@@ -53,6 +53,7 @@ from snowlight.predict import (
     inputs,
     learn,
     ndfd,
+    outlook_cli,
     pool,
     terms_cli,
     terms_file,
@@ -259,7 +260,7 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
         "--out", type=Path, default=PIPELINE_ROOT / "out" / "internal" / "predict" / "headsup.json"
     )
     heads.set_defaults(handler=run_headsup)
-    for module in (forecast_history, terms_cli, tuning_cli):
+    for module in (forecast_history, terms_cli, tuning_cli, outlook_cli):
         module.register(actions)
 
 

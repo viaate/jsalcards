@@ -171,11 +171,19 @@ class Event:
     start: datetime
     end: datetime | None
     """``None``: until further notice."""
+    withdrawn_at: datetime | None = None
+    """When a ``CAN`` or ``UPG`` product took the event back (S7-F rule D2, history only:
+    the live memory drops a withdrawn event at once); ``None``: never."""
 
     @property
     def weather(self) -> WeatherClass | None:
         """The class it makes, or ``None`` for a code that makes none."""
         return CLASS_BY_CODE.get(self.code)
+
+    @property
+    def heads_up(self) -> HeadsUp:
+        """The heads-up it gives (``NONE`` for every other code)."""
+        return HEADS_UP_BY_CODE.get(self.code, HeadsUp.NONE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -250,3 +258,78 @@ def district_class_from_counts(covered: Sequence[int], total: int, share: float)
         if running >= needed:
             return weather
     return WeatherClass.NONE
+
+
+# --- S7-F: the class as issued, heads-ups and the 05:00 record (spec-f s. 2, 3, 5) ------------
+
+WITHDRAWING: Final = frozenset({"CAN", "UPG"})
+"""The final VTEC actions that take an event back (rule D2); expiry is a natural end."""
+MORNING_RECORD: Final = time(5)
+"""S7-F's class snapshot (rule D3): 05:00 local on D, what the district woke up to."""
+
+
+def issued_counts(event: Event, day: date, zone: str, window: Window, as_of: datetime) -> bool:
+    """Whether ``event`` counts at ``as_of`` under S7-F's one withdrawal rule (D2): issued by
+    then and not yet taken back (``issued <= as_of < withdrawn_at``), a span that is not empty
+    (``start < end``), and a span that overlaps the day's window. Heads-ups count by the same
+    rule (:func:`school_state`). The shipped pass keeps :func:`counts` until S7-F F3 moves the
+    live path onto this rule."""
+    if event.issued > as_of:
+        return False
+    if event.withdrawn_at is not None and as_of >= event.withdrawn_at:
+        return False
+    if event.end is not None and event.start >= event.end:
+        return False
+    start, end = window.span(day, zone)
+    return event.start < end and (event.end is None or event.end > start)
+
+
+def school_state(
+    events: Iterable[Event], day: date, zone: str, window: Window, as_of: datetime
+) -> tuple[WeatherClass, HeadsUp]:
+    """A school's class and heads-up at ``as_of`` under rule D2 (:func:`issued_counts`): the
+    strongest class and the strongest heads-up (lowest rank above ``NONE``) that count."""
+    weather = WeatherClass.NONE
+    heads = HeadsUp.NONE
+    for event in events:
+        if not issued_counts(event, day, zone, window, as_of):
+            continue
+        found = event.weather
+        if found is not None and found > weather:
+            weather = found
+        given = event.heads_up
+        if given is not HeadsUp.NONE and (heads is HeadsUp.NONE or given < heads):
+            heads = given
+    return weather, heads
+
+
+def heads_up_strength(heads: int) -> int:
+    """A heads-up index as a strength (0 none, 5 the winter storm watch), so the covered-share
+    rule reads it as it reads a class."""
+    return 0 if heads <= 0 else len(HeadsUp) - heads
+
+
+def district_heads_up(heads: Sequence[HeadsUp], share: float) -> HeadsUp:
+    """The strongest heads-up that covers, with itself or a stronger one, ``share`` of the
+    schools (``heads`` holds one per eligible school; none gives ``NONE``): the class's rule
+    (:func:`district_class`) in the heads-up order."""
+    if not heads:
+        return HeadsUp.NONE
+    needed = share * len(heads)
+    for given in sorted(HeadsUp):
+        if given is HeadsUp.NONE:
+            continue
+        if sum(1 for found in heads if found is not HeadsUp.NONE and found <= given) >= needed:
+            return given
+    return HeadsUp.NONE
+
+
+def local_moment(day: date, zone: str, clock: time, *, evening_before: bool) -> datetime:
+    """``clock`` local in ``zone`` on D-1 (``evening_before``) or on D, as an aware time."""
+    on = day - timedelta(days=1) if evening_before else day
+    return datetime.combine(on, clock, tzinfo=ZoneInfo(zone))
+
+
+def morning_record(day: date, zone: str) -> datetime:
+    """The 05:00 record's moment for ``day`` in ``zone`` (rule D3)."""
+    return local_moment(day, zone, MORNING_RECORD, evening_before=False)

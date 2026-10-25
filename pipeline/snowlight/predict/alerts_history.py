@@ -26,7 +26,7 @@ county rows in the files are flash flood warnings, which no class reads).
 import csv
 import io
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from typing import Final
@@ -39,16 +39,19 @@ import polars as pl
 from snowlight.predict.calendar import is_school_day
 from snowlight.predict.situations import (
     CLASS_BY_CODE,
+    WITHDRAWING,
     Event,
     WeatherClass,
     Window,
+    issued_counts,
     school_class,
 )
 from snowlight.weather.hazards import CONUS_STATES
 
 ENDED: Final = frozenset({"CAN", "EXP", "UPG"})
 """Final VTEC actions that ended a row explicitly."""
-TROPICAL: Final = frozenset({"HU.W", "TR.W"})
+TROPICAL: Final = frozenset({"HU.W", "TR.W", "HU.A", "TR.A"})
+"""Codes issued until further notice: tropical warnings, and (heads-ups, S7-F) watches."""
 _ONE_DAY: Final = timedelta(days=1)
 
 
@@ -70,6 +73,43 @@ class HistoryRow:
     end: datetime | None
     final_end: datetime
     """IEM's final ``utc_expire``: when the row really ended."""
+    status: str = ""
+    """The row's final VTEC action (``CAN``, ``UPG``, ``EXP``, ...)."""
+
+    @property
+    def withdrawn_at(self) -> datetime | None:
+        """When a ``CAN`` or ``UPG`` product took the row back (rule D2): its final
+        ``utc_expire``; ``None`` for a row that ran out or still stands."""
+        return self.final_end if self.status in WITHDRAWING else None
+
+    def event_issued(self, as_of: datetime) -> Event:
+        """The event at ``as_of`` under rule D2 (spec-f s. 3): a withdrawn row keeps the first
+        product's window and stops counting from its withdrawal; any other row ends early once
+        its ending product was out, as :meth:`event` has it."""
+        withdrawn = self.withdrawn_at
+        if withdrawn is None:
+            return self.event(as_of)
+        return Event(self.code, self.issued, self.start, self.end, withdrawn)
+
+    def counting(
+        self, day: date, zone: str, window: Window
+    ) -> tuple[datetime, datetime | None] | None:
+        """The moments ``[from, until)`` at which the row counts for ``day`` under rule D2
+        (:func:`~snowlight.predict.situations.issued_counts` of :meth:`event_issued`), ``until``
+        ``None`` for ever; ``None`` when it never counts. One interval per day, so a sweep
+        gives every sample hour of a night at once."""
+        open_span = Event(self.code, self.issued, self.start, self.end)
+        if not issued_counts(open_span, day, zone, window, self.issued):
+            return None
+        withdrawn = self.withdrawn_at
+        if withdrawn is not None:
+            return (self.issued, withdrawn) if withdrawn > self.issued else None
+        if self.end is not None and self.final_end >= self.end:
+            return self.issued, None
+        cut = Event(self.code, self.issued, self.start, self.final_end)
+        if issued_counts(cut, day, zone, window, max(self.issued, self.final_end)):
+            return self.issued, None
+        return (self.issued, self.final_end) if self.final_end > self.issued else None
 
     def event(self, as_of: datetime) -> Event:
         """The event as it was known at ``as_of``: ended early only once the ending product
@@ -85,8 +125,12 @@ def _utc(text: str, compact: bool = False) -> datetime:
     return datetime.strptime(text, form).replace(tzinfo=UTC)
 
 
-def read_season(text: str, season: int) -> list[HistoryRow]:
-    """The class-making zone rows of one season file (see the module docstring).
+def read_season(
+    text: str, season: int, codes: Collection[str] = CLASS_BY_CODE.keys()
+) -> list[HistoryRow]:
+    """The zone rows of ``codes`` (the class-making codes by default; S7-F reads the heads-up
+    files with :data:`~snowlight.predict.situations.HEADS_UP_BY_CODE`) of one season file
+    (see the module docstring), each with its final status.
 
     Raises:
         HistoryError: a needed column is missing or a value is malformed.
@@ -105,7 +149,7 @@ def read_season(text: str, season: int) -> list[HistoryRow]:
         for record in reader:
             code = f"{record['phenomena']}.{record['significance']}"
             ugc = record["ugc"]
-            if code not in CLASS_BY_CODE or record["gtype"] != "C" or len(ugc) != 6:  # noqa: PLR2004
+            if code not in codes or record["gtype"] != "C" or len(ugc) != 6:  # noqa: PLR2004
                 continue
             if ugc[2] != "Z" or ugc[:2] not in CONUS_STATES:
                 continue
@@ -122,6 +166,7 @@ def read_season(text: str, season: int) -> list[HistoryRow]:
                 start=_utc(record["utc_issue"]),
                 end=None if code in TROPICAL else _utc(record["utc_init_expire"], compact=True),
                 final_end=final_end,
+                status=record["status"],
             )
             if code in TROPICAL and record["status"] in ENDED:
                 known = tropical_ends.get(key)
@@ -142,7 +187,7 @@ def _close_tropical(item: tuple[HistoryRow, str], ends: Mapping[str, datetime]) 
         return row
     return HistoryRow(
         row.season, row.event_key, row.ugc, row.area_km2, row.code, row.issued, row.start,
-        row.end, last,
+        row.end, last, row.status,
     )  # fmt: skip
 
 

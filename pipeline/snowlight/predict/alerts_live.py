@@ -41,7 +41,7 @@ import numpy as np
 import numpy.typing as npt
 import shapely
 
-from snowlight.predict.situations import CLASS_BY_CODE, Event
+from snowlight.predict.situations import CLASS_BY_CODE, HEADS_UP_BY_CODE, Event
 from snowlight.sources.nws.alerts import ActiveFeed, NwsAlert
 from snowlight.sources.nws.elevation import ElevationLimit
 
@@ -87,7 +87,17 @@ def live_events(feed: ActiveFeed) -> list[LiveEvent]:
     return found
 
 
-def _events(alert: NwsAlert) -> list[LiveEvent]:
+def live_heads_ups(feed: ActiveFeed) -> list[LiveEvent]:
+    """The feed's heads-up events (watches and cold advisories, S7-F spec-f s. 2), read as
+    :func:`live_events` reads the class-making ones. The pass does not read them yet (S7-F F3
+    wires them in); the parity tests compare them with the history's heads-up rows."""
+    found: list[LiveEvent] = []
+    for alert in feed.alerts:
+        found.extend(_events(alert, HEADS_UP_BY_CODE))
+    return found
+
+
+def _events(alert: NwsAlert, codes: Mapping[str, object] = CLASS_BY_CODE) -> list[LiveEvent]:
     if alert.status != "Actual" or alert.message_type not in {"Alert", "Update"}:
         return []
     start = alert.onset or alert.effective
@@ -96,7 +106,7 @@ def _events(alert: NwsAlert) -> list[LiveEvent]:
     found: list[LiveEvent] = []
     for vtec in alert.vtec:
         code = f"{vtec.phenomena}.{vtec.significance}"
-        if code not in CLASS_BY_CODE or vtec.action in ENDING_ACTIONS:
+        if code not in codes or vtec.action in ENDING_ACTIONS:
             continue
         end = alert.ends or vtec.end
         key = f"{vtec.office}.{code}.{vtec.etn:04d}"

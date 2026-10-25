@@ -180,12 +180,19 @@ class HistoryPlaces:
     zone_of_school: dict[int, str] = field(default_factory=dict)
     files: dict[int, Path] = field(default_factory=dict)
     """Season to its cached IEM file."""
+    headsup_files: dict[int, Path] = field(default_factory=dict)
+    """Season to its cached heads-up file (S7-F; empty unless asked for)."""
 
 
 def history_places(
-    paths: TrainPaths, schools: pl.DataFrame, seasons: Sequence[int]
+    paths: TrainPaths,
+    schools: pl.DataFrame,
+    seasons: Sequence[int],
+    headsup: Mapping[int, Path] | None = None,
 ) -> HistoryPlaces:  # pragma: no cover - reads the cached NWS and IEM files
-    """Place every school in its zone versions, season by season, as the weights build does."""
+    """Place every school in its zone versions, season by season, as the weights build does.
+    ``headsup`` (S7-F) adds each season's heads-up file, so the zone book also holds the
+    versions its watches and cold advisories were issued for."""
     from snowlight.sources.nws.http import HttpCache, make_client  # noqa: PLC0415
     from snowlight.weights import archive, schoolzones, zonepolys, zones  # noqa: PLC0415
     from snowlight.weights import schools as weight_schools  # noqa: PLC0415
@@ -195,6 +202,21 @@ def history_places(
         cache = WeightsCache(http, root=paths.weights_cache, siblings=())
         counties = zones.load_counties(cache)
         files = [archive.load_year(cache, season) for season in seasons]
+        if headsup:
+            from dataclasses import replace  # noqa: PLC0415
+
+            from snowlight.predict.inputs import read_headsup  # noqa: PLC0415
+
+            files = [
+                replace(
+                    file,
+                    rows=file.rows
+                    + tuple(read_headsup(headsup[file.year].read_text(encoding="utf-8"))[0]),
+                )
+                if file.year in headsup
+                else file
+                for file in files
+            ]
         frame = schools.select(weight_schools.SCHOOL_COLUMNS)
         placement = weight_schools.place_schools(frame, counties)
         sets = zonepolys.load_zone_sets(cache)
@@ -226,7 +248,12 @@ def history_places(
         for position, school in enumerate(zoned.schools)
         if school.time_zones
     }
-    return HistoryPlaces(reach, zone_of_school, {file.year: file.file.path for file in files})
+    return HistoryPlaces(
+        reach,
+        zone_of_school,
+        {file.year: file.file.path for file in files},
+        dict(headsup or {}),
+    )
 
 
 def school_zones(
@@ -857,6 +884,53 @@ def run_private_labels(  # noqa: PLR0913, PLR0917 - the archive, the units and t
     both = pl.concat([district_labels.select(mine.columns), mine], how="vertical")
     judged = storm_absences(both, config.labels.storm_absence_share)
     return judged.filter(pl.col("district").is_in(list(zone_of))).sort("district", "day")
+
+
+def named_share(eligible: Sequence[str], lit: Mapping[str, LitStatus]) -> float:
+    """The share of ``eligible`` lit closed, remote or delayed with a weather reason named
+    (S7-F GF1, GF3: a label that does not rest on the class of a no-reason closing)."""
+    from snowlight.predict.labels import NO_SCHOOL, WEATHER_REASONS  # noqa: PLC0415
+    from snowlight.schemas.vocab import Status  # noqa: PLC0415
+
+    if not eligible:
+        return 0.0
+    named = 0
+    for school in eligible:
+        found = lit.get(school)
+        if found is None or found.status not in (*NO_SCHOOL, Status.DELAYED):
+            continue
+        named += found.reason in WEATHER_REASONS
+    return named / len(eligible)
+
+
+def named_shares(
+    run: ArchiveRun, labels: pl.DataFrame, schools: pl.DataFrame
+) -> pl.DataFrame:  # pragma: no cover - the real archive
+    """Per closed or delayed label (``district``, ``day``), :func:`named_share` of its eligible
+    schools on that day."""
+    eligible = eligible_schools(schools)
+    by_district: dict[str, list[str]] = {}
+    for district, school in zip(
+        eligible["district_id"].to_list(), eligible["id"].to_list(), strict=True
+    ):
+        by_district.setdefault(district, []).append(school)
+    run.eligible = frozenset(eligible["id"].to_list())
+    positive = labels.filter(pl.col("outcome").is_in(["no_school", "delayed"]))
+    rows: list[dict[str, object]] = []
+    for (day,), group in positive.group_by("day"):
+        assert isinstance(day, date)  # noqa: S101
+        lit = run.lit_for(day).lit
+        for district in group["district"].to_list():
+            rows.append(
+                {
+                    "district": district,
+                    "day": day,
+                    "named_share": named_share(by_district.get(district, []), lit),
+                }
+            )
+    return pl.DataFrame(
+        rows, schema={"district": pl.String, "day": pl.Date, "named_share": pl.Float64}
+    ).sort("district", "day")
 
 
 def labels_report(labels: pl.DataFrame, states: Mapping[str, str]) -> str:

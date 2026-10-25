@@ -1321,3 +1321,142 @@ evidence), the level-free check (each model's own best logit shift per class) an
 within-day ranking over every market-day with both outcomes (the pre-registered figure, then
 apart from it every market-day but the four split ones, and the split ones alone,
 in sample).
+
+## The night-before outlook (S7-F, piece F2: model and backtest, nothing visible)
+
+Nothing on the site changes with this piece, and `predict.yml` serves exactly as before: no
+pass reads the outlook, the heads-ups or the 05:00 labels yet (piece F3 wires them in behind
+`PREDICT_OUTLOOK`, off by default). It builds what the night-before chance will serve and
+judges it on the archive. All its outputs are internal (`out/internal/predict-outlook/` or a
+folder named with `--out`), except the model file below.
+
+**One withdrawal rule (D2).** An alert counts at a moment when it was issued by then and not
+yet taken back, its span is not empty and the span overlaps the day's window (18:00 the day
+before to 09:00). History reads a row whose final action is a cancel or an upgrade as taken
+back at its final `utc_expire`, and before that as its first product gave it; any other row
+ends early once its ending product was out, as before. Watches and cold advisories count by
+the same rule. The shipped pass is unchanged: its live memory already drops a cancelled or
+upgraded alert at once (exactly this rule at the present moment), and its 21:00 training
+snapshot keeps the shipped rule until a refit takes the new one (spec-f s. 3). The one place
+the rule is new in code is `situations.issued_counts`; the live pass keeps `counts` until F3.
+
+**Heads-ups.** Winter storm watch (WS.A, and the retired BZ.A, LE.A), extreme cold watch (EC.A,
+WC.A), cold weather advisory (CW.Y, WC.Y), hurricane watch and tropical storm watch, in that
+order of strength. A school's heads-up is the strongest that counts, a district's the
+strongest that covers half its eligible schools or more with itself or a stronger one (the
+class's rule). A heads-up never changes a class, a label or a rate. The live feed's heads-ups
+read by `alerts_live.live_heads_ups`, which no pass calls yet.
+
+**The 05:00 record (D3).** The outlook's target and its labels use the class at 05:00 local on
+the school day: what the district woke up to. `predict outlook states` writes that class
+history in the files `predict labels --reuse-weather` reads, so the 05:00 labels come from the
+shipped label code unchanged.
+
+**States and cases.** `predict outlook states` sweeps the class and heads-up rows of every
+school year once: under rule D2 each row counts on one interval of moments per day, so one
+pass gives every moment of every night: the 21 sample hours (08:00 the day before to 04:00,
+three per slot), the late-in-slot scoring times (10:15, 13:15, 16:15, 19:15, 22:15, 01:15,
+04:15) and the 05:00 record. A case is one district at one sample hour of one school night
+(15 August to 15 June): the class issued then, the heads-up, the forecast bucket of the newest
+run by then (piece F1's `code_filled`: a school whose cell has no value reads as nothing
+forecast of that element, as piece 3 reads it; 13 when no run counted) and the 05:00 class.
+A late-in-slot time takes its whole hour's forecast (the hourly history holds no later run)
+and its class and heads-up exactly as issued by then.
+
+**The outlook (D5).** For each slot S1-S7 (before 10:30 the day before, 10:30-13:30,
+13:30-16:30, 16:30-19:30, 19:30-22:30, 22:30-01:30, 01:30-05:00), class issued (none or
+advisory), heads-up and bucket, the share of cases that woke up to each class. A cell the
+nation holds on fewer than 20 nights merges with the next bucket of its ladder (snow, ice,
+feels), the nearer side first and the larger amounts on a tie, then any bucket, then any
+heads-up; the merged cell is the cell counted at every place. Each state shrinks toward its
+region and each region toward the nation, the strengths chosen from 8, 32, 128, 512, 2048 by
+leave-one-season-out log loss over the training seasons' cases. A sentence may name the most
+specific place whose merged cell holds 20 nights or more, else the nation, with that cell's raw
+share.
+
+**The chance (D6).** `outlook.chance` is the one function serving, the backtest and S7-L will
+use: the class's own rate (today's chance, exactly) when a warning is issued, from 05:00, or
+when the outlook is not on; otherwise the mixture of the district's rates under each class,
+weighted by the outlook, and the delay chance alike, then the shipped clamp and rounding. A
+class the outlook gives no weight adds nothing to the mixture, even where it has no rate. A
+row whose outlook is empty (F3 passes none when the forecast is stale, the lead's
+`Dark.FORECAST` decision, and an empty row for a district whose forecast is unknown) or that
+weighs a class with no rate gets today's chance instead, never a blank or a mixture with a
+term missing; `chance` refuses an outlook row that is not a distribution.
+
+**The model file.** `predict outlook fit` writes `data/predict/model-f.json.gz` (v3): the 05:00
+rates (a v2 model fit on the 05:00 labels) and the outlook's counts by place, derived counts
+only. `data/predict/model.json.gz` (v2) stays beside it and is still the one served.
+
+**Commands** (run from `pipeline/`, internal, under the heavy lock):
+`predict outlook states` (the states, the cases and the 05:00 weather history; 4 minutes for
+2015-16 to 2025-26), then `predict labels --reuse-weather --out <its labels-0500 folder>` (the
+05:00 labels), `predict outlook reasons --labels <that folder>` (the share of each closed or
+delayed label's schools lit with a weather reason named), `predict outlook backtest`
+(`--fold-labels DIR`: each fold's training labels, `labels-<S>.parquet` and
+`shipped-<S>.parquet`) and `predict outlook fit`.
+
+**The backtest (2026-10-25).** Walk-forward over 2019-20 to 2025-26: the outlook fit on the
+cases of the seasons before each test season (from 2018-19, the first forecast season), the
+rates on the labels before it. The same 05:00-labeled rows for three models: S7-F; B-issued
+(the class issued by the moment, rates refit on the 05:00 labels); B-shipped (the class issued
+by the moment, today's 21:00 rates). The 05:00 labels hold 2,231 known district-days (1,455
+no school, 99 delayed, 677 open; the 21:00 labels 2,388). The archive's lists come mostly
+from big storm days, so this backtest can veto an outlook that hurts, not prove one helps.
+
+The research lane's label audit (calc-research plan T1) found that the training labels of
+every fold depend on later seasons' lists (station audiences and gates built from the whole
+archive: 11% to 100% of a fold's training labels change when they are built from the seasons
+before it). So the primary run (`--fold-labels`) fits each fold's rates on labels rebuilt from
+the seasons before it (the research lane's code); the whole-archive run is kept beside it.
+With fold labels, 2019-20 and 2020-21 have no warning-class rate before them, so S7-F's
+mixture has no rate for the classes the outlook weighs there: those rows (52 and 46 at 20:00,
+762 E(t) rows over all moments) get today's chance from S7-F, as serving will give it, and
+are scored for every model. 159 E(t) rows of 2019-20 have no rate under their own class for
+any model (no closing among them) and are left out for all three; the report gives each
+model's count by season and moment. 56 E(t) rows whose forecast is unknown also get today's
+chance from S7-F (lead decision `Dark.FORECAST`).
+
+- Rows with no warning issued at 8 PM the evening before (E20): 890 rows on 34 dates, 278
+  closings; 792 of them where the outlook moved the chance (270 closings). With no alert and
+  no heads-up at all: 441 rows and no closing. So the archive holds no "nothing issued yet"
+  closing: that case rests entirely on S7-L's live check.
+- Fold labels (primary): Brier on E20 S7-F 0.0760, B-issued 0.0755, B-shipped 0.0514 (on the
+  792 moved rows 0.0837, 0.0832, 0.0567); log loss 0.247, 0.244, 0.187. GF1 fails against
+  both (ratio 1.006 and 1.478, bootstrap bounds +0.016 and +0.053; late slots pooled 0.0678
+  against 0.0692 and 0.0538). Its explicit-reason rows hold 1 closing, so that subcheck is not
+  informative on the archive, and no season reaches 300 E20 rows (largest 287), so the
+  per-season check is untested. GF2 fails (closings at 30%: 97.1%, 97.1%, 96.0%; the bar is
+  B-shipped's plus 3 points). GF3 fails (precision at 30%: 0.778 against B-shipped's 0.850).
+  GF4 fails (ECE at 20:00 0.041 against 0.034 and 0.029; at 22:15 and 04:15 too). GF5 fails in
+  89 of 220 bins as T moves from season to season. GF6 passes with no change at all. GF8
+  fails (5 AM rates 0.0709 against today's 0.0635; amended G1 passes).
+- GF7 (daytime slots) passes on the numbers (0.138 against 0.175 and 0.155), but its whole gain
+  comes from raised chances on alert days: against B-issued, raised rows save 104.5 summed
+  squared error (124.5 on advisory and warning days) and lowered rows lose 2.6; against
+  B-shipped 63.3 and -17.6. Two dates carry it (2024-02-13 and 2023-03-14, a split day chosen
+  by outcome), and on quiet rows S7-F is worse (0.015 against 0.0001). Under the research
+  plan's T4 that is no archive evidence, so it cannot support the daytime heads-up option
+  until live labels arrive.
+- Each gate's rows (E20, late slots pooled, 22:15, 04:15, all rows at 20:00, the daytime slots,
+  the 05:00 storm rows) are reported with the strata by 05:00 class and storm size and by the
+  class issued, the level-free check, the within-day ranking, the gain by date and the raised
+  and lowered split with its T4 verdict. On E20 S7-F is worse than B-shipped on advisory
+  nights with under 4 in forecast (0.139 against 0.113 and 0.067) and with 4 in or more
+  (0.257 against 0.138), and on quiet-label nights with under 4 in (0.062 against 0.035).
+- Named dates (20:00, closings with no warning yet): on 2024-01-16 the median chance falls from
+  0.86 to 0.66 (117 closings, all at 30% or more either way); on 2023-03-14 from 0.75 to 0.61
+  (31 closings, 90.3% at 30% or more either way).
+- The strength m sits at the top of the grid (2048) for the region and the state in every fold
+  from 2020-21 on: leave-one-season-out wants more pooling than the grid allows. A wider grid
+  (up to 131,072, chosen on the training seasons only) picks 8,192 to 131,072, lowers E20
+  Brier to 0.0723 (still above B-shipped's 0.0514, so GF1 still fails) and GF5's failing bins
+  to 70 of 214 (still failing); the model file keeps the spec's grid, and the lead decides.
+- Whole-archive run (leaky, for comparison only): S7-F 0.1443, B-issued 0.1534, B-shipped
+  0.1825; GF1 and GF2 fail there too.
+- The research lane's T2 check (a later product moving an alert's start), re-measured at
+  20:00 the evening before and at 05:00 against these states: 67 and 0 zone-days moved later,
+  161 and 87 earlier, none on a labeled row, so no scored row moves.
+- Verdict: nothing turns on. The outlook stays off (F3 builds shadow), and only live labels
+  can show whether it helps (300 live storm rows on 8 or more dates, the research plan's T5).
+The full report is internal (`report.md`, `metrics.json`).
