@@ -298,9 +298,14 @@ def boundary_kind(previous: Run | None, following: Run | None) -> str:
     return next((kind for found, kind in kinds if found), "restart")
 
 
-def handoffs(commits: Sequence[Commit], runs: Mapping[str, Run]) -> dict[str, JSONValue]:
+def handoffs(
+    commits: Sequence[Commit],
+    runs: Mapping[str, Run],
+    since: datetime | None = None,
+    until: datetime | None = None,
+) -> dict[str, JSONValue]:
     """Each boundary between two runs' commits, with its type (:func:`boundary_kind`) and
-    gap, and the cold starts (:func:`cold_starts`)."""
+    gap, and the cold starts (:func:`cold_starts`) of the runs that started in the window."""
     found: list[dict[str, JSONValue]] = []
     successors: list[float] = []
     others: list[float] = []
@@ -314,7 +319,7 @@ def handoffs(commits: Sequence[Commit], runs: Mapping[str, Run]) -> dict[str, JS
         by_kind[kind] += 1
         (successors if kind == "successor" else others).append(gap)
         found.append({"at": after.at.isoformat(), "kind": kind, "gap_minutes": gap})
-    colds = cold_starts(commits, runs.values())
+    colds = cold_starts(commits, runs.values(), since, until)
     return {
         "boundaries": list[JSONValue](found),
         "by_kind": dict(sorted(by_kind.items())),
@@ -327,11 +332,18 @@ def handoffs(commits: Sequence[Commit], runs: Mapping[str, Run]) -> dict[str, JS
     }
 
 
-def cold_starts(commits: Sequence[Commit], runs: Iterable[Run]) -> list[float]:
+def cold_starts(
+    commits: Sequence[Commit],
+    runs: Iterable[Run],
+    since: datetime | None = None,
+    until: datetime | None = None,
+) -> list[float]:
     """Each live-read run's cold start: its job's start to its first pass's start, from the
     loop's ``first pass`` notice (a successor's first pass may skip an unchanged upload, so
     its first commit can be the next grid pass); from its first commit only when the notice
-    is missing."""
+    is missing (a job still running has no annotations yet). Only a run whose job started in
+    the window (``since`` to ``until``) counts: the commits are the window's own, so a run
+    that started before it would read its first commit in the window as its first pass."""
     first_commit: dict[str, datetime] = {}
     for commit in sorted(commits, key=lambda item: item.at):
         found = commit.parsed
@@ -342,6 +354,10 @@ def cold_starts(commits: Sequence[Commit], runs: Iterable[Run]) -> list[float]:
     colds: list[float] = []
     for run in runs:
         if run.workflow != "live-read" or run.started is None:
+            continue
+        if (since is not None and run.started < since) or (
+            until is not None and run.started > until
+        ):
             continue
         notice = _first(run, FIRST)
         first = _moment(notice["at"]) if notice is not None else first_commit.get(str(run.id))
@@ -489,7 +505,7 @@ def report(history: History) -> dict[str, JSONValue]:
         "live_host_growth": host_growth(history.runs),
         "github_token_peak_by_hour": dict(peaks),
         "github_token_hourly_peak": max(peaks.values(), default=None),
-        "handoffs": handoffs(commits, runs),
+        "handoffs": handoffs(commits, runs, history.since, history.until),
         "incidents": len(history.incidents),
         "drills": list[JSONValue](drills(history)),
     }

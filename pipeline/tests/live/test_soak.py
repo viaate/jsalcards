@@ -176,6 +176,19 @@ def test_cold_start_comes_from_the_first_pass_notice_when_the_first_upload_is_sk
     assert fallback["cold_start_max_seconds"] > 95.0
 
 
+def test_a_run_that_started_before_the_window_has_no_cold_start_in_it() -> None:
+    """A soak window opened while a reader runs: that run's first commit in the window is
+    not its first pass (its job started hours before), and a running job has no notice."""
+    history = _history()
+    early = T0 - timedelta(hours=4)
+    history.runs[0] = replace(history.runs[0], created=early, started=early, annotations=())
+    hand = report(history)["handoffs"]
+    assert isinstance(hand, dict)
+    assert hand["cold_starts"] == 1  # only the successor, which started in the window
+    assert isinstance(hand["cold_start_max_seconds"], float)
+    assert hand["cold_start_max_seconds"] < 600.0
+
+
 def test_reader_commits_under_v1_are_found_by_message_and_run_id() -> None:
     history = _history()
     stamp = "2026-10-31T20:00:00Z"
