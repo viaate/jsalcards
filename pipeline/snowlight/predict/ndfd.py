@@ -95,12 +95,23 @@ class HeadError(NdfdError):
     (an object truncated on its host), or a section overruns the bytes that hold it."""
 
 
+class LongHeadError(HeadError):
+    """Section 4 lies past the bytes read at a message's start (a long section 2): the head is
+    read again whole (:func:`head_bytes`)."""
+
+
 class Element(StrEnum):
-    """An NDFD element, by its folder name on AWS."""
+    """An NDFD element, by its folder name on AWS. The night-before chance reads the first
+    three (:data:`ELEMENTS`); the rest are read only by the label-night forecast extract
+    (:mod:`snowlight.predict.night_extract`)."""
 
     SNOW = "snow"
     ICE = "iceaccum"
     APT = "apt"
+    TEMP = "temp"
+    POP12 = "pop12"
+    QPF = "qpf"
+    WX = "wx"
 
     @property
     def heading(self) -> str:
@@ -117,13 +128,22 @@ HEADING: Final[Mapping[Element, str]] = {
     Element.SNOW: "YSUZ98",
     Element.ICE: "YZUZ98",
     Element.APT: "YTUZ98",
+    Element.TEMP: "YEUZ98",
+    Element.POP12: "YDUZ98",
+    Element.QPF: "YIUZ98",
+    Element.WX: "YJUZ98",
 }
 PARAMETER: Final[Mapping[Element, tuple[int, int, int]]] = {
     Element.SNOW: (0, 1, 29),
     Element.ICE: (0, 1, 227),
     Element.APT: (0, 0, 193),
+    Element.TEMP: (0, 0, 0),
+    Element.POP12: (0, 1, 8),
+    Element.QPF: (0, 1, 8),
+    Element.WX: (0, 1, 192),
 }
 ELEMENTS: Final = (Element.SNOW, Element.ICE, Element.APT)
+"""The elements of a run of the night-before chance (:func:`assemble_runs`)."""
 
 
 class Host(StrEnum):
@@ -236,7 +256,7 @@ def sample(grid: Floats, where: Cells) -> Floats:
 
 # --- listings and runs --------------------------------------------------------------------------
 
-_NAME: Final = re.compile(r"\b(Y[SZT]UZ98)_KWBN_(\d{12})\b")
+_NAME: Final = re.compile(r"\b(Y[SZTEDIJ]UZ98)_KWBN_(\d{12})\b")
 _HEADING_ELEMENT: Final = {heading: element for element, heading in HEADING.items()}
 
 
@@ -361,11 +381,14 @@ def ncei_catalog_url(day: date) -> str:
     return f"{NCEI_ROOT}/catalog/{NCEI_DATASET}/{day:%Y%m}/{day:%Y%m%d}/catalog.xml"
 
 
-_DATASET: Final = re.compile(r'<dataset\s+name="(Y[SZT]UZ98_KWBN_\d{12})"[^>]*urlPath="([^"]+)"')
+_DATASET: Final = re.compile(
+    r'<dataset\s+name="(Y[SZTEDIJ]UZ98_KWBN_\d{12})"[^>]*urlPath="([^"]+)"'
+)
 
 
-def parse_ncei_catalog(xml: bytes) -> list[Listed]:
-    """The CONUS 2.5 km snow, ice and apparent temperature files a THREDDS day catalog lists.
+def parse_ncei_catalog(xml: bytes, elements: Collection[Element] = ELEMENTS) -> list[Listed]:
+    """The CONUS 2.5 km files of ``elements`` (snow, ice and apparent temperature unless
+    told) a THREDDS day catalog lists.
 
     Raises:
         NdfdError: it is not a THREDDS catalog.
@@ -376,6 +399,8 @@ def parse_ncei_catalog(xml: bytes) -> list[Listed]:
     found: list[Listed] = []
     for name, path in _DATASET.findall(text):
         heading, stamp = name.split("_KWBN_")
+        if _HEADING_ELEMENT[heading] not in elements:
+            continue
         found.append(
             Listed(
                 _HEADING_ELEMENT[heading],
@@ -576,9 +601,13 @@ _UNIT_SECONDS: Final[Mapping[int, int]] = {
 }
 """GRIB2 code table 4.4: the unit of a forecast time, in seconds."""
 _STATISTICAL: Final = 8
+_PROBABILITY: Final = 9
 _INSTANT: Final = 0
 _RANGE_END: Final = 58
 """Template 4.8 with one time range ends at octet 58 (its length and increment)."""
+_PROBABILITY_SHIFT: Final = 13
+"""Template 4.9 is template 4.8 with the probability's 13 octets (35 to 47) before the end of
+its interval, so each of 4.8's later octets sits 13 further on (GRIB2 code table 4.0)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -666,6 +695,8 @@ def _parse_head(raw: bytes, offset: int) -> Head:
         at += size
     if len(raw) < min(length, HEAD_BYTES):
         raise HeadError(f"the file ends {len(raw)} bytes into a message, before its section 4")
+    if len(raw) < length:
+        raise LongHeadError(f"section 4 is not in the message's first {len(raw)} bytes")
     raise HeadError("section 4 is not in the message's first bytes")
 
 
@@ -682,15 +713,17 @@ def _section4(
     lead = struct.unpack(">I", raw[18:22])[0] * _UNIT_SECONDS[unit]
     start = reference + timedelta(seconds=lead)
     span = timedelta(0)
-    if template == _STATISTICAL:
-        _need(raw, _RANGE_END, "a template 4.8 section")
-        if raw[41] != 1:
-            raise NdfdError("a template 4.8 message without exactly one time range")
-        end = _when(raw, 34)
-        span_unit = raw[48]
+    if template in {_STATISTICAL, _PROBABILITY}:
+        shift = _PROBABILITY_SHIFT if template == _PROBABILITY else 0
+        _need(raw, _RANGE_END + shift, f"a template 4.{template} section")
+        if raw[41 + shift] != 1:
+            raise NdfdError(f"a template 4.{template} message without exactly one time range")
+        end = _when(raw, 34 + shift)
+        span_unit = raw[48 + shift]
         if span_unit not in _UNIT_SECONDS:
             raise NdfdError(f"unknown time range unit {span_unit}")
-        span = timedelta(seconds=struct.unpack(">I", raw[49:53])[0] * _UNIT_SECONDS[span_unit])
+        units = struct.unpack(">I", raw[49 + shift : 53 + shift])[0]
+        span = timedelta(seconds=units * _UNIT_SECONDS[span_unit])
     elif template == _INSTANT:
         end = start
     else:
@@ -698,6 +731,36 @@ def _section4(
     return Head(
         offset, length, (discipline, category, number), reference, start, end, template, span
     )
+
+
+LONG_HEAD_MAX: Final = 1 << 20
+"""The most a message's sections 0 to 4 may take (a Wx file's weather strings in section 2 take
+about 12 KB)."""
+
+
+def head_bytes(read: Ranged, offset: int) -> bytes:
+    """Sections 0 to 4 of the message at ``offset``, found by hopping over its sections (for a
+    message whose section 2 is longer than :data:`HEAD_BYTES`).
+
+    Raises:
+        HeadError: the file ends inside them, or they are longer than :data:`LONG_HEAD_MAX`.
+    """
+    indicator = read(offset, 16)
+    if len(indicator) < 16 or indicator[:4] != b"GRIB":  # noqa: PLR2004
+        raise HeadError(f"no GRIB indicator at {offset}")
+    length = min(struct.unpack(">Q", indicator[8:16])[0], LONG_HEAD_MAX)
+    at = 16
+    while at + 5 <= length:
+        header = read(offset + at, 5)
+        if len(header) < 5:  # noqa: PLR2004
+            raise HeadError(f"the file ends inside the head of the message at {offset}")
+        size, number = struct.unpack(">I", header[:4])[0], header[4]
+        if size < 5 or number > 4:  # noqa: PLR2004
+            break
+        at += size
+        if number == 4:  # noqa: PLR2004
+            return read(offset, at)
+    raise HeadError(f"section 4 is not in the head of the message at {offset}")
 
 
 def walk(read: Ranged, stop: Callable[[Head], bool] | None = None) -> Iterator[Head]:
@@ -733,7 +796,11 @@ def walk(read: Ranged, stop: Callable[[Head], bool] | None = None) -> Iterator[H
         if found:
             offset += found
             raw = read(offset, HEAD_BYTES)
-        head = last = parse_head(raw, offset)
+        try:
+            head = parse_head(raw, offset)
+        except LongHeadError:
+            head = parse_head(head_bytes(read, offset), offset)
+        last = head
         yield head
         if stop is not None and stop(head):
             return
@@ -817,6 +884,70 @@ def decode(raw: bytes, head: Head) -> Decoded:
     grid = values.reshape(NY, NX)
     grid[1::2] = grid[1::2, ::-1].copy()
     return Decoded(head, grid)
+
+
+def weather_strings(raw: bytes) -> tuple[str, ...]:
+    """The weather strings of an NDFD Wx message (``Lkly:S:-:<NoVis>:``), in the order its grid
+    values index them. NDFD keeps them in section 2 (local use, version 1): a count of groups,
+    then per group the number of characters (4 octets), a reference value (IEEE float), a
+    binary scale factor (2 octets), the bits per character and the type of the original values
+    (1: integers), and the characters simple packed; the strings end each in a zero.
+
+    Raises:
+        NdfdError: the message has no such section 2.
+    """
+    at = 16
+    while at + 5 <= len(raw):
+        size, number = struct.unpack(">I", raw[at : at + 4])[0], raw[at + 4]
+        if size < 5 or at + size > len(raw):  # noqa: PLR2004
+            break
+        if number == 2:  # noqa: PLR2004
+            return _string_table(raw[at : at + size])
+        if number > 2:  # noqa: PLR2004
+            break
+        at += size
+    raise NdfdError("no weather strings in section 2")
+
+
+_GROUP_HEAD: Final = 12
+_CHAR_BITS: Final = 8
+
+
+def _string_table(section: bytes) -> tuple[str, ...]:
+    if len(section) < 8 or section[5] != 1:  # noqa: PLR2004
+        raise NdfdError("section 2 is not NDFD's local use version 1")
+    groups = struct.unpack(">H", section[6:8])[0]
+    at = 8
+    codes: list[npt.NDArray[np.int64]] = []
+    for _ in range(groups):
+        if at + _GROUP_HEAD > len(section):
+            raise NdfdError("section 2 ends inside a group's head")
+        count = struct.unpack(">I", section[at : at + 4])[0]
+        reference = struct.unpack(">f", section[at + 4 : at + 8])[0]
+        scale = struct.unpack(">h", section[at + 8 : at + 10])[0]
+        bits, kind = section[at + 10], section[at + 11]
+        at += _GROUP_HEAD
+        size = (count * bits + 7) // 8
+        if (
+            reference != 0
+            or scale != 0
+            or kind != 1
+            or not 0 < bits <= _CHAR_BITS
+            or at + size > len(section)
+        ):
+            raise NdfdError("section 2's characters are not simple packed integers")
+        packed = np.unpackbits(np.frombuffer(section[at : at + size], dtype=np.uint8))
+        rows = packed[: count * bits].reshape(count, bits).astype(np.int64)
+        codes.append(rows @ (1 << np.arange(bits - 1, -1, -1, dtype=np.int64)))
+        at += size
+    text = bytes(np.concatenate(codes).astype(np.uint8).tolist()) if codes else b""
+    try:
+        strings = text.decode("ascii").split("\0")
+    except UnicodeDecodeError as error:
+        raise NdfdError("section 2's weather strings are not ASCII") from error
+    if strings and strings[-1] == "":
+        strings.pop()
+    return tuple(strings)
 
 
 # --- the window ---------------------------------------------------------------------------------

@@ -1,9 +1,11 @@
 """District-day labels from settled statuses and reads (synthetic)."""
 
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any
 
 import polars as pl
+import pytest
 
 from snowlight.predict.config import PredictConfig
 from snowlight.predict.labels import (
@@ -17,11 +19,15 @@ from snowlight.predict.labels import (
     carries,
     did_of,
     district_markets,
+    fold_label_days,
+    label_changes,
     label_day,
     label_days,
+    listings_before,
     outcome_of,
     parse_reads,
     read_stations,
+    reads_before,
     shares,
     station_stats,
     storm_absences,
@@ -331,3 +337,189 @@ def test_absence_from_the_lists_is_not_open_when_the_market_closed() -> None:
         dict(zip(*storm_absences(other, 0.5).select("district", "outcome"), strict=True))["c"]
         == "open"
     )
+
+
+def test_a_fold_builds_audiences_and_gates_from_its_own_days_only() -> None:
+    listings = [
+        ("kaaa", "d1", date(2018, 1, 8)),
+        ("kaaa", "d1", date(2019, 1, 8)),
+        ("kaaa", "d2", date(2018, 1, 9)),
+    ]
+    before = date(2018, 7, 1)
+    assert listings_before(listings, before) == [listings[0], listings[2]]
+    # Built from the whole archive, kaaa carries d1 in 2018 only because 2019 named it again.
+    assert audiences(listings, 2) == {"kaaa": {"d1": date(2018, 1, 8)}}
+    assert audiences(listings_before(listings, before), 2) == {}
+    reads = [read("kaaa", "2018-06-30T23:59:00"), read("kaaa", "2018-07-01T00:00:00")]
+    assert reads_before(reads, before) == reads[:1]
+
+
+def test_label_changes_count_known_labels_that_move() -> None:
+    def frame(rows: list[tuple[str, str]]) -> pl.DataFrame:
+        return pl.DataFrame(
+            {
+                "district": [d for d, _ in rows],
+                "day": [DAY] * len(rows),
+                "outcome": [o for _, o in rows],
+            }
+        )
+
+    whole = frame([("d1", "open"), ("d2", "no_school"), ("d3", "unknown"), ("d4", "open")])
+    fold = frame([("d1", "open"), ("d2", "unknown"), ("d3", "delayed"), ("d5", "unknown")])
+    found = label_changes(whole, fold)
+    assert found.training == 3
+    assert found.changed == 2  # d2 to unknown, d4 to no row
+    assert found.added == 1  # d3 from unknown
+    assert found.pairs == {
+        ("no_school", "unknown"): 1,
+        ("open", "no_row"): 1,
+        ("unknown", "delayed"): 1,
+    }
+    assert found.share == 1.0
+    assert label_changes(whole, whole).share == 0.0
+    assert label_changes(whole.head(0), whole.head(0)).share == 0.0
+
+
+FOLD_START = date(2018, 7, 1)
+"""The fold's test season (2018-19) starts here; 2017-18 is its training season."""
+EARLY_DAYS = [date(2018, 2, 5), date(2018, 2, 6), date(2018, 2, 7)]
+LATER_DAYS = [date(2019, 1, 8), date(2019, 1, 9), date(2019, 1, 10)]
+STORM_DAY = date(2018, 2, 6)
+
+
+def morning(day: date, rows: int = 12, source: str = "kaaa") -> ReadRecord:
+    """A populated read at 07:00 Chicago (13:00 UTC) on ``day``."""
+    return read(source, f"{day.isoformat()}T13:00:00", rows=rows)
+
+
+def gate_reads(days: int, rows: int = 12, start: date = date(2018, 1, 15)) -> list[ReadRecord]:
+    """``days`` populated reads of kaaa at 20:00 UTC (outside the read window) from ``start``."""
+    return [
+        read("kaaa", f"{date.fromordinal(start.toordinal() + i).isoformat()}T20:00:00", rows=rows)
+        for i in range(days)
+    ]
+
+
+@dataclass(frozen=True, slots=True)
+class Channel:
+    """One way a later season could reach a fold's labels: what the seasons before the fold
+    hold (``early_*``) and what a later season adds (``later_*``)."""
+
+    early_listings: list[tuple[str, str, date]]
+    early_reads: list[ReadRecord]
+    later_listings: list[tuple[str, str, date]]
+    later_reads: list[ReadRecord]
+    weather: dict[tuple[str, date], WeatherClass] = field(default_factory=dict)
+    market_of: dict[str, str] = field(
+        default_factory=lambda: {"kaaa": "Kansas City", "kccc": "Topeka"}
+    )
+
+
+def two_days(district: str, station: str = "kaaa") -> list[tuple[str, str, date]]:
+    return [(station, district, EARLY_DAYS[0]), (station, district, EARLY_DAYS[1])]
+
+
+CHANNELS: dict[str, Channel] = {
+    # d2 is listed once before the fold and once after: only a later season gives it an audience.
+    "audiences": Channel(
+        [*two_days("d1"), ("kaaa", "d2", EARLY_DAYS[0])],
+        [*gate_reads(5), *(morning(day) for day in EARLY_DAYS)],
+        [("kaaa", "d2", LATER_DAYS[0])],
+        [morning(day) for day in LATER_DAYS],
+    ),
+    # kaaa has 3 populated captures before the fold (under the gate of 5), 20 with a later season.
+    "captures": Channel(
+        two_days("d1"),
+        [morning(day) for day in EARLY_DAYS],
+        [("kaaa", "d1", day) for day in LATER_DAYS],
+        [*gate_reads(17, start=date(2019, 2, 1)), *(morning(day) for day in LATER_DAYS)],
+    ),
+    # kaaa's median list before the fold is 10 rows, so 6 rows on a storm morning is a whole list;
+    # a later season's 40-row lists would make it a partial one (small_capture).
+    "median_rows": Channel(
+        two_days("d1"),
+        [
+            *gate_reads(5, rows=10),
+            morning(EARLY_DAYS[0], 10),
+            morning(STORM_DAY, 6),
+            morning(EARLY_DAYS[2], 10),
+        ],
+        [("kaaa", "d1", day) for day in LATER_DAYS],
+        [*gate_reads(20, rows=40, start=date(2019, 2, 1)), *(morning(d, 40) for d in LATER_DAYS)],
+        weather={("d1", STORM_DAY): WeatherClass.SNOW_WARNING},
+    ),
+    # Before the fold kaaa (Kansas City) lists d1; a later season's Topeka lists outnumber it.
+    "markets": Channel(
+        two_days("d1"),
+        [*gate_reads(5), *(morning(day) for day in EARLY_DAYS)],
+        [("kccc", "d1", day) for day in (*LATER_DAYS, date(2019, 1, 11))],
+        [morning(day) for day in LATER_DAYS],
+    ),
+}
+
+
+def channel_builds(
+    channel: Channel,
+) -> tuple[tuple[pl.DataFrame, dict[str, str]], ...]:
+    """(the fold's build, the build from the seasons before it alone, the whole archive's
+    build of the same days)."""
+
+    def build(
+        days: list[date],
+        listings: list[tuple[str, str, date]],
+        reads: list[ReadRecord],
+        cut: date | None,
+    ) -> tuple[pl.DataFrame, dict[str, str]]:
+        return fold_label_days(
+            days,
+            inputs(
+                reads=sorted(reads, key=lambda item: item.fetched_at),
+                audience={},
+                weather=channel.weather,
+                market_of=channel.market_of,
+            ),
+            listings,
+            lambda _day: DayLit({}),
+            SETTINGS,
+            cut,
+        )
+
+    listings = [*channel.early_listings, *channel.later_listings]
+    reads = [*channel.early_reads, *channel.later_reads]
+    days = [*EARLY_DAYS, *LATER_DAYS]
+    fold = build(days, listings, reads, FOLD_START)
+    alone = build(EARLY_DAYS, channel.early_listings, channel.early_reads, None)
+    whole, whole_markets = build(days, listings, reads, None)
+    return fold, alone, (whole.filter(pl.col("day") < FOLD_START), whole_markets)
+
+
+@pytest.mark.parametrize("name", sorted(CHANNELS))
+def test_a_folds_labels_never_depend_on_a_later_season(name: str) -> None:
+    (fold, fold_markets), (alone, alone_markets), (whole, whole_markets) = channel_builds(
+        CHANNELS[name]
+    )
+    assert fold.height > 0  # the fold labels days, so the comparison is not of empty frames
+    assert fold.equals(alone)
+    assert fold_markets == alone_markets
+    assert all(day < FOLD_START for day in fold["day"].to_list())
+    # The whole archive's build of the same days differs, through this channel only.
+    if name == "markets":
+        assert fold_markets == {"d1": "Kansas City"}
+        assert whole_markets == {"d1": "Topeka"}
+    else:
+        assert not whole.equals(fold)
+
+
+def test_each_channel_moves_the_labels_the_way_its_later_season_would() -> None:
+    def outcomes_of(frame: pl.DataFrame) -> set[tuple[object, ...]]:
+        return set(frame.select("district", "day", "outcome", "unknown_why").iter_rows())
+
+    (fold, _), _alone, (whole, _) = channel_builds(CHANNELS["audiences"])
+    assert not fold.filter(pl.col("district") == "d2").height
+    assert ("d2", EARLY_DAYS[1], "open", None) in outcomes_of(whole)
+    (fold, _), _alone, (whole, _) = channel_builds(CHANNELS["captures"])
+    assert {row[2:] for row in outcomes_of(fold)} == {("unknown", "thin_station")}
+    assert {row[2] for row in outcomes_of(whole)} == {"open"}
+    (fold, _), _alone, (whole, _) = channel_builds(CHANNELS["median_rows"])
+    assert ("d1", STORM_DAY, "open", None) in outcomes_of(fold)
+    assert ("d1", STORM_DAY, "unknown", "small_capture") in outcomes_of(whole)

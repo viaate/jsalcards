@@ -229,25 +229,83 @@ def fit_predict(  # noqa: PLR0913, PLR0917 - the rows, the places, the seasons a
     return strengths, strengths_delay, p_raw, np.where(unmodeled, np.nan, p), delay
 
 
-def walk_forward(
+PER_FOLD_NOTE: Final = (
+    "Training labels: each fold's own, built from the listings and reads before its test season "
+    "only (the per-fold rule, calc-research plan T1); the test rows are the whole archive's labels."
+)
+WHOLE_NOTE: Final = (
+    "Training labels: the whole archive's (station audiences, gates and markets from every "
+    "season, later ones too; the rule before 2026-10-25, kept for comparison)."
+)
+
+
+@dataclass(frozen=True, slots=True)
+class FoldRows:
+    """A test season's training labels under the per-fold rule (calc-research plan T1, the
+    lead's rule of 2026-10-25): the labels of the seasons before it, built from the listings
+    and reads before it only (:func:`snowlight.predict.train.read_fold_labels`)."""
+
+    rows: Rows
+    delay_rows: Rows
+
+    def without(self, keep: npt.NDArray[np.bool_], keep_delay: npt.NDArray[np.bool_]) -> "FoldRows":
+        """The rows ``keep`` and the delay rows ``keep_delay`` keep."""
+        return FoldRows(self.rows.subset(keep), self.delay_rows.subset(keep_delay))
+
+
+type FoldTraining = Mapping[int, FoldRows]
+"""Test season to its training labels (:class:`FoldRows`)."""
+
+
+def training_of(
+    season: int, rows: Rows, delay_rows: Rows, training: FoldTraining | None
+) -> tuple[Rows, Rows]:
+    """The rows (and delay rows) a fold of test season ``season`` trains on: ``training``'s
+    for it under the per-fold rule, else ``rows`` and ``delay_rows`` (the whole archive's
+    labels, the rule before 2026-10-25).
+
+    Raises:
+        ValueError: ``training`` has no labels for ``season``, or they hold a row of
+            ``season`` or later.
+    """
+    if training is None:
+        return rows, delay_rows
+    fold = training.get(season)
+    if fold is None:
+        raise ValueError(f"no fold labels for test season {season}")
+    for found in (fold.rows, fold.delay_rows):
+        if len(found) and int(found.season.max()) >= season:
+            raise ValueError(
+                f"the fold labels of test season {season} hold a row of {int(found.season.max())}"
+            )
+    return fold.rows, fold.delay_rows
+
+
+def walk_forward(  # noqa: PLR0913 - the rows, the places, the seasons, the settings, the folds
     rows: Rows,
     delay_rows: Rows,
     places: Places,
     test_seasons: Sequence[int],
     settings: ModelSettings,
+    *,
+    training: FoldTraining | None = None,
 ) -> list[Fold]:
-    """Every test season, fit on the seasons before it only."""
-    seasons = sorted(set(rows.season.tolist()))
+    """Every test season, fit on the seasons before it only: on ``rows`` (the whole archive's
+    labels), or on ``training``'s labels of the season (the per-fold rule), whose station
+    audiences, gates and markets come from the seasons before it too."""
     folds: list[Fold] = []
     for season in test_seasons:
-        before = [s for s in seasons if s < season]
         test = rows.subset(rows.season == season)
-        if not before or not len(test):
+        if not len(test):
+            continue
+        train_rows, train_delay = training_of(season, rows, delay_rows, training)
+        before = sorted(s for s in set(train_rows.season.tolist()) if s < season)
+        if not before:
             continue
         strengths, strengths_delay, p_raw, p, q = fit_predict(
-            rows, delay_rows, test, places, before, settings
+            train_rows, train_delay, test, places, before, settings
         )
-        train = rows.subset(np.isin(rows.season, np.array(before)))
+        train = train_rows.subset(np.isin(train_rows.season, np.array(before)))
         b0, b1 = baselines(train, test, places)
         folds.append(Fold(season, strengths, strengths_delay, p_raw, p, q, b0, b1))
     return folds
@@ -459,6 +517,115 @@ def unmodeled_rows(folds: Sequence[Fold]) -> int:
     return sum(int(np.isnan(fold.p).sum()) for fold in folds)
 
 
+@dataclass(frozen=True, slots=True)
+class RuleComparison:
+    """The per-fold rule's walk-forward beside the whole archive's on the same test rows: the
+    test rows each rule's fit left dark per season, and both rules' storm Brier (and their
+    B0's) on the storm rows both score, so a pooled G1 on fewer rows reads against the
+    earlier rule on those rows."""
+
+    unmodeled: Mapping[int, tuple[int, int]]
+    """Test season to the (rows, storm rows) the per-fold fit could not publish."""
+    unmodeled_whole: Mapping[int, tuple[int, int]]
+    """The same under the whole archive's labels."""
+    storm_rows: int
+    """Storm rows both rules score."""
+    brier: float
+    brier_b0: float
+    brier_whole: float
+    brier_b0_whole: float
+
+    def as_json(self) -> dict[str, object]:
+        """For ``metrics.json``."""
+        return {
+            "unmodeled_by_season": {
+                str(season): {"rows": n, "storm_rows": storm}
+                for season, (n, storm) in sorted(self.unmodeled.items())
+            },
+            "unmodeled_by_season_whole": {
+                str(season): {"rows": n, "storm_rows": storm}
+                for season, (n, storm) in sorted(self.unmodeled_whole.items())
+            },
+            "same_storm_rows": self.storm_rows,
+            "brier": round(self.brier, 5),
+            "brier_b0": round(self.brier_b0, 5),
+            "brier_whole": round(self.brier_whole, 5),
+            "brier_b0_whole": round(self.brier_b0_whole, 5),
+        }
+
+    def markdown(self) -> list[str]:
+        """The report's lines."""
+        dark = sum(n for n, _storm in self.unmodeled.values())
+        dark_storm = sum(storm for _n, storm in self.unmodeled.values())
+        lines = [
+            "## The per-fold rule beside the whole archive's labels",
+            "",
+            f"Test rows the per-fold fits left unmodeled: {dark:,} ({dark_storm:,} storm rows); "
+            f"on the {self.storm_rows:,} storm rows both rules score, the per-fold rule "
+            f"{self.brier:.5f} against its B0 {self.brier_b0:.5f}, the whole archive's labels "
+            f"{self.brier_whole:.5f} against its B0 {self.brier_b0_whole:.5f}.",
+            "",
+            "| season | unmodeled rows, per fold | storm | unmodeled rows, whole | storm |",
+            "|---|---|---|---|---|",
+        ]
+        for season in sorted(set(self.unmodeled) | set(self.unmodeled_whole)):
+            mine = self.unmodeled.get(season, (0, 0))
+            whole = self.unmodeled_whole.get(season, (0, 0))
+            lines.append(
+                f"| {season_label(season)} | {mine[0]} | {mine[1]} | {whole[0]} | {whole[1]} |"
+            )
+        return [*lines, ""]
+
+
+def _dark_and_scored(
+    folds: Sequence[Fold], rows: Rows, seasons: Sequence[int]
+) -> tuple[dict[int, tuple[int, int]], dict[int, tuple[Floats, Floats]]]:
+    """Per test season with rows: the (rows, storm rows) left dark, and each test row's
+    published chance and B0 (NaN where dark or where the season has no fold)."""
+    by_season = {fold.season: fold for fold in folds}
+    dark: dict[int, tuple[int, int]] = {}
+    found: dict[int, tuple[Floats, Floats]] = {}
+    for season in seasons:
+        mask = rows.season == season
+        if not mask.any():
+            continue
+        storm = WEATHER_OF_SITUATION[rows.situation[mask]] > 0
+        fold = by_season.get(season)
+        nan = np.full(int(mask.sum()), np.nan)
+        p, b0 = (nan, nan) if fold is None else (fold.p, fold.b0)
+        missing = np.isnan(p)
+        dark[season] = (int(missing.sum()), int((missing & storm).sum()))
+        found[season] = (p, b0)
+    return dark, found
+
+
+def compare_rules(
+    fold: Sequence[Fold], whole: Sequence[Fold], rows: Rows, seasons: Sequence[int]
+) -> RuleComparison:
+    """:class:`RuleComparison` of the per-fold rule's folds (``fold``) and the whole archive's
+    (``whole``), both walk-forwards over the test rows ``rows`` and test ``seasons``."""
+    dark, mine = _dark_and_scored(fold, rows, seasons)
+    dark_whole, theirs = _dark_and_scored(whole, rows, seasons)
+    parts: list[tuple[Floats, Floats, Floats, Floats, Floats]] = []
+    for season, (p, b0) in mine.items():
+        p_whole, b0_whole = theirs[season]
+        mask = rows.season == season
+        keep = (WEATHER_OF_SITUATION[rows.situation[mask]] > 0) & ~np.isnan(p) & ~np.isnan(p_whole)
+        parts.append((rows.y[mask][keep], p[keep], b0[keep], p_whole[keep], b0_whole[keep]))
+    y, p, b0, p_whole, b0_whole = (
+        np.concatenate([part[i] for part in parts]) if parts else np.zeros(0) for i in range(5)
+    )
+    return RuleComparison(
+        dark,
+        dark_whole,
+        int(y.size),
+        brier(p, y),
+        brier(b0, y),
+        brier(p_whole, y),
+        brier(b0_whole, y),
+    )
+
+
 def storm_day_briers(scored: pl.DataFrame, min_closings: int) -> list[float]:
     """Brier per storm day: (day, cluster) groups with ``min_closings`` or more closings."""
     groups = (
@@ -539,20 +706,27 @@ LAUNCH_GATE: Final = (
 )
 
 
-def report_markdown(
+def report_markdown(  # noqa: PLR0913 - the metrics, bins, gates, cases, rule and comparison
     metrics: Mapping[str, object],
     bins: Sequence[Bin],
     judged: Gates,
     cases: Sequence[str],
+    *,
+    per_fold: bool = False,
+    comparison: RuleComparison | None = None,
 ) -> str:
-    """The internal backtest report."""
+    """The internal backtest report (``per_fold``: the folds trained on their fold labels;
+    ``comparison``: the per-fold rule beside the whole archive's labels on the same rows)."""
     lines = ["# Backtest, piece 1 (internal)", ""]
     lines.append(
         f"Piece 1 gate (pooled G1, here): {'PASS' if judged.passed else 'FAIL'} (pooled G1 "
         f"{'pass' if judged.g1_pooled else 'FAIL'}, without 2020-21 "
         f"{'pass' if judged.g1_pooled_without_apart else 'FAIL'})."
     )
+    lines.extend(["", PER_FOLD_NOTE if per_fold else WHOLE_NOTE])
     lines.append("")
+    if comparison is not None:
+        lines.extend(comparison.markdown())
     lines.append(G4_NOTE)
     lines.extend(["", PIECE1_DECISION, ""])
     lines.append(
@@ -687,21 +861,30 @@ def reliability_svg(bins: Sequence[Bin]) -> str:
     return "\n".join(parts) + "\n"
 
 
-def chances_on(
+def chances_on(  # noqa: PLR0913 - the rows, the places, the cells, the settings, the folds
     rows: Rows,
     delay_rows: Rows,
     places: Places,
     cells: Sequence[tuple[str, int, int]],
     settings: ModelSettings,
+    *,
+    training: FoldTraining | None = None,
 ) -> list[float | None]:
     """The walk-forward chance of each (unit, situation index, season) cell, labeled or not:
-    fit on the seasons before its own only (the named cases' days, spec piece 2). ``None``
-    where no season comes before, or the unit is not in ``places``."""
+    fit on the seasons before its own only (the named cases' days, spec piece 2), on
+    ``rows`` (the whole archive's labels) or, under the per-fold rule, on ``training``'s
+    labels of the cell's season (:func:`training_of`, as :func:`walk_forward` fits). ``None``
+    where no season comes before, or the unit is not in ``places``.
+
+    Raises:
+        ValueError: ``training`` has no labels for a cell's season, or they hold a row of
+            that season or later (:func:`training_of`).
+    """
     position = places.position()
-    seasons = sorted(set(rows.season.tolist()))
     found: list[float | None] = []
     for unit, situation, season in cells:
-        before = [s for s in seasons if s < season]
+        train_rows, train_delay = training_of(season, rows, delay_rows, training)
+        before = sorted(s for s in set(train_rows.season.tolist()) if s < season)
         if not before or unit not in position:
             found.append(None)
             continue
@@ -711,6 +894,6 @@ def chances_on(
             np.array([season], dtype=np.int64),
             np.array([np.nan]),
         )
-        _s, _d, _raw, p, _q = fit_predict(rows, delay_rows, test, places, before, settings)
+        _s, _d, _raw, p, _q = fit_predict(train_rows, train_delay, test, places, before, settings)
         found.append(None if np.isnan(p[0]) else float(p[0]))
     return found

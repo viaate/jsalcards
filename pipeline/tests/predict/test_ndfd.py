@@ -3,8 +3,10 @@
 Every GRIB message here is synthetic (tests/predict/grib.py); no real forecast is read.
 """
 
+import json
 from datetime import UTC, date, datetime, timedelta
 from itertools import product
+from pathlib import Path
 
 import eccodes  # type: ignore[import-untyped]
 import numpy as np
@@ -681,3 +683,146 @@ def test_buckets_agree_with_every_reading_of_an_unknown_value() -> None:
         }
         assert code == (readings.pop() if len(readings) == 1 else Bucket.UNKNOWN), (s, i, f)
         assert code == Bucket.UNKNOWN or code in rank
+
+
+# --- the label-night extract's elements -----------------------------------------------------------
+
+NCEI_MORE = NCEI_PAGE.replace(
+    b"</catalog>",
+    b'<dataset name="YDUZ98_KWBN_201901150246" ID="p"'
+    b' urlPath="model-ndfd-file-old/201901/20190115/YDUZ98_KWBN_201901150246"></dataset>\n'
+    b'<dataset name="YJUZ98_KWBN_201901150246" ID="w"'
+    b' urlPath="model-ndfd-file-old/201901/20190115/YJUZ98_KWBN_201901150246"></dataset>\n'
+    b"</catalog>",
+)
+
+
+def test_the_night_before_chance_lists_only_its_three_elements() -> None:
+    assert [i.element for i in ndfd.parse_ncei_catalog(NCEI_MORE)] == [Element.SNOW, Element.APT]
+    wanted = (Element.SNOW, Element.POP12, Element.WX)
+    found = ndfd.parse_ncei_catalog(NCEI_MORE, wanted)
+    assert [i.element for i in found] == [Element.SNOW, Element.POP12, Element.WX]
+    page = AWS_PAGE.replace(b"wmo/snow/2025/02/18/YSUZ98", b"wmo/pop12/2025/02/18/YDUZ98")
+    (item,), _token = ndfd.parse_aws_listing(page)
+    assert item.element is Element.POP12
+    assert Element.TEMP.heading == "YEUZ98"
+    assert ndfd.ELEMENTS == (Element.SNOW, Element.ICE, Element.APT)
+
+
+def test_a_chance_of_precipitation_message_reads_its_twelve_hour_period() -> None:
+    reference = grib.utc("2024-01-16T01:50")
+    end = grib.utc("2024-01-17T00:00")
+    plain = grib.message(Element.POP12.parameter, reference, lead_hours=10 + 10 / 60, end=end,
+                         values=40.0)  # fmt: skip
+    raw = grib.as_probability(plain, end, 12)
+    head = ndfd.parse_head(raw[: ndfd.HEAD_BYTES], 0)
+    assert head.template == 9
+    assert head.parameter == Element.POP12.parameter
+    assert head.end == end
+    assert head.span == timedelta(hours=12)
+    assert head.period_start == grib.utc("2024-01-16T12:00")
+    assert float(np.nanmean(ndfd.decode(raw, head).values)) == pytest.approx(40.0)
+    short = bytearray(raw)
+    probability = raw.index(b"\x00\x00\x00\x47\x04")  # section 4 of a template 4.9 message
+    short[probability + 7 + 47] = 2  # two time ranges
+    with pytest.raises(ndfd.NdfdError, match="exactly one time range"):
+        ndfd.parse_head(bytes(short[: ndfd.HEAD_BYTES]), 0)
+
+
+def test_a_weather_message_reads_its_strings_past_a_long_section_2() -> None:
+    reference = grib.utc("2024-01-16T01:50")
+    strings = ["<NoCov>:<NoWx>:<NoInten>:<NoVis>:", "Lkly:S:-:<NoVis>:"]
+    strings += [f"Chc:R:-:{i}SM:" for i in range(150)]
+    raw = grib.with_strings(
+        grib.message(Element.WX.parameter, reference, lead_hours=1, values=1.0, bits=8), strings
+    )
+    assert len(raw) > 2 * ndfd.HEAD_BYTES
+    framed = grib.framed([raw, raw], "YJUZ98 KWBN 160146")
+    heads = list(ndfd.walk(ndfd.bytes_reader(framed)))
+    assert len(heads) == 2
+    assert heads[0].parameter == Element.WX.parameter
+    assert ndfd.weather_strings(raw) == tuple(strings)
+    grid = ndfd.decode(ndfd.message(ndfd.bytes_reader(framed), heads[1]), heads[1])
+    assert float(np.nanmax(grid.values)) == 1.0
+    with pytest.raises(ndfd.NdfdError, match="no weather strings"):
+        ndfd.weather_strings(grib.message(Element.WX.parameter, reference, lead_hours=1))
+    bad = bytearray(raw)
+    first = int.from_bytes(raw[16:20], "big")
+    bad[16 + first + 5] = 2  # local use version 2
+    with pytest.raises(ndfd.NdfdError, match="version 1"):
+        ndfd.weather_strings(bytes(bad))
+    packed = bytearray(raw)
+    packed[16 + first + 18] = 9  # nine bits a character
+    with pytest.raises(ndfd.NdfdError, match="simple packed"):
+        ndfd.weather_strings(bytes(packed))
+
+
+def test_a_head_past_its_message_end_is_cut_short() -> None:
+    raw = grib.with_strings(
+        grib.message(Element.WX.parameter, grib.utc("2024-01-16T01:50"), lead_hours=1, bits=8),
+        [f"Chc:S:-:{i}SM:" for i in range(200)],
+    )
+    cut = raw[: ndfd.HEAD_BYTES + 100]
+    with pytest.raises(ndfd.HeadError):
+        list(ndfd.walk(ndfd.bytes_reader(cut)))
+    with pytest.raises(ndfd.HeadError, match="no GRIB indicator"):
+        ndfd.head_bytes(ndfd.bytes_reader(b"x" * 64), 0)
+    no_four = bytearray(raw)
+    first = int.from_bytes(raw[16:20], "big")
+    second = int.from_bytes(raw[16 + first : 20 + first], "big")
+    three = 16 + first + second
+    four = three + int.from_bytes(raw[three : three + 4], "big")
+    no_four[four + 4] = 6  # section 4 numbered 6
+    with pytest.raises(ndfd.HeadError, match="section 4 is not in the head"):
+        ndfd.head_bytes(ndfd.bytes_reader(bytes(no_four)), 0)
+
+
+REAL = Path(__file__).parent / "fixtures" / "ndfd"
+"""Sections 0 to 4 of real NDFD messages, with the keys eccodes read from the whole messages."""
+
+
+@pytest.mark.parametrize("name", ["pop12", "qpf", "temp", "wx"])
+def test_real_ndfd_heads_read_as_eccodes_read_their_whole_messages(name: str) -> None:
+    record = json.loads((REAL / "eccodes-2024-01-16-0148.json").read_text(encoding="utf-8"))
+    item = record["messages"][name]
+    keys = item["eccodes"]
+    raw = (REAL / f"{name}-head.grib2").read_bytes()
+    assert len(raw) == item["head_bytes"]
+    assert item["grid_equal_to_eccodes"]  # the decode matched eccodes on the whole message
+    element = Element(name)
+    head = next(ndfd.walk(ndfd.bytes_reader(raw), stop=lambda _head: True))
+    assert head == ndfd.parse_head(raw, 0)
+    assert head.length == keys["totalLength"]
+    assert head.parameter == element.parameter == (
+        keys["discipline"], keys["parameterCategory"], keys["parameterNumber"],
+    )  # fmt: skip
+    assert head.template == keys["productDefinitionTemplateNumber"]
+    assert head.reference == ndfd._stamp_time(keys["dataDate"], keys["dataTime"])
+    assert head.end == ndfd._stamp_time(keys["validityDate"], keys["validityTime"])
+    assert keys["indicatorOfUnitOfTimeRange"] == 1  # hours
+    assert head.start == head.reference + timedelta(hours=keys["forecastTime"])
+    if head.template in {8, 9}:
+        assert keys["indicatorOfUnitForTimeRange"] == 1
+        assert head.span == timedelta(hours=keys["lengthOfTimeRange"])
+        # eccodes' stepRange runs from the forecast time for the span (0-12 from 02 UTC), but
+        # the interval ends at the validity time (12 UTC): the period is its end less its span.
+        low, high = (int(part) for part in keys["stepRange"].split("-"))
+        assert (low, high - low) == (keys["forecastTime"], keys["lengthOfTimeRange"])
+        assert head.end != head.reference + timedelta(hours=high)
+        assert head.period_start == head.end - head.span
+    else:
+        assert head.span == timedelta(0)
+        assert head.start == head.end
+    if name == "pop12":
+        assert (head.template, head.span) == (9, timedelta(hours=12))
+        assert keys["probabilityType"] == 1  # above the lower limit (any measurable amount)
+        assert head.reference == datetime(2024, 1, 16, 2, tzinfo=UTC)
+        assert head.period_start == datetime(2024, 1, 16, 0, tzinfo=UTC)  # not eccodes' 0-12
+        assert keys["stepRange"] == "0-12"  # eccodes' step, from the 02 UTC reference
+    if name == "wx":
+        strings = ndfd.weather_strings(raw)
+        assert len(strings) == item["strings"] == int(item["eccodes_largest_index"]) + 1
+        assert list(strings[:3]) == item["first_strings"]
+        assert list(strings[-2:]) == item["last_strings"]
+        with pytest.raises(ndfd.LongHeadError):
+            ndfd.parse_head(raw[: ndfd.HEAD_BYTES], 0)  # its strings run past a short head

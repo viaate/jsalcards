@@ -1,0 +1,407 @@
+{
+ "event_exists": true,
+ "year": 2023,
+ "phenomena": "WW",
+ "significance": "Y",
+ "etn": 2,
+ "wfo": "OKX",
+ "report": {
+  "text": "036 \nWWUS41 KOKX 262010\nWSWOKX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service New York NY\n310 PM EST Sun Feb 26 2023\n\nCTZ005>012-NJZ002-004-103>105-107-NYZ068>071-270415-\n/O.NEW.KOKX.WW.Y.0002.230228T0000Z-230228T1500Z/\nNorthern Fairfield-Northern New Haven-Northern Middlesex-\nNorthern New London-Southern Fairfield-Southern New Haven-\nSouthern Middlesex-Southern New London-Western Passaic-\nEastern Passaic-Western Bergen-Eastern Bergen-Western Essex-\nWestern Union-Putnam-Rockland-Northern Westchester-\nSouthern Westchester-\n310 PM EST Sun Feb 26 2023\n\n...WINTER WEATHER ADVISORY IN EFFECT FROM 7 PM MONDAY TO 10 AM\nEST TUESDAY...\n\n* WHAT...Snow expected. Total snow accumulations of 3 to 5 \n  inches.\n\n* WHERE...Portions of southern Connecticut, northeast New Jersey \n  and southeast New York.\n\n* WHEN...From 7 PM Monday to 10 AM EST Tuesday.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\n  conditions could impact the Tuesday morning commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nSlow down and use caution while traveling. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nNYZ067-270415-\n/O.CON.KOKX.WS.A.0001.230227T2000Z-230228T1800Z/\nOrange-\n310 PM EST Sun Feb 26 2023\n\n...WINTER STORM WATCH REMAINS IN EFFECT FROM MONDAY AFTERNOON\nTHROUGH TUESDAY AFTERNOON...\n\n* WHAT...Heavy snow possible. Total snow accumulations of 5 to 8 \n  inches possible.\n\n* WHERE...Orange County.\n\n* WHEN...From Monday afternoon through Tuesday afternoon.\n\n* IMPACTS...Travel could be very difficult. The hazardous \n  conditions could impact the morning or evening commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nMonitor the latest forecasts for updates on this situation. \n\n&&\n\n$$\n\nFor more information from the National Weather Service visit\nhttps://weather.gov/nyc\n",
+  "valid": "2023-02-26T20:10:00Z",
+  "product_id": "202302262010-KOKX-WWUS41-WSWOKX"
+ },
+ "svs": [
+  {
+   "text": "393 \nWWUS41 KOKX 270017\nWSWOKX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service New York NY\n717 PM EST Sun Feb 26 2023\n\nCTZ005>012-NJZ002-004-103>105-107-NYZ068>071-270930-\n/O.CON.KOKX.WW.Y.0002.230228T0000Z-230228T1500Z/\nNorthern Fairfield-Northern New Haven-Northern Middlesex-\nNorthern New London-Southern Fairfield-Southern New Haven-\nSouthern Middlesex-Southern New London-Western Passaic-\nEastern Passaic-Western Bergen-Eastern Bergen-Western Essex-\nWestern Union-Putnam-Rockland-Northern Westchester-\nSouthern Westchester-\n717 PM EST Sun Feb 26 2023\n\n...WINTER WEATHER ADVISORY REMAINS IN EFFECT FROM 7 PM MONDAY TO\n10 AM EST TUESDAY...\n\n* WHAT...Snow expected. Total snow accumulations of 3 to 5 \n  inches.\n\n* WHERE...Portions of southern Connecticut, northeast New Jersey \n  and southeast New York.\n\n* WHEN...From 7 PM Monday to 10 AM EST Tuesday.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous \n  conditions could impact the Tuesday morning commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nSlow down and use caution while traveling.\n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nNYZ067-270930-\n/O.CON.KOKX.WS.A.0001.230227T2000Z-230228T1800Z/\nOrange-\n717 PM EST Sun Feb 26 2023\n\n...WINTER STORM WATCH REMAINS IN EFFECT FROM MONDAY AFTERNOON\nTHROUGH TUESDAY AFTERNOON...\n\n* WHAT...Heavy snow possible. Total snow accumulations of 5 to 8 \n  inches possible.\n\n* WHERE...Orange County.\n\n* WHEN...From Monday afternoon through Tuesday afternoon.\n\n* IMPACTS...Travel could be very difficult. The hazardous \n  conditions could impact the morning or evening commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nMonitor the latest forecasts for updates on this situation.\n\n&&\n\n$$\n\nFor more information from the National Weather Service visit\nhttps://weather.gov/nyc\n",
+   "valid": "2023-02-27T00:17:00Z",
+   "product_id": "202302270017-KOKX-WWUS41-WSWOKX"
+  },
+  {
+   "text": "195 \nWWUS41 KOKX 270846\nWSWOKX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service New York NY\n346 AM EST Mon Feb 27 2023\n\nCTZ005>012-272300-\n/O.UPG.KOKX.WW.Y.0002.230228T0000Z-230228T1500Z/\n/O.NEW.KOKX.WS.W.0001.230227T2300Z-230228T2300Z/\nNorthern Fairfield-Northern New Haven-Northern Middlesex-\nNorthern New London-Southern Fairfield-Southern New Haven-\nSouthern Middlesex-Southern New London-\n346 AM EST Mon Feb 27 2023\n\n...WINTER STORM WARNING IN EFFECT FROM 6 PM THIS EVENING TO 6 PM\nEST TUESDAY...\n\n* WHAT...Heavy snow expected. Some sleet is expected as well along\n  coastal sections. Total snow and sleet accumulations of 5 to 8 \n  inches.\n\n* WHERE...Southern Connecticut.\n\n* WHEN...From 6 PM this evening to 6 PM EST Tuesday.\n\n* IMPACTS...Travel could be very difficult. The hazardous \n  conditions could impact the morning or evening commute.\n\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nIf you must travel, keep an extra flashlight, food, and water in\nyour vehicle in case of an emergency. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nNJZ002-004-103-NYZ068>070-272300-\n/O.UPG.KOKX.WW.Y.0002.230228T0000Z-230228T1500Z/\n/O.NEW.KOKX.WS.W.0001.230227T2300Z-230228T1800Z/\nWestern Passaic-Eastern Passaic-Western Bergen-Putnam-Rockland-\nNorthern Westchester-\n346 AM EST Mon Feb 27 2023\n\n...WINTER STORM WARNING IN EFFECT FROM 6 PM THIS EVENING TO 1 PM\nEST TUESDAY...\n\n* WHAT...Heavy snow expected. Total snow accumulations of 5 to 8 \n  inches.\n\n* WHERE...Portions of northeast New Jersey and southeast New \n  York.\n\n* WHEN...From 6 PM this evening to 1 PM EST Tuesday.\n\n* IMPACTS...Travel could be very difficult. The hazardous \n  conditions could impact the morning or evening commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nIf you must travel, keep an extra flashlight, food, and water in\nyour vehicle in case of an emergency. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nNYZ067-272300-\n/O.UPG.KOKX.WS.A.0001.230227T2000Z-230228T1800Z/\n/O.NEW.KOKX.WS.W.0001.230227T2300Z-230228T1800Z/\nOrange-\n346 AM EST Mon Feb 27 2023\n\n...WINTER STORM WARNING IN EFFECT FROM 6 PM THIS EVENING TO 1 PM\nEST TUESDAY...\n\n* WHAT...Heavy snow expected. Total snow accumulations of 5 to 8 \n  inches.\n\n* WHERE...Orange County.\n\n* WHEN...From 6 PM this evening to 1 PM EST Tuesday.\n\n* IMPACTS...Travel could be very difficult. The hazardous \n  conditions could impact the morning or evening commute.\n\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nIf you must travel, keep an extra flashlight, food, and water in\nyour vehicle in case of an emergency. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nNJZ006-106-108-NYZ072-073-078-176-177-272300-\n/O.EXB.KOKX.WW.Y.0002.230227T2300Z-230228T1800Z/\nHudson-Eastern Essex-Eastern Union-New York (Manhattan)-Bronx-\nNorthwest Suffolk-Northern Queens-Northern Nassau-\n346 AM EST Mon Feb 27 2023\n\n...WINTER WEATHER ADVISORY IN EFFECT FROM 6 PM THIS EVENING TO\n1 PM EST TUESDAY...\n\n* WHAT...Snow, sleet and rain expected. Total snow and sleet\n  accumulations of 3 to 5 inches. Winds gusting as high as 35 mph\n  at times.\n\n* WHERE...Portions of northeast New Jersey and southeast New \n  York.\n\n* WHEN...From 6 PM this evening to 1 PM EST Tuesday.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous \n  conditions could impact the morning or evening commute.\n\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nSlow down and use caution while traveling. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nNYZ074-075-079>081-178-179-272300-\n/O.EXB.KOKX.WW.Y.0002.230227T2300Z-230228T1800Z/\nRichmond (Staten Island)-Kings (Brooklyn)-Northeast Suffolk-\nSouthwest Suffolk-Southeast Suffolk-Southern Queens-\nSouthern Nassau-\n346 AM EST Mon Feb 27 2023\n\n...WINTER WEATHER ADVISORY IN EFFECT FROM 6 PM THIS EVENING TO\n1 PM EST TUESDAY...\n\n* WHAT...Snow, sleet and rain expected. Total snow and sleet \n  accumulations of 2 to 4 inches. Winds gusting as high as 35 mph \n  at times.\n\n* WHERE...Portions of southeast New York.\n\n* WHEN...From 6 PM this evening to 1 PM EST Tuesday.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous \n  conditions could impact the morning or evening commute.\n\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nSlow down and use caution while traveling. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nNJZ104-105-107-NYZ071-272300-\n/O.EXT.KOKX.WW.Y.0002.230227T2300Z-230228T1800Z/\nEastern Bergen-Western Essex-Western Union-Southern Westchester-\n346 AM EST Mon Feb 27 2023\n\n...WINTER WEATHER ADVISORY NOW IN EFFECT FROM 6 PM THIS EVENING\nTO 1 PM EST TUESDAY...\n\n* WHAT...Snow, sleet and rain expected. Total snow and\n  accumulations of 3 to 5 inches expected, with locally up to 6 \n  inches possible.\n\n* WHERE...In New Jersey, Eastern Bergen, Western Essex and \n  Western Union Counties. In New York, Southern Westchester \n  County.\n\n* WHEN...From 6 PM this evening to 1 PM EST Tuesday.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous \n  conditions could impact the morning or evening commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nSlow down and use caution while traveling. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nFor more information from the National Weather Service visit\nhttps://weather.gov/nyc\n",
+   "valid": "2023-02-27T08:46:00Z",
+   "product_id": "202302270846-KOKX-WWUS41-WSWOKX"
+  },
+  {
+   "text": "347 \nWWUS41 KOKX 272039\nWSWOKX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service New York NY\n339 PM EST Mon Feb 27 2023\n\nCTZ005>008-281015-\n/O.EXT.KOKX.WS.W.0001.230227T2300Z-230228T2000Z/\nNorthern Fairfield-Northern New Haven-Northern Middlesex-\nNorthern New London-\n339 PM EST Mon Feb 27 2023\n\n...WINTER STORM WARNING NOW IN EFFECT UNTIL 3 PM EST TUESDAY...\n\n* WHAT...Heavy snow expected. Total snow accumulations of 5 to 7 \n  inches.\n\n* WHERE...Northern Fairfield, Northern New Haven, Northern \n  Middlesex and Northern New London Counties.\n\n* WHEN...Until 3 PM EST Tuesday.\n\n* IMPACTS...Travel could be very difficult. The hazardous\n  conditions will impact the Tuesday commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nIf you must travel, keep an extra flashlight, food, and water in\nyour vehicle in case of an emergency. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nCTZ009>012-281015-\n/O.EXT.KOKX.WS.W.0001.230227T2300Z-230228T1500Z/\nSouthern Fairfield-Southern New Haven-Southern Middlesex-\nSouthern New London-\n339 PM EST Mon Feb 27 2023\n\n...WINTER STORM WARNING NOW IN EFFECT UNTIL 10 AM EST TUESDAY...\n\n* WHAT...Heavy snow expected. Total snow accumulations of 5 to 7 \n  inches.\n\n* WHERE...Southern Fairfield, Southern New Haven, Southern \n  Middlesex and Southern New London Counties.\n\n* WHEN...Until 10 AM EST Tuesday.\n\n* IMPACTS...Travel could be very difficult. The hazardous \n  conditions will impact the Tuesday morning commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nIf you must travel, keep an extra flashlight, food, and water in\nyour vehicle in case of an emergency. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nNJZ002-004-103-NYZ067>070-281015-\n/O.CON.KOKX.WS.W.0001.230227T2300Z-230228T1800Z/\nWestern Passaic-Eastern Passaic-Western Bergen-Orange-Putnam-\nRockland-Northern Westchester-\n339 PM EST Mon Feb 27 2023\n\n...WINTER STORM WARNING REMAINS IN EFFECT UNTIL 1 PM EST\nTUESDAY...\n\n* WHAT...Heavy snow expected. Total snow accumulations of 6 to 8 \n  inches.\n\n* WHERE...Portions of northeast New Jersey and southeast New \n  York.\n\n* WHEN...Until 1 PM EST Tuesday.\n\n* IMPACTS...Travel could be very difficult. The hazardous\n  conditions will impact the Tuesday morning commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nIf you must travel, keep an extra flashlight, food, and water in\nyour vehicle in case of an emergency. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nNJZ006-104>108-NYZ071>073-078-176-177-281015-\n/O.CON.KOKX.WW.Y.0002.230227T2300Z-230228T1800Z/\nHudson-Eastern Bergen-Western Essex-Eastern Essex-Western Union-\nEastern Union-Southern Westchester-New York (Manhattan)-Bronx-\nNorthwest Suffolk-Northern Queens-Northern Nassau-\n339 PM EST Mon Feb 27 2023\n\n...WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 1 PM EST\nTUESDAY...\n\n* WHAT...Snow expected. Total snow accumulations of 3 to 5 \n  inches.\n\n* WHERE...Portions of northeast New Jersey and southeast New \n  York.\n\n* WHEN...Until 1 PM EST Tuesday.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\n  conditions will impact the Tuesday morning commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nSlow down and use caution while traveling. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nNYZ074-075-079>081-178-179-281015-\n/O.CON.KOKX.WW.Y.0002.230227T2300Z-230228T1800Z/\nRichmond (Staten Island)-Kings (Brooklyn)-Northeast Suffolk-\nSouthwest Suffolk-Southeast Suffolk-Southern Queens-\nSouthern Nassau-\n339 PM EST Mon Feb 27 2023\n\n...WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 1 PM EST\nTUESDAY...\n\n* WHAT...Snow expected. Total snow accumulations of 2 to 4 \n  inches. Winds gusting as high as 35 mph at times tonight. \n\n* WHERE...Portions of southeast New York.\n\n* WHEN...Until 1 PM EST Tuesday.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\n  conditions will impact the Tuesday morning commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nSlow down and use caution while traveling. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nFor more information from the National Weather Service visit\nhttps://weather.gov/nyc\n",
+   "valid": "2023-02-27T20:39:00Z",
+   "product_id": "202302272039-KOKX-WWUS41-WSWOKX"
+  },
+  {
+   "text": "395 \nWWUS41 KOKX 280843\nWSWOKX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service New York NY\n343 AM EST Tue Feb 28 2023\n\nNJZ002-004-103-NYZ067>070-281515-\n/O.CON.KOKX.WS.W.0001.000000T0000Z-230228T1800Z/\nWestern Passaic-Eastern Passaic-Western Bergen-Orange-Putnam-\nRockland-Northern Westchester-\n343 AM EST Tue Feb 28 2023\n\n...WINTER STORM WARNING REMAINS IN EFFECT UNTIL 1 PM EST THIS\nAFTERNOON...\n\n* WHAT...Heavy snow. Total storm snow accumulations of 5 to 8 \n  inches.\n\n* WHERE...Portions of northeast New Jersey and southeast New \n  York.\n\n* WHEN...Until 1 PM EST this afternoon.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\n  conditions will impact the morning commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nIf you must travel, keep an extra flashlight, food, and water in\nyour vehicle in case of an emergency. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nCTZ005>008-281515-\n/O.CON.KOKX.WS.W.0001.000000T0000Z-230228T2000Z/\nNorthern Fairfield-Northern New Haven-Northern Middlesex-\nNorthern New London-\n343 AM EST Tue Feb 28 2023\n\n...WINTER STORM WARNING REMAINS IN EFFECT UNTIL 3 PM EST THIS\nAFTERNOON...\n\n* WHAT...Heavy snow. Total storm snow accumulations of 4 to 7 \n  inches.\n\n* WHERE...Northern Fairfield, Northern New Haven, Northern \n  Middlesex and Northern New London Counties.\n\n* WHEN...Until 3 PM EST this afternoon.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\n  conditions will impact the morning commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nIf you must travel, keep an extra flashlight, food, and water in\nyour vehicle in case of an emergency. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nCTZ009>012-281500-\n/O.CON.KOKX.WS.W.0001.000000T0000Z-230228T1500Z/\nSouthern Fairfield-Southern New Haven-Southern Middlesex-\nSouthern New London-\n343 AM EST Tue Feb 28 2023\n\n...WINTER STORM WARNING REMAINS IN EFFECT UNTIL 10 AM EST THIS\nMORNING...\n\n* WHAT...Heavy snow. Total storm snow accumulations of 4 to 7\n  inches.\n\n* WHERE...Southern Fairfield, Southern New Haven, Southern \n  Middlesex and Southern New London Counties.\n\n* WHEN...Until 10 AM EST this morning.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\n  conditions will impact the morning commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nIf you must travel, keep an extra flashlight, food, and water in\nyour vehicle in case of an emergency. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nNJZ104-105-NYZ071-078-079-177-281500-\n/O.EXT.KOKX.WW.Y.0002.000000T0000Z-230228T1500Z/\nEastern Bergen-Western Essex-Southern Westchester-\nNorthwest Suffolk-Northeast Suffolk-Northern Nassau-\n343 AM EST Tue Feb 28 2023\n\n...WINTER WEATHER ADVISORY NOW IN EFFECT UNTIL 10 AM EST THIS\nMORNING...\n\n* WHAT...Snow and some sleet. Total storm snow/sleet \n  accumulations of 3 to 5 inches.\n\n* WHERE...Portions of northeast New Jersey and southeast New \n  York.\n\n* WHEN...Until 10 AM EST this morning.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\n  conditions will impact the morning commute.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nSlow down and use caution while traveling. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nNJZ006-106>108-NYZ072>075-080-081-176-178-179-281500-\n/O.EXT.KOKX.WW.Y.0002.000000T0000Z-230228T1500Z/\nHudson-Eastern Essex-Western Union-Eastern Union-\nNew York (Manhattan)-Bronx-Richmond (Staten Island)-\nKings (Brooklyn)-Southwest Suffolk-Southeast Suffolk-\nNorthern Queens-Southern Queens-Southern Nassau-\n343 AM EST Tue Feb 28 2023\n\n...WINTER WEATHER ADVISORY NOW IN EFFECT UNTIL 10 AM EST THIS\nMORNING...\n\n* WHAT...Snow and sleet. Total storm snow/sleet accumulations of 1\n  to 4 inches. Highest amounts across Long Island and the Bronx.\n\n* WHERE...Portions of northeast New Jersey and southeast New \n  York.\n\n* WHEN...Until 10 AM EST this morning.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\n  conditions will impact the morning commute.\n\n* ADDITIONAL INFORMATION...The wintry mix is expected to change\n  over to rain by mid-morning.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nSlow down and use caution while traveling. \n\nCheck local Department of Transportation information services for\nthe latest road conditions.\n\n&&\n\n$$\n\nFor more information from the National Weather Service visit\nhttps://weather.gov/nyc\n",
+   "valid": "2023-02-28T08:43:00Z",
+   "product_id": "202302280843-KOKX-WWUS41-WSWOKX"
+  },
+  {
+   "text": "771 \nWWUS41 KOKX 281413\nWSWOKX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service New York NY\n913 AM EST Tue Feb 28 2023\n\nCTZ005>008-281515-\n/O.CAN.KOKX.WS.W.0001.000000T0000Z-230228T2000Z/\nNorthern Fairfield-Northern New Haven-Northern Middlesex-\nNorthern New London-\n913 AM EST Tue Feb 28 2023\n\n...WINTER STORM WARNING IS CANCELLED...\n\nAdditional snowfall accumulation will be light for the remainder\nof the day. \n\n$$\n\nCTZ009>012-281515-\n/O.CAN.KOKX.WS.W.0001.000000T0000Z-230228T1500Z/\nSouthern Fairfield-Southern New Haven-Southern Middlesex-\nSouthern New London-\n913 AM EST Tue Feb 28 2023\n\n...WINTER STORM WARNING IS CANCELLED...\n\nAdditional snowfall accumulation will be light for the remainder\nof the day. \n\n$$\n\nNJZ002-004-103-NYZ067>070-281515-\n/O.CAN.KOKX.WS.W.0001.000000T0000Z-230228T1800Z/\nWestern Passaic-Eastern Passaic-Western Bergen-Orange-Putnam-\nRockland-Northern Westchester-\n913 AM EST Tue Feb 28 2023\n\n...WINTER STORM WARNING IS CANCELLED...\n\nAdditional snowfall accumulation will be light for the remainder\nof the day. \n\n$$\n\nNJZ006-104>108-NYZ071>075-078>081-176>179-281515-\n/O.CAN.KOKX.WW.Y.0002.000000T0000Z-230228T1500Z/\nHudson-Eastern Bergen-Western Essex-Eastern Essex-Western Union-\nEastern Union-Southern Westchester-New York (Manhattan)-Bronx-\nRichmond (Staten Island)-Kings (Brooklyn)-Northwest Suffolk-\nNortheast Suffolk-Southwest Suffolk-Southeast Suffolk-\nNorthern Queens-Northern Nassau-Southern Queens-Southern Nassau-\n913 AM EST Tue Feb 28 2023\n\n...WINTER WEATHER ADVISORY IS CANCELLED...\n\nTemperatures continue to rise above freezing. There may be some\nlight snow mixed in with rain this morning, but no additional\naccumulation is expected. \n\n$$\n\nFor more information from the National Weather Service visit\nhttps://weather.gov/nyc\n",
+   "valid": "2023-02-28T14:13:00Z",
+   "product_id": "202302281413-KOKX-WWUS41-WSWOKX"
+  }
+ ],
+ "utc_issue": "2023-02-27T23:00:00Z",
+ "utc_expire": "2023-02-28T14:13:00Z",
+ "ugcs": [
+  {
+   "ugc": "CTZ008",
+   "name": "Northern New London",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "NJZ004",
+   "name": "Eastern Passaic",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "NJZ105",
+   "name": "Western Essex",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NYZ070",
+   "name": "Northern Westchester",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "CTZ011",
+   "name": "Southern Middlesex",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "NJZ006",
+   "name": "Hudson",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NYZ072",
+   "name": "New York (Manhattan)",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NYZ176",
+   "name": "Northern Queens",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NYZ080",
+   "name": "Southwest Suffolk",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NYZ073",
+   "name": "Bronx",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NYZ081",
+   "name": "Southeast Suffolk",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NYZ179",
+   "name": "Southern Nassau",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NJZ106",
+   "name": "Eastern Essex",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NYZ075",
+   "name": "Kings (Brooklyn)",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NYZ078",
+   "name": "Northwest Suffolk",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NYZ079",
+   "name": "Northeast Suffolk",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NJZ108",
+   "name": "Eastern Union",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NJZ107",
+   "name": "Western Union",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "CTZ007",
+   "name": "Northern Middlesex",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "NYZ074",
+   "name": "Richmond (Staten Is.)",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NYZ178",
+   "name": "Southern Queens",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "CTZ006",
+   "name": "Northern New Haven",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "NYZ068",
+   "name": "Putnam",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "NJZ103",
+   "name": "Western Bergen",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "CTZ009",
+   "name": "Southern Fairfield",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "CTZ010",
+   "name": "Southern New Haven",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "CTZ012",
+   "name": "Southern New London",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "NJZ002",
+   "name": "Western Passaic",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "CTZ005",
+   "name": "Northern Fairfield",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "NYZ177",
+   "name": "Northern Nassau",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-27T08:46:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T18:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NJZ104",
+   "name": "Eastern Bergen",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  },
+  {
+   "ugc": "NYZ069",
+   "name": "Rockland",
+   "status": "UPG",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-28T00:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-27T08:46:00Z",
+   "utc_updated": "2023-02-27T08:46:00Z"
+  },
+  {
+   "ugc": "NYZ071",
+   "name": "Southern Westchester",
+   "status": "CAN",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2023-02-26T20:10:00Z",
+   "utc_issue": "2023-02-27T23:00:00Z",
+   "utc_init_expire": "2023-02-28T15:00:00Z",
+   "utc_expire": "2023-02-28T14:13:00Z",
+   "utc_updated": "2023-02-28T14:13:00Z"
+  }
+ ]
+}

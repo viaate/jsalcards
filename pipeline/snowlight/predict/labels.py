@@ -65,7 +65,7 @@ import json
 import statistics
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
 from typing import Final
@@ -654,3 +654,108 @@ def district_markets(
         top = max(len(seen) for seen in markets.values())
         found[district] = min(market for market, seen in markets.items() if len(seen) == top)
     return found
+
+
+# --- the label audit (calc-research plan T1) -----------------------------------------------------
+
+KNOWN_OUTCOMES: Final = frozenset(
+    {Outcome.NO_SCHOOL.value, Outcome.DELAYED.value, Outcome.OPEN.value}
+)
+"""The outcomes a fit trains on (an unknown row is dropped)."""
+NO_ROW: Final = "no_row"
+"""A district-day one build labels and the other has no row for."""
+
+
+def listings_before(
+    listings: Iterable[tuple[str, str, date]], before: date
+) -> list[tuple[str, str, date]]:
+    """The listings of local days before ``before``: what a station's audience could have been
+    built from at the start of a fold whose test season begins on ``before``."""
+    return [item for item in listings if item[2] < before]
+
+
+def reads_before(reads: Iterable[ReadRecord], before: date) -> list[ReadRecord]:
+    """The reads fetched before midnight UTC starting ``before`` (a season starts in July, when
+    no school day is near the edge)."""
+    edge = datetime.combine(before, datetime.min.time(), tzinfo=UTC)
+    return [read for read in reads if read.fetched_at < edge]
+
+
+@dataclass(frozen=True, slots=True)
+class LabelChanges:
+    """How the known labels of a fold's training seasons change when the station audiences,
+    the station gates and the markets are rebuilt from those seasons only (``fold``) instead
+    of from the whole archive (``whole``)."""
+
+    training: int
+    """Known labels of the training seasons in the whole-archive build."""
+    changed: int
+    """Of those, the ones the fold's build labels another way or not at all."""
+    added: int
+    """Known labels the fold's build has that the whole-archive build does not."""
+    pairs: Mapping[tuple[str, str], int]
+    """(whole, fold) outcome to the rows that moved so (``no_row``: no row)."""
+
+    @property
+    def share(self) -> float:
+        """The changed and added labels over the training labels (0 with none)."""
+        return (self.changed + self.added) / self.training if self.training else 0.0
+
+
+def label_changes(whole: pl.DataFrame, fold: pl.DataFrame) -> LabelChanges:
+    """Compare two label builds of the same days (``district``, ``day``, ``outcome``).
+
+    A row whose outcome is unknown, or that is missing, is not a training label; a known row
+    that becomes unknown, missing or another outcome is ``changed``, and an unknown or missing
+    row that becomes known is ``added``."""
+    left = whole.select("district", "day", pl.col("outcome").alias("whole"))
+    right = fold.select("district", "day", pl.col("outcome").alias("fold"))
+    joined = left.join(right, on=["district", "day"], how="full", coalesce=True).with_columns(
+        pl.col("whole").fill_null(NO_ROW), pl.col("fold").fill_null(NO_ROW)
+    )
+    known = sorted(KNOWN_OUTCOMES)
+    training = int(joined["whole"].is_in(known).sum())
+    moved = joined.filter(pl.col("whole") != pl.col("fold"))
+    pairs: dict[tuple[str, str], int] = {}
+    changed = added = 0
+    for was, now, count in moved.group_by("whole", "fold").len().sort("whole", "fold").iter_rows():
+        if was not in KNOWN_OUTCOMES and now not in KNOWN_OUTCOMES:
+            continue
+        pairs[(str(was), str(now))] = int(count)
+        if was in KNOWN_OUTCOMES:
+            changed += int(count)
+        else:
+            added += int(count)
+    return LabelChanges(training, changed, added, pairs)
+
+
+def fold_label_days(  # noqa: PLR0913, PLR0917 - the days, the inputs, the listings and the fold
+    days: Iterable[date],
+    inputs: LabelInputs,
+    listings: Sequence[tuple[str, str, date]],
+    lit_for: LitFor,
+    settings: LabelSettings,
+    before: date | None = None,
+) -> tuple[pl.DataFrame, dict[str, str]]:
+    """Label ``days`` with the station audiences (:func:`audiences` of ``listings``), the
+    station gates (:func:`station_stats` of ``inputs.reads``) and the districts' markets
+    (:func:`district_markets`) built here, and return the labels and the markets.
+
+    ``before``: the start of a walk-forward fold's test season. Then only the days before it
+    are labeled, and the audiences, the gates and the markets are built from the listings
+    and reads before it only, so a fold's training labels never depend on a later season
+    (calc-research plan T1, the lead's per-fold rule of 2026-10-25). A day's own reads
+    (fetched up to noon the day after it) still read it."""
+    reads: Sequence[ReadRecord] = inputs.reads
+    if before is not None:
+        listings = listings_before(listings, before)
+        reads = reads_before(reads, before)
+        days = [day for day in days if day < before]
+    captures, median_rows = station_stats(reads)
+    mine = replace(
+        inputs,
+        audience=audiences(listings, settings.audience_days),
+        captures=captures,
+        median_rows=median_rows,
+    )
+    return label_days(days, mine, lit_for, settings), district_markets(listings, inputs.market_of)

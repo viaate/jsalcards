@@ -63,6 +63,11 @@ class GateRecord(_Model):
     """The pooled storm Brier's improvement as a share of the base's (6 places)."""
     report_sha256: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
     """SHA-256 of the ``report.md`` the run wrote (UTF-8)."""
+    labels_rule: Literal["whole", "fold"] = "whole"
+    """The walk-forward's training labels the gate was judged on: ``whole`` (the whole
+    archive's, the rule the served fit's bases use; a file from before this was recorded) or
+    ``fold`` (the per-fold rule). ``predict terms`` writes a file only when it is the served
+    fit's own rule (:func:`snowlight.predict.terms_cli.terms_write_refusal`)."""
 
 
 class TermsArtifact(_Model):

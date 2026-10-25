@@ -1,0 +1,40 @@
+{
+ "event_exists": true,
+ "year": 2026,
+ "phenomena": "WW",
+ "significance": "Y",
+ "etn": 9,
+ "wfo": "REV",
+ "report": {
+  "text": "334 \nWWUS45 KREV 201956\nWSWREV\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service Reno NV\n1256 PM PDT Tue Oct 20 2026\n\nCAZ073-220000-\n/O.NEW.KREV.WW.Y.0009.261021T1800Z-261023T0000Z/\nMono County-\nIncluding the cities of Lee Vining, Mammoth Lakes, Bridgeport, and\nColeville\n1256 PM PDT Tue Oct 20 2026\n\n...WINTER WEATHER ADVISORY IN EFFECT FROM 11 AM WEDNESDAY TO 5 PM PDT\nTHURSDAY ABOVE 8000 FEET...\n\n* WHAT...Snow above 8000 feet. Snow accumulations of 4 to 8 inches\n  with up to 10 inches along the highest mountain peaks. Winds\n  gusting as high as 35 mph.\n\n* WHERE...Mono County.\n\n* WHEN...From 11 AM Wednesday to 5 PM PDT Thursday.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\n  conditions will impact the Wednesday evening and Thursday morning\n  commutes.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nSlow down and use caution while traveling. The latest road conditions\nfor the state you are calling from can be obtained by calling 5 1 1.\n\n&&\n\n$$\n\nMRC\n",
+  "valid": "2026-10-20T19:56:00Z",
+  "product_id": "202610201956-KREV-WWUS45-WSWREV"
+ },
+ "svs": [
+  {
+   "text": "539 \nWWUS45 KREV 210839\nWSWREV\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service Reno NV\n139 AM PDT Wed Oct 21 2026\n\nCAZ073-221200-\n/O.CON.KREV.WW.Y.0009.261021T1800Z-261023T0000Z/\nMono County-\nIncluding the cities of Mammoth Lakes, Bridgeport, Lee Vining, and\nColeville\n139 AM PDT Wed Oct 21 2026\n\n...WINTER WEATHER ADVISORY REMAINS IN EFFECT FROM 11 AM THIS MORNING\nTO 5 PM PDT THURSDAY ABOVE 8000 FEET...\n\n* CHANGES...None.\n\n* WHAT...Snow above 8000 feet. Snow accumulations of 4 to 8 inches\n  with up to 10 inches along the highest mountain peaks. Ridge winds\n  gusting as high as 40 mph at times.\n\n* WHERE...Mono County.\n\n* WHEN...From 11 AM this morning to 5 PM PDT Thursday.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\n  conditions will impact the Wednesday evening and Thursday morning\n  commutes.\n\n* ADDITIONAL DETAILS...Brief bursts of heavy snow and locally higher\n  snowfall totals will be possible with any thunderstorms that\n  develop today and Thursday.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nSlow down and use caution while traveling. The latest road conditions\nfor the state you are calling from can be obtained by calling 5 1 1.\n\n&&\n\n$$\n\nTS\n",
+   "valid": "2026-10-21T08:39:00Z",
+   "product_id": "202610210839-KREV-WWUS45-WSWREV"
+  },
+  {
+   "text": "735 \nWWUS45 KREV 220847\nWSWREV\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service Reno NV\n147 AM PDT Thu Oct 22 2026\n\nCAZ073-230000-\n/O.CON.KREV.WW.Y.0009.000000T0000Z-261023T0000Z/\nMono County-\nIncluding the cities of Bridgeport, Mammoth Lakes, Lee Vining, and\nColeville\n147 AM PDT Thu Oct 22 2026\n\n...WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 5 PM PDT THIS\nAFTERNOON ABOVE 8000 FEET...\n\n* CHANGES...None.\n\n* WHAT...Snow above 8000 feet. Additional snow accumulations of 2 to\n  6 inches with 8 to 10 inches along the highest mountain peaks.\n  Ridge winds gusting as high as 40 mph at times.\n\n* WHERE...Mono County.\n\n* WHEN...Until 5 PM PDT this afternoon.\n\n* IMPACTS...Plan on slippery road conditions. The hazardous\n  conditions will impact the Thursday morning and evening commutes.\n\n* ADDITIONAL DETAILS...Brief bursts of heavy snow and locally higher\n  snowfall totals will be possible with any thunderstorms that\n  develop today.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nSlow down and use caution while traveling. The latest road conditions\nfor the state you are calling from can be obtained by calling 5 1 1.\n\n&&\n\n$$\n\nTS\n",
+   "valid": "2026-10-22T08:47:00Z",
+   "product_id": "202610220847-KREV-WWUS45-WSWREV"
+  }
+ ],
+ "utc_issue": "2026-10-21T18:00:00Z",
+ "utc_expire": "2026-10-23T00:00:00Z",
+ "ugcs": [
+  {
+   "ugc": "CAZ073",
+   "name": "Mono",
+   "status": "CON",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2026-10-20T19:56:00Z",
+   "utc_issue": "2026-10-21T18:00:00Z",
+   "utc_init_expire": "2026-10-23T00:00:00Z",
+   "utc_expire": "2026-10-23T00:00:00Z",
+   "utc_updated": "2026-10-22T08:47:00Z"
+  }
+ ]
+}

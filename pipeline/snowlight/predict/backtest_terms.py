@@ -25,14 +25,21 @@ terms`, ``TERMS_OF``); its base's counted weather only decides whether a snow te
 """
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass, field
 from typing import Final
 
 import numpy as np
 import numpy.typing as npt
 
-from snowlight.predict.backtest import Bin, brier, clustered_se, reliability
+from snowlight.predict.backtest import (
+    Bin,
+    FoldTraining,
+    brier,
+    clustered_se,
+    reliability,
+    training_of,
+)
 from snowlight.predict.config import ModelSettings
 from snowlight.predict.pool import (
     Floats,
@@ -84,16 +91,22 @@ class Base:
     """The weather class whose days the base counts (its situation, or the fallback's)."""
 
 
-def _fold(  # noqa: PLR0913, PLR0917 - as backtest.fit_predict
+type Predictor = Callable[[Rows], tuple[Floats, Floats, npt.NDArray[np.int64]]]
+"""A fold's fitted base: (published chance, unrounded chance, counted weather) of any rows."""
+
+
+def _fit(  # noqa: PLR0913, PLR0917 - as backtest.fit_predict
     rows: Rows,
     delay_rows: Rows,
-    test: Rows,
     places: Places,
     seasons: Sequence[int],
     settings: ModelSettings,
-) -> tuple[Floats, Floats, npt.NDArray[np.int64]]:
+    exclude: tuple[npt.NDArray[np.bool_], npt.NDArray[np.bool_]] | None = None,
+) -> Predictor:
     keep = np.isin(rows.season, np.array(list(seasons)))
     keep_delay = np.isin(delay_rows.season, np.array(list(seasons)))
+    if exclude is not None:
+        keep, keep_delay = keep & ~exclude[0], keep_delay & ~exclude[1]
     train, train_delay = rows.subset(keep), delay_rows.subset(keep_delay)
     tables = tables_from_rows(train, places, sorted(seasons))
     tables_delay = tables_from_rows(train_delay, places, sorted(seasons))
@@ -103,38 +116,68 @@ def _fold(  # noqa: PLR0913, PLR0917 - as backtest.fit_predict
     strengths_delay = tune(
         train_delay, places, tables_delay, sorted(seasons), settings.m_grid, rules=later
     ).strengths
-    cells = (test.district, test.situation)
-    found = chain(level_counts(places, *tables.total()), strengths, rules=rules, cells=cells)
+    counts = level_counts(places, *tables.total())
+    counts_delay = level_counts(places, *tables_delay.total())
     total_y, total_n = tables.total()
     mapping = effective_situations(total_y.sum(axis=0), total_n.sum(axis=0), rules)
-    q = chain(
-        level_counts(places, *tables_delay.total()),
-        strengths_delay,
-        rules=later,
-        cells=cells,
-        effective=mapping,
-    ).p
-    p, _delay = publish_rates(found.p, q, settings.floor, settings.ceiling)
-    unmodeled = found.situation < 0
-    counted = np.where(unmodeled, -1, WEATHER_OF[np.maximum(found.situation, 0)])
-    return np.where(unmodeled, np.nan, p), np.where(unmodeled, np.nan, found.p), counted
+
+    def predict_rows(test: Rows) -> tuple[Floats, Floats, npt.NDArray[np.int64]]:
+        cells = (test.district, test.situation)
+        found = chain(counts, strengths, rules=rules, cells=cells)
+        q = chain(counts_delay, strengths_delay, rules=later, cells=cells, effective=mapping).p
+        p, _delay = publish_rates(found.p, q, settings.floor, settings.ceiling)
+        unmodeled = found.situation < 0
+        counted = np.where(unmodeled, -1, WEATHER_OF[np.maximum(found.situation, 0)])
+        return np.where(unmodeled, np.nan, p), np.where(unmodeled, np.nan, found.p), counted
+
+    return predict_rows
 
 
-def base_by_season(rows: Rows, delay_rows: Rows, places: Places, settings: ModelSettings) -> Base:
-    """Every row's piece 1 chance, fit on the seasons before its own only."""
+def base_by_season(  # noqa: PLR0913 - the rows, the places, the settings and the folds
+    rows: Rows,
+    delay_rows: Rows,
+    places: Places,
+    settings: ModelSettings,
+    *,
+    exclude: tuple[npt.NDArray[np.bool_], npt.NDArray[np.bool_]] | None = None,
+    training: FoldTraining | None = None,
+    fits: MutableMapping[int, Predictor] | None = None,
+) -> Base:
+    """Every row's piece 1 chance, fit on the seasons before its own only (``exclude``: the
+    rows and delay rows left out of every fit, plan P8).
+
+    ``training``: the per-fold rule. A row of season ``s`` gets the chance fit on
+    ``training``'s labels of ``s`` (built from the listings and reads before ``s`` only), so
+    ``rows`` may be any labels (a fold's own training rows too); ``exclude`` is then not
+    taken (leave a date out of ``training`` instead). ``fits`` keeps each season's fit for
+    the next call over the same ``training``.
+
+    Raises:
+        ValueError: ``exclude`` with ``training``, or ``training`` lacks a season of ``rows``
+            that has an earlier one.
+    """
+    if training is not None and exclude is not None:
+        raise ValueError("leave a date out of the fold labels, not out of the rows")
     p = np.full(len(rows), np.nan)
     raw = np.full(len(rows), np.nan)
     counted = np.full(len(rows), -1, dtype=np.int64)
     seasons = sorted(set(rows.season.tolist()))
+    kept = {} if fits is None else fits
     for season in seasons:
-        before = [s for s in seasons if s < season]
         mask = rows.season == season
-        if not before or not mask.any():
+        first = not any(s < season for s in seasons)
+        if not mask.any() or (first and (training is None or season not in training)):
             continue
-        found, found_raw, found_counted = _fold(
-            rows, delay_rows, rows.subset(mask), places, before, settings
-        )
-        p[mask], raw[mask], counted[mask] = found, found_raw, found_counted
+        predictor = kept.get(season) if training is not None else None
+        if predictor is None:
+            source, source_delay = training_of(season, rows, delay_rows, training)
+            before = sorted(s for s in set(source.season.tolist()) if s < season)
+            if not before:
+                continue
+            predictor = _fit(source, source_delay, places, before, settings, exclude)
+            if training is not None:
+                kept[season] = predictor
+        p[mask], raw[mask], counted[mask] = predictor(rows.subset(mask))
     return Base(p, raw, counted)
 
 
@@ -191,6 +234,45 @@ def cluster_weights(clusters: Sequence[object]) -> Floats:
     return np.array([1.0 / counts[key] for key in clusters], dtype=np.float64)
 
 
+@dataclass(frozen=True, slots=True)
+class TermTraining:
+    """A test season's term-fit rows under the per-fold rule: its fold labels' rows (the
+    seasons before it, built from the listings and reads before it only), each with its own
+    walk-forward base (:func:`base_by_season` over the same fold labels) and its levels."""
+
+    rows: Rows
+    base: Base
+    levels: Mapping[Term, npt.NDArray[np.int64]]
+    weight: Floats | None = None
+
+
+def term_training(  # noqa: PLR0913 - the folds, their levels, the places, the settings
+    training: FoldTraining,
+    levels: Mapping[int, Mapping[Term, npt.NDArray[np.int64]]],
+    places: Places,
+    settings: ModelSettings,
+    test_seasons: Sequence[int],
+    *,
+    fits: MutableMapping[int, Predictor] | None = None,
+    weight: Mapping[int, Floats] | None = None,
+) -> dict[int, TermTraining]:
+    """Each test season's :class:`TermTraining` from its fold labels (``training``) and
+    their levels (``levels``, in the rows' order), every base fit on ``training`` too."""
+    kept = {} if fits is None else fits
+    found: dict[int, TermTraining] = {}
+    for season in test_seasons:
+        fold = training.get(season)
+        if fold is None:
+            continue
+        base = base_by_season(
+            fold.rows, fold.delay_rows, places, settings, training=training, fits=kept
+        )
+        found[season] = TermTraining(
+            fold.rows, base, levels[season], None if weight is None else weight[season]
+        )
+    return found
+
+
 def walk_forward(  # noqa: PLR0913, PLR0917 - the rows, their bases and levels, and the seasons
     rows: Rows,
     base: Base,
@@ -198,17 +280,50 @@ def walk_forward(  # noqa: PLR0913, PLR0917 - the rows, their bases and levels, 
     test_seasons: Sequence[int],
     settings: ModelSettings,
     weight: Floats | None = None,
+    *,
+    exclude: npt.NDArray[np.bool_] | None = None,
+    training: Mapping[int, TermTraining] | None = None,
 ) -> list[TermFold]:
     """Every test season's terms, fit on the earlier seasons' rows only (each weighted by
-    ``weight``, default 1)."""
+    ``weight``, default 1; ``exclude``: rows left out of every fit, plan P8).
+
+    ``training``: the per-fold rule. A test season's terms are fit on its
+    :class:`TermTraining` (its fold labels, their bases and levels) instead of the earlier
+    seasons of ``rows``; ``rows``, ``base`` and ``levels`` give the test rows only, and
+    ``weight`` and ``exclude`` are not taken (they belong to the training).
+
+    Raises:
+        ValueError: ``weight`` or ``exclude`` with ``training``, or a test season with rows
+            and no training, or training that holds a row of its test season or later.
+    """
+    if training is not None and (weight is not None or exclude is not None):
+        raise ValueError("weight and leave out the fold labels' rows, not the test rows")
     has_base = ~np.isnan(base.p) & (base.counted >= 0)
     folds: list[TermFold] = []
     for season in test_seasons:
-        train = has_base & (rows.season < season)
         test = has_base & (rows.season == season)
         if not test.any():
             continue
-        model = fit(design_of(base, rows, levels, train, weight), rows.season[train])
+        if training is None:
+            train = has_base & (rows.season < season)
+            if exclude is not None:
+                train &= ~exclude
+            source = TermTraining(rows, base, levels, weight)
+        else:
+            if season not in training:
+                raise ValueError(f"no fold labels for test season {season}")
+            source = training[season]
+            if len(source.rows) and int(source.rows.season.max()) >= season:
+                raise ValueError(f"the fold labels of test season {season} hold a later row")
+            train = (
+                ~np.isnan(source.base.p)
+                & (source.base.counted >= 0)
+                & (source.rows.season < season)
+            )
+        model = fit(
+            design_of(source.base, source.rows, source.levels, train, source.weight),
+            source.rows.season[train],
+        )
         found = predict(model, design_of(base, rows, levels, test))
         folds.append(
             TermFold(
@@ -692,15 +807,637 @@ def report_markdown(  # noqa: PLR0913, PLR0917 - the gates, the folds, the owner
     return "\n".join(lines) + "\n"
 
 
+# --- report-only checks of a candidate against today's model (calc-research plan T1, T4) --------
+
+STRATUM_MIN_ROWS: Final = 30
+STRATUM_MIN_DATES: Final = 2
+STRATUM_TOLERANCE: Final = 0.01
+"""P3: a stratum of 30 or more rows on 2 or more dates may be no worse by more than this."""
+BOOTSTRAP_DRAWS: Final = 2000
+BOOTSTRAP_LEVEL: Final = 0.90
+SHIFT_GRID: Final = np.round(np.arange(-6.0, 6.0001, 0.01), 2)
+"""The level-free check's logit shifts."""
+ADVISORY_BUCKETS: Final = ("under 0.5 in", "0.5 to 2 in", "2 to 4 in", "4 to 6 in", "6 in or more")
+WARNING_BUCKETS: Final = (
+    "under 2 in",
+    "under 2 in",
+    "2 to 6 in",
+    "2 to 6 in",
+    "6 to 9 in",
+    "9 in or more",
+)
+"""By the forecast history's snow code (0 quiet, 1 to 5 the snow buckets from 0.5, 2, 4, 6 and 9
+inches); codes 6 to 8 are its ice codes, 9 to 12 cold, 13 unknown."""
+
+
+def forecast_stratum(weather: int, code: int, northeast: bool) -> str:
+    """A row's P3 stratum: its own class, its 9 PM forecast bucket and its region (the Northeast
+    or the rest). Advisory buckets: under 0.5, 0.5 to 2, 2 to 4, 4 to 6 inches (and 6 or more),
+    and the NDFD ice code; warning buckets: under 2, 2 to 6, 6 to 9, 9 or more inches."""
+    place = "northeast" if northeast else "rest"
+    if 6 <= code <= 8:  # noqa: PLR2004 - the history's ice codes
+        bucket = "ice"
+    elif code < 0 or code >= 13:  # noqa: PLR2004 - no forecast
+        bucket = "unknown"
+    elif code >= 9:  # noqa: PLR2004 - a cold code: no snow or ice outranks it
+        bucket = ADVISORY_BUCKETS[0] if weather <= 1 else WARNING_BUCKETS[0]
+    elif weather <= 1:
+        bucket = ADVISORY_BUCKETS[min(code, 4)]
+    else:
+        bucket = WARNING_BUCKETS[code]
+    names = {0: "none", 1: "advisory"}
+    return f"{names.get(weather, f'class {weather}')} | {bucket} | {place}"
+
+
+@dataclass(frozen=True, slots=True)
+class Scored:
+    """Test rows scored by today's model (``p_base``) and by a candidate (``p_new``)."""
+
+    y: Floats
+    p_base: Floats
+    p_new: Floats
+    day: npt.NDArray[np.int64]
+    """Each row's date as a day number (``date.toordinal``)."""
+    market: tuple[str, ...]
+    """Each row's market (the cluster its storm day counts in)."""
+    weather: npt.NDArray[np.int64]
+    """Each row's own weather class (above 0: a storm row)."""
+    stratum: tuple[str, ...] = ()
+    """Each row's P3 stratum (:func:`forecast_stratum`; empty: no strata)."""
+
+    @property
+    def storm(self) -> npt.NDArray[np.bool_]:
+        """The storm rows."""
+        return np.asarray(self.weather > 0, dtype=np.bool_)
+
+    def subset(self, keep: npt.NDArray[np.bool_]) -> "Scored":
+        """The rows ``keep`` names."""
+        at = np.flatnonzero(keep).tolist()
+        return Scored(
+            self.y[keep], self.p_base[keep], self.p_new[keep], self.day[keep],
+            tuple(self.market[i] for i in at), self.weather[keep],
+            tuple(self.stratum[i] for i in at) if self.stratum else (),
+        )  # fmt: skip
+
+
+@dataclass(frozen=True, slots=True)
+class StratumCheck:
+    """P3: one stratum's rows, dates and Briers."""
+
+    stratum: str
+    rows: int
+    dates: int
+    brier_base: float
+    brier_new: float
+
+    @property
+    def checked(self) -> bool:
+        """Whether it holds enough rows and dates to be checked."""
+        return self.rows >= STRATUM_MIN_ROWS and self.dates >= STRATUM_MIN_DATES
+
+    @property
+    def worse(self) -> bool:
+        """Checked, and worse than today's model by more than the tolerance."""
+        return self.checked and self.brier_new - self.brier_base > STRATUM_TOLERANCE
+
+
+def strata_check(scored: Scored) -> list[StratumCheck]:
+    """P3 over every stratum of the scored rows (a stratum with fewer rows or dates is
+    reported, not checked)."""
+    found: list[StratumCheck] = []
+    labels = np.array(scored.stratum, dtype=object)
+    for name in sorted(set(scored.stratum)):
+        keep = labels == name
+        found.append(
+            StratumCheck(
+                str(name),
+                int(keep.sum()),
+                int(np.unique(scored.day[keep]).size),
+                brier(scored.p_base[keep], scored.y[keep]),
+                brier(scored.p_new[keep], scored.y[keep]),
+            )
+        )
+    return found
+
+
+def storm_gain(scored: Scored) -> float:
+    """The candidate's pooled storm Brier gain over today's model, as a share of today's."""
+    storm = scored.storm
+    return _gain(
+        brier(scored.p_base[storm], scored.y[storm]), brier(scored.p_new[storm], scored.y[storm])
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class DropOneDate:
+    """P4: the pooled storm gain, and again with each test date left out."""
+
+    gain: float
+    by_date: tuple[tuple[int, int, float], ...]
+    """(day number, its storm rows, the pooled gain without it)."""
+
+    @property
+    def lowest(self) -> float:
+        """The lowest gain with one date left out (the pooled gain when there is one date)."""
+        return min((gain for _d, _n, gain in self.by_date), default=self.gain)
+
+    @property
+    def holds(self) -> bool:
+        """The gain stays above 0 with any one date left out."""
+        return self.gain > 0 and self.lowest > 0
+
+
+def drop_one_date(scored: Scored) -> DropOneDate:
+    """P4 over the storm rows."""
+    storm = scored.subset(scored.storm)
+    found: list[tuple[int, int, float]] = []
+    for day in np.unique(storm.day).tolist():
+        mine = storm.day == day
+        found.append((int(day), int(mine.sum()), storm_gain(storm.subset(~mine))))
+    return DropOneDate(storm_gain(storm), tuple(found))
+
+
+@dataclass(frozen=True, slots=True)
+class Interval:
+    """P5: the storm Brier difference (candidate less today's model) and its date-bootstrap
+    interval."""
+
+    difference: float
+    low: float
+    high: float
+    dates: int
+    draws: int
+
+    @property
+    def worse(self) -> bool:
+        """The whole interval lies on the worse side."""
+        return self.low > 0
+
+    @property
+    def better(self) -> bool:
+        """The whole interval lies on the better side (upper bound below 0)."""
+        return self.high < 0
+
+
+def date_bootstrap(
+    scored: Scored, draws: int = BOOTSTRAP_DRAWS, seed: int = 7, level: float = BOOTSTRAP_LEVEL
+) -> Interval:
+    """P5: resample the storm test dates (not date x market clusters: a date's weather is
+    shared by its markets) with replacement, ``draws`` times; the ``level`` interval of the
+    pooled storm Brier difference."""
+    storm = scored.subset(scored.storm)
+    days, inverse = np.unique(storm.day, return_inverse=True)
+    if not days.size:
+        return Interval(math.nan, math.nan, math.nan, 0, draws)
+    errors_base = np.bincount(inverse, weights=(storm.p_base - storm.y) ** 2, minlength=days.size)
+    errors_new = np.bincount(inverse, weights=(storm.p_new - storm.y) ** 2, minlength=days.size)
+    counts = np.bincount(inverse, minlength=days.size).astype(np.float64)
+    random = np.random.default_rng(seed)
+    picks = random.integers(0, days.size, size=(draws, days.size))
+    rows = counts[picks].sum(axis=1)
+    diffs = (errors_new[picks].sum(axis=1) - errors_base[picks].sum(axis=1)) / rows
+    tail = (1 - level) / 2
+    difference = float((errors_new.sum() - errors_base.sum()) / counts.sum())
+    low, high = np.quantile(diffs, [tail, 1 - tail])
+    return Interval(difference, float(low), float(high), int(days.size), draws)
+
+
+@dataclass(frozen=True, slots=True)
+class Split:
+    """P9 (T4): the storm rows a candidate raises, lowers and leaves, and their squared
+    errors before and after (a positive ``gain`` is fewer errors)."""
+
+    name: str
+    rows: int
+    closed: float
+    sse_base: float
+    sse_new: float
+
+    @property
+    def gain(self) -> float:
+        """Squared error taken away."""
+        return self.sse_base - self.sse_new
+
+
+def raised_lowered(scored: Scored) -> list[Split]:
+    """P9 over the storm rows: a gain from raised chances on alert days is no evidence until
+    live labels (the captured storms reward any raise)."""
+    storm = scored.subset(scored.storm)
+    found: list[Split] = []
+    for name, keep in (
+        ("raised", storm.p_new > storm.p_base),
+        ("lowered", storm.p_new < storm.p_base),
+        ("unchanged", storm.p_new == storm.p_base),
+    ):
+        y = storm.y[keep]
+        found.append(
+            Split(
+                name,
+                int(keep.sum()),
+                float(y.mean()) if y.size else math.nan,
+                float(((storm.p_base[keep] - y) ** 2).sum()),
+                float(((storm.p_new[keep] - y) ** 2).sum()),
+            )
+        )
+    return found
+
+
+def _sigmoid(x: Floats) -> Floats:
+    return np.asarray(1.0 / (1.0 + np.exp(-x)), dtype=np.float64)
+
+
+def best_shift(p: Floats, y: Floats) -> tuple[float, float]:
+    """The single logit shift (on :data:`SHIFT_GRID`) that gives ``p`` its lowest Brier on
+    ``y``, and that Brier."""
+    if not p.size:
+        return 0.0, math.nan
+    base = logit(np.clip(p, 1e-6, 1 - 1e-6))
+    scores = [float(np.mean((_sigmoid(base + shift) - y) ** 2)) for shift in SHIFT_GRID]
+    best = int(np.argmin(scores))
+    return float(SHIFT_GRID[best]), scores[best]
+
+
+@dataclass(frozen=True, slots=True)
+class LevelFree:
+    """The level-free check of one class: each model's Brier after its own best shift."""
+
+    weather: int
+    rows: int
+    shift_base: float
+    brier_base: float
+    shift_new: float
+    brier_new: float
+
+
+def level_free(scored: Scored) -> list[LevelFree]:
+    """T4's diagnostic: per storm class, today's model and the candidate each get their own
+    best single logit shift on the test rows, which takes away the national class level (not
+    state by state capture differences, so it says nothing of a level rule)."""
+    found: list[LevelFree] = []
+    for weather in sorted(set(scored.weather[scored.storm].tolist())):
+        keep = scored.weather == weather
+        y = scored.y[keep]
+        shift_base, brier_base = best_shift(scored.p_base[keep], y)
+        shift_new, brier_new = best_shift(scored.p_new[keep], y)
+        found.append(
+            LevelFree(int(weather), int(keep.sum()), shift_base, brier_base, shift_new, brier_new)
+        )
+    return found
+
+
+@dataclass(frozen=True, slots=True)
+class Ranking:
+    """Within-day ranking: over market-days with both outcomes, the share of (closed, not
+    closed) pairs each model ranks the right way (a tie counts half)."""
+
+    market_days: int
+    pairs: int
+    share_base: float
+    share_new: float
+    apart_market_days: int = 0
+    apart_pairs: int = 0
+    apart_share_base: float = math.nan
+    apart_share_new: float = math.nan
+    """The market-days reported apart (chosen by outcome, so in sample)."""
+    all_market_days: int = 0
+    all_pairs: int = 0
+    all_share_base: float = math.nan
+    all_share_new: float = math.nan
+    """Every market-day with both outcomes, those reported apart too (the pre-registered
+    figure, plan T4)."""
+
+
+def _pair_share(p: Floats, y: Floats) -> tuple[int, float]:
+    closed, open_ = p[y == 1], p[y == 0]
+    pairs = int(closed.size * open_.size)
+    if not pairs:
+        return 0, 0.0
+    above = (closed[:, None] > open_[None, :]).sum() + 0.5 * (
+        closed[:, None] == open_[None, :]
+    ).sum()
+    return pairs, float(above)
+
+
+def within_day_ranking(scored: Scored, apart: frozenset[tuple[int, str]] = frozenset()) -> Ranking:
+    """The pre-registered ranking over every market-day with both outcomes (``all_*``), and
+    apart from it ``apart`` (day number, market) alone (``apart_*``) and every market-day but
+    those (the pooled share)."""
+    keys = list(zip(scored.day.tolist(), scored.market, strict=True))
+    groups: dict[tuple[int, str], list[int]] = {}
+    for position, key in enumerate(keys):
+        groups.setdefault(key, []).append(position)
+    totals = {"pooled": [0, 0, 0.0, 0.0], "apart": [0, 0, 0.0, 0.0]}
+    for key, members in groups.items():
+        at = np.array(members, dtype=np.int64)
+        y = scored.y[at]
+        if not (y == 1).any() or not (y == 0).any():
+            continue
+        pairs, right_base = _pair_share(scored.p_base[at], y)
+        _pairs, right_new = _pair_share(scored.p_new[at], y)
+        bucket = totals["apart" if key in apart else "pooled"]
+        bucket[0] += 1
+        bucket[1] += pairs
+        bucket[2] += right_base
+        bucket[3] += right_new
+    pooled, aside = totals["pooled"], totals["apart"]
+    every = [a + b for a, b in zip(pooled, aside, strict=True)]
+
+    def share(found: list[float], index: int) -> float:
+        return found[index] / found[1] if found[1] else math.nan
+
+    return Ranking(
+        int(pooled[0]), int(pooled[1]), share(pooled, 2), share(pooled, 3),
+        int(aside[0]), int(aside[1]), share(aside, 2), share(aside, 3),
+        int(every[0]), int(every[1]), share(every, 2), share(every, 3),
+    )  # fmt: skip
+
+
+def busiest_dates(
+    day: npt.NDArray[np.int64], used: npt.NDArray[np.bool_], count: int = 3
+) -> list[int]:
+    """P8: the ``count`` training dates with the most rows ``used`` marks (rows in the steps or
+    levels a candidate uses), most first (ties to the earlier date)."""
+    days, rows = np.unique(day[used], return_counts=True)
+    order = sorted(
+        zip(days.tolist(), rows.tolist(), strict=True), key=lambda item: (-item[1], item[0])
+    )
+    return [int(d) for d, _n in order[:count]]
+
+
+def fold_moved_dates(
+    folds: Sequence[TermFold],
+    training: Mapping[int, TermTraining],
+    days: Mapping[int, npt.NDArray[np.int64]],
+    count: int = 3,
+) -> list[int]:
+    """P8 under the per-fold rule: the ``count`` training dates with the most rows the
+    candidate's own fits move, most first (ties to the earlier date). A fold's fit moves a row
+    of its training (``training``, its fold labels' rows with their own bases; ``days`` the
+    day numbers of those rows) where a term's contribution is not 0; a (district, day) any
+    fold moves counts once."""
+    moved: set[tuple[int, int]] = set()
+    for fold in folds:
+        source = training[fold.season]
+        keep = (
+            ~np.isnan(source.base.p)
+            & (source.base.counted >= 0)
+            & (source.rows.season < fold.season)
+        )
+        hit = np.zeros(int(keep.sum()), dtype=np.bool_)
+        for value in contributions(
+            fold.model, design_of(source.base, source.rows, source.levels, keep)
+        ).values():
+            hit |= value != 0
+        at = np.flatnonzero(keep)[hit]
+        day = days[fold.season]
+        moved.update(zip(source.rows.district[at].tolist(), day[at].tolist(), strict=True))
+    if not moved:
+        return []
+    numbers = np.array([d for _unit, d in sorted(moved)], dtype=np.int64)
+    return busiest_dates(numbers, np.ones(numbers.size, dtype=np.bool_), count)
+
+
+@dataclass(frozen=True, slots=True)
+class DropTraining:
+    """P8: the pooled storm Brier of today's model and of the candidate with each training
+    date left out of every fit."""
+
+    brier: tuple[float, float]
+    """(today's model, candidate) with every training date."""
+    by_date: tuple[tuple[int, float, float], ...]
+    """(day number, today's model, candidate) refit without it."""
+
+
+def drop_training_dates(
+    score: Callable[[npt.NDArray[np.bool_] | None], tuple[float, float]],
+    day: npt.NDArray[np.int64],
+    dates: Sequence[int],
+) -> DropTraining:
+    """P8: ``score(exclude)`` refits today's model and the candidate leaving out the rows
+    ``exclude`` marks from every fit and returns both pooled storm Briers; each of ``dates``
+    is left out in turn."""
+    found = []
+    for number in dates:
+        base, new = score(np.asarray(day == number, dtype=np.bool_))
+        found.append((int(number), base, new))
+    return DropTraining(score(None), tuple(found))
+
+
+def storm_briers(scored: Scored) -> tuple[float, float]:
+    """Today's model's and the candidate's pooled storm Brier."""
+    storm = scored.storm
+    y = scored.y[storm]
+    return brier(scored.p_base[storm], y), brier(scored.p_new[storm], y)
+
+
+@dataclass(frozen=True, slots=True)
+class Checks:
+    """Every report-only check of one candidate against today's model."""
+
+    strata: tuple[StratumCheck, ...]
+    drop_one: DropOneDate
+    bootstrap: Interval
+    splits: tuple[Split, ...]
+    level_free: tuple[LevelFree, ...]
+    ranking: Ranking
+    drop_training: DropTraining | None = None
+
+    @property
+    def harm(self) -> list[str]:
+        """The veto reasons this report sees (plan T3: pooled storm Brier 2% or more worse,
+        the bootstrap interval wholly worse, a stratum worse by more than 0.01); P6, P7 and
+        the T2 sentinels are checked elsewhere."""
+        found: list[str] = []
+        if self.drop_one.gain <= -BRIER_GAIN:
+            found.append(f"pooled storm Brier {100 * -self.drop_one.gain:.1f}% worse")
+        if self.bootstrap.worse:
+            found.append("date-bootstrap interval wholly worse")
+        found += [f"stratum {s.stratum} worse" for s in self.strata if s.worse]
+        return found
+
+
+def run_checks(
+    scored: Scored,
+    *,
+    apart: frozenset[tuple[int, str]] = frozenset(),
+    draws: int = BOOTSTRAP_DRAWS,
+    seed: int = 7,
+    drop_training: DropTraining | None = None,
+) -> Checks:
+    """P3, P4, P5, P9 (raised vs lowered), the level-free check and the within-day ranking."""
+    return Checks(
+        strata=tuple(strata_check(scored)) if scored.stratum else (),
+        drop_one=drop_one_date(scored),
+        bootstrap=date_bootstrap(scored, draws, seed),
+        splits=tuple(raised_lowered(scored)),
+        level_free=tuple(level_free(scored)),
+        ranking=within_day_ranking(scored, apart),
+        drop_training=drop_training,
+    )
+
+
+SPLIT_MARKET_DAYS: Final = (
+    ("2023-02-28", "New York, NY - CT - NJ - PA DMA"),
+    ("2023-03-14", "New York, NY - CT - NJ - PA DMA"),
+    ("2023-03-14", "Hartford & New Haven, CT DMA"),
+    ("2025-02-21", "Colorado Springs - Pueblo, CO DMA"),
+)
+"""The split market-days (10-90% closed) the ranking reports apart: chosen by outcome, and
+where height was found, so in sample (plan T4)."""
+
+
+def split_market_days() -> frozenset[tuple[int, str]]:
+    """:data:`SPLIT_MARKET_DAYS` as (day number, market)."""
+    from datetime import date as day_type  # noqa: PLC0415
+
+    return frozenset((day_type.fromisoformat(d).toordinal(), m) for d, m in SPLIT_MARKET_DAYS)
+
+
+def scored_from_folds(  # noqa: PLR0913, PLR0917 - the folds and each row's day, market, code, region
+    folds: Sequence[TermFold],
+    rows: Rows,
+    day: npt.NDArray[np.int64],
+    market: Sequence[str],
+    code: npt.NDArray[np.int64],
+    northeast: npt.NDArray[np.bool_],
+) -> Scored:
+    """The folds' test rows scored by the base (today's model) and the terms (the candidate),
+    with each row's day number, market and P3 stratum (``code``: the 9 PM forecast code, -1
+    unknown)."""
+    positions = np.concatenate([fold.rows for fold in folds]) if folds else np.zeros(0, np.int64)
+    weather = WEATHER_OF[rows.situation[positions]]
+    return Scored(
+        y=rows.y[positions],
+        p_base=np.concatenate([fold.p_base for fold in folds]) if folds else np.zeros(0),
+        p_new=np.concatenate([fold.p_terms for fold in folds]) if folds else np.zeros(0),
+        day=day[positions],
+        market=tuple(market[i] for i in positions.tolist()),
+        weather=weather,
+        stratum=tuple(
+            forecast_stratum(int(w), int(code[i]), bool(northeast[i]))
+            for w, i in zip(weather.tolist(), positions.tolist(), strict=True)
+        ),
+    )
+
+
+def _day(number: int) -> str:
+    from datetime import date as day_type  # noqa: PLC0415
+
+    return day_type.fromordinal(number).isoformat()
+
+
+def checks_markdown(found: Checks, title: str) -> str:
+    """The checks as an internal report (report only: no gate reads it)."""
+    lines = [f"# {title} (internal, report only)", ""]
+    harm = found.harm
+    lines.append("Veto reasons seen here: " + ("; ".join(harm) if harm else "none") + ".")
+    drop = found.drop_one
+    lines += [
+        "",
+        "## P4: one test date left out",
+        "",
+        f"Pooled storm gain {100 * drop.gain:+.2f}%; lowest with one date left out "
+        f"{100 * drop.lowest:+.2f}% ({'holds' if drop.holds else 'does not hold'}).",
+        "",
+        "| date left out | its storm rows | pooled gain without it |",
+        "|---|---|---|",
+    ]
+    lines += [f"| {_day(d)} | {n} | {100 * g:+.2f}% |" for d, n, g in drop.by_date]
+    boot = found.bootstrap
+    lines += [
+        "",
+        "## P5: storm test dates resampled",
+        "",
+        f"Storm Brier difference (candidate less today's model) {_f(boot.difference)}; "
+        f"{100 * BOOTSTRAP_LEVEL:.0f}% interval {_f(boot.low)} to {_f(boot.high)} over "
+        f"{boot.dates} dates, {boot.draws} draws.",
+        "",
+        "## P9: raised vs lowered (storm rows)",
+        "",
+        "| rows | count | closed | squared error before | after | taken away |",
+        "|---|---|---|---|---|---|",
+    ]
+    lines += [
+        f"| {s.name} | {s.rows} | {_f(s.closed)} | {s.sse_base:.2f} | {s.sse_new:.2f} "
+        f"| {s.gain:+.2f} |"
+        for s in found.splits
+    ]
+    lines += [
+        "",
+        "A gain from raised chances on alert days counts as no evidence until live labels.",
+        "",
+    ]
+    if found.strata:
+        lines += [
+            "## P3: strata (class, 9 PM forecast bucket, region)",
+            "",
+            "| stratum | rows | dates | today | candidate | checked | worse by over 0.01 |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        lines += [
+            f"| {s.stratum} | {s.rows} | {s.dates} | {_f(s.brier_base)} | {_f(s.brier_new)} "
+            f"| {'yes' if s.checked else 'no'} | {'YES' if s.worse else 'no'} |"
+            for s in found.strata
+        ]
+        lines.append("")
+    lines += [
+        "## Level-free check (each model's own best logit shift per class)",
+        "",
+        "| class | rows | today's shift | today's Brier | candidate's shift | candidate's Brier |",
+        "|---|---|---|---|---|---|",
+    ]
+    lines += [
+        f"| {item.weather} | {item.rows} | {item.shift_base:+.2f} | {_f(item.brier_base)} "
+        f"| {item.shift_new:+.2f} | {_f(item.brier_new)} |"
+        for item in found.level_free
+    ]
+    rank = found.ranking
+    lines += [
+        "",
+        "## Within-day ranking (closed vs not closed pairs ranked the right way)",
+        "",
+        f"Every market-day with both outcomes (pre-registered): {rank.all_market_days} "
+        f"market-days, {rank.all_pairs} pairs: today's model {_f(rank.all_share_base)}, the "
+        f"candidate {_f(rank.all_share_new)}.",
+        f"Every market-day with both outcomes but those reported apart: {rank.market_days} "
+        f"market-days, {rank.pairs} pairs: today's model {_f(rank.share_base)}, the candidate "
+        f"{_f(rank.share_new)}.",
+        f"The split market-days alone (chosen by outcome, in sample): {rank.apart_market_days} "
+        "market-days, "
+        f"{rank.apart_pairs} pairs: today's model {_f(rank.apart_share_base)}, the candidate "
+        f"{_f(rank.apart_share_new)}.",
+    ]
+    if found.drop_training is not None:
+        base, new = found.drop_training.brier
+        lines += [
+            "",
+            "## P8: one training date left out of every fit",
+            "",
+            f"Pooled storm Brier with every training date: today's model {_f(base)}, the "
+            f"candidate {_f(new)}.",
+            "",
+            "| training date left out | today's model | candidate | candidate's change |",
+            "|---|---|---|---|",
+        ]
+        lines += [
+            f"| {_day(d)} | {_f(b)} | {_f(c)} | {c - new:+.5f} |"
+            for d, b, c in found.drop_training.by_date
+        ]
+    return "\n".join(lines) + "\n"
+
+
 __all__ = [
     "AdvisoryEvidence",
     "Base",
+    "Checks",
+    "Scored",
     "TermFold",
     "TermGates",
     "advisory_evidence",
     "advisory_table",
     "applies",
     "base_by_season",
+    "checks_markdown",
     "clustered_se",
     "design_of",
     "fit",
@@ -708,6 +1445,8 @@ __all__ = [
     "neighbor_mask",
     "publish",
     "report_markdown",
+    "run_checks",
+    "scored_from_folds",
     "signs_hold",
     "term_table",
     "walk_forward",

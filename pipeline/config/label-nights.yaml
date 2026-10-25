@@ -1,0 +1,62 @@
+# The label-night forecast extract's nights (snowlight predict night-extract,
+# .github/workflows/label-night-forecast-extract.yml): each school day D and time zone
+# whose 21:00 D-1 forecast the tuning candidates' backtest reads. Every district whose own
+# zone reaches 21:00 D-1 at that instant is read, so nothing here or in the extract says
+# which districts any other file labels. NDFD history starts in 2018-19.
+nights:
+  - {day: 2018-11-26, zone: America/Chicago}
+  - {day: 2019-01-23, zone: America/New_York}
+  - {day: 2019-02-04, zone: America/Los_Angeles}
+  - {day: 2019-02-05, zone: America/Los_Angeles}
+  - {day: 2019-02-06, zone: America/New_York}
+  - {day: 2019-02-11, zone: America/Los_Angeles}
+  - {day: 2019-02-20, zone: America/Chicago}
+  - {day: 2019-02-20, zone: America/Denver}
+  - {day: 2019-03-04, zone: America/Chicago}
+  - {day: 2019-03-04, zone: America/Denver}
+  - {day: 2019-03-08, zone: America/New_York}
+  - {day: 2019-08-20, zone: America/Denver}
+  - {day: 2020-12-17, zone: America/New_York}
+  - {day: 2021-02-01, zone: America/New_York}
+  - {day: 2021-02-03, zone: America/New_York}
+  - {day: 2021-02-16, zone: America/New_York}
+  - {day: 2021-02-22, zone: America/New_York}
+  - {day: 2021-03-11, zone: America/New_York}
+  - {day: 2021-05-10, zone: America/Los_Angeles}
+  - {day: 2021-11-10, zone: America/Los_Angeles}
+  - {day: 2021-12-06, zone: America/Chicago}
+  - {day: 2021-12-06, zone: America/New_York}
+  - {day: 2022-01-31, zone: America/New_York}
+  - {day: 2022-02-01, zone: America/New_York}
+  - {day: 2023-01-13, zone: America/New_York}
+  - {day: 2023-01-30, zone: America/Chicago}
+  - {day: 2023-02-24, zone: America/New_York}
+  - {day: 2023-02-28, zone: America/New_York}
+  - {day: 2023-03-14, zone: America/New_York}
+  - {day: 2023-03-29, zone: America/New_York}
+  - {day: 2024-01-09, zone: America/Chicago}
+  - {day: 2024-01-10, zone: America/New_York}
+  - {day: 2024-01-11, zone: America/Chicago}
+  - {day: 2024-01-16, zone: America/New_York}
+  - {day: 2024-01-19, zone: America/New_York}
+  - {day: 2024-01-22, zone: America/Chicago}
+  - {day: 2024-01-31, zone: America/Los_Angeles}
+  - {day: 2024-02-13, zone: America/New_York}
+  - {day: 2024-03-13, zone: America/New_York}
+  - {day: 2024-03-27, zone: America/New_York}
+  - {day: 2025-01-15, zone: America/Chicago}
+  - {day: 2025-01-21, zone: America/New_York}
+  - {day: 2025-01-27, zone: America/New_York}
+  - {day: 2025-02-11, zone: America/Chicago}
+  - {day: 2025-02-18, zone: America/Chicago}
+  - {day: 2025-02-21, zone: America/Denver}
+  - {day: 2025-03-19, zone: America/Chicago}
+  - {day: 2025-03-27, zone: America/Chicago}
+  - {day: 2025-04-16, zone: America/Chicago}
+  - {day: 2025-05-12, zone: America/Chicago}
+  - {day: 2025-11-13, zone: America/New_York}
+  - {day: 2026-01-26, zone: America/New_York}
+  - {day: 2026-02-18, zone: America/Chicago}
+  - {day: 2026-02-23, zone: America/New_York}
+  - {day: 2026-03-02, zone: America/Chicago}
+  - {day: 2026-04-01, zone: America/Chicago}

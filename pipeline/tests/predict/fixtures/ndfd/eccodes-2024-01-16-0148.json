@@ -1,0 +1,115 @@
+{
+ "about": "Sections 0 to 4 of the first message of each NDFD file of the 2024-01-16 01:48 UTC run (AWS noaa-ndfd-pds, wmo/<element>/2024/01/16/<heading>_KWBN_202401160148, the message at byte 80), cut from the whole message; the keys are what eccodes 2.49.0 read from the whole message, whose decoded grid equalled the repo's decode.",
+ "messages": {
+  "pop12": {
+   "eccodes": {
+    "Nx": 2145,
+    "Ny": 1377,
+    "dataDate": 20240116,
+    "dataTime": 200,
+    "discipline": 0,
+    "edition": 2,
+    "forecastTime": 0,
+    "indicatorOfUnitForTimeRange": 1,
+    "indicatorOfUnitOfTimeRange": 1,
+    "lengthOfTimeRange": 12,
+    "parameterCategory": 1,
+    "parameterNumber": 8,
+    "probabilityType": 1,
+    "productDefinitionTemplateNumber": 9,
+    "scaleFactorOfLowerLimit": -1,
+    "scaledValueOfLowerLimit": 2147483647,
+    "stepRange": "0-12",
+    "totalLength": 397559,
+    "validityDate": 20240116,
+    "validityTime": 1200
+   },
+   "grid_equal_to_eccodes": true,
+   "head_bytes": 189,
+   "offset": 80,
+   "url": "https://noaa-ndfd-pds.s3.amazonaws.com/wmo/pop12/2024/01/16/YDUZ98_KWBN_202401160148"
+  },
+  "qpf": {
+   "eccodes": {
+    "Nx": 2145,
+    "Ny": 1377,
+    "dataDate": 20240116,
+    "dataTime": 200,
+    "discipline": 0,
+    "edition": 2,
+    "forecastTime": 0,
+    "indicatorOfUnitForTimeRange": 1,
+    "indicatorOfUnitOfTimeRange": 1,
+    "lengthOfTimeRange": 6,
+    "parameterCategory": 1,
+    "parameterNumber": 8,
+    "productDefinitionTemplateNumber": 8,
+    "stepRange": "0-6",
+    "totalLength": 393521,
+    "validityDate": 20240116,
+    "validityTime": 600
+   },
+   "grid_equal_to_eccodes": true,
+   "head_bytes": 176,
+   "offset": 80,
+   "url": "https://noaa-ndfd-pds.s3.amazonaws.com/wmo/qpf/2024/01/16/YIUZ98_KWBN_202401160148"
+  },
+  "temp": {
+   "eccodes": {
+    "Nx": 2145,
+    "Ny": 1377,
+    "dataDate": 20240116,
+    "dataTime": 200,
+    "discipline": 0,
+    "edition": 2,
+    "forecastTime": 1,
+    "indicatorOfUnitOfTimeRange": 1,
+    "parameterCategory": 0,
+    "parameterNumber": 0,
+    "productDefinitionTemplateNumber": 0,
+    "stepRange": "1",
+    "totalLength": 1039842,
+    "validityDate": 20240116,
+    "validityTime": 300
+   },
+   "grid_equal_to_eccodes": true,
+   "head_bytes": 152,
+   "offset": 80,
+   "url": "https://noaa-ndfd-pds.s3.amazonaws.com/wmo/temp/2024/01/16/YEUZ98_KWBN_202401160148"
+  },
+  "wx": {
+   "eccodes": {
+    "Nx": 2145,
+    "Ny": 1377,
+    "dataDate": 20240116,
+    "dataTime": 200,
+    "discipline": 0,
+    "edition": 2,
+    "forecastTime": 1,
+    "indicatorOfUnitOfTimeRange": 1,
+    "parameterCategory": 1,
+    "parameterNumber": 192,
+    "productDefinitionTemplateNumber": 0,
+    "stepRange": "1",
+    "totalLength": 312192,
+    "validityDate": 20240116,
+    "validityTime": 300
+   },
+   "eccodes_largest_index": 314.0,
+   "first_strings": [
+    "<NoCov>:<NoWx>:<NoInten>:<NoVis>:",
+    "Patchy:ZF:<NoInten>:<NoVis>:",
+    "Patchy:BS:<NoInten>:<NoVis>:"
+   ],
+   "grid_equal_to_eccodes": true,
+   "head_bytes": 11906,
+   "last_strings": [
+    "Chc:RW:--:<NoVis>:^Chc:SW:--:<NoVis>:",
+    "Chc:S:-:1SM:"
+   ],
+   "offset": 80,
+   "strings": 315,
+   "url": "https://noaa-ndfd-pds.s3.amazonaws.com/wmo/wx/2024/01/16/YJUZ98_KWBN_202401160148"
+  }
+ }
+}

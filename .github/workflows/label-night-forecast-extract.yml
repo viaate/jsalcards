@@ -1,0 +1,68 @@
+# The label-night forecast extract (docs/predict.md "The label-night forecast extract"): the
+# Weather Service's forecast grids (NDFD) as they stood at 21:00 the evening before each night of
+# pipeline/config/label-nights.yaml, for every district whose own zone reaches 21:00 then:
+# temperature and apparent temperature at 5 to 8 AM, the 12-hour chance of precipitation, liquid,
+# snow and ice per 6-hour period, and the hourly weather strings. Streamed here on GitHub's
+# runners and never kept: about 12 to 25 MB a night read by range, decoded and dropped at once.
+# Each element's file, stamp, reference time and availability are kept (runs.parquet); the job
+# fails when any of them counts after its night's 21:00.
+#
+# Kept: NOAA's values only (values.parquet, wx.parquet, runs.parquet) and manifest.json with every
+# file's SHA-256, its rows, the districts and values per element and night, and the bytes kept
+# and streamed. Uploaded as the label-night-forecast-extract artifact (kept 90 days), which the
+# tuning lane downloads to pipeline/.cache/predict/label-nights/. Nothing is committed and
+# nothing is published. Free: a public repository's runners, public NOAA buckets, no key.
+#
+# It runs once when this file lands or changes (a push that changes it).
+name: label-night forecast extract
+
+on:
+  push:
+    paths:
+      - .github/workflows/label-night-forecast-extract.yml
+
+concurrency:
+  group: label-night-forecast-extract
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read # the Pages artifact of the deployed directory (S8-0)
+  deployments: read # the deployed directory's handshake (S8-0)
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: pipeline
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - run: uv sync --locked --no-dev
+
+      - run: >
+          uv run snowlight predict night-extract
+          --nights config/label-nights.yaml --workers 4
+          --out ../label-night-forecast-extract
+
+      # Uploaded even when a file counted after its night's 21:00, so the manifest can be read.
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: label-night-forecast-extract
+          path: label-night-forecast-extract/
+          retention-days: 90
+          if-no-files-found: error

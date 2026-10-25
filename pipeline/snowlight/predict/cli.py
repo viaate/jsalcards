@@ -57,6 +57,7 @@ from snowlight.predict import (
     terms_cli,
     terms_file,
     train,
+    tuning_cli,
 )
 from snowlight.predict.alerts_live import (
     LiveEvent,
@@ -206,6 +207,7 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
     check = actions.add_parser("backtest", help="walk-forward backtest (internal report)")
     check.add_argument("--work", type=Path, default=train.DEFAULT_OUT, help="labels folder")
     check.add_argument("--directory", type=Path, default=train.TrainPaths().directory)
+    labels_rule_options(check)
     check.set_defaults(handler=run_backtest)
 
     once = actions.add_parser("once", help="one serving pass")
@@ -257,8 +259,8 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
         "--out", type=Path, default=PIPELINE_ROOT / "out" / "internal" / "predict" / "headsup.json"
     )
     heads.set_defaults(handler=run_headsup)
-    forecast_history.register(actions)
-    terms_cli.register(actions)
+    for module in (forecast_history, terms_cli, tuning_cli):
+        module.register(actions)
 
 
 def _train_inputs(parser: argparse.ArgumentParser) -> None:
@@ -507,6 +509,31 @@ def run_train(args: argparse.Namespace) -> int:  # pragma: no cover - the real l
     return 0
 
 
+def labels_rule_options(parser: argparse.ArgumentParser) -> None:
+    """The walk-forward's training labels: per fold (the rule) or the whole archive's."""
+    parser.add_argument(
+        "--labels-rule",
+        choices=("fold", "whole"),
+        default="fold",
+        help="fold: each fold trains on its fold label files (the rule); whole: the whole "
+        "archive's labels (the rule before 2026-10-25, for comparison)",
+    )
+    parser.add_argument(
+        "--folds", type=Path, default=None, help="fold label files (default: WORK/folds)"
+    )
+
+
+def fold_set(
+    args: argparse.Namespace, seasons: Sequence[int], places: pool.Places, *, private: bool = False
+) -> "train.FoldSet | None":  # pragma: no cover - the real labels
+    """The fold label files ``--labels-rule fold`` reads, or ``None`` for ``whole``."""
+    if args.labels_rule == "whole":
+        return None
+    return train.read_fold_set(
+        args.folds or args.work / train.FOLDS, seasons, places, private=private
+    )
+
+
 def run_backtest(args: argparse.Namespace) -> int:  # pragma: no cover - the real labels
     """Run ``predict backtest``."""
     config = PredictConfig.load(args.config)
@@ -514,7 +541,16 @@ def run_backtest(args: argparse.Namespace) -> int:  # pragma: no cover - the rea
     usable = pool.usable_labels(labels, places)
     markets_path = args.work / "district-markets.json"
     markets = json.loads(markets_path.read_text(encoding="utf-8")) if markets_path.is_file() else {}
-    report = backtest_report(usable, places, config, labels=labels, markets=markets)
+    seasons = config.backtest.test_seasons
+    folds = fold_set(args, seasons, places)
+    report = backtest_report(
+        usable,
+        places,
+        config,
+        labels=labels,
+        markets=markets,
+        training=None if folds is None else folds.training,
+    )
     out = args.work / "backtest"
     out.mkdir(parents=True, exist_ok=True)
     write_json(out / "metrics.json", json_safe(report.metrics))
@@ -525,6 +561,7 @@ def run_backtest(args: argparse.Namespace) -> int:  # pragma: no cover - the rea
     if private is not None:
         private_labels, _private_table, private_places = private
         usable_private = pool.usable_labels(private_labels, private_places)
+        private_folds = fold_set(args, seasons, private_places, private=True)
         found = backtest_report(
             usable_private,
             private_places,
@@ -533,6 +570,7 @@ def run_backtest(args: argparse.Namespace) -> int:  # pragma: no cover - the rea
             markets=markets,
             names=NAMED_PRIVATE,
             days=PEMBROKE_DAYS,
+            training=None if private_folds is None else private_folds.training,
         )
         folder = out / "private"
         folder.mkdir(parents=True, exist_ok=True)
@@ -547,7 +585,13 @@ def run_backtest(args: argparse.Namespace) -> int:  # pragma: no cover - the rea
         with (folder / "report.md").open("a", encoding="utf-8") as handle:
             handle.write(
                 "\n".join(
-                    oracle_table(private_labels, weather, private_places, config.model.private())
+                    oracle_table(
+                        private_labels,
+                        weather,
+                        private_places,
+                        config.model.private(),
+                        training=None if private_folds is None else private_folds.training,
+                    )
                 )
                 + "\n"
             )
@@ -555,14 +599,22 @@ def run_backtest(args: argparse.Namespace) -> int:  # pragma: no cover - the rea
     return 0
 
 
-def oracle_table(
+def oracle_table(  # noqa: PLR0913 - the labels, the weather, the places, the settings, the cases
     labels: pl.DataFrame,
     weather: pl.DataFrame,
     places: pool.Places,
     settings: ModelSettings,
-) -> list[str]:  # pragma: no cover - the real labels
+    *,
+    training: backtest.FoldTraining | None = None,
+    names: Mapping[str, str] = NAMED_PRIVATE,
+    days: Sequence[date] = PEMBROKE_DAYS,
+) -> list[str]:
     """Each named private school on each named day, predicted walk-forward (fit on the
-    seasons before its own only) from its weather class that day, labeled or not."""
+    seasons before its own only) from its weather class that day, labeled or not.
+
+    ``labels`` give the days after a closing and the label column; the fit trains on their
+    usable rows (the whole archive's labels), or on ``training``'s fold labels of each day's
+    season under the per-fold rule (:func:`backtest.chances_on`)."""
     usable = pool.usable_labels(labels, places)
     rows = pool.rows_from_labels(usable, places, "no_school")
     delay_rows = pool.rows_from_labels(usable, places, "delay")
@@ -574,20 +626,22 @@ def oracle_table(
     outcome = {(row["district"], row["day"]): row for row in labels.iter_rows(named=True)}
     cells: list[tuple[str, int, int]] = []
     shown: list[tuple[str, date, int, bool]] = []
-    for unit in NAMED_PRIVATE:
-        for day in PEMBROKE_DAYS:
+    for unit in names:
+        for day in days:
             weather_class = classes.get((unit, day), 0)
             after = (unit, previous_school_day(day)) in closed
             key = pool.situation_of(weather_class, after).key
             cells.append((unit, pool.SITUATION_INDEX[key], season_of(day)))
             shown.append((unit, day, weather_class, after))
-    chances = backtest.chances_on(rows, delay_rows, places, cells, settings)
+    chances = backtest.chances_on(rows, delay_rows, places, cells, settings, training=training)
     lines = [
         "",
         "## Named private schools, every named day, predicted",
         "",
         "Walk-forward: each day's chance from its weather class that day (alerts issued by "
         "21:00 the evening before), fit on the seasons before its own only, labeled or not.",
+        "",
+        backtest.WHOLE_NOTE if training is None else backtest.PER_FOLD_NOTE,
         "",
         "| school | day | weather class | day after | chance | label |",
         "|---|---|---|---|---|---|",
@@ -596,7 +650,7 @@ def oracle_table(
         row = outcome.get((unit, day))
         label = "no morning read" if row is None else str(row["outcome"])
         lines.append(
-            f"| {NAMED_PRIVATE[unit]} ({unit}) | {day} | {_class_label(str(weather_class))} | "
+            f"| {names[unit]} ({unit}) | {day} | {_class_label(str(weather_class))} | "
             f"{'yes' if after else 'no'} | {'-' if chance is None else f'{chance:.2f}'} | "
             f"{label} |"
         )
@@ -633,15 +687,18 @@ def backtest_report(  # noqa: PLR0913 - the labels, the places, the settings and
     markets: Mapping[str, str] | None = None,
     names: Mapping[str, str] = NAMED_DISTRICTS,
     days: Sequence[date] = NAMED_DAYS,
+    training: backtest.FoldTraining | None = None,
 ) -> BacktestReport:
     """Run the walk-forward backtest on the usable labels (with a ``cluster`` column).
 
     ``labels`` (every row, unknown ones with why) and ``markets`` (district to its market)
-    word the named cases (``names`` on ``days``); without them the usable labels are used."""
+    word the named cases (``names`` on ``days``); without them the usable labels are used.
+    ``training``: each test season's fold labels (the per-fold rule); without it every fold
+    trains on the earlier seasons of ``usable``."""
     rows = pool.rows_from_labels(usable, places, "no_school")
     delay_rows = pool.rows_from_labels(usable, places, "delay")
     folds = backtest.walk_forward(
-        rows, delay_rows, places, config.backtest.test_seasons, config.model
+        rows, delay_rows, places, config.backtest.test_seasons, config.model, training=training
     )
     scored = backtest.scored_frame(folds, rows, places, usable)
     if scored.is_empty():
@@ -737,8 +794,18 @@ def backtest_report(  # noqa: PLR0913 - the labels, the places, the settings and
     for district, cluster in zip(known["district"], known["cluster"], strict=True):
         places_of.setdefault(district, cluster)
     cases = backtest.named_cases(known, scored, names, days, places_of)
+    comparison = None
+    if training is not None:
+        whole = backtest.walk_forward(
+            rows, delay_rows, places, config.backtest.test_seasons, config.model
+        )
+        comparison = backtest.compare_rules(folds, whole, rows, config.backtest.test_seasons)
+        metrics["per_fold_beside_whole"] = comparison.as_json()
     report_metrics = {**metrics, "reliability_by_region": by_region}
-    markdown = backtest.report_markdown(report_metrics, bins, judged, cases)
+    metrics["labels_rule"] = "whole" if training is None else "fold"
+    markdown = backtest.report_markdown(
+        report_metrics, bins, judged, cases, per_fold=training is not None, comparison=comparison
+    )
     return BacktestReport(metrics, markdown, backtest.reliability_svg(bins), judged)
 
 

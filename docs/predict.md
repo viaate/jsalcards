@@ -115,24 +115,34 @@ winter storm warning or advisory for the area.
   gives today's class and so today's base. The share in the sentence is true of those days
   (`tests/predict/test_truth.py`); it is not measured over every day any winter storm warning
   touched the district (the archive keeps one class per district-day).
-- Backtest (`out/internal/predict/backtest/report.md`, internal), with the truth rule above:
-  storm district-day Brier 0.1090 against 0.1188 for the national rate per class (B0), all
-  rows 0.0774 against 0.0844; pooled G1 passes with and without 2020-21. The truth rule
-  costs accuracy: before it (round 3, a 0.05 tolerance) the storm Brier was 0.0888, and the
-  national rate per class and region (B1, 0.1053) now does better than the model; that is
-  reported, not gated.
+- Backtest (`out/internal/predict/backtest/report.md`, internal), with the truth rule above
+  and, since 2026-10-25, the per-fold rule: each fold trains on labels built only from the
+  seasons before its test season (station audiences, gates and markets too; the fold label
+  files `folds/labels-before-YYYY-07-01.parquet` that `predict label-audit` writes; see the
+  label audit below); `--labels-rule whole` re-runs the earlier rule for comparison. Storm
+  district-day Brier 0.0612 against 0.0974 for the national rate per class (B0), all rows
+  0.0418 against 0.0665; pooled G1 passes with and without 2020-21. 177 storm rows of 2020-21
+  (179 rows in all) are not scored: the 2020-21 fold's labels hold no rows of their situation.
+  On the same 1,208 storm rows the earlier rule scored 0.1166 against B0's 0.1267; the report
+  says so under its rule line, with the rows each rule left unmodeled per season (and
+  `metrics.json` under `per_fold_beside_whole`). Under the earlier rule: 0.1090 against 0.1188 on
+  1,385 storm rows, all rows 0.0774 against 0.0844.
+  The truth rule costs accuracy: before it (round 3, a 0.05 tolerance) the storm Brier was
+  0.0888. The national rate per class and region (B1) scores 0.0659 (0.1053 under the earlier
+  rule); that is reported, not gated.
 - Piece 1 gate (spec addendum 2026-10-20 d): G4 (the leakage tests in `tests/predict`, run by
-  pytest with every gate; the report does not compute it) and pooled G1 (model against B0,
-  with and without 2020-21) gate piece 1, and both pass. G1 per season, G2 and G3 are
-  reported, not gated, because the model and B0 are judged on the same labels, which the
-  archive biases high under alerts:
-  - G1 by season (amended gate, addendum b): 2023-24 (567 storm rows) +0.0117 against B0,
-    over the 0.005 tolerance; the other seasons have under 300 storm rows: 2020-21 (185)
-    -0.0093, 2021-22 (20) +0.0121, 2022-23 (225) +0.0072, 2024-25 (131) -0.1524, 2025-26
-    (257) -0.0012.
-  - G2: every bin with enough rows and clusters is within its bound.
-  - G3: closings given 50% or more 91.4% against B0's 98.1% (B0 gives every storm class 50%
-    or more, so it catches nearly every closing), at precision 0.889 against B0's 0.896.
+  pytest with every gate, `test_fold_labels.py` among them; the report does not compute it) and
+  pooled G1 (model against B0, with and without 2020-21) gate piece 1, and both pass. G1 per
+  season, G2 and G3 are reported, not gated, because the model and B0 are judged on the same
+  labels, which the archive biases high under alerts (earlier rule in brackets):
+  - G1 by season (amended gate, addendum b): 2023-24 (567 storm rows) -0.0107 against B0, within
+    the 0.005 tolerance [+0.0117, over it]; the other seasons have under 300 storm rows: 2020-21
+    (8) -0.0600 [185 rows, -0.0093], 2021-22 (20) +0.0119 [+0.0121], 2022-23 (225) -0.1348
+    [+0.0072], 2024-25 (131) -0.0511 [-0.1524], 2025-26 (257) -0.0016 [-0.0012].
+  - G2: fails one bin: 0.8 to 0.9 (333 rows, 11 storm-day clusters, mean chance 0.872, observed
+    0.988) [every bin with enough rows and clusters within its bound].
+  - G3: closings given 50% or more 98.4% against B0's 100% at precision 0.941 against B0's
+    0.886 [91.4% against 98.1%, 0.889 against 0.896].
 - Launch gate (before the public launch, addendum d item 3): the storm classes' absolute
   levels are re-anchored on live-read days (complete daily reads of every list this winter)
   by piece 3's automatic retrain under its no-worse rule. Until then the alert-class chances
@@ -349,13 +359,18 @@ alert only within the heights it names.
   "Private schools near St. Ann closed or went remote on 3 in 10 of their recorded days like
   this." (`PooledBase.of`: `private_schools`).
 - Private backtest (`out/internal/predict/backtest/private/report.md`, internal, reported
-  apart from the districts'): storm-row Brier 0.0802 against B0's 0.0820 (B0 here is the
-  national rate per class over the private school-days of earlier seasons), all rows 0.0594 against 0.0609: pooled G1 passes. G2
-  passes (every bin with enough rows within its bound) and G3 passes (closings caught at
-  50% or more 100% against B0's 100%, precision 0.924 each). No season holds 300 storm rows,
-  so G1 by season is reported only. The report ends with Pembroke Hill's and Visitation
-  Catholic's named days, each predicted walk-forward (one of Pembroke Hill's 13 named days,
-  2025-02-18, has a morning read: no school, predicted 95%).
+  apart from the districts', per fold like theirs: `labels-private-before-YYYY-07-01.parquet`):
+  storm-row Brier 0.0711 against B0's 0.0771 on 169 storm rows (B0 here is the national rate
+  per class over the private school-days of earlier seasons), all rows 0.0468 against 0.0508:
+  pooled G1 passes (earlier rule: 0.0802 against 0.0820 on 251 storm rows, all rows 0.0594
+  against 0.0609). G2 and G3 pass (closings caught at 50% or more 100% against B0's 100%,
+  precision 0.923 each). No season holds 300 storm rows, so G1 by season is reported only. The
+  report ends with Pembroke Hill's and Visitation Catholic's named days, each predicted
+  walk-forward on its own season's fold labels (one of Pembroke Hill's 13 named days,
+  2025-02-18, has a morning read: no school, predicted 94% [95%]; the 2023-24 days that were
+  87% [87%] have no chance under the per-fold rule, since that fold's private labels hold no
+  day of their situation). On the 169 storm rows both rules score, the earlier rule scored
+  0.0731 against its B0's 0.0791.
 - Learning: `predict learn` re-anchors the districts' rates on days read live; it does not
   yet label private schools from live reads. Until it does (the first follow-up), the
   private chain's sentences count the archive's recorded days only, never days read live.
@@ -607,25 +622,38 @@ The gate fails (below), so they stay off.
   archive holds at most 2 such days for any district, so no district has one yet.
 
 Backtest v2 on the labels of 2026-10-25 (internal report; storm district-days of the test
-seasons 2019-20 to 2025-26; 2019-20 has no storm rows):
+seasons 2019-20 to 2025-26; 2019-20 has no storm rows), under the per-fold rule (each row's base
+and each fold's terms fit on labels built only from the seasons before; `--labels-rule whole`
+gives the earlier rule's report):
 
-- The gate fails: storm Brier 0.10898 with the base alone, 0.11580 with the terms (6.3% worse;
-  the gate asks 2% better), and 0.117 to 0.125 without 2020-21 (6.7% worse). G2 holds and every
-  sign holds. The season gate ("worse in at most 2 of 7 seasons") covers 1 season: only 2023-24
-  has the 300 storm rows piece 1's rule gates (0.08494 to 0.08350, better), so "worse in 0 of 1"
-  says little, and the pooled gate decides. Of the reported seasons, 2022-23 is worse (225 rows,
-  0.393 to 0.440); the lead may weigh it at turn-on. The report says both.
-- What drives it: in 2022-23 the advisory snow term fit on the seasons before it (penalty 0.3,
-  from almost only 2018-19's forecast rows) adds 2.91 log odds at 4 to 6 inches; 47 advisory
-  test rows there, 36% of them closed, went from a mean 77% to 94% (Brier 0.401 to 0.627), more
-  than the whole pooled loss. Round 1's account (the 9 PM window on warning days) was wrong:
-  there the cold days of 2024-25, counted over winter storm days, took the storm's snow term
-  (Brier 0.0036 to 0.1999). With the terms keyed on each day's own class, 2024-25 scores as the
-  base.
-- The penalty grid: the inner loop picks an end of it in 5 of 7 folds (0.3 in 2019-20 to
-  2022-23, 1000 in 2023-24). A grid widened to 0.03 and 10,000 picked its ends again and scored
-  worse (7.2%), so it was not kept: with one or two seasons holding forecast levels the inner
-  loop has too little to choose from.
+- The gate passes on the archive: storm Brier 0.06122 with the base alone, 0.05814 with the
+  terms (5.0% better; the gate asks 2% better), 0.062 to 0.059 without 2020-21 (5.0% better). G2
+  holds and every sign holds. Only 2023-24 has the 300 storm rows piece 1's rule gates (0.03015
+  to 0.02427, better); no reported season is worse (2022-23: 225 rows, 0.234 either way). This is
+  not evidence for turning the reasons on. The report-only checks find the gain is raised chances
+  on alert days (P9: 253 storm rows raised, 9 lowered), which counts as no evidence until live
+  labels, and it rests on two training dates (P8, the dates picked from the rows the per-fold
+  candidate's own fold fits move: with 2016-02-16 left out of every fit the base and the terms
+  both score 0.102, with 2023-03-14 left out both 0.124, against 0.061 and 0.058 with every
+  date). The committed terms file is unchanged and still records the gate as the earlier rule
+  judged it (failed, -6.3%, `labels_rule` whole), and `serve.reasons` stays off in the config,
+  so nothing serves the terms. The served terms fit keeps the earlier rule's bases, so `predict
+  terms` writes a terms file only under that rule (`--labels-rule whole`; any other run must be
+  `--report-only`, `terms_cli.terms_write_refusal`) and records the rule in the gate: a gate
+  judged per fold never stands for the served fit. Whether the served fit and its gate move to
+  the per-fold rule is the lead's call.
+- Under the earlier rule (the whole archive's labels in every fold) the gate failed: 0.10898 to
+  0.11580 (6.3% worse), 0.117 to 0.125 without 2020-21 (6.7% worse); 2023-24 0.08494 to 0.08350;
+  2022-23 worse (0.393 to 0.440). What drove it: in 2022-23 the advisory snow term fit on the
+  seasons before it (penalty 0.3, from almost only 2018-19's forecast rows) added 2.91 log odds at
+  4 to 6 inches; 47 advisory test rows there, 36% of them closed, went from a mean 77% to 94%
+  (Brier 0.401 to 0.627), more than the whole pooled loss. Under the per-fold rule the 2022-23
+  fold's labels hold none of those rows' forecast levels and its snow term is 0 there.
+- The penalty grid: the inner loop picks an end of it in 2 of 6 folds (0.3 in 2022-23 and
+  2023-24; under the earlier rule 5 of 7, 0.3 in 2019-20 to 2022-23 and 1000 in 2023-24). A grid
+  widened to 0.03 and 10,000 picked its ends again and scored worse under the earlier rule (7.2%),
+  so it was not kept: with one or two seasons holding forecast levels the inner loop has too
+  little to choose from.
 
 For the owner, the advisory chance by forecast snow (the 9 PM forecast's 50% value), before and
 after, computed through the serving path (`reasons.moved`, the published floor and ceiling)
@@ -647,13 +675,15 @@ over every deployed district's advisory base (median 74%, all 18,227 above 50%):
 - The snow lever has no held-out evidence. The under-half-inch step (-1.52 log odds, a 74%
   base to 38%) is an in-sample fit on 29 training rows and was never tested on rows the fit had
   not seen: walk-forward, no advisory test row under 0.5 in falls in a fold where that step
-  exists. The step at 6 in or more rests on 1 row. Walk-forward, 43 advisory test rows were
-  moved by the snow term (Brier 0.443 to 0.690, worse) and 71 by the ice term (0.091 to 0.079);
-  all advisory rows 0.275 to 0.301.
+  exists. The step at 6 in or more rests on 1 row. Walk-forward, 146 advisory test rows were
+  moved by the snow term (Brier 0.031 to 0.008) and none by the ice term; all advisory rows
+  0.102 to 0.093 (earlier rule: 43 rows 0.443 to 0.690, worse, 71 by the ice term 0.091 to
+  0.079, all advisory rows 0.275 to 0.301).
 - The ice term adds 3.43 log odds at 0.10 inch of ice or more: a 74% advisory base becomes 99%
   (80% of districts hit the ceiling). It is fit on storm-picked labels (addendum f) and swings
-  across folds (5.27 in 2019-20 to 2022-23, 0.08, 4.34, 3.43). The owner should see it before
-  turn-on.
+  across folds (0 in 2020-21 to 2023-24, then 2.31 in 2024-25 and 2025-26 under the per-fold
+  rule; 5.27 in 2019-20 to 2022-23, 0.08, 4.34, 3.43 under the earlier rule). The owner should see
+  it before turn-on.
 
 Replays through the serving path with the reasons on (real NDFD runs at 9 PM, s4's directory;
 phone and desktop shots in the build folder for the lead; rerun in round 5, every row below as
@@ -1131,3 +1161,163 @@ ended only at a time after that. It exits 1 when a code has
 rows in a season it cannot (Blizzard and Lake Effect Snow Watches after 2016-17, the Wind
 Chill Watch and Advisory after 2023-24, the Extreme Cold Watch and Cold Weather Advisory
 before 2024-25); on 2026-10-21 there were none. No class reads these yet.
+
+## Inputs for the tuning candidates (calc-data lane: data and checks only)
+
+Nothing on the site changes with this lane, and `predict.yml` serves exactly as before. It
+gathers, as known at 21:00 the evening before, what the tune lane's candidates read (7 AM
+temperature and the rain/snow line, when the snow falls, alert start, end and words), checks
+two possible leaks in today's labels and history, and adds report-only checks to backtest v2.
+The archive's labels come mostly from big storm days, so a backtest on them can veto an idea
+that hurts but cannot show one helps; turning anything on waits for live labels.
+
+**The label audit** (`snowlight predict label-audit`, internal, heavy lock). The labels build
+each station's audience (the districts it listed on 2 or more days) and its gates (populated
+captures, median rows) and the markets from the whole archive, later seasons included. The
+audit rebuilds them, for each test season, from the listings and reads before it, relabels the
+seasons before it and counts the training labels that change. On 2026-10-25 every fold changed
+far more than 1% of its training labels (11% in 2025-26 to 100% in 2016-17 and 2017-18; mostly
+a known label that has no row or is unknown when only earlier seasons are counted), so the
+walk-forward backtest's training labels depended on later seasons' lists. The served fit, which
+counts every past season, is not affected in kind.
+
+**The per-fold rule** (the lead's decision of 2026-10-25). `predict label-audit` also writes each
+test season's fold labels (`folds/labels-before-YYYY-07-01.parquet` and the private schools'
+`labels-private-before-YYYY-07-01.parquet` in the labels folder, with `manifest.json`: rows,
+known labels and SHA-256 of each; `labels.fold_label_days` builds them, and
+`tests/predict/test_labels.py` fails if a fold's labels move when a later season's listings or
+reads are added, through each channel: audiences, station captures, median rows and markets;
+`test_fold_labels.py` runs `train.run_labels` and `run_private_labels` on a stand-in archive). `predict backtest` and `predict terms` read them by default
+(`--labels-rule fold`): piece 1's folds, every row's walk-forward base, the terms' folds and
+the private report's named-days table fit only on the labels of their own fold
+(`backtest.walk_forward`, `backtest.chances_on`, `backtest_terms.base_by_season` and
+`walk_forward` with `training`; `tests/predict/test_fold_labels.py` fails if a fold reads
+another fold's or the whole archive's labels), and the test rows stay the whole archive's
+labels. A missing fold file stops the run rather than fall back. Known training labels by
+fold: 67 for 2019-20, 188, 319, 405, 647, 1,419 and 1,825 for 2025-26 (the whole archive's:
+438 to 2,049). The served model, the served terms and every served chance are unchanged: a real
+pass on 2026-10-25 wrote the same file with the code before and after, bar its `generated_at`,
+and the serving model's every rate hashed the same.
+
+Old and new, for each headline number (the earlier rule re-run with the new code reproduces
+every earlier figure):
+
+| figure | whole archive's labels | per-fold labels |
+|---|---|---|
+| piece 1 storm rows scored | 1,385 | 1,208 (177 of 2020-21 unmodeled) |
+| piece 1 storm Brier against B0 (pooled G1) | 0.1090 against 0.1188, pass | 0.0612 against 0.0974, pass |
+| the same, on the 1,208 rows both score | 0.1166 against 0.1267 | 0.0612 against 0.0974 |
+| piece 1 all rows against B0 | 0.0774 against 0.0844 | 0.0418 against 0.0665 |
+| G1, 2023-24 (567 storm rows) | +0.0117, over the tolerance | -0.0107, within |
+| G2 | pass | fails the 0.8 to 0.9 bin |
+| G3 (caught at 50%, B0) | 91.4%, 98.1% | 98.4%, 100% |
+| advisory no-school rate of the training labels, 2019-20 to 2025-26 folds | 0.77, 0.77, 0.77, 0.77, 0.61, 0.74, 0.74 | 0.13, 0.76, 0.74, 0.75, 0.74, 0.70, 0.72 |
+| advisory test rows' mean chance, 2022-23 (140 rows, 26% closed) | 77% (Brier 0.450) | 37% (Brier 0.196) |
+| advisory test rows' mean chance, 2023-24 (216 rows, 99.5% closed) | 59% (Brier 0.188) | 81% (Brier 0.047) |
+| private storm Brier against B0 | 0.0802 against 0.0820 (251 rows) | 0.0711 against 0.0771 (169 rows) |
+| backtest v2 storm Brier, base to terms | 0.10898 to 0.11580, 6.3% worse, fail | 0.06122 to 0.05814, 5.0% better, pass |
+| backtest v2 checks: vetoes | pooled 6.3% worse; advisory 4 to 6 in, Northeast | none |
+| P5, 90% interval of the Brier difference | -0.002 to +0.022 | -0.005 to -0.001 |
+| P8, base and terms without 2016-02-16 | 0.118, 0.116 | 0.102, 0.102 |
+| P8, the other dates (base, terms without each) | from the served terms: 2020-12-17 0.115, 0.122; 2019-02-06 0.092, 0.103; 2024-01-22 0.109, 0.116 | from the fold fits: 2023-03-14 0.124, 0.124; 2024-01-22 0.062, 0.060; 2023-02-28 0.061, 0.058 (the served terms' dates gave 0.071, 0.068; 0.102, 0.080; 0.062, 0.060) |
+| within-day ranking, every market-day (base, terms) | 10 market-days: 0.840, 0.858 | 9 market-days: 0.846, 0.847 |
+| within-day ranking, without the 4 split days; the split days alone | 0.856, 0.856 (6); 0.838, 0.859 (4) | 0.901, 0.905 (5); 0.839, 0.839 (4) |
+| Pembroke Hill 2025-02-18 (no school), named-days table | 95% | 94%, as the named cases give it |
+
+The per-fold labels drop the rows that existed only because a later list named the district,
+mostly no-school days, so the earlier folds train on fewer and quieter rows. Both the base and
+the terms score better on the archive's storm-picked labels, which can veto an idea but not show
+that one helps; the terms' gain is raised chances on alert days and leans on 2016-02-16, so
+nothing turns on from it.
+
+**Alerts as known at 21:00** (`snowlight predict alert-streams`, then `alert-classes`;
+`pipeline/snowlight/predict/alert_streams.py`). IEM's VTEC event record holds each event's
+first product and every follow-up with its issue time. For a zone at the snapshot, only the
+products issued by then count; the latest one that names the zone states the start (its VTEC
+begin, or its issue time when the event is already in effect, as the live path reads onset or
+effective), the end and the words; a CAN or UPG withdraws the zone from its issue time (rule
+D2). The type flags (snow, sleet, freezing rain, freezing drizzle, rain, mix, ice) and the
+elevation band (`sources/nws/elevation.py`) are kept, never the text. The fetch asks one record
+a second with the site's User-Agent, caches under `pipeline/.cache/predict/vtec-events/`
+(gitignored), takes the events whose recorded span can meet a label night's window first, and
+keeps the cached records of its events within the cap (`--cap`, 100 MB by default): it asks for
+no more once the room left is less than the largest record seen, and a record that would still
+pass the cap is dropped, not cached. (The first run, before that rule, stopped one record past
+the 100 MB cap, at 100,018,036 bytes; the lead's raised cap of 112,000,000 bytes holds every
+record.)
+`alert-classes` gives every district on the label dates its class by the history's rule and by
+the streams, and checks that the history side equals the labels' own class.
+
+On 2026-10-25 the fetch took all 2,606 event records of the 58 label dates (2,606 requests over
+three runs, no errors, 111,117,979 bytes cached; the lead raised the cap to 112,000,000 bytes
+for the last 252). With every stream read, the history side equals the labels' class on all
+2,388 known labels. A later product moved a zone's start across 09:00 on 61 zone-days (later)
+and 156 (earlier), none of them a labeled district-day, so that leak changes no label's class.
+As of 21:00, 59 of the 2,388 known labels (2.47%) take another class from the streams than from
+the history. These training labels carry a class that was no longer current at 21:00 the evening
+before, all from products issued before the snapshot (none from a later one):
+
+- 54 (all no school, all in the Kansas City market) on 2018-11-26 the history counts as
+  blizzard days: the Kansas City office (EAX) cancelled its blizzard warning for zone groups
+  there at 19:27 and 20:55 CST, before the snapshot; read product by product, the streams hold
+  no class-making alert in force for these districts at 21:00, while the history's season rows
+  still do.
+- 4 (all open) on 2023-03-14 the history counts as winter storm warning days: Mount Holly
+  (PHI) had replaced the warning for NJZ008 with an advisory (WW.Y NEW) at 20:30 EDT.
+- 1 (open) on 2019-02-04 the history counts as a day with no alert: Seattle (SEW) had extended
+  the WAZ503 advisory at 15:36 PST to 22:00, past 21:00, where the first product ended it at
+  18:00.
+
+Whether these labels are relabeled is rule D2's call (S7-F, lane F2): the training labels keep
+the history's class until then.
+
+**The label-night forecast extract** (`.github/workflows/label-night-forecast-extract.yml`,
+`snowlight predict night-extract`; `pipeline/snowlight/predict/night_extract.py`). For each
+(school day, time zone) of `pipeline/config/label-nights.yaml` (56 nights from 2018-19 on), every
+district whose own zone reaches 21:00 the evening before at that instant: snow, ice and liquid
+per 6-hour period, the 12-hour chance of precipitation (GRIB template 4.9, now read by
+`ndfd.py`), air and apparent temperature at 5 to 8 AM local, the snow and ice window totals as
+the forecast history keeps them, and the hourly NDFD weather strings (decoded from the files'
+section 2; each district's most common string among its schools, a tie going to the string
+first in that hour's message table) from 9 PM to noon. Snow, ice and apparent temperature come from the run the forecast
+history's 21:00 sample uses; temperature, the chance of precipitation, liquid and the weather
+strings each from that element's own newest file that counts by 21:00. Each file's stamp,
+reference time and availability are kept, and the job fails if any counts after 21:00. A dry
+run of two nights (2019-02-06 from NCEI, 2024-01-16 from AWS) matched the forecast history's
+21:00 codes for all 7,191 districts of each night. The readers were checked against eccodes
+2.49.0 on the first message of each file of the 2024-01-16 01:48 UTC run (chance of
+precipitation, liquid, temperature, weather): every head key and every decoded grid agree, and
+the weather table holds 315 strings, one more than the largest grid index. Those messages'
+sections 0 to 4 are test fixtures (`pipeline/tests/predict/fixtures/ndfd/`, with the eccodes
+keys). eccodes gives the first chance of precipitation message's step as 0-12 from its 02 UTC
+reference, though the period ends at 12 UTC; the reader takes the period as its end less its
+span (00 to 12 UTC). The workflow runs when its own file changes
+and keeps NOAA's values only, as the artifact `label-night-forecast-extract` with a SHA-256
+manifest (about 18 to 26 MB streamed and 170 KB kept a night).
+
+**5 AM airport reports** (`snowlight predict morning-obs`;
+`pipeline/snowlight/predict/morning_obs.py`). For the 05:00 pass only: at each labeled
+district's nearest ASOS station within 40 km, the last routine report at or before 05:00 local
+and at most 90 minutes old, its temperature and present weather codes and the flags read from
+them. One request a second to IEM, cached under `pipeline/.cache/predict/asos/`.
+
+**Snow cover (SNODAS).** Measured only: the label dates need 111 daily analyses; the daily
+files hold 3 to 35 MB (2.4 GB in all) and the snow depth member alone about 0.9 GB, over the
+100 MB cap, so nothing is fetched until the lead decides. Files from 2019-03 on were posted 7 to
+8 hours after their 06 UTC analysis time (the day's analysis is up by 9 PM); older files were
+rewritten years later, so their posting time cannot be shown and a night would use the analysis
+a day older.
+
+**Report-only checks in backtest v2** (`backtest_terms.run_checks`; `snowlight predict terms`
+writes `checks.md` and `checks.json` beside its report, which no gate and no terms file read;
+`--drop-training-dates` adds P8). For a candidate against today's model on the storm test rows:
+P3 strata (class, 9 PM forecast bucket, Northeast or the rest; a stratum of 30 or more rows on 2
+or more dates may be no worse by more than 0.01), P4 (each test date left out), P5 (storm test
+dates resampled 2,000 times, the 90% interval of the Brier difference), P8 (2016-02-16 and the 3
+training dates with the most rows the candidate moves, each left out of every fit, the base's
+too; under the per-fold rule the rows its own fold fits move in their fold labels, each
+district-day once, under the earlier rule the rows the served terms move), the raised-vs-lowered split (a gain from raised chances on alert days counts as no
+evidence), the level-free check (each model's own best logit shift per class) and the
+within-day ranking over every market-day with both outcomes (the pre-registered figure, then
+apart from it every market-day but the four split ones, and the split ones alone,
+in sample).

@@ -10,7 +10,7 @@ audit sample. The model itself is fit from those by :mod:`snowlight.predict.pool
 import bisect
 import json
 from collections import Counter
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
@@ -18,6 +18,7 @@ from typing import Final
 from zoneinfo import ZoneInfo
 
 import numpy as np
+import numpy.typing as npt
 import polars as pl
 
 from snowlight.predict import pool
@@ -35,21 +36,21 @@ from snowlight.predict.artifact import (
     Settings,
     Training,
 )
+from snowlight.predict.backtest import FoldRows
 from snowlight.predict.calendar import school_days, season_label
 from snowlight.predict.config import PIPELINE_ROOT, LabelSettings, PredictConfig
 from snowlight.predict.geography import REGION_OF, majority, neighbors
 from snowlight.predict.labels import (
     DayLit,
+    LabelChanges,
     LabelInputs,
     LitStatus,
     Outcome,
     ReadRecord,
-    audiences,
     carries,
-    district_markets,
-    label_days,
+    fold_label_days,
+    label_changes,
     parse_reads,
-    station_stats,
     storm_absences,
 )
 from snowlight.predict.situations import WeatherClass, Window
@@ -228,13 +229,12 @@ def history_places(
     return HistoryPlaces(reach, zone_of_school, {file.year: file.file.path for file in files})
 
 
-def weather_history(
-    places: HistoryPlaces, schools: pl.DataFrame, config: PredictConfig
-) -> tuple[pl.DataFrame, pl.DataFrame, dict[str, object]]:
-    """Each (district, day) whose class is above ``none``, each (private school, day) the same
-    way (its own school's class), and the counts behind them."""
-    weather = config.weather
-    window = Window(weather.window_from, weather.window_until, weather.snapshot_hour)
+def school_zones(
+    places: HistoryPlaces, schools: pl.DataFrame
+) -> tuple[pl.DataFrame, pl.DataFrame, list[str | None]]:
+    """The eligible schools' districts and the private schools (``school`` directory index,
+    ``district``), and each directory index's time zone for the class rule: an eligible
+    school's district's zone, a private school's own."""
     table = district_table(schools, places.zone_of_school)
     zone_of_district = dict(zip(table["district"], table["time_zone"], strict=True))
     eligible = eligible_schools(schools)
@@ -256,6 +256,17 @@ def weather_history(
         zone_by_index[index] = zone_of_district.get(district)
     for index in private_of_school["school"].to_list():
         zone_by_index[index] = places.zone_of_school.get(index)
+    return district_of_school, private_of_school, zone_by_index
+
+
+def weather_history(
+    places: HistoryPlaces, schools: pl.DataFrame, config: PredictConfig
+) -> tuple[pl.DataFrame, pl.DataFrame, dict[str, object]]:
+    """Each (district, day) whose class is above ``none``, each (private school, day) the same
+    way (its own school's class), and the counts behind them."""
+    weather = config.weather
+    window = Window(weather.window_from, weather.window_until, weather.snapshot_hour)
+    district_of_school, private_of_school, zone_by_index = school_zones(places, schools)
     rows = [
         row
         for season, path in sorted(places.files.items())
@@ -595,8 +606,15 @@ def run_labels(  # noqa: PLR0913, PLR0917 - the archive, the directory and the s
     weather: pl.DataFrame,
     config: PredictConfig,
     days: Sequence[date] | None = None,
-) -> pl.DataFrame:  # pragma: no cover - the real archive
-    """Label every school day of the archive's span (or ``days``)."""
+    before: date | None = None,
+) -> pl.DataFrame:
+    """Label every school day of the archive's span (or ``days``).
+
+    ``before``: label only the days before it, with the station audiences, the station gates
+    and the markets built from the listings and reads before it too (a walk-forward fold's
+    training labels, :func:`snowlight.predict.labels.fold_label_days`; the label audit,
+    :func:`label_audit`, and the fold label files, :func:`write_fold_labels`); the run's own
+    markets are left as they are."""
     eligible = eligible_schools(schools)
     by_district: dict[str, list[str]] = {}
     for district, school in zip(
@@ -609,11 +627,10 @@ def run_labels(  # noqa: PLR0913, PLR0917 - the archive, the directory and the s
         if zone is not None
     }
     run.eligible = frozenset(eligible["id"].to_list())
-    captures, median_rows = station_stats(run.reads)
     inputs = LabelInputs(
         eligible={district: tuple(ids) for district, ids in by_district.items()},
         zone_of=zone_of,
-        audience=audiences(run.listings, config.labels.audience_days),
+        audience={},
         reads=run.reads,
         market_of=run.market_of,
         weather={
@@ -621,18 +638,169 @@ def run_labels(  # noqa: PLR0913, PLR0917 - the archive, the directory and the s
             for district, day, value in weather.iter_rows()
         },
         district_of={school: district for district, ids in by_district.items() for school in ids},
-        captures=captures,
-        median_rows=median_rows,
     )
     days = list(days) if days is not None else archive_days(run, config)
-    labels = label_days(days, inputs, run.lit_for, config.labels)
-    markets = district_markets(run.listings, run.market_of)
-    run.markets = markets
+    labels, markets = fold_label_days(
+        days, inputs, run.listings, run.lit_for, config.labels, before
+    )
+    if before is None:
+        run.markets = markets
     states = dict(zip(table["district"], table["state"], strict=True))
     return storm_absences(_clustered(labels, markets, states), config.labels.storm_absence_share)
 
 
-def archive_days(run: ArchiveRun, config: PredictConfig) -> list[date]:  # pragma: no cover
+@dataclass(frozen=True, slots=True)
+class FoldAudit:
+    """One fold of the label audit: the test season and how its training labels change."""
+
+    season: int
+    changes: LabelChanges
+
+
+FOLDS: Final = "folds"
+"""The labels folder's subfolder of fold label files (:func:`fold_label_path`)."""
+
+
+def fold_start(season: int) -> date:
+    """The first day of ``season`` (a walk-forward fold whose test season it is starts then)."""
+    return date(season, 7, 1)
+
+
+def fold_label_path(folder: Path, season: int, *, private: bool = False) -> Path:
+    """The fold label file of test season ``season`` in ``folder``: the labels of the days
+    before it, built from the listings and reads before it only."""
+    stem = "labels-private" if private else "labels"
+    return folder / f"{stem}-before-{fold_start(season).isoformat()}.parquet"
+
+
+def fold_labels(  # noqa: PLR0913, PLR0917 - the archive, the directory and the settings
+    run: ArchiveRun,
+    schools: pl.DataFrame,
+    table: pl.DataFrame,
+    weather: pl.DataFrame,
+    config: PredictConfig,
+    seasons: Sequence[int],
+) -> dict[int, pl.DataFrame]:
+    """Each season's fold labels (:func:`run_labels` with ``before`` its first day)."""
+    return {
+        season: run_labels(run, schools, table, weather, config, before=fold_start(season))
+        for season in seasons
+    }
+
+
+def private_fold_labels(
+    run: ArchiveRun,
+    table: pl.DataFrame,
+    weather: pl.DataFrame,
+    folds: Mapping[int, pl.DataFrame],
+    config: PredictConfig,
+) -> dict[int, pl.DataFrame]:
+    """Each season's private fold labels (:func:`run_private_labels` with ``before`` its first
+    day and the districts' fold labels ``folds`` of the same season)."""
+    return {
+        season: run_private_labels(
+            run, table, weather, folds[season], config, before=fold_start(season)
+        )
+        for season in sorted(folds)
+    }
+
+
+def read_fold_labels(
+    folder: Path, seasons: Iterable[int], *, private: bool = False
+) -> dict[int, pl.DataFrame]:
+    """The fold label files of ``seasons`` (written by ``predict label-audit``).
+
+    Raises:
+        FileNotFoundError: a season's file is missing (the per-fold rule never falls back to
+            the whole archive's labels).
+        ValueError: a file holds a day of its test season or later.
+    """
+    found: dict[int, pl.DataFrame] = {}
+    for season in seasons:
+        path = fold_label_path(folder, season, private=private)
+        if not path.is_file():
+            raise FileNotFoundError(f"no fold labels for {season_label(season)}: {path}")
+        frame = pl.read_parquet(path)
+        if frame.height and frame["day"].max() >= fold_start(season):  # type: ignore[operator]
+            raise ValueError(f"{path.name} holds a day of {season_label(season)} or later")
+        found[season] = frame
+    return found
+
+
+@dataclass(frozen=True, slots=True)
+class FoldSet:
+    """The fold label files of some test seasons, as a fit reads them."""
+
+    usable: Mapping[int, pl.DataFrame]
+    """Test season to its fold labels a fit uses (:func:`pool.usable_labels`)."""
+    training: Mapping[int, FoldRows]
+    """Test season to its rows and delay rows, in the order of ``usable``."""
+
+    def days(self, season: int) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+        """The day ordinals of a season's rows and of its delay rows."""
+        frame = self.usable[season]
+        day = np.array([d.toordinal() for d in frame["day"].to_list()], dtype=np.int64)
+        delay = frame.filter(pl.col("outcome") != "no_school")
+        return day, np.array([d.toordinal() for d in delay["day"].to_list()], dtype=np.int64)
+
+
+def read_fold_set(
+    folder: Path, seasons: Iterable[int], places: pool.Places, *, private: bool = False
+) -> FoldSet:
+    """The fold label files of ``seasons`` (:func:`read_fold_labels`) as rows of ``places``."""
+    usable: dict[int, pl.DataFrame] = {}
+    training: dict[int, FoldRows] = {}
+    for season, frame in read_fold_labels(folder, seasons, private=private).items():
+        usable[season] = pool.usable_labels(frame, places)
+        training[season] = FoldRows(
+            pool.rows_from_labels(usable[season], places, "no_school"),
+            pool.rows_from_labels(usable[season], places, "delay"),
+        )
+    return FoldSet(usable, training)
+
+
+def label_audit(whole: pl.DataFrame, folds: Mapping[int, pl.DataFrame]) -> list[FoldAudit]:
+    """For every test season ``S`` of ``folds`` (each the labels :func:`run_labels` builds
+    with ``before`` the first day of ``S``), how many of the training labels (the seasons
+    before ``S``) of ``whole`` (:func:`run_labels` over the whole archive) change when the
+    station audiences, the station gates and the markets are rebuilt from the listings and
+    reads before ``S`` only (calc-research plan T1)."""
+    return [
+        FoldAudit(
+            season,
+            label_changes(whole.filter(pl.col("day") < fold_start(season)), folds[season]),
+        )
+        for season in sorted(folds)
+    ]
+
+
+def label_audit_markdown(found: Sequence[FoldAudit], limit: float) -> str:
+    """The label audit's internal report: per fold, the training labels and how many change."""
+    lines = [
+        "# Label audit: station audiences from the training seasons only (internal)",
+        "",
+        "Each fold rebuilds the station audiences, the station gates (captures, median rows) and",
+        "the markets from the listings and reads before its test season, relabels the seasons",
+        "before it, and compares them with the labels built from the whole archive.",
+        "",
+        "| test season | training labels | changed | added | share | over the limit |",
+        "|---|---:|---:|---:|---:|---|",
+    ]
+    for item in found:
+        change = item.changes
+        over = "yes" if change.share > limit else "no"
+        lines.append(
+            f"| {season_label(item.season)} | {change.training:,} | {change.changed:,} "
+            f"| {change.added:,} | {change.share:.2%} | {over} |"
+        )
+    lines += ["", f"Limit: {limit:.0%} of a fold's training labels.", "", "Moves (whole -> fold):"]
+    for item in found:
+        moves = ", ".join(f"{a} -> {b}: {n}" for (a, b), n in sorted(item.changes.pairs.items()))
+        lines.append(f"- {season_label(item.season)}: {moves or 'none'}")
+    return "\n".join(lines) + "\n"
+
+
+def archive_days(run: ArchiveRun, config: PredictConfig) -> list[date]:
     """Every school day of the archive's span."""
     first = run.reads[0].fetched_at.date()
     last = run.reads[-1].fetched_at.date()
@@ -658,9 +826,11 @@ def run_private_labels(  # noqa: PLR0913, PLR0917 - the archive, the units and t
     district_labels: pl.DataFrame,
     config: PredictConfig,
     days: Sequence[date] | None = None,
-) -> pl.DataFrame:  # pragma: no cover - the real archive
+    before: date | None = None,
+) -> pl.DataFrame:
     """Label every private school of ``table`` (:func:`private_table`) as its own unit, by
-    the districts' rules, from the same settled days. On a storm day, a private school absent
+    the districts' rules, from the same settled days (``before``: as :func:`run_labels`, with
+    ``district_labels`` the same fold's). On a storm day, a private school absent
     from the lists is unknown when at least half of the other labeled units of its market
     (districts and private schools) had no school (``absent_in_storm``)."""
     zone_of = {
@@ -669,21 +839,19 @@ def run_private_labels(  # noqa: PLR0913, PLR0917 - the archive, the units and t
         if zone is not None
     }
     run.private = frozenset(zone_of)
-    captures, median_rows = station_stats(run.reads)
     inputs = LabelInputs(
         eligible={unit: (unit,) for unit in zone_of},
         zone_of=zone_of,
-        audience=audiences(run.listings, config.labels.audience_days),
+        audience={},
         reads=run.reads,
         market_of=run.market_of,
         weather={(unit, day): WeatherClass(int(value)) for unit, day, value in weather.iter_rows()},
         district_of={unit: unit for unit in zone_of},
-        captures=captures,
-        median_rows=median_rows,
     )
     days = list(days) if days is not None else archive_days(run, config)
-    labels = label_days(days, inputs, run.lit_for, config.labels)
-    markets = run.markets or district_markets(run.listings, run.market_of)
+    labels, markets = fold_label_days(
+        days, inputs, run.listings, run.lit_for, config.labels, before
+    )
     states = dict(zip(table["district"], table["state"], strict=True))
     mine = _clustered(labels, markets, states)
     both = pl.concat([district_labels.select(mine.columns), mine], how="vertical")

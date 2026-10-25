@@ -1,0 +1,125 @@
+{
+ "event_exists": true,
+ "year": 2026,
+ "phenomena": "WW",
+ "significance": "Y",
+ "etn": 5,
+ "wfo": "HNX",
+ "report": {
+  "text": "140 \nWWUS46 KHNX 201951\nWSWHNX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service Hanford CA\n1251 PM PDT Tue Oct 20 2026\n\nCAZ323-326>328-330-331-210400-\n/O.NEW.KHNX.WW.Y.0005.261021T1800Z-261022T1800Z/\nYosemite NP outside of the valley-Upper San Joaquin River-Kaiser\nto Rodgers Ridge-Kings Canyon NP-Sequoia NP-South End of the\nUpper Sierra-\nIncluding the cities of Huntington Lake, Devils Postpile, Giant\nForest, Johnsondale, Tuolumne Meadows, Shaver Lake, Florence Lake,\nLodgepole, Lake Wishon, Lake Thomas Edison, Wawona, and Cedar Grove\n1251 PM PDT Tue Oct 20 2026\n\n...WINTER WEATHER ADVISORY IN EFFECT ABOVE 8,000 FEET FROM 11 AM\nWEDNESDAY TO 11 AM PDT THURSDAY...\n\n* WHAT...There is an 80% chance of 4 inches or more of snow along the\n  Tioga Pass and highway 120. There is a 50-60% chance for four\n  inches or more of snow above 8,000 feet in Tulare, Madera, and\n  Fresno counties.\n\n* WHERE...Above 8,000 feet in the Sierra Nevada.\n\n* WHEN...From 11 AM Wednesday to 11 AM PDT Thursday.\n\n* IMPACTS...Roads, and especially bridges and overpasses, will likely\n  become slick and hazardous.\n\n* ADDITIONAL DETAILS...Snowfall will affect traffic across Tioga\n  Highway/Pass.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nBe prepared for slippery roads. Slow down and use caution while\ndriving. If you are going outside, watch your first few steps taken\non stairs, sidewalks, and driveways. These surfaces could be icy and\nslippery, increasing your risk of a fall and injury.\n\n&&\n\n$$\n\nMC\n",
+  "valid": "2026-10-20T19:51:00Z",
+  "product_id": "202610201951-KHNX-WWUS46-WSWHNX"
+ },
+ "svs": [
+  {
+   "text": "755 \nWWUS46 KHNX 210332\nWSWHNX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service Hanford CA\n832 PM PDT Tue Oct 20 2026\n\nCAZ323-326>328-330-331-211200-\n/O.CON.KHNX.WW.Y.0005.261021T1800Z-261022T1800Z/\nYosemite NP outside of the valley-Upper San Joaquin River-Kaiser\nto Rodgers Ridge-Kings Canyon NP-Sequoia NP-South End of the\nUpper Sierra-\nIncluding the cities of Lake Wishon, Wawona, Lake Thomas Edison,\nTuolumne Meadows, Giant Forest, Lodgepole, Johnsondale, Cedar Grove,\nDevils Postpile, Huntington Lake, Shaver Lake, and Florence Lake\n832 PM PDT Tue Oct 20 2026\n\n...WINTER WEATHER ADVISORY REMAINS IN EFFECT FROM 11 AM WEDNESDAY TO\n11 AM PDT THURSDAY...\n\n* WHAT...There is an 80% chance of 4 inches or more of snow along the\n  Tioga Pass and highway 120. There is a 50-60% chance for four\n  inches or more of snow above 8,000 feet in Tulare, Madera, and\n  Fresno counties.\n\n* WHERE...Above 8,000 feet in the Sierra Nevada.\n\n* WHEN...From 11 AM Wednesday to 11 AM PDT Thursday.\n\n* IMPACTS...Roads, and especially bridges and overpasses, will likely\n  become slick and hazardous.\n\n* ADDITIONAL DETAILS...Snowfall will affect traffic across Tioga\n  Highway/Pass.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nBe prepared for slippery roads. Slow down and use caution while\ndriving. If you are going outside, watch your first few steps taken\non stairs, sidewalks, and driveways. These surfaces could be icy and\nslippery, increasing your risk of a fall and injury.\n\n&&\n\n$$\n\nBSO\n",
+   "valid": "2026-10-21T03:32:00Z",
+   "product_id": "202610210332-KHNX-WWUS46-WSWHNX"
+  },
+  {
+   "text": "269 \nWWUS46 KHNX 210335 CCA\nWSWHNX\n\nURGENT - WINTER WEATHER MESSAGE...CORRECTED\nNational Weather Service Hanford CA\n835 PM PDT Tue Oct 20 2026\n\nCAZ323-326>328-330-331-211200-\n/O.COR.KHNX.WW.Y.0005.261021T1800Z-261022T1800Z/\nYosemite NP outside of the valley-Upper San Joaquin River-Kaiser\nto Rodgers Ridge-Kings Canyon NP-Sequoia NP-South End of the\nUpper Sierra-\nIncluding the cities of Lake Wishon, Wawona, Lake Thomas Edison,\nTuolumne Meadows, Giant Forest, Lodgepole, Johnsondale, Cedar Grove,\nDevils Postpile, Huntington Lake, Shaver Lake, and Florence Lake\n835 PM PDT Tue Oct 20 2026\n\n...WINTER WEATHER ADVISORY REMAINS IN EFFECT FROM 11 AM WEDNESDAY TO\n11 AM PDT THURSDAY...\n\n* WHAT...There is an 80% chance of 4 inches or more of snow along the\n  Tioga Pass and highway 120. There is a 50-60% chance for four\n  inches or more of snow above 8,000 feet in Tulare, Madera, and\n  Fresno Counties.\n\n* WHERE...Above 8,000 feet in the Sierra Nevada.\n\n* WHEN...From 11 AM Wednesday to 11 AM PDT Thursday.\n\n* IMPACTS...Roads, and especially bridges and overpasses, will likely\n  become slick and hazardous.\n\n* ADDITIONAL DETAILS...Snowfall will affect traffic across Tioga\n  Highway/Pass.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nBe prepared for slippery roads. Slow down and use caution while\ndriving. If you are going outside, watch your first few steps taken\non stairs, sidewalks, and driveways. These surfaces could be icy and\nslippery, increasing your risk of a fall and injury.\n\n&&\n\n$$\n\nBSO\n",
+   "valid": "2026-10-21T03:35:00Z",
+   "product_id": "202610210335-KHNX-WWUS46-WSWHNX-CCA"
+  },
+  {
+   "text": "080 \nWWUS46 KHNX 211135\nWSWHNX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service Hanford CA\n435 AM PDT Wed Oct 21 2026\n\nCAZ323-326>328-330-331-212100-\n/O.CON.KHNX.WW.Y.0005.261021T1800Z-261022T1800Z/\nYosemite NP outside of the valley-Upper San Joaquin River-Kaiser\nto Rodgers Ridge-Kings Canyon NP-Sequoia NP-South End of the\nUpper Sierra-\nIncluding the cities of Tuolumne Meadows, Devils Postpile, Giant\nForest, Lake Wishon, Cedar Grove, Wawona, Johnsondale, Huntington\nLake, Lake Thomas Edison, Shaver Lake, Florence Lake, and Lodgepole\n435 AM PDT Wed Oct 21 2026\n\n...WINTER WEATHER ADVISORY REMAINS IN EFFECT FROM 11 AM THIS MORNING\nTO 11 AM PDT THURSDAY...\n\n* WHAT...There is an 70% chance of 4 inches or more of snow along the\n  Tioga Pass and highway 120. There is a 60-80% chance for four\n  inches or more of snow above 8,000 feet in Tulare, Madera, and\n  Fresno Counties.\n\n* WHERE...Above 8,000 feet in the Sierra Nevada.\n\n* WHEN...From 11 AM this morning to 11 AM PDT Thursday.\n\n* IMPACTS...Roads, and especially bridges and overpasses, will likely\n  become slick and hazardous.\n\n* ADDITIONAL DETAILS...Snowfall will affect traffic across Tioga\n  Highway/Pass.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nBe prepared for slippery roads. Slow down and use caution while\ndriving. If you are going outside, watch your first few steps taken\non stairs, sidewalks, and driveways. These surfaces could be icy and\nslippery, increasing your risk of a fall and injury.\n\n&&\n\n$$\n\nCMolina\n",
+   "valid": "2026-10-21T11:35:00Z",
+   "product_id": "202610211135-KHNX-WWUS46-WSWHNX"
+  },
+  {
+   "text": "144 \nWWUS46 KHNX 212044\nWSWHNX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service Hanford CA\n144 PM PDT Wed Oct 21 2026\n\nCAZ323-326>328-330-331-220500-\n/O.CON.KHNX.WW.Y.0005.000000T0000Z-261022T1800Z/\nYosemite NP outside of the valley-Upper San Joaquin River-Kaiser\nto Rodgers Ridge-Kings Canyon NP-Sequoia NP-South End of the\nUpper Sierra-\nIncluding the cities of Florence Lake, Lake Wishon, Devils Postpile,\nLake Thomas Edison, Lodgepole, Huntington Lake, Wawona, Shaver Lake,\nGiant Forest, Cedar Grove, Johnsondale, and Tuolumne Meadows\n144 PM PDT Wed Oct 21 2026\n\n...WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 11 AM PDT\nTHURSDAY...\n\n* WHAT...There is an 70% chance of 4 inches or more of snow along the\n  Tioga Pass and highway 120. There is a 60-80% chance for four\n  inches or more of snow above 8,000 feet in Tulare, Madera, and\n  Fresno Counties.\n\n* WHERE...Above 8,000 feet in the Sierra Nevada.\n\n* WHEN...Until 11 AM PDT Thursday.\n\n* IMPACTS...Roads, and especially bridges and overpasses, will likely\n  become slick and hazardous.\n\n* ADDITIONAL DETAILS...Snowfall will affect traffic across Tioga\n  Highway/Pass.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nBe prepared for slippery roads. Slow down and use caution while\ndriving. If you are going outside, watch your first few steps taken\non stairs, sidewalks, and driveways. These surfaces could be icy and\nslippery, increasing your risk of a fall and injury.\n\n&&\n\n$$\n\nJPK\n",
+   "valid": "2026-10-21T20:44:00Z",
+   "product_id": "202610212044-KHNX-WWUS46-WSWHNX"
+  },
+  {
+   "text": "961 \nWWUS46 KHNX 220431\nWSWHNX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service Hanford CA\n931 PM PDT Wed Oct 21 2026\n\nCAZ323-326>328-330-331-221300-\n/O.CON.KHNX.WW.Y.0005.000000T0000Z-261022T1800Z/\nYosemite NP outside of the valley-Upper San Joaquin River-Kaiser\nto Rodgers Ridge-Kings Canyon NP-Sequoia NP-South End of the\nUpper Sierra-\nIncluding the cities of Lake Thomas Edison, Lake Wishon, Huntington\nLake, Giant Forest, Florence Lake, Cedar Grove, Johnsondale, Tuolumne\nMeadows, Shaver Lake, Devils Postpile, Lodgepole, and Wawona\n931 PM PDT Wed Oct 21 2026\n\n...WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 11 AM PDT\nTHURSDAY...\n\n* WHAT...There is an 70% chance of 4 inches or more of snow along the\n  Tioga Pass and highway 120. There is a 60-80% chance for four\n  inches or more of snow above 8,000 feet in Tulare, Madera, and\n  Fresno Counties.\n\n* WHERE...Above 8,000 feet in the Sierra Nevada.\n\n* WHEN...Until 11 AM PDT Thursday.\n\n* IMPACTS...Roads, and especially bridges and overpasses, will likely\n  become slick and hazardous.\n\n* ADDITIONAL DETAILS...Snowfall will affect traffic across Tioga\n  Highway/Pass.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nBe prepared for slippery roads. Slow down and use caution while\ndriving. If you are going outside, watch your first few steps taken\non stairs, sidewalks, and driveways. These surfaces could be icy and\nslippery, increasing your risk of a fall and injury.\n\n&&\n\n$$\n\nBSO\n",
+   "valid": "2026-10-22T04:31:00Z",
+   "product_id": "202610220431-KHNX-WWUS46-WSWHNX"
+  },
+  {
+   "text": "878 \nWWUS46 KHNX 221237\nWSWHNX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service Hanford CA\n537 AM PDT Thu Oct 22 2026\n\nCAZ323-326>328-330-331-221800-\n/O.CON.KHNX.WW.Y.0005.000000T0000Z-261022T1800Z/\nYosemite NP outside of the valley-Upper San Joaquin River-Kaiser\nto Rodgers Ridge-Kings Canyon NP-Sequoia NP-South End of the\nUpper Sierra-\nIncluding the cities of Cedar Grove, Giant Forest, Florence Lake,\nWawona, Huntington Lake, Shaver Lake, Lodgepole, Johnsondale, Lake\nWishon, Lake Thomas Edison, Devils Postpile, and Tuolumne Meadows\n537 AM PDT Thu Oct 22 2026\n\n...WINTER WEATHER ADVISORY REMAINS IN EFFECT UNTIL 11 AM PDT THIS\nMORNING...\n\n* WHAT...There is an 70% chance of 4 inches or more of snow along the\n  Tioga Pass and highway 120. There is a 60-80% chance for four\n  inches or more of snow above 8,000 feet in Tulare, Madera, and\n  Fresno Counties.\n\n* WHERE...Above 8,000 feet in the Sierra Nevada.\n\n* WHEN...Until 11 AM PDT this morning.\n\n* IMPACTS...Roads, and especially bridges and overpasses, will likely\n  become slick and hazardous.\n\n* ADDITIONAL DETAILS...Snowfall will affect traffic across Tioga\n  Highway/Pass.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nBe prepared for slippery roads. Slow down and use caution while\ndriving. If you are going outside, watch your first few steps taken\non stairs, sidewalks, and driveways. These surfaces could be icy and\nslippery, increasing your risk of a fall and injury.\n\n&&\n\n$$\n\nCMolina\n",
+   "valid": "2026-10-22T12:37:00Z",
+   "product_id": "202610221237-KHNX-WWUS46-WSWHNX"
+  },
+  {
+   "text": "137 \nWWUS46 KHNX 221728\nWSWHNX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service Hanford CA\n1028 AM PDT Thu Oct 22 2026\n\nCAZ323-326>328-330-331-230000-\n/O.EXT.KHNX.WW.Y.0005.000000T0000Z-261023T0000Z/\nYosemite NP outside of the valley-Upper San Joaquin River-Kaiser\nto Rodgers Ridge-Kings Canyon NP-Sequoia NP-South End of the\nUpper Sierra-\nIncluding the cities of Devils Postpile, Lake Thomas Edison, Lake\nWishon, Giant Forest, Shaver Lake, Lodgepole, Florence Lake, Cedar\nGrove, Johnsondale, Huntington Lake, Tuolumne Meadows, and Wawona\n1028 AM PDT Thu Oct 22 2026\n\n...WINTER WEATHER ADVISORY NOW IN EFFECT UNTIL 5 PM PDT THIS\nAFTERNOON...\n\n* WHAT...Snow. Additional snow accumulations up to two inches.\n\n* WHERE...A portion of central California.\n\n* WHEN...Until 5 PM PDT this afternoon.\n\n* IMPACTS...Roads, and especially bridges and overpasses, will likely\n  become slick and hazardous.\n\nPRECAUTIONARY/PREPAREDNESS ACTIONS...\n\nBe prepared for slippery roads. Slow down and use caution while\ndriving. If you are going outside, watch your first few steps taken\non stairs, sidewalks, and driveways. These surfaces could be icy and\nslippery, increasing your risk of a fall and injury.\n\n&&\n\n$$\n\nBM\n",
+   "valid": "2026-10-22T17:28:00Z",
+   "product_id": "202610221728-KHNX-WWUS46-WSWHNX"
+  },
+  {
+   "text": "196 \nWWUS46 KHNX 222354\nWSWHNX\n\nURGENT - WINTER WEATHER MESSAGE\nNational Weather Service Hanford CA\n454 PM PDT Thu Oct 22 2026\n\nCAZ323-326>328-330-331-230100-\n/O.EXP.KHNX.WW.Y.0005.000000T0000Z-261023T0000Z/\nYosemite NP outside of the valley-Upper San Joaquin River-Kaiser\nto Rodgers Ridge-Kings Canyon NP-Sequoia NP-South End of the\nUpper Sierra-\nIncluding the cities of Wawona, Giant Forest, Devils Postpile,\nJohnsondale, Lodgepole, Tuolumne Meadows, Huntington Lake, Florence\nLake, Cedar Grove, Lake Wishon, Shaver Lake, and Lake Thomas Edison\n454 PM PDT Thu Oct 22 2026\n\n...WINTER WEATHER ADVISORY WILL EXPIRE AT 5 PM PDT THIS AFTERNOON...\n\nLight snow showers are possible through this evening.\n\n$$\n\nBSO\n",
+   "valid": "2026-10-22T23:54:00Z",
+   "product_id": "202610222354-KHNX-WWUS46-WSWHNX"
+  }
+ ],
+ "utc_issue": "2026-10-21T18:00:00Z",
+ "utc_expire": "2026-10-23T00:00:00Z",
+ "ugcs": [
+  {
+   "ugc": "CAZ327",
+   "name": "Kaiser to Rodgers Ridge",
+   "status": "EXP",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2026-10-20T19:51:00Z",
+   "utc_issue": "2026-10-21T18:00:00Z",
+   "utc_init_expire": "2026-10-22T18:00:00Z",
+   "utc_expire": "2026-10-23T00:00:00Z",
+   "utc_updated": "2026-10-22T23:54:00Z"
+  },
+  {
+   "ugc": "CAZ323",
+   "name": "Yosemite NP outside of the valley",
+   "status": "EXP",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2026-10-20T19:51:00Z",
+   "utc_issue": "2026-10-21T18:00:00Z",
+   "utc_init_expire": "2026-10-22T18:00:00Z",
+   "utc_expire": "2026-10-23T00:00:00Z",
+   "utc_updated": "2026-10-22T23:54:00Z"
+  },
+  {
+   "ugc": "CAZ326",
+   "name": "Upper San Joaquin River",
+   "status": "EXP",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2026-10-20T19:51:00Z",
+   "utc_issue": "2026-10-21T18:00:00Z",
+   "utc_init_expire": "2026-10-22T18:00:00Z",
+   "utc_expire": "2026-10-23T00:00:00Z",
+   "utc_updated": "2026-10-22T23:54:00Z"
+  },
+  {
+   "ugc": "CAZ328",
+   "name": "Kings Canyon NP",
+   "status": "EXP",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2026-10-20T19:51:00Z",
+   "utc_issue": "2026-10-21T18:00:00Z",
+   "utc_init_expire": "2026-10-22T18:00:00Z",
+   "utc_expire": "2026-10-23T00:00:00Z",
+   "utc_updated": "2026-10-22T23:54:00Z"
+  },
+  {
+   "ugc": "CAZ330",
+   "name": "Sequoia NP",
+   "status": "EXP",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2026-10-20T19:51:00Z",
+   "utc_issue": "2026-10-21T18:00:00Z",
+   "utc_init_expire": "2026-10-22T18:00:00Z",
+   "utc_expire": "2026-10-23T00:00:00Z",
+   "utc_updated": "2026-10-22T23:54:00Z"
+  },
+  {
+   "ugc": "CAZ331",
+   "name": "South End of the Upper Sierra",
+   "status": "EXP",
+   "hvtec_nwsli": null,
+   "utc_product_issue": "2026-10-20T19:51:00Z",
+   "utc_issue": "2026-10-21T18:00:00Z",
+   "utc_init_expire": "2026-10-22T18:00:00Z",
+   "utc_expire": "2026-10-23T00:00:00Z",
+   "utc_updated": "2026-10-22T23:54:00Z"
+  }
+ ]
+}

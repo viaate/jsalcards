@@ -115,3 +115,48 @@ def framed(messages: Iterable[bytes], heading: str = "YSUZ98 KWBN 060246") -> by
 def utc(text: str) -> datetime:
     """A UTC time from ``YYYY-MM-DDTHH:MM``."""
     return datetime.fromisoformat(text).replace(tzinfo=UTC)
+
+
+def as_probability(raw: bytes, end: datetime, span_hours: float) -> bytes:
+    """A template 4.8 message (:func:`message`) as template 4.9, the chance of precipitation's:
+    the same interval, the probability octets before its end."""
+    handle = eccodes.codes_new_from_message(raw)
+    try:
+        eccodes.codes_set(handle, "productDefinitionTemplateNumber", 9)
+        for name, value in (
+            ("year", end.year),
+            ("month", end.month),
+            ("day", end.day),
+            ("hour", end.hour),
+            ("minute", end.minute),
+            ("second", 0),
+        ):
+            eccodes.codes_set(handle, f"{name}OfEndOfOverallTimeInterval", value)
+        eccodes.codes_set(handle, "indicatorOfUnitForTimeRange", 0)
+        eccodes.codes_set(handle, "lengthOfTimeRange", round(span_hours * 60))
+        return bytes(eccodes.codes_get_message(handle))
+    finally:
+        eccodes.codes_release(handle)
+
+
+def with_strings(raw: bytes, strings: Iterable[str], bits: int = 7) -> bytes:
+    """A message with NDFD's weather strings in a section 2 put after its section 1 (local use,
+    version 1, one group of simple packed characters, each string ending in a zero)."""
+    chars = b"".join(text.encode("ascii") + b"\0" for text in strings)
+    packed = np.packbits(
+        np.unpackbits(np.frombuffer(chars, dtype=np.uint8)[:, None], axis=1)[:, 8 - bits :]
+    ).tobytes()
+    body = (
+        bytes([1])
+        + (1).to_bytes(2, "big")
+        + len(chars).to_bytes(4, "big")
+        + bytes(4)  # reference value 0.0
+        + bytes(2)  # binary scale factor 0
+        + bytes([bits, 1])
+        + packed
+    )
+    section = (len(body) + 5).to_bytes(4, "big") + bytes([2]) + body
+    first = int.from_bytes(raw[16:20], "big")
+    out = bytearray(raw[: 16 + first] + section + raw[16 + first :])
+    out[8:16] = len(out).to_bytes(8, "big")
+    return bytes(out)
