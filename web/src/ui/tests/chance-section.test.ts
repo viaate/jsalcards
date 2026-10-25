@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -242,5 +246,57 @@ describe('the chance section', () => {
     expect(section.querySelector('.chart')).toBeNull();
     expect(section.querySelector('.why')).toBeNull();
     expect(section.querySelector('.delay')).toBeNull();
+  });
+
+  it('with few local records, shows the number lighter and says so on its own line under the meaning', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    const section = show({ ...chance(true), fewRecords: chanceCopy.fewRecords });
+    expect(text(section, '.number')).toEqual(['64%']);
+    expect(section.querySelectorAll('.number.is-thin')).toHaveLength(1);
+    expect(text(section, '.few')).toEqual(['Few local records']);
+    // Directly under "Chance of no school Tuesday", before what moved it.
+    const meaning = section.querySelector('.meaning');
+    expect(meaning?.nextElementSibling?.className).toMatch(/\bfew\b/u);
+    expect(meaning?.nextElementSibling?.nextElementSibling?.className).toMatch(/\bchange\b/u);
+    expect(text(section, '.meaning')).toEqual(['64% Chance of no school Tuesday']);
+  });
+
+  it('without the flag, shows the number and its meaning as before', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    const section = show(chance(true));
+    expect(section.querySelector('.few')).toBeNull();
+    expect(section.querySelector('.is-thin')).toBeNull();
+    expect(section.textContent).not.toContain(chanceCopy.fewRecords);
+  });
+});
+
+describe('the lighter number', () => {
+  /** WCAG relative luminance of a #rrggbb or #rgb color. */
+  function luminance(hex: string): number {
+    const full = hex.length === 4 ? hex.replace(/[0-9a-f]/giu, (c) => c + c) : hex;
+    const [r, g, b] = [1, 3, 5].map((i) => {
+      const v = Number.parseInt(full.slice(i, i + 2), 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
+  }
+
+  it('is a theme gray at 4.5:1 or more on every surface a panel sits on', () => {
+    const css = readFileSync(
+      path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../styles/global.css'),
+      'utf8',
+    );
+    const token = (name: string): string => {
+      const found = new RegExp(`--${name}:\\s*(#[0-9a-f]{3,6});`, 'iu').exec(css)?.[1];
+      if (found === undefined) throw new Error(`no --${name}`);
+      return found;
+    };
+    // The site has one theme: these tokens, dark, on :root only.
+    expect(css.match(/--text-2:/gu)).toHaveLength(1);
+    const gray = luminance(token('text-2'));
+    for (const surface of ['bg', 'surface-1', 'surface-2']) {
+      const ratio = (gray + 0.05) / (luminance(token(surface)) + 0.05);
+      expect(ratio, surface).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

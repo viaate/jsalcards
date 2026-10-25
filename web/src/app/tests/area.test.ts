@@ -1115,3 +1115,59 @@ describe('an area with its closings at a live root', () => {
     });
   });
 });
+
+describe('few local records over an area', () => {
+  /** A forecast whose base is the nation's record, few local records (made up). */
+  function thin(chance: number): unknown {
+    const plain = forecast(chance) as { why: { base: unknown } };
+    return {
+      ...plain,
+      why: {
+        base: { kind: 'pooled', scope: 'nation', points: Math.round(chance * 100), thin: true },
+        reasons: [],
+      },
+    };
+  }
+
+  /** The predictions file with Kansas City 33's and Center's Tuesday as given. */
+  function predictions(kansasCity: unknown, center: unknown): PredictionsFile {
+    const [first, second, third] = (PREDICTIONS as unknown as { districts: object[] }).districts;
+    return {
+      ...PREDICTIONS,
+      districts: [
+        { ...first, days: [{ state: 'no_threat' }, kansasCity] },
+        { ...second, days: [{ state: 'no_threat' }, center] },
+        third,
+      ],
+    } as unknown as PredictionsFile;
+  }
+
+  /** Only the area's public schools of Kansas City 33 and Center, with nothing posted. */
+  const PUBLIC: AreaRecord = { ...AREA, own: AREA.own.slice(0, 3), near: [] };
+
+  function chanceOf(file: PredictionsFile, area: AreaRecord = PUBLIC, closings = false) {
+    return areaView(
+      input({
+        area,
+        live: { closings: closings ? CLOSINGS : null, covered: null, predictions: file },
+      }),
+    )?.chance;
+  }
+
+  it('says it where every school counted has a few-local-records chance', () => {
+    const one: AreaRecord = { ...AREA, own: AREA.own.slice(0, 2), near: [] };
+    const alone = chanceOf(predictions(thin(0.74), forecast(0.31)), one);
+    expect(alone?.number).toBe('74');
+    expect(alone?.fewRecords).toBe('Few local records');
+    // Two districts, each the nation's record for want of local days.
+    expect(chanceOf(predictions(thin(0.74), thin(0.74)))?.fewRecords).toBe('Few local records');
+  });
+
+  it('says nothing where any part of the number is not a few-local-records chance', () => {
+    expect(areaView(input())?.chance?.fewRecords).toBeNull();
+    // A district with its own records beside a thin one.
+    expect(chanceOf(predictions(thin(0.74), forecast(0.31)))?.fewRecords).toBeNull();
+    // A posted closing and a school with no weather threat count in it too.
+    expect(chanceOf(predictions(thin(0.74), thin(0.74)), AREA, true)?.fewRecords).toBeNull();
+  });
+});

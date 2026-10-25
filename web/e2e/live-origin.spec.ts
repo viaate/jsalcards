@@ -44,7 +44,7 @@ import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
 import { copy } from '../src/copy';
-import { chanceFormat } from '../src/copy-chance';
+import { chanceCopy, chanceFormat } from '../src/copy-chance';
 import { format } from '../src/copy-format';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -322,6 +322,20 @@ const STORM_FORECAST = {
     ],
   },
   events: [],
+};
+
+/**
+ * SYNTHETIC: an advisory day whose base is the nation's record, as a district whose region holds
+ * too few recorded days of the weather gets it (spec addendum 2026-10-24 e, E3b): few local
+ * records. Compact, as the pipeline writes it.
+ */
+const NATION_BASE = { kind: 'pooled', points: 74, scope: 'nation', weather: 'advisory' };
+const THIN_FORECAST = {
+  state: 'forecast',
+  p_no_school: 0.74,
+  p_delay: 0.01,
+  reasons: [0],
+  why: { base: { ...NATION_BASE, thin: true } },
 };
 
 /** What the live origin answers, and every request it was sent. */
@@ -871,6 +885,50 @@ for (const [device, options] of DEVICES) {
       await expect(panel.locator('.number')).toHaveText('37%', SETTLE);
       expect(area.problems).toEqual([]);
       await area.context.close();
+    });
+
+    test('a chance with few local records shows lighter with its line under the meaning, and none without the flag', async ({
+      browser,
+    }) => {
+      const { live } = theSite();
+      live.body = closings('2026-01-12T12:42:00Z', []);
+      const serve = (today: unknown): void => {
+        live.predictions = predictions([
+          { district: 0, time_zone: ZONE, neighbors: [], days: [today, today] },
+        ]);
+      };
+      serve(THIN_FORECAST);
+      const school = await visit(browser, options, { query: `?school=${ALPHA}` });
+      const section = school.page.locator('aside.detail .chance');
+      const number = section.locator('.number');
+      await expect(number).toHaveText('74%', SETTLE);
+      await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
+      await expect(section.locator('.few')).toHaveText(chanceCopy.fewRecords);
+      await expect(section.locator('.meaning + .few')).toHaveCount(1);
+      await expect(number).toHaveClass(/\bis-thin\b/u);
+      await expect(section.locator('.sum > li').first()).toContainText('winter advisory days');
+      const lighter = await number.evaluate((node) => getComputedStyle(node).color);
+      expect(lighter).toBe('rgb(163, 163, 163)');
+      expect(school.problems).toEqual([]);
+      await school.context.close();
+
+      // The same day from a file with the flag off, and from one written before it.
+      for (const why of [{ base: { ...NATION_BASE, thin: false } }, { base: NATION_BASE }]) {
+        serve({ ...THIN_FORECAST, why });
+        const plain = await visit(browser, options, { query: `?school=${ALPHA}` });
+        const shown = plain.page.locator('aside.detail .chance');
+        await expect(shown.locator('.number')).toHaveText('74%', SETTLE);
+        await expect(shown.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
+        await expect(shown.locator('.few')).toHaveCount(0);
+        await expect(shown.locator('.number')).not.toHaveClass(/\bis-thin\b/u);
+        await expect(shown).not.toContainText(chanceCopy.fewRecords);
+        const color = await shown
+          .locator('.number')
+          .evaluate((node) => getComputedStyle(node).color);
+        expect(color).toBe('rgb(245, 245, 245)');
+        expect(plain.problems).toEqual([]);
+        await plain.context.close();
+      }
     });
 
     test('a private school panel shows its own chance from the live root, counted over private schools', async ({

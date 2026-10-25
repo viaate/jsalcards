@@ -81,6 +81,7 @@ export const A_DETAIL: ForecastDetail = {
     heavy: { first: 6, last: 8 },
   },
   why: A_WHY,
+  thin: false,
   record: A_RECORD,
   events: [],
 };
@@ -105,6 +106,7 @@ export const B_DETAIL: ForecastDetail = {
       { kind: 'icy_roads', points: 4, inches: 8 },
     ],
   },
+  thin: false,
   record: {
     proves: 'base',
     inches: null,

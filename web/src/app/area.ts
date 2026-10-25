@@ -43,7 +43,7 @@
 import { STATUS_KEYS, copy } from '../copy';
 import type { StatusKey } from '../copy';
 import { areaFormat } from '../copy-area';
-import { chanceFormat } from '../copy-chance';
+import { chanceCopy, chanceFormat } from '../copy-chance';
 import type { Zones } from '../copy-chance';
 import { format } from '../copy-format';
 import { AREA_MIN_SCHOOLS, AREA_NEAR_MILES } from '../data/areas-format';
@@ -108,6 +108,13 @@ export interface AreaChanceView {
   readonly number: string;
   /** "Chance of no school Tuesday". */
   readonly meaning: string;
+  /**
+   * "Few local records", under the meaning, where every school the chance counts is counted by
+   * a forecast whose base names the nation for want of the region's days (`why.base.thin`):
+   * then every part of the number is a few-local-records chance, and it shows lighter. Null
+   * where any part is a posted status, a day with no threat, or a chance with local records.
+   */
+  readonly fewRecords: string | null;
   /** Who decides, most students first. */
   readonly why: readonly AreaWhyRow[];
   /** How many of the area's schools the chance leaves out, and why; null when it counts them all. */
@@ -313,6 +320,10 @@ export function areaChance(
   });
   if (students <= 0) return null;
   const chance = sum / students;
+  const thin = counted.every(
+    (count, i) =>
+      count === null || (count.how === 'forecast' && days[i]?.shown?.detail?.thin === true),
+  );
 
   // Who decides: a district, or a school outside one deciding for itself, and what it counts as.
   interface Decider {
@@ -442,6 +453,7 @@ export function areaChance(
     day,
     number,
     meaning,
+    fewRecords: thin ? chanceCopy.fewRecords : null,
     why,
     left,
     chart,

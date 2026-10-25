@@ -165,6 +165,12 @@ export interface ForecastDetail {
   readonly busesAt: Date | null;
   readonly hours: HoursDetail | null;
   readonly why: WhyDetail | null;
+  /**
+   * The base names the nation because the district's region holds too few recorded days of the
+   * weather (`why.base.thin`): few local records. Read from the base alone, so it holds even
+   * where the sum's other parts do not read; false where the file does not say it.
+   */
+  readonly thin: boolean;
   readonly record: RecordDetail | null;
   readonly events: readonly EventDetail[];
 }
@@ -175,6 +181,7 @@ export const NO_DETAIL: ForecastDetail = Object.freeze({
   busesAt: null,
   hours: null,
   why: null,
+  thin: false,
   record: null,
   events: [],
 });
@@ -422,6 +429,22 @@ function whyOf(value: unknown, context: WhyContext): WhyDetail | null {
   return { base, reasons };
 }
 
+/**
+ * Whether a forecast's base says few local records: a pooled base over the nation's recorded
+ * days with the flag set, as the contract allows it only there (never one read live). A flag
+ * on any other base, or one that is not `true`, says nothing.
+ */
+function thinOf(value: unknown): boolean {
+  const base = fields(fields(value)?.base);
+  return (
+    base !== null &&
+    base.thin === true &&
+    base.kind === 'pooled' &&
+    base.scope === 'nation' &&
+    (base.live ?? false) === false
+  );
+}
+
 function recordOf(value: unknown, day: LocalDate): RecordDetail | null {
   const record = fields(value);
   if (record === null) return null;
@@ -521,6 +544,7 @@ export function forecastDetail(value: unknown, context: DetailContext): Forecast
     busesAt,
     hours,
     why: whyOf(forecast.why, { ...context, busesAt, hours }),
+    thin: thinOf(forecast.why),
     record: recordOf(forecast.record, day),
     events: eventsOf(forecast.events, generatedAt),
   };

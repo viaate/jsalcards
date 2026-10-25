@@ -41,6 +41,8 @@ function deepFreeze<T>(value: T): T {
 export const chanceCopy = /* @__PURE__ */ deepFreeze({
   /** Before the weekday: "Chance of no school Tuesday". */
   noSchool: 'Chance of no school',
+  /** Under it, where the chance is the nation's record for want of the region's days. */
+  fewRecords: 'Few local records',
   /** Before the chance: "How we got 64%". */
   howWeGot: 'How we got',
   /** The chart's titles. */

@@ -121,6 +121,25 @@ describe('AreaPanel', () => {
     expect(panel.querySelector('.counts')).toBeNull();
   });
 
+  it('with few local records, shows the chance lighter and says so under its meaning', () => {
+    const chance = {
+      day: '2026-01-13',
+      number: '74',
+      meaning: 'Chance of no school Tuesday',
+      fewRecords: 'Few local records',
+      why: [{ key: 'a', number: '74%', text: 'Test Village decides for 1 school here.' }],
+      left: null,
+      chart: null,
+      chartOf: null,
+      announces: () => null,
+    };
+    const { panel } = show({ ...VIEW, chance });
+    expect(panel.querySelector('.number.is-thin')?.textContent.trim()).toBe('74%');
+    const meaning = panel.querySelector('.meaning');
+    expect(meaning?.nextElementSibling?.textContent).toBe('Few local records');
+    expect(panel.querySelectorAll('.few')).toHaveLength(1);
+  });
+
   it('heads with the chance, who decides, what it leaves out, then counts today’s statuses', () => {
     const { panel } = show({
       ...VIEW,
@@ -129,6 +148,7 @@ describe('AreaPanel', () => {
         day: '2026-01-13',
         number: '64',
         meaning: 'Chance of no school Tuesday',
+        fewRecords: null,
         why: [{ key: 'a', number: '64%', text: 'Test Village decides for 1 school here.' }],
         left: '2 of the 3 schools here have no chance given for Tuesday and are left out.',
         chart: null,
@@ -137,6 +157,7 @@ describe('AreaPanel', () => {
       },
     });
     expect(panel.querySelector('.number')?.textContent).toBe('64%');
+    expect(panel.querySelector('.few, .is-thin')).toBeNull();
     expect(panel.querySelector('.meaning')?.textContent.trim()).toBe(
       '64% Chance of no school Tuesday',
     );

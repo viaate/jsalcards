@@ -79,11 +79,16 @@
   {#if view.chance !== null}
     {@const chance = view.chance}
     <section class="block" aria-labelledby="area-meaning">
-      <p class="number" aria-hidden="true">{chance.number}<span class="pct">%</span></p>
+      <p class="number" class:is-thin={chance.fewRecords !== null} aria-hidden="true">
+        {chance.number}<span class="pct">%</span>
+      </p>
       <p class="meaning" id="area-meaning">
         <span class="sr-only">{chance.number}%</span>
         {chance.meaning}
       </p>
+      {#if chance.fewRecords !== null}
+        <p class="few">{chance.fewRecords}</p>
+      {/if}
       <ol class="rows why">
         {#each chance.why as row (row.key)}
           <li class="row">
@@ -251,6 +256,12 @@
     font: var(--type-title);
     letter-spacing: -0.01em;
     color: var(--text-1);
+  }
+
+  /* Few local records, as the chance section sets it: the number in gray, the line under it. */
+  .number.is-thin,
+  .few {
+    color: var(--text-2);
   }
 
   /* Who decides, a row each, right under it; then what it leaves out, and whose forecast the chart is. */

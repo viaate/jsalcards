@@ -68,11 +68,16 @@
 
   <div class="block">
     <div class="hero">
-      <p class="number" aria-hidden="true">{chance.number}<span class="pct">%</span></p>
+      <p class="number" class:is-thin={chance.fewRecords !== null} aria-hidden="true">
+        {chance.number}<span class="pct">%</span>
+      </p>
       <p class="meaning" id="chance-meaning">
         <span class="sr-only">{chance.number}%</span>
         {chance.meaning}
       </p>
+      {#if chance.fewRecords !== null}
+        <p class="few">{chance.fewRecords}</p>
+      {/if}
       {#if chance.moved !== null}
         <p class="change is-{chance.moved.direction}">
           {#if chance.moved.direction === 'up'}
@@ -225,6 +230,12 @@
     color: var(--text-1);
   }
 
+  /* Few local records: the number in the gray of the words around it (7.8:1 on the panel). */
+  .number.is-thin {
+    color: var(--text-2);
+  }
+
+  .few,
   .change,
   .delay {
     color: var(--text-2);

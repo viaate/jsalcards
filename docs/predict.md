@@ -245,8 +245,13 @@ alert only within the heights it names.
   names the nation's live record). The chance is still the nation's record and the sentence
   is true of it. With the committed model, 4,191 of the 18,227 districts are thin under an
   advisory (all of California and Nevada among them) and publish the nation's 74%. The web
-  reads the file as before and shows no mark: a "Few local records" marker waits for the
-  owner's approval of a design (mockups, not in the site).
+  shows it as the owner approved on 2026-10-24 (mockup B): the chance number in the panel's
+  gray (`--text-2`, 7.8:1 on the panel) and "Few local records" on its own line directly
+  under "Chance of no school <day>", in the school panel, and in the ZIP code's area panel
+  only where every school its number counts is counted by such a chance (a posted status, a
+  day with no threat or a chance with local records in the mix leaves it off). Nothing else
+  changes, and a file without the flag shows as before (`forecastDetail` reads `thin` from
+  the base alone, true only on a pooled nation base not read live).
 - **Advisory rates stay the archive's recorded days.** Under an advisory alone every district
   is above 50%: the nation's record is 495 of 667 recorded days (74%), and those days come
   mostly from the storm days the archive captured. Two ways to an honest lower rate were

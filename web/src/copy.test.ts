@@ -688,6 +688,9 @@ describe('format', () => {
       expect(allProblems(copyLeaves(waitlistCopy).map(([, text]) => text))).toEqual([]);
       expect(chanceFormat.weekday('2026-01-13')).toBe('Tuesday');
       expect(chanceFormat.chanceOn('2026-01-14')).toBe('Chance of no school Wednesday');
+      // Under it where the chance is the nation's record for want of local days (owner, Oct 24).
+      expect(chanceCopy.fewRecords).toBe('Few local records');
+      expect(problems(chanceCopy.fewRecords)).toEqual([]);
       expect(chanceFormat.chanceNumber(0.64)).toBe('64');
       expect(chanceFormat.chanceNumber(0.01)).toBe('1');
       expect(chanceFormat.chanceNumber(0.99)).toBe('99');

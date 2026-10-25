@@ -192,6 +192,12 @@ export interface ChanceView {
   readonly number: string;
   /** "Chance of no school Tuesday". */
   readonly meaning: string;
+  /**
+   * "Few local records", on its own line under the meaning, where the chance's base names the
+   * nation for want of the region's days (`why.base.thin`); the number then shows lighter.
+   * Null otherwise, and for a file without the flag.
+   */
+  readonly fewRecords: string | null;
   readonly moved: MovedView | null;
   readonly moments: readonly MomentView[];
   readonly chart: ChartView | null;
@@ -1087,6 +1093,7 @@ export function chanceView(input: ChanceInput): ChanceView | null {
     day,
     number,
     meaning,
+    fewRecords: detail.thin ? chanceCopy.fewRecords : null,
     moved,
     moments,
     chart,

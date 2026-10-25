@@ -76,6 +76,7 @@ describe('a forecast’s chance section parts', () => {
           { kind: 'snow_stops', points: -3, at: at('2027-01-12T13:00:00Z') },
         ],
       },
+      thin: false,
       record: {
         proves: 'snow_total',
         inches: 6,
@@ -448,5 +449,49 @@ describe('the weathers a base names', () => {
       ),
     ) as { $defs: { CountedWeather: { enum: string[] } } };
     expect([...WEATHERS].sort()).toEqual([...schema.$defs.CountedWeather.enum].sort());
+  });
+});
+
+describe('few local records', () => {
+  /** A forecast whose base is the nation's record, as a thin pass writes it. */
+  function nation(base: Json): Json {
+    return {
+      state: 'forecast',
+      p_no_school: 0.74,
+      p_delay: 0.01,
+      reasons: [],
+      why: { base: { kind: 'pooled', scope: 'nation', points: 74, ...base } },
+    };
+  }
+
+  it('reads the flag from a nation base over recorded days', () => {
+    const thin = read(nation({ thin: true, weather: 'advisory' }));
+    expect(thin.thin).toBe(true);
+    // The sum reads as before, with its weather name.
+    expect(thin.why?.base).toMatchObject({ kind: 'pooled', scope: 'nation', weather: 'advisory' });
+  });
+
+  it('reads no flag where the file does not set it, as an old file does', () => {
+    expect(read(nation({})).thin).toBe(false);
+    expect(read(nation({ thin: false })).thin).toBe(false);
+    expect(read(night()).thin).toBe(false);
+    expect(NO_DETAIL.thin).toBe(false);
+  });
+
+  it('reads no flag on a base the contract never sets it on, or one that is not true', () => {
+    expect(read(nation({ thin: true, scope: 'state' })).thin).toBe(false);
+    expect(read(nation({ thin: true, live: true })).thin).toBe(false);
+    expect(read(nation({ thin: 'yes' })).thin).toBe(false);
+    expect(read(nation({ thin: 1 })).thin).toBe(false);
+    const own = { ...night(), why: { base: { kind: 'similar_days', points: 30, thin: true } } };
+    expect(read(own).thin).toBe(false);
+  });
+
+  it('holds where the sum’s other parts do not read', () => {
+    const broken = nation({ thin: true });
+    (broken.why as Json).reasons = [{ kind: 'not_a_reason', points: 3 }];
+    const found = read(broken);
+    expect(found.why).toBeNull();
+    expect(found.thin).toBe(true);
   });
 });

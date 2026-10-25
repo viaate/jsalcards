@@ -434,6 +434,7 @@ describe('what the section leaves out', () => {
       day: '2026-01-12',
       number: '50',
       meaning: 'Chance of no school Monday',
+      fewRecords: null,
       moved: null,
       moments: [],
       chart: null,
@@ -1271,5 +1272,31 @@ describe('districts next door, told apart', () => {
       'Teton County in Wyoming canceled Tuesday',
       'Olathe canceled Tuesday',
     ]);
+  });
+});
+
+describe('few local records', () => {
+  it('says it under the meaning where the base is the nation’s record for want of local days', () => {
+    const thin = chanceView(nightBefore({ outlook: nightOutlook({ ...A_DETAIL, thin: true }) }));
+    expect(thin).toMatchObject({
+      number: '64',
+      meaning: 'Chance of no school Tuesday',
+      fewRecords: 'Few local records',
+    });
+    expect(thin?.fewRecords).toBe(chanceCopy.fewRecords);
+  });
+
+  it('says nothing where the base has local records, or the file does not say', () => {
+    expect(chanceView(nightBefore())?.fewRecords).toBeNull();
+    expect(chanceView(nextMorning())?.fewRecords).toBeNull();
+    // A forecast from before the section: no detail at all.
+    const bare: Outlook = {
+      today: { state: 'forecast', noSchool: 0.5, delay: 0, reasons: [0], day: '2026-01-12' },
+      tomorrow: null,
+      timeZone: ZONE,
+    };
+    const old = chanceView(nightBefore({ outlook: bare, now: at('2026-01-12T12:00:00Z') }));
+    expect(old?.number).toBe('50');
+    expect(old?.fewRecords).toBeNull();
   });
 });
