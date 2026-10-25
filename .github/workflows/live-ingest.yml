@@ -37,6 +37,26 @@ permissions:
   contents: read
 
 jobs:
+  # Landing push 1 of S8-E (docs/live.md, "The reader"): only prints the mode the reader would
+  # run in, LIVE_PUBLISH as Actions compares strings (case ignored, nothing trimmed; anything
+  # but on, shadow or off, unset included, is shadow). It dispatches nothing and never fails.
+  reader:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    continue-on-error: true
+    permissions: {}
+    steps:
+      - name: Print the reader's mode
+        env:
+          LIVE_PUBLISH: ${{ vars.LIVE_PUBLISH }}
+        run: |
+          lower=$(printf '%s' "$LIVE_PUBLISH" | LC_ALL=C tr '[:upper:]' '[:lower:]')
+          case "$lower" in on | shadow | off) mode="$lower" ;; *) mode=shadow ;; esac
+          if [ -z "$LIVE_PUBLISH" ]; then set_as=unset; else set_as=set; fi
+          echo "::notice::live reader mode $mode (LIVE_PUBLISH $set_as)"
+          exit 0
+
   check:
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
