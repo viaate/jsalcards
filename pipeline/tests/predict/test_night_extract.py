@@ -126,6 +126,26 @@ def test_run_elements_come_from_the_run_and_the_others_from_their_own_files() ->
     assert all(c.available <= NIGHT.snapshot for c in chosen.values())
 
 
+def test_a_half_hour_without_snow_makes_no_run_whatever_else_it_holds() -> None:
+    # As NCEI's 2018-11-26 evening: ice, temperature and the chance of precipitation each half
+    # hour, but no snow or apparent temperature file within three hours of the snapshot.
+    files = [
+        *(listed(e, "2024-01-15T22:47") for e in (*ndfd.ELEMENTS, Element.QPF, Element.WX)),
+        *(listed(e, "2024-01-16T00:16") for e in (Element.ICE, Element.TEMP, Element.POP12)),
+        *(listed(e, "2024-01-16T01:16") for e in (Element.ICE, Element.TEMP, Element.POP12)),
+    ]
+    chosen, missing = choose_files(NIGHT, files)
+    assert set(chosen) == {Element.TEMP, Element.POP12}
+    assert chosen[Element.TEMP].listed.stamp == grib.utc("2024-01-16T01:16")
+    assert missing == [
+        "snow: no run",
+        "iceaccum: no run",
+        "apt: no run",
+        "qpf: no file",
+        "wx: no file",
+    ]
+
+
 def test_local_hours_and_the_most_common_string() -> None:
     times = local_times(date(2024, 1, 16), "America/Chicago", (-3, 7))
     assert times == {grib.utc("2024-01-16T03:00"): -3, grib.utc("2024-01-16T13:00"): 7}

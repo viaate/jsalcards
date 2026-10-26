@@ -1282,7 +1282,12 @@ section 2; each district's most common string among its schools, a tie going to 
 first in that hour's message table) from 9 PM to noon. Snow, ice and apparent temperature come from the run the forecast
 history's 21:00 sample uses; temperature, the chance of precipitation, liquid and the weather
 strings each from that element's own newest file that counts by 21:00. Each file's stamp,
-reference time and availability are kept, and the job fails if any counts after 21:00. A dry
+reference time and availability are kept, and the job fails if any counts after 21:00. A run
+is made of snow, ice and apparent temperature files alone, so another element's file never
+completes one or moves its time. NCEI holds no complete run within three hours of 21:00 on
+2018-11-26 (Central; none from 23:47 to 04:17 UTC) and no liquid or weather file then, so that
+night keeps air temperature and the chance of precipitation only, with the rest named in the
+manifest's errors. A dry
 run of two nights (2019-02-06 from NCEI, 2024-01-16 from AWS) matched the forecast history's
 21:00 codes for all 7,191 districts of each night. The readers were checked against eccodes
 2.49.0 on the first message of each file of the 2024-01-16 01:48 UTC run (chance of

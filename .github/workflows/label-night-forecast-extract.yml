@@ -5,7 +5,9 @@
 # snow and ice per 6-hour period, and the hourly weather strings. Streamed here on GitHub's
 # runners and never kept: about 12 to 25 MB a night read by range, decoded and dropped at once.
 # Each element's file, stamp, reference time and availability are kept (runs.parquet); the job
-# fails when any of them counts after its night's 21:00.
+# fails when any of them counts after its night's 21:00. A night with no complete snow, ice and
+# apparent temperature run within three hours of 21:00 (2018-11-26 on NCEI) keeps the elements
+# that do count and names the rest in the manifest's errors.
 #
 # Kept: NOAA's values only (values.parquet, wx.parquet, runs.parquet) and manifest.json with every
 # file's SHA-256, its rows, the districts and values per element and night, and the bytes kept

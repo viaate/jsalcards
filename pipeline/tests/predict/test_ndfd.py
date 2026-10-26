@@ -391,6 +391,27 @@ def test_a_run_is_three_elements_in_one_half_hour_and_counts_ten_minutes_after_i
     assert ndfd.newest_run(assembled.runs, grib.utc("2025-01-06T02:57")) == run
 
 
+def test_other_elements_never_complete_a_run_or_move_its_time() -> None:
+    files = [
+        listed(Element.ICE, "2025-01-06T02:46"),
+        listed(Element.APT, "2025-01-06T02:46"),
+        listed(Element.TEMP, "2025-01-06T02:47"),
+        listed(Element.SNOW, "2025-01-06T03:16"),
+        listed(Element.ICE, "2025-01-06T03:16"),
+        listed(Element.APT, "2025-01-06T03:16"),
+        listed(Element.POP12, "2025-01-06T03:28", "2025-01-06T03:50"),
+        listed(Element.QPF, "2025-01-06T03:29"),
+        listed(Element.WX, "2025-01-06T03:29"),
+        listed(Element.TEMP, "2025-01-06T03:44"),
+    ]
+    assembled = ndfd.assemble_runs(files)
+    assert assembled.incomplete == (grib.utc("2025-01-06T02:30"),)
+    (run,) = assembled.runs
+    assert set(run.files) == set(ndfd.ELEMENTS)
+    assert run.time == grib.utc("2025-01-06T03:16")
+    assert run.available_at == grib.utc("2025-01-06T03:26")
+
+
 def test_a_late_object_holds_the_run_until_it_was_written() -> None:
     files = [
         listed(Element.SNOW, "2025-01-06T02:46", "2025-01-06T02:50"),

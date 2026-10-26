@@ -452,10 +452,14 @@ def assemble_runs(
     listed: Iterable[Listed], delay: timedelta = RUN_DELAY, fills: Collection[date] = ()
 ) -> Assembled:
     """Group listed files into runs (spec-f s. 4): the three elements in one half hour, the
-    latest stamp of each element there; a half hour missing an element makes no run. ``fills``
-    are the archive fill days (:func:`archive_fills`)."""
+    latest stamp of each element there; a half hour missing an element makes no run. Files of
+    other elements (the extract's temperature, chance of precipitation, liquid and weather) are
+    left out, so they never stand in for a run element or move a run's time. ``fills`` are the
+    archive fill days (:func:`archive_fills`)."""
     by_half: dict[datetime, dict[Element, Listed]] = {}
     for item in listed:
+        if item.element not in ELEMENTS:
+            continue
         slot = by_half.setdefault(half_hour_of(item.stamp), {})
         known = slot.get(item.element)
         if known is None or item.stamp > known.stamp:
@@ -464,7 +468,7 @@ def assemble_runs(
     incomplete: list[datetime] = []
     for half in sorted(by_half):
         files = by_half[half]
-        if len(files) < len(ELEMENTS):
+        if any(element not in files for element in ELEMENTS):
             incomplete.append(half)
             continue
         run_time = max(item.stamp for item in files.values())
