@@ -32,7 +32,7 @@ from snowlight.social.cards import Card, Post
 from snowlight.social.content import Content, ContentError, Image, check_image, load
 from snowlight.social.issue import GitHub
 from snowlight.social.picture import NOTE, Taken
-from snowlight.social.rules import MENTION, URL, Style, check
+from snowlight.social.rules import MENTION, URL, Style, chances_shown, check, mentions_chance
 from snowlight.social.store import (
     D1,
     MAX_POSTS_PER_DAY,
@@ -122,11 +122,14 @@ type Fresh = Mapping[str, Image]
 """The run's fresh cards by post style."""
 
 
-def fresh_picture(folder: Path | None, now: datetime, say: Callable[[str], None]) -> Fresh:
+def fresh_picture(
+    folder: Path | None, now: datetime, say: Callable[[str], None], *, chances: bool
+) -> Fresh:
     """The render job's fresh cards of this run by post style (handed over by
     :mod:`snowlight.social.relay`); none (the reason said) when there is no picture, or it is
-    malformed, or it is not from the last :data:`FRESH_FOR`. A style whose card failed, or
-    whose alt text holds a link, is left out (that post goes with the library's card)."""
+    malformed, or it is not from the last :data:`FRESH_FOR`, or, without ``chances`` (the
+    facts file's switch), it gives a chance. A style whose card failed, or whose alt text
+    holds a link or a chance, is left out (that post goes with the library's card)."""
     if folder is None:
         return {}
     note = folder / NOTE
@@ -142,6 +145,11 @@ def fresh_picture(folder: Path | None, now: datetime, say: Callable[[str], None]
     if not timedelta(minutes=-2) <= age <= FRESH_FOR:
         say("::warning::social: the fresh picture is not from this run; it is not used")
         return {}
+    if not chances and (
+        taken.kind == "district" or taken.seen.chance is not None or mentions_chance(taken.shows)
+    ):
+        say("::warning::social: the fresh picture gives a chance while chances are TESTING")
+        return {}
     cards: dict[str, Image] = {}
     for style, post in CARD_OF.items():
         try:
@@ -155,6 +163,9 @@ def fresh_picture(folder: Path | None, now: datetime, say: Callable[[str], None]
             continue
         if URL.search(card.alt) or MENTION.search(card.alt):
             say(f"::warning::social: the {post} card's alt text holds a link; it is not used")
+            continue
+        if not chances and mentions_chance(card.alt):
+            say(f"::warning::social: the {post} card's alt text gives a chance; it is not used")
             continue
         cards[style] = Image(
             id=f"fresh-{taken.taken_at.astimezone(UTC):%Y%m%dt%H%M}",
@@ -488,7 +499,7 @@ def _start(env: Env, root: Path, deps: Deps, picture: Path | None) -> Run | int:
         say(f"::warning::social: the D1 store failed ({error}): nothing posts")
         return 1
     now = deps.now()
-    fresh = fresh_picture(picture, now, say)
+    fresh = fresh_picture(picture, now, say, chances=chances_shown(content.facts))
     return Run(env, deps, content, store, secrets, github, run_id, now, fresh)
 
 

@@ -9,9 +9,11 @@ files the page reads and picks the view:
   shows (the day that is today in every contiguous US time zone, 08:00 to 04:00 UTC, as
   ``web/src/data/closings.ts`` has it) under the deployed directory's stamp, the map is
   zoomed (``?at=lat,lon,zoom``) to the window of the picture's size holding the most of them.
-* **Else a high chance**: when a district's chance of no school today is at least
-  :data:`PANEL_MIN_CHANCE`, the district with the highest one, framed by its schools on the
-  left of the picture (:data:`DISTRICT_X`), the right side left free for the card's number.
+* **Else a high chance** (only while the facts file marks chances LIVE: while they are
+  TESTING the site is locked, and no picture gives a chance): when a district's chance of
+  no school today is at least :data:`PANEL_MIN_CHANCE`, the district with the highest one,
+  framed by its schools on the left of the picture (:data:`DISTRICT_X`), the right side left
+  free for the card's number.
   The map draws no chance, so the chance is a number on the card, never on the map.
 * **Else the national map**: the site's dark map, near-black land, state lines and city
   names (dark at any hour: the words never say "night"). The site draws no school specks at
@@ -588,8 +590,13 @@ def choose(
     predictions: Mapping[str, object] | None,
     directory: Directory,
     now: datetime,
+    chances: bool,
 ) -> Picture:
     """The view to take at ``now`` and its description (see the module's docstring).
+
+    ``chances`` is the facts file's switch (:func:`snowlight.social.rules.chances_shown`):
+    without it the predictions are not read at all, so the picture is never a district's
+    chance and its description and facts hold no chance.
 
     Raises:
         PictureError: a live file is malformed (the run then falls back to the library).
@@ -599,7 +606,7 @@ def choose(
     if lit is not None:
         return _closings_picture(lit, directory, now)
     read = closings_read(closings, directory)
-    high = highest_chance(predictions, directory, now)
+    high = highest_chance(predictions, directory, now) if chances else None
     closings_line, current = calm_closings(closings, read, now)
     if high is not None and high[0] >= PANEL_MIN_CHANCE:
         chance, index, counted, today = high

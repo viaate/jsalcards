@@ -228,6 +228,8 @@ body {
 
 .sub .part {
   white-space: normal;
+  /* A line that wraps (the model line at 42 px) breaks into two even lines, never a lone word. */
+  text-wrap: balance;
 }
 
 .sub .part.main {

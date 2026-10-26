@@ -15,7 +15,7 @@ import pytest
 
 from snowlight.social import logscan, seal
 from snowlight.social.cli import Output
-from snowlight.social.content import load
+from snowlight.social.content import ContentError, load
 from snowlight.social.issue import TITLE
 from snowlight.social.post import Deps, run
 from snowlight.social.store import TABLES
@@ -825,3 +825,124 @@ def test_a_card_whose_alt_text_holds_a_link_is_not_used(tmp_path: Path, world: W
     assert runner() == 0
     assert b"FRESH-PICTURE" not in world.x.uploaded[0]
     assert "alt text holds a link" in runner.log
+
+
+# Chances while the site is locked (F). The fakes' facts file has no LIVE `chances` fact, so
+# these runs are in that mode; every predictions number here is SYNTHETIC.
+
+DISTRICT_SHOWS = (
+    "SYNTHETIC: a picture of the Snowlight map zoomed to the schools of a public school district"
+    " in Montana: its chance of no school on Tuesday, October 27 is 74%, the highest of any"
+    " district that day."
+)
+DISTRICT_CHANCE: dict[str, Any] = {
+    "text": "74%",
+    "day": "2026-10-27",
+    "scope": "district",
+    "districts": 18227,
+    "at_most": False,
+}
+DISTRICT_SEEN: dict[str, Any] = {"chance": DISTRICT_CHANCE, "state": "Montana"}
+
+
+def _with_seen(folder: Path, seen: dict[str, Any]) -> Path:
+    note = folder / "picture.json"
+    data = json.loads(note.read_text())
+    data["seen"] = seen
+    note.write_text(json.dumps(data))
+    return folder
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        ("district", DISTRICT_SHOWS, DISTRICT_SEEN, None),
+        (
+            "national",
+            FRESH_SHOWS,
+            {"chance": {**DISTRICT_CHANCE, "scope": "highest"}},
+            None,
+        ),
+        ("national", FRESH_SHOWS + " Not in the picture: a chance of 1% everywhere.", {}, None),
+        ("national", FRESH_SHOWS, {}, "The dark national Snowlight map, top chance 74%"),
+    ],
+)
+def test_a_fresh_picture_that_gives_a_chance_is_not_used_while_chances_are_testing(
+    tmp_path: Path, world: World, case: tuple[str, str, dict[str, Any], str | None]
+) -> None:
+    kind, shows, seen, alt = case
+    runner = make(tmp_path, world, queue=[unpictured("0001", FIRST)])
+    folder = _with_seen(
+        make_picture(tmp_path, at("2026-10-26T16:35:00"), kind=kind, shows=shows), seen
+    )
+    if alt is not None:
+        for post in ("dev-log", "waitlist"):
+            note = folder / f"{post}.json"
+            note.write_text(note.read_text().replace("SYNTHETIC alt text", alt))
+    runner.picture = folder
+    assert runner() == 0
+    assert "gives a chance" in runner.log
+    assert b"FRESH-PICTURE" not in world.x.uploaded[0]
+    assert world.d1.row("SELECT image FROM social_posts") == {"image": "img-2"}
+    assert "74" not in "".join(alt["metadata"]["alt_text"]["text"] for alt in world.x.alts)
+
+
+def test_haiku_gives_no_chance_while_chances_are_testing(tmp_path: Path, world: World) -> None:
+    """Rule F end to end: Haiku is told chances are TESTING, a draft with a district's 74% or
+    the nation's 1% is refused, and what is posted holds no percent and no chance word."""
+    runner = make(tmp_path, world)
+    runner.picture = make_picture(tmp_path, at("2026-10-26T16:35:00"))
+    fresh = "fresh-20261026t1635"
+    leaky = {
+        **GOOD_DEV_LOG,
+        "image_id": fresh,
+        "text": "Dev log: a district in Montana is at 74% for Tuesday, and 1% everywhere else."
+        " The closings reader runs 24/7 in practice mode.",
+    }
+    runner.haiku = FakeAnthropic([leaky, {**GOOD_DEV_LOG, "image_id": fresh}, dict(OK)])
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    first = runner.haiku.requests[0]["messages"][0]["content"]
+    assert "The chances are TESTING" in first
+    assert "never say how high or low a chance is" in first.replace("\n", " ")
+    retry = runner.haiku.requests[1]["messages"][0]["content"]
+    assert "it gives a chance as a number ('%')" in retry
+    check = runner.haiku.requests[2]["messages"][0]["content"]
+    assert "The chances are TESTING (the site is locked)" in check
+    posted = world.x.posts[-1]["text"]
+    assert "%" not in posted
+    assert "chance" not in posted.lower()
+
+
+def test_with_chances_live_a_district_picture_goes_out(tmp_path: Path, world: World) -> None:
+    """The switch back: the same district picture is used once the facts mark chances LIVE."""
+    facts = fakes.FACTS + (
+        "- [LIVE] chances: Each school day the model works out a chance of no school."
+        " | terms: chance, chances\n"
+    )
+    runner = Runner(
+        make_root(tmp_path, queue=[unpictured("0001", FIRST)], facts=facts),
+        world,
+        Clock(at("2026-10-26T16:37:00")),
+    )
+    folder = make_picture(
+        tmp_path, at("2026-10-26T16:35:00"), kind="district", shows=DISTRICT_SHOWS
+    )
+    runner.picture = _with_seen(folder, DISTRICT_SEEN)
+    assert runner() == 0
+    assert b"FRESH-PICTURE" in world.x.uploaded[0]
+
+
+def test_a_library_card_that_gives_a_chance_stops_the_run_while_chances_are_testing(
+    tmp_path: Path, world: World
+) -> None:
+    root = make_root(tmp_path, queue=[unpictured("0001", FIRST)])
+    note = root / "social" / "images" / "img-1.json"
+    entry = json.loads(note.read_text())
+    entry["shows"] += ". Not in the picture: the chance of no school is at most 1% everywhere."
+    note.write_text(json.dumps(entry))
+    with pytest.raises(ContentError, match="gives a chance while chances are TESTING"):
+        load(root)
+    runner = Runner(root, world, Clock(at("2026-10-26T16:37:00")))
+    assert runner() == 1
+    assert world.x.posts == []
+    assert world.x.refreshes == 0

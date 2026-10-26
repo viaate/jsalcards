@@ -24,7 +24,7 @@ import anthropic
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from snowlight.social.content import Content, Image
-from snowlight.social.rules import Fact, Style, check, model_fact_for
+from snowlight.social.rules import Fact, Style, chances_shown, check, model_fact_for
 
 MODEL: Final = "claude-haiku-5-5"
 MAX_TOKENS: Final = 1024
@@ -109,6 +109,13 @@ says anything about the image its description does not say, or presents an older
 as current; does not state the model fact it was given, or states it more strongly than the \
 facts do (an accuracy, a score, or "always"); or describes, names or compares any other \
 product, site, app or predictor, or what others do. Otherwise ok=true with no problems."""
+
+
+HIDDEN: Final = """The chances are TESTING: the site is locked while I test them. Never give \
+any chance, for any place or for the country: no number, no percent, no odds, and never say \
+how high or low a chance is. You may say where the chances come from (the model)."""
+HIDDEN_CHECK: Final = """The chances are TESTING (the site is locked): answer ok=false when the \
+draft gives any chance as a number, percent or odds, or says how high or low any chance is."""
 
 
 class Draft(BaseModel):
@@ -220,6 +227,7 @@ def write_prompt(  # noqa: PLR0913 - the prompt's parts
         f"Today is {today.isoformat()}.",
         STYLES[style],
         f"Set kind to {style}.",
+        *([] if chances_shown(content.facts) else [HIDDEN]),
         "Facts (the only things you may state):\n" + content.facts.text.strip(),
         *(
             [
@@ -254,6 +262,7 @@ def review_prompt(
             "Facts:\n" + content.facts.text.strip(),
             f"Image: {written.image.describe()}",
             f"Kind: {written.style}",
+            *([] if chances_shown(content.facts) else [HIDDEN_CHECK]),
             *([f"Model fact it was given: {model_fact.text}"] if model_fact is not None else []),
             f"Draft:\n{written.text}",
         ]

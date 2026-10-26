@@ -10,15 +10,21 @@ from pathlib import Path
 import pytest
 
 from snowlight.social.content import load
-from snowlight.social.rules import Style, check, model_fact_for, numbers_in
+from snowlight.social.rules import (
+    FactsError,
+    Style,
+    chances_shown,
+    check,
+    model_fact_for,
+    numbers_in,
+    parse_facts,
+)
 
 REPO = Path(__file__).resolve().parents[3]
 FACTS = load(REPO).facts
 FRESH = (
-    "A picture of the Snowlight map taken at 9:47 AM Central time on October 26, 2026 over"
-    " the Great Lakes. Not in the picture: Snowlight's chance of no school on Monday,"
-    " October 26 is at most 1% in every one of the 18227 districts with a chance."
-    " (taken for this post)"
+    "A picture of the Snowlight map taken at 9:47 AM Central time on Monday, October 26, 2026"
+    " over the Great Lakes. (taken for this post)"
 )
 OLDER = (
     "A picture of the dark Snowlight map over the Great Lakes (an older picture, taken"
@@ -117,8 +123,8 @@ def test_an_older_picture_is_never_called_current(text: str) -> None:
         " 9 AM. The chances come from a statistical model. Waitlist link in my bio.",
         "Closings on the map are coming this winter. Until then, every district gets a chance"
         " from a prediction model. Waitlist link in my bio.",
-        "The map is still in private testing. The chance of no school is 1% almost everywhere"
-        " in late October, and it comes from a statistical model, not a guess.",
+        "The map is still in private testing, and its chances come from a statistical model,"
+        " not a guess.",
         "Snowlight's school directory holds 118,211 schools in 18,227 districts, and each one"
         " gets a chance from the same prediction model.",
         "Join the waitlist: one email when Snowlight goes live. The chances come from a real"
@@ -136,7 +142,9 @@ def test_true_drafts_pass_with_a_fresh_or_an_older_picture(text: str, *, current
 
 
 def test_a_picture_day_may_be_said_as_the_picture_says_it() -> None:
-    assert problems("Monday's chance in my test map is 1% almost everywhere, from the model.") == []
+    assert (
+        problems("Monday over the Great Lakes in my test map. The chances come from a model.") == []
+    )
     assert problems("Monday I launch. Waitlist link in my bio.", style="waitlist")
 
 
@@ -232,13 +240,18 @@ def test_not_a_guess_is_the_one_guess_a_post_may_say() -> None:
 def test_the_waitlist_may_be_open_to_everyone() -> None:
     assert (
         problems(
-            "The waitlist is open to everyone, and the chances come from a prediction model."
+            # A live claim and a TESTING fact are never in one sentence: the waitlist's openness
+            # and the chances (TESTING while the site is locked) are said apart.
+            "The waitlist is open to everyone. The chances come from a prediction model."
             " Link in my bio.",
             style="waitlist",
         )
         == []
     )
     assert problems("At launch you can see your school's chance from the prediction model.") == []
+    assert problems(
+        "The waitlist is open to everyone, and the chances come from a prediction model.",
+    ), "a live claim in a sentence that names the TESTING chances"
 
 
 def test_the_day_model_fact_must_be_the_one_stated() -> None:
@@ -301,3 +314,100 @@ def test_the_model_file_holds_the_facts_numbers() -> None:
     assert f"{model['training']['labeled_days']:,}" in days.text
     assert f"{len(model['training']['seasons'])} past winters" in days.text
     assert f"{model['private_labeled_days']:,}" in private.text
+
+
+# Chances while the site is locked (F): while the facts file marks chances TESTING, no post
+# gives a chance, by number, percent, odds or level; saying where they come from is fine.
+
+
+def test_the_real_facts_file_marks_chances_testing_and_gives_no_chance_number() -> None:
+    chances = FACTS.get("chances")
+    assert chances is not None
+    assert chances.status == "TESTING", "the site is locked: chances are TESTING"
+    assert not chances_shown(FACTS)
+    assert not any(number.endswith("%") for number in FACTS.numbers)
+    assert "%" not in FACTS.said
+    assert "percent" not in FACTS.said.lower()
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "A public school district in Montana is at 74% for Tuesday, from the prediction model.",
+        "The prediction model gives a 1% chance of no school almost everywhere.",
+        "The chance of no school is 1% almost everywhere, from a statistical model.",
+        "The country sits at 1 percent from my prediction model.",
+        "Fifty percent chance in Maine, says the statistical model.",
+        "A \uff17\uff14\uff05 chance in Montana, says the prediction model.",
+        "The statistical model puts the odds of a snow day in Montana at 3 in 4.",
+        "The prediction model says one in four districts may close Tuesday.",
+        "Every chance from the statistical model is low this week.",
+        "A high chance of no school in Montana, says the prediction model.",
+        "Chances are rising across the Northeast, says the prediction model.",
+        "The prediction model's chances jumped in Montana.",
+        "Near zero chance of a snow day anywhere, per the prediction model.",
+        "The model gives Montana the highest chance in the country.",
+    ],
+)
+def test_no_post_gives_a_chance_while_chances_are_testing(text: str) -> None:
+    style: Style = "waitlist" if "link in my bio" in text.lower() else "dev_log"
+    assert problems(text, style=style), text
+
+
+def test_a_picture_description_with_a_chance_is_refused_while_chances_are_testing() -> None:
+    described = (
+        "A picture of the Snowlight map zoomed to a public school district in Montana: its"
+        " chance of no school on Tuesday is 74%."
+    )
+    found = check(
+        "The chances come from a statistical model, not a guess.",
+        style="dev_log",
+        facts=FACTS,
+        image_description=described,
+        image_is_today=True,
+    )
+    assert "the picture's description gives a chance while chances are TESTING" in found
+
+
+def test_the_first_post_names_the_chances_only_as_the_model_s() -> None:
+    text = json.loads((REPO / "social" / "queue" / "0001.json").read_text(encoding="utf-8"))
+    assert "%" not in text["text"]
+    assert problems(text["text"]) == []
+
+
+def _facts_with_chances(status: str, text: str) -> str:
+    real = (REPO / "social" / "facts.md").read_text(encoding="utf-8")
+    lines = [
+        f"- [{status}] chances: {text} | terms: chance, chances, odds"
+        if line.startswith("- [TESTING] chances:")
+        else line
+        for line in real.splitlines()
+    ]
+    return "\n".join(lines)
+
+
+def test_the_facts_file_may_give_no_chance_number_while_chances_are_testing() -> None:
+    with pytest.raises(FactsError, match="chance"):
+        parse_facts(
+            _facts_with_chances("TESTING", "In late October the chance is 1% almost everywhere.")
+        )
+    with pytest.raises(FactsError, match="chance"):
+        parse_facts(_facts_with_chances("TESTING", "The odds are 3 in 4 in a storm."))
+
+
+def test_marking_chances_live_lets_a_chance_number_from_the_facts_be_posted() -> None:
+    live = parse_facts(
+        _facts_with_chances(
+            "LIVE",
+            "Every school day the model works out a chance of no school; in late October that"
+            " chance is 1% almost everywhere.",
+        )
+    )
+    assert chances_shown(live)
+    text = (
+        "In late October the chance of no school is 1% almost everywhere, from a statistical model."
+    )
+    assert (
+        check(text, style="dev_log", facts=live, image_description=FRESH, image_is_today=True) == []
+    )
+    assert check(text, style="dev_log", facts=FACTS, image_description=FRESH, image_is_today=True)

@@ -22,7 +22,7 @@ from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
-from snowlight.social.rules import Facts, Style, parse_facts
+from snowlight.social.rules import Facts, Style, chances_shown, mentions_chance, parse_facts
 
 MAX_IMAGE_BYTES: Final = 5 * 1024 * 1024
 PNG: Final = b"\x89PNG\r\n\x1a\n"
@@ -184,6 +184,13 @@ def load(root: Path) -> Content:
                 f"social/images/{path.name}: its card's line is no longer in the facts file;"
                 " re-render the library (docs/social.md)"
             )
+        if not chances_shown(facts) and (
+            mentions_chance(entry.shows) or mentions_chance(entry.alt or "")
+        ):
+            raise ContentError(
+                f"social/images/{path.name} gives a chance while chances are TESTING;"
+                " re-render the library (docs/social.md)"
+            )
         check_image(social / "images" / entry.file)
         images.append(
             Image(
@@ -204,6 +211,10 @@ def load(root: Path) -> Content:
         if path.stem != item.id:
             raise ContentError(f"social/queue/{path.name} names another id")
         image = None
+        if item.shows is not None and not chances_shown(facts) and mentions_chance(item.shows):
+            raise ContentError(
+                f"social/queue/{path.name}: its picture gives a chance while chances are TESTING"
+            )
         if item.image is not None and item.day is not None and item.shows is not None:
             check_image(social / "queue" / item.image)
             image = Image(

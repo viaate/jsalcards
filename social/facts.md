@@ -13,6 +13,11 @@ names of people, schools, districts or stations. Each line is one fact:
 The lead keeps this file current: when something ships, move its fact to LIVE in the same
 change that ships it.
 
+The `chances` fact is the switch for chance numbers (docs/social.md, "Chances while the site is
+locked"): while it is TESTING, no post, card, alt text or picture description gives any
+chance, and the picture is never a district's chance. When the owner unlocks the site, mark it
+LIVE (and give its numbers here, if any) and chance cards come back with no code change.
+
 ## The prediction model
 
 Model first (docs/social.md): every post states one LIVE fact below whose id starts with
@@ -21,7 +26,7 @@ trained on real closing records. Every number here is from docs/predict.md and t
 model file (`pipeline/data/predict/model.json.gz`). No accuracy number is ever posted: the
 past records lean toward big storm days, so a score on them would not be a fair one.
 
-- [LIVE] model: Snowlight gives chances from a prediction model trained on real closing records, not a guess: a statistical model fit to real past school days whose outcome is known. | terms: prediction model, statistical model, model, not a guess
+- [LIVE] model: Snowlight's chances come from a prediction model trained on real closing records, not a guess: a statistical model fit to real past school days whose outcome is known. | terms: prediction model, statistical model, model, not a guess
 - [LIVE] model-days: The district model is trained on 2,388 real past school days with a known outcome, each one district on one day, from the records of 11 past winters: 1,547 with no school, 109 with a delayed start and 732 open. | terms: trained on, known outcome, known outcomes, past school days
 - [LIVE] model-private: Private schools get their own chance from the same kind of model, trained on 661 real past private school days with a known outcome. | terms: private school days, their own chance
 - [LIVE] model-places: For each kind of weather day, the model uses a district's own recorded days where it has enough of them, and leans on the records of its nearby districts, county, state, region and the whole country where it has fewer. | terms: own record, own recorded days, recorded days, nearby districts, whole country
@@ -42,7 +47,7 @@ past records lean toward big storm days, so a score on them would not be a fair 
 - [LIVE] directory: Snowlight's school directory holds 118,211 US K-12 schools in 18,227 districts, public and private. | terms: directory, school directory
 - [TESTING] map: The map is in private testing behind a lock; only I can open it before launch. It is a near-black map of the US with every school on it. | terms: the map, map, the site, the app, website
 - [TESTING] search: On the map you can search by school, city or ZIP code. | terms: search, zip code, zip codes
-- [LIVE] chances: Every school day the model works out a chance of no school and a chance of a delayed start, today and tomorrow, for every US public school district and every private school in the lower 48 states. In late October that chance is 1% almost everywhere; it rises when the weather service puts out a winter storm warning or advisory for the area. | terms: chance, chances, snow day chances, odds, prediction, predictions, delayed start
+- [TESTING] chances: Every school day the model works out a chance of no school and a chance of a delayed start, today and tomorrow, for every US public school district and every private school in the lower 48 states. While I test them they show only on the locked map, so no post or picture gives a chance number. | terms: chance, chances, snow day chances, odds, prediction, predictions, delayed start
 - [COMING] glow: At launch, every school that is closed, delayed, remote or dismissing early for weather will glow on the map like city lights seen from space. | terms: glow, glows, glowing, lights up, light up, lit up, city lights
 - [COMING] closings: Live school closings on the map, for every state, starting this winter. | terms: closings, closing, closed, closures, closure, closes, delays, delayed, school is closed, schools are closed, which schools | except: closings reader, closing lists, closing records, delayed start
 - [COMING] aim: Every school closing in the US on one map, coming this winter. | terms: every school closing, one map

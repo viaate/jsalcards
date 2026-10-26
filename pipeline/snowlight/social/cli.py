@@ -20,6 +20,7 @@ import httpx
 
 from snowlight.social import logscan
 from snowlight.social.post import Deps, run
+from snowlight.social.rules import FactsError, chances_shown, parse_facts
 from snowlight.social.xapi import XClient
 
 SECRET_NAMES: Final = (
@@ -101,8 +102,18 @@ def _render(args: argparse.Namespace) -> int:
     if bool(args.view) != bool(args.place):
         output.say("::error::social: --view and --place go together")
         return 2
+    root = Path(args.root).resolve()
+    try:
+        facts = parse_facts((root / "social" / "facts.md").read_text(encoding="utf-8"))
+    except (OSError, FactsError) as error:
+        output.say(f"::error::social: social/facts.md could not be read ({error})")
+        return 1
+    chances = chances_shown(facts)
+    if not chances:
+        output.say("social: chances are TESTING in social/facts.md: no picture gives a chance")
     taken = render(
         Path(args.out),
+        chances=chances,
         site=args.site or SITE,
         say=output.say,
         live=Path(args.live_dir) if args.live_dir else None,
@@ -173,6 +184,7 @@ def register(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") ->
     shot.add_argument(
         "--out", required=True, help="The folder for picture.png, picture.json and the cards."
     )
+    shot.add_argument("--root", default="..", help="The repository root (holds social/).")
     shot.add_argument("--site", default="", help="Another site address (a local build).")
     shot.add_argument(
         "--live-dir", default="", help="Serve the live files from this folder (a dry run)."

@@ -96,6 +96,7 @@ def test_closings_zoom_to_the_busiest_window_and_say_what_glows() -> None:
     now = at("2026-12-10T12:10")
     rows = [(0, 0), (1, 0), (2, 1), (3, 0), (4, 2), (5, 0), (6, 0), (8, 0), (9, 3)]
     picture = choose(
+        chances=True,
         closings=closings(rows, "2026-12-10", "2026-12-10T12:05:00Z"),
         predictions=None,
         directory=directory(),
@@ -126,6 +127,7 @@ def test_closings_zoom_to_the_busiest_window_and_say_what_glows() -> None:
 
 def test_an_old_closings_file_is_not_called_current() -> None:
     picture = choose(
+        chances=True,
         closings=closings([(0, 0)], "2026-12-10", "2026-12-10T11:00:00Z"),
         predictions=None,
         directory=directory(),
@@ -158,7 +160,11 @@ def test_no_lit_school_gives_the_national_map(
     file: dict[str, Any] | None, now: str, read: bool
 ) -> None:
     picture = choose(
-        closings=file, predictions=None, directory=directory(), now=at(f"2026-12-10T{now}")
+        chances=True,
+        closings=file,
+        predictions=None,
+        directory=directory(),
+        now=at(f"2026-12-10T{now}"),
     )
     assert picture.kind == "national"
     assert picture.query == ""
@@ -177,6 +183,7 @@ def test_no_lit_school_gives_the_national_map(
 
 def test_a_high_chance_opens_that_districts_panel() -> None:
     picture = choose(
+        chances=True,
         closings=None,
         predictions=predictions([0.04, 0.37], ("2026-12-09", "2026-12-10"), "2026-12-10T14:50:00Z"),
         directory=directory(),
@@ -186,6 +193,7 @@ def test_a_high_chance_opens_that_districts_panel() -> None:
     assert picture.seen.chance is None, "no chance of a day already under way"
     assert "chance" not in picture.shows
     picture = choose(
+        chances=True,
         closings=None,
         predictions=predictions([0.04, 0.37], ("2026-12-09", "2026-12-10"), "2026-12-09T18:00:00Z"),
         directory=directory(),
@@ -210,6 +218,7 @@ def test_a_high_chance_opens_that_districts_panel() -> None:
 
 def test_a_calm_day_says_the_chance_is_not_in_the_picture() -> None:
     picture = choose(
+        chances=True,
         closings=None,
         predictions=predictions([0.01, 0.01], ("2026-10-26", "2026-10-27")),
         directory=directory(),
@@ -224,6 +233,7 @@ def test_a_calm_day_says_the_chance_is_not_in_the_picture() -> None:
     assert picture.seen.chance.at_most
     assert picture.seen.chance.text == "1%"
     some = choose(
+        chances=True,
         closings=None,
         predictions=predictions([0.06, None], ("2026-10-26", "2026-10-27")),
         directory=directory(),
@@ -233,6 +243,7 @@ def test_a_calm_day_says_the_chance_is_not_in_the_picture() -> None:
     assert some.seen.chance is not None
     assert (some.seen.chance.text, some.seen.chance.at_most) == ("6%", False)
     other = choose(
+        chances=True,
         closings=None,
         predictions={**predictions([0.5], ("2026-10-26", "2026-10-27")), "directory": {}},
         directory=directory(),
@@ -274,6 +285,7 @@ def test_a_malformed_closings_file_is_an_error(file: dict[str, Any]) -> None:
 def test_malformed_predictions_are_an_error() -> None:
     with pytest.raises(PictureError, match="days"):
         choose(
+            chances=True,
             closings=None,
             predictions={"directory": dict(STAMP), "generated_at": "2026-10-26T16:30:00Z"},
             directory=directory(),
@@ -281,6 +293,7 @@ def test_malformed_predictions_are_an_error() -> None:
         )
     with pytest.raises(PictureError, match="district"):
         choose(
+            chances=True,
             closings=None,
             predictions={
                 "directory": dict(STAMP),
@@ -293,6 +306,7 @@ def test_malformed_predictions_are_an_error() -> None:
         )
     with pytest.raises(PictureError, match="generated_at"):
         choose(
+            chances=True,
             closings=None,
             predictions={"directory": dict(STAMP), "days": ["2026-10-26"], "districts": []},
             directory=directory(),
@@ -387,7 +401,9 @@ def test_a_stale_file_with_nothing_lit_says_nothing_and_is_not_current(
     now: str, generated_at: str
 ) -> None:
     file = closings([(0, 0)], "2026-12-09", generated_at)
-    picture = choose(closings=file, predictions=None, directory=directory(), now=at(now))
+    picture = choose(
+        chances=True, closings=file, predictions=None, directory=directory(), now=at(now)
+    )
     assert picture.kind == "national"
     assert not picture.current, "a stale calm map is never presented as current"
     assert "lit up" not in picture.shows
@@ -406,7 +422,11 @@ def test_a_stale_file_with_nothing_lit_says_nothing_and_is_not_current(
 def test_a_fresh_file_with_nothing_lit_says_so_and_is_current() -> None:
     file = closings([(0, 0)], "2026-12-09", "2026-12-10T12:05:00Z")
     picture = choose(
-        closings=file, predictions=None, directory=directory(), now=at("2026-12-10T12:10")
+        chances=True,
+        closings=file,
+        predictions=None,
+        directory=directory(),
+        now=at("2026-12-10T12:10"),
     )
     assert picture.current
     assert "No school is lit up for weather on the map." in picture.shows
@@ -415,6 +435,7 @@ def test_a_fresh_file_with_nothing_lit_says_so_and_is_current() -> None:
 def test_a_stale_predictions_file_shows_no_chance() -> None:
     for stamp in ("2026-10-26T14:00:00Z", "2026-10-26T17:00:00Z"):  # 2.6 h old; 23 min ahead
         picture = choose(
+            chances=True,
             closings=None,
             predictions=predictions([0.5, 0.01], ("2026-10-26", "2026-10-27"), stamp),
             directory=directory(),
@@ -452,6 +473,7 @@ def test_the_chance_named_is_the_next_school_day_not_yet_under_way() -> None:
 
 def test_at_11_27_on_monday_the_card_and_description_name_tuesday() -> None:
     picture = choose(
+        chances=True,
         closings=None,
         predictions=predictions([0.01, 0.01], ("2026-10-26", "2026-10-27"), "2026-10-26T16:07:00Z"),
         directory=directory(),
@@ -462,6 +484,7 @@ def test_at_11_27_on_monday_the_card_and_description_name_tuesday() -> None:
     assert "Tuesday, October 27" in picture.shows
     assert "Monday" not in picture.shows
     picture = choose(
+        chances=True,
         closings=None,
         predictions=predictions([0.01, 0.37], ("2026-10-26", "2026-10-27"), "2026-10-26T01:50:00Z"),
         directory=directory(),
@@ -470,6 +493,7 @@ def test_at_11_27_on_monday_the_card_and_description_name_tuesday() -> None:
     assert picture.kind == "national", "Monday's column holds no chance in this file"
     assert picture.seen.chance is None
     picture = choose(
+        chances=True,
         closings=None,
         predictions=predictions([0.01, 0.37], ("2026-12-10", "2026-12-11"), "2026-12-10T20:50:00Z"),
         directory=directory(),
@@ -477,3 +501,24 @@ def test_at_11_27_on_monday_the_card_and_description_name_tuesday() -> None:
     )
     assert picture.kind == "district"
     assert "Friday, December 11 is 37%" in picture.shows
+
+
+def test_while_chances_are_testing_the_picture_gives_none() -> None:
+    """Rule F (SYNTHETIC predictions): a 74% district and a 1% nation, with chances TESTING,
+    give the national map, and its description and facts hold no chance at all."""
+    file = predictions([0.74, 0.01], ("2026-12-09", "2026-12-10"), "2026-12-09T18:00:00Z")
+    now = at("2026-12-09T18:10")
+    shown = choose(chances=True, closings=None, predictions=file, directory=directory(), now=now)
+    assert shown.kind == "district", "the same files with chances LIVE give the district"
+    assert "74%" in shown.shows
+    hidden = choose(chances=False, closings=None, predictions=file, directory=directory(), now=now)
+    assert hidden.kind == "national"
+    assert hidden.query == ""
+    assert hidden.seen.chance is None
+    for word in ("%", "percent", "chance", "odds", "74", "highest"):
+        assert word not in hidden.shows.lower(), word
+    # The predictions are not read at all: a malformed file changes nothing.
+    broken = choose(
+        chances=False, closings=None, predictions={"days": 3}, directory=directory(), now=now
+    )
+    assert broken.shows == hidden.shows

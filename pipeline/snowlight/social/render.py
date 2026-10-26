@@ -336,6 +336,7 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
     say: Callable[[str], None],
     live: Path | None,
     view: View | None,
+    chances: bool,
 ) -> Taken:
     context = browser.new_context(
         viewport={"width": WIDTH, "height": HEIGHT},
@@ -363,9 +364,17 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
             attempt = Attempt(context, site, say, live=live)
             attempt.watch(page)
             directory, closings, root = attempt.files(page)
-            predictions = attempt.predictions(page, root)
+            # While chances are TESTING the predictions are not even read (no picture of a
+            # chance, and nothing about one in its description).
+            predictions = attempt.predictions(page, root) if chances else None
             picture = (
-                choose(closings=closings, predictions=predictions, directory=directory, now=now())
+                choose(
+                    closings=closings,
+                    predictions=predictions,
+                    directory=directory,
+                    now=now(),
+                    chances=chances,
+                )
                 if view is None
                 else region(
                     query=view.query,
@@ -403,6 +412,7 @@ def _proxy() -> dict[str, str] | None:
 def render(  # noqa: PLR0913 - the render's parts
     out: Path,
     *,
+    chances: bool,
     site: str = SITE,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
     say: Callable[[str], None],
@@ -418,7 +428,9 @@ def render(  # noqa: PLR0913 - the render's parts
 
     ``live`` serves the live files from a local folder instead of the live root (a dry run
     against a local build); ``view`` and ``fallback`` make the image library's dated cards.
-    The workflow passes none of them.
+    The workflow passes none of them. ``chances`` is the facts file's switch
+    (:func:`snowlight.social.rules.chances_shown`): without it no picture or card gives a
+    chance.
     """
     out.mkdir(parents=True, exist_ok=True)
     stale_files = [FILE, NOTE, *(f"{post}.{ext}" for post in POSTS for ext in ("png", "json"))]
@@ -435,7 +447,14 @@ def render(  # noqa: PLR0913 - the render's parts
             for attempt in range(1, attempts + 1):
                 try:
                     taken = _attempt(
-                        browser, site=site, out=out, now=now, say=say, live=live, view=view
+                        browser,
+                        site=site,
+                        out=out,
+                        now=now,
+                        say=say,
+                        live=live,
+                        view=view,
+                        chances=chances,
                     )
                 except (RenderError, PictureError, PlaywrightError) as error:
                     say(f"::warning::social: picture try {attempt} failed: {_short(error)}")
@@ -444,7 +463,7 @@ def render(  # noqa: PLR0913 - the render's parts
                 (out / NOTE).write_text(taken.model_dump_json(indent=2) + "\n", encoding="utf-8")
                 say(f"social: the picture shows: {taken.shows}")
                 for post in POSTS:
-                    _card(browser, taken, out, post, fallback=fallback, say=say)
+                    _card(browser, taken, out, post, fallback=fallback, chances=chances, say=say)
                 return taken
         finally:
             browser.close()
@@ -458,12 +477,15 @@ def _card(  # noqa: PLR0913 - the card's parts
     post: Post,
     *,
     fallback: bool,
+    chances: bool,
     say: Callable[[str], None],
 ) -> None:
     """The card for ``post`` over the picture, tried twice; none after two failures."""
     for attempt in range(1, ATTEMPTS + 1):
         try:
-            compose(browser, taken, out / FILE, post, out, fallback=fallback, say=say)
+            compose(
+                browser, taken, out / FILE, post, out, fallback=fallback, chances=chances, say=say
+            )
         except (CardError, PlaywrightError) as error:
             say(f"::warning::social: the {post} card, try {attempt}, failed: {_short(error)}")
             for ext in ("png", "json"):

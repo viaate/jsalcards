@@ -36,10 +36,11 @@ from snowlight.social.cards import (
     groups,
     lay,
     pick,
+    without_chances,
 )
 from snowlight.social.content import ContentError, _still_true, load
 from snowlight.social.picture import Box, Chance, Counts, Seen, Taken
-from snowlight.social.rules import parse_facts
+from snowlight.social.rules import mentions_chance, parse_facts
 
 REPO = Path(__file__).resolve().parents[3]
 TAKEN_AT = datetime(2026, 12, 10, 12, 42, tzinfo=UTC)  # 6:42 AM CT
@@ -366,8 +367,9 @@ def test_every_tagline_on_a_card_is_true_per_the_facts_file() -> None:
     assert found is not None
     # B's dev-log kicker is the label "Dev log"; its headline is a line of the facts file.
     lines = [found.group(1), *(x for x in re.findall(r"'dev-log': '([^']+)'", b) if x != "Dev log")]
-    assert lines == ["Chances from a prediction model trained on real closing records",
+    assert lines == ["A prediction model trained on real closing records, not a guess",
                      "Building Snowlight"]  # fmt: skip
+    assert not mentions_chance(lines[0]), "the model line stays while chances are TESTING"
     model = facts.get("model")
     assert model is not None
     assert model.status == "LIVE"
@@ -542,7 +544,13 @@ def test_compose_writes_the_card_its_note_and_alt(
 ) -> None:
     said: list[str] = []
     card = compose(
-        browser, taken("closings", STORM), maps["storm"], "dev-log", tmp_path, say=said.append
+        browser,
+        taken("closings", STORM),
+        maps["storm"],
+        "dev-log",
+        tmp_path,
+        chances=True,
+        say=said.append,
     )
     assert card.style == "c", said
     assert (tmp_path / "dev-log.png").stat().st_size < MAX_BYTES
@@ -557,6 +565,7 @@ def test_compose_writes_the_card_its_note_and_alt(
         "waitlist",
         tmp_path,
         fallback=True,
+        chances=True,
         say=said.append,
     )
     assert old.fallback
@@ -567,7 +576,9 @@ def test_a_map_of_the_wrong_size_is_refused(browser: Browser, tmp_path: Path) ->
     small = tmp_path / "small.png"
     small.write_bytes(png(np.zeros((90, 160, 3), dtype=np.uint8)))
     with pytest.raises(CardError, match="1600 x 900"):
-        compose(browser, taken("national", CALM), small, "dev-log", tmp_path, say=print)
+        compose(
+            browser, taken("national", CALM), small, "dev-log", tmp_path, chances=True, say=print
+        )
 
 
 def test_an_older_national_card_drops_the_days_chance() -> None:
@@ -642,3 +653,63 @@ def test_a_card_line_is_words_of_a_live_fact_or_a_whole_coming_one() -> None:
 def test_every_library_card_with_a_line_names_it() -> None:
     for path in sorted((REPO / "social" / "images").glob("*national*.json")):
         assert json.loads(path.read_text(encoding="utf-8")).get("tagline"), path.name
+
+
+# Chances while the site is locked (F): no card, card word or alt text gives a chance.
+
+
+def test_while_chances_are_testing_the_card_facts_hold_no_chance() -> None:
+    calm = without_chances(taken("national", CALM))
+    assert calm.seen.chance is None
+    for post in ("dev-log", "waitlist"):
+        assert not any(
+            "chance" in key.lower() for key in c_slots(calm, post, "left", fallback=False)
+        )
+        picture = a_facts(calm, post, fallback=False)["picture"]
+        assert isinstance(picture, dict)
+        assert picture["top_chance"] is None
+        assert "forecast" not in b_card(calm, post, "file:///m.png", fallback=False)
+        assert not mentions_chance(alt_text(calm, post, fallback=False))
+    with pytest.raises(CardError, match="district"):
+        without_chances(taken("district", DISTRICT))
+    told = taken("national", Seen()).model_copy(
+        update={"shows": "SYNTHETIC: a district's chance of no school on Tuesday is 74%"}
+    )
+    with pytest.raises(CardError, match="description"):
+        without_chances(told)
+    plain = taken("national", Seen())
+    assert without_chances(plain) is plain
+
+
+@pytest.mark.parametrize("candidate", ["c-left", "c-right", "a", "b"])
+def test_while_chances_are_testing_no_template_shows_a_chance(
+    page: Page, maps: dict[str, Path], candidate: Candidate
+) -> None:
+    calm = without_chances(taken("national", CALM))
+    for post in ("dev-log", "waitlist"):
+        _, words = lay(page, candidate, calm, post, maps["calm"], fallback=False)
+        assert not mentions_chance(words), (candidate, post, words)
+        if candidate == "a" and post == "dev-log":
+            assert "A prediction model trained on real closing records, not a guess" in words
+
+
+def test_compose_while_chances_are_testing(
+    browser: Browser, maps: dict[str, Path], tmp_path: Path
+) -> None:
+    """SYNTHETIC: a 1% nation on a calm map, and a 77% district, with chances TESTING."""
+    for post in ("dev-log", "waitlist"):
+        card = compose(
+            browser,
+            taken("national", CALM),
+            maps["calm"],
+            post,
+            tmp_path,
+            chances=False,
+            say=print,
+        )
+        assert not mentions_chance(card.alt), card.alt
+    with pytest.raises(CardError, match="district"):
+        compose(
+            browser, taken("district", DISTRICT), maps["calm"], "dev-log", tmp_path,
+            chances=False, say=print,
+        )  # fmt: skip

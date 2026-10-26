@@ -52,8 +52,31 @@ Two rules hold for every post, Haiku's and the queued ones alike, and for every 
   form except "not a guess" (about Snowlight's own chances). Haiku's second check refuses
   any other comparison it sees.
 
-The A card's line on a dev log or waitlist card is the model line, "Chances from a
-prediction model trained on real closing records", words of the LIVE fact `model`.
+The A card's line on a dev log or waitlist card is the model line, "A prediction model
+trained on real closing records, not a guess", words of the LIVE fact `model`. It names no
+chance, so it stays while chances are TESTING (below).
+
+## Chances while the site is locked
+
+The site stays locked until the owner says its chances are ready, so a post never shows what
+the site still hides. One switch decides it: the status of the `chances` fact in
+`social/facts.md` (`rules.chances_shown`). While it is **TESTING** (now):
+
+- the render job does not read the predictions, so the picture is never a district's chance
+  view, and its description, card and alt text hold no chance at all (no number, percent,
+  "chance" or "odds"); the A card's chance line is gone and its model line stays;
+- `cards.py` refuses a card or alt text that holds any word of a chance, and the post job
+  drops a fresh card whose picture, description or alt text gives one (the post then goes
+  with the library card); the library refuses a card whose description or alt text gives one;
+- the checks refuse any post that gives a chance: a percent sign, "percent", odds, "3 in 4",
+  or a level next to "chance" ("a high chance", "chances are low"); a sentence may still say
+  where the chances come from when it names a LIVE model fact ("each district's chance comes
+  from a statistical model trained on 2,388 real past school days"), and Haiku is told the
+  same;
+- the facts file itself may hold no chance number (parsing it fails otherwise).
+
+When the owner unlocks the site, the lead marks `chances` LIVE (with any numbers it should
+give) and chance cards and posts come back with no code change.
 
 ## Caps (in code, tested)
 
@@ -118,8 +141,8 @@ phrases that hold one of those words but name another fact (`| except: ...`, suc
 when something ships, move its fact to LIVE in the same change. Nothing private goes in
 it. Every number in the model section comes from docs/predict.md and the committed model
 file, and a test checks them against both. A term is a word or phrase, never a bare number
-(a term "2,388" would split at its comma). A line printed on a card (the A card's "Chances
-from a prediction model trained on real closing records", the B card's "Building
+(a term "2,388" would split at its comma). A line printed on a card (the A card's "A
+prediction model trained on real closing records, not a guess", the B card's "Building
 Snowlight") must be words of a LIVE fact; a test holds the templates to it, and a library
 card's line is kept in its JSON (`tagline`): when that line leaves the facts file (it must
 stay words of a LIVE fact, or the whole text of a COMING one), the run stops red until the
@@ -135,10 +158,12 @@ with no sandbox; the secrets live only in the post job, which runs no browser:
 1. Headless Chromium (installed in the job) reads the site's lock check from its own page and
    unlocks it in that browser only (never printed). Signed out, it opens the map at a view
    where the site reads the school directory and `live/closings.json`, and keeps their bytes;
-   it reads `predictions/latest.json` from the same live root.
+   it reads `predictions/latest.json` from the same live root, only while the facts file
+   marks chances LIVE.
 2. `picture.py` picks the view from those files: the busiest picture-sized area of lit
-   schools when closings light any today; else the district with the highest chance of no
-   school (at least 10%), framed by its schools on the left; else the dark national map (the
+   schools when closings light any today; else, only while chances are LIVE, the district
+   with the highest chance of no school (at least 10%), framed by its schools on the left;
+   else the dark national map (the
    words never say "night": the map is dark at any hour). It writes the description (time
    with its zone, place by state, counts, chance) and the same facts as fields. Nothing is
    said about closings when the closings file was a 404 (practice mode), and neither when it

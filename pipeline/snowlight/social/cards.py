@@ -49,6 +49,7 @@ from snowlight.social.picture import (
     Taken,
     clock,
 )
+from snowlight.social.rules import mentions_chance
 
 HERE: Final = Path(__file__).parent / "cards"
 FIT_SHARE: Final = 0.03
@@ -552,14 +553,20 @@ def compose(  # noqa: PLR0913 - the card's parts
     out: Path,
     *,
     fallback: bool = False,
+    chances: bool,
     say: Callable[[str], None],
 ) -> Card:
     """The card for ``post`` over the map picture, written to ``out/<post>.png`` and
-    ``out/<post>.json``; the style chosen by :func:`pick`.
+    ``out/<post>.json``; the style chosen by :func:`pick`. Without ``chances`` (the facts
+    file's switch, :func:`snowlight.social.rules.chances_shown`) the card, its alt text and
+    the picture's description give no chance (:func:`without_chances`).
 
     Raises:
-        CardError: no style gave a true, whole card.
+        CardError: no style gave a true, whole card, or a chance would show while chances
+            are TESTING.
     """
+    if not chances:
+        taken = without_chances(taken)
     context = browser.new_context(
         viewport={"width": WIDTH, "height": HEIGHT}, device_scale_factor=1, color_scheme="dark"
     )
@@ -590,6 +597,9 @@ def compose(  # noqa: PLR0913 - the card's parts
         png = laid[chosen].png
         if len(png) > MAX_BYTES:
             raise CardError("the card is over 5 MB")
+        alt = alt_text(taken, post, fallback=fallback)
+        if not chances and (mentions_chance(laid[chosen].words) or mentions_chance(alt)):
+            raise CardError("the card would give a chance while chances are TESTING")
     finally:
         context.close()
     out.mkdir(parents=True, exist_ok=True)
@@ -598,13 +608,30 @@ def compose(  # noqa: PLR0913 - the card's parts
         post=post,
         style=chosen[0],  # type: ignore[arg-type]
         why=why[:600],
-        alt=alt_text(taken, post, fallback=fallback),
+        alt=alt,
         file=f"{post}.png",
         fallback=fallback,
     )
     (out / f"{post}.json").write_text(card.model_dump_json(indent=2) + "\n", encoding="utf-8")
     say(f"social: the {post} card is style {card.style}: {why}")
     return card
+
+
+def without_chances(taken: Taken) -> Taken:
+    """The picture with no chance in it, for a card while chances are TESTING (the site is
+    locked): its chance dropped from the facts. A district's chance picture, or a description
+    that gives a chance, cannot be made into one.
+
+    Raises:
+        CardError: the picture is a district's chance, or its description gives a chance.
+    """
+    if taken.kind == "district":
+        raise CardError("a district's chance picture while chances are TESTING")
+    if mentions_chance(taken.shows):
+        raise CardError("the picture's description gives a chance while chances are TESTING")
+    if taken.seen.chance is None:
+        return taken
+    return taken.model_copy(update={"seen": taken.seen.model_copy(update={"chance": None})})
 
 
 def load_card(folder: Path, post: Post) -> tuple[Card, Path] | None:

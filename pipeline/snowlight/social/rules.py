@@ -28,6 +28,12 @@ for what it claims:
   from the picture's description is never written: the card carries those, labeled.
 * **Dates.** "tomorrow", "next week", "next Monday", a weekday or a month name only as the
   facts or the picture's description use it.
+* **Chances while TESTING.** While the facts file marks ``chances`` TESTING (the site is
+  locked until the chances are ready, :func:`chances_shown`), no post gives a chance: no
+  percent, no "percent", no odds and no level ("a high chance", "chances are low"), and the
+  facts file itself may hold no percent then. A sentence may still say where the chances come
+  from when it names a LIVE model fact whose own words speak of them ("each district's chance
+  comes from a statistical model").
 * **Older pictures.** When the picture is not current, nothing in the post says it is: no
   "now", "today", "currently", "as of", "just", "fresh", "latest" or a clock time.
 
@@ -440,6 +446,57 @@ NOW_WORDS: Final = (
     "at present",
 )
 """Words that call a picture current: refused when it is an older one."""
+CHANCES_ID: Final = "chances"
+"""The facts file's switch: chances are shown in posts and cards only while this fact is LIVE."""
+CHANCE_NUMBER: Final = re.compile(
+    r"[%\uff05\ufe6a\u2030]|\bper\s?cent|\bpercent|\bpct\b|\bodds\b|\b\d+\s*(?:in|out of)\s*\d+\b"
+    r"|\b(?:one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:in|out of)\s+"
+    r"(?:two|three|four|five|six|seven|eight|nine|ten|\d+)\b",
+    re.IGNORECASE,
+)
+"""A chance given as a number: a percent sign or word, odds, "3 in 4", "one out of ten"."""
+CHANCE_WORDS: Final = re.compile(
+    r"[%\uff05\ufe6a\u2030]|\bper\s?cent|\bpercent|\bodds\b|\bchances?\b|\blikelihood\b"
+    r"|\bprobabilit(?:y|ies)\b",
+    re.IGNORECASE,
+)
+"""Any word of a chance: what a picture's description, alt text and card hold none of while
+chances are TESTING."""
+LEVEL: Final = (
+    "low",
+    "lower",
+    "lowest",
+    "high",
+    "higher",
+    "highest",
+    "tiny",
+    "small",
+    "slim",
+    "big",
+    "bigger",
+    "huge",
+    "good",
+    "decent",
+    "strong",
+    "zero",
+    "none",
+    "nil",
+    "likely",
+    "unlikely",
+    "rising",
+    "rises",
+    "rose",
+    "jumped",
+    "jumps",
+    "spiked",
+    "spikes",
+    "climbing",
+    "dropped",
+    "falling",
+    "minimal",
+    "flat",
+)
+"""Words that give a chance's level, refused near "chance" while chances are TESTING."""
 CLOCK: Final = re.compile(r"\b\d{1,2}(?::\d{2})?\s?(?:a\.?m\.?|p\.?m\.?)(?![a-z])", re.IGNORECASE)
 
 
@@ -476,6 +533,19 @@ class Facts:
             for fact in self.facts
             if fact.status == "LIVE" and (fact.id == "model" or fact.id.startswith("model-"))
         )
+
+
+def chances_shown(facts: Facts) -> bool:
+    """Whether posts and cards may show a chance: only while the facts file marks the
+    ``chances`` fact LIVE (the lead marks it LIVE when the owner unlocks the site). A file
+    without it shows none."""
+    fact = facts.get(CHANCES_ID)
+    return fact is not None and fact.status == "LIVE"
+
+
+def mentions_chance(text: str) -> bool:
+    """Whether ``text`` holds any word of a chance (:data:`CHANCE_WORDS`)."""
+    return CHANCE_WORDS.search(text) is not None
 
 
 def model_fact_for(facts: Facts, day: date) -> Fact | None:
@@ -525,6 +595,11 @@ def parse_facts(text: str) -> Facts:
     if len(set(ids)) != len(ids):
         raise FactsError("a fact id repeats")
     said = "\n".join(fact.text for fact in facts)
+    shown = any(fact.id == CHANCES_ID and fact.status == "LIVE" for fact in facts)
+    if not shown and CHANCE_NUMBER.search(said):
+        # A post may use any number the facts hold: while chances are TESTING none of them
+        # may be a chance.
+        raise FactsError("a fact gives a chance as a number while chances are not LIVE")
     return Facts(facts=tuple(facts), numbers=numbers_in(said), text=text)
 
 
@@ -650,11 +725,45 @@ def _claims(sentence: str, facts: Facts) -> list[str]:
         if not named:
             problems.append(f"it says something is live ('{claim}') but names no LIVE fact")
         return problems
+    live = [fact for fact, _ in named if fact.status == "LIVE"]
     return problems + [
         f"it names '{term}' without saying it is {fact.status.lower()} ({fact.id})"
         for fact, term in named
-        if fact.status != "LIVE" and not _has(sentence, NOT_LIVE)
+        if fact.status != "LIVE"
+        and not _has(sentence, NOT_LIVE)
+        and not (fact.status == "TESTING" and any(_speaks_of(other, term) for other in live))
     ]
+
+
+def _speaks_of(fact: Fact, term: str) -> bool:
+    """Whether a LIVE fact's own text uses ``term`` (or its plural or singular): a sentence
+    naming that fact may use the term as the fact does ("each district's chance comes from a
+    statistical model" names the LIVE model, whose text speaks of chances, while the chances
+    themselves are TESTING)."""
+    forms = {term, term + "s", term.removesuffix("s")}
+    return _has(fact.text, forms) is not None
+
+
+def _chance_given(text: str) -> list[str]:
+    """What gives a chance in a post while chances are TESTING (see the module's docstring)."""
+    problems: list[str] = []
+    if match := CHANCE_NUMBER.search(text):
+        problems.append(
+            f"it gives a chance as a number ('{match.group().lower()}'); no chance is posted"
+            " while the chances are in testing"
+        )
+    tokens = TOKEN.findall(text.lower())
+    for index, token in enumerate(tokens):
+        if _stem(token) not in {"chance", "likelihood"}:
+            continue
+        near = tokens[max(0, index - 4) : index + 7]
+        if level := next((word for word in near if word in LEVEL), None):
+            problems.append(
+                f"it says how high or low a chance is ('{level}'); no chance is posted while"
+                " the chances are in testing"
+            )
+            break
+    return problems
 
 
 def _numbers(text: str, facts: Facts, image_description: str) -> list[str]:
@@ -748,6 +857,10 @@ def check(  # noqa: PLR0912, PLR0913 - one rule a branch; the post and what it i
         problems.append("it names a station's call letters")
     if style == "waitlist" and "link in my bio" not in lowered:
         problems.append("a waitlist post must say 'link in my bio'")
+    if not chances_shown(facts):
+        problems += _chance_given(text)
+        if mentions_chance(image_description):
+            problems.append("the picture's description gives a chance while chances are TESTING")
     problems += _numbers(text, facts, image_description)
     if not image_is_today:
         if now_word := _has(text, NOW_WORDS):
