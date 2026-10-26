@@ -8,6 +8,9 @@
 4. Claim its slot in D1 (the claim also holds the day's cap), take the token chain, refresh,
    store the rotated token, upload the image and post. Every failure after the claim drops
    the claim, except a post X may have made (``uncertain``: never sent again).
+5. A scheduled run with nothing to post still refreshes once when the chain stopped and the
+   ``X_REFRESH_TOKEN`` secret is not the one that stopped (the owner pasted a new one), so the
+   new token is checked and the owner's issue closes without waiting for a post.
 
 Caps (all in code): one post a run; :data:`snowlight.social.store.MAX_POSTS_PER_DAY` a UTC
 day; one Haiku post a UTC day (its slot is the day); four Haiku calls a run, each at most
@@ -84,7 +87,9 @@ class Pick:
     image: Image
 
 
-def _anthropic() -> anthropic.Anthropic:  # pragma: no cover - the real client
+def _anthropic() -> anthropic.Anthropic:
+    """The real client: it retries nothing, so :data:`snowlight.social.writer.MAX_CALLS`
+    counts every request."""
     return anthropic.Anthropic(max_retries=0, timeout=60.0)
 
 
@@ -160,20 +165,29 @@ def fresh_picture(folder: Path | None, now: datetime, say: Callable[[str], None]
     return cards
 
 
-def picture_for(
+def picture_for(  # noqa: PLR0913 - the post's parts
     content: Content,
     fresh: Fresh,
     style: str,
     kinds: tuple[str, ...] | None,
     own: Image | None,
+    *,
+    say: Callable[[str], None],
 ) -> Image | None:
     """A post's picture: the fresh card for its style when the picture's kind fits, else
     ``own``, else the library's newest card (stored cards keep their own day and
-    description)."""
+    description). An older picture is said in the log, by the one the post goes with."""
     image = fresh.get(style)
     if image is not None and (kinds is None or image.fresh in kinds):
         return image
-    return own or content.newest(style)
+    older = own or content.newest(style)
+    if older is not None:
+        why = "no fresh card fits it" if fresh.get(style) is not None else "no fresh card"
+        say(
+            f"::warning::social: {why}: the {style} post uses {older.id} from"
+            f" {older.day.isoformat()}, as an older picture"
+        )
+    return older
 
 
 def _queued(
@@ -184,7 +198,7 @@ def _queued(
     for item in content.queue:
         if item.slot in taken:
             continue
-        image = picture_for(content, fresh, item.style, item.pictures, item.image)
+        image = picture_for(content, fresh, item.style, item.pictures, item.image, say=say)
         problems = (
             ["it has no picture: no fresh one fits and the library is empty"]
             if image is None
@@ -217,6 +231,8 @@ class Run:
     run_id: str
     now: datetime
     fresh: Fresh = field(default_factory=dict)
+    chain_lost: bool = False
+    """The rotated token could not be stored (the run may still post, and ends red)."""
 
     def say(self, line: str) -> None:
         self.deps.say(line)
@@ -242,7 +258,7 @@ class Run:
         style: Style = (
             "waitlist" if last is not None and last.get("style") == "dev_log" else "dev_log"
         )
-        image = picture_for(self.content, self.fresh, style, None, None)
+        image = picture_for(self.content, self.fresh, style, None, None, say=self.say)
         if image is None:
             self.say("::warning::social: no fresh picture and an empty library: no Haiku post")
             return None
@@ -277,15 +293,30 @@ class Run:
         except StoreError:
             self.say(f"::warning::social: the claim on {pick.slot} could not be dropped")
 
-    def refresh(self) -> Tokens | None:
-        """The tokens, with the rotated refresh token stored; ``None`` when that failed (the
-        reason said, and the owner's issue opened when they must act)."""
+    @property
+    def seed(self) -> str:
+        """The fingerprint of the ``X_REFRESH_TOKEN`` secret (never the secret)."""
+        return seal.fingerprint(self.secrets.refresh_seed, self.secrets.client_secret)
+
+    def stopped(self, why: str) -> None:
+        """The chain stopped: open the owner's issue, and record which secret it was."""
+        self.issue(why)
+        try:
+            self.store.stopped(self.seed)
+        except StoreError:
+            self.say("::warning::social: the stopped chain could not be recorded")
+
+    def refresh(self) -> Tokens | None:  # noqa: PLR0911 - one reason a return
+        """The tokens, with the rotated refresh token stored; ``None`` when no token came
+        (the reason said, and the owner's issue opened when they must act). When the rotated
+        token could not be stored the tokens still come back (this run may post) and the
+        issue is opened."""
         try:
             chain = self.store.take_chain(self.run_id, self.now)
         except (ChainBusyError, StoreError) as error:
             self.say(f"::warning::social: the token chain is not free ({error}): nothing posts")
             return None
-        seed = seal.fingerprint(self.secrets.refresh_seed, self.secrets.client_secret)
+        seed = self.seed
         if chain.version == 0 or not chain.sealed or chain.seed != seed:
             token, source = self.secrets.refresh_seed, "the X_REFRESH_TOKEN secret"
         else:
@@ -294,7 +325,10 @@ class Run:
             except seal.SealError as error:
                 self.say(f"::error::social: {error}")
                 self.store.release_chain(self.run_id)
-                self.issue("the stored token did not open")
+                self.stopped(
+                    "The refresh token stored for the posting workflow could not be opened"
+                    " (it is sealed with X_CLIENT_SECRET; was that secret changed?)"
+                )
                 return None
             self.deps.mask(token)
             source = f"the stored token (version {chain.version})"
@@ -303,7 +337,7 @@ class Run:
         except RefreshRefusedError as error:
             self.say(f"::error::social: {error} (from {source})")
             self.store.release_chain(self.run_id)
-            self.issue(str(error))
+            self.stopped(f"X refused the refresh token the posting workflow uses ({error})")
             return None
         except RefreshUnknownError as error:
             self.say(f"::error::social: {error}; the next run tries again")
@@ -312,33 +346,65 @@ class Run:
         sealed = seal.seal(tokens.refresh, self.secrets.client_secret)
         try:
             version = self.store.store_chain(chain, self.run_id, sealed, seed, self.deps.now())
+        except ChainBusyError as error:
+            self.say(f"::warning::social: the rotated token was not stored ({error})")
+            return tokens
         except StoreError as error:
             self.say(f"::error::social: the rotated token could not be stored ({error})")
-            self.issue("the rotated token could not be stored")
-            return None
+            self.stopped(
+                "X gave the posting workflow a new refresh token, but it could not be stored"
+                " in the D1 database, so the next run has no token that works"
+            )
+            self.chain_lost = True
+            return tokens
         self.say(
             f"social: refreshed from {source}; the rotated token is stored sealed"
             f" (version {version})"
         )
+        return tokens
+
+    def usable(self, tokens: Tokens) -> bool:
+        """Whether the token has every scope a post needs: if not, the owner's issue says
+        which are missing; if so, the chain works again and the issue is closed."""
+        missing = sorted(NEEDED_SCOPES - tokens.scopes) if tokens.scopes else []
+        if missing:
+            names = ", ".join(missing)
+            self.say(f"::error::social: the X token lacks the scopes {names}: nothing posts")
+            self.stopped(f"The X token lacks the scopes {names}, which a post needs")
+            return False
+        try:
+            if self.store.refused_seed() is not None:
+                self.store.working()
+        except StoreError:
+            self.say("::warning::social: the working chain could not be recorded")
         if self.github is not None:
             try:
                 if (closed := self.github.resolve(self.deps.http)) is not None:
                     self.say(f"social: closed issue #{closed}")
             except httpx.HTTPError as error:
                 self.say(f"::warning::social: the issue was not closed ({type(error).__name__})")
-        return tokens
+        return True
+
+    def recover(self) -> int:
+        """A scheduled run with nothing to post: refresh once when the chain stopped and the
+        ``X_REFRESH_TOKEN`` secret is not the one that stopped; the exit code."""
+        refused = self.store.refused_seed()
+        if refused is None:
+            return 0
+        if refused == self.seed:
+            self.say(
+                "::warning::social: posting is stopped until a new X_REFRESH_TOKEN is pasted"
+                " (the open issue says how)"
+            )
+            return 0
+        self.say("social: X_REFRESH_TOKEN is new since the chain stopped: checking it")
+        tokens = self.refresh()
+        return 0 if tokens is not None and self.usable(tokens) else 1
 
     def send(self, pick: Pick) -> int:
         """Refresh, upload and post a claimed pick; the exit code."""
         tokens = self.refresh()
-        if tokens is None:
-            self.drop(pick)
-            return 1
-        missing = sorted(NEEDED_SCOPES - tokens.scopes) if tokens.scopes else []
-        if missing:
-            self.say(
-                f"::error::social: the X token lacks the scopes {', '.join(missing)}: nothing posts"
-            )
+        if tokens is None or not self.usable(tokens):
             self.drop(pick)
             return 1
         x = self.deps.x
@@ -376,7 +442,7 @@ class Run:
         )
         self.say(f"social: text: {pick.text}")
         self.say(f"social: picture: {pick.image.describe()}")
-        return 0
+        return 1 if self.chain_lost else 0
 
 
 def _start(env: Env, root: Path, deps: Deps, picture: Path | None) -> Run | int:
@@ -416,11 +482,6 @@ def _start(env: Env, root: Path, deps: Deps, picture: Path | None) -> Run | int:
         return 1
     now = deps.now()
     fresh = fresh_picture(picture, now, say)
-    if not fresh and (newest := content.newest()) is not None:
-        say(
-            f"::warning::social: no fresh picture: a post uses the library's newest image,"
-            f" {newest.id} from {newest.day.isoformat()}, as an older picture"
-        )
     return Run(env, deps, content, store, secrets, github, run_id, now, fresh)
 
 
@@ -432,6 +493,13 @@ def run(env: Env, root: Path, event: str, deps: Deps, picture: Path | None = Non
         return started
     one = started
     try:
+        for row in one.store.stale_claims(one.now):
+            one.say(
+                f"::warning::social: {row.get('slot')} was claimed by run {row.get('run')} at"
+                f" {row.get('claimed_at')} and never finished: it may or may not be on"
+                f" @{ACCOUNT}. It is never sent again by itself; check the account, then delete"
+                " its social_posts row (docs/social.md)"
+            )
         taken = one.store.taken_slots()
         pick, refused = _queued(one.content, taken, one.fresh, one.say)
         if pick is None and one.store.posts_on(one.now.date().isoformat()) >= MAX_POSTS_PER_DAY:
@@ -452,6 +520,11 @@ def run(env: Env, root: Path, event: str, deps: Deps, picture: Path | None = Non
         one.say(f"::warning::social: the D1 store failed ({error}): nothing posts")
         return 1
     if pick is None:
-        return 1 if refused else 0
+        try:
+            recovered = one.recover() if event == "schedule" else 0
+        except StoreError as error:
+            one.say(f"::warning::social: the D1 store failed ({error})")
+            recovered = 1
+        return 1 if refused else recovered
     one.say(f"social: claimed {pick.slot} ({pick.style}, image {pick.image.id})")
     return one.send(pick) or (1 if refused else 0)

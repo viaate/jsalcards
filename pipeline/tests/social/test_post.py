@@ -18,6 +18,7 @@ from snowlight.social.cli import Output
 from snowlight.social.content import load
 from snowlight.social.issue import TITLE
 from snowlight.social.post import Deps, run
+from snowlight.social.store import TABLES
 from snowlight.social.xapi import XClient
 from social import fakes
 from social.fakes import (
@@ -45,6 +46,7 @@ GOOD_DEV_LOG = {
     "text": "Dev log: the closings reader runs 24/7 in practice mode.",
 }
 OK = {"ok": True, "problems": []}
+TABLES_SQL = TABLES[1]
 
 
 class Runner:
@@ -355,6 +357,7 @@ def test_a_token_without_media_write_posts_nothing(tmp_path: Path, world: World)
     assert runner() == 1
     assert "lacks the scopes media.write" in runner.log
     assert world.x.uploads == 0
+    assert world.github.issues[0]["body"].startswith("The X token lacks the scopes media.write")
     assert world.d1.row("SELECT version FROM social_token") == {"version": 1}
 
 
@@ -382,10 +385,13 @@ def test_a_rotated_token_that_cannot_be_stored_opens_the_issue(
     world.d1.fail_next = ["UPDATE social_token SET version"] * 3 + [
         "SELECT version, sealed, lease"
     ] * 6
-    assert runner() == 1
+    assert runner() == 1, "red: the owner must paste a new token"
     assert "could not be stored" in runner.log
-    assert world.x.posts == []
+    assert len(world.x.posts) == 1, "the fresh access token still posts the claimed post"
     assert [issue["title"] for issue in world.github.issues] == [TITLE]
+    body = world.github.issues[0]["body"]
+    assert body.startswith("X gave the posting workflow a new refresh token, but it could not")
+    assert "X refused" not in body
 
 
 def test_a_store_whose_answer_was_lost_reads_its_write_back(tmp_path: Path, world: World) -> None:
@@ -482,7 +488,7 @@ def test_without_a_fitting_fresh_picture_the_newest_library_image_goes_as_older(
     assert world.d1.row("SELECT image FROM social_posts") == {"image": "img-2"}
     if why is not None:
         assert why in runner.log
-        assert "uses the library's newest image, img-2 from 2026-10-20" in runner.log
+        assert "the dev_log post uses img-2 from 2026-10-20, as an older picture" in runner.log
 
 
 def test_a_missing_or_malformed_picture_falls_back(tmp_path: Path, world: World) -> None:
@@ -629,7 +635,8 @@ def test_haikus_free_text_never_starts_a_workflow_command(tmp_path: Path, world:
     assert len(world.x.posts) == 1
     lines = runner.log.splitlines()
     refused = next(line for line in lines if "refused" in line)
-    assert "stop-commands" in refused and "::stop-commands" not in refused
+    assert "stop-commands" in refused
+    assert "::stop-commands" not in refused
     assert not any(line.startswith(("::stop", "##[")) for line in lines)
     # The masks come after the refusal and are still commands the runner reads.
     assert any(line.startswith("::add-mask::") for line in lines[lines.index(refused) :])
@@ -656,7 +663,8 @@ def test_one_say_is_one_line_and_never_a_command(injected: str) -> None:
     assert lines[1].startswith("::warning::social: x ")
     assert lines[2].startswith(": :set-output")
     for line in lines[:3]:
-        assert "::stop-commands::" not in line and "##[" not in line
+        assert "::stop-commands::" not in line
+        assert "##[" not in line
     assert lines[3:] == [
         "::add-mask::Two9PiecesTwo9Pieces",
         "::add-mask::Second9PieceSecond9Piece",
@@ -667,6 +675,102 @@ def test_the_real_anthropic_client_retries_nothing(monkeypatch: pytest.MonkeyPat
     from snowlight.social import post  # noqa: PLC0415 - the module's private factory
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-SYNTHETIC")
-    client = post._anthropic()  # noqa: SLF001 - the factory the run uses
+    client = post._anthropic()
     assert client.max_retries == 0, "the four-call cap counts requests, so nothing retries"
     assert client.timeout == 60.0
+
+
+@pytest.mark.parametrize("missing", ["tweet.read", "users.read", "tweet.write"])
+def test_a_token_without_a_scope_the_post_needs_posts_nothing_and_says_which(
+    tmp_path: Path, world: World, missing: str
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    world.x.scope = " ".join(
+        scope
+        for scope in ("tweet.read", "tweet.write", "users.read", "offline.access", "media.write")
+        if scope != missing
+    )
+    assert runner() == 1
+    assert f"lacks the scopes {missing}" in runner.log
+    assert world.x.uploads == 0
+    assert world.x.posts == []
+    assert f"lacks the scopes {missing}" in world.github.issues[0]["body"]
+
+
+def test_a_strangers_issue_with_the_same_title_is_never_patched_or_closed(
+    tmp_path: Path, world: World
+) -> None:
+    world.github.issues.append(
+        {"number": 1, "state": "open", "title": TITLE, "body": "theirs", "user": fakes.STRANGER}
+    )
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002")])
+    world.x.valid.clear()
+    assert runner() == 1
+    stranger, mine = world.github.issues
+    assert stranger["body"] == "theirs"
+    assert mine["user"] == fakes.BOT_USER
+    assert mine["title"] == TITLE
+    assert mine["body"].startswith("X refused the refresh token the posting workflow uses")
+    new_seed = fakes.token("Rn")
+    world.x.valid.add(new_seed)
+    runner.clock.at += timedelta(hours=1)
+    assert runner(X_REFRESH_TOKEN=new_seed) == 0
+    assert stranger["state"] == "open"
+    assert mine["state"] == "closed"
+    assert [number for number, _ in world.github.comments] == [2]
+
+
+def test_a_new_secret_is_checked_and_the_issue_closed_on_a_run_with_nothing_to_post(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    assert runner() == 0  # 0001 posted; the queue is empty now and there is no Anthropic key
+    world.x.valid.clear()
+    runner.clock.at += timedelta(hours=1)
+    (tmp_path / "social" / "queue" / "0002.json").write_text(json.dumps(queued("0002")))
+    (tmp_path / "social" / "queue" / "0002.png").write_bytes(fakes.PNG)
+    assert runner() == 1
+    assert world.github.issues[0]["state"] == "open"
+    refreshes = world.x.refreshes
+    # The same secret again: nothing is tried on a run with nothing new to post.
+    world.d1.db.execute("DELETE FROM social_posts WHERE slot = 'queue:0002'")
+    world.d1.db.commit()
+    (tmp_path / "social" / "queue" / "0002.json").unlink()
+    runner.clock.at += timedelta(days=1)
+    assert runner("schedule") == 0
+    assert world.x.refreshes == refreshes
+    assert "until a new X_REFRESH_TOKEN is pasted" in runner.log
+    # The owner pastes a new one: the scheduled run checks it and closes the issue.
+    new_seed = fakes.token("Rn")
+    world.x.valid.add(new_seed)
+    runner.clock.at += timedelta(days=1)
+    assert runner("schedule", X_REFRESH_TOKEN=new_seed) == 0
+    assert world.x.refreshes == refreshes + 1
+    assert len(world.x.posts) == 1
+    assert world.github.issues[0]["state"] == "closed"
+    assert world.d1.row("SELECT refused FROM social_token") == {"refused": None}
+
+
+def test_a_claim_whose_answer_was_lost_is_read_back_and_posts(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    world.d1.fail_next = ["ran:INSERT INTO social_posts"]
+    assert runner() == 0
+    assert len(world.x.posts) == 1
+    assert world.d1.row("SELECT state FROM social_posts") == {"state": "posted"}
+
+
+def test_a_claim_a_stopped_run_left_is_never_sent_and_warned_about(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    world.d1.db.execute(TABLES_SQL)
+    world.d1.db.execute(
+        "INSERT INTO social_posts (slot, kind, style, day, state, image, claimed_at, run)"
+        " VALUES ('queue:0001', 'queue', 'dev_log', '2026-10-26', 'claimed', 'img-1',"
+        " '2026-10-26T15:00:00Z', '999.1')"
+    )
+    world.d1.db.commit()
+    assert runner() == 0
+    assert world.x.posts == []
+    assert "::warning::social: queue:0001 was claimed by run 999.1" in runner.log
+    assert "delete its social_posts row" in runner.log

@@ -270,8 +270,8 @@ def draft(  # noqa: PLR0913 - the run's parts
                 continue
             if verdict.ok and not verdict.problems:
                 return written
-            problems = [
-                plain for line in verdict.problems[:6] if (plain := _plain(line))
-            ] or ["the check said no"]
+            problems = [plain for line in verdict.problems[:6] if (plain := _plain(line))] or [
+                "the check said no"
+            ]
         say(f"social: try {attempt}: refused: " + "; ".join(problems))
     return None

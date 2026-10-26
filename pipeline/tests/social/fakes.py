@@ -231,6 +231,10 @@ class FakeX:
         return httpx.Response(200, json=body)
 
 
+BOT_USER = {"login": "github-actions[bot]", "type": "Bot"}
+STRANGER = {"login": "github-actions-bot", "type": "User"}
+
+
 @dataclass
 class FakeGitHub:
     issues: list[dict[str, Any]] = field(default_factory=list)
@@ -242,12 +246,19 @@ class FakeGitHub:
         assert request.headers["Authorization"] == f"Bearer {GITHUB_TOKEN}"
         path = request.url.path
         if request.method == "GET" and path == "/repos/owner/repo/issues":
+            creator = request.url.params.get("creator")
             return httpx.Response(
-                200, json=[issue for issue in self.issues if issue["state"] == "open"]
+                200,
+                json=[
+                    issue
+                    for issue in self.issues
+                    if issue["state"] == "open"
+                    and (creator is None or issue["user"]["login"] == creator)
+                ],
             )
         if request.method == "POST" and path == "/repos/owner/repo/issues":
             body = json.loads(request.content)
-            issue = {"number": len(self.issues) + 1, "state": "open", **body}
+            issue = {"number": len(self.issues) + 1, "state": "open", "user": BOT_USER, **body}
             self.issues.append(issue)
             return httpx.Response(201, json=issue)
         number = int(path.split("/")[5])

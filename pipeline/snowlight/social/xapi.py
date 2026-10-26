@@ -29,7 +29,11 @@ import httpx
 
 API: Final = "https://api.x.com"
 TIMEOUT: Final = httpx.Timeout(30.0, connect=10.0)
-NEEDED_SCOPES: Final = frozenset({"tweet.write", "media.write", "offline.access"})
+NEEDED_SCOPES: Final = frozenset(
+    {"tweet.read", "tweet.write", "users.read", "media.write", "offline.access"}
+)
+"""POST /2/tweets needs tweet.read, tweet.write and users.read; the upload and alt text need
+media.write; a refresh token needs offline.access (docs.x.com)."""
 STATUS_POLLS: Final = 5
 MAX_WAIT: Final = 10.0
 CODE: Final = re.compile(r"^[A-Za-z0-9_. -]{1,80}$")

@@ -15,13 +15,23 @@ run holding it refreshes, and it stores the rotated token with
 ``UPDATE ... SET version = version + 1 ... WHERE version = <read> AND lease = <run>``, so two
 runs can never both spend one refresh token or overwrite each other's. The first run inserts
 the row at version 0 with its lease (an insert fails when a row appeared meanwhile).
+``refused`` holds the fingerprint of the secret whose chain stopped (X refused it, the stored
+token did not open or could not be stored, or a scope is missing) until a refresh works again:
+a scheduled run with nothing to post refreshes only when the secret's fingerprint differs from
+it, so a newly pasted token is checked and the owner's issue closes, and a refused one is
+never tried again by itself.
 
 **The posts** (``social_posts``): one row a slot (``queue:<id>`` or ``haiku:<UTC day>``),
 claimed before anything is sent with one ``INSERT ... SELECT ... WHERE`` that also enforces
 the day's cap, so a slot is posted at most once and a day never holds more than
 :data:`MAX_POSTS_PER_DAY` posts. ``state`` is ``claimed``, then ``posted`` (with the post id)
 or ``uncertain`` (X may have posted it: never sent again). A post X refused is deleted, so a
-later run may try it again.
+later run may try it again. A ``claimed`` row older than :data:`STALE_CLAIM` belongs to a
+run that stopped mid-send: it may or may not be posted, so it is never sent again by itself,
+and every run warns about it until the owner deletes the row (docs/social.md).
+
+Nothing else records what was posted: the ``social_posts`` table must never be dropped, and
+a posted queue file is removed from ``social/queue`` (docs/social.md).
 """
 
 import time
@@ -37,7 +47,13 @@ DATABASE: Final = "snowlight-live-state"
 TIMEOUT: Final = httpx.Timeout(30.0, connect=10.0)
 RETRY_PAUSE: Final = 3.0
 LEASE: Final = timedelta(minutes=10)
-"""How long a run may hold the token chain (the job's timeout is 15 minutes)."""
+"""How long a run may hold the token chain: taken in the Post step just before the refresh
+and given back when the rotated token is stored, well under a minute later (one refresh call
+of at most 30 seconds). The Post step's own timeout is 10 minutes, and the job's concurrency
+group runs one post job at a time."""
+STALE_CLAIM: Final = timedelta(minutes=30)
+"""A claim older than this belongs to a run that stopped mid-send (the Post step's timeout is
+10 minutes)."""
 MAX_POSTS_PER_DAY: Final = 2
 """Posts of every kind in one UTC day, claimed or posted."""
 STORE_TRIES: Final = 3
@@ -45,7 +61,7 @@ STORE_TRIES: Final = 3
 TABLES: Final = (
     "CREATE TABLE IF NOT EXISTS social_token (id INTEGER PRIMARY KEY CHECK (id = 1),"
     " version INTEGER NOT NULL, sealed TEXT NOT NULL, seed TEXT NOT NULL, lease TEXT,"
-    " lease_until TEXT, updated_at TEXT NOT NULL)",
+    " lease_until TEXT, refused TEXT, updated_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS social_posts (slot TEXT PRIMARY KEY, kind TEXT NOT NULL,"
     " style TEXT NOT NULL, day TEXT NOT NULL, state TEXT NOT NULL, image TEXT NOT NULL,"
     " post_id TEXT, claimed_at TEXT NOT NULL, posted_at TEXT, run TEXT NOT NULL)",
@@ -276,7 +292,8 @@ class Store:
             try:
                 swapped = self.db.run(
                     "UPDATE social_token SET version = ?, sealed = ?, seed = ?, lease = NULL,"
-                    " lease_until = NULL, updated_at = ? WHERE id = 1 AND version = ?"
+                    " lease_until = NULL, refused = NULL, updated_at = ? WHERE id = 1"
+                    " AND version = ?"
                     " AND lease = ?",
                     (new, sealed, seed, _iso(now), chain.version, run),
                     retry=False,
@@ -301,6 +318,20 @@ class Store:
             "UPDATE social_token SET lease = NULL, lease_until = NULL WHERE id = 1 AND lease = ?",
             (run,),
         )
+
+    def stopped(self, seed: str) -> None:
+        """Record that the chain started from ``seed`` (a fingerprint) stopped."""
+        self.db.run("UPDATE social_token SET refused = ? WHERE id = 1", (seed,))
+
+    def working(self) -> None:
+        """Record that the chain works again (a refresh worked with every scope)."""
+        self.db.run("UPDATE social_token SET refused = NULL WHERE id = 1")
+
+    def refused_seed(self) -> str | None:
+        """The fingerprint of the secret whose chain stopped, or ``None`` when it works."""
+        rows = self.db.run("SELECT refused FROM social_token WHERE id = 1").rows
+        value = rows[0].get("refused") if rows else None
+        return value if isinstance(value, str) and value else None
 
     def _token_row(self) -> Row | None:
         try:
@@ -331,17 +362,40 @@ class Store:
     def claim(  # noqa: PLR0913 - one row's columns
         self, slot: str, *, kind: str, style: str, image: str, run: str, now: datetime
     ) -> bool:
-        """Claim a slot before sending it: false when it is taken or the day is full."""
+        """Claim a slot before sending it: false when it is taken or the day is full.
+
+        When the claim's answer is lost, the row is read back: a row this run holds counts
+        as claimed, so a claim that was made is never left stranded.
+
+        Raises:
+            StoreError: the claim failed and its row could not be read back.
+        """
         day = now.date().isoformat()
-        made = self.db.run(
-            "INSERT INTO social_posts (slot, kind, style, day, state, image, claimed_at, run)"
-            " SELECT ?, ?, ?, ?, 'claimed', ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM"
-            " social_posts WHERE slot = ?) AND (SELECT COUNT(*) FROM social_posts WHERE"
-            " day = ?) < ?",
-            (slot, kind, style, day, image, _iso(now), run, slot, day, MAX_POSTS_PER_DAY),
-            retry=False,
-        )
+        try:
+            made = self.db.run(
+                "INSERT INTO social_posts (slot, kind, style, day, state, image, claimed_at,"
+                " run) SELECT ?, ?, ?, ?, 'claimed', ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM"
+                " social_posts WHERE slot = ?) AND (SELECT COUNT(*) FROM social_posts WHERE"
+                " day = ?) < ?",
+                (slot, kind, style, day, image, _iso(now), run, slot, day, MAX_POSTS_PER_DAY),
+                retry=False,
+            )
+        except StoreError:
+            rows = self.db.run("SELECT run, state FROM social_posts WHERE slot = ?", (slot,)).rows
+            if rows and rows[0].get("run") == run and rows[0].get("state") == "claimed":
+                return True
+            raise
         return made.changes == 1
+
+    def stale_claims(self, now: datetime) -> list[Row]:
+        """Claims older than :data:`STALE_CLAIM` (runs that stopped mid-send)."""
+        return list(
+            self.db.run(
+                "SELECT slot, run, claimed_at FROM social_posts WHERE state = 'claimed'"
+                " AND claimed_at < ? ORDER BY claimed_at",
+                (_iso(now - STALE_CLAIM),),
+            ).rows
+        )
 
     def posted(self, slot: str, run: str, post_id: str, now: datetime) -> None:
         self.db.run(
