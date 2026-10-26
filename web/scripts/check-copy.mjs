@@ -89,6 +89,7 @@ export const COPY_MODULES = [
   'src/copy-account.ts',
   'src/copy-notify.ts',
   'src/copy-waitlist.ts',
+  'src/copy-diag.ts',
 ];
 
 // House style --------------------------------------------------------------------------

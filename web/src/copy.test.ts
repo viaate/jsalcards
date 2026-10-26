@@ -12,6 +12,7 @@ import { areaFormat } from './copy-area';
 import { chanceCopy, chanceFormat } from './copy-chance';
 import type { BaseInput, ReasonInput, Zones } from './copy-chance';
 import { format } from './copy-format';
+import { diagCopy } from './copy-diag';
 import { waitlistCopy } from './copy-waitlist';
 
 // The house-style rules and the lint live in scripts/check-copy.mjs, a plain
@@ -687,6 +688,8 @@ describe('format', () => {
       expect(allProblems(copyLeaves(chanceCopy).map(([, text]) => text))).toEqual([]);
       expect(Object.isFrozen(waitlistCopy)).toBe(true);
       expect(allProblems(copyLeaves(waitlistCopy).map(([, text]) => text))).toEqual([]);
+      expect(Object.isFrozen(diagCopy)).toBe(true);
+      expect(allProblems(copyLeaves(diagCopy).map(([, text]) => text))).toEqual([]);
       expect(chanceFormat.weekday('2026-01-13')).toBe('Tuesday');
       expect(chanceFormat.chanceOn('2026-01-14')).toBe('Chance of no school Wednesday');
       // Under it where the chance is the nation's record for want of local days (owner, Oct 24).
@@ -3375,14 +3378,15 @@ ${aliases}
     expect(findings).toEqual([]);
     // copy.ts's strings, the chance section's fixed words (src/copy-chance.ts), the waitlist's
     // (src/copy-waitlist.ts), the account controls' and admin view's (src/copy-account.ts) and
-    // the notifications' (src/copy-notify.ts).
+    // the notifications' (src/copy-notify.ts) and the screen check's (src/copy-diag.ts).
     expect(scanned.strings).toBe(
       strings.length +
         copyLeaves(chanceCopy).length +
         copyLeaves(waitlistCopy).length +
         copyLeaves(accountCopy).length +
         copyLeaves(adminCopy).length +
-        copyLeaves(notifyCopy).length,
+        copyLeaves(notifyCopy).length +
+        copyLeaves(diagCopy).length,
     );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s

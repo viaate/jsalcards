@@ -56,6 +56,7 @@ import type { SchoolHint, SchoolView, WatchOptions } from './school';
 import type { AreaHint, AreaView, WatchAreaOptions } from './area';
 import type { AreaRecord } from '../data/areas';
 import type { Active, Controller, ReplayBar } from './replay';
+import { startDiagnostics } from './diagnostics';
 import { startServiceWorker } from './service-worker';
 import { ZOOM, selectionForHit, startupSelection, viewForHit, zipHit } from './startup';
 
@@ -450,6 +451,8 @@ export function boot(options: BootOptions): Services {
 
   // Once the map is on screen: installing the worker would otherwise run alongside its start.
   void startServiceWorker(options.map);
+  // The screen check, where the address asks for it (?diag=1).
+  startDiagnostics();
 
   /** The menu, started the first time its button is pressed (ui/menu-host.ts). */
   let menuHost: Promise<Menu | null> | null = null;

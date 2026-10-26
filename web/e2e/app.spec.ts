@@ -48,9 +48,12 @@ import type { PreviewServer } from 'vite';
 
 import { STATUS_KEYS, copy } from '../src/copy';
 import { chanceCopy, chanceFormat } from '../src/copy-chance';
+import { diagCopy, diagFormat } from '../src/copy-diag';
 import { format } from '../src/copy-format';
 import { OPEN_SETTLE_ZOOM } from '../src/map/basemap/flight';
 import { COPIED_MS } from '../src/ui/share';
+
+import { smallFields } from './fields';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const GLOW_LAYER = 'snowlight-glow';
@@ -3467,6 +3470,323 @@ test.describe('with data staged', () => {
     await tapLights();
     await zoomedInto(page, { left: 0, top: strip, right: width, bottom: peekTop });
     expect(await sheetTop()).toBeCloseTo(peekTop, 0);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('nothing leaves the screen at any size, with a mouse or a touch screen, safe areas or none, and the page never scrolls sideways', async ({
+    browser,
+  }) => {
+    // Three pages, each resized through every size below: a few seconds a size in software.
+    test.setTimeout(480_000);
+    /** Phones, split views and windows, folds, tablets, laptops and desktops, upright and on their side. */
+    const SIZES = [
+      [320, 568],
+      [375, 667],
+      [390, 844],
+      [507, 768],
+      [540, 720],
+      [640, 360],
+      [678, 1024],
+      [694, 768],
+      [719, 900],
+      [720, 900],
+      [844, 390],
+      [932, 430],
+      [951, 543],
+      [981, 700],
+      [1000, 571],
+      [1024, 768],
+      [1114, 720],
+      [1180, 820],
+      [1366, 700],
+      [1366, 1024],
+      [1440, 900],
+      [1920, 1080],
+      [2560, 1600],
+    ] as const;
+    const IPHONE_UA = devices['iPhone 15 Pro Max'].userAgent;
+    const TOUCH = { deviceScaleFactor: 3, isMobile: true, hasTouch: true, userAgent: IPHONE_UA };
+    const NONE = { top: 0, right: 0, bottom: 0, left: 0 };
+    /**
+     * An iPhone's safe areas at a size: upright, the island's strip at the top and the home bar;
+     * on its side, the island's side and the other kept clear, and the home bar.
+     */
+    const iPhoneSafeAreas = (width: number, height: number): typeof NONE =>
+      width > height
+        ? { top: 0, right: 59, bottom: 21, left: 59 }
+        : { top: 59, right: 0, bottom: 34, left: 0 };
+    const profiles = [
+      { name: 'mouse', options: { deviceScaleFactor: 1 }, touch: false, safeAreas: false },
+      { name: 'touch', options: TOUCH, touch: true, safeAreas: false },
+      { name: 'touch, safe areas', options: TOUCH, touch: true, safeAreas: true },
+    ] as const;
+    /** What is off the screen or cut off, and where everything sits (to tell when it settled). */
+    const measure = (insets: typeof NONE): { problems: string[]; boxes: string } => {
+      const problems: string[] = [];
+      const boxes: string[] = [];
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const root = document.documentElement;
+      if (root.scrollWidth > root.clientWidth) {
+        problems.push(`page ${String(root.scrollWidth)} wide in ${String(root.clientWidth)}`);
+      }
+      // Nothing for the page to scroll to sideways, even asked to.
+      window.scrollTo(10_000, 0);
+      if (window.scrollX !== 0) problems.push(`page scrolls ${String(window.scrollX)} sideways`);
+      window.scrollTo(0, 0);
+      const view = window.visualViewport;
+      if (view !== null && (view.scale !== 1 || view.offsetLeft !== 0)) {
+        problems.push(`zoomed ${String(view.scale)} at ${String(view.offsetLeft)}`);
+      }
+      const left = insets.left;
+      const right = width - insets.right;
+      // The strip and the controls over the map, all of each on the screen and clear of its
+      // safe areas; the panel's words, all of each across the screen (they scroll down in it).
+      const parts: [string, boolean][] = [
+        ['h1.wordmark', true],
+        ['form.search', true],
+        ['.menu-button', true],
+        ['.legend li', true],
+        ['.locate', true],
+        ['p.updated', true],
+        ['.maplibregl-ctrl-attrib', true],
+        ['aside.detail', false],
+        ['aside.detail h2', false],
+        ['aside.detail .kind', false],
+        ['aside.detail .place', false],
+        ['aside.detail .action', false],
+        ['aside.detail .chance .number', false],
+        ['aside.detail .close', false],
+      ];
+      for (const [selector, whole] of parts) {
+        const nodes = [...document.querySelectorAll(selector)];
+        if (nodes.length === 0 && !selector.startsWith('.maplibregl')) {
+          problems.push(`${selector} missing`);
+        }
+        for (const node of nodes) {
+          const box = node.getBoundingClientRect();
+          boxes.push(
+            `${selector} ${box.left.toFixed(1)} ${box.top.toFixed(1)} ${box.width.toFixed(1)} ${box.height.toFixed(1)}`,
+          );
+          if (box.width === 0 || getComputedStyle(node).visibility === 'hidden') continue;
+          // The sheet itself runs edge to edge; what is in it keeps clear of the safe areas.
+          const [from, to] = selector === 'aside.detail' ? [0, width] : [left, right];
+          const where = `${selector} ${box.left.toFixed(1)}–${box.right.toFixed(1)} × ${box.top.toFixed(1)}–${box.bottom.toFixed(1)}`;
+          if (box.left < from - 0.5 || box.right > to + 0.5) problems.push(`${where} across`);
+          if (whole && (box.top < -0.5 || box.bottom > height + 0.5)) {
+            problems.push(`${where} down`);
+          }
+          // The wordmark's and the key's words inside their own boxes: none cut off at either end.
+          const words = selector === 'h1.wordmark' || selector === '.legend li';
+          if (words && node.scrollWidth > node.clientWidth + 1 && node.clientWidth > 0) {
+            problems.push(
+              `${where} words ${String(node.scrollWidth)} in ${String(node.clientWidth)}`,
+            );
+          }
+        }
+      }
+      return { problems, boxes: boxes.join('\n') };
+    };
+    const out: string[] = [];
+    for (const profile of profiles) {
+      const context = await browser.newContext({
+        ...profile.options,
+        viewport: { width: 1440, height: 900 },
+        timezoneId: ZONE,
+        serviceWorkers: 'block',
+      });
+      const page = await context.newPage();
+      await fixDate(page, EVENING);
+      const { problems } = watch(page);
+      await page.route('**/data/live/closings.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body: syntheticEveningClosings() }),
+      );
+      // The page reads its safe areas through env(); this sets what env() gives, size by size.
+      const cdp = profile.safeAreas ? await context.newCDPSession(page) : null;
+      const insetsAt = (width: number, height: number): typeof NONE =>
+        profile.safeAreas ? iPhoneSafeAreas(width, height) : NONE;
+      let held = insetsAt(1440, 900);
+      const setSize = async (width: number, height: number): Promise<typeof NONE> => {
+        const insets = insetsAt(width, height);
+        const same = (['top', 'right', 'bottom', 'left'] as const).every(
+          (side) => insets[side] === held[side],
+        );
+        if (!same) await cdp?.send('Emulation.setSafeAreaInsetsOverride', { insets });
+        await page.setViewportSize({ width, height });
+        if (cdp !== null && !same) {
+          // The page's own reading of them, in one wait in the page, long enough for software
+          // drawing: a big window keeps the page busy for seconds after it resizes.
+          await page.waitForFunction(
+            (want) =>
+              ['top', 'right', 'bottom', 'left']
+                .map((side) =>
+                  getComputedStyle(document.documentElement).getPropertyValue(`--inset-${side}`),
+                )
+                .join(' ') === want,
+            `${String(insets.top)}px ${String(insets.right)}px ${String(insets.bottom)}px ${String(insets.left)}px`,
+            { polling: 100, timeout: 30_000 },
+          );
+        }
+        held = insets;
+        return insets;
+      };
+      await cdp?.send('Emulation.setSafeAreaInsetsOverride', { insets: held });
+      await page.goto(`${site}?school=${SHAWNEE_MISSION_EAST}`);
+      const panel = page.locator('aside.detail');
+      await expect(panel.locator('.chance .number')).toHaveText('64%', { timeout: 60_000 });
+      // The map drawn at one device pixel a pixel: the grid reads where boxes sit, not how sharp
+      // the map is, and at three a big window takes software drawing seconds a frame. The page's
+      // own pixel ratio, and so its CSS, stays the device's.
+      await page.waitForFunction(() => window.snowlightMap !== undefined, null, {
+        timeout: 30_000,
+      });
+      await page.evaluate(() => {
+        window.snowlightMap?.setPixelRatio(1);
+      });
+      // The key's counts in: until they come it is one line of four, then two rows on a phone.
+      await expect
+        .poll(() => page.locator('.legend .count').count(), { timeout: 30_000 })
+        .toBeGreaterThan(0);
+      for (const [width, height] of SIZES) {
+        const insets = await setSize(width, height);
+        // Focused, as after a search: on an iPhone the page zooms in on a field under 16 px.
+        await page.locator('input.search-input').focus();
+        // The panel turns into a sheet, or back, at the phone's width, and what sits by it moves
+        // with it: read until two reads a moment apart agree.
+        await page.waitForTimeout(250);
+        let found = await page.evaluate(measure, insets);
+        for (let read = 0; read < 40; read += 1) {
+          await page.waitForTimeout(150);
+          const again = await page.evaluate(measure, insets);
+          const settled = again.boxes === found.boxes;
+          found = again;
+          if (settled) break;
+        }
+        // On a touch screen every field that takes text is 16 px or more.
+        if (profile.touch) {
+          for (const field of await page.evaluate(smallFields)) {
+            found.problems.push(`${field} on a touch screen`);
+          }
+        }
+        await page.locator('input.search-input').blur();
+        for (const problem of found.problems) {
+          out.push(`${profile.name} ${String(width)}×${String(height)}: ${problem}`);
+        }
+      }
+      if (profile.safeAreas) {
+        // The credits opened on a phone on its side: their line keeps clear of both safe areas.
+        // The school's sheet closed first: open, it covers them.
+        const insets = await setSize(640, 360);
+        await panel.locator('.close').click();
+        await expect(panel).toHaveCount(0, { timeout: 30_000 });
+        await page.locator('.maplibregl-ctrl-attrib-button').click();
+        const credits = page.locator('.maplibregl-ctrl-attrib.maplibregl-compact-show');
+        await expect(credits).toBeVisible({ timeout: 30_000 });
+        const box = await credits.boundingBox();
+        if (box === null) {
+          out.push(`${profile.name} 640×360: no credits`);
+        } else if (box.x < insets.left - 0.5 || box.x + box.width > 640 - insets.right + 0.5) {
+          // With every other problem, so one run names every cause.
+          out.push(
+            `${profile.name} 640×360: credits ${box.x.toFixed(1)}–${(box.x + box.width).toFixed(1)} across`,
+          );
+        }
+      }
+      // A big window at three device pixels a pixel is past MapLibre's canvas limit: it says so
+      // and draws at a lower ratio. Nothing to do with where things sit.
+      for (const problem of problems) {
+        if (!problem.includes('larger than maxCanvasSize')) out.push(`${profile.name}: ${problem}`);
+      }
+      await context.close();
+    }
+    expect(out).toEqual([]);
+  });
+
+  test('?diag=1 shows the screen check: the window, its zoom and shift, the page’s width, the safe areas, the screen and the browser', async ({
+    browser,
+  }) => {
+    const userAgent = devices['iPhone 15 Pro Max'].userAgent;
+    const context = await browser.newContext({
+      viewport: { width: 951, height: 543 },
+      deviceScaleFactor: 3,
+      isMobile: true,
+      hasTouch: true,
+      userAgent,
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    const { problems } = watch(page);
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', {
+      insets: { top: 0, right: 59, bottom: 21, left: 59 },
+    });
+    await page.goto(`${site}?diag=1`);
+    const box = page.getByRole('region', { name: diagCopy.label });
+    await expect(box).toBeVisible();
+    await expect(box.locator('dt')).toHaveText([
+      diagCopy.window,
+      diagCopy.visible,
+      diagCopy.zoom,
+      diagCopy.shift,
+      diagCopy.page,
+      diagCopy.safe,
+      diagCopy.pixels,
+      diagCopy.screen,
+      diagCopy.browser,
+    ]);
+    const value = (name: string): Locator => box.locator(`[data-diag="${name}"]`);
+    await expect(value('window')).toHaveText('951 × 543');
+    await expect(value('visible')).toHaveText('951 × 543');
+    await expect(value('zoom')).toHaveText('1');
+    await expect(value('shift')).toHaveText('0, 0');
+    await expect(value('page')).toHaveText('951 / 951');
+    await expect(value('safe')).toHaveText('0 · 59 · 21 · 59');
+    await expect(value('pixels')).toHaveText('3');
+    const screenSize = await page.evaluate(() => [screen.width, screen.height] as const);
+    await expect(value('screen')).toHaveText(`${String(screenSize[0])} × ${String(screenSize[1])}`);
+    await expect(value('browser')).toHaveText(userAgent);
+    // Zoomed in as iOS Safari zooms on a field under 16 px, and panned right to the end, as the
+    // owner's unfolded iPhone showed the page: the box reads the zoom and the shift.
+    await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 16 / 15 });
+    await expect(value('zoom')).toHaveText('1.07');
+    await expect(value('visible')).toHaveText('891.56 × 509.06');
+    await expect(value('window')).toHaveText('951 × 543');
+    // Panned right to the end with the wheel over the wordmark: the box lets the pointer through
+    // to the map, and the map takes a drag or a wheel over it as its own, not the page's.
+    const wordmark = await page.locator('h1.wordmark').boundingBox();
+    if (wordmark === null) throw new Error('no wordmark');
+    await page.mouse.move(wordmark.x + wordmark.width / 2, wordmark.y + wordmark.height / 2);
+    await page.mouse.wheel(2000, 0);
+    // Most of the way or all of it (951 less 891.56 at most), wherever the browser stops it.
+    await page.waitForFunction(() => (window.visualViewport?.offsetLeft ?? 0) > 50, null, {
+      timeout: 30_000,
+    });
+    const [left, top] = await page.evaluate(
+      () =>
+        [
+          window.visualViewport?.offsetLeft ?? Number.NaN,
+          window.visualViewport?.offsetTop ?? Number.NaN,
+        ] as const,
+    );
+    expect(left).toBeLessThanOrEqual(951 - (951 * 15) / 16 + 0.01);
+    expect(top).toBe(0);
+    await expect(value('shift')).toHaveText(diagFormat.pair(left, top));
+    await expect(value('page')).toHaveText('951 / 951');
+    await cdp.send('Emulation.setPageScaleFactor', { pageScaleFactor: 1 });
+    await expect(value('zoom')).toHaveText('1');
+    await expect(value('shift')).toHaveText('0, 0');
+    // It reads again as the window changes, and stays on the screen, clear of its safe areas.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(value('window')).toHaveText('390 × 844');
+    const where = await box.boundingBox();
+    expect(where?.x).toBeGreaterThanOrEqual(59);
+    expect((where?.x ?? 0) + (where?.width ?? 0)).toBeLessThanOrEqual(390 - 59);
+    // Not there without ?diag=1.
+    await page.goto(site);
+    await waitForMap(page);
+    await expect(page.locator('h1.wordmark')).toBeVisible();
+    await expect(box).toHaveCount(0);
     expect(problems).toEqual([]);
     await context.close();
   });

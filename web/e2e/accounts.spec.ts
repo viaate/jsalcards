@@ -5,12 +5,14 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { devices, expect, test, type Browser, type Page, type Route } from '@playwright/test';
 import { build, preview, type PreviewServer } from 'vite';
 
 import { format } from '../src/copy-format';
 
 import { ACCOUNTS_API, ACCOUNTS_URL } from './accounts-server';
+import { smallFields } from './fields';
+import { offScreen } from './screen';
 
 // The accounts build (VITE_API_ROOT set to a made-up root), with no service worker in the way of
 // the routes that answer for the API.
@@ -85,6 +87,8 @@ class StubApi {
   bodies: string[] = [];
   /** Every admin rename's body. */
   renames: Record<string, unknown>[] = [];
+  /** How many devices the account gets notifications on. */
+  devices = 0;
   /** The account's notification settings (src/account/notify.ts), as the Worker keeps them. */
   notify: Record<string, unknown> = {
     status: true,
@@ -225,7 +229,7 @@ class StubApi {
     if (path === '/v1/me') return reply(200, { user: this.publicUser(me) });
     if (path === '/v1/me/notify') {
       this.notify = { ...this.notify, ...(request.method() === 'PATCH' ? body : {}) };
-      return reply(200, { settings: this.notify, devices: 0 });
+      return reply(200, { settings: this.notify, devices: this.devices });
     }
     if (path === '/v1/me/username') {
       if (this.users.some((u) => u.username === body.username && u !== me))
@@ -342,6 +346,37 @@ async function logIn(page: Page, login: string): Promise<void> {
 async function openPage(page: Page, api: StubApi, path = '/'): Promise<void> {
   await api.attach(page);
   await page.goto(path);
+}
+
+/**
+ * A page of the accounts build on an iPhone's touch screen of its own at `width` × `height`, signed
+ * in with `token` when there is one.
+ */
+async function touchPage(
+  browser: Browser,
+  api: StubApi,
+  width: number,
+  height: number,
+  token: string | null = null,
+  path = '/',
+): Promise<Page> {
+  const context = await browser.newContext({
+    baseURL: ACCOUNTS_URL,
+    serviceWorkers: 'block',
+    viewport: { width, height },
+    deviceScaleFactor: 3,
+    isMobile: true,
+    hasTouch: true,
+    userAgent: devices['iPhone 15 Pro Max'].userAgent,
+  });
+  if (token !== null) {
+    await context.addInitScript((held) => {
+      localStorage.setItem('snowlight:session', held);
+    }, token);
+  }
+  const page = await context.newPage();
+  await openPage(page, api, path);
+  return page;
 }
 
 test.describe('accounts', () => {
@@ -731,6 +766,90 @@ test.describe('accounts', () => {
     await expect.poll(async () => (await sheet.boundingBox())?.height).toBe(before?.height);
   });
 
+  test('every field takes 16 px text on a touch screen, an unfolded iPhone’s or a phone’s: logging in, signing up, picking a username, the settings and the admin view', async ({
+    browser,
+  }) => {
+    test.skip(test.info().project.name !== 'desktop', 'it makes its own touch screens');
+    test.setTimeout(180_000);
+    const api = new StubApi();
+    api.users.push(
+      await stubUser({
+        id: 'u5',
+        name: 'Rae',
+        email: 'rae@example.com',
+        username: 'player_0005',
+        join: 5,
+        renamed: true,
+      }),
+    );
+    const jo = await stubUser({
+      id: 'u7',
+      name: 'Jo',
+      email: 'jo@example.com',
+      username: 'jo_snow',
+    });
+    api.users.push(jo, await adminUser());
+    const token = jo.id.padEnd(43, 'x');
+    api.sessions.set(token, jo.id);
+    // Every setting's field shown: a device that gets them, the night before and quiet hours on.
+    api.devices = 1;
+    api.notify = { ...api.notify, night_before: true };
+    for (const [width, height] of [
+      [951, 543],
+      [390, 844],
+    ] as const) {
+      const at = `${String(width)}×${String(height)}`;
+      const small: string[] = [];
+      const check = async (page: Page, step: string): Promise<void> => {
+        for (const field of await page.evaluate(smallFields)) small.push(`${at} ${step}: ${field}`);
+      };
+      let page = await touchPage(browser, api, width, height);
+      await page.getByRole('button', { name: 'Sign up or log in' }).click();
+      const sheet = page.getByRole('dialog');
+      await expect(sheet.getByLabel('Password')).toBeVisible();
+      await check(page, 'log in');
+      await page.getByRole('button', { name: 'New here? Sign up' }).click();
+      await expect(sheet.getByLabel('Username', { exact: true })).toBeVisible();
+      await check(page, 'sign up');
+      await page.context().close();
+
+      page = await touchPage(browser, api, width, height);
+      await logIn(page, 'rae@example.com');
+      await expect(
+        page.getByRole('dialog').getByRole('heading', { name: 'Pick a new username' }),
+      ).toBeVisible({
+        timeout: 20_000,
+      });
+      await check(page, 'pick a username');
+      await page.context().close();
+
+      page = await touchPage(browser, api, width, height, token);
+      await page.getByRole('button', { name: 'Account menu for Jo' }).click();
+      await page.getByRole('menuitem', { name: 'Settings' }).click();
+      await expect(page.getByRole('dialog').locator('select')).toHaveCount(3);
+      await check(page, 'settings');
+      await page.context().close();
+
+      page = await touchPage(browser, api, width, height, null, '/?admin');
+      await logIn(page, 'Olivia');
+      await expect(page.getByRole('heading', { name: 'Admin' })).toBeVisible({ timeout: 20_000 });
+      await page.getByRole('tab', { name: 'Statuses' }).click();
+      await expect(
+        page.getByRole('searchbox', { name: 'Find a school or district' }),
+      ).toBeVisible();
+      await check(page, 'statuses');
+      await page.getByRole('tab', { name: 'Moderation' }).click();
+      await expect(page.getByLabel('Word or part of a word')).toBeVisible();
+      await check(page, 'moderation');
+      await page.getByRole('tab', { name: 'Users' }).click();
+      await page.getByRole('button', { name: 'Rename', exact: true }).first().click();
+      await expect(page.getByLabel('New username, or empty for a player number')).toBeVisible();
+      await check(page, 'users');
+      await page.context().close();
+      expect(small).toEqual([]);
+    }
+  });
+
   test('fit the strip at 320 px without overlap', async ({ browser }) => {
     test.skip(test.info().project.name !== 'phone', 'a phone’s width');
     const context = await browser.newContext({
@@ -762,6 +881,104 @@ test.describe('accounts', () => {
       320,
     );
     await context.close();
+  });
+
+  test('the account button stays on the screen and clear of its safe areas, signed in or out, on an unfolded iPhone or a phone, upright or on its side', async ({
+    browser,
+  }) => {
+    test.skip(test.info().project.name !== 'desktop', 'it makes its own touch screens');
+    test.setTimeout(180_000);
+    const api = new StubApi();
+    const olivia = await stubUser({ id: 'u8', name: 'Olivia', email: 'olivia@example.com' });
+    api.users.push(olivia);
+    const token = olivia.id.padEnd(43, 'x');
+    api.sessions.set(token, olivia.id);
+    const SIZES = [
+      [951, 543],
+      [1114, 720],
+      [1366, 700],
+      [390, 844],
+      [320, 568],
+    ] as const;
+    const NONE = { top: 0, right: 0, bottom: 0, left: 0 };
+    /** An iPhone's safe areas: on its side, the island's side and the other; upright, the top. */
+    const iPhoneSafeAreas = (width: number, height: number): typeof NONE =>
+      width > height
+        ? { top: 0, right: 59, bottom: 21, left: 59 }
+        : { top: 59, right: 0, bottom: 34, left: 0 };
+    const out: string[] = [];
+    for (const [signedIn, safeAreas] of [
+      [true, false],
+      [true, true],
+      [false, true],
+    ] as const) {
+      const context = await browser.newContext({
+        baseURL: ACCOUNTS_URL,
+        serviceWorkers: 'block',
+        viewport: { width: SIZES[0][0], height: SIZES[0][1] },
+        deviceScaleFactor: 3,
+        isMobile: true,
+        hasTouch: true,
+        userAgent: devices['iPhone 15 Pro Max'].userAgent,
+      });
+      if (signedIn) {
+        await context.addInitScript((held) => {
+          localStorage.setItem('snowlight:session', held);
+        }, token);
+      }
+      const page = await context.newPage();
+      const cdp = safeAreas ? await context.newCDPSession(page) : null;
+      const name = `${signedIn ? 'signed in' : 'signed out'}${safeAreas ? ', safe areas' : ''}`;
+      const control = page.getByRole('button', {
+        name: signedIn ? 'Account menu for Olivia' : 'Sign up or log in',
+      });
+      let opened = false;
+      for (const [width, height] of SIZES) {
+        const insets = safeAreas ? iPhoneSafeAreas(width, height) : NONE;
+        await cdp?.send('Emulation.setSafeAreaInsetsOverride', { insets });
+        await page.setViewportSize({ width, height });
+        if (!opened) {
+          await openPage(page, api);
+          opened = true;
+        }
+        await expect(control).toBeVisible({ timeout: 20_000 });
+        await page.waitForFunction(
+          (want) =>
+            ['top', 'right', 'bottom', 'left']
+              .map((side) =>
+                getComputedStyle(document.documentElement).getPropertyValue(`--inset-${side}`),
+              )
+              .join(' ') === want,
+          `${String(insets.top)}px ${String(insets.right)}px ${String(insets.bottom)}px ${String(insets.left)}px`,
+          { polling: 100, timeout: 30_000 },
+        );
+        const clear = {
+          parts: [
+            ['.account-button', false],
+            ['.account-button .label', true],
+            ['h1.wordmark', true],
+            ['form.search', false],
+            ['.menu-button', false],
+          ] as [string, boolean][],
+          left: insets.left,
+          right: insets.right,
+        };
+        // Read until two reads a moment apart agree: the strip lays out again after a resize.
+        let found = await page.evaluate(offScreen, clear);
+        for (let read = 0; read < 40; read += 1) {
+          await page.waitForTimeout(150);
+          const again = await page.evaluate(offScreen, clear);
+          const settled = again.boxes === found.boxes;
+          found = again;
+          if (settled) break;
+        }
+        for (const problem of found.problems) {
+          out.push(`${name} ${String(width)}×${String(height)}: ${problem}`);
+        }
+      }
+      await context.close();
+    }
+    expect(out).toEqual([]);
   });
 });
 
@@ -931,6 +1148,39 @@ test.describe('the admin view with a directory', () => {
     await page.getByRole('button', { name: 'Back to the map' }).click();
     await expect(page.getByRole('heading', { name: 'Admin' })).toHaveCount(0);
     expect(new URL(page.url()).searchParams.has('admin')).toBe(false);
+  });
+
+  test('the status form’s fields take 16 px text on a touch screen, an unfolded iPhone’s or a phone’s', async ({
+    browser,
+  }) => {
+    for (const [width, height] of [
+      [951, 543],
+      [390, 844],
+    ] as const) {
+      const context = await browser.newContext({
+        serviceWorkers: 'block',
+        viewport: { width, height },
+        deviceScaleFactor: 3,
+        isMobile: true,
+        hasTouch: true,
+        userAgent: devices['iPhone 15 Pro Max'].userAgent,
+      });
+      const page = await context.newPage();
+      await openStatuses(page, new StubApi(), '2026-10-20T17:00:00Z');
+      const small: string[] = [];
+      for (const [status, field] of [
+        ['Delayed', 'Minutes late'],
+        ['Early dismissal', 'Dismissal time'],
+      ] as const) {
+        await page.getByLabel(status, { exact: true }).check();
+        await expect(page.getByLabel(field, { exact: true })).toBeVisible();
+        for (const found of await page.evaluate(smallFields)) {
+          small.push(`${String(width)}×${String(height)} ${status}: ${found}`);
+        }
+      }
+      expect(small).toEqual([]);
+      await context.close();
+    }
   });
 
   test('a day picked before the school’s midnight is the date it showed when saved after it', async ({

@@ -554,6 +554,53 @@
         }
       }
 
+      /*
+        Every field's text is 16px on a touch screen, at any width and in any
+        part of the app: iOS Safari zooms the page in on a tapped field set
+        smaller and keeps it zoomed, the left of the page off the screen (an
+        unfolded iPhone is wider than a phone, where fields were 15px). Here
+        once for all of them, whichever component draws the field, and with
+        !important over each component's own size. A touch screen as the
+        main pointer counts, and iOS itself, so an iPad with a trackpad or
+        keyboard gets it too; a laptop with a mouse and a touch screen keeps
+        its 15px, as it never zooms on a field.
+      */
+      @media (hover: none), (pointer: coarse) {
+        input:not(
+          [type='checkbox'],
+          [type='radio'],
+          [type='range'],
+          [type='color'],
+          [type='file'],
+          [type='button'],
+          [type='submit'],
+          [type='reset'],
+          [type='image']
+        ),
+        select,
+        textarea {
+          font-size: 16px !important;
+        }
+      }
+
+      @supports (-webkit-touch-callout: none) {
+        input:not(
+          [type='checkbox'],
+          [type='radio'],
+          [type='range'],
+          [type='color'],
+          [type='file'],
+          [type='button'],
+          [type='submit'],
+          [type='reset'],
+          [type='image']
+        ),
+        select,
+        textarea {
+          font-size: 16px !important;
+        }
+      }
+
       .search.has-query .search-input {
         padding-right: 44px;
       }
@@ -1153,7 +1200,7 @@
       .maplibregl-ctrl.maplibregl-ctrl-attrib {
         position: relative;
         min-width: 28px;
-        max-width: calc(100vw - 2 * var(--edge));
+        max-width: calc(100vw - var(--inset-left) - var(--inset-right) - 2 * var(--edge));
         min-height: 28px;
         padding: 0;
         color: var(--text-2);
