@@ -341,7 +341,8 @@ class Run:
         except RefreshRefusedError as error:
             self.say(f"::error::social: {error} (from {source})")
             self.store.release_chain(self.run_id)
-            self.stopped(f"X refused the refresh token the posting workflow uses ({error})")
+            answer = str(error).removeprefix("X refused the refresh token: ")
+            self.stopped(f"X refused the refresh token the posting workflow uses ({answer})")
             return None
         except RefreshUnknownError as error:
             self.say(f"::error::social: {error}; the next run tries again")

@@ -710,7 +710,9 @@ def test_a_strangers_issue_with_the_same_title_is_never_patched_or_closed(
     assert stranger["body"] == "theirs"
     assert mine["user"] == fakes.BOT_USER
     assert mine["title"] == TITLE
-    assert mine["body"].startswith("X refused the refresh token the posting workflow uses")
+    assert mine["body"].startswith(
+        "X refused the refresh token the posting workflow uses (HTTP 400 (invalid_request)) ("
+    )
     new_seed = fakes.token("Rn")
     world.x.valid.add(new_seed)
     runner.clock.at += timedelta(hours=1)
