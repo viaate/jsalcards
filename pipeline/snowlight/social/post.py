@@ -2,19 +2,28 @@
 
 1. Read ``social/`` (facts, image library, queue). A malformed file stops the run red.
 2. Without the X secrets, or the Cloudflare ones, say what is missing and stop (green).
-3. Pick the post: the oldest queued post not posted yet that passes the checks; else, on the
+3. Stop before anything else while posting is stopped for the current secret: the token
+   chain stopped (X refused the refresh token, the stored token did not open or could not
+   be stored, a scope is missing) and ``X_REFRESH_TOKEN`` is still the secret it stopped
+   with; or X refused a post for good (:data:`snowlight.social.xapi.FOR_GOOD`) and its
+   issue is still open. No Haiku call, no claim and no refresh: the owner's issue says what
+   to do, and a new secret (or, for a refused post, closing the issue) starts it again.
+4. Pick the post: the oldest queued post not posted yet that passes the checks (one marked
+   ``fresh_only`` waits, and holds the queue, until a fresh card fits it); else, on the
    daily scheduled run only, with ``ANTHROPIC_API_KEY`` set, nothing posted in the last
-   :data:`QUIET` and no Haiku post today, one post Haiku writes (styles alternate).
-4. Claim its slot in D1 (the claim also holds the day's cap), take the token chain, refresh,
+   :data:`QUIET` and Haiku not yet asked today, one post Haiku writes (styles alternate).
+5. Claim its slot in D1 (the claim also holds the day's cap), take the token chain, refresh,
    store the rotated token, upload the image and post. Every failure after the claim drops
    the claim, except a post X may have made (``uncertain``: never sent again).
-5. A scheduled run with nothing to post still refreshes once when the chain stopped and the
+6. A scheduled run with nothing to post still refreshes once when the chain stopped and the
    ``X_REFRESH_TOKEN`` secret is not the one that stopped (the owner pasted a new one), so the
    new token is checked and the owner's issue closes without waiting for a post.
 
 Caps (all in code): one post a run; :data:`snowlight.social.store.MAX_POSTS_PER_DAY` a UTC
-day; one Haiku post a UTC day (its slot is the day); four Haiku calls a run, each at most
-1,024 tokens (:mod:`snowlight.social.writer`).
+day; one Haiku post a UTC day (its slot is the day); one Haiku try a UTC day (its row in
+``social_haiku_days`` is made before the first call), of at most four calls, each at most
+1,024 tokens (:mod:`snowlight.social.writer`). No refresh starts past :data:`REFRESH_BY`
+into the step, so the refresh and its store always finish before the step's timeout.
 """
 
 from collections.abc import Callable, Mapping, Sequence
@@ -30,7 +39,7 @@ from pydantic import ValidationError
 from snowlight.social import seal
 from snowlight.social.cards import Card, Post
 from snowlight.social.content import Content, ContentError, Image, check_image, load
-from snowlight.social.issue import GitHub
+from snowlight.social.issue import REFUSED, TOKEN, GitHub, Issue
 from snowlight.social.picture import NOTE, Taken
 from snowlight.social.rules import MENTION, URL, Style, chances_shown, check, mentions_chance
 from snowlight.social.store import (
@@ -42,7 +51,7 @@ from snowlight.social.store import (
     Store,
     StoreError,
 )
-from snowlight.social.writer import Writer, draft
+from snowlight.social.writer import FatalAnswerError, Writer, draft, usable_commits
 from snowlight.social.xapi import (
     NEEDED_SCOPES,
     RefreshRefusedError,
@@ -56,6 +65,9 @@ from snowlight.social.xapi import (
 FRESH_FOR: Final = timedelta(minutes=40)
 """How old the render job's picture may be when the post step reads it (the render job's
 Render step times out after 15 minutes, and the post job starts right after it)."""
+REFRESH_BY: Final = timedelta(minutes=6)
+"""The latest a refresh may start, from the start of the run: the Post step times out after
+10 minutes, and the refresh and the store of the rotated token need room before that."""
 QUIET: Final = timedelta(hours=20)
 """Haiku writes only when nothing was posted for this long."""
 ACCOUNT: Final = "SnowlightMap"
@@ -207,12 +219,21 @@ def picture_for(  # noqa: PLR0913 - the post's parts
 
 def _queued(
     content: Content, taken: set[str], fresh: Fresh, say: Callable[[str], None]
-) -> tuple[Pick | None, bool]:
-    """The oldest queued post that may go, and whether one was refused by the checks."""
+) -> tuple[Pick | None, bool, bool]:
+    """The oldest queued post that may go, whether one was refused by the checks, and
+    whether a ``fresh_only`` post waits for a fresh card (it holds the queue)."""
     refused = False
     for item in content.queue:
         if item.slot in taken:
             continue
+        if item.fresh_only:
+            card = fresh.get(item.style)
+            if card is None or (item.pictures is not None and card.fresh not in item.pictures):
+                say(
+                    f"::warning::social: queued post {item.id} waits for a fresh card taken"
+                    " for it (no fresh card fits): nothing posts this run"
+                )
+                return None, refused, True
         image = picture_for(content, fresh, item.style, item.pictures, item.image, say=say)
         problems = (
             ["it has no picture: no fresh one fits and the library is empty"]
@@ -229,8 +250,8 @@ def _queued(
             refused = True
             say(f"::error::social: queued post {item.id} is refused: " + "; ".join(problems))
             continue
-        return Pick(item.slot, "queue", item.style, item.text, image), refused
-    return None, refused
+        return Pick(item.slot, "queue", item.style, item.text, image), refused, False
+    return None, refused, False
 
 
 @dataclass(slots=True)
@@ -245,9 +266,15 @@ class Run:
     github: GitHub | None
     run_id: str
     now: datetime
+    begun: datetime
+    """When the run started (the refresh's time budget, :data:`REFRESH_BY`)."""
     fresh: Fresh = field(default_factory=dict)
     chain_lost: bool = False
     """The rotated token could not be stored (the run may still post, and ends red)."""
+    red: bool = False
+    """Something the owner or the lead must look at happened (the run ends red)."""
+    sent: bool = False
+    """The post request went to X (from then on the claim is never dropped)."""
 
     def say(self, line: str) -> None:
         self.deps.say(line)
@@ -277,30 +304,54 @@ class Run:
         if image is None:
             self.say("::warning::social: no fresh picture and an empty library: no Haiku post")
             return None
+        day = today.isoformat()
+        if not self.store.begin_haiku_day(day, self.run_id, self.now):
+            state = self.store.haiku_day(day) or "unknown"
+            self.say(f"social: Haiku was already asked to write for {day} ({state}): no second try")
+            return None
         since = (_when(last.get("posted_at")) or claimed) if last is not None else None
         writer = Writer(self.deps.haiku_client())
-        commits = list(self.deps.commits(since))[:MAX_COMMITS]
+        commits = usable_commits(list(self.deps.commits(since)), self.content.facts)
         # The picture is the only one Haiku sees, and its description the only facts about it.
         content = replace(self.content, images=(image,))
-        written = draft(writer, content, style=style, today=today, commits=commits, say=self.say)
+        try:
+            written = draft(
+                writer,
+                content,
+                style=style,
+                today=today,
+                commits=commits[:MAX_COMMITS],
+                say=self.say,
+            )
+        except FatalAnswerError as error:
+            self.say(
+                f"::error::social: {error}: no Haiku post today; check ANTHROPIC_API_KEY and the"
+                " model id (docs/social.md)"
+            )
+            self.red = True
+            written = None
         self.say(f"social: Haiku calls this run: {writer.calls}")
+        try:
+            self.store.end_haiku_day(day, self.run_id, "failed" if written is None else "drafted")
+        except StoreError:
+            self.say(f"::warning::social: how Haiku's try for {day} went was not recorded")
         if written is None:
-            self.say("::warning::social: both Haiku drafts failed a check: no post today")
+            self.say("::warning::social: no Haiku draft passed: no post today")
             return None
         return Pick(slot, "haiku", style, written.text, written.image)
 
-    def issue(self, why: str) -> None:
+    def issue(self, why: str, issue: Issue = TOKEN) -> None:
         if self.github is None:
             self.say("::warning::social: no GITHUB_TOKEN: the owner's issue is not opened")
             return
         try:
-            number = self.github.report(self.deps.http, why, self.now)
+            number = self.github.report(self.deps.http, why, self.now, issue)
         except httpx.HTTPError as error:
             self.say(
                 f"::warning::social: the owner's issue was not opened ({type(error).__name__})"
             )
             return
-        self.say(f"social: issue #{number} tells the owner how to paste a new refresh token")
+        self.say(f"social: issue #{number} tells the owner what to do ({issue.title})")
 
     def drop(self, pick: Pick) -> None:
         try:
@@ -312,6 +363,44 @@ class Run:
     def seed(self) -> str:
         """The fingerprint of the ``X_REFRESH_TOKEN`` secret (never the secret)."""
         return seal.fingerprint(self.secrets.refresh_seed, self.secrets.client_secret)
+
+    def release_chain(self) -> None:
+        """Give the token chain's lease back (a failure is said: the lease expires by itself)."""
+        try:
+            self.store.release_chain(self.run_id)
+        except StoreError as error:
+            self.say(f"::warning::social: the token chain's lease was not given back ({error})")
+
+    def halted(self) -> bool:
+        """Whether posting is stopped for the current secret (see the module's docstring):
+        said once, before any pick, Haiku call, claim or refresh."""
+        refused = self.store.refused_seed()
+        if refused is not None and refused == self.seed:
+            self.say(
+                "::warning::social: posting is stopped until a new X_REFRESH_TOKEN is pasted"
+                " (the open issue says how): this run sends nothing"
+            )
+            return True
+        held = self.store.held_seed()
+        if held is None:
+            return False
+        if held != self.seed:
+            self.say("social: X_REFRESH_TOKEN is new since X refused a post: trying again")
+            self.store.unhold()
+            return False
+        try:
+            still = self.github is None or self.github.is_open(self.deps.http, REFUSED)
+        except httpx.HTTPError:
+            still = True
+        if not still:
+            self.say("social: the owner closed the issue about X's refusal: trying again")
+            self.store.unhold()
+            return False
+        self.say(
+            "::warning::social: posting is stopped since X refused a post (the open issue"
+            " says what to do; close it once fixed): this run sends nothing"
+        )
+        return True
 
     def stopped(self, why: str) -> None:
         """The chain stopped: open the owner's issue, and record which secret it was."""
@@ -326,8 +415,15 @@ class Run:
         (the reason said, and the owner's issue opened when they must act). When the rotated
         token could not be stored the tokens still come back (this run may post) and the
         issue is opened."""
+        spent = self.deps.now() - self.begun
+        if spent > REFRESH_BY:
+            self.say(
+                f"::warning::social: the run is {int(spent.total_seconds() // 60)} minutes in:"
+                " too late to refresh the token before the step's timeout; nothing posts"
+            )
+            return None
         try:
-            chain = self.store.take_chain(self.run_id, self.now)
+            chain = self.store.take_chain(self.run_id, self.deps.now())
         except (ChainBusyError, StoreError) as error:
             self.say(f"::warning::social: the token chain is not free ({error}): nothing posts")
             return None
@@ -336,13 +432,14 @@ class Run:
             token, source = self.secrets.refresh_seed, "the X_REFRESH_TOKEN secret"
         else:
             try:
-                token = seal.unseal(chain.sealed, self.secrets.client_secret)
+                token = seal.unseal(chain.sealed, self.secrets.client_secret, version=chain.version)
             except seal.SealError as error:
                 self.say(f"::error::social: {error}")
-                self.store.release_chain(self.run_id)
+                self.release_chain()
                 self.stopped(
                     "The refresh token stored for the posting workflow could not be opened"
-                    " (it is sealed with X_CLIENT_SECRET; was that secret changed?)"
+                    " (it is sealed with X_CLIENT_SECRET for its version; was that secret"
+                    " changed, or an older stored value written back?)"
                 )
                 return None
             self.deps.mask(token)
@@ -351,19 +448,26 @@ class Run:
             tokens = self.deps.x.refresh(self.secrets.client_id, self.secrets.client_secret, token)
         except RefreshRefusedError as error:
             self.say(f"::error::social: {error} (from {source})")
-            self.store.release_chain(self.run_id)
+            self.release_chain()
             answer = str(error).removeprefix("X refused the refresh token: ")
             self.stopped(f"X refused the refresh token the posting workflow uses ({answer})")
             return None
         except RefreshUnknownError as error:
             self.say(f"::error::social: {error}; the next run tries again")
-            self.store.release_chain(self.run_id)
+            self.release_chain()
             return None
-        sealed = seal.seal(tokens.refresh, self.secrets.client_secret)
+        sealed = seal.seal(tokens.refresh, self.secrets.client_secret, version=chain.version + 1)
         try:
             version = self.store.store_chain(chain, self.run_id, sealed, seed, self.deps.now())
         except ChainBusyError as error:
-            self.say(f"::warning::social: the rotated token was not stored ({error})")
+            # The stored token is spent and its successor is not stored: the chain is lost.
+            self.say(f"::error::social: the rotated token could not be stored ({error})")
+            self.stopped(
+                "X gave the posting workflow a new refresh token, but the stored token row"
+                " changed under the run, so it was not stored and the next run has no token"
+                " that works"
+            )
+            self.chain_lost = True
             return tokens
         except StoreError as error:
             self.say(f"::error::social: the rotated token could not be stored ({error})")
@@ -419,6 +523,14 @@ class Run:
         tokens = self.refresh()
         return 0 if tokens is not None and self.usable(tokens) else 1
 
+    def held(self, why: str) -> None:
+        """X refused a post for good: open the owner's issue and hold posting."""
+        self.issue(why, REFUSED)
+        try:
+            self.store.hold(self.seed)
+        except StoreError:
+            self.say("::warning::social: the hold on posting could not be recorded")
+
     def send(self, pick: Pick) -> int:
         """Refresh, upload and post a claimed pick; the exit code."""
         tokens = self.refresh()
@@ -436,10 +548,13 @@ class Run:
                     x.describe(tokens.access, media_id, image.alt)
                 except RefusedError as error:
                     self.say(f"::warning::social: the alt text was not set ({error})")
+            self.sent = True
             post_id = x.post(tokens.access, pick.text, media_id)
         except RefusedError as error:
             self.say(f"::error::social: {error}: nothing was posted")
             self.drop(pick)
+            if error.for_good:
+                self.held(f"X refused a post of the posting workflow ({str(error).strip()})")
             return 1
         except UnknownOutcomeError as error:
             self.say(
@@ -451,19 +566,29 @@ class Run:
             except StoreError:
                 self.say(f"::warning::social: {pick.slot} stays claimed (never sent again)")
             return 1
-        try:
-            self.store.posted(pick.slot, self.run_id, post_id, self.deps.now())
-        except StoreError:
-            self.say(f"::warning::social: {pick.slot} is posted; its record stays claimed")
         self.say(
             f"social: posted {pick.slot} as {post_id}: https://x.com/{ACCOUNT}/status/{post_id}"
         )
+        try:
+            self.store.posted(pick.slot, self.run_id, post_id, self.deps.now())
+        except StoreError:
+            self.say(
+                f"::warning::social: {pick.slot} is posted as {post_id}, but its record stays"
+                " claimed: mark it posted with that id (docs/social.md); it is never sent again"
+            )
+            self.red = True
         self.say(f"social: text: {pick.text}")
         self.say(f"social: picture: {pick.image.describe()}")
-        return 1 if self.chain_lost else 0
+        if self.github is not None:
+            try:
+                if (closed := self.github.resolve(self.deps.http, REFUSED)) is not None:
+                    self.say(f"social: closed issue #{closed}")
+            except httpx.HTTPError as error:
+                self.say(f"::warning::social: the issue was not closed ({type(error).__name__})")
+        return 1 if self.chain_lost or self.red else 0
 
 
-def _start(env: Env, root: Path, deps: Deps, picture: Path | None) -> Run | int:
+def _start(env: Env, root: Path, deps: Deps, picture: Path | None, begun: datetime) -> Run | int:
     """The run's state, or the exit code when it stops before the store."""
     say = deps.say
     try:
@@ -500,17 +625,19 @@ def _start(env: Env, root: Path, deps: Deps, picture: Path | None) -> Run | int:
         return 1
     now = deps.now()
     fresh = fresh_picture(picture, now, say, chances=chances_shown(content.facts))
-    return Run(env, deps, content, store, secrets, github, run_id, now, fresh)
+    return Run(env, deps, content, store, secrets, github, run_id, now, begun, fresh)
 
 
 def run(env: Env, root: Path, event: str, deps: Deps, picture: Path | None = None) -> int:
     """One run; its exit code (1 when the owner or the lead should look). ``picture`` is the
     Render step's folder (:mod:`snowlight.social.render`)."""
-    started = _start(env, root, deps, picture)
+    started = _start(env, root, deps, picture, deps.now())
     if isinstance(started, int):
         return started
     one = started
     try:
+        if one.halted():
+            return 0
         for row in one.store.stale_claims(one.now):
             one.say(
                 f"::warning::social: {row.get('slot')} was claimed by run {row.get('run')} at"
@@ -519,8 +646,10 @@ def run(env: Env, root: Path, event: str, deps: Deps, picture: Path | None = Non
                 " its social_posts row (docs/social.md)"
             )
         taken = one.store.taken_slots()
-        pick, refused = _queued(one.content, taken, one.fresh, one.say)
-        if pick is None and one.store.posts_on(one.now.date().isoformat()) >= MAX_POSTS_PER_DAY:
+        pick, refused, waiting = _queued(one.content, taken, one.fresh, one.say)
+        if waiting:
+            refused = True  # red: the fresh card the queue waits for failed
+        elif pick is None and one.store.posts_on(one.now.date().isoformat()) >= MAX_POSTS_PER_DAY:
             one.say(f"social: the day's cap of {MAX_POSTS_PER_DAY} posts is reached")
         elif pick is None:
             pick = one.haiku(event, taken)
@@ -543,6 +672,23 @@ def run(env: Env, root: Path, event: str, deps: Deps, picture: Path | None = Non
         except StoreError as error:
             one.say(f"::warning::social: the D1 store failed ({error})")
             recovered = 1
-        return 1 if refused else recovered
+        return 1 if refused or one.red else recovered
     one.say(f"social: claimed {pick.slot} ({pick.style}, image {pick.image.id})")
-    return one.send(pick) or (1 if refused else 0)
+    return _send(one, pick) or (1 if refused or one.red else 0)
+
+
+def _send(one: Run, pick: Pick) -> int:
+    """Send a claimed pick; an error nothing else caught drops the claim when nothing went to
+    X, and marks it ``uncertain`` (never sent again) when the post request did."""
+    try:
+        return one.send(pick)
+    except (StoreError, OSError) as error:
+        one.say(f"::error::social: the post stopped ({type(error).__name__}: {error})")
+        if one.sent:
+            try:
+                one.store.uncertain(pick.slot, one.run_id)
+            except StoreError:
+                one.say(f"::warning::social: {pick.slot} stays claimed (never sent again)")
+        else:
+            one.drop(pick)
+        return 1

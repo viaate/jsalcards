@@ -16,7 +16,7 @@ import pytest
 from snowlight.social import logscan, seal
 from snowlight.social.cli import Output
 from snowlight.social.content import ContentError, load
-from snowlight.social.issue import TITLE
+from snowlight.social.issue import REFUSED_TITLE, TITLE
 from snowlight.social.post import Deps, run
 from snowlight.social.store import TABLES
 from snowlight.social.xapi import XClient
@@ -158,7 +158,7 @@ def test_the_first_run_posts_the_queued_post_and_stores_the_rotated_token_sealed
     assert row["lease"] is None
     (rotated,) = world.x.valid
     assert rotated not in json.dumps(row)
-    assert seal.unseal(row["sealed"], fakes.CLIENT_SECRET) == rotated
+    assert seal.unseal(row["sealed"], fakes.CLIENT_SECRET, version=1) == rotated
     assert row["seed"] == seal.fingerprint(fakes.SEED, fakes.CLIENT_SECRET)
     posted = world.d1.row("SELECT * FROM social_posts")
     assert posted is not None
@@ -293,10 +293,14 @@ def test_a_refused_refresh_opens_one_issue_and_a_new_secret_starts_the_chain_aga
     assert [issue["title"] for issue in world.github.issues] == [TITLE]
     assert "X_REFRESH_TOKEN" in world.github.issues[0]["body"]
     assert world.d1.row("SELECT COUNT(*) AS n FROM social_posts") == {"n": 1}
+    assert "It is not retried." in world.github.issues[0]["body"]
     runner.clock.at += timedelta(hours=1)
-    assert runner() == 1
-    assert len(world.github.issues) == 1, "the open issue is updated, never a second one"
-    assert world.x.refreshes == 3
+    calls = world.github.calls
+    assert runner() == 0
+    assert "posting is stopped until a new X_REFRESH_TOKEN is pasted" in runner.log
+    assert len(world.github.issues) == 1, "never a second issue"
+    assert world.x.refreshes == 2, "the refused token is never sent to X again"
+    assert world.github.calls == calls, "the issue is not touched again either"
     new_seed = fakes.token("Rn")
     world.x.valid.add(new_seed)
     runner.clock.at += timedelta(hours=1)
@@ -340,9 +344,10 @@ def test_a_post_x_may_have_made_is_never_sent_again(tmp_path: Path, world: World
 
 def test_a_post_x_refused_is_tried_again_by_a_later_run(tmp_path: Path, world: World) -> None:
     runner = make(tmp_path, world, queue=[queued("0001")])
-    world.x.post_status = 403
+    world.x.post_status = 429
     assert runner() == 1
-    assert "X refused the post: HTTP 403 (Forbidden)" in runner.log
+    assert "X refused the post: HTTP 429 (Forbidden)" in runner.log
+    assert world.github.issues == [], "a refusal a later run may get past opens no issue"
     assert world.d1.row("SELECT COUNT(*) AS n FROM social_posts") == {"n": 0}
     assert world.d1.row("SELECT version FROM social_token") == {"version": 1}
     world.x.post_status = 201
@@ -444,7 +449,7 @@ def test_a_stored_token_under_another_client_secret_opens_the_issue(
 ) -> None:
     runner = make(tmp_path, world, queue=[queued("0001"), queued("0002")])
     assert runner() == 0
-    other = seal.seal("x", fakes.token("Zz"))
+    other = seal.seal("x", fakes.token("Zz"), version=1)
     world.d1.db.execute("UPDATE social_token SET sealed = ?", (other,))
     world.d1.db.commit()
     runner.clock.at += timedelta(hours=1)
@@ -946,3 +951,341 @@ def test_a_library_card_that_gives_a_chance_stops_the_run_while_chances_are_test
     assert runner() == 1
     assert world.x.posts == []
     assert world.x.refreshes == 0
+
+
+# -- stopped posting spends nothing (no Haiku call, no claim, no refresh) ---------------------
+
+
+def _refused_chain(tmp_path: Path, world: World) -> Runner:
+    """A world whose chain X refused (one post went out first), with more queued."""
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002"), queued("0003")])
+    assert runner() == 0
+    world.x.valid.clear()
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 1
+    assert world.x.refreshes == 2
+    assert world.d1.row("SELECT refused FROM social_token") == {
+        "refused": seal.fingerprint(fakes.SEED, fakes.CLIENT_SECRET)
+    }
+    return runner
+
+
+def test_a_refused_chain_sends_nothing_on_queued_push_runs(tmp_path: Path, world: World) -> None:
+    runner = _refused_chain(tmp_path, world)
+    calls = world.github.calls
+    for _ in range(4):
+        runner.clock.at += timedelta(hours=1)
+        assert runner() == 0
+        assert "posting is stopped until a new X_REFRESH_TOKEN is pasted" in runner.log
+        assert "claimed" not in runner.log
+    assert world.x.refreshes == 2
+    assert world.github.calls == calls
+    assert world.d1.row("SELECT COUNT(*) AS n FROM social_posts") == {"n": 1}
+
+
+def test_a_refused_chain_asks_haiku_nothing_on_scheduled_runs(tmp_path: Path, world: World) -> None:
+    runner = _refused_chain(tmp_path, world)
+    for name in ("0002", "0003"):  # nothing queued: the scheduled runs would ask Haiku
+        (tmp_path / "social" / "queue" / f"{name}.json").unlink()
+    runner.haiku = FakeAnthropic([])
+    for when in ("2026-10-27T16:37:00", "2026-10-27T20:41:00", "2026-10-28T16:37:00"):
+        runner.clock.at = at(when)
+        assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+        assert "posting is stopped until a new X_REFRESH_TOKEN is pasted" in runner.log
+    assert runner.haiku.requests == []
+    assert world.x.refreshes == 2
+    assert world.d1.row("SELECT COUNT(*) AS n FROM social_haiku_days") == {"n": 0}
+    assert world.d1.row("SELECT COUNT(*) AS n FROM social_posts") == {"n": 1}
+
+
+def test_a_new_secret_after_a_refused_chain_posts_the_queue_again(
+    tmp_path: Path, world: World
+) -> None:
+    runner = _refused_chain(tmp_path, world)
+    new_seed = fakes.token("Rn")
+    world.x.valid.add(new_seed)
+    runner.clock.at += timedelta(hours=1)
+    assert runner(X_REFRESH_TOKEN=new_seed) == 0
+    assert world.x.refreshes == 3
+    assert len(world.x.posts) == 2
+    assert world.github.issues[0]["state"] == "closed"
+
+
+# -- one Haiku try a day -------------------------------------------------------------------
+
+
+BAD_DRAFT = {**GOOD_DEV_LOG, "text": "Dev log: 99% sure the map is live now at snowlightmap.com"}
+
+
+def test_a_failed_haiku_day_is_not_tried_again_by_the_second_slot(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, when="2026-10-27T16:37:00")
+    runner.haiku = FakeAnthropic([dict(BAD_DRAFT), dict(BAD_DRAFT)])
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert "no Haiku draft passed: no post today" in runner.log
+    assert world.d1.row("SELECT day, state FROM social_haiku_days") == {
+        "day": "2026-10-27",
+        "state": "failed",
+    }
+    runner.clock.at = at("2026-10-27T20:41:00")
+    runner.haiku = FakeAnthropic([dict(GOOD_DEV_LOG), dict(OK)])
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert runner.haiku.requests == [], "no second try that day"
+    assert "already asked to write for 2026-10-27 (failed)" in runner.log
+    assert world.x.posts == []
+    assert world.x.refreshes == 0
+    runner.clock.at = at("2026-10-28T16:37:00")
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert len(runner.haiku.requests) == 2, "the next day writes again"
+    assert len(world.x.posts) == 1
+
+
+def test_the_second_slot_writes_when_the_first_never_ran(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, when="2026-10-27T20:41:00")
+    runner.haiku = FakeAnthropic([dict(GOOD_DEV_LOG), dict(OK)])
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert len(world.x.posts) == 1
+    assert world.d1.row("SELECT state FROM social_haiku_days") == {"state": "drafted"}
+
+
+def test_a_haiku_post_x_did_not_take_is_not_written_again_that_day(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, when="2026-10-27T16:37:00")
+    world.x.refresh_status = 503
+    runner.haiku = FakeAnthropic([dict(GOOD_DEV_LOG), dict(OK)])
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 1
+    world.x.refresh_status = 200
+    runner.clock.at = at("2026-10-27T20:41:00")
+    runner.haiku = FakeAnthropic([])
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert runner.haiku.requests == []
+    assert world.x.posts == []
+
+
+def test_a_bad_anthropic_key_stops_at_once_and_ends_red(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, when="2026-10-27T16:37:00")
+    for status in (401, 404):
+        runner.haiku = FakeAnthropic([{"status": status}, dict(GOOD_DEV_LOG), dict(OK)])
+        assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 1
+        assert len(runner.haiku.requests) == 1, "no second try after a fatal answer"
+        assert f"the Anthropic API answered HTTP {status}" in runner.log
+        assert "check ANTHROPIC_API_KEY" in runner.log
+        assert world.d1.row("SELECT state FROM social_haiku_days") == {"state": "failed"}
+        world.d1.db.execute("DELETE FROM social_haiku_days")
+        world.d1.db.commit()
+    assert world.x.refreshes == 0
+
+
+def test_an_overloaded_anthropic_answer_is_one_failed_try(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, when="2026-10-27T16:37:00")
+    runner.haiku = FakeAnthropic([{"status": 529}, dict(GOOD_DEV_LOG), dict(OK)])
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert len(runner.haiku.requests) == 3
+    assert len(world.x.posts) == 1
+
+
+# -- the token chain's failure paths ----------------------------------------------------------
+
+
+def test_a_rotated_token_lost_to_a_changed_row_stops_the_chain(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002")])
+
+    def another_run_takes_the_row() -> None:
+        world.d1.db.execute("UPDATE social_token SET lease = 'other.1'")
+        world.d1.db.commit()
+
+    world.d1.hooks = [("UPDATE social_token SET version", another_run_takes_the_row)]
+    assert runner() == 1, "red: the chain is lost"
+    assert "the rotated token could not be stored" in runner.log
+    assert len(world.x.posts) == 1, "the fresh access token still posts the claimed post"
+    assert [issue["title"] for issue in world.github.issues] == [TITLE]
+    assert "changed under the run" in world.github.issues[0]["body"]
+    assert world.d1.row("SELECT refused FROM social_token") == {
+        "refused": seal.fingerprint(fakes.SEED, fakes.CLIENT_SECRET)
+    }
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 0
+    assert "posting is stopped until a new X_REFRESH_TOKEN is pasted" in runner.log
+    assert world.x.refreshes == 1
+
+
+def test_a_seal_written_back_at_another_version_stops_the_chain(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002"), queued("0003")])
+    assert runner() == 0
+    first = world.d1.row("SELECT sealed FROM social_token")
+    assert first is not None
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 0
+    world.d1.db.execute("UPDATE social_token SET sealed = ?", (first["sealed"],))  # replayed
+    world.d1.db.commit()
+    runner.clock.at += timedelta(days=1)
+    assert runner() == 1
+    assert "did not open" in runner.log
+    assert world.x.refreshes == 2, "the replayed (spent) token is never sent"
+    assert world.github.issues[0]["state"] == "open"
+
+
+def test_a_late_refresh_is_never_started(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+
+    class Late(Clock):  # each reading of the clock is 4 minutes on (slow D1 and Haiku calls)
+        def __call__(self) -> Any:
+            self.at += timedelta(minutes=4)
+            return self.at
+
+    runner.clock = Late(at("2026-10-26T16:37:00"))
+    assert runner() == 1
+    assert "too late to refresh the token before the step's timeout" in runner.log
+    assert world.x.refreshes == 0
+    assert world.d1.row("SELECT COUNT(*) AS n FROM social_posts") == {"n": 0}, "claim dropped"
+
+
+def test_a_lease_taken_late_runs_from_when_it_is_taken(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    taken: list[str] = []
+
+    class Ticking(Clock):
+        def __call__(self) -> Any:
+            self.at += timedelta(seconds=20)
+            return self.at
+
+    runner.clock = Ticking(at("2026-10-26T16:37:00"))
+
+    def record() -> None:
+        row = world.d1.row("SELECT lease_until FROM social_token")
+        taken.append(str(row["lease_until"]) if row else "")
+
+    world.d1.hooks = [("UPDATE social_token SET version", record)]
+    assert runner() == 0
+    start = at("2026-10-26T16:37:00")
+    (until,) = taken
+    lease_until = at(until.removesuffix("Z"))
+    assert lease_until - start > timedelta(minutes=10, seconds=20), "timed from the take"
+
+
+def test_a_failed_lease_release_still_opens_the_issue_and_drops_the_claim(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002")])
+    assert runner() == 0
+    world.x.valid.clear()
+    world.d1.fail_next = ["UPDATE social_token SET lease = NULL"] * 2
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 1
+    assert "lease was not given back" in runner.log
+    assert [issue["title"] for issue in world.github.issues] == [TITLE]
+    assert world.d1.row("SELECT COUNT(*) AS n FROM social_posts") == {"n": 1}, "claim dropped"
+
+
+def test_a_failure_mid_send_drops_the_claim(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+
+    def the_image_goes_missing() -> None:
+        (tmp_path / "social" / "queue" / "0001.png").unlink()
+
+    world.d1.hooks = [("INSERT INTO social_posts", the_image_goes_missing)]
+    assert runner() == 1
+    assert "the post stopped (FileNotFoundError" in runner.log
+    assert world.x.posts == []
+    assert world.d1.row("SELECT COUNT(*) AS n FROM social_posts") == {"n": 0}
+
+
+def test_a_post_whose_record_failed_says_its_id(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    world.d1.fail_next = ["UPDATE social_posts SET state = 'posted'"] * 6
+    assert runner() == 1
+    assert len(world.x.posts) == 1
+    assert "queue:0001 is posted as 1850000000000000002, but its record stays claimed" in (
+        runner.log
+    )
+
+
+def test_a_posted_record_is_asked_again(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    world.d1.fail_next = ["UPDATE social_posts SET state = 'posted'"] * 2
+    assert runner() == 0
+    assert world.d1.row("SELECT state FROM social_posts") == {"state": "posted"}
+
+
+# -- X refusing a post for good holds posting until the owner acts -----------------------------
+
+
+@pytest.mark.parametrize(("where", "status"), [("post", 402), ("post", 403), ("upload", 403)])
+def test_a_post_x_refuses_for_good_holds_posting_until_the_issue_is_closed(
+    tmp_path: Path, world: World, where: str, status: int
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002")])
+    setattr(world.x, f"{where}_status", status)
+    assert runner() == 1
+    assert [issue["title"] for issue in world.github.issues] == [REFUSED_TITLE]
+    body = world.github.issues[0]["body"]
+    assert f"HTTP {status}" in body
+    assert "It is not retried." in body
+    refreshes = world.x.refreshes
+    for _ in range(3):
+        runner.clock.at += timedelta(hours=1)
+        assert runner() == 0
+        assert "posting is stopped since X refused a post" in runner.log
+    assert world.x.refreshes == refreshes, "no refresh while posting is held"
+    assert world.x.posts == []
+    setattr(world.x, f"{where}_status", 201 if where == "post" else 200)
+    world.github.issues[0]["state"] = "closed"  # the owner fixed it and closed the issue
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 0
+    assert "the owner closed the issue about X's refusal: trying again" in runner.log
+    assert len(world.x.posts) == 1
+    assert world.d1.row("SELECT held FROM social_token") == {"held": None}
+
+
+def test_a_new_secret_lifts_a_hold_and_a_post_closes_the_issue(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    world.x.post_status = 402
+    assert runner() == 1
+    world.x.post_status = 201
+    new_seed = fakes.token("Rn")
+    world.x.valid.add(new_seed)
+    runner.clock.at += timedelta(hours=1)
+    assert runner(X_REFRESH_TOKEN=new_seed) == 0
+    assert "X_REFRESH_TOKEN is new since X refused a post" in runner.log
+    assert len(world.x.posts) == 1
+    assert world.github.issues[0]["state"] == "closed"
+    assert world.github.comments[-1][1] == "X took a post again; posting continues."
+
+
+# -- the first post waits for its fresh card ------------------------------------------------------
+
+
+def test_a_fresh_only_post_waits_for_a_fresh_card_and_holds_the_queue(
+    tmp_path: Path, world: World
+) -> None:
+    first = unpictured("0001", FIRST, pictures=["national", "region"])
+    first["fresh_only"] = True
+    runner = make(tmp_path, world, queue=[first, queued("0002")])
+    runner.haiku = FakeAnthropic([])
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 1
+    assert "queued post 0001 waits for a fresh card" in runner.log
+    assert world.x.refreshes == 0
+    assert runner.haiku.requests == []
+    runner.picture = make_picture(tmp_path, runner.clock.at, kind="closings")
+    assert runner() == 1, "a fresh card of a kind its text does not fit"
+    assert world.x.posts == []
+    runner.picture = make_picture(tmp_path, runner.clock.at)
+    assert runner() == 0
+    assert world.x.posts[0]["text"] == FIRST
+    assert "fresh" in world.d1.row("SELECT image FROM social_posts")["image"]  # type: ignore[index]
+
+
+def test_a_fresh_only_post_never_names_its_own_image(tmp_path: Path, world: World) -> None:
+    item = queued("0001")
+    item["fresh_only"] = True
+    runner = make(tmp_path, world, queue=[item])
+    assert runner() == 1
+    assert "social/queue/0001.json is malformed" in runner.log

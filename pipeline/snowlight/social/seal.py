@@ -6,6 +6,11 @@ seals the refresh token stored in D1, the other keys the fingerprint of the
 secret from the one already used: a stored chain whose fingerprint is not the current
 secret's was started from an older secret, so the run starts again from the secret.
 
+The seal is bound to the row and the version it is stored as (the additional data names
+both), so a sealed token written back into the row at another version does not open: an
+older seal replayed by anyone who can write the database stops the chain (the owner's issue
+says so) rather than spending a token that was already spent.
+
 Neither key nor any token ever leaves this module except as the sealed text or the
 fingerprint, and an error never says more than that the seal did not open.
 """
@@ -26,7 +31,8 @@ PREFIX: Final = "v1."
 SALT: Final = b"snowlight social x refresh token"
 SEAL_INFO: Final = b"seal v1"
 SEED_INFO: Final = b"seed fingerprint v1"
-AAD: Final = b"snowlight social_token id=1"
+AAD: Final = "snowlight social_token id=1 v={version}"
+"""The additional data: the row and the version the sealed token is stored as."""
 NONCE_BYTES: Final = 12
 
 
@@ -42,18 +48,24 @@ def _key(client_secret: str, info: bytes) -> bytes:
     )
 
 
-def seal(token: str, client_secret: str) -> str:
-    """The token sealed under the client secret's key, with a fresh random nonce."""
+def _aad(version: int) -> bytes:
+    return AAD.format(version=version).encode()
+
+
+def seal(token: str, client_secret: str, *, version: int) -> str:
+    """The token sealed under the client secret's key, with a fresh random nonce, for the
+    token row's ``version``."""
     nonce = os.urandom(NONCE_BYTES)
-    sealed = AESGCM(_key(client_secret, SEAL_INFO)).encrypt(nonce, token.encode(), AAD)
+    sealed = AESGCM(_key(client_secret, SEAL_INFO)).encrypt(nonce, token.encode(), _aad(version))
     return PREFIX + base64.urlsafe_b64encode(nonce + sealed).decode()
 
 
-def unseal(text: str, client_secret: str) -> str:
-    """The token a :func:`seal` text holds.
+def unseal(text: str, client_secret: str, *, version: int) -> str:
+    """The token a :func:`seal` text holds, stored as ``version``.
 
     Raises:
-        SealError: the text is not a seal, or not one made with this client secret.
+        SealError: the text is not a seal, or not one made with this client secret for this
+            version.
     """
     if not text.startswith(PREFIX):
         raise SealError("the stored token is not sealed in a known format")
@@ -65,7 +77,7 @@ def unseal(text: str, client_secret: str) -> str:
         raise SealError("the stored token's seal is damaged")
     try:
         opened = AESGCM(_key(client_secret, SEAL_INFO)).decrypt(
-            raw[:NONCE_BYTES], raw[NONCE_BYTES:], AAD
+            raw[:NONCE_BYTES], raw[NONCE_BYTES:], _aad(version)
         )
     except InvalidTag as error:
         raise SealError("the stored token's seal did not open") from error

@@ -13,8 +13,15 @@ from snowlight.cli import main
 from snowlight.social import logscan, seal
 from snowlight.social.cli import Output, commits
 from snowlight.social.content import ContentError, load
-from snowlight.social.rules import model_fact_for
-from snowlight.social.writer import MAX_CALLS, AnswerError, CallCapError, Writer, draft
+from snowlight.social.rules import chances_shown, model_fact_for, parse_facts
+from snowlight.social.writer import (
+    MAX_CALLS,
+    AnswerError,
+    CallCapError,
+    Writer,
+    draft,
+    usable_commits,
+)
 from snowlight.social.xapi import (
     RefreshRefusedError,
     RefreshUnknownError,
@@ -34,20 +41,30 @@ GOOD = {
 
 
 def test_the_seal_opens_only_under_its_client_secret() -> None:
-    sealed = seal.seal("refresh-value", "secret-a")
+    sealed = seal.seal("refresh-value", "secret-a", version=3)
     assert "refresh-value" not in sealed
-    assert seal.seal("refresh-value", "secret-a") != sealed, "a fresh nonce each time"
-    assert seal.unseal(sealed, "secret-a") == "refresh-value"
+    assert sealed.startswith("v1.")
+    assert seal.seal("refresh-value", "secret-a", version=3) != sealed, "a fresh nonce each time"
+    assert seal.unseal(sealed, "secret-a", version=3) == "refresh-value"
     with pytest.raises(seal.SealError, match="did not open"):
-        seal.unseal(sealed, "secret-b")
+        seal.unseal(sealed, "secret-b", version=3)
     with pytest.raises(seal.SealError, match="known format"):
-        seal.unseal("plain", "secret-a")
+        seal.unseal("plain", "secret-a", version=3)
     with pytest.raises(seal.SealError, match="damaged"):
-        seal.unseal("v1.AAAA", "secret-a")
+        seal.unseal("v1.AAAA", "secret-a", version=3)
     with pytest.raises(seal.SealError, match="damaged"):
-        seal.unseal("v1.@@@", "secret-a")
+        seal.unseal("v1.@@@", "secret-a", version=3)
     with pytest.raises(ValueError, match="no client secret"):
-        seal.seal("x", "")
+        seal.seal("x", "", version=1)
+
+
+def test_a_seal_written_back_at_another_version_does_not_open() -> None:
+    older = seal.seal("spent-refresh-value", "secret-a", version=2)
+    for version in (1, 3, 4):
+        with pytest.raises(seal.SealError, match="did not open"):
+            seal.unseal(older, "secret-a", version=version)
+    assert seal.unseal(older, "secret-a", version=2) == "spent-refresh-value"
+
     assert seal.fingerprint("seed", "secret-a") != seal.fingerprint("seed", "secret-b")
     assert seal.fingerprint("seed", "secret-a") != seal.fingerprint("other", "secret-a")
 
@@ -365,3 +382,25 @@ def test_malformed_content_is_named(tmp_path: Path, change: object, message: str
     change(root / "social")  # type: ignore[operator]
     with pytest.raises(ContentError, match=message):
         load(root)
+
+
+def test_haiku_sees_no_commit_subject_with_a_number_a_station_or_a_chance() -> None:
+    real = (Path(__file__).resolve().parents[3] / "social" / "facts.md").read_text(encoding="utf-8")
+    facts = parse_facts(real)
+    assert not chances_shown(facts)
+    subjects = [
+        "give a district with no weather threat 0% as it counts",
+        "its chance the students' average with a closed school as 100%",
+        "Wyoming's acceptance at 85.8% plain",
+        "Read KIFI's closings articles",
+        "Show each district's chance in its panel",
+        "Link the waitlist from snowlightmap.com",
+        "Draw the map's school specks at every zoom",
+        "Keep the waitlist form inside its card on phones",
+    ]
+    assert usable_commits(subjects, facts) == [
+        "Draw the map's school specks at every zoom",
+        "Keep the waitlist form inside its card on phones",
+    ]
+    live = parse_facts(real.replace("- [TESTING] chances:", "- [LIVE] chances:"))
+    assert "Show each district's chance in its panel" in usable_commits(subjects, live)

@@ -11,7 +11,13 @@ The flow (:func:`draft`): write, stating the day's model fact
 (:func:`snowlight.social.rules.model_fact_for`: the LIVE model facts in turn); check it with
 :func:`snowlight.social.rules.check` (which also holds it to that model fact); if that passes,
 ask Haiku to check it against the facts. Either check failing gives one more try with
-the problems shown; a second failure means no post today.
+the problems shown; a second failure means no post today. An answer that says the key, the
+model id or the request is wrong (HTTP 400, 401, 403, 404) stops at once
+(:class:`FatalAnswerError`): no second try, and the run ends red.
+
+The commit subjects Haiku sees are only those with no digit, no station's call letters and
+(while the facts file marks chances TESTING) no word of a chance (:func:`usable_commits`): a
+subject such as "give a district 0% ..." never reaches the prompt.
 """
 
 import json
@@ -24,12 +30,25 @@ import anthropic
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from snowlight.social.content import Content, Image
-from snowlight.social.rules import Fact, Style, chances_shown, check, model_fact_for
+from snowlight.social.rules import (
+    CALL_SIGN,
+    URL,
+    Fact,
+    Facts,
+    Style,
+    chances_shown,
+    check,
+    mentions_chance,
+    model_fact_for,
+)
 
 MODEL: Final = "claude-haiku-5-5"
 MAX_TOKENS: Final = 1024
 MAX_CALLS: Final = 4
 ATTEMPTS: Final = 2
+FATAL: Final = frozenset({400, 401, 403, 404})
+"""Anthropic answers no second try can change: a bad request, a bad or disabled key, or an
+unknown model id."""
 PROBLEM_CHARS: Final = 200
 """The most of one of Haiku's problem lines that is kept (shown to the writer and logged)."""
 
@@ -142,6 +161,10 @@ class AnswerError(RuntimeError):
     """A call stopped early, refused, or answered outside its schema (safe for the log)."""
 
 
+class FatalAnswerError(AnswerError):
+    """The API refused the call in a way no retry can change (:data:`FATAL`)."""
+
+
 class Writer:
     """The capped Haiku calls of one run."""
 
@@ -165,6 +188,10 @@ class Writer:
                 },
             )
         except anthropic.APIStatusError as error:
+            if error.status_code in FATAL:
+                raise FatalAnswerError(
+                    f"the Anthropic API answered HTTP {error.status_code}"
+                ) from None
             raise AnswerError(f"the Anthropic API answered HTTP {error.status_code}") from None
         except anthropic.APIError as error:
             raise AnswerError(f"the Anthropic API failed ({type(error).__name__})") from None
@@ -206,6 +233,21 @@ def _plain(text: str, limit: int = PROBLEM_CHARS) -> str:
     (the log prints it; :func:`snowlight.social.logscan.one_line` also guards the log)."""
     printable = "".join(char if char.isprintable() else " " for char in text)
     return " ".join(printable.split())[:limit]
+
+
+def usable_commits(subjects: Sequence[str], facts: Facts) -> list[str]:
+    """The commit subjects Haiku may see: none with a digit (a percent, a score, a count the
+    facts do not give), a station's call letters, a link, or, while chances are TESTING, any
+    word of a chance."""
+    hidden = not chances_shown(facts)
+    return [
+        subject
+        for subject in subjects
+        if not any(char.isdigit() for char in subject)
+        and CALL_SIGN.search(subject) is None
+        and URL.search(subject) is None
+        and not (hidden and mentions_chance(subject))
+    ]
 
 
 def _library(images: Sequence[Image]) -> str:
@@ -269,7 +311,7 @@ def review_prompt(
     )
 
 
-def draft(  # noqa: PLR0913 - the run's parts
+def draft(  # noqa: PLR0912, PLR0913 - one check a branch; the run's parts
     writer: Writer,
     content: Content,
     *,
@@ -278,7 +320,11 @@ def draft(  # noqa: PLR0913 - the run's parts
     commits: Sequence[str],
     say: Callable[[str], None],
 ) -> Written | None:
-    """The day's post, or ``None`` when both tries fail a check (each problem is said)."""
+    """The day's post, or ``None`` when both tries fail a check (each problem is said).
+
+    Raises:
+        FatalAnswerError: the API refused a call in a way no retry can change.
+    """
     problems: list[str] = []
     model_fact = model_fact_for(content.facts, today)
     if model_fact is not None:
@@ -288,6 +334,8 @@ def draft(  # noqa: PLR0913 - the run's parts
             got = writer.write(
                 write_prompt(content, style, today, commits, problems, model_fact=model_fact)
             )
+        except FatalAnswerError:
+            raise
         except AnswerError as error:
             problems = [str(error)]
             say(f"social: try {attempt}: {error}")
@@ -318,6 +366,8 @@ def draft(  # noqa: PLR0913 - the run's parts
             )
             try:
                 verdict = writer.review(review_prompt(content, written, today, model_fact))
+            except FatalAnswerError:
+                raise
             except AnswerError as error:
                 problems = [str(error)]
                 say(f"social: try {attempt}: the check failed: {error}")

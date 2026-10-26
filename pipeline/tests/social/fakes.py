@@ -71,6 +71,9 @@ class FakeD1:
     """Statement prefixes whose next request answers HTTP 500 (after running, when the
     entry starts with ``ran:``, as a lost answer)."""
     statements: list[str] = field(default_factory=list)
+    hooks: list[tuple[str, Callable[[], None]]] = field(default_factory=list)
+    """Statement prefixes with something to do once just before that statement runs (another
+    run changing a row, a file going missing)."""
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         assert request.headers["Authorization"] == f"Bearer {CF_TOKEN}"
@@ -84,6 +87,10 @@ class FakeD1:
         body = json.loads(request.content)
         sql, params = body["sql"], body["params"]
         self.statements.append(sql)
+        for hook in list(self.hooks):
+            if sql.startswith(hook[0]):
+                self.hooks.remove(hook)
+                hook[1]()
         for entry in list(self.fail_next):
             ran = entry.startswith("ran:")
             if sql.startswith(entry.removeprefix("ran:")):

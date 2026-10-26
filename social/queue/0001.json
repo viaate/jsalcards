@@ -1,5 +1,7 @@
 {
   "id": "0001",
   "style": "dev_log",
-  "text": "Snowlight dev log: each school district's chance comes from a statistical model trained on 2,388 real past school days with known outcomes, not a guess. The closings reader runs 24/7 in practice mode. Launching before the first real snow. Waitlist link in my bio."
+  "text": "Snowlight dev log: each school district's chance comes from a statistical model trained on 2,388 real past school days with known outcomes, not a guess. The closings reader runs 24/7 in practice mode. Launching before the first real snow. Waitlist link in my bio.",
+  "pictures": ["national", "region"],
+  "fresh_only": true
 }

@@ -17,9 +17,18 @@ runs can never both spend one refresh token or overwrite each other's. The first
 the row at version 0 with its lease (an insert fails when a row appeared meanwhile).
 ``refused`` holds the fingerprint of the secret whose chain stopped (X refused it, the stored
 token did not open or could not be stored, or a scope is missing) until a refresh works again:
-a scheduled run with nothing to post refreshes only when the secret's fingerprint differs from
-it, so a newly pasted token is checked and the owner's issue closes, and a refused one is
-never tried again by itself.
+while it is the current secret's fingerprint, every run stops before it picks a post, so no
+run calls Haiku, claims a slot or sends that token to X again. A run whose secret's
+fingerprint differs (the owner pasted a new one) refreshes from the new secret, so the new
+token is checked and the owner's issue closes; a refused one is never tried again by itself.
+``held`` holds the fingerprint of the secret in use when X refused a post or an image upload
+for good (HTTP 401, 402 or 403: no credits, no write permission, a duplicate): every run stops
+before it picks a post until the owner closes that issue or pastes a new secret.
+
+**The Haiku days** (``social_haiku_days``): one row a UTC day Haiku was asked to write, made
+before the first call with an ``INSERT ... WHERE NOT EXISTS``, so a day gets one try of at
+most four calls whatever happens to it (both drafts failed a check, X refused the post, the
+run stopped): the second daily slot asks Haiku only when the first never reached it.
 
 **The posts** (``social_posts``): one row a slot (``queue:<id>`` or ``haiku:<UTC day>``),
 claimed before anything is sent with one ``INSERT ... SELECT ... WHERE`` that also enforces
@@ -48,9 +57,10 @@ TIMEOUT: Final = httpx.Timeout(30.0, connect=10.0)
 RETRY_PAUSE: Final = 3.0
 LEASE: Final = timedelta(minutes=10)
 """How long a run may hold the token chain: taken in the Post step just before the refresh
-and given back when the rotated token is stored, well under a minute later (one refresh call
-of at most 30 seconds). The Post step's own timeout is 10 minutes, and the job's concurrency
-group runs one post job at a time."""
+(timed from that moment) and given back when the rotated token is stored, well under a minute
+later (one refresh call of at most 30 seconds). A run never starts a refresh past
+:data:`snowlight.social.post.REFRESH_BY` into the Post step, whose own timeout is 10 minutes,
+and the job's concurrency group runs one post job at a time."""
 STALE_CLAIM: Final = timedelta(minutes=30)
 """A claim older than this belongs to a run that stopped mid-send (the Post step's timeout is
 10 minutes)."""
@@ -61,10 +71,12 @@ STORE_TRIES: Final = 3
 TABLES: Final = (
     "CREATE TABLE IF NOT EXISTS social_token (id INTEGER PRIMARY KEY CHECK (id = 1),"
     " version INTEGER NOT NULL, sealed TEXT NOT NULL, seed TEXT NOT NULL, lease TEXT,"
-    " lease_until TEXT, refused TEXT, updated_at TEXT NOT NULL)",
+    " lease_until TEXT, refused TEXT, held TEXT, updated_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS social_posts (slot TEXT PRIMARY KEY, kind TEXT NOT NULL,"
     " style TEXT NOT NULL, day TEXT NOT NULL, state TEXT NOT NULL, image TEXT NOT NULL,"
     " post_id TEXT, claimed_at TEXT NOT NULL, posted_at TEXT, run TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS social_haiku_days (day TEXT PRIMARY KEY, state TEXT NOT NULL,"
+    " run TEXT NOT NULL, at TEXT NOT NULL)",
 )
 
 type Value = str | int | None
@@ -119,6 +131,11 @@ class D1:
         self._secrets = secrets
         self._database = database
         self._pause = pause
+
+    @property
+    def pause(self) -> float:
+        """The pause before a second asking."""
+        return self._pause
 
     @classmethod
     def find(
@@ -327,6 +344,21 @@ class Store:
         """Record that the chain works again (a refresh worked with every scope)."""
         self.db.run("UPDATE social_token SET refused = NULL WHERE id = 1")
 
+    def hold(self, seed: str) -> None:
+        """Record that X refused a post for good while ``seed`` (a fingerprint) was in use."""
+        self.db.run("UPDATE social_token SET held = ? WHERE id = 1", (seed,))
+
+    def unhold(self) -> None:
+        """Record that posting may be tried again (the owner closed the issue, or a new
+        secret is in place)."""
+        self.db.run("UPDATE social_token SET held = NULL WHERE id = 1")
+
+    def held_seed(self) -> str | None:
+        """The fingerprint of the secret in use when X refused a post for good, or ``None``."""
+        rows = self.db.run("SELECT held FROM social_token WHERE id = 1").rows
+        value = rows[0].get("held") if rows else None
+        return value if isinstance(value, str) and value else None
+
     def refused_seed(self) -> str | None:
         """The fingerprint of the secret whose chain stopped, or ``None`` when it works."""
         rows = self.db.run("SELECT refused FROM social_token WHERE id = 1").rows
@@ -398,16 +430,64 @@ class Store:
         )
 
     def posted(self, slot: str, run: str, post_id: str, now: datetime) -> None:
-        self.db.run(
-            "UPDATE social_posts SET state = 'posted', post_id = ?, posted_at = ?"
-            " WHERE slot = ? AND run = ?",
-            (post_id, _iso(now), slot, run),
-        )
+        """Mark a slot posted, asked up to :data:`STORE_TRIES` times (the same update twice
+        changes nothing more).
+
+        Raises:
+            StoreError: it could not be recorded.
+        """
+        for attempt in range(STORE_TRIES):
+            try:
+                self.db.run(
+                    "UPDATE social_posts SET state = 'posted', post_id = ?, posted_at = ?"
+                    " WHERE slot = ? AND run = ?",
+                    (post_id, _iso(now), slot, run),
+                )
+            except StoreError:
+                if attempt == STORE_TRIES - 1:
+                    raise
+                time.sleep(self.db.pause)
+                continue
+            return
 
     def uncertain(self, slot: str, run: str) -> None:
         self.db.run(
             "UPDATE social_posts SET state = 'uncertain' WHERE slot = ? AND run = ?",
             (slot, run),
+        )
+
+    # -- the Haiku days ------------------------------------------------------------------
+
+    def begin_haiku_day(self, day: str, run: str, now: datetime) -> bool:
+        """Mark ``day`` (a UTC date) as the day Haiku writes in this run: false when a run
+        already asked Haiku that day. A lost answer is read back.
+
+        Raises:
+            StoreError: the row could not be made or read back.
+        """
+        try:
+            made = self.db.run(
+                "INSERT INTO social_haiku_days (day, state, run, at) SELECT ?, 'writing', ?, ?"
+                " WHERE NOT EXISTS (SELECT 1 FROM social_haiku_days WHERE day = ?)",
+                (day, run, _iso(now), day),
+                retry=False,
+            )
+        except StoreError:
+            rows = self.db.run("SELECT run FROM social_haiku_days WHERE day = ?", (day,)).rows
+            if rows and rows[0].get("run") == run:
+                return True
+            raise
+        return made.changes == 1
+
+    def haiku_day(self, day: str) -> str | None:
+        """How ``day``'s Haiku try went (``writing``, ``failed``, ``drafted``), or ``None``."""
+        rows = self.db.run("SELECT state FROM social_haiku_days WHERE day = ?", (day,)).rows
+        value = rows[0].get("state") if rows else None
+        return str(value) if value is not None else None
+
+    def end_haiku_day(self, day: str, run: str, state: str) -> None:
+        self.db.run(
+            "UPDATE social_haiku_days SET state = ? WHERE day = ? AND run = ?", (state, day, run)
         )
 
     def release(self, slot: str, run: str) -> None:

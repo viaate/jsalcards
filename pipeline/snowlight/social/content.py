@@ -8,7 +8,9 @@
 * ``social/queue/<id>.json``: posts written ahead, sent oldest first. A queued post goes out
   with the run's fresh card for its style (:mod:`snowlight.social.cards`) when the picture
   is of a kind its ``pictures`` list allows (any, without the list); else with its own image
-  when it names one, else with the library's newest card for its style.
+  when it names one, else with the library's newest card for its style. A post marked
+  ``fresh_only`` (the first post) goes only with a fresh card taken for it, and waits (holding
+  the queue) while none fits.
 
 Images are PNG or JPEG files under :data:`MAX_IMAGE_BYTES` (X's limit for a post image).
 """
@@ -61,6 +63,8 @@ class QueueEntry(BaseModel):
         default=None, min_length=1
     )
     """The fresh picture kinds the text fits (any, when absent)."""
+    fresh_only: bool = False
+    """Go only with a fresh card taken by the run that posts it, never an older one."""
     image: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9.-]{0,60}\.(png|jpg)$")
     day: date | None = None
     shows: str | None = Field(default=None, min_length=20, max_length=600)
@@ -69,6 +73,8 @@ class QueueEntry(BaseModel):
     def _image_whole(self) -> "QueueEntry":
         if len({self.image is None, self.day is None, self.shows is None}) != 1:
             raise ValueError("a queued post names its image, day and shows together, or none")
+        if self.fresh_only and self.image is not None:
+            raise ValueError("a fresh_only post names no image of its own")
         return self
 
 
@@ -106,6 +112,7 @@ class Queued:
     text: str
     image: Image | None
     pictures: tuple[str, ...] | None = None
+    fresh_only: bool = False
 
     @property
     def slot(self) -> str:
@@ -225,7 +232,12 @@ def load(root: Path) -> Content:
             )
         queue.append(
             Queued(
-                id=item.id, style=item.style, text=item.text, image=image, pictures=item.pictures
+                id=item.id,
+                style=item.style,
+                text=item.text,
+                image=image,
+                pictures=item.pictures,
+                fresh_only=item.fresh_only,
             )
         )
     return Content(facts=facts, images=tuple(images), queue=tuple(queue))

@@ -34,6 +34,10 @@ NEEDED_SCOPES: Final = frozenset(
 )
 """POST /2/tweets needs tweet.read, tweet.write and users.read; the upload and alt text need
 media.write; a refresh token needs offline.access (docs.x.com)."""
+FOR_GOOD: Final = frozenset({401, 402, 403})
+"""X's answers to an upload or a post that no later run can change by itself: the token may
+not do it (401), the account has no credits (402), or the app may not post or the post is a
+duplicate (403)."""
 STATUS_POLLS: Final = 5
 MAX_WAIT: Final = 10.0
 CODE: Final = re.compile(r"^[A-Za-z0-9_. -]{1,80}$")
@@ -60,7 +64,17 @@ class ScopeError(XError):
 
 
 class RefusedError(XError):
-    """X answered and did not post (nothing to undo; safe to try again on a later run)."""
+    """X answered and did not post (nothing to undo). ``status`` is X's HTTP status when it
+    answered: a 401, 402 or 403 (:data:`FOR_GOOD`) holds posting until the owner acts; any
+    other refusal may be tried again by a later run."""
+
+    def __init__(self, message: str, *, status: int | None = None) -> None:
+        super().__init__(message)
+        self.status = status
+
+    @property
+    def for_good(self) -> bool:
+        return self.status in FOR_GOOD
 
 
 class UnknownOutcomeError(XError):
@@ -182,7 +196,9 @@ class XClient:
         body = _json(response)
         data_part = body.get("data") if isinstance(body, dict) else None
         if response.status_code != httpx.codes.OK or not isinstance(data_part, dict):
-            raise RefusedError(f"X refused the image upload: {_say(response)}")
+            raise RefusedError(
+                f"X refused the image upload: {_say(response)}", status=response.status_code
+            )
         media_id = data_part.get("id")
         if not isinstance(media_id, str) or not media_id.isdigit():
             raise RefusedError("the image upload answer holds no media id")
@@ -258,7 +274,7 @@ class XClient:
         body = _json(response)
         data_part = body.get("data") if isinstance(body, dict) else None
         if response.status_code != httpx.codes.CREATED or not isinstance(data_part, dict):
-            raise RefusedError(f"X refused the post: {_say(response)}")
+            raise RefusedError(f"X refused the post: {_say(response)}", status=response.status_code)
         post_id = data_part.get("id")
         if not isinstance(post_id, str) or not post_id.isdigit():
             raise UnknownOutcomeError("the post answer holds no post id")
