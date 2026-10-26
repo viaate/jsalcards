@@ -7,6 +7,7 @@ license = "MIT"
 authors = [{ name = "viaate" }]
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "anthropic>=1.13.0,<2",
     "cryptography>=46",
     "eccodes==2.49.0",
     "eccodeslib==2.49.0.30",
