@@ -97,9 +97,13 @@ export interface MomentView {
   /** "8:41 PM", "8:41 PM CT". */
   readonly time: string;
   readonly text: string;
-  /** A status a district posted (its map dot), what already happened, or what comes next. */
-  readonly mark: StatusKey | 'event' | 'next';
-  /** For what comes next: when, for its live countdown; null otherwise. */
+  /**
+   * Its marker on the timeline: a status a district posted (a dot in that
+   * status's color), a weather event that happened (a gray dot), or when this
+   * district usually announces (a ring: its habit, never a post).
+   */
+  readonly mark: StatusKey | 'event' | 'announces';
+  /** For the announcement still to come: when, for its live countdown; null otherwise. */
   readonly at: Date | null;
 }
 
@@ -561,7 +565,7 @@ export function momentsOf(
         key: 'announces',
         time: chanceFormat.momentTime(at, now, zones),
         text: chanceFormat.usuallyAnnounces(district),
-        mark: ahead ? 'next' : 'event',
+        mark: 'announces',
         at: ahead ? at : null,
       },
     });

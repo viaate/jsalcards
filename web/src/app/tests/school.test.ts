@@ -1158,7 +1158,7 @@ describe('the chance section in the panel', () => {
     ]);
     // Before the directory came, the same sum, by how many.
     const first = views.find((view) => (view?.chance ?? null) !== null)?.chance;
-    expect(first?.moments.map((moment) => moment.mark)).toEqual(['next']);
+    expect(first?.moments.map((moment) => moment.mark)).toEqual(['announces']);
     expect(first?.why?.lines[0]?.text).toBe('2 districts next door canceled.');
     expect(directory).toHaveBeenCalledTimes(1);
     expect(directory).toHaveBeenCalledWith(stamp);

@@ -20,6 +20,20 @@
     open: 'is-open',
   } as const;
 
+  /**
+   * A timeline row's marker: a dot in the color of the status a district
+   * posted, a gray dot for a weather event, a ring for when this district
+   * usually announces.
+   */
+  const MARKS = {
+    closed: 'is-closed',
+    delayed: 'is-delayed',
+    remote: 'is-remote',
+    earlyDismissal: 'is-early-dismissal',
+    event: 'is-event',
+    announces: 'is-announces',
+  } as const;
+
   /** The clock, a few times a minute, for the countdowns to the usual announcement. */
   let now = $state(Date.now());
   onMount(() => {
@@ -99,13 +113,17 @@
 
     {#if chance.moments.length > 0}
       <ol class="rows moments">
-        {#each chance.moments as moment (moment.key)}
+        {#each chance.moments as moment, i (moment.key)}
           {@const count = moment.at === null ? null : countdown(moment.at)}
-          <li class="row moment">
+          <li class="moment">
             <span class="label">{moment.time}</span>
-            <span>
+            <span class="m-text">
               {moment.text}
               {#if count !== null}<span class="m-count">{count}</span>{/if}
+            </span>
+            <span class="rail" aria-hidden="true">
+              <span class="mark {MARKS[moment.mark]}"></span>
+              {#if i < chance.moments.length - 1}<span class="link"></span>{/if}
             </span>
           </li>
         {/each}
@@ -263,9 +281,93 @@
     stroke: var(--text-2);
   }
 
-  /* The evening so far, and what comes next: its time, then plain words. */
-  .moments {
+  /*
+    The evening so far, and what comes next: its time in gray, a marker on a
+    thin dotted rail, then plain words. The rail's column takes the room the
+    other lists leave between their columns, so with a time like "8:41 PM"
+    the words start where every list's words start; a wider time ("11:52 PM")
+    moves them over, never under it.
+  */
+  .rows.moments {
+    display: grid;
+    grid-template-columns: fit-content(var(--column)) 22px minmax(0, 1fr);
+    column-gap: 0;
     margin-top: var(--section);
+  }
+
+  .moment {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    align-items: start;
+    font: var(--type-body);
+    color: var(--text-1);
+    text-wrap: pretty;
+  }
+
+  /* The words come before the rail for a screen reader, which hears no rail; the eye sees it between. */
+  .moment > * {
+    grid-row: 1;
+  }
+
+  .moment > .label {
+    grid-column: 1;
+  }
+
+  .m-text {
+    grid-column: 3;
+  }
+
+  .rail {
+    position: relative;
+    display: flex;
+    grid-column: 2;
+    align-self: stretch;
+    justify-content: center;
+  }
+
+  /* On the first line's middle. */
+  .mark {
+    box-sizing: border-box;
+    width: 8px;
+    height: 8px;
+    margin-top: 7px;
+    border-radius: 50%;
+  }
+
+  .mark.is-closed {
+    background: var(--status-closed);
+  }
+
+  .mark.is-delayed {
+    background: var(--status-delayed);
+  }
+
+  .mark.is-remote {
+    background: var(--status-remote);
+  }
+
+  .mark.is-early-dismissal {
+    background: var(--status-early-dismissal);
+  }
+
+  .mark.is-event {
+    background: var(--text-2);
+  }
+
+  /* When the district usually announces: its habit, not a post, so a ring. */
+  .mark.is-announces {
+    border: 1.5px solid var(--text-1);
+  }
+
+  /* Dotted down to the next row's marker, 3px clear of each. */
+  .link {
+    position: absolute;
+    top: 18px;
+    bottom: calc(-1 * var(--row) - 4px);
+    left: calc(50% - 0.5px);
+    width: 1px;
+    background: linear-gradient(var(--text-3) 50%, transparent 50%) 0 0 / 1px 4px repeat-y;
   }
 
   .m-count {

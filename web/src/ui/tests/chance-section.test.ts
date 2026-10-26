@@ -223,7 +223,7 @@ describe('the chance section', () => {
           key: 'announces',
           time: `5:30${NBSP}AM`,
           text: 'Shawnee Mission usually announces',
-          mark: 'next',
+          mark: 'announces',
           at: new Date('2026-01-13T11:30:00Z'),
         },
       ],
@@ -235,6 +235,89 @@ describe('the chance section', () => {
     vi.advanceTimersByTime(61_000);
     flushSync();
     expect(text(section, '.m-count')).toEqual(['in 8h 24m']);
+    // Its marker is a ring, not a dot: when it usually announces, never a post.
+    expect(section.querySelector('.moment:last-child .mark')?.className).toMatch(
+      /\bis-announces\b/u,
+    );
+  });
+
+  it('marks each timeline row: a dot in its status color, a ring for the usual announcement, a dotted rail between', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    const row = (key: string, mark: ChanceView['moments'][number]['mark']) => ({
+      key,
+      time: `8:41${NBSP}PM`,
+      text: key,
+      mark,
+      at: null,
+    });
+    const moments = [
+      row('a', 'closed'),
+      row('b', 'delayed'),
+      row('c', 'remote'),
+      row('d', 'earlyDismissal'),
+      row('e', 'event'),
+      row('f', 'announces'),
+    ];
+    const section = show({ ...chance(true), moments });
+    const marks = [...section.querySelectorAll('.moment .mark')].map((mark) =>
+      [...mark.classList].filter((name) => name.startsWith('is-')),
+    );
+    expect(marks).toEqual([
+      ['is-closed'],
+      ['is-delayed'],
+      ['is-remote'],
+      ['is-early-dismissal'],
+      ['is-event'],
+      ['is-announces'],
+    ]);
+    // Every row's marker, and its rail, is for the eye only: the words say the status.
+    const rails = [...section.querySelectorAll('.moment .rail')];
+    expect(rails).toHaveLength(6);
+    for (const rail of rails) expect(rail.getAttribute('aria-hidden')).toBe('true');
+    expect(text(section, '.moment .m-text')).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
+    // The words come right after the time for a screen reader; the rail sits between for the eye.
+    for (const moment of section.querySelectorAll('.moment')) {
+      expect([...moment.children].map((child) => child.className.split(' ')[0])).toEqual([
+        'label',
+        'm-text',
+        'rail',
+      ]);
+    }
+    // The dotted rail joins one row's marker to the next: none after the last.
+    const links = [...section.querySelectorAll('.moment')].map(
+      (moment) => moment.querySelectorAll('.link').length,
+    );
+    expect(links).toEqual([1, 1, 1, 1, 1, 0]);
+  });
+
+  it('draws no rail for a single row', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    const [first] = chance(true).moments;
+    if (first === undefined) throw new Error('no moment');
+    const section = show({ ...chance(true), moments: [first] });
+    expect(section.querySelectorAll('.moment .mark.is-closed')).toHaveLength(1);
+    expect(section.querySelectorAll('.link')).toHaveLength(0);
+  });
+
+  it('paints the dashed lines behind the bars, so a line never crosses one', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    const section = show(chance(true));
+    const plot = section.querySelector('.plot');
+    const lines = [...section.querySelectorAll('.line')];
+    expect(lines).toHaveLength(2);
+    for (const line of lines) {
+      // Earlier in the drawing than the plot, with no stacking of their own: painted first.
+      expect(line.parentElement).toBe(plot?.parentElement);
+      expect(
+        plot !== null &&
+          (line.compareDocumentPosition(plot) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+      ).toBe(true);
+    }
+    const css = readFileSync(
+      path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../ChanceChart.svelte'),
+      'utf8',
+    );
+    expect(css).not.toMatch(/z-index/u);
   });
 
   it('shows only what is consistent: no sum, no chart, no timeline where the file gives none', () => {
@@ -267,6 +350,29 @@ describe('the chance section', () => {
     expect(section.querySelector('.few')).toBeNull();
     expect(section.querySelector('.is-thin')).toBeNull();
     expect(section.textContent).not.toContain(chanceCopy.fewRecords);
+  });
+});
+
+describe('the timeline markers', () => {
+  const read = (file: string): string =>
+    readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), file), 'utf8');
+
+  it('fill each status dot with the map’s color for it and draw the announcement as a ring', () => {
+    const css = read('../ChanceSection.svelte');
+    const rule = (selector: string): string => {
+      const found = new RegExp(`\\.mark\\.${selector}\\s*\\{([^}]*)\\}`, 'u').exec(css)?.[1];
+      if (found === undefined) throw new Error(`no .mark.${selector}`);
+      return found.trim();
+    };
+    expect(rule('is-closed')).toBe('background: var(--status-closed);');
+    expect(rule('is-delayed')).toBe('background: var(--status-delayed);');
+    expect(rule('is-remote')).toBe('background: var(--status-remote);');
+    expect(rule('is-early-dismissal')).toBe('background: var(--status-early-dismissal);');
+    expect(rule('is-event')).toBe('background: var(--text-2);');
+    // Hollow: a border, no fill.
+    expect(rule('is-announces')).toMatch(/^border: 1\.5px solid var\(--text-1\);$/u);
+    // Closed and canceled are the map's blue.
+    expect(read('../../styles/global.css')).toMatch(/--status-closed:\s*#7fd4ff;/u);
   });
 });
 

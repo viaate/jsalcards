@@ -856,7 +856,12 @@ describe('the timeline', () => {
     ).toEqual([
       [`8:41${NBSP}PM`, 'closed', 'Blue Valley canceled Tuesday', null],
       [`8:52${NBSP}PM`, 'closed', 'Olathe canceled Tuesday', null],
-      [`5:30${NBSP}AM`, 'next', 'Shawnee Mission usually announces', at('2026-01-13T11:30:00Z')],
+      [
+        `5:30${NBSP}AM`,
+        'announces',
+        'Shawnee Mission usually announces',
+        at('2026-01-13T11:30:00Z'),
+      ],
     ]);
     expect(bare?.countdown(at('2026-01-13T11:30:00Z'), A_NOW)).toBe('in 8h 25m');
     // Without the chart, the sum says the numbers it would have said.
@@ -872,13 +877,13 @@ describe('the timeline', () => {
       `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM`,
     );
     expect(just?.moments).toHaveLength(2);
-    // Before the chart's first hour: back on the timeline, no longer "next".
+    // Before the chart's first hour: back on the timeline, still its ring, no longer counting.
     const past = chanceView(nightBefore({ now: at('2026-01-13T12:05:00Z') }));
     expect(past?.chart?.announces).toBeNull();
     expect(past?.moments.map((moment) => [moment.mark, moment.at])).toEqual([
       ['closed', null],
       ['closed', null],
-      ['event', null],
+      ['announces', null],
     ]);
     // An announcement the evening before, before the districts next door posted.
     const early = chanceView(
@@ -891,7 +896,7 @@ describe('the timeline', () => {
       'Blue Valley canceled Tuesday',
       'Olathe canceled Tuesday',
     ]);
-    expect(early?.moments[0]?.mark).toBe('event');
+    expect(early?.moments[0]?.mark).toBe('announces');
     // Long past: off the timeline.
     const late = chanceView(
       nightBefore({

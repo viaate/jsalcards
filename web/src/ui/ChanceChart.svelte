@@ -77,7 +77,8 @@
   (chart-labels.ts), the announcement's with its live countdown; the lit
   bars' words are the key under the chart, a row on the panel's two columns,
   the bar drawn small in the first. The announcement's line is at its time,
-  the bus hour's through the bar it answers for.
+  the bus hour's through the bar it answers for. Both lines are drawn behind
+  the bars: where a line's time falls inside a bar, the bar covers it.
 -->
 <figure class="chart">
   <figcaption class="title">{chart.title}</figcaption>
@@ -120,6 +121,23 @@
       {/if}
     </div>
 
+    <!-- Before the plot, so the bars paint over them: a dashed line never crosses a bar. -->
+    {#if chart.announces !== null}
+      <span
+        class="line is-announces"
+        aria-hidden="true"
+        style:left={across(chart.announces)}
+        style:top="{placed.announcesLine ?? 0}px"
+      ></span>
+    {/if}
+    <span
+      class="line is-buses"
+      aria-hidden="true"
+      style:left={middle(count - 1)}
+      style:top="{placed.busesLine}px"
+      style:bottom="{chart.busTop}px"
+    ></span>
+
     <div class="plot" style:height="{chart.plot}px" style:--bars={count} aria-hidden="true">
       <span class="rule" style:bottom="{chart.zero}px"></span>
       {#each chart.bars as bar, i (i)}
@@ -141,22 +159,6 @@
         ></span>
       {/if}
     </div>
-
-    {#if chart.announces !== null}
-      <span
-        class="line is-announces"
-        aria-hidden="true"
-        style:left={across(chart.announces)}
-        style:top="{placed.announcesLine ?? 0}px"
-      ></span>
-    {/if}
-    <span
-      class="line is-buses"
-      aria-hidden="true"
-      style:left={middle(count - 1)}
-      style:top="{placed.busesLine}px"
-      style:bottom="{chart.busTop}px"
-    ></span>
   </div>
 
   <div class="times" aria-hidden="true">

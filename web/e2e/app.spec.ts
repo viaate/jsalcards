@@ -2248,6 +2248,41 @@ test.describe('with data staged', () => {
       `${format.time(new Date('2026-01-13T02:41:00Z'), ZONE)} Blue Valley canceled Tuesday`,
       `${format.time(new Date('2026-01-13T02:52:00Z'), ZONE)} Olathe canceled Tuesday`,
     ]);
+    // Each with a filled dot in the map's blue for closed, between the gray time and the words,
+    // and a dotted rail from the first dot down to the second.
+    const marks = await section.locator('.moment').evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const box = (selector: string) => {
+          const found = node.querySelector(selector);
+          if (found === null) return null;
+          const { x, y, width, height } = found.getBoundingClientRect();
+          return { x, y, width, height };
+        };
+        const mark = node.querySelector('.mark');
+        return {
+          fill: mark === null ? null : getComputedStyle(mark).backgroundColor,
+          mark: box('.mark'),
+          time: box('.label'),
+          words: box('.m-text'),
+          link: box('.link'),
+        };
+      }),
+    );
+    expect(marks.map(({ fill }) => fill)).toEqual(['rgb(127, 212, 255)', 'rgb(127, 212, 255)']);
+    for (const { mark, time, words } of marks) {
+      if (mark === null || time === null || words === null) throw new Error('no marker');
+      expect(mark.width).toBeCloseTo(8, 0);
+      expect(time.x + time.width).toBeLessThan(mark.x);
+      expect(mark.x + mark.width).toBeLessThan(words.x);
+    }
+    const [first, second] = marks;
+    if (first === undefined || second === undefined) throw new Error('no rows');
+    if (first.link === null || first.mark === null || second.mark === null) {
+      throw new Error('no rail');
+    }
+    expect(second.link).toBeNull();
+    expect(first.link.y).toBeGreaterThan(first.mark.y + first.mark.height);
+    expect(first.link.y + first.link.height).toBeLessThan(second.mark.y);
 
     // The chart: a bar an hour, the heaviest lit, the buses and the range at their hour; over
     // it the two dashed lines' words, the answer first, and under it the lit bars' key row.
@@ -2309,6 +2344,33 @@ test.describe('with data staged', () => {
     for (const box of words) {
       for (const bar of bars) expect(overlaps(box, bar)).toBe(false);
     }
+    // The 5:30 AM line falls inside the lit 5 AM bar: the bar is painted over it, so where they
+    // meet the bar shows, and above the bar the line does.
+    await chart.locator('.plot').scrollIntoViewIfNeeded();
+    const [announceLine] = await boxes('.line.is-announces');
+    const fiveBar = (await boxes('.col.is-lit')).at(-1);
+    if (announceLine === undefined || fiveBar === undefined) throw new Error('no line or bar');
+    expect(announceLine.x).toBeGreaterThan(fiveBar.x);
+    expect(announceLine.x).toBeLessThan(fiveBar.x + fiveBar.width);
+    // What is drawn at a point, topmost first: the bar's own class, or the line's.
+    const stackAt = async (x: number, y: number) =>
+      page.evaluate(
+        ([px, py]) =>
+          document
+            .elementsFromPoint(px ?? 0, py ?? 0)
+            .map((node) =>
+              node.classList.contains('col')
+                ? 'col'
+                : node.classList.contains('line')
+                  ? 'line'
+                  : '',
+            )
+            .filter((name) => name !== ''),
+        [x, y],
+      );
+    const lineX = announceLine.x + announceLine.width / 2;
+    expect(await stackAt(lineX, fiveBar.y + fiveBar.height / 2)).toEqual(['col', 'line']);
+    expect(await stackAt(lineX, fiveBar.y - 4)).toEqual(['line']);
 
     // How it adds up, always open: the base and each reason's points, adding up to the headline.
     await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.64));
