@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1600" />
+    <title>Snowlight card</title>
+    <link rel="stylesheet" href="card.css" />
+  </head>
+  <body>
+    <!--
+      Direction C "stamp". Every word and number on the card is filled by
+      window.fill(slots, background) from the post job's picture.json
+      (picture.Taken) and its description; none of it is written here.
+
+      Slots:
+        kind        'dev-log' | 'waitlist' | 'storm' | 'chance'
+        view        picture.Taken.kind: 'national' | 'closings' | 'district' | 'region'
+        current     picture.Taken.current (true or false, always given)
+        label       optional short label over the place; dev-log and waitlist have a default
+        states      closings view: picture._states, most lit first (at most two);
+                    the place reads "Mostly <a> and <b>", as the description says "mostly in"
+        place       national, district and region views: "United States", "A district in
+                    Michigan", the region's name
+        time        the picture's clock with zone ("6:42 AM CT"); never on a fallback
+        date        the picture's day ("Oct 26"; "Oct 26, 2026" on a fallback)
+        isFallback  an older library picture: "From <date>", no clock
+        updatedAt   {time, date} of lit.generated_at; required when current is false,
+                    and then shown in place of the picture's time
+        counts      {closed, delayed, remote, early_dismissal} integers held in view; the badge
+                    says "in this view"
+        total       the lit schools across the country (picture.Seen.lit); shown in the row
+                    as "<n> across the US" only when larger than the view's
+        chance      exactly as picture.chance_text writes it ("78%", "<1%", ">99%")
+        chanceDay   "Mon"
+        chanceScope 'district' | 'highest'
+        link        waitlist address (default snowlightmap.com)
+        anchor      'left' | 'right': the top corner the stamp takes (the post job picks
+                    the one the subject leaves free)
+        focus       {x0, y0, x1, y1}: the district's box in the frame, drawn as corner ticks
+        sample      staged data: draws the SAMPLE tag (never posted)
+    -->
+    <main class="card" id="card">
+      <img class="map" id="map" alt="" />
+
+      <div class="focus" id="focus" hidden><i></i><i></i><i></i><i></i></div>
+
+      <section class="stamp" id="stamp">
+        <p class="label" id="label" hidden></p>
+        <h1 class="place" id="place"></h1>
+        <p class="time" id="time"></p>
+        <div class="badge" id="badge" hidden>
+          <span class="mark" id="badge-mark"></span>
+          <span class="num" id="badge-num"></span>
+          <span class="word" id="badge-word"></span>
+        </div>
+      </section>
+
+      <ul class="rest" id="rest" hidden></ul>
+
+      <div class="brand" id="brand">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <radialGradient id="bloom" cx="32" cy="32" r="32" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#f4fbff" stop-opacity="0.996" />
+              <stop offset="0.04" stop-color="#f1faff" stop-opacity="0.995" />
+              <stop offset="0.08" stop-color="#e5f6ff" stop-opacity="0.987" />
+              <stop offset="0.12" stop-color="#cceeff" stop-opacity="0.963" />
+              <stop offset="0.15" stop-color="#b3e6ff" stop-opacity="0.929" />
+              <stop offset="0.18" stop-color="#9ddeff" stop-opacity="0.882" />
+              <stop offset="0.22" stop-color="#8ad8ff" stop-opacity="0.812" />
+              <stop offset="0.26" stop-color="#82d5ff" stop-opacity="0.741" />
+              <stop offset="0.31" stop-color="#7fd4ff" stop-opacity="0.65" />
+              <stop offset="0.37" stop-color="#7fd4ff" stop-opacity="0.535" />
+              <stop offset="0.44" stop-color="#7fd4ff" stop-opacity="0.408" />
+              <stop offset="0.52" stop-color="#7fd4ff" stop-opacity="0.291" />
+              <stop offset="0.6" stop-color="#7fd4ff" stop-opacity="0.209" />
+              <stop offset="0.7" stop-color="#7fd4ff" stop-opacity="0.141" />
+              <stop offset="0.8" stop-color="#7fd4ff" stop-opacity="0.095" />
+              <stop offset="0.9" stop-color="#7fd4ff" stop-opacity="0.031" />
+              <stop offset="1" stop-color="#7fd4ff" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+          <circle cx="32" cy="32" r="32" fill="url(#bloom)" />
+        </svg>
+        <span class="wordmark">Snowlight</span>
+      </div>
+
+      <div class="sample" id="sample" hidden>SAMPLE</div>
+    </main>
+
+    <template id="bloom-mark">
+      <svg class="mark is-bloom" viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="32" fill="url(#bloom)" />
+      </svg>
+    </template>
+
+    <script>
+      const STATUSES = ['closed', 'delayed', 'remote', 'early_dismissal'];
+      const CLASS = {
+        closed: 'is-closed',
+        delayed: 'is-delayed',
+        remote: 'is-remote',
+        early_dismissal: 'is-early-dismissal',
+      };
+      // picture.STATUS_WORDS, the words the description uses.
+      const STATUS_WORD = {
+        closed: 'closed',
+        delayed: 'delayed',
+        remote: 'remote',
+        early_dismissal: 'dismissing early',
+      };
+      // picture.STATES names that do not read as a headline.
+      const DISPLAY = { 'the District of Columbia': 'DC' };
+      const DEFAULT_LABEL = { 'dev-log': 'Dev log', waitlist: 'Join the waitlist' };
+      const MONTH = '(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)';
+      const TIME_RE = /^(1[0-2]|[1-9]):[0-5]\d (AM|PM) [A-Z]{2,4}$/;
+      const DATE_RE = new RegExp(`^${MONTH} ([1-9]|[12]\\d|3[01])(, 20\\d\\d)?$`);
+      const CHANCE_RE = /^(<1|>99|[1-9]\d?)%$/;
+      const number = new Intl.NumberFormat('en-US');
+      const $ = (id) => document.getElementById(id);
+
+      function text(id, value) {
+        const node = $(id);
+        node.textContent = value ?? '';
+        node.hidden = !value;
+      }
+
+      function fail(message) {
+        throw new Error(message);
+      }
+
+      function display(name) {
+        let out = name;
+        for (const [from, to] of Object.entries(DISPLAY)) out = out.split(from).join(to);
+        return out.charAt(0).toUpperCase() + out.slice(1);
+      }
+
+      function readCounts(counts) {
+        if (counts == null) return null;
+        const values = STATUSES.map((key) => counts[key] ?? 0);
+        if (values.some((v) => typeof v !== 'number' || !Number.isInteger(v) || v < 0)) {
+          fail('counts: every count must be a whole number, not a string');
+        }
+        return values;
+      }
+
+      function badgeWord(lines) {
+        const word = $('badge-word');
+        word.replaceChildren(
+          ...lines.map((line) => {
+            const span = document.createElement('span');
+            span.textContent = line;
+            return span;
+          }),
+        );
+      }
+
+      function useBloomMark() {
+        const bloom = $('bloom-mark').content.firstElementChild.cloneNode(true);
+        bloom.id = 'badge-mark';
+        $('badge-mark').replaceWith(bloom);
+      }
+
+      // The largest status in the badge; the other non-zero ones in one row along the bottom-left.
+      function statusBadge(values, total) {
+        let top = 0;
+        values.forEach((v, i) => {
+          if (v > values[top]) top = i;
+        });
+        const key = STATUSES[top];
+        const n = values[top];
+        $('badge-mark').className = `mark ${CLASS[key]}`;
+        $('badge-num').textContent = number.format(n);
+        badgeWord([`${n === 1 ? 'school' : 'schools'} ${STATUS_WORD[key]}`, 'in this view']);
+        $('badge').hidden = false;
+        const rest = $('rest');
+        rest.replaceChildren();
+        STATUSES.forEach((other, i) => {
+          if (i === top || values[i] === 0) return;
+          const li = document.createElement('li');
+          const m = document.createElement('i');
+          m.className = `mark ${CLASS[other]}`;
+          const c = document.createElement('span');
+          c.className = 'count';
+          c.textContent = number.format(values[i]);
+          const w = document.createElement('span');
+          w.textContent = STATUS_WORD[other];
+          li.append(m, c, w);
+          rest.append(li);
+        });
+        // The country's total only when it is larger than the view's, and named as such.
+        const inView = values.reduce((a, b) => a + b, 0);
+        if (Number.isInteger(total) && total > inView) {
+          const li = document.createElement('li');
+          const c = document.createElement('span');
+          c.className = 'count';
+          c.textContent = number.format(total);
+          const w = document.createElement('span');
+          w.textContent = 'lit up across the US';
+          li.append(c, w);
+          rest.append(li);
+        }
+        rest.hidden = rest.children.length === 0;
+      }
+
+      // picture.py: the district view's chance is the highest of any district that day; the
+      // national view's is "at most 1% in every district" when it rounds to 1% or less.
+      function chanceBadge(chance, day, scope) {
+        if (typeof chance !== 'string' || !CHANCE_RE.test(chance)) {
+          fail(`chance: not as chance_text writes it: ${chance}`);
+        }
+        if (!['district', 'highest'].includes(scope)) fail(`chanceScope: ${scope}`);
+        if (!/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)$/.test(day ?? '')) fail(`chanceDay: ${day}`);
+        $('badge-mark').hidden = true; // no status mark: a chance is not a closing
+        const atMostOne = scope === 'highest' && (chance === '<1%' || chance === '1%');
+        $('badge-num').textContent = atMostOne ? '1%' : chance;
+        badgeWord([
+          `chance of no school ${day}`,
+          atMostOne ? 'or less in every district' : 'highest of any district',
+        ]);
+        $('badge').hidden = false;
+      }
+
+      function linkBadge(link) {
+        if (!/^[a-z0-9.-]+\.[a-z]{2,}(\/[a-z0-9-]*)?$/.test(link)) fail(`link: ${link}`);
+        useBloomMark();
+        $('badge').classList.add('is-link');
+        $('badge-num').textContent = link;
+        $('badge-word').hidden = true;
+        $('badge').hidden = false;
+      }
+
+      function focusBox(box) {
+        if (!box) return;
+        const pad = 22;
+        const f = $('focus');
+        const x0 = Math.max(0, box.x0 - pad);
+        const y0 = Math.max(0, box.y0 - pad);
+        f.style.left = `${x0}px`;
+        f.style.top = `${y0}px`;
+        f.style.width = `${Math.min(1600, box.x1 + pad) - x0}px`;
+        f.style.height = `${Math.min(900, box.y1 + pad) - y0}px`;
+        f.hidden = false;
+      }
+
+      window.fill = async (slots, background) => {
+        const kind = slots.kind;
+        const view = slots.view;
+        if (!['dev-log', 'waitlist', 'storm', 'chance'].includes(kind)) fail(`kind: ${kind}`);
+        if (!['national', 'closings', 'district', 'region'].includes(view)) fail(`view: ${view}`);
+        if (typeof slots.current !== 'boolean') fail('current: give picture.Taken.current');
+        if (!DATE_RE.test(slots.date ?? '')) fail(`date: ${slots.date}`);
+
+        // Where: the closings view says "mostly in" its top states, as the description does.
+        let place;
+        if (view === 'closings') {
+          const states = slots.states;
+          if (!Array.isArray(states) || states.length < 1 || states.length > 2) {
+            fail('states: picture._states, one or two names');
+          }
+          if (slots.place) fail('place: the closings view takes states, not place');
+          place = `Mostly ${states.map(display).join(' and ')}`;
+        } else {
+          if (!slots.place) fail('place is required');
+          place = display(slots.place);
+        }
+
+        const anchor = slots.anchor ?? 'left';
+        if (!['left', 'right'].includes(anchor)) fail(`anchor: ${anchor}`);
+        $('stamp').classList.toggle('is-right', anchor === 'right');
+        $('sample').classList.toggle('is-left', anchor === 'right');
+
+        text('label', slots.label ?? DEFAULT_LABEL[kind]);
+        text('place', place);
+
+        // When: a fallback shows only its own date; stale closings show when they were updated.
+        if (slots.isFallback) {
+          if (slots.time) fail('a fallback card carries no clock');
+          text('time', `From ${slots.date}`);
+        } else if (slots.current === false) {
+          const u = slots.updatedAt;
+          if (!u || !TIME_RE.test(u.time ?? '') || !DATE_RE.test(u.date ?? '')) {
+            fail('updatedAt {time, date} is required when the closings are not current');
+          }
+          text('time', `Updated ${u.time} · ${u.date}`);
+        } else {
+          if (!TIME_RE.test(slots.time ?? '')) fail(`time: ${slots.time}`);
+          text('time', `${slots.time} · ${slots.date}`);
+        }
+
+        // The number. A count only when the closings view lit schools; never "0 closed".
+        const values = readCounts(slots.counts);
+        const lit = values ? values.reduce((a, b) => a + b, 0) : 0;
+        if (values && view !== 'closings' && lit > 0) fail('counts: only the closings view lights schools');
+        if (kind === 'storm') {
+          if (view !== 'closings' || lit === 0) fail('a storm card needs lit schools from the closings view');
+          statusBadge(values, slots.total);
+        } else if (kind === 'chance') {
+          chanceBadge(slots.chance, slots.chanceDay, slots.chanceScope);
+        } else if (kind === 'waitlist') {
+          linkBadge(slots.link ?? 'snowlightmap.com');
+        } else if (lit > 0) {
+          statusBadge(values, slots.total);
+        } else if (slots.chance != null) {
+          chanceBadge(slots.chance, slots.chanceDay, slots.chanceScope);
+        }
+        // dev-log with nothing lit and no chance: the stamp alone, no badge.
+
+        focusBox(slots.focus);
+        $('brand').classList.toggle('is-lead', view === 'national');
+        $('sample').hidden = !slots.sample;
+
+        const words = document.querySelector('.card').innerText;
+        if (/\p{Extended_Pictographic}/u.test(words)) fail('no emoji or pictographs');
+        if (/[‒-―!]/.test(words)) fail('no en or em dashes and no exclamation marks');
+        const timely = slots.current === true && !slots.isFallback;
+        if (!timely && /\b(now|live|today|tonight)\b/i.test(words)) {
+          fail('a card that is not current may not say now, live, today or tonight');
+        }
+
+        const img = $('map');
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => reject(new Error(`background did not load: ${background}`));
+          img.src = background;
+        });
+        await document.fonts.ready;
+        for (const f of ["600 92px 'Geist Variable'", "500 36px 'Geist Mono Variable'", "500 40px 'Geist Variable'"]) {
+          await document.fonts.load(f);
+        }
+        // The status row stays one line unless it would reach the brand; then it wraps.
+        const rest = $('rest');
+        if (!rest.hidden) {
+          const gap = 32;
+          const room = $('brand').getBoundingClientRect().left - gap;
+          if (rest.getBoundingClientRect().right > room) {
+            rest.classList.add('is-column');
+            rest.style.maxWidth = `${room - rest.getBoundingClientRect().left}px`;
+          }
+        }
+        return words;
+      };
+
+      // Every piece of text on the card, its box, color, size and cap height in px.
+      window.textBoxes = () => {
+        const canvas = document.createElement('canvas').getContext('2d');
+        const pick = [
+          ['label', '#label'],
+          ['place', '#place'],
+          ['time', '#time'],
+          ['badge number', '#badge-num'],
+          ['wordmark', '.wordmark'],
+          ['sample', '#sample'],
+        ];
+        document.querySelectorAll('#badge-word span').forEach((s, i) => pick.push([`badge word ${i}`, s]));
+        document.querySelectorAll('#rest li span').forEach((s, i) => pick.push([`rest ${i}: ${s.textContent}`, s]));
+        const out = [];
+        for (const [name, sel] of pick) {
+          const el = typeof sel === 'string' ? document.querySelector(sel) : sel;
+          if (!el || el.hidden || !el.textContent || el.closest('[hidden]')) continue;
+          const cs = getComputedStyle(el);
+          canvas.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+          const cap = canvas.measureText('H').actualBoundingBoxAscent;
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const rects = [...range.getClientRects()].map((r) => ({ x: r.left, y: r.top, w: r.width, h: r.height }));
+          out.push({
+            name,
+            text: el.textContent,
+            color: cs.color,
+            fontSize: parseFloat(cs.fontSize),
+            weight: cs.fontWeight,
+            family: cs.fontFamily.split(',')[0],
+            cap,
+            rects,
+          });
+        }
+        return out;
+      };
+
+      // Every element that must sit inside the safe margin, plus the overlay boxes that cover map.
+      window.importantBoxes = () =>
+        ['#stamp', '#brand', '#brand svg', '.wordmark', '#sample', '#label', '#place', '#time', '#badge', '#rest']
+          .map((s) => document.querySelector(s))
+          .filter((el) => el && !el.hidden && el.getClientRects().length)
+          .map((el) => {
+            const r = el.getBoundingClientRect();
+            return { el: el.id || el.getAttribute('class') || el.tagName, x0: r.left, y0: r.top, x1: r.right, y1: r.bottom };
+          });
+    </script>
+  </body>
+</html>

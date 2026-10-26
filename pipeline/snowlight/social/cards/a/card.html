@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1600, initial-scale=1" />
+    <title>Snowlight card</title>
+    <link rel="stylesheet" href="card.css" />
+  </head>
+  <body>
+    <main class="card" id="card">
+      <img class="map" id="map" alt="" />
+      <div class="scrims" id="scrims"></div>
+
+      <section class="block" id="block">
+        <p class="kicker" id="kicker" hidden></p>
+        <h1 class="headline" id="headline"></h1>
+        <p class="sub" id="sub" hidden></p>
+        <ul class="chips" id="chips" hidden></ul>
+      </section>
+
+      <div class="brand" id="brand">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <radialGradient id="bloom" cx="32" cy="32" r="32" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#f4fbff" stop-opacity="0.996" />
+              <stop offset="0.04" stop-color="#f1faff" stop-opacity="0.995" />
+              <stop offset="0.08" stop-color="#e5f6ff" stop-opacity="0.987" />
+              <stop offset="0.12" stop-color="#cceeff" stop-opacity="0.963" />
+              <stop offset="0.15" stop-color="#b3e6ff" stop-opacity="0.929" />
+              <stop offset="0.18" stop-color="#9ddeff" stop-opacity="0.882" />
+              <stop offset="0.22" stop-color="#8ad8ff" stop-opacity="0.812" />
+              <stop offset="0.26" stop-color="#82d5ff" stop-opacity="0.741" />
+              <stop offset="0.31" stop-color="#7fd4ff" stop-opacity="0.65" />
+              <stop offset="0.37" stop-color="#7fd4ff" stop-opacity="0.535" />
+              <stop offset="0.44" stop-color="#7fd4ff" stop-opacity="0.408" />
+              <stop offset="0.52" stop-color="#7fd4ff" stop-opacity="0.291" />
+              <stop offset="0.6" stop-color="#7fd4ff" stop-opacity="0.209" />
+              <stop offset="0.7" stop-color="#7fd4ff" stop-opacity="0.141" />
+              <stop offset="0.8" stop-color="#7fd4ff" stop-opacity="0.095" />
+              <stop offset="0.9" stop-color="#7fd4ff" stop-opacity="0.031" />
+              <stop offset="1" stop-color="#7fd4ff" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+          <circle cx="32" cy="32" r="32" fill="url(#bloom)" />
+        </svg>
+        <span class="mark">Snowlight</span>
+      </div>
+    </main>
+
+    <script>
+      /*
+        Fills the card from the structured fields the post job exports from
+        picture.py (Picture / Taken), one to one. Every word on the card is
+        chosen here by rule; the data supplies only numbers, state names, ISO
+        times and (behind an explicit opt-in) a district's name.
+
+        facts = {
+          post: 'dev-log' | 'waitlist' | 'storm' | 'chance',
+          picture: {
+            kind: 'closings' | 'district' | 'national',       // Picture.kind
+            taken_at: ISO with zone,                          // Picture.taken_at
+            current: bool,                                    // Picture.current
+            // closings (from _closings_picture):
+            in_view: { closed, delayed, remote, early_dismissal },   // _status_counts(lit.statuses[held])
+            states: ['Michigan', 'Ohio'],                     // _states(in view), most first, at most two
+            lit: int,                                         // Picture.lit, across the country
+            closings_generated_at: ISO,                       // Lit.generated_at
+            // district (from choose()):
+            state: 'Michigan', chance_text: '78%', day: 'YYYY-MM-DD',
+            district_name: string (optional, shown only with nameDistrict),
+            // national (from choose() / highest_chance()):
+            top_chance: { text: '1%', day: 'YYYY-MM-DD', districts: 18227 } | null,
+          },
+          isFallback: bool,     // an older library picture: dated from its own taken_at
+          nameDistrict: bool,   // the owner's opt-in to name a district (default: never)
+          isSample: bool,       // staged data: marked on the card, never posted (render.js forces it)
+          frame: { free, subject } // the capture's text-free box and subject box, px in 1600 x 900
+        }
+      */
+      const W = 1600;
+      const H = 900;
+      const SAFE = 64;
+      const ZONE = 'America/Chicago'; // picture.py SHOWN_ZONE: every time on the card is Central
+      // The product's aim, worded as coming: true today per social/facts.md (fact "aim"). The
+      // present-tense site line is not used until live closings are on.
+      const TAGLINE = 'Every school closing in the US on one map, coming this winter';
+      const LABELS = { 'dev-log': 'Dev log', waitlist: 'Join the waitlist' };
+      // key, the site's legend word (copy.ts), picture.py's plain word (STATUS_WORDS), glow class
+      const STATUS = [
+        ['closed', 'Closed', 'closed', 'closed'],
+        ['delayed', 'Delayed', 'delayed', 'delayed'],
+        ['remote', 'Remote', 'remote', 'remote'],
+        ['early_dismissal', 'Early dismissal', 'dismissing early', 'early'],
+      ];
+      const NOT_ON_A_FALLBACK = /\b(now|live|tonight|today|this morning|currently)\b/i;
+      const BANNED = /[—–!]/; // owner style: no em or en dashes, no exclamation marks
+      const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
+      const DAY = /^\d{4}-\d{2}-\d{2}$/;
+      const CHANCE = /^(<1|>99|\d{1,2})%$/; // picture.chance_text
+      const FRESH_MS = 20 * 60e3; // picture.py FRESH
+      const LEAD_MS = 2 * 60e3; // picture.py LEAD
+
+      const n = (v) => Number(v || 0).toLocaleString('en-US');
+      const fail = (m) => {
+        throw new Error(m);
+      };
+
+      // Times are formatted here from ISO, in Central time; a pre-formatted string is refused.
+      function instant(v, what) {
+        if (typeof v !== 'string' || !ISO.test(v)) fail(`${what} must be an ISO time with its zone, got ${JSON.stringify(v)}`);
+        return new Date(v);
+      }
+      function ct(d) {
+        const fmt = new Intl.DateTimeFormat('en-US', { timeZone: ZONE, hour: 'numeric', minute: '2-digit', hour12: true, month: 'short', day: 'numeric', year: 'numeric' });
+        const p = Object.fromEntries(fmt.formatToParts(d).map((x) => [x.type, x.value]));
+        return { clock: `${p.hour}:${p.minute} ${p.dayPeriod.toUpperCase()} CT`, monthDay: `${p.month} ${p.day}`, date: `${p.month} ${p.day}, ${p.year}` };
+      }
+      function weekday(day, what) {
+        if (typeof day !== 'string' || !DAY.test(day)) fail(`${what} must be a YYYY-MM-DD day`);
+        return new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+      }
+      const and = (xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : xs[0] || '');
+
+      function check(f) {
+        const p = f.picture || fail('facts.picture is missing');
+        if (!['closings', 'district', 'national', 'region'].includes(p.kind)) fail(`unknown picture kind ${p.kind}`);
+        const taken = instant(p.taken_at, 'picture.taken_at');
+        const out = { p, taken: ct(taken) };
+        if (p.kind === 'closings') {
+          const c = p.in_view || fail('a closings picture needs in_view counts');
+          out.inView = STATUS.reduce((s, [k]) => s + Number(c[k] || 0), 0);
+          if (out.inView === 0) fail('a closings picture lights at least one school in view (picture.py never builds one with none)');
+          if (!Number.isInteger(p.lit) || p.lit < out.inView) fail('picture.lit is the country total and cannot be below the view');
+          if (!Array.isArray(p.states)) fail('picture.states is missing');
+          const gen = instant(p.closings_generated_at, 'picture.closings_generated_at');
+          const age = taken - gen;
+          const current = age >= -LEAD_MS && age <= FRESH_MS;
+          if (current !== !!p.current) fail(`picture.current is ${p.current} but the closings are ${Math.round(age / 60e3)} minutes old`);
+          out.updated = ct(gen);
+        }
+        if (p.kind === 'district') {
+          if (!CHANCE.test(p.chance_text || '')) fail(`bad chance ${p.chance_text}`);
+          if (!p.state) fail('a district picture needs its state');
+          out.day = weekday(p.day, 'picture.day');
+          if (f.nameDistrict && !p.district_name) fail('nameDistrict needs picture.district_name from the job');
+        }
+        if (p.kind === 'national' && p.top_chance) {
+          if (!CHANCE.test(p.top_chance.text || '')) fail(`bad chance ${p.top_chance.text}`);
+          if (!Number.isInteger(p.top_chance.districts) || p.top_chance.districts < 1) fail('top_chance.districts must be a count');
+          out.day = weekday(p.top_chance.day, 'top_chance.day');
+        }
+        return out;
+      }
+
+      // Where the picture is, in the card's words.
+      function placeOf(k, f) {
+        const p = k.p;
+        if (p.kind === 'closings') return p.states.length ? { tpl: 'Mostly in ', data: and(p.states) } : null;
+        if (p.kind === 'district') return f.nameDistrict ? { tpl: '', data: `${p.district_name}, ${p.state}` } : { tpl: 'A public school district in ', data: p.state };
+        if (p.kind === 'region' && p.place) return { tpl: 'Over ', data: p.place };
+        return null;
+      }
+
+      function compose(f) {
+        const k = check(f);
+        const p = k.p;
+        const tpl = []; // the template's own words: the only ones checked against the fallback list
+        const data = []; // numbers and names from the data
+        const out = { side: 'left', kicker: null, lead: null, label: [], plain: false, stack: false, sub: [], chips: [] };
+
+        // Kicker: when. Never the word LIVE; a blue dot only while the picture is current.
+        if (f.isFallback) {
+          out.kicker = { text: `From ${k.taken.date}`, dated: true };
+        } else if (p.kind === 'closings' && !p.current) {
+          out.kicker = { text: `Updated ${k.updated.clock} · ${k.updated.monthDay}` };
+        } else {
+          out.kicker = { text: `${k.taken.clock} · ${k.taken.monthDay}`, dot: !!p.current };
+        }
+        tpl.push(out.kicker.text);
+
+        const place = placeOf(k, f);
+        const placeText = place ? place.tpl + place.data : null;
+        if (place) tpl.push(place.tpl), data.push(place.data);
+        const statusChips = (skip) =>
+          STATUS.filter(([key]) => key !== skip && Number(p.in_view[key] || 0) > 0).map(([key, word, , cls]) => ({ cls, word, value: n(p.in_view[key]) }));
+        const across = () => (p.lit > k.inView ? [{ word: 'Across the US', value: n(p.lit) }] : []);
+
+        if (f.post === 'storm') {
+          if (p.kind !== 'closings') fail('a storm card needs a closings picture (no closings claim is made from a national or district view)');
+          const c = p.in_view;
+          const [key, , phrase, cls] = Number(c.closed || 0) > 0 ? STATUS[0] : STATUS.slice().sort((a, b) => (c[b[0]] || 0) - (c[a[0]] || 0))[0];
+          const count = Number(c[key]);
+          out.lead = n(count);
+          // The status word takes its glow color, so the headline is the first key of the map.
+          out.label = [[`${count === 1 ? 'school' : 'schools'} `, { t: phrase, cls }]];
+          out.sub = [{ text: placeText, main: true }];
+          // The row holds the other statuses in view, then the country total when it is larger.
+          out.chips = [...statusChips(key), ...across()];
+        } else if (f.post === 'chance') {
+          if (p.kind === 'district') {
+            out.lead = p.chance_text;
+            out.label = ['chance of no school', k.day];
+            out.sub = [{ text: placeText, main: true }, { text: 'Highest of any district', optional: true }];
+          } else if (p.kind === 'national' && p.top_chance) {
+            out.lead = p.top_chance.text;
+            out.label = ['top chance of no school', k.day];
+            out.sub = [{ text: `Across all ${n(p.top_chance.districts)} districts`, main: true }];
+            tpl.push('Across all', 'districts');
+          } else {
+            fail('a chance card needs a district picture or a national picture with a top chance');
+          }
+        } else if (f.post === 'dev-log' || f.post === 'waitlist') {
+          out.plain = true;
+          out.label = [LABELS[f.post]];
+          // One real line from the picture, so the card says what the map shows.
+          let line = [];
+          if (p.kind === 'closings') {
+            line = [{ text: placeText, main: true }];
+            out.chips = [...statusChips(null), ...across()];
+          } else if (p.kind === 'district') {
+            line = [{ text: placeText, main: true }];
+            out.chips = [{ word: `Chance of no school ${k.day}`, value: p.chance_text }];
+          } else if (p.kind === 'region') {
+            line = [{ text: placeText, main: true }];
+          } else {
+            line = [{ text: TAGLINE, main: true }];
+            tpl.push(TAGLINE);
+            // A waitlist card already carries the address and the tagline: no third line on an empty map.
+            if (p.top_chance && f.post === 'dev-log') out.chips = [{ word: `Top chance of no school ${k.day}`, value: p.top_chance.text }];
+          }
+          if (f.post === 'waitlist') {
+            out.sub = [{ text: 'snowlightmap.com', main: true }, ...line.map((x) => ({ text: x.text }))];
+            tpl.push('snowlightmap.com');
+          } else {
+            out.sub = line;
+          }
+        } else {
+          fail(`unknown post ${f.post}`);
+        }
+        tpl.push(...out.label.map((l) => (Array.isArray(l) ? l.map((x) => (typeof x === 'string' ? x : x.t)).join('') : l)));
+        tpl.push(...out.chips.map((c) => c.word));
+        data.push(out.lead, ...out.chips.map((c) => c.value));
+
+        // District views are framed with the right side free: the block goes there, clear of the district.
+        const free = f.frame && f.frame.free;
+        if (p.kind === 'district' && free && free.x0 >= W / 2 - 100) {
+          out.side = 'right';
+          out.stack = !out.plain;
+        }
+
+        const all = [...tpl, ...data].filter(Boolean).join(' ');
+        if (BANNED.test(all)) fail(`banned character in: ${all}`);
+        // On a fallback only the template's own words are checked: a place called Live Oak is still a place.
+        if (f.isFallback && NOT_ON_A_FALLBACK.test(tpl.filter(Boolean).join(' '))) fail(`a fallback card may not say: ${tpl.join(' ')}`);
+        out.words = all;
+        return out;
+      }
+
+      const $ = (id) => document.getElementById(id);
+      const el = (tag, cls, text) => {
+        const e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (text != null) e.textContent = text;
+        return e;
+      };
+
+      function fill(c, f) {
+        document.documentElement.dataset.side = c.side;
+        const kicker = $('kicker');
+        kicker.hidden = !c.kicker;
+        kicker.className = 'kicker';
+        kicker.textContent = '';
+        if (c.kicker) {
+          if (c.kicker.dot) kicker.append(el('i', 'dot'));
+          if (c.kicker.dated) kicker.classList.add('dated');
+          kicker.append(el('span', 'k', c.kicker.text));
+        }
+        const h = $('headline');
+        h.className = 'headline' + (c.plain ? ' plain' : '') + (c.stack ? ' stack' : '');
+        h.textContent = '';
+        if (c.lead) h.append(el('span', 'lead', c.lead));
+        const label = el('span', 'label');
+        c.label.forEach((line) => {
+          const span = el('span', 'line');
+          for (const part of Array.isArray(line) ? line : [line]) {
+            if (typeof part === 'string') span.append(part);
+            else span.append(el('em', `status ${part.cls}`, part.t));
+          }
+          label.append(span);
+        });
+        h.append(label);
+
+        const sub = $('sub');
+        sub.textContent = '';
+        sub.hidden = c.sub.length === 0;
+        c.sub.forEach((part, i) => {
+          if (i > 0) sub.append(el('span', 'sep', '·'));
+          sub.append(el('span', 'part' + (part.main ? ' main' : '') + (part.optional ? ' optional' : ''), part.text));
+        });
+
+        const chips = $('chips');
+        chips.textContent = '';
+        chips.hidden = c.chips.length === 0;
+        for (const chip of c.chips) {
+          const li = el('li', `chip ${chip.cls || 'plain'}`);
+          if (chip.cls) li.append(el('i'));
+          li.append(el('span', 'w', chip.word), el('b', null, chip.value));
+          chips.append(li);
+        }
+
+        document.querySelector('.sample')?.remove();
+        if (f.isSample) $('card').append(el('div', 'sample', 'SAMPLE'));
+      }
+
+      const rect = (node) => node.getBoundingClientRect();
+      const lineCount = (node) => {
+        const tops = new Set([...node.children].filter((x) => !x.hidden).map((x) => Math.round(rect(x).top / 8)));
+        return tops.size;
+      };
+
+      // Shrink the headline until the block fits its column; step the sub-line down before refusing.
+      function fit(f) {
+        const root = document.documentElement.style;
+        for (const v of ['--lead', '--label', '--plain', '--sub', '--block-bottom']) root.removeProperty(v);
+        const brand = rect($('brand'));
+        const block = $('block');
+        let max;
+        if (document.documentElement.dataset.side === 'right') {
+          const fr = f.frame || {};
+          const x0 = Math.max(fr.free ? fr.free.x0 : 0, fr.subject ? fr.subject.x1 + 48 : 0);
+          max = W - SAFE - x0;
+          // The block stands on the brand row.
+          root.setProperty('--block-bottom', `${H - brand.top + 40}px`);
+        } else {
+          max = brand.left - SAFE - 64; // the block's room: safe margin to the brand, less a gap
+        }
+        block.style.maxWidth = `${max}px`;
+        const h = $('headline');
+        let scale = 1;
+        while (h.scrollWidth > max + 0.5 && scale > 0.6) {
+          scale -= 0.02;
+          root.setProperty('--lead', `${Math.round(168 * scale)}px`);
+          root.setProperty('--label', `${Math.max(48, Math.round(60 * scale))}px`);
+          root.setProperty('--plain', `${Math.round(120 * scale)}px`);
+        }
+        if (h.scrollWidth > max + 0.5) fail('headline does not fit at 60%');
+        // The sub-line may wrap to two lines; a dot never ends or starts a line.
+        const sub = $('sub');
+        if (sub.hidden) return;
+        // Try 42, 38, then 36 px; then drop an optional part (never the place) and try again.
+        const optional = [...sub.querySelectorAll('.part.optional')];
+        for (const drop of [false, true]) {
+          if (drop) {
+            if (!optional.length) break;
+            optional.forEach((o) => {
+              o.previousElementSibling?.remove();
+              o.remove();
+            });
+          }
+          for (const size of [42, 38, 36]) {
+            root.setProperty('--sub', `${size}px`);
+            sub.querySelectorAll('.sep').forEach((s) => (s.hidden = false));
+            sub.querySelectorAll('.sep').forEach((s) => {
+              const prev = s.previousElementSibling;
+              const next = s.nextElementSibling;
+              if (rect(next).top > rect(prev).top + 4) s.hidden = true;
+            });
+            const lh = parseFloat(getComputedStyle(sub).lineHeight);
+            if (rect(sub).height <= lh * 2 + 8 && sub.scrollWidth <= max + 0.5) return;
+          }
+        }
+        fail('sub-line runs past two lines at 36 px');
+      }
+
+      // The wordmark sits on the baseline of the block's last line, like a station bug on the lower third.
+      function baseline(node) {
+        const probe = document.createElement('span');
+        probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+        node.append(probe);
+        const y = rect(probe).bottom;
+        probe.remove();
+        return y;
+      }
+      function alignBrand() {
+        const brand = $('brand');
+        brand.style.transform = '';
+        if (document.documentElement.dataset.side === 'right') return;
+        const lines = [...document.querySelectorAll('#chips .chip .w, #sub .part, #headline .label .line')].filter((x) => !x.closest('[hidden]'));
+        const last = lines.reduce((a, x) => (baseline(x) > baseline(a) ? x : a), lines[0]);
+        const dy = baseline(last) - baseline(brand.querySelector('.mark'));
+        const glyph = rect(brand.querySelector('svg'));
+        const room = H - SAFE - glyph.bottom; // the glyph's box stays inside the safe margin
+        brand.style.transform = `translateY(${Math.min(dy, room)}px)`;
+      }
+
+      // A black field behind each line group (kicker, headline, sub-line, row) and the brand:
+      // about 0.9 under the text, feathered out past it, so map labels never touch the words
+      // while the map stays bright beside short lines.
+      function scrims() {
+        const host = $('scrims');
+        host.textContent = '';
+        const right = document.documentElement.dataset.side === 'right';
+        const add = (r, l, t, rr, b) => {
+          const d = el('div', 'scrim');
+          Object.assign(d.style, { left: `${r.left - l}px`, top: `${r.top - t}px`, width: `${r.width + l + rr}px`, height: `${r.height + t + b}px` });
+          host.append(d);
+        };
+        const groups = ['#kicker', '#headline .lead', '#headline .label', '#sub', '#chips'].map((q) => document.querySelector(q)).filter((x) => x && !x.closest('[hidden]'));
+        // Inner lines are padded generously toward the edge they hang from, lightly toward open map.
+        for (const g of groups) {
+          const r = rect(g);
+          if (right) add(r, 80, 70, 200, 70);
+          else add(r, 200, 70, 80, 70);
+        }
+        // The lowest group's field runs off the bottom edge.
+        const last = groups.at(-1);
+        if (last) {
+          const r = rect(last);
+          if (right) add(r, 80, 40, 200, 300);
+          else add(r, 200, 40, 80, 300);
+        }
+        const g = rect($('brand'));
+        add(g, 80, 60, 200, 300);
+      }
+
+      window.renderCard = async (facts, bg) => {
+        const c = compose(facts);
+        fill(c, facts);
+        const img = $('map');
+        if (img.getAttribute('src') !== bg) {
+          img.src = bg;
+          await img.decode();
+        }
+        await document.fonts.ready;
+        await Promise.all([...document.fonts].map((x) => x.load()));
+        if (![...document.fonts].some((x) => x.family.includes('Geist') && x.status === 'loaded')) fail('Geist did not load');
+        fit(facts);
+        alignBrand();
+        scrims();
+        return c;
+      };
+
+      // One sentence of alt text, built from the picture's kind and fields; the post only adds its caption.
+      // A screen reader says "<" and ">" badly: the alt spells them out.
+      const spoken = (t) => t.replace(/^<(\d+%)$/, 'under $1').replace(/^>(\d+%)$/, 'over $1');
+      window.altText = (f) => {
+        const k = check(f);
+        const p = k.p;
+        const when = f.isFallback ? `pictured on ${k.taken.date}` : `at ${k.taken.clock} on ${k.taken.monthDay}`;
+        const caption = { 'dev-log': ', captioned Dev log', waitlist: ', captioned Join the waitlist at snowlightmap.com' }[f.post] || '';
+        let s;
+        if (p.kind === 'closings') {
+          const parts = STATUS.filter(([key]) => Number(p.in_view[key] || 0) > 0).map(([key, , word]) => `${n(p.in_view[key])} ${word}`);
+          parts[0] = parts[0].replace(/^([\d,]+) /, (m, v) => `${v} ${v === '1' ? 'school' : 'schools'} `);
+          const where = p.states.length ? `, mostly in ${and(p.states)}` : '';
+          s =
+            `The Snowlight map ${when}, zoomed to the area with the most schools lit up for weather${where}: ` +
+            `${and(parts)} in this view` +
+            (p.lit > k.inView ? `, and ${n(p.lit)} lit up across the country` : '') +
+            (p.current || f.isFallback ? '' : `, with closings last updated at ${k.updated.clock}`);
+        } else if (p.kind === 'district') {
+          const who = f.nameDistrict ? `${p.district_name}, ${p.state}` : `a public school district in ${p.state}`;
+          s = `The Snowlight map ${when}, zoomed to ${who}, whose chance of no school ${k.day} is ${spoken(p.chance_text)}, the highest of any district`;
+        } else {
+          s = `The national Snowlight map ${when}, with no school lit up for weather`;
+          if (p.top_chance) s += ` and a top chance of no school ${k.day} of ${spoken(p.top_chance.text)} across all ${n(p.top_chance.districts)} districts`;
+        }
+        s += `${caption}.`;
+        if (BANNED.test(s)) fail(`banned character in alt: ${s}`);
+        return s;
+      };
+
+      // Boxes and type metrics of every text on the card, for the report.
+      window.cardMetrics = () => {
+        const canvas = document.createElement('canvas').getContext('2d');
+        const items = [];
+        const add = (name, node, important = true) => {
+          if (!node || node.closest('[hidden]')) return;
+          const cs = getComputedStyle(node);
+          canvas.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+          const cap = canvas.measureText('H').actualBoundingBoxAscent;
+          const r = rect(node);
+          items.push({ name, text: node.textContent.trim(), color: cs.color, fontSize: parseFloat(cs.fontSize), cap, box: { x0: r.left, y0: r.top, x1: r.right, y1: r.bottom }, important });
+        };
+        add('kicker', document.querySelector('#kicker .k'));
+        add('lead', document.querySelector('#headline .lead'));
+        document.querySelectorAll('#headline .label .line').forEach((s, i) => add(`label${i + 1}`, s));
+        add('status-word', document.querySelector('#headline em'));
+        document.querySelectorAll('#sub .part').forEach((s, i) => add(`sub${i + 1}`, s));
+        document.querySelectorAll('#chips .chip').forEach((s, i) => {
+          add(`chip${i + 1}-word`, s.querySelector('.w'));
+          add(`chip${i + 1}-value`, s.querySelector('b'));
+        });
+        add('wordmark', document.querySelector('.brand .mark'));
+        const g = rect(document.querySelector('.brand svg'));
+        const b = rect($('block'));
+        const sample = document.querySelector('.sample');
+        if (sample) add('sample-tag', sample, false);
+        return { items, glyph: { x0: g.left, y0: g.top, x1: g.right, y1: g.bottom }, block: { x0: b.left, y0: b.top, x1: b.right, y1: b.bottom }, side: document.documentElement.dataset.side };
+      };
+    </script>
+  </body>
+</html>

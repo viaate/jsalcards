@@ -23,5 +23,7 @@ change that ships it.
 - [TESTING] chances: Every school day the map shows a chance of no school today and tomorrow for every public school district and every private school in the lower 48 states, refreshed about every 30 minutes. In late October that chance is 1% almost everywhere; it rises when the weather service puts out a winter storm warning or advisory for the area. | terms: chance, chances, snow day chances, odds, prediction, predictions
 - [COMING] glow: At launch, every school that is closed, delayed, remote or dismissing early for weather will glow on the map like city lights seen from space. | terms: glow, glows, glowing, lights up, light up, city lights
 - [COMING] closings: Live school closings on the map, for every state, starting this winter. | terms: closings on the map, live closings on the map
+- [COMING] aim: Every school closing in the US on one map, coming this winter. | terms: every school closing, one map
+- [TESTING] watches: A winter storm watch can raise a district's chance; I am testing that quietly in the background first, and the map does not show it yet. | terms: watch, watches, winter storm watch
 - [COMING] notifications: Notifications on your phone when your school closes or its chance jumps. | terms: notification, notifications, notify, push alert, push alerts
 - [COMING] launch: Snowlight goes live this winter; the plan is to launch before the first real snow. | terms: launch, launches, launching, goes live, go live

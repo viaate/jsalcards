@@ -1,0 +1,379 @@
+/*
+  Snowlight X card, direction A "broadcast".
+  A 1600 x 900 frame: the map full-bleed, one text block at the bottom left
+  (kicker, headline, sub-line, status row), the glyph and wordmark at the
+  bottom right. Every box sits inside a 64 px safe margin.
+  Fonts are local files next to this sheet (never a CDN).
+*/
+
+@font-face {
+  font-family: 'Geist Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('../fonts/geist-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Geist Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('../fonts/geist-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Geist Mono Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('../fonts/geist-mono-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+:root {
+  --bg: #000;
+  --text-1: #f5f5f5;
+  --text-2: #c8c8c8;
+  --text-3: #a3a3a3;
+  --closed: #7fd4ff;
+  --delayed: #ffc46b;
+  --remote: #b79cff;
+  --early: #6bffb0;
+
+  --sans: 'Geist Variable', system-ui, sans-serif;
+  --mono: 'Geist Mono Variable', ui-monospace, monospace;
+
+  --w: 1600px;
+  --h: 900px;
+  --safe: 64px;
+  /*
+    The text sits higher than the safe margin at the bottom: X lays its ALT
+    badge over the bottom-left corner of a feed picture (about 12 CSS px in,
+    about 20 tall, so roughly the bottom 130 px of this file at phone width).
+  */
+  --foot: 140px;
+
+  /* Type scale for the 1600 px file (a phone feed shows it at about a quarter). */
+  --kicker: 36px;
+  --lead: 168px;
+  --label: 60px;
+  --plain: 120px;
+  --sub: 42px;
+  --chip: 38px;
+  --mark: 50px;
+  --glyph: 84px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+}
+
+body {
+  width: var(--w);
+  height: var(--h);
+  overflow: hidden;
+  font-family: var(--sans);
+  color: var(--text-1);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'tnum' 1;
+}
+
+.card {
+  position: relative;
+  width: var(--w);
+  height: var(--h);
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* A soft black field behind each text group only: a blurred box sized by the box it backs. */
+.scrims {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.scrim {
+  position: absolute;
+  background: #000;
+  opacity: 0.86;
+  filter: blur(40px);
+  border-radius: 80px;
+  pointer-events: none;
+}
+
+/* ---------- Text block, bottom left ---------- */
+
+.block {
+  position: absolute;
+  left: var(--safe);
+  bottom: var(--foot);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 0 22px;
+  font-family: var(--mono);
+  font-size: var(--kicker);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  word-spacing: -0.2em;
+  text-transform: uppercase;
+  color: var(--text-1);
+}
+
+.kicker .dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--closed);
+  box-shadow:
+    0 0 10px var(--closed),
+    0 0 24px rgba(127, 212, 255, 0.6);
+}
+
+/* A fallback picture's own date: an outlined tag, so it reads as a date and not a live mark. */
+.kicker.dated {
+  padding: 12px 20px 11px;
+  border: 2px solid #8a8a8a;
+  border-radius: 999px;
+  color: var(--text-1);
+  letter-spacing: 0.06em;
+}
+
+.headline {
+  display: flex;
+  align-items: last baseline;
+  gap: 28px;
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-1);
+  text-shadow: 0 0 24px rgba(0, 0, 0, 0.55);
+}
+
+.headline .lead {
+  font-size: var(--lead);
+  line-height: 0.86;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+}
+
+.headline .label {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--label);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+}
+
+.headline .label .line {
+  white-space: nowrap;
+}
+
+.headline em {
+  font-style: normal;
+}
+
+.status.closed { color: var(--closed); }
+.status.delayed { color: var(--delayed); }
+.status.remote { color: var(--remote); }
+.status.early { color: var(--early); }
+
+.headline.plain .label {
+  font-size: var(--plain);
+  line-height: 0.9;
+  letter-spacing: -0.045em;
+}
+
+.sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0;
+  row-gap: 6px;
+  margin: 26px 0 0;
+  font-size: var(--sub);
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.012em;
+  color: var(--text-2);
+  text-shadow: 0 0 16px rgba(0, 0, 0, 0.6);
+}
+
+.sub .part {
+  white-space: normal;
+}
+
+.sub .part.main {
+  color: var(--text-1);
+}
+
+.sub .sep {
+  padding: 0 18px;
+  color: var(--text-3);
+}
+
+.sub .sep[hidden] {
+  display: none;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 34px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-size: var(--chip);
+  line-height: 1.05;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.chip b {
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.chip .w {
+  color: var(--text-2);
+}
+
+.chip i {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow:
+    0 0 8px var(--c),
+    0 0 20px var(--c);
+}
+
+.chip.closed { --c: var(--closed); }
+.chip.delayed { --c: var(--delayed); }
+.chip.remote { --c: var(--remote); }
+.chip.early { --c: var(--early); }
+
+/*
+  District views are framed with the right side free for text: the block
+  stands right-aligned on the brand row, the number over its label.
+*/
+[data-side='right'] .block {
+  left: auto;
+  right: var(--safe);
+  bottom: var(--block-bottom, 260px);
+  align-items: flex-end;
+  text-align: right;
+}
+
+[data-side='right'] .sub,
+[data-side='right'] .chips {
+  justify-content: flex-end;
+}
+
+.headline.stack {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.headline.stack .label {
+  align-items: flex-end;
+}
+
+/* ---------- Brand, bottom right ---------- */
+
+.brand {
+  position: absolute;
+  right: var(--safe);
+  bottom: var(--foot);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand svg {
+  width: var(--glyph);
+  height: var(--glyph);
+  display: block;
+  /* The bloom fades to nothing at its edge: pull the word in to where the light is. */
+  margin: 0 -6px 0 0;
+}
+
+.brand .mark {
+  font-size: var(--mark);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--text-1);
+  text-shadow:
+    0 0 2px #000,
+    0 0 12px #000;
+}
+
+/* A staged picture is never posted: it says so on its face as well as in its file name. */
+.sample {
+  position: absolute;
+  left: var(--safe);
+  top: var(--safe);
+  padding: 8px 14px 7px;
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  color: #000;
+  background: #ffc46b;
+  border-radius: 6px;
+}
+
+/* Measurement pass: hide the ink, keep everything behind it. */
+.measure-ink .kicker,
+.measure-ink .headline,
+.measure-ink .sub,
+.measure-ink .chip,
+.measure-ink .chip b,
+.measure-ink .headline em,
+.measure-ink .sub .part,
+.measure-ink .sub .sep,
+.measure-ink .chip .w,
+.measure-ink .brand .mark,
+.measure-ink .sample {
+  color: transparent !important;
+}
+.measure-ink .sample {
+  background: transparent;
+}

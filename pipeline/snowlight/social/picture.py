@@ -564,7 +564,9 @@ def choose(
             f"{_day_of(today)} is at most {max(1, _percent(high[0]))}% in every one of the "
             f"{high[2]} districts with a chance."
         )
-        chance_seen = Chance(text="1%", day=today, scope="highest", districts=high[2], at_most=True)
+        chance_seen = Chance(
+            text=chance_text(high[0]), day=today, scope="highest", districts=high[2], at_most=True
+        )
     else:
         chance_line = (
             f" Not in the picture: Snowlight's highest chance of no school on {_weekday(today)},"

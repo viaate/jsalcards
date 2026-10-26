@@ -1,0 +1,427 @@
+/*
+  Snowlight X card, direction C "stamp".
+  The map full-bleed and untouched. One compact stamp in a top corner
+  (place, time with zone, one number badge), the other statuses as one
+  flat row along the bottom-left, the glyph and wordmark bottom-right.
+  1600 x 900, safe margin 64 px.
+*/
+
+@font-face {
+  font-family: 'Geist Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('../fonts/geist-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Geist Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('../fonts/geist-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F,
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Geist Mono Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('../fonts/geist-mono-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+:root {
+  --bg: #000;
+  --surface-1: #0a0a0a;
+  --border-2: #2a2a2a;
+  --text-1: #f5f5f5;
+  --text-2: #a3a3a3;
+  --status-closed: #7fd4ff;
+  --status-delayed: #ffc46b;
+  --status-remote: #b79cff;
+  --status-early-dismissal: #6bffb0;
+  --font-sans: 'Geist Variable', system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+
+  --safe: 64px;
+  /*
+    A tight feathered halo: stacked black shadows that fill the gaps between
+    letters solid black (so a map label never shows through a word) and fade
+    out within about 30 px, so the map stays lit right up to the text.
+  */
+  --halo:
+    0 0 1px #000, 0 0 2px #000, 0 0 3px #000, 0 0 4px #000, 0 0 6px #000, 0 0 6px #000,
+    0 0 9px #000, 0 0 12px #000, 0 0 12px #000, 0 0 16px #000, 0 0 16px #000,
+    0 0 24px rgb(0 0 0 / 0.85),
+    0 0 36px rgb(0 0 0 / 0.5);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+}
+
+.card {
+  position: relative;
+  width: 1600px;
+  height: 900px;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: var(--font-sans);
+  color: var(--text-1);
+  -webkit-font-smoothing: antialiased;
+  font-kerning: normal;
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+  width: 1600px;
+  height: 900px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ---- Focus: four corner ticks around the area the number is about (district view) ---- */
+
+.focus {
+  position: absolute;
+  pointer-events: none;
+}
+
+.focus i {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border: 0 solid rgb(245 245 245 / 0.85);
+  filter: drop-shadow(0 0 3px #000) drop-shadow(0 0 6px #000);
+}
+
+.focus i:nth-child(1) { left: 0; top: 0; border-left-width: 4px; border-top-width: 4px; border-top-left-radius: 6px; }
+.focus i:nth-child(2) { right: 0; top: 0; border-right-width: 4px; border-top-width: 4px; border-top-right-radius: 6px; }
+.focus i:nth-child(3) { left: 0; bottom: 0; border-left-width: 4px; border-bottom-width: 4px; border-bottom-left-radius: 6px; }
+.focus i:nth-child(4) { right: 0; bottom: 0; border-right-width: 4px; border-bottom-width: 4px; border-bottom-right-radius: 6px; }
+
+/* ---- The stamp: a top corner, inside the safe margin ---- */
+
+.stamp {
+  position: absolute;
+  /* The mono label's content box rises 2 px above its line: keep its words inside the margin. */
+  top: calc(var(--safe) + 4px);
+  left: var(--safe);
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  isolation: isolate;
+}
+
+.stamp.is-right {
+  left: auto;
+  right: var(--safe);
+  align-items: flex-end;
+  text-align: right;
+}
+
+.label,
+.place,
+.time,
+.wordmark {
+  text-shadow: var(--halo);
+}
+
+.label {
+  margin: 0 0 12px;
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 44px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--status-closed);
+}
+
+.place {
+  margin: 0;
+  font-size: 60px;
+  font-weight: 600;
+  line-height: 68px;
+  letter-spacing: -0.025em;
+  color: var(--text-1);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.time {
+  margin: 6px 0 0;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 48px;
+  letter-spacing: -0.005em;
+  color: var(--text-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- The badge: the news, one number with its mark ---- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 22px;
+  margin-top: 26px;
+  height: 128px;
+  padding: 0 40px 0 34px;
+  background: var(--surface-1);
+  border: 2px solid var(--border-2);
+  border-radius: 64px;
+  white-space: nowrap;
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 0.6), 0 6px 28px rgb(0 0 0 / 0.55);
+}
+
+.badge .num {
+  font-size: 92px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-1);
+}
+
+.badge .word {
+  display: flex;
+  flex-direction: column;
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 40px;
+  color: var(--text-2);
+  text-align: left;
+}
+
+.badge .word span:first-child {
+  color: var(--text-1);
+}
+
+.badge.is-link {
+  height: 104px;
+}
+
+.badge.is-link .num {
+  font-size: 52px;
+  letter-spacing: -0.01em;
+}
+
+/* ---- The other statuses: one flat row along the bottom-left ---- */
+
+.rest {
+  position: absolute;
+  left: var(--safe);
+  bottom: var(--safe);
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px 30px;
+  margin: 0;
+  padding: 14px 34px 14px 28px;
+  background: var(--surface-1);
+  border: 2px solid var(--border-2);
+  border-radius: 48px;
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 0.6), 0 6px 28px rgb(0 0 0 / 0.55);
+  list-style: none;
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 48px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+/* When one line would run into the brand, the row stacks into the corner instead. */
+/* Too long for one line beside the brand: the row wraps onto a second line (two short lines
+   cover less of the map than a column). */
+.rest.is-column {
+  flex-wrap: wrap;
+  border-radius: 36px;
+  padding: 14px 34px 14px 28px;
+}
+
+.rest li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rest .count {
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Status marks, the site's legend glyphs at card scale ---- */
+
+.mark {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.rest .mark {
+  width: 20px;
+  height: 20px;
+}
+
+.mark.is-closed {
+  background: var(--status-closed);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--status-closed) 60%, transparent);
+}
+
+.mark.is-delayed {
+  box-shadow:
+    inset 0 0 0 5px var(--status-delayed),
+    0 0 20px color-mix(in srgb, var(--status-delayed) 50%, transparent);
+}
+
+.rest .mark.is-delayed {
+  box-shadow:
+    inset 0 0 0 4px var(--status-delayed),
+    0 0 12px color-mix(in srgb, var(--status-delayed) 50%, transparent);
+}
+
+.mark.is-remote {
+  width: 26px;
+  height: 26px;
+  margin: 0 3px;
+  background: var(--status-remote);
+  border-radius: 3px;
+  transform: rotate(45deg);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--status-remote) 55%, transparent);
+}
+
+.rest .mark.is-remote {
+  width: 16px;
+  height: 16px;
+  margin: 0 2px;
+  border-radius: 2px;
+}
+
+.mark.is-early-dismissal {
+  background: linear-gradient(90deg, var(--status-early-dismissal) 50%, transparent 50%);
+  box-shadow:
+    inset 0 0 0 5px var(--status-early-dismissal),
+    0 0 20px color-mix(in srgb, var(--status-early-dismissal) 50%, transparent);
+}
+
+.rest .mark.is-early-dismissal {
+  box-shadow:
+    inset 0 0 0 4px var(--status-early-dismissal),
+    0 0 12px color-mix(in srgb, var(--status-early-dismissal) 50%, transparent);
+}
+
+/* The brand bloom, as the badge's mark where the number is not a status (chance, link). */
+.mark.is-bloom {
+  width: 56px;
+  height: 56px;
+  margin: 0 -8px 0 -12px;
+  border-radius: 0;
+}
+
+/* ---- Brand: bottom-right, inside the safe margin ---- */
+
+.brand {
+  position: absolute;
+  right: var(--safe);
+  bottom: var(--safe);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  isolation: isolate;
+}
+
+/* A small soft scrim behind the brand corner only: no map label under the wordmark. */
+.brand::before {
+  content: '';
+  position: absolute;
+  inset: -28px -40px -28px -24px;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.92) 55%, rgb(0 0 0 / 0) 100%);
+  transform: scale(1.18, 1.5);
+}
+
+.brand svg {
+  display: block;
+  width: 88px;
+  height: 88px;
+}
+
+.wordmark {
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 64px;
+  letter-spacing: -0.025em;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+/* The national map with nothing lit: the brand leads the card. */
+.brand.is-lead {
+  gap: 6px;
+}
+
+.brand.is-lead svg {
+  width: 128px;
+  height: 128px;
+  margin: 0 -4px 0 0;
+}
+
+.brand.is-lead .wordmark {
+  font-size: 88px;
+  line-height: 96px;
+  letter-spacing: -0.03em;
+}
+
+/* ---- Never-post marker for staged data (the top corner the stamp leaves free) ---- */
+
+.sample {
+  position: absolute;
+  top: var(--safe);
+  right: var(--safe);
+  padding: 6px 16px;
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 36px;
+  letter-spacing: 0.08em;
+  color: var(--text-1);
+  background: #000;
+  border: 2px solid var(--text-1);
+  border-radius: 8px;
+}
+
+.sample.is-left {
+  right: auto;
+  left: var(--safe);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Measurement pass: the words drawn transparent so the pixels behind them can be sampled. */
+.measure-bg .label,
+.measure-bg .place,
+.measure-bg .time,
+.measure-bg .badge .num,
+.measure-bg .badge .word span,
+.measure-bg .rest li > span,
+.measure-bg .wordmark,
+.measure-bg .sample {
+  color: transparent !important;
+}

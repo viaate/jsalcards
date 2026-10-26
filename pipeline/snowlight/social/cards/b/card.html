@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1600" />
+    <title>Snowlight X card</title>
+    <link rel="stylesheet" href="card.css" />
+  </head>
+  <body>
+    <!--
+      Snowlight X card, direction B "framed". Filled by code from window.__CARD__
+      (render.cjs sets it from a scenario's slots, which come from picture.json's facts).
+      No word here is written by a language model: every word is in the COPY table below,
+      and every number, state, date and time comes from a typed slot.
+    -->
+    <main class="card" id="card">
+      <section class="copy" id="copy">
+        <div class="stack" id="stack">
+          <p class="kicker" id="kicker"></p>
+          <h1 class="headline" id="headline" hidden></h1>
+          <p class="hero" id="hero" hidden></p>
+          <p class="unit" id="unit" hidden></p>
+          <p class="place" id="place" hidden></p>
+          <div class="rows" id="rows" hidden>
+            <p class="rows-head" id="rowsHead" hidden></p>
+            <ul class="statuses" id="statuses" hidden></ul>
+            <ul class="facts" id="facts" hidden></ul>
+          </div>
+        </div>
+      </section>
+
+      <div class="frame" id="frame"><img id="map" alt="" /></div>
+
+      <footer class="bar">
+        <p class="when" id="when"></p>
+        <p class="brand" id="brand">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <defs>
+              <radialGradient id="bloom" cx="32" cy="32" r="32" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#f4fbff" stop-opacity="0.996" />
+                <stop offset="0.02" stop-color="#f4fbff" stop-opacity="0.996" />
+                <stop offset="0.04" stop-color="#f1faff" stop-opacity="0.995" />
+                <stop offset="0.06" stop-color="#edf9ff" stop-opacity="0.992" />
+                <stop offset="0.08" stop-color="#e5f6ff" stop-opacity="0.987" />
+                <stop offset="0.1" stop-color="#daf3ff" stop-opacity="0.978" />
+                <stop offset="0.12" stop-color="#cceeff" stop-opacity="0.963" />
+                <stop offset="0.15" stop-color="#b3e6ff" stop-opacity="0.929" />
+                <stop offset="0.18" stop-color="#9ddeff" stop-opacity="0.882" />
+                <stop offset="0.22" stop-color="#8ad8ff" stop-opacity="0.812" />
+                <stop offset="0.26" stop-color="#82d5ff" stop-opacity="0.741" />
+                <stop offset="0.31" stop-color="#7fd4ff" stop-opacity="0.65" />
+                <stop offset="0.37" stop-color="#7fd4ff" stop-opacity="0.535" />
+                <stop offset="0.44" stop-color="#7fd4ff" stop-opacity="0.408" />
+                <stop offset="0.52" stop-color="#7fd4ff" stop-opacity="0.291" />
+                <stop offset="0.6" stop-color="#7fd4ff" stop-opacity="0.209" />
+                <stop offset="0.7" stop-color="#7fd4ff" stop-opacity="0.141" />
+                <stop offset="0.8" stop-color="#7fd4ff" stop-opacity="0.095" />
+                <stop offset="0.9" stop-color="#7fd4ff" stop-opacity="0.031" />
+                <stop offset="1" stop-color="#7fd4ff" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+            <circle cx="32" cy="32" r="32" fill="url(#bloom)" />
+          </svg>
+          <span class="wordmark">Snowlight</span>
+        </p>
+      </footer>
+    </main>
+
+    <script>
+      const nb = (s) => String(s).replace(/ /g, ' ');
+      const and = (names) => names.join(' and ');
+      const fmt = (n) => Number(n).toLocaleString('en-US');
+      // A slot date ("2026-10-26") in words, read in UTC so the day never shifts.
+      const dayWords = (iso, style) => {
+        const d = new Date(iso + 'T12:00:00Z');
+        if (Number.isNaN(d.getTime())) throw new Error('day is not a date: ' + iso);
+        const opts = {
+          long: { weekday: 'long', month: 'long', day: 'numeric' },
+          short: { weekday: 'short', month: 'short', day: 'numeric' },
+          md: { month: 'short', day: 'numeric' },
+        }[style];
+        return d.toLocaleDateString('en-US', { ...opts, timeZone: 'UTC' });
+      };
+
+      // Every word on the card that is not a number, a state or a time. Nothing else writes words.
+      const COPY = {
+        kicker: {
+          'dev-log': 'Dev log',
+          waitlist: null, // the headline says it
+          storm: 'Storm update',
+          chance: 'Chance of no school',
+        },
+        archiveKicker: (date) => `Archive · ${date}`,
+        // Never a no-closings headline: in practice mode the closings file is a 404, which says nothing
+        // about schools. The dev log's line is a fact of social/facts.md ("founder").
+        headline: {
+          'dev-log': 'Building Snowlight',
+          waitlist: 'Join the waitlist',
+        },
+        address: 'snowlightmap.com',
+        unitLit: (n, past) =>
+          `${n === 1 ? 'school' : 'schools'} ${past ? (n === 1 ? 'was' : 'were') + ' ' : ''}lit up for weather`,
+        // picture._states: at most two states, most first. "In" when they hold every lit school in view.
+        place: (states, cover) => (states.length ? `${cover ? 'In' : 'Mostly in'} ${and(states)}` : ''),
+        inView: (n, states, cover) =>
+          `${fmt(n)} in this view` + (states.length ? `, ${cover ? 'in' : 'mostly in'} ${and(states)}` : ''),
+        district: (state) => `A district in ${state}`,
+        rank: (n) => ({ value: 'Highest', label: `of ${fmt(n)} districts`, inline: true }),
+        forecastDistricts: (n) => ({ value: fmt(n), label: 'school districts with a forecast' }),
+        topChance: (top, atMost, dayIso) =>
+          atMost
+            ? { value: `${top} or less`, label: `chance of no school on ${dayWords(dayIso, 'md')}, in every district` }
+            : { value: top, label: `highest chance of no school on ${dayWords(dayIso, 'md')}` },
+        updated: (time) => `Updated ${time}`,
+        status: [
+          ['closed', 'Closed', 'is-closed'],
+          ['delayed', 'Delayed', 'is-delayed'],
+          ['remote', 'Remote', 'is-remote'],
+          ['early_dismissal', 'Early dismissal', 'is-early-dismissal'],
+        ],
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const show = (el, on = true) => (el.hidden = !on);
+      const set = (el, text) => {
+        el.textContent = text;
+        show(el, Boolean(text));
+      };
+
+      /** Shrink an element's font until it fits its width (and at most `lines` lines). */
+      function fit(el, { width, lines = 1, min = 24 }) {
+        let size = parseFloat(getComputedStyle(el).fontSize);
+        const lineHeight = () => {
+          const lh = getComputedStyle(el).lineHeight;
+          return lh === 'normal' ? size * 1.2 : parseFloat(lh);
+        };
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const tooBig = () =>
+          range.getBoundingClientRect().width > width + 0.5 ||
+          el.scrollWidth > el.clientWidth + 0.5 ||
+          el.getBoundingClientRect().height > lineHeight() * lines + 1;
+        while (tooBig() && size > min) {
+          size -= 2;
+          el.style.fontSize = size + 'px';
+        }
+        return { size, fits: !tooBig() };
+      }
+
+      /** Place the map so its focus box sits in the frame, never scaled up. */
+      function placeMap(img, frame, bg) {
+        const W = img.naturalWidth;
+        const H = img.naturalHeight;
+        const Fw = frame.clientWidth;
+        const Fh = frame.clientHeight;
+        const [x0, y0, x1, y1] = bg.focus || [0, 0, W, H];
+        const pad = bg.pad ?? 24;
+        const fitScale = Math.min((Fw - 2 * pad) / (x1 - x0), (Fh - 2 * pad) / (y1 - y0));
+        const s = Math.min(bg.maxScale ?? 1, fitScale);
+        const cx = (x0 + x1) / 2;
+        const cy = (y0 + y1) / 2;
+        const place = (F, size, c) => {
+          const scaled = size * s;
+          if (scaled <= F) return (F - scaled) / 2;
+          return Math.min(0, Math.max(F - scaled, F / 2 - c * s));
+        };
+        const tx = place(Fw, W, cx);
+        const ty = place(Fh, H, cy);
+        img.style.width = W + 'px';
+        img.style.height = H + 'px';
+        img.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+        return { scale: s, tx, ty, crop: [-tx / s, -ty / s, (Fw - tx) / s, (Fh - ty) / s].map(Math.round) };
+      }
+
+      /** "78%", "<1%", ">99%" (picture.chance_text): digits, a small grey % and a small grey < or >. */
+      function heroChance(el, text) {
+        const m = /^([<>]?)(\d{1,2})%$/.exec(text);
+        if (!m) throw new Error('chance is not in chance_text form: ' + text);
+        el.textContent = '';
+        if (m[1]) {
+          const sign = document.createElement('span');
+          sign.className = 'sign';
+          sign.textContent = m[1];
+          el.append(sign);
+        }
+        const digits = document.createElement('span');
+        digits.className = 'digits';
+        digits.textContent = m[2];
+        el.append(digits);
+        const pct = document.createElement('span');
+        pct.className = 'pct';
+        pct.textContent = '%';
+        el.append(pct);
+      }
+
+      /** Space the % from the last digit's own ink, not its advance: a 7's bar reaches further right
+       *  than a 1's stem. The gap is GAP of the hero's size between the two inks, for every digit. */
+      const PCT_GAP = 0.05;
+      function spacePct(hero) {
+        const digits = hero.querySelector('.digits');
+        const pct = hero.querySelector('.pct');
+        if (!digits || !pct) return null;
+        const ctx = document.createElement('canvas').getContext('2d');
+        const dcs = getComputedStyle(digits);
+        const pcs = getComputedStyle(pct);
+        const heroSize = parseFloat(dcs.fontSize);
+        ctx.font = `${dcs.fontWeight} ${dcs.fontSize} ${dcs.fontFamily}`;
+        const last = ctx.measureText(digits.textContent.slice(-1));
+        const rightBearing = last.width - last.actualBoundingBoxRight; // advance past the ink
+        const ls = parseFloat(dcs.letterSpacing) || 0; // Chrome adds it after the last digit too
+        ctx.font = `${pcs.fontWeight} ${pcs.fontSize} ${pcs.fontFamily}`;
+        const p = ctx.measureText('%');
+        const pctInkOffset = -p.actualBoundingBoxLeft; // the % ink starts this far past its origin
+        const marginPx = PCT_GAP * heroSize - ls - rightBearing - pctInkOffset;
+        pct.style.marginLeft = marginPx / parseFloat(pcs.fontSize) + 'em';
+        return { marginPx, rightBearing, ls, pctInkOffset };
+      }
+
+      async function render(card) {
+        const past = Boolean(card.isFallback);
+        document.body.dataset.kind = card.kind;
+        document.body.dataset.archive = past ? '1' : '0';
+        await document.fonts.ready;
+        await Promise.all([
+          document.fonts.load("600 76px 'Geist Variable'"),
+          document.fonts.load("450 38px 'Geist Variable'"),
+          document.fonts.load("500 36px 'Geist Mono Variable'"),
+        ]);
+        const colWidth = $('copy').clientWidth;
+        const log = { dropped: [] };
+
+        // The kicker: what kind of card, or, for an older picture, that it is one and its own date.
+        set($('kicker'), past ? COPY.archiveKicker(card.date) : COPY.kicker[card.kind]);
+
+        const facts = [];
+        if (card.kind === 'storm') {
+          const total = card.total;
+          const v = card.inView ?? {};
+          const counts = v.counts ?? {};
+          const inViewN = COPY.status.reduce((sum, [key]) => sum + (counts[key] ?? 0), 0);
+          if (!(total > 0)) throw new Error('storm card with no school lit: picture.py takes the national view then');
+          if (inViewN > total) throw new Error(`in-view counts (${inViewN}) exceed the national total (${total})`);
+          const states = v.states ?? [];
+          const cover = Boolean(v.statesCover);
+          $('hero').textContent = fmt(total);
+          show($('hero'));
+          set($('unit'), COPY.unitLit(total, past));
+          if (inViewN === total) {
+            // Every lit school is in view: the place and the rows hold for the whole count.
+            set($('place'), COPY.place(states, cover));
+          } else {
+            set($('rowsHead'), COPY.inView(inViewN, states, cover));
+          }
+          log.rowsLabeled = inViewN === total || !$('rowsHead').hidden;
+          const list = $('statuses');
+          for (const [key, word, cls] of COPY.status) {
+            const n = counts[key] ?? 0;
+            const li = document.createElement('li');
+            if (n === 0) li.className = 'is-none';
+            li.innerHTML = `<span class="glyph ${cls}"></span><span class="n"></span><span class="w"></span>`;
+            li.querySelector('.n').textContent = fmt(n);
+            li.querySelector('.w').textContent = word;
+            list.append(li);
+          }
+          show(list);
+        } else if (card.kind === 'chance') {
+          heroChance($('hero'), card.chance);
+          show($('hero'));
+          $('unit').dataset.long = dayWords(card.day, 'long');
+          $('unit').dataset.short = dayWords(card.day, 'short');
+          set($('unit'), nb($('unit').dataset.long));
+          set($('place'), COPY.district(card.state));
+          facts.push(COPY.rank(card.districts));
+        } else {
+          const key = card.kind === 'waitlist' ? 'waitlist' : 'dev-log';
+          const headline = COPY.headline[key];
+          if (!headline) throw new Error('no headline in COPY for ' + key);
+          set($('headline'), headline);
+          if (card.kind === 'waitlist') set($('place'), COPY.address);
+          const f = card.forecast;
+          if (f && card.kind === 'dev-log') facts.push(COPY.topChance(f.top, f.atMost, f.day));
+          if (f) facts.push(COPY.forecastDistricts(f.districts));
+        }
+
+        for (const fact of facts.slice(0, 2)) {
+          const li = document.createElement('li');
+          if (fact.inline) li.className = 'is-inline';
+          li.innerHTML = '<span class="v"></span><span class="l"></span>';
+          li.querySelector('.v').textContent = nb(fact.value);
+          li.querySelector('.l').textContent = (fact.inline ? ' ' : '') + fact.label.replace(/([A-Z][a-z]{2}) (\d)/g, '$1 $2');
+          $('facts').append(li);
+        }
+        show($('facts'), facts.length > 0);
+        show($('rows'), !$('statuses').hidden || !$('facts').hidden);
+
+        // The bottom bar: the picture's own date and time; stale closings say when they were updated.
+        const stamp = document.createElement('span');
+        stamp.className = 'stamp';
+        if (past && card.time) throw new Error('a fallback card carries no clock');
+        stamp.textContent = past ? `From ${card.date}` : [card.date, card.time].filter(Boolean).join(', ');
+        $('when').append(stamp);
+        if (card.kind === 'storm' && card.current === false) {
+          if (!card.updated) throw new Error('stale closings need their updated time');
+          const up = document.createElement('span');
+          up.className = 'updated';
+          up.textContent = COPY.updated(card.updated);
+          $('when').append(up);
+        }
+
+        // Fit each text to the column.
+        const fits = {};
+        if (!$('kicker').hidden) fits.kicker = fit($('kicker'), { width: colWidth, lines: 1, min: 30 });
+        if (!$('hero').hidden) {
+          log.pct = spacePct($('hero'));
+          fits.hero = fit($('hero'), { width: colWidth, lines: 1, min: 96 });
+          if (log.pct) log.pct = spacePct($('hero'));
+        }
+        if (!$('headline').hidden) fits.headline = fit($('headline'), { width: colWidth, lines: 3, min: 56 });
+        if (!$('unit').hidden) {
+          if (card.kind === 'chance') {
+            // The day on one line: shrink, then the short form ("Wed, Sep 30"), never a lone "30".
+            fits.unit = fit($('unit'), { width: colWidth, lines: 1, min: 36 });
+            if (!fits.unit.fits) {
+              $('unit').style.fontSize = '';
+              $('unit').textContent = nb($('unit').dataset.short);
+              fits.unit = fit($('unit'), { width: colWidth, lines: 1, min: 36 });
+              log.dayShort = true;
+            }
+          } else fits.unit = fit($('unit'), { width: colWidth, lines: 2, min: 36 });
+        }
+        if (!$('place').hidden) fits.place = fit($('place'), { width: colWidth, lines: 2, min: 34 });
+        if (!$('rowsHead').hidden) fits.rowsHead = fit($('rowsHead'), { width: colWidth, lines: 2, min: 34 });
+        for (const el of document.querySelectorAll('.facts li:not(.is-inline) .l')) fit(el, { width: colWidth, lines: 2, min: 32 });
+        log.fits = Object.fromEntries(Object.entries(fits).map(([k, v]) => [k, v.fits]));
+
+        // The column must hold the stack: drop the last fact, then the other, then shrink the hero.
+        const copy = $('copy');
+        const over = () => $('stack').getBoundingClientRect().height > copy.clientHeight + 0.5;
+        while (over() && $('facts').children.length) {
+          log.dropped.push($('facts').lastElementChild.textContent);
+          $('facts').lastElementChild.remove();
+          show($('facts'), $('facts').children.length > 0);
+          show($('rows'), !$('statuses').hidden || !$('facts').hidden);
+        }
+        if (over() && !$('hero').hidden) {
+          let size = parseFloat(getComputedStyle($('hero')).fontSize);
+          while (over() && size > 140) {
+            size -= 4;
+            $('hero').style.fontSize = size + 'px';
+          }
+          if (log.pct) log.pct = spacePct($('hero'));
+        }
+        const overflow = over() || Object.values(fits).some((f) => !f.fits);
+
+        // The map.
+        const img = $('map');
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = () => reject(new Error('background did not load: ' + card.bg.path));
+          img.src = card.bg.src ?? card.bg.path;
+        });
+        await img.decode();
+        const placed = placeMap(img, $('frame'), card.bg);
+
+        document.body.dataset.ready = '1';
+        return { placed, overflow, text: $('card').innerText, ...log };
+      }
+
+      window.__render = () => render(window.__CARD__);
+      window.__heroChance = heroChance;
+      window.__spacePct = spacePct;
+    </script>
+  </body>
+</html>

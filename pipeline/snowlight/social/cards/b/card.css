@@ -1,0 +1,427 @@
+/*
+  Snowlight X card, direction B "framed".
+  1600 x 900 (X's 16:9, 2x of 800 x 450). Black card, the map inside an inset
+  rounded frame on the right, the words in the black margin to its left, and a
+  bottom bar with the time on the left and the glyph and wordmark on the right.
+  Every text box stays inside the 64 px safe margin (x 64-1536, y 64-836).
+*/
+
+@font-face {
+  font-family: 'Geist Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('../fonts/geist-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+    U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Geist Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('../fonts/geist-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Geist Mono Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  src: url('../fonts/geist-mono-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+/* The site's tokens (web/index.html :root). */
+:root {
+  --bg: #000;
+  --surface-1: #0a0a0a;
+  --border-1: #1f1f1f;
+  --border-2: #2a2a2a;
+  /* The frame's hairline: one step brighter than the site's border-2, so the panel edge
+     survives a phone feed (2.03:1 on #000, 3 px wide = 0.73 px at 390 wide). */
+  --frame-line: #404040;
+  --text-1: #f5f5f5;
+  --text-2: #a3a3a3;
+  --text-3: #6b6b6b;
+  --status-closed: #7fd4ff;
+  --status-delayed: #ffc46b;
+  --status-remote: #b79cff;
+  --status-early-dismissal: #6bffb0;
+  --font-sans: 'Geist Variable', system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+
+  /* The card's grid. */
+  --safe: 64px;
+  --col-right: 560px; /* the text column runs 64 -> 560 */
+  --frame-left: 600px; /* the frame runs 600 -> 1536 */
+  --frame-bottom: 752px;
+  --bar-top: 772px; /* the bar sits in 772 -> 836 */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 1600px;
+  height: 900px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text-1);
+  font-feature-settings: 'tnum' 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+.card {
+  position: relative;
+  width: 1600px;
+  height: 900px;
+  background: var(--bg);
+}
+
+/* ---- The map, in its frame (like the site's panels: hairline border, soft corner). ---- */
+
+.frame {
+  position: absolute;
+  top: var(--safe);
+  left: var(--frame-left);
+  width: calc(1600px - var(--safe) - var(--frame-left));
+  height: calc(var(--frame-bottom) - var(--safe));
+  overflow: hidden;
+  background: var(--surface-1);
+  border-radius: 28px;
+}
+
+.frame img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  image-rendering: auto;
+}
+
+/* The hairline sits over the map, so the picture's edge never shows past it. */
+.frame::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: '';
+  border: 3px solid var(--frame-line);
+  border-radius: 28px;
+  box-shadow: inset 0 3px 0 rgb(255 255 255 / 0.05);
+}
+
+/* ---- The words, in the black margin to the left of the frame: one stack, centered on the frame. ---- */
+
+.copy {
+  position: absolute;
+  top: var(--safe);
+  left: var(--safe);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: calc(var(--col-right) - var(--safe));
+  height: calc(var(--frame-bottom) - var(--safe));
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: 500;
+  line-height: 44px;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* An older picture from the library: the kicker says so, with the picture's own date, in the bright ink. */
+body[data-archive='1'] .kicker {
+  color: var(--text-1);
+}
+
+.headline {
+  font-size: 76px;
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  color: var(--text-1);
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.kicker:not([hidden]) + .headline {
+  margin-top: 28px;
+}
+
+/* The one big number: a count of schools, or a chance. */
+.hero {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 20px;
+  /* Half the digits' own side bearing: their ink lines up with the words, inside the safe margin. */
+  margin-left: -2px;
+  font-size: 200px;
+  font-weight: 600;
+  line-height: 0.96;
+  letter-spacing: -0.045em;
+  color: var(--text-1);
+  white-space: nowrap;
+  /* Proportional digits: a lone "1" sits close to its percent sign. */
+  font-feature-settings: 'tnum' 0;
+}
+
+/* The percent sign as the site's chance panel sets it: smaller, gray, at the top. Its left
+   margin is set by code from the last digit's own ink (a 7's bar reaches further right than a 1). */
+.hero .pct {
+  margin-top: 0.09em;
+  font-size: 0.42em;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-2);
+}
+
+.hero .sign {
+  align-self: center;
+  margin: 0 0.04em 0 0;
+  font-size: 0.42em;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-2);
+}
+
+.unit {
+  margin-top: 14px;
+  font-size: 42px;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--text-1);
+  text-wrap: balance;
+}
+
+.place {
+  margin-top: 14px;
+  font-size: 38px;
+  font-weight: 450;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text-2);
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.headline + .place {
+  margin-top: 22px;
+}
+
+/* The waitlist's address: the one place the card uses the brand's blue for words. */
+body[data-kind='waitlist'] .place {
+  font-weight: 500;
+  color: var(--status-closed);
+}
+
+/* ---- The stat rows: the four lights with their counts, or one or two facts. ---- */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin-top: 48px;
+}
+
+/* When the view holds fewer lit schools than the country, the rows say they are the view's. */
+.rows-head {
+  margin-bottom: 14px;
+  font-size: 38px;
+  font-weight: 450;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text-2);
+  text-wrap: balance;
+}
+
+.statuses {
+  display: grid;
+  grid-template-columns: 22px auto 1fr;
+  column-gap: 18px;
+  row-gap: 10px;
+  align-items: center;
+  list-style: none;
+}
+
+.statuses li {
+  display: contents;
+}
+
+.statuses .n {
+  justify-self: end;
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 50px;
+  letter-spacing: -0.02em;
+  color: var(--text-1);
+}
+
+.statuses .w {
+  font-size: 38px;
+  font-weight: 450;
+  line-height: 50px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+/* A status no school has: its mark steps back, its count in the words' gray (as the site's key). */
+.statuses li.is-none .glyph {
+  opacity: 0.4;
+}
+
+.statuses li.is-none .n {
+  color: var(--text-2);
+}
+
+.facts {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  list-style: none;
+}
+
+.facts .v {
+  display: block;
+  font-size: 52px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+}
+
+.facts .l {
+  display: block;
+  margin-top: 8px;
+  font-size: 36px;
+  font-weight: 450;
+  line-height: 1.15;
+  color: var(--text-2);
+  text-wrap: balance;
+}
+
+/* A fact set as one line of words, its key word bright (the chance card's rank). */
+.facts li.is-inline .v,
+.facts li.is-inline .l {
+  display: inline;
+  margin: 0;
+  font-size: 40px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.facts li.is-inline .v {
+  font-weight: 600;
+}
+
+.facts li.is-inline {
+  text-wrap: balance;
+}
+
+/* The site's key marks (web/index.html .glyph), at the card's scale. */
+.glyph {
+  flex: none;
+  justify-self: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+
+.glyph.is-closed {
+  background: var(--status-closed);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--status-closed) 50%, transparent);
+}
+
+.glyph.is-delayed {
+  box-shadow:
+    inset 0 0 0 4px var(--status-delayed),
+    0 0 14px color-mix(in srgb, var(--status-delayed) 45%, transparent);
+}
+
+.glyph.is-remote {
+  width: 19px;
+  height: 19px;
+  background: var(--status-remote);
+  border-radius: 3px;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--status-remote) 50%, transparent);
+  transform: rotate(45deg);
+}
+
+.glyph.is-early-dismissal {
+  background: linear-gradient(90deg, var(--status-early-dismissal) 50%, transparent 50%);
+  box-shadow:
+    inset 0 0 0 4px var(--status-early-dismissal),
+    0 0 14px color-mix(in srgb, var(--status-early-dismissal) 45%, transparent);
+}
+
+/* ---- The bottom bar. ---- */
+
+.bar {
+  position: absolute;
+  top: var(--bar-top);
+  left: var(--safe);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(1600px - 2 * var(--safe));
+  height: calc(900px - var(--safe) - var(--bar-top));
+}
+
+.when {
+  display: flex;
+  gap: 0;
+  align-items: center;
+  font-size: 34px;
+  font-weight: 450;
+  line-height: 40px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+/* "Updated 5:10 AM CT" when the closings are older than the picture's live window. */
+.updated::before {
+  padding: 0 0.45em;
+  content: '\00b7';
+  color: var(--text-3);
+}
+
+.brand {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.brand svg {
+  display: block;
+  width: 64px;
+  height: 64px;
+}
+
+.wordmark {
+  font-size: 46px;
+  font-weight: 600;
+  line-height: 56px;
+  letter-spacing: -0.025em;
+  color: var(--text-1);
+}

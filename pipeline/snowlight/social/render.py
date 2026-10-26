@@ -19,8 +19,10 @@ One attempt:
    (:mod:`snowlight.social.cards`).
 
 A failed attempt gets one more; a second failure exits 1 with no picture, and the post step
-then uses the library's newest image with its own day and description (:mod:`.post`). The
-result is ``picture.png`` and ``picture.json`` (:class:`Taken`) in the output folder.
+then uses the library's newest card with its own day and description (:mod:`.post`). The
+result is ``picture.png`` (the map alone) and ``picture.json`` (:class:`Taken`) in the output
+folder, and the branded card for each kind of post over it, ``dev-log.png`` and
+``waitlist.png`` with their notes (:class:`snowlight.social.cards.Card`).
 """
 
 import json
@@ -36,6 +38,7 @@ from playwright.sync_api import Browser, BrowserContext, Page, Route, sync_playw
 from playwright.sync_api import Error as PlaywrightError
 
 from snowlight.directory.points import PointsFormatError, decode
+from snowlight.social.cards import POSTS, CardError, Post, compose
 from snowlight.social.picture import (
     FILE,
     HEIGHT,
@@ -383,15 +386,21 @@ def render(  # noqa: PLR0913 - the render's parts
     live: Path | None = None,
     attempts: int = ATTEMPTS,
     view: View | None = None,
+    fallback: bool = False,
 ) -> Taken | None:
-    """The fresh picture in ``out``, or ``None`` after ``attempts`` failed attempts.
+    """The fresh picture in ``out`` and a card over it for each kind of post
+    (``dev-log.png``, ``waitlist.png`` and their notes, :mod:`snowlight.social.cards`), or
+    ``None`` after ``attempts`` failed attempts. A card that fails twice is left out (that
+    post then goes with the library's card).
 
     ``live`` serves the live files from a local folder instead of the live root (a dry run
-    against a local build); the workflow never passes it.
+    against a local build); ``view`` and ``fallback`` make the image library's dated cards.
+    The workflow passes none of them.
     """
     out.mkdir(parents=True, exist_ok=True)
-    for stale in (out / FILE, out / NOTE):
-        stale.unlink(missing_ok=True)
+    stale_files = [FILE, NOTE, *(f"{post}.{ext}" for post in POSTS for ext in ("png", "json"))]
+    for stale in stale_files:
+        (out / stale).unlink(missing_ok=True)
     with sync_playwright() as playwright:
         proxy = _proxy()
         browser = (
@@ -411,10 +420,33 @@ def render(  # noqa: PLR0913 - the render's parts
                     continue
                 (out / NOTE).write_text(taken.model_dump_json(indent=2) + "\n", encoding="utf-8")
                 say(f"social: the picture shows: {taken.shows}")
+                for post in POSTS:
+                    _card(browser, taken, out, post, fallback=fallback, say=say)
                 return taken
         finally:
             browser.close()
     return None
+
+
+def _card(  # noqa: PLR0913 - the card's parts
+    browser: Browser,
+    taken: Taken,
+    out: Path,
+    post: Post,
+    *,
+    fallback: bool,
+    say: Callable[[str], None],
+) -> None:
+    """The card for ``post`` over the picture, tried twice; none after two failures."""
+    for attempt in range(1, ATTEMPTS + 1):
+        try:
+            compose(browser, taken, out / FILE, post, out, fallback=fallback, say=say)
+        except (CardError, PlaywrightError) as error:
+            say(f"::warning::social: the {post} card, try {attempt}, failed: {_short(error)}")
+            for ext in ("png", "json"):
+                (out / f"{post}.{ext}").unlink(missing_ok=True)
+            continue
+        return
 
 
 def _short(error: Exception) -> str:
