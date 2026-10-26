@@ -358,24 +358,28 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
             script=f"try {{ localStorage.setItem({json.dumps(LOCK_KEY)}, {json.dumps(value)}); }}"
             " catch {}"
         )
-        page = context.new_page()
-        attempt = Attempt(context, site, say, live=live)
-        attempt.watch(page)
-        directory, closings, root = attempt.files(page)
-        predictions = attempt.predictions(page, root)
-        picture = (
-            choose(closings=closings, predictions=predictions, directory=directory, now=now())
-            if view is None
-            else region(
-                query=view.query,
-                place=view.place,
-                closings=closings,
-                directory=directory,
-                now=now(),
+        try:
+            page = context.new_page()
+            attempt = Attempt(context, site, say, live=live)
+            attempt.watch(page)
+            directory, closings, root = attempt.files(page)
+            predictions = attempt.predictions(page, root)
+            picture = (
+                choose(closings=closings, predictions=predictions, directory=directory, now=now())
+                if view is None
+                else region(
+                    query=view.query,
+                    place=view.place,
+                    closings=closings,
+                    directory=directory,
+                    now=now(),
+                )
             )
-        )
-        say(f"social: the picture is the {picture.kind} view {picture.query or '(national)'}")
-        attempt.take(page, picture, out)
+            say(f"social: the picture is the {picture.kind} view {picture.query or '(national)'}")
+            attempt.take(page, picture, out)
+        except (RenderError, PictureError, PlaywrightError) as error:
+            # No message that leaves this attempt carries the lock value.
+            raise RenderError(_short(error).replace(value, "[lock]")) from None
     finally:
         context.close()
     return Taken(

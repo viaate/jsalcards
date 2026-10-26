@@ -254,6 +254,7 @@ def test_a_picture_that_does_not_match_is_dropped_after_one_retry(
     tries = [line for line in said if "picture try" in line]
     assert len(tries) == 2
     assert problem in tries[0]
+    assert not any(LOCK in line for line in said), "the lock value is never said"
     assert not (tmp_path / "picture.png").exists()
     assert not (tmp_path / "picture.json").exists()
 
