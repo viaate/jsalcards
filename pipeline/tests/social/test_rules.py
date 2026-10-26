@@ -132,13 +132,17 @@ def test_the_repository_facts_and_queue_pass_their_own_checks() -> None:
     content = load(REPO)
     assert len(content.images) >= 4
     assert content.queue, "the first post is queued"
+    newest = content.newest()
+    assert newest is not None
     for item in content.queue:
+        # The strictest case: no fresh picture fits, so it goes with an older image.
+        image = item.image or newest
         assert (
             check(
                 item.text,
                 style=item.style,
                 facts=content.facts,
-                image_description=item.image.describe(),
+                image_description=image.describe(),
                 image_is_today=False,
             )
             == []

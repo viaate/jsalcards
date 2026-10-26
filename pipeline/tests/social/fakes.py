@@ -132,6 +132,7 @@ class FakeX:
     rotate: bool = True
     refreshes: int = 0
     uploads: int = 0
+    uploaded: list[bytes] = field(default_factory=list)
     posts: list[dict[str, Any]] = field(default_factory=list)
     issued: list[str] = field(default_factory=list)
     next_id: int = 1850000000000000001
@@ -145,6 +146,7 @@ class FakeX:
         assert auth[7:] in self.issued, "a stale access token"
         if path == "/2/media/upload" and request.method == "POST":
             self.uploads += 1
+            self.uploaded.append(request.content)
             assert b'name="media_category"' in request.content
             assert b"tweet_image" in request.content
             assert b'name="media"' in request.content
@@ -350,7 +352,8 @@ def make_root(
         )
     for item in queue or []:
         (social / "queue" / f"{item['id']}.json").write_text(json.dumps(item))
-        (social / "queue" / item["image"]).write_bytes(PNG)
+        if "image" in item:
+            (social / "queue" / item["image"]).write_bytes(PNG)
     return tmp
 
 
@@ -366,6 +369,45 @@ def queued(
         "day": "2026-10-26",
         "shows": "SYNTHETIC test image: the national map at night",
     }
+
+
+FRESH_SHOWS = (
+    "SYNTHETIC fresh picture: the Snowlight map of the US at night taken at 11:37 AM Central"
+    " time on October 26, 2026: every school is a faint dot of light."
+)
+
+
+def make_picture(
+    tmp: Path,
+    taken_at: datetime,
+    *,
+    kind: str = "national",
+    current: bool = True,
+    shows: str = FRESH_SHOWS,
+) -> Path:
+    """A Render step's folder: picture.json and a picture.png marked as the fresh one."""
+    folder = tmp / "picture"
+    folder.mkdir(exist_ok=True)
+    (folder / "picture.png").write_bytes(PNG + b"FRESH-PICTURE")
+    note = {
+        "kind": kind,
+        "query": "",
+        "shows": shows,
+        "taken_at": taken_at.isoformat(),
+        "current": current,
+        "lit": 0,
+        "file": "picture.png",
+    }
+    (folder / "picture.json").write_text(json.dumps(note))
+    return folder
+
+
+def unpictured(number: str, text: str, pictures: list[str] | None = None) -> dict[str, Any]:
+    """A queued post with no image of its own (it goes with the fresh picture)."""
+    item: dict[str, Any] = {"id": number, "style": "dev_log", "text": text}
+    if pictures is not None:
+        item["pictures"] = pictures
+    return item
 
 
 class Clock:

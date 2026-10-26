@@ -12,6 +12,7 @@ from snowlight.social.picture import (
     Directory,
     PictureError,
     busiest_view,
+    chance_text,
     choose,
     lit_schools,
     today_everywhere,
@@ -156,6 +157,7 @@ def test_a_high_chance_opens_that_districts_panel() -> None:
     )
     assert picture.kind == "district"
     assert picture.query == "?district=2700001"
+    assert picture.panel == "37%"
     assert "public school district in Minnesota open" in picture.shows
     assert "chance of no school on December 10 is 37%, the highest of any district" in (
         picture.shows
@@ -244,3 +246,14 @@ def test_the_busiest_window_is_repeatable_and_holds_its_points() -> None:
     again = busiest_view(lon[::-1].copy(), lat[::-1].copy())
     assert int(first[1].sum()) == int(again[1].sum()) == 8
     assert first[0] == pytest.approx(again[0])
+
+
+def test_chances_are_written_as_the_page_writes_them() -> None:
+    assert [chance_text(v) for v in (0.004, 0.005, 0.125, 0.37, 0.994, 0.995)] == [
+        "<1%",
+        "1%",
+        "13%",
+        "37%",
+        "99%",
+        ">99%",
+    ]

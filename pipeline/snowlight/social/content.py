@@ -3,7 +3,10 @@
 * ``social/facts.md``: the facts a post may state (:func:`snowlight.social.rules.parse_facts`).
 * ``social/images/<id>.json`` and the image it names: the library Haiku picks from. Each
   description says exactly what the image shows and the day it was taken.
-* ``social/queue/<id>.json`` and its image: posts written ahead, sent oldest first.
+* ``social/queue/<id>.json``: posts written ahead, sent oldest first. A queued post goes out
+  with the run's fresh picture (:mod:`snowlight.social.picture`) when the picture is of a
+  kind its ``pictures`` list allows (any, without the list); else with its own image when it
+  names one, else with the library's newest image.
 
 Images are PNG or JPEG files under :data:`MAX_IMAGE_BYTES` (X's limit for a post image).
 """
@@ -15,7 +18,7 @@ from datetime import date
 from pathlib import Path
 from typing import Final, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from snowlight.social.rules import Facts, Style, parse_facts
 
@@ -44,9 +47,19 @@ class QueueEntry(BaseModel):
     id: str = Field(pattern=r"^[0-9]{4}$")
     style: Literal["dev_log", "waitlist"]
     text: str = Field(min_length=1, max_length=600)
-    image: str = Field(pattern=r"^[a-z0-9][a-z0-9.-]{0,60}\.(png|jpg)$")
-    day: date
-    shows: str = Field(min_length=20, max_length=600)
+    pictures: tuple[Literal["closings", "district", "national"], ...] | None = Field(
+        default=None, min_length=1
+    )
+    """The fresh picture kinds the text fits (any, when absent)."""
+    image: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9.-]{0,60}\.(png|jpg)$")
+    day: date | None = None
+    shows: str | None = Field(default=None, min_length=20, max_length=600)
+
+    @model_validator(mode="after")
+    def _image_whole(self) -> "QueueEntry":
+        if len({self.image is None, self.day is None, self.shows is None}) != 1:
+            raise ValueError("a queued post names its image, day and shows together, or none")
+        return self
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,13 +68,21 @@ class Image:
     path: Path
     day: date
     shows: str
+    fresh: str | None = None
+    """The fresh picture's kind; ``None`` for a stored image (library or queue)."""
+    current: bool = False
+    """Whether a post may call what it shows current: only a fresh picture of live files."""
 
     @property
     def content_type(self) -> str:
         return "image/png" if self.path.suffix == ".png" else "image/jpeg"
 
     def describe(self) -> str:
-        return f"{self.shows} (taken {self.day.isoformat()})"
+        if self.fresh is not None:
+            return f"{self.shows} (taken for this post)"
+        return (
+            f"{self.shows} (an older picture, taken {self.day.isoformat()}, not a picture of now)"
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,7 +90,8 @@ class Queued:
     id: str
     style: Style
     text: str
-    image: Image
+    image: Image | None
+    pictures: tuple[str, ...] | None = None
 
     @property
     def slot(self) -> str:
@@ -85,8 +107,13 @@ class Content:
     def image(self, image_id: str) -> Image | None:
         return next((image for image in self.images if image.id == image_id), None)
 
+    def newest(self) -> Image | None:
+        """The library's newest image (the latest day, then the last id): the fallback."""
+        return max(self.images, key=lambda image: (image.day, image.id), default=None)
 
-def _image(path: Path) -> None:
+
+def check_image(path: Path) -> None:
+    """Raises :class:`ContentError` unless ``path`` is a PNG or JPEG X takes."""
     if not path.is_file():
         raise ContentError(f"social image {path.name} is missing")
     data = path.read_bytes()
@@ -124,7 +151,7 @@ def load(root: Path) -> Content:
             raise ContentError(f"social/images/{path.name} is malformed") from error
         if path.stem != entry.id:
             raise ContentError(f"social/images/{path.name} names another id")
-        _image(social / "images" / entry.file)
+        check_image(social / "images" / entry.file)
         images.append(
             Image(
                 id=entry.id, path=social / "images" / entry.file, day=entry.day, shows=entry.shows
@@ -138,12 +165,18 @@ def load(root: Path) -> Content:
             raise ContentError(f"social/queue/{path.name} is malformed") from error
         if path.stem != item.id:
             raise ContentError(f"social/queue/{path.name} names another id")
-        _image(social / "queue" / item.image)
-        image = Image(
-            id=f"queue-{item.id}",
-            path=social / "queue" / item.image,
-            day=item.day,
-            shows=item.shows,
+        image = None
+        if item.image is not None and item.day is not None and item.shows is not None:
+            check_image(social / "queue" / item.image)
+            image = Image(
+                id=f"queue-{item.id}",
+                path=social / "queue" / item.image,
+                day=item.day,
+                shows=item.shows,
+            )
+        queue.append(
+            Queued(
+                id=item.id, style=item.style, text=item.text, image=image, pictures=item.pictures
+            )
         )
-        queue.append(Queued(id=item.id, style=item.style, text=item.text, image=image))
     return Content(facts=facts, images=tuple(images), queue=tuple(queue))

@@ -1,4 +1,4 @@
-"""``snowlight social post`` and ``snowlight social scan-log`` (social-post.yml).
+"""``snowlight social post``, ``render`` and ``scan-log`` (social-post.yml).
 
 Every line the command prints passes :func:`snowlight.social.logscan.scrub` against the
 secrets in the environment and the tokens it masked, so no secret reaches the log even by
@@ -85,7 +85,24 @@ def _post(args: argparse.Namespace) -> int:
             mask=output.mask,
             commits=lambda since: commits(root, since),
         )
-        return run(env, root, args.event, deps)
+        return run(env, root, args.event, deps, Path(args.picture) if args.picture else None)
+
+
+def _render(args: argparse.Namespace) -> int:
+    # Imported here: the post and scan commands need no browser library.
+    from snowlight.social.render import SITE, render  # noqa: PLC0415
+
+    output = Output(dict(os.environ))
+    taken = render(
+        Path(args.out),
+        site=args.site or SITE,
+        say=output.say,
+        live=Path(args.live_dir) if args.live_dir else None,
+    )
+    if taken is None:
+        output.say("::warning::social: no fresh picture; the post uses the library's newest one")
+        return 1
+    return 0
 
 
 def _scan(args: argparse.Namespace) -> int:
@@ -106,7 +123,17 @@ def register(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") ->
     post.add_argument(
         "--event", default="push", help="The GitHub event (Haiku writes only on 'schedule')."
     )
+    post.add_argument(
+        "--picture", default="", help="The fresh picture's folder (picture.json, picture.png)."
+    )
     post.set_defaults(handler=_post)
+    shot = sub.add_parser("render", help="Take the post's fresh picture of the live site.")
+    shot.add_argument("--out", required=True, help="The folder for picture.png and picture.json.")
+    shot.add_argument("--site", default="", help="Another site address (a local build).")
+    shot.add_argument(
+        "--live-dir", default="", help="Serve the live files from this folder (a dry run)."
+    )
+    shot.set_defaults(handler=_render)
     scan = sub.add_parser("scan-log", help="Fail when a log holds a secret-shaped value.")
     scan.add_argument("file", help="The log file, or - for standard input.")
     scan.set_defaults(handler=_scan)

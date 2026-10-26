@@ -15,17 +15,19 @@ day; one Haiku post a UTC day (its slot is the day); four Haiku calls a run, eac
 """
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
-from datetime import UTC, date, datetime, timedelta
+from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Final
 
 import anthropic
 import httpx
+from pydantic import ValidationError
 
 from snowlight.social import seal
-from snowlight.social.content import Content, ContentError, Image, load
+from snowlight.social.content import Content, ContentError, Image, check_image, load
 from snowlight.social.issue import GitHub
+from snowlight.social.picture import FILE, NOTE, Taken
 from snowlight.social.rules import Style, check
 from snowlight.social.store import (
     D1,
@@ -47,6 +49,8 @@ from snowlight.social.xapi import (
     XClient,
 )
 
+FRESH_FOR: Final = timedelta(minutes=30)
+"""How old the Render step's picture may be when the post step reads it."""
 QUIET: Final = timedelta(hours=20)
 """Haiku writes only when nothing was posted for this long."""
 ACCOUNT: Final = "SnowlightMap"
@@ -104,26 +108,70 @@ def _when(value: object) -> datetime | None:
         return None
 
 
+def fresh_picture(folder: Path | None, now: datetime, say: Callable[[str], None]) -> Image | None:
+    """The Render step's picture of this run, or ``None`` (the reason said) when there is
+    none, or it is malformed, or it is not from the last :data:`FRESH_FOR`."""
+    if folder is None:
+        return None
+    note = folder / NOTE
+    if not note.is_file():
+        say("::warning::social: the Render step left no fresh picture")
+        return None
+    try:
+        taken = Taken.model_validate_json(note.read_text(encoding="utf-8"))
+        check_image(folder / FILE)
+    except (OSError, ValidationError, ContentError):
+        say("::warning::social: the fresh picture is malformed; it is not used")
+        return None
+    age = now - taken.taken_at
+    if not timedelta(minutes=-2) <= age <= FRESH_FOR:
+        say("::warning::social: the fresh picture is not from this run; it is not used")
+        return None
+    return Image(
+        id=f"fresh-{taken.taken_at.astimezone(UTC):%Y%m%dt%H%M}",
+        path=folder / FILE,
+        day=taken.taken_at.astimezone(UTC).date(),
+        shows=taken.shows,
+        fresh=taken.kind,
+        current=taken.current,
+    )
+
+
+def picture_for(
+    content: Content, fresh: Image | None, kinds: tuple[str, ...] | None, own: Image | None
+) -> Image | None:
+    """A post's picture: the fresh one when its kind fits, else ``own``, else the library's
+    newest image (stored images keep their own day and description)."""
+    if fresh is not None and (kinds is None or fresh.fresh in kinds):
+        return fresh
+    return own or content.newest()
+
+
 def _queued(
-    content: Content, taken: set[str], today: date, say: Callable[[str], None]
+    content: Content, taken: set[str], fresh: Image | None, say: Callable[[str], None]
 ) -> tuple[Pick | None, bool]:
     """The oldest queued post that may go, and whether one was refused by the checks."""
     refused = False
     for item in content.queue:
         if item.slot in taken:
             continue
-        problems = check(
-            item.text,
-            style=item.style,
-            facts=content.facts,
-            image_description=item.image.describe(),
-            image_is_today=item.image.day == today,
+        image = picture_for(content, fresh, item.pictures, item.image)
+        problems = (
+            ["it has no picture: no fresh one fits and the library is empty"]
+            if image is None
+            else check(
+                item.text,
+                style=item.style,
+                facts=content.facts,
+                image_description=image.describe(),
+                image_is_today=image.current,
+            )
         )
-        if problems:
+        if problems or image is None:
             refused = True
             say(f"::error::social: queued post {item.id} is refused: " + "; ".join(problems))
             continue
-        return Pick(item.slot, "queue", item.style, item.text, item.image), refused
+        return Pick(item.slot, "queue", item.style, item.text, image), refused
     return None, refused
 
 
@@ -139,6 +187,7 @@ class Run:
     github: GitHub | None
     run_id: str
     now: datetime
+    fresh: Image | None = None
 
     def say(self, line: str) -> None:
         self.deps.say(line)
@@ -161,8 +210,9 @@ class Run:
         if claimed is not None and self.now - claimed < QUIET:
             self.say("social: something was posted in the last 20 hours: no Haiku post")
             return None
-        if not self.content.images:
-            self.say("::warning::social: the image library is empty: no Haiku post")
+        image = picture_for(self.content, self.fresh, None, None)
+        if image is None:
+            self.say("::warning::social: no fresh picture and an empty library: no Haiku post")
             return None
         style: Style = (
             "waitlist" if last is not None and last.get("style") == "dev_log" else "dev_log"
@@ -170,9 +220,9 @@ class Run:
         since = (_when(last.get("posted_at")) or claimed) if last is not None else None
         writer = Writer(self.deps.haiku_client())
         commits = list(self.deps.commits(since))[:MAX_COMMITS]
-        written = draft(
-            writer, self.content, style=style, today=today, commits=commits, say=self.say
-        )
+        # The picture is the only one Haiku sees, and its description the only facts about it.
+        content = replace(self.content, images=(image,))
+        written = draft(writer, content, style=style, today=today, commits=commits, say=self.say)
         self.say(f"social: Haiku calls this run: {writer.calls}")
         if written is None:
             self.say("::warning::social: both Haiku drafts failed a check: no post today")
@@ -291,10 +341,11 @@ class Run:
             f"social: posted {pick.slot} as {post_id}: https://x.com/{ACCOUNT}/status/{post_id}"
         )
         self.say(f"social: text: {pick.text}")
+        self.say(f"social: picture: {pick.image.describe()}")
         return 0
 
 
-def _start(env: Env, root: Path, deps: Deps) -> Run | int:
+def _start(env: Env, root: Path, deps: Deps, picture: Path | None) -> Run | int:
     """The run's state, or the exit code when it stops before the store."""
     say = deps.say
     try:
@@ -329,18 +380,26 @@ def _start(env: Env, root: Path, deps: Deps) -> Run | int:
     except StoreError as error:
         say(f"::warning::social: the D1 store failed ({error}): nothing posts")
         return 1
-    return Run(env, deps, content, store, secrets, github, run_id, deps.now())
+    now = deps.now()
+    fresh = fresh_picture(picture, now, say)
+    if fresh is None and (newest := content.newest()) is not None:
+        say(
+            f"::warning::social: no fresh picture: a post uses the library's newest image,"
+            f" {newest.id} from {newest.day.isoformat()}, as an older picture"
+        )
+    return Run(env, deps, content, store, secrets, github, run_id, now, fresh)
 
 
-def run(env: Env, root: Path, event: str, deps: Deps) -> int:
-    """One run; its exit code (1 when the owner or the lead should look)."""
-    started = _start(env, root, deps)
+def run(env: Env, root: Path, event: str, deps: Deps, picture: Path | None = None) -> int:
+    """One run; its exit code (1 when the owner or the lead should look). ``picture`` is the
+    Render step's folder (:mod:`snowlight.social.render`)."""
+    started = _start(env, root, deps, picture)
     if isinstance(started, int):
         return started
     one = started
     try:
         taken = one.store.taken_slots()
-        pick, refused = _queued(one.content, taken, one.now.date(), one.say)
+        pick, refused = _queued(one.content, taken, one.fresh, one.say)
         if pick is None and one.store.posts_on(one.now.date().isoformat()) >= MAX_POSTS_PER_DAY:
             one.say(f"social: the day's cap of {MAX_POSTS_PER_DAY} posts is reached")
         elif pick is None:

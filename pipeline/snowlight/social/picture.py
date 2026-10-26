@@ -20,6 +20,7 @@ render answers the page's requests for them), and the render checks the page lit
 schools as the description counts.
 """
 
+import math
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -29,6 +30,7 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 import numpy.typing as npt
+from pydantic import BaseModel, ConfigDict, Field
 
 from snowlight.directory.points import Points
 
@@ -66,6 +68,9 @@ STATES: Final[Mapping[str, str]] = {
 
 type Kind = Literal["closings", "district", "national"]
 
+FILE: Final = "picture.png"
+NOTE: Final = "picture.json"
+
 
 class PictureError(ValueError):
     """A live file is not what the page reads (the picture would not match its words)."""
@@ -102,6 +107,8 @@ class Picture:
     :data:`FRESH` is not)."""
     lit: int
     """How many schools the page lights, across the country (the render checks it)."""
+    panel: str | None = None
+    """The chance the open panel shows, as the page writes it (the render checks it)."""
 
 
 def today_everywhere(now: datetime) -> date | None:
@@ -329,7 +336,18 @@ def highest_chance(
 
 
 def _percent(chance: float) -> int:
-    return round(chance * 100)
+    """A chance as a whole percent, halves up, as the page's ``Math.round`` has it."""
+    return math.floor(chance * 100 + 0.5)
+
+
+def chance_text(chance: float) -> str:
+    """A chance as the page writes it (web/src/copy-format.ts): "34%", "<1%", ">99%"."""
+    percent = _percent(chance)
+    if percent < 1:
+        return "<1%"
+    if percent > 99:  # noqa: PLR2004
+        return ">99%"
+    return f"{percent}%"
 
 
 def choose(
@@ -359,10 +377,12 @@ def choose(
         shows = (
             f"A picture of the Snowlight map taken at {_clock(now)} on {_day(now)}, with the "
             f"panel of a public school district{where} open: its chance of no school on "
-            f"{_day_of(today)} is {_percent(chance)}%, the highest of any district that day. "
+            f"{_day_of(today)} is {chance_text(chance)}, the highest of any district that day. "
             f"{closings_line}"
         )
-        return Picture("district", f"?district={district}", shows, now, True, 0)
+        return Picture(
+            "district", f"?district={district}", shows, now, True, 0, chance_text(chance)
+        )
     if high is None:
         chance_line = ""
     elif high[0] == 0 or _percent(high[0]) <= 1:
@@ -373,10 +393,24 @@ def choose(
     else:
         chance_line = (
             f" Not in the picture: Snowlight's highest chance of no school on {_day_of(today)} in"
-            f" any district is {_percent(high[0])}%."
+            f" any district is {chance_text(high[0])}."
         )
     shows = (
         f"A picture of the Snowlight map of the US at night taken at {_clock(now)} on "
         f"{_day(now)}: every school is a faint dot of light. {closings_line}{chance_line}"
     )
     return Picture("national", "", shows, now, True, 0)
+
+
+class Taken(BaseModel):
+    """``picture.json``: what the fresh picture shows, for the post step."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    kind: Kind
+    query: str = Field(max_length=80)
+    shows: str = Field(min_length=20, max_length=600)
+    taken_at: datetime
+    current: bool
+    lit: int = Field(ge=0)
+    file: str = Field(pattern=r"^picture\.png$")

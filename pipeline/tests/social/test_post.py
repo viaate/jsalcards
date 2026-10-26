@@ -19,12 +19,22 @@ from snowlight.social.issue import TITLE
 from snowlight.social.post import Deps, run
 from snowlight.social.xapi import XClient
 from social import fakes
-from social.fakes import Clock, FakeAnthropic, World, at, make_root, queued
+from social.fakes import (
+    FRESH_SHOWS,
+    Clock,
+    FakeAnthropic,
+    World,
+    at,
+    make_picture,
+    make_root,
+    queued,
+    unpictured,
+)
 
 GOOD_DRAFT = {
     "text": "I keep the closings reader running 24/7 in practice mode."
     " Join the waitlist, link in my bio.",
-    "image_id": "img-1",
+    "image_id": "img-2",  # the library's newest: the fallback when no fresh picture is given
     "kind": "waitlist",
     "facts_used": ["reader", "waitlist"],
 }
@@ -38,6 +48,7 @@ OK = {"ok": True, "problems": []}
 
 class Runner:
     def __init__(self, root: Path, world: World, clock: Clock) -> None:
+        self.picture: Path | None = None
         self.root = root
         self.world = world
         self.clock = clock
@@ -72,7 +83,7 @@ class Runner:
             db_pause=0.0,
         )
         before = len(self.world.x.issued)
-        code = run(environment, self.root, event, deps)
+        code = run(environment, self.root, event, deps, self.picture)
         log = stream.getvalue()
         self.logs.append(log)
         self.check_log(log, environment, self.world.x.issued[before:])
@@ -420,3 +431,98 @@ def test_a_stored_token_under_another_client_secret_opens_the_issue(
     assert runner() == 1
     assert "did not open" in runner.log
     assert len(world.github.issues) == 1
+
+
+FIRST = (
+    "Snowlight dev log: the closings reader runs 24/7 in practice mode and checks lists every"
+    " 5 minutes in the morning and evening. Waitlist link in my bio."
+)
+
+
+def test_a_queued_post_goes_with_the_fresh_picture(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[unpictured("0001", FIRST, ["national", "district"])])
+    runner.picture = make_picture(tmp_path, at("2026-10-26T16:35:00"))
+    assert runner() == 0
+    assert len(world.x.posts) == 1
+    assert b"FRESH-PICTURE" in world.x.uploaded[0]
+    assert f"social: picture: {FRESH_SHOWS} (taken for this post)" in runner.log
+    posted = world.d1.row("SELECT image FROM social_posts")
+    assert posted == {"image": "fresh-20261026t1635"}
+
+
+@pytest.mark.parametrize(
+    ("kind", "taken", "why"),
+    [
+        ("closings", "2026-10-26T16:35:00", None),  # a kind the queued text does not fit
+        ("national", "2026-10-26T15:00:00", "is not from this run"),
+        ("national", "2026-10-26T16:50:00", "is not from this run"),  # from the future
+    ],
+)
+def test_without_a_fitting_fresh_picture_the_newest_library_image_goes_as_older(
+    tmp_path: Path, world: World, kind: str, taken: str, why: str | None
+) -> None:
+    runner = make(tmp_path, world, queue=[unpictured("0001", FIRST, ["national", "district"])])
+    runner.picture = make_picture(tmp_path, at(taken), kind=kind)
+    assert runner() == 0
+    assert b"FRESH-PICTURE" not in world.x.uploaded[0]
+    assert "(an older picture, taken 2026-10-20, not a picture of now)" in runner.log
+    assert world.d1.row("SELECT image FROM social_posts") == {"image": "img-2"}
+    if why is not None:
+        assert why in runner.log
+        assert "uses the library's newest image, img-2 from 2026-10-20" in runner.log
+
+
+def test_a_missing_or_malformed_picture_falls_back(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[unpictured("0001", FIRST)])
+    runner.picture = tmp_path / "nothing"
+    assert runner() == 0
+    assert "the Render step left no fresh picture" in runner.log
+    folder = make_picture(tmp_path, at("2026-10-26T16:35:00"))
+    (folder / "picture.png").write_bytes(b"not a png")
+    runner.picture = folder
+    world.d1.db.execute("DELETE FROM social_posts")
+    world.d1.db.commit()
+    assert runner() == 0
+    assert "the fresh picture is malformed" in runner.log
+    assert [b"FRESH-PICTURE" in body for body in world.x.uploaded] == [False, False]
+
+
+def test_an_older_picture_is_never_called_current(tmp_path: Path, world: World) -> None:
+    now_text = FIRST.replace("Waitlist link", "Right now it is quiet. Waitlist link")
+    runner = make(tmp_path, world, queue=[unpictured("0001", now_text)])
+    assert runner() == 1
+    assert "it says 'right now' but the image is not from today" in runner.log
+    assert world.x.posts == []
+    runner.picture = make_picture(tmp_path, at("2026-10-26T16:35:00"))
+    assert runner() == 0, "the same words go with a current fresh picture"
+    runner.picture = make_picture(tmp_path, at("2026-10-26T16:35:00"), current=False)
+    world.d1.db.execute("DELETE FROM social_posts")
+    world.d1.db.commit()
+    assert runner() == 1, "a fresh picture of an old closings file is not current"
+
+
+def test_a_queued_post_with_no_picture_at_all_is_refused(tmp_path: Path, world: World) -> None:
+    runner = Runner(
+        make_root(tmp_path, queue=[unpictured("0001", FIRST)], images=0),
+        world,
+        Clock(at("2026-10-26T16:37:00")),
+    )
+    assert runner() == 1
+    assert "it has no picture" in runner.log
+    assert world.x.refreshes == 0
+
+
+def test_haiku_sees_only_the_fresh_picture(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world)
+    runner.picture = make_picture(tmp_path, at("2026-10-26T16:35:00"))
+    runner.haiku = FakeAnthropic([{**GOOD_DEV_LOG, "image_id": "fresh-20261026t1635"}, dict(OK)])
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    prompt = runner.haiku.requests[0]["messages"][0]["content"]
+    assert f"- fresh-20261026t1635: {FRESH_SHOWS} (taken for this post)" in prompt
+    assert "img-1" not in prompt
+    assert "img-2" not in prompt
+    assert (
+        f"Image: {FRESH_SHOWS} (taken for this post)"
+        in (runner.haiku.requests[1]["messages"][0]["content"])
+    )
+    assert b"FRESH-PICTURE" in world.x.uploaded[0]

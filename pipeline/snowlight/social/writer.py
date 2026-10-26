@@ -66,7 +66,8 @@ is live or available.
 wrong, better than, calculator, formula, reconstruction.
 - Never name a TV or radio station, a school, a district or a person.
 - Keep it under 240 characters.
-- Do not say the image is from today, tonight or right now unless its day is today."""
+- Say only what the image's description says about the image. Never call an older picture \
+current: no "today", "tonight", "this morning" or "right now" about it."""
 
 STYLES: Final[dict[Style, str]] = {
     "dev_log": "Style: a short dev log: one thing I built, fixed or learned, from the facts or "
@@ -81,7 +82,8 @@ short line, when the draft: states anything the facts or the image description d
 support; calls a TESTING or COMING fact live or available; holds a number the facts do not; \
 holds a URL, domain or @mention; compares Snowlight with, or names, another site, app or \
 calculator; is hype, salesy or corporate; names a station, school, district or person; or \
-presents the image as current when its day is not today. Otherwise ok=true with no problems."""
+says anything about the image its description does not say, or presents an older picture \
+as current. Otherwise ok=true with no problems."""
 
 
 class Draft(BaseModel):
@@ -184,8 +186,8 @@ def write_prompt(
         STYLES[style],
         f"Set kind to {style}.",
         "Facts (the only things you may state):\n" + content.facts.text.strip(),
-        "Images (pick exactly one by its id; the post must fit what it shows):\n"
-        + _library(content.images),
+        "The picture (set image_id to its id; the post must fit what it shows, and may say "
+        "about it only what its description says):\n" + _library(content.images),
     ]
     if commits:
         parts.append(
@@ -245,7 +247,7 @@ def draft(  # noqa: PLR0913 - the run's parts
                 style=style,
                 facts=content.facts,
                 image_description=image.describe(),
-                image_is_today=image.day == today,
+                image_is_today=image.current,
             )
         if not problems and image is not None:
             written = Written(
