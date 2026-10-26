@@ -37,7 +37,7 @@ from snowlight.social.cards import (
     lay,
     pick,
 )
-from snowlight.social.content import ContentError, load
+from snowlight.social.content import ContentError, _still_true, load
 from snowlight.social.picture import Box, Chance, Counts, Seen, Taken
 from snowlight.social.rules import parse_facts
 
@@ -604,20 +604,39 @@ def test_a_library_card_whose_line_left_the_facts_file_is_refused(tmp_path: Path
     (social / "queue").mkdir(parents=True)
     images = social / "images"
     images.mkdir()
-    for name in ("2026-10-26-national-dark-dev-log.json", "2026-10-26-national-dark-dev-log.png"):
-        (images / name).write_bytes((REPO / "social" / "images" / name).read_bytes())
+    source = next(
+        path
+        for path in sorted((REPO / "social" / "images").glob("*national*dev-log.json"))
+        if json.loads(path.read_text(encoding="utf-8")).get("tagline")
+    )
+    entry = json.loads(source.read_text(encoding="utf-8"))
+    (images / source.name).write_bytes(source.read_bytes())
+    (images / entry["file"]).write_bytes((source.parent / entry["file"]).read_bytes())
     facts = (REPO / "social" / "facts.md").read_text(encoding="utf-8")
     (social / "facts.md").write_text(facts, encoding="utf-8")
-    assert load(tmp_path).images[0].id == "2026-10-26-national-dark-dev-log"
-    # The aim goes live: the card's "coming this winter" is no longer true.
-    moved = facts.replace(
-        "- [COMING] aim: Every school closing in the US on one map, coming this winter.",
-        "- [LIVE] aim: Every school closing in the US on one map.",
-    )
+    assert load(tmp_path).images[0].id == entry["id"]
+    # The model fact is reworded: the card's line is no longer words of a LIVE fact.
+    line = entry["tagline"]
+    assert line.lower() in facts.lower()
+    moved = re.sub(re.escape(line), "chances worked out by a model", facts, count=1, flags=re.I)
     assert moved != facts
     (social / "facts.md").write_text(moved, encoding="utf-8")
     with pytest.raises(ContentError, match="re-render the library"):
         load(tmp_path)
+
+
+def test_a_card_line_is_words_of_a_live_fact_or_a_whole_coming_one() -> None:
+    facts = parse_facts(
+        "- [LIVE] model: Snowlight gives chances from a prediction model trained on real"
+        " closing records, not a guess.\n"
+        "- [COMING] aim: Every school closing in the US on one map, coming this winter."
+        " | terms: one map\n"
+    )
+    assert _still_true("Chances from a prediction model trained on real closing records", facts)
+    assert _still_true("Every school closing in the US on one map, coming this winter", facts)
+    # Part of a COMING fact drops its "coming": a present-tense claim.
+    assert not _still_true("Every school closing in the US on one map", facts)
+    assert not _still_true("Chances from an AI trained on everything", facts)
 
 
 def test_every_library_card_with_a_line_names_it() -> None:
