@@ -45,6 +45,9 @@ class ImageEntry(BaseModel):
     """The card's alt text (X's limit is 1,000 characters)."""
     style: Literal["dev_log", "waitlist"] | None = None
     """The kind of post the card is labeled for (any, when absent)."""
+    tagline: str | None = Field(default=None, min_length=10, max_length=200)
+    """The line from the facts file baked into the card, if any: it must still be the text
+    of a LIVE or COMING fact, or the card is no longer true (re-render the library)."""
 
 
 class QueueEntry(BaseModel):
@@ -135,6 +138,16 @@ def check_image(path: Path) -> None:
         raise ContentError(f"social image {path.name} is not the image its name says")
 
 
+def _still_true(line: str, facts: Facts) -> bool:
+    """Whether a card's line is still the text of a LIVE or COMING fact."""
+    wanted = line.strip().rstrip(".").lower()
+    return any(
+        fact.text.strip().rstrip(".").lower() == wanted
+        for fact in facts.facts
+        if fact.status in ("LIVE", "COMING")
+    )
+
+
 def _json(path: Path) -> object:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -163,6 +176,11 @@ def load(root: Path) -> Content:
             raise ContentError(f"social/images/{path.name} is malformed") from error
         if path.stem != entry.id:
             raise ContentError(f"social/images/{path.name} names another id")
+        if entry.tagline is not None and not _still_true(entry.tagline, facts):
+            raise ContentError(
+                f"social/images/{path.name}: its card's line is no longer in the facts file;"
+                " re-render the library (docs/social.md)"
+            )
         check_image(social / "images" / entry.file)
         images.append(
             Image(

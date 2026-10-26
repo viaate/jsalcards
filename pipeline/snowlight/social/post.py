@@ -31,8 +31,8 @@ from snowlight.social import seal
 from snowlight.social.cards import Card, Post
 from snowlight.social.content import Content, ContentError, Image, check_image, load
 from snowlight.social.issue import GitHub
-from snowlight.social.picture import FILE, NOTE, Taken
-from snowlight.social.rules import Style, check
+from snowlight.social.picture import NOTE, Taken
+from snowlight.social.rules import MENTION, URL, Style, check
 from snowlight.social.store import (
     D1,
     MAX_POSTS_PER_DAY,
@@ -53,8 +53,9 @@ from snowlight.social.xapi import (
     XClient,
 )
 
-FRESH_FOR: Final = timedelta(minutes=30)
-"""How old the Render step's picture may be when the post step reads it."""
+FRESH_FOR: Final = timedelta(minutes=40)
+"""How old the render job's picture may be when the post step reads it (the render job's
+Render step times out after 15 minutes, and the post job starts right after it)."""
 QUIET: Final = timedelta(hours=20)
 """Haiku writes only when nothing was posted for this long."""
 ACCOUNT: Final = "SnowlightMap"
@@ -122,9 +123,10 @@ type Fresh = Mapping[str, Image]
 
 
 def fresh_picture(folder: Path | None, now: datetime, say: Callable[[str], None]) -> Fresh:
-    """The Render step's fresh cards of this run by post style; none (the reason said) when
-    there is no picture, or it is malformed, or it is not from the last :data:`FRESH_FOR`.
-    A style whose card failed is left out (that post goes with the library's card)."""
+    """The render job's fresh cards of this run by post style (handed over by
+    :mod:`snowlight.social.relay`); none (the reason said) when there is no picture, or it is
+    malformed, or it is not from the last :data:`FRESH_FOR`. A style whose card failed, or
+    whose alt text holds a link, is left out (that post goes with the library's card)."""
     if folder is None:
         return {}
     note = folder / NOTE
@@ -133,8 +135,7 @@ def fresh_picture(folder: Path | None, now: datetime, say: Callable[[str], None]
         return {}
     try:
         taken = Taken.model_validate_json(note.read_text(encoding="utf-8"))
-        check_image(folder / FILE)
-    except (OSError, ValidationError, ContentError):
+    except (OSError, ValidationError):
         say("::warning::social: the fresh picture is malformed; it is not used")
         return {}
     age = now - taken.taken_at
@@ -151,6 +152,9 @@ def fresh_picture(folder: Path | None, now: datetime, say: Callable[[str], None]
             continue
         if card.post != post or card.fallback:
             say(f"::warning::social: the {post} card is not this run's; it is not used")
+            continue
+        if URL.search(card.alt) or MENTION.search(card.alt):
+            say(f"::warning::social: the {post} card's alt text holds a link; it is not used")
             continue
         cards[style] = Image(
             id=f"fresh-{taken.taken_at.astimezone(UTC):%Y%m%dt%H%M}",

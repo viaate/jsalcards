@@ -13,7 +13,8 @@ The style is chosen by code, never at random (:func:`pick`): the preferred order
 for a closings or district picture and A, C, B for a calm one, and a style fits only when
 its words, stamp and logo darken at most :data:`FIT_SHARE` of the lit-school pixels of the
 map (:func:`cover`; the owner's objection to A was its text over lit schools). B covers no
-pixel of the map by construction (checked on its layout). The choice and its measures are
+pixel of the map by construction (checked on its layout). When no style fits, no fresh card
+is made (the post goes with the library's dated card). The choice and its measures are
 logged.
 
 Every word, number, place and time on a card comes from the picture's facts
@@ -131,8 +132,12 @@ def pick(
     order: Sequence[Sequence[Candidate]], measure: Callable[[Candidate], Measure]
 ) -> tuple[Candidate, str]:
     """The first style in ``order`` with a layout that fits (the layout covering least, the
-    earlier one on a tie), measuring only what it must; with none, the layout covering least.
-    Also the reason, for the log."""
+    earlier one on a tie), measuring only what it must, and the reason, for the log.
+
+    Raises:
+        CardError: no layout fits: the post then goes with the library's dated card, never
+            with words over lit schools.
+    """
     tried: list[tuple[Candidate, Measure]] = []
     for group in order:
         measured = [(candidate, measure(candidate)) for candidate in group]
@@ -142,13 +147,8 @@ def pick(
             best = min(fitting, key=lambda pair: pair[1].covered)
             notes = "; ".join(f"{name} {result}" for name, result in tried)
             return best[0], f"{best[0]} is the first style that fits ({notes})"
-    usable = [pair for pair in tried if pair[1].refused is None]
-    if not usable:
-        notes = "; ".join(f"{name} {result}" for name, result in tried)
-        raise CardError(f"no style gave a true, whole card ({notes})"[:600])
-    best = min(usable, key=lambda pair: pair[1].covered)
     notes = "; ".join(f"{name} {result}" for name, result in tried)
-    return best[0], f"no style fits; {best[0]} covers the least ({notes})"
+    raise CardError(f"no style fits without covering lit schools ({notes})"[:600])
 
 
 def glow_mask(rgb: npt.NDArray[np.uint8]) -> npt.NDArray[np.bool_]:
@@ -238,11 +238,10 @@ def alt_text(taken: Taken, post: Post, *, fallback: bool) -> str:
         )
     elif taken.kind == "region":
         text = (
-            f"The Snowlight map at night over {seen.place}, {when}, schools drawn as faint "
-            "white specks"
+            f"The dark Snowlight map over {seen.place}, {when}, schools drawn as faint white specks"
         )
     else:
-        text = f"The national Snowlight map at night, {when}, with state lines and city names"
+        text = f"The dark national Snowlight map, {when}, with state lines and city names"
         if chance is not None and post == "dev-log" and not fallback:
             text += (
                 f", and the chance of no school {chance.day:%A}: at most 1% in every district"
@@ -292,7 +291,9 @@ def c_slots(taken: Taken, post: Post, anchor: str, *, fallback: bool) -> dict[st
     slots: dict[str, object] = {
         "kind": post,
         "view": taken.kind,
-        "current": taken.current,
+        # The template's "current" speaks of the closings a card shows: the other views show
+        # none, so their clock is the picture's own (and the card says nothing of closings).
+        "current": taken.current or taken.kind != "closings",
         "anchor": anchor,
         "date": _long_date(taken.taken_at) if fallback else _month_day(taken.taken_at),
         "isFallback": fallback,
@@ -300,7 +301,11 @@ def c_slots(taken: Taken, post: Post, anchor: str, *, fallback: bool) -> dict[st
     if not fallback:
         slots["time"] = clock(taken.taken_at)
     if taken.kind == "closings":
-        slots["states"] = list(seen.states) or ["the US"]
+        if not seen.states:
+            # The lit schools in view are all private (no state in their ids): the stamp
+            # names no place rather than a false one.
+            raise CardError("a closings stamp names its states; none are known")
+        slots["states"] = list(seen.states)
         if seen.in_view is not None:
             slots["counts"] = seen.in_view.model_dump()
         slots["total"] = seen.lit

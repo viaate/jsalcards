@@ -13,15 +13,21 @@ files the page reads and picks the view:
   :data:`PANEL_MIN_CHANCE`, the district with the highest one, framed by its schools on the
   left of the picture (:data:`DISTRICT_X`), the right side left free for the card's number.
   The map draws no chance, so the chance is a number on the card, never on the map.
-* **Else the national map at night**: black land, state lines and city names. The site draws
-  no school specks at this zoom (it draws them only between zoom 5 and 10).
+* **Else the national map**: the site's dark map, near-black land, state lines and city
+  names (dark at any hour: the words never say "night"). The site draws no school specks at
+  this zoom (it draws them only between zoom 5 and 10).
 
 It also writes :attr:`Picture.shows`, the plain facts about the picture (the time, the place
 by state, the counts and the chance), the only things a post may say about it, and the same
 facts as fields (:class:`Seen`) for the card. No school, district or person is named. When
 ``closings.json`` was not read (a 404 in practice mode, or another directory's file) nothing
-is said about closings at all. The browser is then served exactly the files described, and
-the render checks the page lit as many schools as the description counts.
+is said about closings at all, and neither when the file is older than :data:`FRESH` (a
+stopped reader's empty file is no sign that nothing is closed): the picture is then not
+current, so the post may not call it so. A chance is shown only from a predictions file no
+older than :data:`PREDICTIONS_FRESH`, for the day the page puts first: today until
+:data:`DAY_OVER_HOUR` Eastern time, then the next day. The browser is then served exactly the
+files described, and the render checks the page lit as many schools as the description
+counts.
 """
 
 import math
@@ -55,6 +61,13 @@ FRESH: Final = timedelta(minutes=20)
 """How old a closings file may be and still be called live (web/src/state/freshness.ts)."""
 LEAD: Final = timedelta(minutes=2)
 """How far ahead of the clock a closings file may be stamped and still be live (the same)."""
+PREDICTIONS_FRESH: Final = timedelta(minutes=90)
+"""How old a predictions file may be and still be shown (web/src/data/school-day.ts)."""
+PREDICTIONS_AHEAD: Final = timedelta(minutes=15)
+"""How far ahead of the clock a predictions file may be stamped (the same)."""
+EASTERN: Final = ZoneInfo("America/New_York")
+DAY_OVER_HOUR: Final = 15
+"""From 3 PM Eastern the school day is over in the east: the chance shown is the next day's."""
 EAST_OFFSET: Final = timedelta(hours=-4)
 WEST_OFFSET: Final = timedelta(hours=-8)
 SHOWN_ZONE: Final = ZoneInfo("America/Chicago")
@@ -416,16 +429,41 @@ def _chance_day(predictions: Mapping[str, object], today: date) -> int | None:
     return next((i for i, value in enumerate(days) if value == today.isoformat()), None)
 
 
+def chance_day(now: datetime) -> date:
+    """The day whose chance a picture shows: today (the day that is today everywhere, else
+    the eastern date) until :data:`DAY_OVER_HOUR` Eastern time, then the next day."""
+    east = now.astimezone(EASTERN)
+    if east.hour >= DAY_OVER_HOUR:
+        return east.date() + timedelta(days=1)
+    return today_everywhere(now) or east.date()
+
+
+def predictions_fresh(predictions: Mapping[str, object], now: datetime) -> bool:
+    """Whether the page shows this predictions file's chances at ``now`` (not stale).
+
+    Raises:
+        PictureError: its stamp is missing or malformed.
+    """
+    age = now - _instant(predictions.get("generated_at"), "predictions")
+    return -PREDICTIONS_AHEAD <= age <= PREDICTIONS_FRESH
+
+
 def highest_chance(
-    predictions: Mapping[str, object] | None, directory: Directory, today: date
+    predictions: Mapping[str, object] | None,
+    directory: Directory,
+    today: date,
+    now: datetime,
 ) -> tuple[float, int, int] | None:
     """The highest chance of no school ``today`` of any district, the district's index, and
-    how many districts have a chance that day; ``None`` without one.
+    how many districts have a chance that day; ``None`` without one, or when the file is
+    stale (:data:`PREDICTIONS_FRESH`).
 
     Raises:
         PictureError: the file is malformed.
     """
     if predictions is None or predictions.get("directory") != directory.stamp():
+        return None
+    if not predictions_fresh(predictions, now):
         return None
     column = _chance_day(predictions, today)
     districts = predictions.get("districts")
@@ -522,11 +560,9 @@ def choose(
     if lit is not None:
         return _closings_picture(lit, directory, now)
     read = closings_read(closings, directory)
-    today = today_everywhere(now) or (now + EAST_OFFSET).date()
-    high = highest_chance(predictions, directory, today)
-    # Nothing is said about closings unless the page read a closings file (practice mode
-    # serves none: a 404 says nothing about schools).
-    closings_line = " No school is lit up for weather on the map." if read else ""
+    today = chance_day(now)
+    high = highest_chance(predictions, directory, today, now)
+    closings_line, current = calm_closings(closings, read, now)
     if high is not None and high[0] >= PANEL_MIN_CHANCE:
         chance, index, counted = high
         frame = district_frame(directory, index)
@@ -554,7 +590,7 @@ def choose(
                 state=state,
                 focus=box,
             )
-            return Picture("district", query, shows, now, True, 0, seen)
+            return Picture("district", query, shows, now, current, 0, seen)
     chance_seen: Chance | None = None
     if high is None:
         chance_line = ""
@@ -580,12 +616,29 @@ def choose(
             at_most=False,
         )
     shows = (
-        f"A picture of the Snowlight map of the contiguous US at night taken at {_clock(now)} "
-        f"on {_day(now)}: black land, gray state lines and city names. At this zoom the map "
-        f"draws no school specks.{closings_line}{chance_line}"
+        f"A picture of the dark Snowlight map of the contiguous US taken at {_clock(now)} "
+        f"on {_day(now)}: near-black land, gray state lines and city names. At this zoom the "
+        f"map draws no school specks.{closings_line}{chance_line}"
     )
     seen = Seen(closings_read=read, chance=chance_seen)
-    return Picture("national", "", shows, now, True, 0, seen)
+    return Picture("national", "", shows, now, current, 0, seen)
+
+
+def calm_closings(
+    closings: Mapping[str, object] | None, read: bool, now: datetime
+) -> tuple[str, bool]:
+    """What a picture with no lit school may say about closings, and whether it is current.
+
+    Only a closings file the page reads, written within :data:`FRESH`, says that no school is
+    lit up; an older one (a stopped reader) says nothing and the picture is not current, so
+    a post never calls a stale calm map current. Without a file (practice mode's 404) nothing
+    is said about closings at all.
+    """
+    if not read or closings is None:
+        return "", True
+    if -LEAD <= now - _instant(closings.get("generated_at"), "closings.json") <= FRESH:
+        return " No school is lit up for weather on the map.", True
+    return "", False
 
 
 def region(
@@ -607,13 +660,14 @@ def region(
     if lit_schools(closings, directory, now) is not None:
         raise PictureError("schools are lit: a calm region picture would leave them out")
     read = closings_read(closings, directory)
-    closings_line = " No school is lit up for weather on the map." if read else ""
+    closings_line, current = calm_closings(closings, read, now)
     shows = (
-        f"A picture of the Snowlight map at night over {place}, taken at {_clock(now)} on "
+        f"A picture of the dark Snowlight map over {place}, taken at {_clock(now)} on "
         f"{_day(now)}: schools drawn as faint white specks, with gray "
         f"state lines and city names.{closings_line}"
     )
-    return Picture("region", query, shows, now, True, 0, Seen(closings_read=read, place=place))
+    seen = Seen(closings_read=read, place=place)
+    return Picture("region", query, shows, now, current, 0, seen)
 
 
 class Taken(BaseModel):

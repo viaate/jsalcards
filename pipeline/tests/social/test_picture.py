@@ -15,6 +15,7 @@ from snowlight.social.picture import (
     Directory,
     PictureError,
     busiest_view,
+    chance_day,
     chance_text,
     choose,
     clock,
@@ -62,7 +63,11 @@ def closings(rows: list[tuple[int, int]], day: str, generated_at: str) -> dict[s
     }
 
 
-def predictions(chances: list[float | None], days: tuple[str, str]) -> dict[str, Any]:
+def predictions(
+    chances: list[float | None], days: tuple[str, str], generated_at: str | None = None
+) -> dict[str, Any]:
+    """A predictions file, stamped at ``generated_at`` (by default 16:30 UTC on its last day,
+    fresh for a picture at 16:37)."""
     rows = []
     for index, chance in enumerate(chances):
         today: dict[str, Any] = (
@@ -71,7 +76,8 @@ def predictions(chances: list[float | None], days: tuple[str, str]) -> dict[str,
             else {"state": "forecast", "p_no_school": chance}
         )
         rows.append({"district": index, "days": [{"state": "no_threat"}, today]})
-    return {"directory": dict(STAMP), "days": list(days), "districts": rows}
+    stamp = generated_at or f"{days[-1]}T16:30:00Z"
+    return {"generated_at": stamp, "directory": dict(STAMP), "days": list(days), "districts": rows}
 
 
 def at(text: str) -> datetime:
@@ -161,7 +167,8 @@ def test_no_lit_school_gives_the_national_map(
     if not read:
         assert "closing" not in picture.shows.lower()
         assert "lit" not in picture.shows
-    assert "at night" in picture.shows
+    assert "dark Snowlight map" in picture.shows
+    assert "night" not in picture.shows
     # The site draws no school specks at the national zoom: the words never say it does.
     assert "draws no school specks" in picture.shows
     assert "dot" not in picture.shows
@@ -170,16 +177,15 @@ def test_no_lit_school_gives_the_national_map(
 def test_a_high_chance_opens_that_districts_panel() -> None:
     picture = choose(
         closings=None,
-        predictions=predictions([0.04, 0.37], ("2026-12-09", "2026-12-10")),
+        predictions=predictions([0.04, 0.37], ("2026-12-09", "2026-12-10"), "2026-12-09T18:00:00Z"),
         directory=directory(),
-        now=at("2026-12-10T02:30"),  # 8:30 PM Central on December 9: the day is December 9
+        now=at("2026-12-09T18:10"),  # 1:10 PM Eastern: the chance shown is today's
     )
-    # 02:30 UTC is between days, so the chance day is the eastern date, December 9: the
-    # column is the first, where every district is no_threat.
+    # December 9's column, where every district is no_threat.
     assert picture.kind == "national"
     picture = choose(
         closings=None,
-        predictions=predictions([0.04, 0.37], ("2026-12-09", "2026-12-10")),
+        predictions=predictions([0.04, 0.37], ("2026-12-09", "2026-12-10"), "2026-12-10T14:50:00Z"),
         directory=directory(),
         now=at("2026-12-10T15:00"),
     )
@@ -267,14 +273,26 @@ def test_malformed_predictions_are_an_error() -> None:
     with pytest.raises(PictureError, match="days"):
         choose(
             closings=None,
-            predictions={"directory": dict(STAMP)},
+            predictions={"directory": dict(STAMP), "generated_at": "2026-10-26T16:30:00Z"},
             directory=directory(),
             now=at("2026-10-26T16:37"),
         )
     with pytest.raises(PictureError, match="district"):
         choose(
             closings=None,
-            predictions={"directory": dict(STAMP), "days": ["2026-10-26"], "districts": [7]},
+            predictions={
+                "directory": dict(STAMP),
+                "generated_at": "2026-10-26T16:30:00Z",
+                "days": ["2026-10-26"],
+                "districts": [7],
+            },
+            directory=directory(),
+            now=at("2026-10-26T16:37"),
+        )
+    with pytest.raises(PictureError, match="generated_at"):
+        choose(
+            closings=None,
+            predictions={"directory": dict(STAMP), "days": ["2026-10-26"], "districts": []},
             directory=directory(),
             now=at("2026-10-26T16:37"),
         )
@@ -354,3 +372,68 @@ def test_a_region_picture_is_calm_only() -> None:
 def test_the_clock_carries_its_zone() -> None:
     assert clock(at("2026-12-10T12:05")) == "6:05 AM CT"
     assert clock(at("2026-07-10T23:59")) == "6:59 PM CT"
+
+
+@pytest.mark.parametrize(
+    ("now", "generated_at"),
+    [
+        ("2026-12-10T12:10", "2026-12-10T08:00:00Z"),  # a reader stopped 4 hours ago
+        ("2026-12-11T13:00", "2026-12-10T07:00:00Z"),  # yesterday's file only
+    ],
+)
+def test_a_stale_file_with_nothing_lit_says_nothing_and_is_not_current(
+    now: str, generated_at: str
+) -> None:
+    file = closings([(0, 0)], "2026-12-09", generated_at)
+    picture = choose(closings=file, predictions=None, directory=directory(), now=at(now))
+    assert picture.kind == "national"
+    assert not picture.current, "a stale calm map is never presented as current"
+    assert "lit up" not in picture.shows
+    assert "closing" not in picture.shows.lower()
+    calm = region(
+        query="?at=43,-79,6",
+        place="the Great Lakes",
+        closings=file,
+        directory=directory(),
+        now=at(now),
+    )
+    assert not calm.current
+    assert "lit up" not in calm.shows
+
+
+def test_a_fresh_file_with_nothing_lit_says_so_and_is_current() -> None:
+    file = closings([(0, 0)], "2026-12-09", "2026-12-10T12:05:00Z")
+    picture = choose(
+        closings=file, predictions=None, directory=directory(), now=at("2026-12-10T12:10")
+    )
+    assert picture.current
+    assert "No school is lit up for weather on the map." in picture.shows
+
+
+def test_a_stale_predictions_file_shows_no_chance() -> None:
+    for stamp in ("2026-10-26T14:00:00Z", "2026-10-26T17:00:00Z"):  # 2.6 h old; 23 min ahead
+        picture = choose(
+            closings=None,
+            predictions=predictions([0.5, 0.01], ("2026-10-25", "2026-10-26"), stamp),
+            directory=directory(),
+            now=at("2026-10-26T16:37"),
+        )
+        assert picture.kind == "national"
+        assert "chance" not in picture.shows
+        assert picture.seen.chance is None
+
+
+def test_after_the_school_day_the_chance_is_the_next_days() -> None:
+    assert chance_day(at("2026-10-26T18:59")) == date(2026, 10, 26)  # 2:59 PM Eastern
+    assert chance_day(at("2026-10-26T19:00")) == date(2026, 10, 27)  # 3 PM Eastern
+    assert chance_day(at("2026-10-27T02:30")) == date(2026, 10, 27)  # 10:30 PM Eastern
+    assert chance_day(at("2026-10-27T06:00")) == date(2026, 10, 27)  # 2 AM Eastern
+    assert chance_day(at("2026-12-10T21:00")) == date(2026, 12, 11)  # 4 PM EST
+    picture = choose(
+        closings=None,
+        predictions=predictions([0.01, 0.37], ("2026-12-10", "2026-12-11"), "2026-12-10T20:50:00Z"),
+        directory=directory(),
+        now=at("2026-12-10T21:00"),
+    )
+    assert picture.kind == "district"
+    assert "Friday, December 11 is 37%" in picture.shows

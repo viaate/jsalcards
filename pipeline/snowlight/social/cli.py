@@ -115,6 +115,38 @@ def _render(args: argparse.Namespace) -> int:
     return 0
 
 
+def _relay_out(args: argparse.Namespace) -> int:
+    from snowlight.social.relay import RelayError, send  # noqa: PLC0415 - the render job only
+
+    def write(line: str) -> None:
+        # The bundle's own lines: base64 of public cards, never through the scrub (which
+        # would mask them as secret-shaped), and never a workflow command (they start with
+        # the relay's mark).
+        sys.stdout.write(line + "\n")
+
+    output = os.environ.get("GITHUB_OUTPUT")
+    try:
+        digest = send(Path(args.dir), write, Path(output) if output else None)
+    except (OSError, RelayError) as error:
+        sys.stdout.write(f"::warning::social: the cards were not handed over ({error})\n")
+        return 1
+    sys.stdout.write(f"social: the cards are handed over (digest {digest})\n")
+    return 0
+
+
+def _relay_in(args: argparse.Namespace) -> int:
+    from snowlight.social.relay import RelayError, receive  # noqa: PLC0415 - the post job only
+
+    output = Output(dict(os.environ))
+    try:
+        names = receive(Path(args.log).read_text(errors="replace"), args.digest, Path(args.out))
+    except (OSError, RelayError) as error:
+        output.say(f"::warning::social: the render job's cards were not taken ({error})")
+        return 1
+    output.say(f"social: took the render job's {', '.join(names)}")
+    return 0
+
+
 def _scan(args: argparse.Namespace) -> int:
     text = sys.stdin.read() if args.file == "-" else Path(args.file).read_text(errors="replace")
     found = logscan.findings(text)
@@ -155,6 +187,14 @@ def register(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") ->
         help='Make dated library cards ("From <date>", no clock) instead of fresh ones.',
     )
     shot.set_defaults(handler=_render)
+    out = sub.add_parser("relay-out", help="Print the render job's cards for the post job.")
+    out.add_argument("--dir", required=True, help="The render's folder.")
+    out.set_defaults(handler=_relay_out)
+    take = sub.add_parser("relay-in", help="Take the render job's cards out of its log.")
+    take.add_argument("--log", required=True, help="The render job's log, as a file.")
+    take.add_argument("--digest", required=True, help="The render job's digest output.")
+    take.add_argument("--out", required=True, help="The folder to write the cards to.")
+    take.set_defaults(handler=_relay_in)
     scan = sub.add_parser("scan-log", help="Fail when a log holds a secret-shaped value.")
     scan.add_argument("file", help="The log file, or - for standard input.")
     scan.set_defaults(handler=_scan)

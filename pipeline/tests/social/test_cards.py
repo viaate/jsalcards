@@ -3,6 +3,7 @@ every truth guard with adversarial facts, the alt text, the fallback card, and (
 pre-installed headless Chromium, skipped where none is installed) the three templates laid
 over SYNTHETIC map pictures: 1600 x 900, under 5 MB, every word inside the 64 px margin."""
 
+import json
 import re
 import struct
 import zlib
@@ -36,7 +37,7 @@ from snowlight.social.cards import (
     lay,
     pick,
 )
-from snowlight.social.content import load
+from snowlight.social.content import ContentError, load
 from snowlight.social.picture import Box, Chance, Counts, Seen, Taken
 from snowlight.social.rules import parse_facts
 
@@ -193,12 +194,33 @@ def test_pick_skips_a_refused_layout_and_never_returns_one() -> None:
         "a": Measure(100, 50),
         "b": Measure(100, 40),
     }
-    chosen, why = pick((("c-left",), ("a",), ("b",)), measures.__getitem__)
-    assert chosen == "b"
-    assert why.startswith("no style fits; b covers the least")
-    assert "not usable" in why
+    with pytest.raises(CardError, match="no style fits without covering lit schools") as error:
+        pick((("c-left",), ("a",), ("b",)), measures.__getitem__)
+    assert "not usable" in str(error.value)
+    assert "b covers 40 of 100" in str(error.value)
     with pytest.raises(CardError, match="no style"):
         pick((("c-left",),), {"c-left": measures["c-left"]}.__getitem__)
+    fitting = {**measures, "b": Measure(100, 0)}
+    assert pick((("c-left",), ("a",), ("b",)), fitting.__getitem__)[0] == "b"
+
+
+def test_a_closings_stamp_never_names_a_place_it_does_not_know() -> None:
+    private_only = Seen(
+        in_view=Counts(closed=3, delayed=0, remote=0, early_dismissal=0),
+        states=(),
+        lit=3,
+        closings_read=True,
+    )
+    with pytest.raises(CardError, match="states"):
+        c_slots(taken("closings", private_only), "dev-log", "left", fallback=False)
+
+
+@pytest.mark.parametrize("kind", ["national", "region"])
+def test_a_daytime_picture_is_never_called_night(kind: str) -> None:
+    seen = Seen(place="the Great Lakes") if kind == "region" else Seen()
+    for fallback in (False, True):
+        alt = alt_text(taken(kind, seen), "dev-log", fallback=fallback)
+        assert "night" not in alt.lower(), alt
 
 
 def test_the_fit_threshold_is_a_small_share() -> None:
@@ -305,13 +327,13 @@ def test_alt_text_is_built_from_the_facts() -> None:
     assert "is under 1%" in alt_text(taken("district", low), "dev-log", fallback=False)
     national = alt_text(taken("national", CALM), "dev-log", fallback=False)
     assert national == (
-        "The national Snowlight map at night, at 6:42 AM CT on Dec 10, with state lines and "
+        "The dark national Snowlight map, at 6:42 AM CT on Dec 10, with state lines and "
         "city names, and the chance of no school Thursday: at most 1% in every district, "
         "captioned Dev log."
     )
     region = alt_text(taken("region", REGION), "waitlist", fallback=True)
     assert region == (
-        "The Snowlight map at night over the Great Lakes and the Northeast, pictured on Dec "
+        "The dark Snowlight map over the Great Lakes and the Northeast, pictured on Dec "
         "10, 2026, schools drawn as faint white specks, captioned Join the waitlist."
     )
 
@@ -571,3 +593,29 @@ def test_the_library_holds_dated_cards_for_both_styles() -> None:
         assert not image.current
         assert image.path.stat().st_size < MAX_BYTES
         assert struct.unpack(">II", image.path.read_bytes()[16:24]) == (1600, 900)
+
+
+def test_a_library_card_whose_line_left_the_facts_file_is_refused(tmp_path: Path) -> None:
+    social = tmp_path / "social"
+    (social / "queue").mkdir(parents=True)
+    images = social / "images"
+    images.mkdir()
+    for name in ("2026-10-26-national-dark-dev-log.json", "2026-10-26-national-dark-dev-log.png"):
+        (images / name).write_bytes((REPO / "social" / "images" / name).read_bytes())
+    facts = (REPO / "social" / "facts.md").read_text(encoding="utf-8")
+    (social / "facts.md").write_text(facts, encoding="utf-8")
+    assert load(tmp_path).images[0].id == "2026-10-26-national-dark-dev-log"
+    # The aim goes live: the card's "coming this winter" is no longer true.
+    moved = facts.replace(
+        "- [COMING] aim: Every school closing in the US on one map, coming this winter.",
+        "- [LIVE] aim: Every school closing in the US on one map.",
+    )
+    assert moved != facts
+    (social / "facts.md").write_text(moved, encoding="utf-8")
+    with pytest.raises(ContentError, match="re-render the library"):
+        load(tmp_path)
+
+
+def test_every_library_card_with_a_line_names_it() -> None:
+    for path in sorted((REPO / "social" / "images").glob("*national*.json")):
+        assert json.loads(path.read_text(encoding="utf-8")).get("tagline"), path.name

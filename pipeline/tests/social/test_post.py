@@ -497,7 +497,7 @@ def test_a_missing_or_malformed_picture_falls_back(tmp_path: Path, world: World)
     assert runner() == 0
     assert "the Render step left no fresh picture" in runner.log
     folder = make_picture(tmp_path, at("2026-10-26T16:35:00"))
-    (folder / "picture.png").write_bytes(b"not a png")
+    (folder / "picture.json").write_text("not json")
     runner.picture = folder
     world.d1.db.execute("DELETE FROM social_posts")
     world.d1.db.commit()
@@ -795,3 +795,30 @@ def test_an_answer_cut_off_while_thinking_is_a_failed_try(tmp_path: Path, world:
     assert world.x.posts == []
     assert "Haiku stopped early (max_tokens)" in runner.log
     assert "social: Haiku calls this run: 2" in runner.log
+
+
+def test_the_cards_handed_over_by_the_render_jobs_log_go_out(tmp_path: Path, world: World) -> None:
+    from snowlight.social.relay import receive, send  # noqa: PLC0415 - the relay's two ends
+
+    runner = make(tmp_path, world, queue=[unpictured("0001", FIRST)])
+    rendered = make_picture(tmp_path, at("2026-10-26T16:35:00"))
+    lines: list[str] = []
+    digest = send(rendered, lines.append, None)
+    taken = tmp_path / "taken"
+    receive("\n".join(f"2026-10-26T16:36:00.0Z {line}" for line in lines), digest, taken)
+    assert not (taken / "picture.png").exists()
+    runner.picture = taken
+    assert runner() == 0
+    assert b"FRESH-PICTURE" in world.x.uploaded[0]
+
+
+def test_a_card_whose_alt_text_holds_a_link_is_not_used(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[unpictured("0001", FIRST)])
+    folder = make_picture(tmp_path, at("2026-10-26T16:35:00"))
+    card = json.loads((folder / "dev-log.json").read_text())
+    card["alt"] = "SYNTHETIC alt text that sends people to evil.example for the tests"
+    (folder / "dev-log.json").write_text(json.dumps(card))
+    runner.picture = folder
+    assert runner() == 0
+    assert b"FRESH-PICTURE" not in world.x.uploaded[0]
+    assert "alt text holds a link" in runner.log

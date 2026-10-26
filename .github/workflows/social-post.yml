@@ -1,29 +1,35 @@
 # Posts on the X account @SnowlightMap (docs/social.md): at most one post a run.
 #
 # A push to the default branch that changes social/queue/ (or this file) posts the oldest
-# queued post not posted yet. The daily schedule (16:37 UTC, US daytime) posts a queued post
-# if one is waiting, else one post Claude Haiku writes from social/facts.md, once the
-# ANTHROPIC_API_KEY secret is in the x-posting environment (until then it says
-# "no Anthropic key" and posts only queued posts). Caps live in the code (pipeline/snowlight/
-# social): one post a run, two a UTC day, one Haiku post a day, four Haiku calls a run.
+# queued post not posted yet. The daily schedule (16:37 UTC, and 20:41 UTC in case GitHub
+# drops the first) posts a queued post if one is waiting, else one post Claude Haiku writes
+# from social/facts.md, once the ANTHROPIC_API_KEY secret is in the x-posting environment
+# (until then it says "no Anthropic key" and posts only queued posts). Caps live in the code
+# (pipeline/snowlight/social): one post a run, two a UTC day, one Haiku post a day, four
+# Haiku calls a run; nothing posted in the last 20 hours before a Haiku post.
 #
-# Pictures: every post goes with a branded card made fresh in this job (the Render step,
-# which holds no secret): headless Chromium opens the real site, https://snowlightmap.com,
-# unlocks it in that browser only, waits for the live files, hides the site's interface and
-# takes a 1600 x 900 picture of the map alone (the busiest area of lit-up schools, else the
-# district with the highest chance, else the national map at night), with a plain
-# description of it that the post may use. Then it lays the Snowlight card over it, in the
-# style that covers no lit school (pipeline/snowlight/social/cards), with every word filled
-# from that description. When the render fails twice, the post goes with the library's
-# newest dated card (social/images) as an older picture, never as current.
+# Pictures: every post goes with a branded card made fresh in the render job, which holds
+# no secret and has no environment: headless Chromium opens the real site,
+# https://snowlightmap.com, unlocks it in that browser only, waits for the live files, hides
+# the site's interface and takes a 1600 x 900 picture of the map alone (the busiest area of
+# lit-up schools, else the district with the highest chance, else the dark national map),
+# with a plain description of it that the post may use. Then it lays the Snowlight card over
+# it, in the style that covers no lit school (pipeline/snowlight/social/cards), with every
+# word filled from that description. The cards reach the post job through the render job's
+# own log (pipeline/snowlight/social/relay.py), checked against the digest the render job
+# gives: the browser never runs on the machine that holds the secrets. When the render
+# fails, the post goes with the library's newest dated card (social/images) as an older
+# picture, never as current.
 #
 # Secrets: the X ones (X_CLIENT_ID, X_CLIENT_SECRET, X_REFRESH_TOKEN) and ANTHROPIC_API_KEY
-# are environment secrets of x-posting, which only the default branch may use; the Cloudflare
-# ones are repository secrets. Only the post step gets them, and nothing a fork or a pull
-# request can start runs this workflow: it has no pull_request, pull_request_target or
-# workflow_dispatch trigger. The job checks the branch again before anything else. Every
-# token the run derives is masked, nothing is written to a file, artifact, cache or summary,
-# and the log-check job reads the post job's own log and fails on any secret-shaped value.
+# are environment secrets of x-posting, which only the default branch may use (the owner
+# sets that deployment branch rule: docs/social.md); the Cloudflare ones are repository
+# secrets. Only the post step gets them, and nothing a fork or a pull request can start runs
+# this workflow: it has no pull_request, pull_request_target or workflow_dispatch trigger.
+# Both jobs check the branch before anything else. Every token the run derives is masked,
+# every line the post step prints is one plain line no outside text can make a workflow
+# command, nothing is written to a file, artifact, cache or summary, and the log-check job
+# reads the post job's own log and fails on any secret-shaped value.
 #
 # To stop it: disable this workflow (Actions > social-post > Disable workflow), or delete it,
 # or remove the X secrets from the x-posting environment.
@@ -32,6 +38,7 @@ name: social-post
 on:
   schedule:
     - cron: "37 16 * * *"
+    - cron: "41 20 * * *"
   push:
     branches:
       - claude/keen-faraday-oy7yqw
@@ -42,16 +49,84 @@ on:
 permissions: {}
 
 jobs:
-  post:
+  render:
     if: github.repository == 'viaate/jsalcards' && github.ref == 'refs/heads/claude/keen-faraday-oy7yqw'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    outputs:
+      digest: ${{ steps.relay.outputs.digest }}
+    defaults:
+      run:
+        working-directory: pipeline
+    env:
+      PYTHONWARNINGS: ignore
+    steps:
+      - name: Run only on the default branch
+        working-directory: .
+        env:
+          REF: ${{ github.ref }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          if [ "$REF" != "refs/heads/claude/keen-faraday-oy7yqw" ] || [ "$REPOSITORY" != "viaate/jsalcards" ]; then
+            echo "::error::social-post runs only on the default branch of viaate/jsalcards."
+            exit 1
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.11.32"
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: false
+
+      - run: uv sync --locked --no-dev --group render
+
+      # The picture's browser: Playwright's headless Chromium, the version uv.lock pins. Its
+      # output is kept out of the log unless it fails.
+      - name: Install the picture's browser
+        id: browser
+        continue-on-error: true
+        timeout-minutes: 8
+        run: |
+          if ! uv run --no-sync playwright install --with-deps --only-shell chromium > "$RUNNER_TEMP/browser.log" 2>&1; then
+            tail -n 20 "$RUNNER_TEMP/browser.log"
+            echo "::warning::social: the picture's browser did not install"
+            exit 1
+          fi
+          rm -f "$RUNNER_TEMP/browser.log"
+
+      - name: Render
+        id: render
+        if: steps.browser.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 15 # two tries of two map views, then the cards (about 2 minutes)
+        run: uv run --no-sync snowlight social render --out "$RUNNER_TEMP/picture"
+
+      # The cards, as base64 lines of this job's log, and their digest as the job's output.
+      - name: Hand the cards to the post job
+        id: relay
+        if: steps.render.outcome == 'success'
+        continue-on-error: true
+        run: uv run --no-sync snowlight social relay-out --dir "$RUNNER_TEMP/picture"
+
+  post:
+    needs: render
+    if: ${{ !cancelled() && github.repository == 'viaate/jsalcards' && github.ref == 'refs/heads/claude/keen-faraday-oy7yqw' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     environment: x-posting
     concurrency:
       group: social-post
       cancel-in-progress: false
     permissions:
       contents: read
+      actions: read # the render job's log, which carries the cards
       issues: write # the one "X posting stopped: refresh token" issue
     defaults:
       run:
@@ -77,33 +152,39 @@ jobs:
 
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
+          version: "0.11.32"
           python-version: "3.12"
           working-directory: pipeline
           enable-cache: false
 
-      - run: uv sync --locked --no-dev --group render
+      - run: uv sync --locked --no-dev
 
-      # The picture's browser: Playwright's headless Chromium, the version uv.lock pins. Its
-      # output is kept out of the log unless it fails (the log check reads every line).
-      - name: Install the picture's browser
-        id: browser
+      # The render job's cards, read from its log and checked against its digest. No browser
+      # runs here.
+      - name: Take the cards
+        if: needs.render.outputs.digest != ''
         continue-on-error: true
-        timeout-minutes: 8
+        timeout-minutes: 3
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          ATTEMPT: ${{ github.run_attempt }}
+          DIGEST: ${{ needs.render.outputs.digest }}
         run: |
-          if ! uv run --no-sync playwright install --with-deps --only-shell chromium > "$RUNNER_TEMP/browser.log" 2>&1; then
-            tail -n 20 "$RUNNER_TEMP/browser.log"
-            echo "::warning::social: the picture's browser did not install"
-            exit 1
-          fi
-          rm -f "$RUNNER_TEMP/browser.log"
-
-      - name: Render
-        if: steps.browser.outcome == 'success'
-        continue-on-error: true
-        timeout-minutes: 15 # two tries of two map views, then the cards (about 2 minutes)
-        run: uv run --no-sync snowlight social render --out "$RUNNER_TEMP/picture"
+          set -euo pipefail
+          job=$(gh api "repos/$REPOSITORY/actions/runs/$RUN_ID/attempts/$ATTEMPT/jobs" --jq '.jobs[] | select(.name == "render") | .id')
+          for try in 1 2 3 4 5 6; do
+            if gh api "repos/$REPOSITORY/actions/jobs/$job/logs" > "$RUNNER_TEMP/render.log" 2> /dev/null; then break; fi
+            sleep 10
+          done
+          status=0
+          uv run --no-sync snowlight social relay-in --log "$RUNNER_TEMP/render.log" --digest "$DIGEST" --out "$RUNNER_TEMP/picture" || status=$?
+          rm -f "$RUNNER_TEMP/render.log"
+          exit "$status"
 
       - name: Post
+        timeout-minutes: 10
         env:
           X_CLIENT_ID: ${{ secrets.X_CLIENT_ID }}
           X_CLIENT_SECRET: ${{ secrets.X_CLIENT_SECRET }}
@@ -146,9 +227,14 @@ jobs:
           prefixes = ("sk-ant-", "ghs_", "ghp_", "gho_", "github_pat_")
           def shaped(v):
               return v.startswith(prefixes) or (any(c.isupper() for c in v) and any(c.islower() for c in v) and any(c.isdigit() for c in v))
-          found = [(n, len(m)) for n, line in enumerate(sys.stdin.read().splitlines(), 1) for m in run.findall(line) if shaped(m)]
+          lines = sys.stdin.read().splitlines()
+          found = [(n, len(m)) for n, line in enumerate(lines, 1) for m in run.findall(line) if shaped(m)]
           for n, size in found[:20]:
               print(f"::error::secret-shaped value in the post job log at line {n} ({size} characters)")
-          print(f"log-check: {len(found)} secret-shaped values")
-          sys.exit(1 if found else 0)
+          # A command that stops the runner reading commands would let later masks print.
+          stops = [n for n, line in enumerate(lines, 1) if "::stop-commands::" in line or "::echo::on" in line]
+          for n in stops[:20]:
+              print(f"::error::a workflow command that stops masking at line {n}")
+          print(f"log-check: {len(found)} secret-shaped values, {len(stops)} stop commands")
+          sys.exit(1 if found or stops else 0)
           '

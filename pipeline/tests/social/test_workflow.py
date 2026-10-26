@@ -30,7 +30,7 @@ def test_only_the_schedule_and_pushes_to_the_default_branch_start_it(
 ) -> None:
     triggers = workflow[True]  # YAML 1.1 reads the key "on" as true
     assert set(triggers) == {"schedule", "push"}
-    assert triggers["schedule"] == [{"cron": "37 16 * * *"}]
+    assert triggers["schedule"] == [{"cron": "37 16 * * *"}, {"cron": "41 20 * * *"}]
     assert triggers["push"] == {
         "branches": [BRANCH],
         "paths": ["social/queue/**", ".github/workflows/social-post.yml"],
@@ -51,11 +51,14 @@ def test_the_post_job_is_guarded_and_alone(workflow: dict[Any, Any]) -> None:
     job = workflow["jobs"]["post"]
     assert job["environment"] == "x-posting"
     assert job["concurrency"] == {"group": "social-post", "cancel-in-progress": False}
-    assert job["permissions"] == {"contents": "read", "issues": "write"}
-    assert f"github.ref == 'refs/heads/{BRANCH}'" in job["if"]
-    first = job["steps"][0]
-    assert f'"$REF" != "refs/heads/{BRANCH}"' in first["run"]
-    assert "exit 1" in first["run"]
+    assert job["permissions"] == {"contents": "read", "actions": "read", "issues": "write"}
+    assert job["needs"] == "render"
+    for name in ("post", "render"):
+        guarded = workflow["jobs"][name]
+        assert f"github.ref == 'refs/heads/{BRANCH}'" in guarded["if"]
+        first = guarded["steps"][0]
+        assert f'"$REF" != "refs/heads/{BRANCH}"' in first["run"]
+        assert "exit 1" in first["run"]
 
 
 def test_secrets_reach_only_the_post_step(workflow: dict[Any, Any]) -> None:
@@ -101,23 +104,60 @@ def test_the_log_check_is_logscan(workflow: dict[Any, Any]) -> None:
     assert '.jobs[] | select(.name == "post")' in script
 
 
-def test_the_picture_is_rendered_before_the_post_without_secrets(
+def test_the_browser_runs_in_its_own_job_with_no_secret_and_no_environment(
     workflow: dict[Any, Any],
 ) -> None:
-    steps = workflow["jobs"]["post"]["steps"]
+    render = workflow["jobs"]["render"]
+    assert "environment" not in render
+    assert render["permissions"] == {"contents": "read"}
+    assert "secrets." not in yaml.safe_dump(render)
+    assert "github.token" not in yaml.safe_dump(render)
+    assert render["outputs"] == {"digest": "${{ steps.relay.outputs.digest }}"}
+    steps = render["steps"]
     names = [step.get("name") for step in steps]
     assert names.index("Install the picture's browser") < names.index("Render")
-    assert names.index("Render") < names.index("Post")
+    assert names.index("Render") < names.index("Hand the cards to the post job")
     sync = next(step for step in steps if step.get("run", "").startswith("uv sync"))
     assert sync["run"] == "uv sync --locked --no-dev --group render"
-    browser, render = (
-        steps[names.index(name)] for name in ("Install the picture's browser", "Render")
-    )
-    for step in (browser, render):
+    for name in ("Install the picture's browser", "Render", "Hand the cards to the post job"):
+        step = steps[names.index(name)]
         assert step["continue-on-error"] is True, "a failed render falls back, it never stops"
         assert "env" not in step
-        assert "secrets." not in yaml.safe_dump(step)
+    browser = steps[names.index("Install the picture's browser")]
     assert "playwright install --with-deps --only-shell chromium" in browser["run"]
-    assert render["run"] == 'uv run --no-sync snowlight social render --out "$RUNNER_TEMP/picture"'
-    post = steps[names.index("Post")]
-    assert post["run"].endswith('--picture "$RUNNER_TEMP/picture"')
+    render_step = steps[names.index("Render")]
+    assert render_step["run"] == (
+        'uv run --no-sync snowlight social render --out "$RUNNER_TEMP/picture"'
+    )
+    # The post job installs no browser and never runs one: it takes the cards from the log.
+    post = workflow["jobs"]["post"]
+    text = yaml.safe_dump(post)
+    assert "playwright" not in text
+    assert "social render" not in text
+    post_steps = post["steps"]
+    sync = next(step for step in post_steps if step.get("run", "").startswith("uv sync"))
+    assert sync["run"] == "uv sync --locked --no-dev"
+    names = [step.get("name") for step in post_steps]
+    take = post_steps[names.index("Take the cards")]
+    assert take["continue-on-error"] is True
+    assert "relay-in" in take["run"]
+    assert '.jobs[] | select(.name == "render")' in take["run"]
+    assert "secrets." not in yaml.safe_dump(take)
+    assert names.index("Take the cards") < names.index("Post")
+    assert post_steps[names.index("Post")]["timeout-minutes"] == 10
+    assert post_steps[names.index("Post")]["run"].endswith('--picture "$RUNNER_TEMP/picture"')
+    assert post["if"].startswith("${{ !cancelled()")
+
+
+def test_uv_is_pinned_to_one_version(workflow: dict[Any, Any]) -> None:
+    for job in workflow["jobs"].values():
+        for step in job["steps"]:
+            if step.get("uses", "").startswith("astral-sh/setup-uv@"):
+                assert re.fullmatch(r"\d+\.\d+\.\d+", step["with"]["version"])
+
+
+def test_the_log_check_also_fails_on_a_command_that_stops_masking(
+    workflow: dict[Any, Any],
+) -> None:
+    script = workflow["jobs"]["log-check"]["steps"][0]["run"]
+    assert '"::stop-commands::" in line' in script

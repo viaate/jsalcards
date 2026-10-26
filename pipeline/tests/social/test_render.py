@@ -156,6 +156,7 @@ def served(chromium: bool) -> Iterator[tuple[Site, str]]:
 
 def _predictions(chances: list[float]) -> dict[str, Any]:
     return {
+        "generated_at": "2026-12-10T12:00:00Z",
         "directory": STAMP,
         "days": ["2026-12-09", "2026-12-10"],
         "districts": [
