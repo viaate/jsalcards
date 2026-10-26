@@ -610,7 +610,7 @@ def region(
     closings_line = " No school is lit up for weather on the map." if read else ""
     shows = (
         f"A picture of the Snowlight map at night over {place}, taken at {_clock(now)} on "
-        f"{_day(now)}: each school in the directory drawn as a faint white speck, with gray "
+        f"{_day(now)}: schools drawn as faint white specks, with gray "
         f"state lines and city names.{closings_line}"
     )
     return Picture("region", query, shows, now, True, 0, Seen(closings_read=read, place=place))

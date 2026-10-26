@@ -339,7 +339,7 @@ def test_a_region_picture_is_calm_only() -> None:
     )
     assert picture.kind == "region"
     assert picture.seen.place == "the Great Lakes and the Northeast"
-    assert "each school in the directory drawn as a faint white speck" in picture.shows
+    assert "schools drawn as faint white specks" in picture.shows
     assert "closing" not in picture.shows.lower()
     with pytest.raises(PictureError, match="lit"):
         region(

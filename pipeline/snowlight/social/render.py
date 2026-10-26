@@ -6,9 +6,11 @@ One attempt:
 1. Read the site's lock value from its own page, and set it in this browser's storage only
    (the way web/e2e/waitlist.spec.ts unlocks it), so the map shows instead of the waitlist.
    The value is never printed or written anywhere.
-2. Open the national map, signed out, and keep the bytes of the files it reads: the school
-   directory (``schools/meta.*.json``, ``schools/points.*.bin``) and ``live/closings.json``
-   from the live root the page names. Read ``predictions/latest.json`` from the same root.
+2. Open the map at :data:`FILES_VIEW`, signed out, and keep the bytes of the files it reads:
+   the school directory (``schools/meta.*.json``, ``schools/points.*.bin``) and
+   ``live/closings.json`` from the live root the page names (the site reads them only at the
+   zooms it draws schools at, not at the national view). Read ``predictions/latest.json``
+   from the same root.
 3. :func:`snowlight.social.picture.choose` picks the view and writes what it shows (or, for
    the image library only, :func:`snowlight.social.picture.region` a calm view asked for).
 4. Open that view with the page served exactly those live files, hide every piece of the
@@ -65,6 +67,9 @@ ATTEMPTS: Final = 2
 TIMEOUT_MS: Final = 120_000
 """How long one wait in an attempt may take (SwiftShader draws the map on the CPU)."""
 ZOOM_SLACK: Final = 0.05
+FILES_VIEW: Final = "?at=40.9000,-80.6000,6.1"
+"""A view where the site reads the school directory and the closings file (it reads them
+only between zoom 5 and 10): the Great Lakes and the Northeast."""
 GL_ARGS: Final = ("--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader")
 
 MAP_ONLY: Final = """
@@ -92,6 +97,15 @@ SETTLED: Final = """() => {
   // outside that band a settled map has none.
   return stats !== undefined && stats.frames > 0 && (stats.dust > 0 || !(z > 5 && z < 10));
 }"""
+WHY_NOT: Final = """() => {
+  const map = window.snowlightMap;
+  const stats = map?.getLayer('snowlight-glow')?.implementation?.stats;
+  return { still: document.querySelector('svg.still') !== null, map: map !== undefined,
+    loaded: map?.loaded() ?? null, tiles: map?.areTilesLoaded() ?? null,
+    moving: map?.isMoving() ?? null, dust: stats?.dust ?? null, frames: stats?.frames ?? null,
+    zoom: map?.getZoom() ?? null };
+}"""
+"""What a map that did not settle was waiting for (no value from the page's storage)."""
 STATE: Final = """() => {
   const map = window.snowlightMap;
   const stats = map?.getLayer('snowlight-glow')?.implementation?.stats;
@@ -234,28 +248,33 @@ class Attempt:
         """Wait until the map is at rest with every tile in, twice (late tiles and the
         glow's first frames come between), then two more frames. The expression is invoked:
         a bare function string is truthy and would pass at once."""
-        page.wait_for_function(f"({SETTLED})()", timeout=TIMEOUT_MS, polling=250)
-        page.wait_for_timeout(SETTLE_AGAIN_MS)
-        page.wait_for_function(f"({SETTLED})()", timeout=TIMEOUT_MS, polling=250)
+        for wait in (0, SETTLE_AGAIN_MS):
+            page.wait_for_timeout(wait)
+            try:
+                page.wait_for_function(f"({SETTLED})()", timeout=TIMEOUT_MS, polling=250)
+            except PlaywrightError:
+                state = page.evaluate(f"({WHY_NOT})()")
+                raise RenderError(f"the map did not settle: {json.dumps(state)}") from None
         page.evaluate(TWO_FRAMES)
 
-    def files(self, page: Page) -> tuple[Directory, Mapping[str, object] | None, str | None]:
-        """The directory and closings the national map read, and the live root."""
-        page.goto(self.site, wait_until="load", timeout=TIMEOUT_MS)
+    def files(self, page: Page) -> tuple[Directory, Mapping[str, object] | None, str]:
+        """The directory and closings the map read, and the live root. The site reads them
+        only at the zooms it draws schools at, so this opens :data:`FILES_VIEW`."""
+        page.goto(self.site + FILES_VIEW, wait_until="load", timeout=TIMEOUT_MS)
         self.settle(page)
+        waited = 0
+        while "closings" not in self.kept and waited < TIMEOUT_MS:
+            page.wait_for_timeout(250)
+            waited += 250
         meta, points = self.kept.get("meta"), self.kept.get("points")
         if meta is None or points is None or meta.status != 200 or points.status != 200:  # noqa: PLR2004
             raise RenderError("the page did not read the school directory")
         closings = self.kept.get("closings")
-        return (
-            directory_of(meta.body, points.body),
-            _json(closings),
-            live_root(closings.url) if closings is not None else None,
-        )
+        if closings is None:
+            raise RenderError("the page did not ask for the closings file")
+        return directory_of(meta.body, points.body), _json(closings), live_root(closings.url)
 
-    def predictions(self, page: Page, root: str | None) -> Mapping[str, object] | None:
-        if root is None:
-            return None
+    def predictions(self, page: Page, root: str) -> Mapping[str, object] | None:
         if self.live is not None:
             path = self.live / PREDICTIONS
             body, status = (path.read_bytes(), 200) if path.is_file() else (b"{}", 404)

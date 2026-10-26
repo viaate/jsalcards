@@ -311,7 +311,7 @@ def test_alt_text_is_built_from_the_facts() -> None:
     region = alt_text(taken("region", REGION), "waitlist", fallback=True)
     assert region == (
         "The Snowlight map at night over the Great Lakes and the Northeast, pictured on Dec "
-        "10, 2026, each school a faint white speck, captioned Join the waitlist."
+        "10, 2026, schools drawn as faint white specks, captioned Join the waitlist."
     )
 
 

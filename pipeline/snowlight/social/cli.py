@@ -90,14 +90,19 @@ def _post(args: argparse.Namespace) -> int:
 
 def _render(args: argparse.Namespace) -> int:
     # Imported here: the post and scan commands need no browser library.
-    from snowlight.social.render import SITE, render  # noqa: PLC0415
+    from snowlight.social.render import SITE, View, render  # noqa: PLC0415
 
     output = Output(dict(os.environ))
+    if bool(args.view) != bool(args.place):
+        output.say("::error::social: --view and --place go together")
+        return 2
     taken = render(
         Path(args.out),
         site=args.site or SITE,
         say=output.say,
         live=Path(args.live_dir) if args.live_dir else None,
+        view=View(args.view, args.place) if args.view else None,
+        fallback=args.fallback,
     )
     if taken is None:
         output.say("::warning::social: no fresh picture; the post uses the library's newest one")
@@ -128,10 +133,21 @@ def register(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") ->
     )
     post.set_defaults(handler=_post)
     shot = sub.add_parser("render", help="Take the post's fresh picture of the live site.")
-    shot.add_argument("--out", required=True, help="The folder for picture.png and picture.json.")
+    shot.add_argument(
+        "--out", required=True, help="The folder for picture.png, picture.json and the cards."
+    )
     shot.add_argument("--site", default="", help="Another site address (a local build).")
     shot.add_argument(
         "--live-dir", default="", help="Serve the live files from this folder (a dry run)."
+    )
+    shot.add_argument(
+        "--view", default="", help="A calm ?at=lat,lon,zoom view (the image library only)."
+    )
+    shot.add_argument("--place", default="", help="The --view's place, in plain words.")
+    shot.add_argument(
+        "--fallback",
+        action="store_true",
+        help='Make dated library cards ("From <date>", no clock) instead of fresh ones.',
     )
     shot.set_defaults(handler=_render)
     scan = sub.add_parser("scan-log", help="Fail when a log holds a secret-shaped value.")

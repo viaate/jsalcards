@@ -238,7 +238,8 @@ def alt_text(taken: Taken, post: Post, *, fallback: bool) -> str:
         )
     elif taken.kind == "region":
         text = (
-            f"The Snowlight map at night over {seen.place}, {when}, each school a faint white speck"
+            f"The Snowlight map at night over {seen.place}, {when}, schools drawn as faint "
+            "white specks"
         )
     else:
         text = f"The national Snowlight map at night, {when}, with state lines and city names"
