@@ -66,8 +66,8 @@ def closings(rows: list[tuple[int, int]], day: str, generated_at: str) -> dict[s
 def predictions(
     chances: list[float | None], days: tuple[str, str], generated_at: str | None = None
 ) -> dict[str, Any]:
-    """A predictions file, stamped at ``generated_at`` (by default 16:30 UTC on its last day,
-    fresh for a picture at 16:37)."""
+    """A predictions file, stamped at ``generated_at`` (by default 16:30 UTC on its first day,
+    fresh for a picture at 16:37), every district in Central time but the second, in Eastern."""
     rows = []
     for index, chance in enumerate(chances):
         today: dict[str, Any] = (
@@ -75,8 +75,9 @@ def predictions(
             if chance is None
             else {"state": "forecast", "p_no_school": chance}
         )
-        rows.append({"district": index, "days": [{"state": "no_threat"}, today]})
-    stamp = generated_at or f"{days[-1]}T16:30:00Z"
+        zone = "America/New_York" if index == 1 else "America/Chicago"
+        rows.append({"district": index, "days": [{"state": "no_threat"}, today], "time_zone": zone})
+    stamp = generated_at or f"{days[0]}T16:30:00Z"
     return {"generated_at": stamp, "directory": dict(STAMP), "days": list(days), "districts": rows}
 
 
@@ -177,17 +178,18 @@ def test_no_lit_school_gives_the_national_map(
 def test_a_high_chance_opens_that_districts_panel() -> None:
     picture = choose(
         closings=None,
-        predictions=predictions([0.04, 0.37], ("2026-12-09", "2026-12-10"), "2026-12-09T18:00:00Z"),
-        directory=directory(),
-        now=at("2026-12-09T18:10"),  # 1:10 PM Eastern: the chance shown is today's
-    )
-    # December 9's column, where every district is no_threat.
-    assert picture.kind == "national"
-    picture = choose(
-        closings=None,
         predictions=predictions([0.04, 0.37], ("2026-12-09", "2026-12-10"), "2026-12-10T14:50:00Z"),
         directory=directory(),
-        now=at("2026-12-10T15:00"),
+        now=at("2026-12-10T15:00"),  # 9 AM Central: December 10 is under way, and the file ends
+    )
+    assert picture.kind == "national"
+    assert picture.seen.chance is None, "no chance of a day already under way"
+    assert "chance" not in picture.shows
+    picture = choose(
+        closings=None,
+        predictions=predictions([0.04, 0.37], ("2026-12-09", "2026-12-10"), "2026-12-09T18:00:00Z"),
+        directory=directory(),
+        now=at("2026-12-09T18:10"),  # 12:10 PM Central: the next school day is December 10
     )
     assert picture.kind == "district"
     assert picture.query.startswith("?at=")
@@ -209,13 +211,13 @@ def test_a_high_chance_opens_that_districts_panel() -> None:
 def test_a_calm_day_says_the_chance_is_not_in_the_picture() -> None:
     picture = choose(
         closings=None,
-        predictions=predictions([0.01, 0.01], ("2026-10-25", "2026-10-26")),
+        predictions=predictions([0.01, 0.01], ("2026-10-26", "2026-10-27")),
         directory=directory(),
         now=at("2026-10-26T16:37"),
     )
     assert picture.kind == "national"
     assert (
-        "Not in the picture: Snowlight's chance of no school on Monday, October 26 is at most 1%"
+        "Not in the picture: Snowlight's chance of no school on Tuesday, October 27 is at most 1%"
         " in every one of the 2 districts with a chance."
     ) in picture.shows
     assert picture.seen.chance is not None
@@ -223,16 +225,16 @@ def test_a_calm_day_says_the_chance_is_not_in_the_picture() -> None:
     assert picture.seen.chance.text == "1%"
     some = choose(
         closings=None,
-        predictions=predictions([0.06, None], ("2026-10-25", "2026-10-26")),
+        predictions=predictions([0.06, None], ("2026-10-26", "2026-10-27")),
         directory=directory(),
         now=at("2026-10-26T16:37"),
     )
-    assert "highest chance of no school on Monday, October 26 in any district is 6%" in some.shows
+    assert "highest chance of no school on Tuesday, October 27 in any district is 6%" in some.shows
     assert some.seen.chance is not None
     assert (some.seen.chance.text, some.seen.chance.at_most) == ("6%", False)
     other = choose(
         closings=None,
-        predictions={**predictions([0.5], ("2026-10-25", "2026-10-26")), "directory": {}},
+        predictions={**predictions([0.5], ("2026-10-26", "2026-10-27")), "directory": {}},
         directory=directory(),
         now=at("2026-10-26T16:37"),
     )
@@ -283,7 +285,7 @@ def test_malformed_predictions_are_an_error() -> None:
             predictions={
                 "directory": dict(STAMP),
                 "generated_at": "2026-10-26T16:30:00Z",
-                "days": ["2026-10-26"],
+                "days": ["2026-10-27"],
                 "districts": [7],
             },
             directory=directory(),
@@ -414,7 +416,7 @@ def test_a_stale_predictions_file_shows_no_chance() -> None:
     for stamp in ("2026-10-26T14:00:00Z", "2026-10-26T17:00:00Z"):  # 2.6 h old; 23 min ahead
         picture = choose(
             closings=None,
-            predictions=predictions([0.5, 0.01], ("2026-10-25", "2026-10-26"), stamp),
+            predictions=predictions([0.5, 0.01], ("2026-10-26", "2026-10-27"), stamp),
             directory=directory(),
             now=at("2026-10-26T16:37"),
         )
@@ -423,12 +425,50 @@ def test_a_stale_predictions_file_shows_no_chance() -> None:
         assert picture.seen.chance is None
 
 
-def test_after_the_school_day_the_chance_is_the_next_days() -> None:
-    assert chance_day(at("2026-10-26T18:59")) == date(2026, 10, 26)  # 2:59 PM Eastern
-    assert chance_day(at("2026-10-26T19:00")) == date(2026, 10, 27)  # 3 PM Eastern
-    assert chance_day(at("2026-10-27T02:30")) == date(2026, 10, 27)  # 10:30 PM Eastern
-    assert chance_day(at("2026-10-27T06:00")) == date(2026, 10, 27)  # 2 AM Eastern
-    assert chance_day(at("2026-12-10T21:00")) == date(2026, 12, 11)  # 4 PM EST
+def test_the_chance_named_is_the_next_school_day_not_yet_under_way() -> None:
+    week = predictions([0.01, 0.37], ("2026-10-26", "2026-10-27"))
+    # 11:27 AM Central on Monday: Monday is under way everywhere, so the card names Tuesday.
+    assert chance_day(week, at("2026-10-26T16:27")) == date(2026, 10, 27)
+    # 9 PM Central on Sunday: Monday's 5 AM is still ahead everywhere.
+    assert chance_day(week, at("2026-10-26T02:00")) == date(2026, 10, 26)
+    # 5:30 AM Eastern on Monday: under way in the east (one district), not in Central (one):
+    # not more than half, so Monday is no longer named.
+    assert chance_day(week, at("2026-10-26T09:30")) == date(2026, 10, 27)
+    # 4:30 AM Eastern: still ahead in both.
+    assert chance_day(week, at("2026-10-26T08:30")) == date(2026, 10, 26)
+    # Every day the file holds is under way: no chance is named at all.
+    assert chance_day(week, at("2026-10-27T11:00")) is None
+    # A file whose days skip the weekend: on Saturday the next school day is its Monday.
+    weekend = predictions([0.01, 0.2], ("2026-10-26", "2026-10-27"))
+    assert chance_day(weekend, at("2026-10-24T18:00")) == date(2026, 10, 26)
+    # A district with no zone, or one this machine does not know, counts in Eastern time.
+    odd = {**week, "districts": [{"district": 0, "days": []}, {"time_zone": "Mars/Base"}]}
+    assert chance_day(odd, at("2026-10-26T09:30")) == date(2026, 10, 27)
+    with pytest.raises(PictureError, match="a day is malformed"):
+        chance_day({**week, "days": ["Monday"]}, at("2026-10-26T09:30"))
+    with pytest.raises(PictureError, match="districts is missing"):
+        chance_day({"days": ["2026-10-26"]}, at("2026-10-26T09:30"))
+
+
+def test_at_11_27_on_monday_the_card_and_description_name_tuesday() -> None:
+    picture = choose(
+        closings=None,
+        predictions=predictions([0.01, 0.01], ("2026-10-26", "2026-10-27"), "2026-10-26T16:07:00Z"),
+        directory=directory(),
+        now=at("2026-10-26T16:27"),
+    )
+    assert picture.seen.chance is not None
+    assert picture.seen.chance.day == date(2026, 10, 27)
+    assert "Tuesday, October 27" in picture.shows
+    assert "Monday" not in picture.shows
+    picture = choose(
+        closings=None,
+        predictions=predictions([0.01, 0.37], ("2026-10-26", "2026-10-27"), "2026-10-26T01:50:00Z"),
+        directory=directory(),
+        now=at("2026-10-26T02:00"),  # 9 PM Central on Sunday
+    )
+    assert picture.kind == "national", "Monday's column holds no chance in this file"
+    assert picture.seen.chance is None
     picture = choose(
         closings=None,
         predictions=predictions([0.01, 0.37], ("2026-12-10", "2026-12-11"), "2026-12-10T20:50:00Z"),

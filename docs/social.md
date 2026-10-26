@@ -109,8 +109,10 @@ with no sandbox; the secrets live only in the post job, which runs no browser:
    said about closings when the closings file was a 404 (practice mode), and neither when it
    is older than 20 minutes: a stopped reader's empty file is no sign that nothing is
    closed, so that picture is not current and the post may not call it so. A chance is shown
-   only from a predictions file at most 90 minutes old, for today until 3 PM Eastern, then
-   for the next day. No district is named.
+   only from a predictions file at most 90 minutes old, and only for the next school day not
+   yet under way: the first of the file's days whose 5 AM, in each district's own time zone,
+   is still ahead in most districts (at 11:27 AM Central on a Monday the card names Tuesday).
+   No district is named.
 3. It opens that view served exactly those files, hides every piece of the site's interface
    with a style in that page only, waits until the map is at rest (twice), checks that the
    map lit as many schools as the description counts at the zoom asked, and takes a
