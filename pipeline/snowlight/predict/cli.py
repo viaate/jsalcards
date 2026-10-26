@@ -49,6 +49,7 @@ from snowlight.output import write_bytes_atomic, write_json
 from snowlight.predict import artifact as artifact_module
 from snowlight.predict import (
     backtest,
+    candidates_cli,
     forecast_history,
     inputs,
     learn,
@@ -260,7 +261,7 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
         "--out", type=Path, default=PIPELINE_ROOT / "out" / "internal" / "predict" / "headsup.json"
     )
     heads.set_defaults(handler=run_headsup)
-    for module in (forecast_history, terms_cli, tuning_cli, outlook_cli):
+    for module in (forecast_history, terms_cli, tuning_cli, outlook_cli, candidates_cli):
         module.register(actions)
 
 

@@ -253,6 +253,8 @@ class Model:
 
     fits: Mapping[Term, TermFit]
     penalty: float
+    extra: tuple[float, ...] = ()
+    """The fitted weights of the design's extra columns (:attr:`Design.extra`)."""
 
     def values(self, own: WeatherClass, counted: WeatherClass, levels: Levels) -> dict[Term, float]:
         """The terms of a day of weather ``own`` whose base counts ``counted``'s days
@@ -269,6 +271,26 @@ class Model:
 
 
 NO_TERMS: Final = Model({}, 0.0)
+
+
+@dataclass(frozen=True, slots=True)
+class Support:
+    """The support rule (calc-research plan P2): a fitted step or column whose training rows
+    (the rows where it is not 0) span fewer than ``min_dates`` distinct dates or fewer than
+    ``min_rows`` rows is fixed at 0. The served terms' fit takes no support rule."""
+
+    min_rows: int = 20
+    min_dates: int = 3
+
+    def supported(self, x: Floats, day: Ints) -> npt.NDArray[np.bool_]:
+        """Which columns of ``x`` (rows, k) rest on enough rows and dates of ``day``."""
+        found = np.zeros(x.shape[1], dtype=np.bool_)
+        for k in range(x.shape[1]):
+            hit = x[:, k] != 0
+            found[k] = int(hit.sum()) >= self.min_rows and (
+                np.unique(day[hit]).size >= self.min_dates
+            )
+        return found
 
 
 def logit(p: Floats) -> Floats:
@@ -296,6 +318,17 @@ class Design:
     """Each row's weight in the fit (``None``: 1 each)."""
     own: Ints | None = None
     """The day's own weather class (``None``: the counted one)."""
+    day: Ints | None = None
+    """Each row's date as a day number (``date.toordinal``), for the support rule
+    (:class:`Support`; ``None``: no support rule can be applied)."""
+    extra: Floats | None = None
+    """A candidate's own columns (rows, k), fit beside the terms with :attr:`extra_bounds`
+    (calc-research plan: tuning candidates; ``None``: none, the served terms alone)."""
+    extra_bounds: tuple[tuple[float | None, float | None], ...] = ()
+    """Each extra column's bounds: ``(0, None)`` only adds, ``(None, 0)`` only takes away,
+    ``(None, None)`` either."""
+    up_only: npt.NDArray[np.bool_] | None = None
+    """Rows on which a snow term may not take away (a candidate's gate; ``None``: none)."""
 
     def subset(self, keep: npt.NDArray[np.bool_]) -> "Design":
         """The rows ``keep`` selects."""
@@ -306,6 +339,10 @@ class Design:
             {term: level[keep] for term, level in self.levels.items()},
             None if self.weight is None else self.weight[keep],
             None if self.own is None else self.own[keep],
+            None if self.day is None else self.day[keep],
+            None if self.extra is None else self.extra[keep],
+            self.extra_bounds,
+            None if self.up_only is None else self.up_only[keep],
         )
 
     def weights(self) -> Floats:
@@ -357,14 +394,30 @@ def _matrix(design: Design, shapes: Mapping[Term, Shape]) -> tuple[Floats, list[
         if not shape.size:
             continue
         level = np.where(_applies(term, design), design.levels[term], UNKNOWN)
-        blocks.append(shape.columns(level.astype(np.int64)))
+        columns = shape.columns(level.astype(np.int64))
+        if design.up_only is not None and term in SNOW_TERMS:
+            columns[design.up_only, shape.ups :] = 0.0
+        blocks.append(columns)
         owners.extend((term, k) for k in range(shape.size))
     if not blocks:
         return np.zeros((design.y.size, 0)), owners
     return np.hstack(blocks), owners
 
 
-def _solve(x: Floats, offset: Floats, y: Floats, w: Floats, penalty: float) -> Floats:
+def _with_extra(design: Design, x: Floats) -> Floats:
+    if design.extra is None or not design.extra.shape[1]:
+        return x
+    return np.hstack([x, design.extra])
+
+
+def _solve(  # noqa: PLR0913, PLR0917 - the design's parts, the penalty and the bounds
+    x: Floats,
+    offset: Floats,
+    y: Floats,
+    w: Floats,
+    penalty: float,
+    bounds: Sequence[tuple[float | None, float | None]] | None = None,
+) -> Floats:
     if not x.shape[1] or not y.size:
         return np.zeros(x.shape[1])
 
@@ -380,18 +433,48 @@ def _solve(x: Floats, offset: Floats, y: Floats, w: Floats, penalty: float) -> F
         np.zeros(x.shape[1]),
         jac=True,
         method="L-BFGS-B",
-        bounds=[(0.0, None)] * x.shape[1],
+        bounds=[(0.0, None)] * x.shape[1] if bounds is None else list(bounds),
         options={"maxiter": 500},
     )
     return np.asarray(found.x, dtype=np.float64)
 
 
-def fit_with(design: Design, penalty: float, shapes: Mapping[Term, Shape] | None = None) -> Model:
+def _bounds(
+    design: Design, x: Floats, support: Support | None
+) -> list[tuple[float | None, float | None]] | None:
+    """Every column's bounds: the terms' steps at least 0, the extra columns their own, and
+    under ``support`` a column without enough rows and dates fixed at 0 (``None``: the
+    served fit's, every step at least 0)."""
+    terms = x.shape[1] - (0 if design.extra is None else design.extra.shape[1])
+    if support is None and terms == x.shape[1]:
+        return None
+    if design.extra is not None and len(design.extra_bounds) != design.extra.shape[1]:
+        raise ValueError("every extra column needs its bounds")
+    found: list[tuple[float | None, float | None]] = [(0.0, None)] * terms
+    found += list(design.extra_bounds)
+    if support is not None:
+        if design.day is None:
+            raise ValueError("the support rule needs each row's date")
+        kept = support.supported(x, design.day)
+        found = [bound if kept[k] else (0.0, 0.0) for k, bound in enumerate(found)]
+    return found
+
+
+def fit_with(
+    design: Design,
+    penalty: float,
+    shapes: Mapping[Term, Shape] | None = None,
+    support: Support | None = None,
+) -> Model:
     """The terms fit on ``design`` with L2 ``penalty`` (bounds keep every step at least 0, so
-    each term is monotone with its sign)."""
+    each term is monotone with its sign), and the design's extra columns with their own bounds;
+    ``support``: the support rule (:class:`Support`)."""
     shapes = dict(shapes) if shapes is not None else shapes_for(design)
     x, owners = _matrix(design, shapes)
-    theta = _solve(x, design.offset, design.y, design.weights(), penalty)
+    x = _with_extra(design, x)
+    theta = _solve(
+        x, design.offset, design.y, design.weights(), penalty, _bounds(design, x, support)
+    )
     fits: dict[Term, TermFit] = {}
     for term in TERM_ORDER:
         shape = shapes[term]
@@ -403,7 +486,8 @@ def fit_with(design: Design, penalty: float, shapes: Mapping[Term, Shape] | None
         fits[term] = TermFit(
             term, shape, up=tuple(mine[: shape.ups]), down=tuple(mine[shape.ups :]), counts=counts
         )
-    return Model(fits, penalty)
+    extra = tuple(float(v) for v in theta[len(owners) :])
+    return Model(fits, penalty, extra)
 
 
 def contributions(model: Model, design: Design) -> dict[Term, Floats]:
@@ -414,8 +498,18 @@ def contributions(model: Model, design: Design) -> dict[Term, Floats]:
         if fit is None:
             continue
         level = np.where(_applies(term, design), design.levels[term], UNKNOWN)
-        found[term] = np.array([fit.value(int(v)) for v in level.tolist()], dtype=np.float64)
+        value = np.array([fit.value(int(v)) for v in level.tolist()], dtype=np.float64)
+        if design.up_only is not None and term in SNOW_TERMS:
+            value[design.up_only] = np.maximum(value[design.up_only], 0.0)
+        found[term] = value
     return found
+
+
+def extra_contribution(model: Model, design: Design) -> Floats:
+    """The extra columns' part of the log odds on every row (0 without them)."""
+    if design.extra is None or not model.extra:
+        return np.zeros(design.y.size)
+    return np.asarray(design.extra @ np.array(model.extra), dtype=np.float64)
 
 
 def predict(model: Model, design: Design) -> Floats:
@@ -423,7 +517,7 @@ def predict(model: Model, design: Design) -> Floats:
     z = design.offset.copy()
     for value in contributions(model, design).values():
         z += value
-    return sigmoid(z)
+    return sigmoid(z + extra_contribution(model, design))
 
 
 PENALTIES: Final = (0.3, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0)
@@ -434,11 +528,17 @@ pooled storm Brier was worse (7.2% against 6.3%): with one or two seasons holdin
 levels, the inner loop has too little to choose a penalty from, so the grid stays."""
 
 
-def _held_out_loss(design: Design, seasons: Ints, penalty: float) -> float:
+def _held_out_loss(
+    design: Design,
+    seasons: Ints,
+    penalty: float,
+    shapes: Mapping[Term, Shape] | None = None,
+    support: Support | None = None,
+) -> float:
     total = 0.0
     for season in sorted(set(seasons.tolist())):
         held = seasons == season
-        model = fit_with(design.subset(~held), penalty)
+        model = fit_with(design.subset(~held), penalty, shapes, support)
         p = np.clip(predict(model, design.subset(held)), 1e-6, 1 - 1e-6)
         y = design.y[held]
         w = design.weights()[held]
@@ -446,18 +546,27 @@ def _held_out_loss(design: Design, seasons: Ints, penalty: float) -> float:
     return total
 
 
-def fit(design: Design, seasons: Ints, penalties: Sequence[float] = PENALTIES) -> Model:
+def fit(
+    design: Design,
+    seasons: Ints,
+    penalties: Sequence[float] = PENALTIES,
+    *,
+    shapes: Mapping[Term, Shape] | None = None,
+    support: Support | None = None,
+) -> Model:
     """The terms fit on every row, with the penalty that gives the lowest log loss leaving one
     season out at a time, inside these rows' seasons only (a single season: the middle one).
     Each inner fit takes its bands from its own rows only, never the season it leaves out; the
-    final fit takes them from every row."""
+    final fit takes them from every row. ``shapes`` fixes every fit's shapes instead
+    (a candidate's own levels); ``support`` applies the support rule in every fit, the inner
+    ones included."""
     distinct = sorted(set(seasons.tolist()))
     if len(distinct) < 2:  # noqa: PLR2004 - nothing to leave out
-        return fit_with(design, penalties[len(penalties) // 2])
+        return fit_with(design, penalties[len(penalties) // 2], shapes, support)
     best: tuple[float, float] | None = None
     for penalty in penalties:
-        loss = _held_out_loss(design, seasons, penalty)
+        loss = _held_out_loss(design, seasons, penalty, shapes, support)
         if best is None or loss < best[0] - 1e-9:
             best = (loss, penalty)
     assert best is not None  # noqa: S101
-    return fit_with(design, best[1])
+    return fit_with(design, best[1], shapes, support)

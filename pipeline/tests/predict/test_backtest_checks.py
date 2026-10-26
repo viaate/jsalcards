@@ -1,5 +1,6 @@
 """Backtest v2's report-only checks of a candidate against today's model (synthetic rows)."""
 
+from dataclasses import replace
 from datetime import date
 
 import numpy as np
@@ -8,6 +9,7 @@ import pytest
 from snowlight.predict.backtest_terms import (
     SPLIT_MARKET_DAYS,
     STRATUM_TOLERANCE,
+    DropTraining,
     Scored,
     best_shift,
     busiest_dates,
@@ -170,3 +172,16 @@ def test_the_checks_report_names_its_veto_reasons() -> None:
     worse = run_checks(scored(p_new=1 - scored().y), draws=200)
     assert any("worse" in reason for reason in worse.harm)
     assert storm_briers(scored())[1] < storm_briers(scored())[0]
+
+
+def test_the_p8_rows_print_a_dash_where_a_brier_has_no_rows() -> None:
+    nan = float("nan")
+    found = replace(
+        run_checks(scored(), draws=50),
+        drop_training=DropTraining((0.1, 0.09), ((D1, 0.11, 0.10123456), (D2, nan, nan))),
+    )
+    text = checks_markdown(found, "Checks")
+    assert f"| {date.fromordinal(D1).isoformat()} | 0.11000 | 0.10123 | -0.00877 |" in text
+    assert "candidate less today's model -0.01000" in text
+    assert f"| {date.fromordinal(D2).isoformat()} | - | - | - |" in text
+    assert "nan" not in text

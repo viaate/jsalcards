@@ -256,8 +256,11 @@ def test_each_inner_fit_takes_its_bands_from_its_own_rows(monkeypatch: pytest.Mo
     calls: list[tuple[int, object]] = []
     real = terms.fit_with
 
-    def spy(found: Design, penalty: float, shapes: object = None) -> terms.Model:
+    def spy(
+        found: Design, penalty: float, shapes: object = None, support: object = None
+    ) -> terms.Model:
         calls.append((found.y.size, shapes))
+        assert support is None
         return real(found, penalty, None if shapes is None else shapes)  # type: ignore[arg-type]
 
     monkeypatch.setattr(terms, "fit_with", spy)

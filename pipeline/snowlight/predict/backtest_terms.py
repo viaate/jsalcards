@@ -181,6 +181,60 @@ def base_by_season(  # noqa: PLR0913 - the rows, the places, the settings and th
     return Base(p, raw, counted)
 
 
+def _fit_delay(
+    rows: Rows, delay_rows: Rows, places: Places, seasons: Sequence[int], settings: ModelSettings
+) -> Callable[[Rows], Floats]:
+    """A fold's delay chance ``q`` (unrounded) of any rows, fit as :func:`_fit` fits it."""
+    keep = np.isin(rows.season, np.array(list(seasons)))
+    keep_delay = np.isin(delay_rows.season, np.array(list(seasons)))
+    train, train_delay = rows.subset(keep), delay_rows.subset(keep_delay)
+    tables = tables_from_rows(train, places, sorted(seasons))
+    tables_delay = tables_from_rows(train_delay, places, sorted(seasons))
+    later = delay_rules(rules_of(settings))
+    strengths_delay = tune(
+        train_delay, places, tables_delay, sorted(seasons), settings.m_grid, rules=later
+    ).strengths
+    counts_delay = level_counts(places, *tables_delay.total())
+    total_y, total_n = tables.total()
+    mapping = effective_situations(total_y.sum(axis=0), total_n.sum(axis=0), rules_of(settings))
+
+    def predict_q(test: Rows) -> Floats:
+        cells = (test.district, test.situation)
+        found = chain(counts_delay, strengths_delay, rules=later, cells=cells, effective=mapping)
+        return np.asarray(np.where(found.situation < 0, np.nan, found.p), dtype=np.float64)
+
+    return predict_q
+
+
+def delay_by_season(
+    rows: Rows,
+    places: Places,
+    settings: ModelSettings,
+    training: FoldTraining,
+    fits: MutableMapping[int, Callable[[Rows], Floats]] | None = None,
+) -> Floats:
+    """Every row's piece 1 delay chance ``q`` (unrounded; NaN where no earlier season fits it),
+    fit as :func:`base_by_season` fits the chance of no school under the per-fold rule: a row
+    of season ``s`` gets the ``q`` fit on ``training``'s labels of ``s``. ``fits`` keeps each
+    season's fit for the next call over the same ``training``."""
+    q = np.full(len(rows), np.nan)
+    kept = {} if fits is None else fits
+    for season in sorted(set(rows.season.tolist())):
+        if season not in training:
+            continue
+        mask = rows.season == season
+        predictor = kept.get(season)
+        if predictor is None:
+            source, source_delay = training_of(season, rows, rows, training)
+            before = sorted(s for s in set(source.season.tolist()) if s < season)
+            if not before:
+                continue
+            predictor = _fit_delay(source, source_delay, places, before, settings)
+            kept[season] = predictor
+        q[mask] = predictor(rows.subset(mask))
+    return q
+
+
 @dataclass(frozen=True, slots=True)
 class TermFold:
     """One test season: the terms fit on the seasons before it, and its rows' chances."""
@@ -690,10 +744,16 @@ def neighbor_mask(levels: Mapping[Term, npt.NDArray[np.int64]]) -> npt.NDArray[n
     return np.asarray(levels[Term.NEIGHBORS] != UNKNOWN, dtype=np.bool_)
 
 
-def _f(value: object) -> str:
+def _f(value: object, places: int = 3) -> str:
+    """``value`` to ``places`` decimals, ``-`` for NaN (no rows)."""
     if isinstance(value, float):
-        return "-" if math.isnan(value) else f"{value:.3f}"
+        return "-" if math.isnan(value) else f"{value:.{places}f}"
     return str(value)
+
+
+def _signed(value: float, places: int = 5) -> str:
+    """``value`` signed to ``places`` decimals, ``-`` for NaN (no rows)."""
+    return "-" if math.isnan(value) else f"{value:+.{places}f}"
 
 
 def _season(season: int) -> str:
@@ -1413,14 +1473,16 @@ def checks_markdown(found: Checks, title: str) -> str:
             "",
             "## P8: one training date left out of every fit",
             "",
-            f"Pooled storm Brier with every training date: today's model {_f(base)}, the "
-            f"candidate {_f(new)}.",
+            f"Pooled storm Brier with every training date: today's model {_f(base, 5)}, the "
+            f"candidate {_f(new, 5)}, candidate less today's model {_signed(new - base)}. Each "
+            "refit scores the rows that keep a base without the date, so its own two Briers "
+            "are compared.",
             "",
-            "| training date left out | today's model | candidate | candidate's change |",
+            "| training date left out | today's model | candidate | candidate less today's model |",
             "|---|---|---|---|",
         ]
         lines += [
-            f"| {_day(d)} | {_f(b)} | {_f(c)} | {c - new:+.5f} |"
+            f"| {_day(d)} | {_f(b, 5)} | {_f(c, 5)} | {_signed(c - b)} |"
             for d, b, c in found.drop_training.by_date
         ]
     return "\n".join(lines) + "\n"

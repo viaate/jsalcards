@@ -675,3 +675,82 @@ def publish_rates(
     no_school = np.clip(np.round(p_no_school, 2), floor, ceiling)
     delay = np.round((1.0 - no_school) * q_delay, 2)
     return no_school, np.minimum(delay, np.round(1.0 - no_school, 2))
+
+
+# --- a level's own record (tuning candidates C1 and C2b; internal, nothing served) -------------
+
+LEVEL_MIN_DAYS: Final = 30
+LEVEL_MIN_DATES: Final = 3
+LEVEL_MAX_DATE_SHARE: Final = 0.5
+"""The level support rule (calc-research plan P2): a place serves its own record of a
+situation, or splits one off, only with this many labeled days on this many dates, no single
+date holding more than this share of them."""
+
+
+def level_supported(days: int, dates: int, busiest: int) -> bool:
+    """Whether ``days`` labeled days on ``dates`` dates, the busiest date holding ``busiest``
+    of them, may serve a level's own record (:data:`LEVEL_MIN_DAYS`)."""
+    return (
+        days >= LEVEL_MIN_DAYS
+        and dates >= LEVEL_MIN_DATES
+        and busiest <= LEVEL_MAX_DATE_SHARE * days
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class LevelRecord:
+    """Each target row's record at one level: closings ``y`` of labeled days ``n`` of its
+    situation in its unit, from the source rows of the seasons before the row's own, and
+    whether that record has level support (:func:`level_supported`)."""
+
+    y: Floats
+    n: Floats
+    supported: npt.NDArray[np.bool_]
+
+    @property
+    def rate(self) -> Floats:
+        """``y / n`` (NaN where no day is counted)."""
+        with np.errstate(invalid="ignore", divide="ignore"):
+            return np.asarray(np.where(self.n > 0, self.y / self.n, np.nan), dtype=np.float64)
+
+
+def level_records(  # noqa: PLR0913, PLR0917 - the targets, the sources and their units and days
+    target: Rows,
+    target_unit: Ints,
+    source: Rows,
+    source_unit: Ints,
+    source_day: Ints,
+    source_keep: npt.NDArray[np.bool_] | None = None,
+) -> LevelRecord:
+    """Every ``target`` row's record in its unit (``target_unit``; -1: none) and situation,
+    counted over the ``source`` rows (``source_keep`` of them) of the same unit and situation
+    whose season is before the target row's own; ``source_day`` each source row's day number."""
+    y = np.zeros(len(target))
+    n = np.zeros(len(target))
+    supported = np.zeros(len(target), dtype=np.bool_)
+    keep = np.ones(len(source), dtype=np.bool_) if source_keep is None else source_keep
+    for season in sorted(set(target.season.tolist())):
+        mine = np.flatnonzero(target.season == season)
+        use = keep & (source.season < season) & (source_unit >= 0)
+        counts: dict[tuple[int, int], list[float]] = {}
+        dates: dict[tuple[int, int], dict[int, int]] = {}
+        for unit, situation, outcome, day in zip(
+            source_unit[use].tolist(),
+            source.situation[use].tolist(),
+            source.y[use].tolist(),
+            source_day[use].tolist(),
+            strict=True,
+        ):
+            found = counts.setdefault((unit, situation), [0.0, 0.0])
+            found[0] += outcome
+            found[1] += 1.0
+            per = dates.setdefault((unit, situation), {})
+            per[day] = per.get(day, 0) + 1
+        for i in mine.tolist():
+            key = (int(target_unit[i]), int(target.situation[i]))
+            if key[0] < 0 or key not in counts:
+                continue
+            y[i], n[i] = counts[key]
+            per = dates[key]
+            supported[i] = level_supported(int(n[i]), len(per), max(per.values()))
+    return LevelRecord(y, n, supported)

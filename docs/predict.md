@@ -1327,6 +1327,146 @@ within-day ranking over every market-day with both outcomes (the pre-registered 
 apart from it every market-day but the four split ones, and the split ones alone,
 in sample).
 
+## The tuning candidates on the archive (tune-v3: nothing turns on)
+
+Nothing on the site changes with this lane, and `predict.yml` serves exactly as before: no pass
+reads a candidate, and every candidate's shadow switch (`candidates.SHADOW`) is off. It runs
+the research plan's candidates through the archive test written down before any score
+(`docs/research/candidates-preregistration.md`, committed first and never changed):
+`snowlight predict candidates` (internal; `pipeline/snowlight/predict/candidates.py`,
+`candidates_cli.py`, `candidates_run.py`) writes `report.md` and `metrics.json` to `--out`
+only. The archive's lists come mostly from big storm days and its test seasons were studied
+when these candidates were designed, so the test can veto a candidate that hurts; it cannot
+show that one helps.
+
+**What runs.** Every fit reads its own fold's labels (the per-fold rule) and the P2 support
+rule (a fitted step or column needs 20 training rows on 3 dates, else it is 0; a served or
+split-off level needs 30 labeled days on 3 dates, no date over half). In order, each against
+today's model plus the earlier candidates the archive did not veto:
+
+- the **P2 control**: piece 3's terms with P2;
+- **C2a**, the rain/snow line at 7 AM: a term from the 7 AM temperature (32 F and 34 F edges)
+  and a mixed type (liquid against snow, or the alert's words as of 21:00);
+- **C3**, timing: snow done overnight or ending in the early morning (from the alert's end as
+  of 21:00 and the 6-hour snow periods in local bands), mostly afternoon snow, a delay term,
+  and a gate that keeps a snow term from taking away once the alert has begun by 21:00;
+- the **C4 stage**: the control's terms on that stack, with the snow terms reading the
+  district's 9 PM bucket against its own pooled snowy nights (C4) instead of the nation's
+  band, judged against the same stack with piece 3's own levels;
+- **C1 with C2b**: a state, else a region, serves its own record when it has level support,
+  and on snow days the rate moves by the cold or warm record against the level's whole;
+- **C2c**, beside them: the C2 columns from the 5 AM airport report, on the 05:00 labels.
+
+Each gets P1 (piece 3's gate), P3 to P6, P8, P9, the level-free check, the within-day ranking,
+the T2 sentinels, and the owner table (chance before and after by class, region and 9 PM snow
+bucket).
+
+**What it found (2026-10-26, labels SHA-256 38e1c9ca, extract run 40262501880).** Today's model
+scores 0.06122 on 1,208 storm rows on 17 dates, as backtest v2 gives it under the per-fold rule.
+Every verdict below is **provisional**: two veto checks the plan names did not run (see "Checks
+that did not run"), and C3's verdict waits for the lead's ruling on the shifted-input sentinel.
+
+| candidate | its baseline | storm Brier | rows it moves | verdict, sentinel as pre-registered | verdict, sentinel as plan T2 states it | not run (verdict provisional) |
+|---|---|---|---|---|---|---|
+| P2 control | today's model | 0.06122 to 0.06094 (+0.46%) | 98 raised (all closed), 0 lowered | no archive evidence | no archive evidence | P7 (waits for F3); T2 later-product sentinel on the real data |
+| C2a | today's model | unchanged (+0.00%) | none | no archive evidence | no archive evidence | P7 (waits for F3); T2 later-product sentinel on the real data |
+| C3 | C2a (equal to today's model's chances) | unchanged; delay Brier on 382 advisory rows 0.0744 either way; shifted inputs +0.023% | none | no archive evidence | harm (veto: T2 sentinel) | P7 (waits for F3); T2 later-product sentinel on the real data |
+| C4 stage | the stack with the control's terms | unchanged | none | no archive evidence | no archive evidence | P7 (waits for F3); T2 later-product sentinel on the real data |
+| C1 with C2b | the C4 stage (equal to today's model's chances) | 0.06122 to 0.06083 (+0.65%) | 189 raised (99.5% closed), 0 lowered | no archive evidence | no archive evidence | P7 (waits for F3); T2 later-product sentinel on the real data |
+| C2c | today's model on the 05:00 labels | 0.07090, unchanged | none | no archive evidence | no archive evidence | P7 (waits for F3); T2 later-product sentinel on the real data; P8 |
+
+Every candidate is also reported against today's model (P1, P5 and harm), as pre-registered.
+Here every stack below C1 gives today's chances, so the two comparisons coincide: C1 with C2b
+against today's model is +0.65%, its P5 interval -0.00099 to -0.00000, no harm.
+
+- **The shifted-input sentinel (T2 (a)): two readings, and the lead rules.** The
+  pre-registration set its bar at a 2% pooled gain (P1's bar). Plan T2 says "an input shifted
+  by one day must not help", and plan T3 makes a failed sentinel a veto. The pre-registered bar
+  is the weaker one, and the pre-registration did not record it as a departure. Both readings
+  are reported, each with its own cumulative stack. C3's own inputs move nothing (+0.000%), but
+  shifted by one label night they gain +0.023%: under the plan's rule that is a veto, and the
+  stack drops C3 and its gate; the C4 stage and C1 with C2b re-run on that stack give the same
+  numbers. The other shifted gains are 0.000% (C2a, C2c) and -0.279% (C1 with C2b), so the two
+  readings disagree on C3 alone. C3 stays "no archive evidence (pre-registered) / harm (plan
+  T2)" until the lead rules; the pre-registration itself is unchanged.
+- **No candidate has archive support.** Under the per-fold rule, the fold labels hold few rows
+  with a base before the 2024-25 fold (0, 0, 4, 35 and 270 rows for the 2019-20 to 2023-24
+  folds), and the forecast inputs exist only from 2018-19. A candidate's columns reach P2's
+  support only in the 2024-25 and 2025-26 folds, and there the inner leave-one-season-out loop
+  picks the largest penalty (1,000): fit on one season, the warm and mixed steps do not carry
+  to the other. So their weights stay under 0.02 and no published chance moves by a hundredth.
+- **Which way the training rows lean** (a diagnostic, never a verdict: the last fold's fit at
+  a penalty of 1): 34 F or warmer at 7 AM -0.75, mixed at 32-33 F -1.80, mixed and cold +0.77;
+  ending in the early morning -0.53 with the control's terms (-0.81 with C4's levels); at 5 AM
+  (C2c) 32 F or warmer -0.36 and mixed and warm -1.50. These are the signs the plan expected,
+  from the two 2022-23 rain/snow-line days and 2023-24 alone; only live labels can say if they
+  hold.
+- **The gains that exist are raises on alert days** (P9): the control's 98 rows and C1 with
+  C2b's 189 rows are all raised, on days that closed, so they count as no evidence until live.
+  C1a served no state or region record on any scored storm row (in no fold did a state or
+  region record of the row's situation have level support); all of C1 with C2b's moves are
+  C2b's cold/warm split.
+- **C1 with C2b's other checks.** P8 refits without 2016-02-16 and the busiest 3 training dates
+  of every level record its scored rows rest on (2024-02-13, 2020-12-17, 2019-02-06, 2024-01-22,
+  2024-01-16, 2023-03-14, 2021-02-01): in each refit it stays below today's model, by 0.0000006
+  (2020-12-17) to 0.00096. Piece 1's G1 for the new base alone against B0 passes pooled (0.06083 against
+  0.09743) and in 2023-24, the one gated season (0.03015 against 0.04087); G2 fails the 0.8-0.9
+  bin, as today's base does. On every labeled season C1a would serve 7 cells: the CT and NY
+  winter storm warning records (0.97, 0.86), NY's advisory record (0.17 against the nation's
+  0.74; 72 days on 3 dates), the Northeast's advisory and winter storm warning records (0.56,
+  0.95), and the Ohio Valley's and Upper Midwest's winter storm warning records (0.98, 0.93).
+  Another state in those regions takes its region's record; every other place keeps today's
+  base. These records are which days each place's lists were captured (T4). None of the 7 is in a region with fewer than 8 labeled days of its
+  situation (a served cell needs 30), so C1a turns no "Few local records" flag on or off, and
+  C2b's split never changes the level a base names: the flag's count on alert days is today's.
+  `test_truth.py` for its cells is deferred to F3, since C1 with C2b builds no model file; its
+  sentence ("recorded cold advisory days") waits for the owner.
+- **C3's delay term** never reached support (one delay date on the archive), so the delay
+  chance is unchanged. **C4** leaves every chance unchanged at the chosen penalty; its
+  advisory table by snow bucket is in the report.
+- **The owner table** (chance before and after by class, region and 9 PM snow bucket) changes
+  in these cells only, all upward: winter storm warnings
+  0.92 to 0.93 (P2 control; C1 with C2b); the Ohio Valley 0.84 to 0.85 and the South 0.86 to
+  0.88 (C1 with C2b); winter storm warning 2-6 in 0.91 to 0.92, under 2 in 0.94 to 0.96 (on
+  rows that closed 0.85) and 9 in or more 0.93 to 0.95 (C1 with C2b) or 0.96 (P2 control).
+  The report lists every changed cell.
+
+**Departures from the plan, recorded after the scores** (the pre-registration is unchanged):
+- **The shifted-input sentinel's bar** (above).
+- **C2's temperature** is the 7 AM value alone (`temp_h07`). Plan sec. 2.2 also names the
+  minimum over 5-8 AM; the pre-registration left it out without saying so. It is not added now,
+  since that would be a choice made after seeing the scores; the extract keeps `temp_h05` to
+  `temp_h08` for a later pre-registered test or the live shadow.
+- **C2's date-forward diagnostic** (1,208 storm rows: 0.06122 to 0.06121) fits on each fold's
+  labels plus the same season's earlier test dates, and those same-season rows carry the
+  whole-archive labels, not per-fold ones (station audiences built from every season). No
+  per-fold file is clean for them (the next season's fold builds its audiences from the whole
+  test season, its later dates included), so it never gates.
+- **C2c's 5 AM reports** were first fetched for the 21:00 labels' 2,388 district-days only. A
+  refetch for every district-day of the 05:00 labels and their fold files (2,460: 2,374 with an
+  airport within 40 km, 2,253 with a report in the 90 minutes before 05:00; identical on the
+  first 2,388) gives C2c's inputs on 919 of its 1,003 scored snow-class rows, and on 635 of 686
+  and 656 of 715 snow-class training rows in the 2024-25 and 2025-26 folds. The rest have no
+  report and enter as unknown temperature (0).
+
+**Checks that did not run** (every verdict is provisional on them):
+- **P7 parity** of the candidates' inputs with the live builders waits for F3, which builds
+  them; the Kansas 2025-01-06 replay is not a label night of the extract.
+- **T2's later-product sentinel on the real data** (drop every alert product issued after
+  21:00 and recompute these candidates' alert inputs: end, begin and type words) did not run:
+  the product cache left with the calc-data worktree. What exists is the unit test
+  `test_dropping_products_after_the_snapshot_changes_nothing_at_it` and the calc-data lane's
+  real-data check of the labels' classes and start moves across 09:00, which does not cover
+  these inputs. Every forecast file read was available by 21:00 (387 files, 0 late).
+
+**What happens next.** Nothing turns on. Every candidate goes to S7-L's live shadow when F3
+wires its live inputs behind its switch, and live labels decide (T5: 300 or more live storm
+rows on 8 or more dates, no harm plus direction, the owner's approval of any new row's words).
+A real `predict once` pass on 2026-10-26 (18,227 districts, 22,110 private schools, 4 winter
+alerts, publishing off) wrote the same 8,307,105-byte file with the code before this lane and
+with it, bar its `generated_at`, and the serving model's every rate hashed the same (checked
+again on the lane's final code at 17:22 UTC).
+
 ## The night-before outlook (S7-F, piece F2: model and backtest, nothing visible)
 
 Nothing on the site changes with this piece, and `predict.yml` serves exactly as before: no
