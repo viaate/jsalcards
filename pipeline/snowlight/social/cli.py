@@ -48,14 +48,19 @@ class Output:
         stream.flush()
 
     def say(self, line: str) -> None:
-        self._write(logscan.scrub(line, self._secrets) + "\n")
+        """Write one log line: scrubbed, on one line, and never a workflow command but the
+        annotation it starts with (:func:`logscan.one_line`)."""
+        self._write(logscan.one_line(logscan.scrub(line, self._secrets)) + "\n")
 
     def mask(self, value: str) -> None:
-        if not value:
-            return
-        self._secrets.append(value)
-        if self._actions:
-            self._write(f"::add-mask::{value}\n")
+        """Register a derived token with ``::add-mask::`` (each whitespace-free piece of it,
+        so a value can never end its own command line)."""
+        for piece in logscan.CONTROL.sub(" ", value).split():
+            if piece in self._secrets:
+                continue
+            self._secrets.append(piece)
+            if self._actions:
+                self._write(f"::add-mask::{piece}\n")
 
 
 def commits(root: Path, since: datetime | None) -> list[str]:

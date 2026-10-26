@@ -91,6 +91,18 @@ class Runner:
         return code
 
     def check_log(self, log: str, environment: dict[str, str], issued: list[str]) -> None:
+        # Every line is plain text or one of the code's own commands: nothing from outside
+        # can start a command (::stop-commands:: would let the masks below print as text).
+        masked = set(self.masked)
+        for line in log.splitlines():
+            assert line == line.strip(), line
+            if line.startswith("::add-mask::"):
+                assert line.removeprefix("::add-mask::") in masked | set(self.world.x.issued)
+            elif line.startswith("::"):
+                assert line.startswith(("::error::", "::warning::", "::notice::")), line
+            if not line.startswith("::add-mask::"):
+                for command in ("::stop-commands::", "::echo::", "::add-mask::", "##["):
+                    assert command not in line[2:], line
         shown = "\n".join(line for line in log.splitlines() if not line.startswith("::add-mask::"))
         for name in (
             "X_CLIENT_ID",
@@ -603,3 +615,58 @@ def test_the_library_falls_back_by_the_post_style(tmp_path: Path) -> None:
     assert (dev.id, wait.id) == ("old-dev", "new-wait")
     assert dev.alt == "SYNTHETIC alt text of a library card for the tests"
     assert "(an older picture, taken 2026-10-20, not a picture of now)" in dev.describe()
+
+
+INJECTIONS = ("x\n::stop-commands::pwn", "x\r\n::stop-commands::pwn", "x\u2028##[add-mask]y")
+
+
+def test_haikus_free_text_never_starts_a_workflow_command(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world)
+    runner.haiku = FakeAnthropic(
+        [dict(GOOD_DEV_LOG), {"ok": False, "problems": list(INJECTIONS)}, dict(GOOD_DEV_LOG), OK]
+    )
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert len(world.x.posts) == 1
+    lines = runner.log.splitlines()
+    refused = next(line for line in lines if "refused" in line)
+    assert "stop-commands" in refused and "::stop-commands" not in refused
+    assert not any(line.startswith(("::stop", "##[")) for line in lines)
+    # The masks come after the refusal and are still commands the runner reads.
+    assert any(line.startswith("::add-mask::") for line in lines[lines.index(refused) :])
+
+
+def test_a_queued_posts_text_never_starts_a_workflow_command(tmp_path: Path, world: World) -> None:
+    text = "Dev log: the calculator\n::stop-commands::pwn\r\n::add-mask::x is fine."
+    runner = make(tmp_path, world, queue=[queued("0001", text), queued("0002")])
+    assert runner() == 1  # 0001 refused (the log says why), 0002 posted
+    assert len(world.x.posts) == 1
+    assert sum(line.startswith("::error::") for line in runner.log.splitlines()) == 1
+
+
+@pytest.mark.parametrize("injected", INJECTIONS)
+def test_one_say_is_one_line_and_never_a_command(injected: str) -> None:
+    stream = io.StringIO()
+    output = Output({"GITHUB_ACTIONS": "true"}, stream)
+    output.say(f"social: {injected}")
+    output.say(f"::warning::social: {injected}")
+    output.say(f"  ::set-output name=a::{injected}")
+    output.mask("Two9PiecesTwo9Pieces\r\nSecond9PieceSecond9Piece")
+    lines = stream.getvalue().splitlines()
+    assert lines[0].startswith("social: x ")
+    assert lines[1].startswith("::warning::social: x ")
+    assert lines[2].startswith(": :set-output")
+    for line in lines[:3]:
+        assert "::stop-commands::" not in line and "##[" not in line
+    assert lines[3:] == [
+        "::add-mask::Two9PiecesTwo9Pieces",
+        "::add-mask::Second9PieceSecond9Piece",
+    ]
+
+
+def test_the_real_anthropic_client_retries_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    from snowlight.social import post  # noqa: PLC0415 - the module's private factory
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-SYNTHETIC")
+    client = post._anthropic()  # noqa: SLF001 - the factory the run uses
+    assert client.max_retries == 0, "the four-call cap counts requests, so nothing retries"
+    assert client.timeout == 60.0

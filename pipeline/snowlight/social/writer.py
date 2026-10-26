@@ -28,6 +28,8 @@ MODEL: Final = "claude-haiku-5-5"
 MAX_TOKENS: Final = 1024
 MAX_CALLS: Final = 4
 ATTEMPTS: Final = 2
+PROBLEM_CHARS: Final = 200
+"""The most of one of Haiku's problem lines that is kept (shown to the writer and logged)."""
 
 DRAFT_SCHEMA: Final[dict[str, Any]] = {
     "type": "object",
@@ -169,6 +171,13 @@ class Written:
     facts_used: tuple[str, ...]
 
 
+def _plain(text: str, limit: int = PROBLEM_CHARS) -> str:
+    """Haiku's free text as one short printable line: never a log command, never a new line
+    (the log prints it; :func:`snowlight.social.logscan.one_line` also guards the log)."""
+    printable = "".join(char if char.isprintable() else " " for char in text)
+    return " ".join(printable.split())[:limit]
+
+
 def _library(images: Sequence[Image]) -> str:
     return "\n".join(f"- {image.id}: {image.describe()}" for image in images)
 
@@ -261,6 +270,8 @@ def draft(  # noqa: PLR0913 - the run's parts
                 continue
             if verdict.ok and not verdict.problems:
                 return written
-            problems = [line[:200] for line in verdict.problems[:6]] or ["the check said no"]
+            problems = [
+                plain for line in verdict.problems[:6] if (plain := _plain(line))
+            ] or ["the check said no"]
         say(f"social: try {attempt}: refused: " + "; ".join(problems))
     return None
