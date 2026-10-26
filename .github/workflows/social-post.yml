@@ -12,8 +12,9 @@
 # no secret and has no environment: headless Chromium opens the real site,
 # https://snowlightmap.com, unlocks it in that browser only, waits for the live files, hides
 # the site's interface and takes a 1600 x 900 picture of the map alone (the busiest area of
-# lit-up schools, else the district with the highest chance, else the dark national map),
-# with a plain description of it that the post may use. Then it lays the Snowlight card over
+# lit-up schools, else the district with the highest chance, else the dark national map;
+# while social/facts.md marks chances TESTING no picture, card or post gives a chance), with
+# a plain description of it that the post may use. Then it lays the Snowlight card over
 # it, in the style that covers no lit school (pipeline/snowlight/social/cards), with every
 # word filled from that description. The cards reach the post job through the render job's
 # own log (pipeline/snowlight/social/relay.py), checked against the digest the render job
