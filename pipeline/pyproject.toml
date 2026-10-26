@@ -43,7 +43,10 @@ dev = [
     "pytest-cov>=7.1.0",
     "ruff>=0.16.9",
     "types-shapely>=2.1.0.20260728",
+    { include-group = "render" },
 ]
+# The social posts' picture, rendered in the social-post workflow (snowlight.social.render).
+render = ["playwright==1.63.0"]
 
 [tool.ruff]
 line-length = 100
