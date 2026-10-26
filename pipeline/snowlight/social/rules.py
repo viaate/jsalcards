@@ -46,6 +46,9 @@ FACT_LINE: Final = re.compile(
     r"^- \[(?P<status>LIVE|TESTING|COMING)\] (?P<id>[a-z0-9][a-z0-9-]*): (?P<text>.+?)"
     r"(?: \| terms: (?P<terms>.+?))?(?: \| except: (?P<except>.+))?$"
 )
+DOTS: Final = re.compile("[\u00b7\u2022\u2024\u2027\u2219\u22c5\u3002\ufe52\uff0e\uff61]")
+"""Characters that read as a dot in a domain ("snowlight\u2024com")."""
+SPOKEN_DOMAIN: Final = re.compile(r"\bdot\s+(?:com|org|net|io|app|co|ai|us)\b", re.IGNORECASE)
 URL: Final = re.compile(
     r"https?:|www\.|(?<![\w@])[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.[a-z]{2,24}\b", re.IGNORECASE
 )
@@ -325,8 +328,9 @@ NEGATIONS: Final = re.compile(
     r"\bno longer\b|\bnot\b[^.?!]*\banymore\b|\bnot (?:in |a )?(?:testing|practice|test)\b"
     r"|\b(?:done|finished|through|out of|past|over|wrapped(?: up)?)(?: with)? (?:the )?"
     r"(?:testing|practice|test|tests|beta)\b"
-    r"|\b(?:testing|practice|the test|tests?|beta)(?: mode)? (?:is|are|was|were|has|have)"
-    r" (?:over|done|finished|wrapped|complete|ended|behind)\b|\bis over\b|\bare over\b",
+    r"|\b(?:testing|practice|the test|tests?|beta)(?: mode)?"
+    r" (?:(?:is|are|was|were|has|have|got|been) )*(?:over|done|finished|wrapped|complete|ended"
+    r"|behind|closed)\b|\bis over\b|\bare over\b",
     re.IGNORECASE,
 )
 """A sentence holding one says testing or practice has ended: a live claim."""
@@ -582,7 +586,8 @@ def check(  # noqa: PLR0912 - one rule a branch
         return ["the post is empty"]
     if (size := weight(text)) > MAX_WEIGHT:
         problems.append(f"it is {size} characters by X's count; the most is {MAX_WEIGHT}")
-    if URL.search(text):
+    plain = DOTS.sub(".", unicodedata.normalize("NFKC", text))
+    if URL.search(plain) or SPOKEN_DOMAIN.search(plain):
         problems.append("it holds a URL or a domain; the link is in the bio")
     if MENTION.search(text):
         problems.append("it mentions an account (@)")
