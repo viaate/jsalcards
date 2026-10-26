@@ -15,6 +15,7 @@ import pytest
 
 from snowlight.social import logscan, seal
 from snowlight.social.cli import Output
+from snowlight.social.content import load
 from snowlight.social.issue import TITLE
 from snowlight.social.post import Deps, run
 from snowlight.social.xapi import XClient
@@ -526,3 +527,79 @@ def test_haiku_sees_only_the_fresh_picture(tmp_path: Path, world: World) -> None
         in (runner.haiku.requests[1]["messages"][0]["content"])
     )
     assert b"FRESH-PICTURE" in world.x.uploaded[0]
+
+
+def test_the_fresh_card_goes_with_its_alt_text(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[unpictured("0001", FIRST)])
+    runner.picture = make_picture(tmp_path, at("2026-10-26T16:35:00"))
+    assert runner() == 0
+    assert world.x.alts == [
+        {
+            "id": "1880028106020515840",
+            "metadata": {
+                "alt_text": {"text": "SYNTHETIC alt text of the fresh dev-log card for the tests"}
+            },
+        }
+    ]
+    assert len(world.x.posts) == 1
+
+
+def test_a_refused_alt_text_does_not_stop_the_post(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[unpictured("0001", FIRST)])
+    runner.picture = make_picture(tmp_path, at("2026-10-26T16:35:00"))
+    world.x.alt_status = 403
+    assert runner() == 0
+    assert "the alt text was not set (X refused the alt text: HTTP 403 (Forbidden))" in runner.log
+    assert len(world.x.posts) == 1
+
+
+def test_a_style_whose_card_failed_takes_the_library_card(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[unpictured("0001", FIRST)])
+    runner.picture = make_picture(tmp_path, at("2026-10-26T16:35:00"), cards=("waitlist",))
+    assert runner() == 0
+    assert "no fresh dev-log card; that post uses the library's card" in runner.log
+    assert b"FRESH-PICTURE" not in world.x.uploaded[0]
+    assert world.d1.row("SELECT image FROM social_posts") == {"image": "img-2"}
+
+
+def test_a_fallback_card_in_the_render_folder_is_not_taken_as_fresh(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[unpictured("0001", FIRST)])
+    folder = make_picture(tmp_path, at("2026-10-26T16:35:00"))
+    note = folder / "dev-log.json"
+    note.write_text(note.read_text().replace('"fallback": false', '"fallback": true'))
+    runner.picture = folder
+    assert runner() == 0
+    assert "the dev-log card is not this run's" in runner.log
+    assert b"FRESH-PICTURE" not in world.x.uploaded[0]
+
+
+def test_the_library_falls_back_by_the_post_style(tmp_path: Path) -> None:
+    root = make_root(tmp_path, images=0)
+    images = root / "social" / "images"
+    for name, style, day in (
+        ("old-dev", "dev_log", "2026-10-20"),
+        ("new-wait", "waitlist", "2026-10-26"),
+    ):
+        (images / f"{name}.png").write_bytes(fakes.PNG)
+        (images / f"{name}.json").write_text(
+            json.dumps(
+                {
+                    "id": name,
+                    "file": f"{name}.png",
+                    "day": day,
+                    "shows": "SYNTHETIC test card: the national map at night",
+                    "alt": "SYNTHETIC alt text of a library card for the tests",
+                    "style": style,
+                }
+            )
+        )
+    content = load(root)
+    dev = content.newest("dev_log")
+    wait = content.newest("waitlist")
+    assert dev is not None
+    assert wait is not None
+    assert (dev.id, wait.id) == ("old-dev", "new-wait")
+    assert dev.alt == "SYNTHETIC alt text of a library card for the tests"
+    assert "(an older picture, taken 2026-10-20, not a picture of now)" in dev.describe()

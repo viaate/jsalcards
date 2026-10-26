@@ -134,10 +134,12 @@ class FakeX:
     uploads: int = 0
     uploaded: list[bytes] = field(default_factory=list)
     posts: list[dict[str, Any]] = field(default_factory=list)
+    alts: list[dict[str, Any]] = field(default_factory=list)
+    alt_status: int = 200
     issued: list[str] = field(default_factory=list)
     next_id: int = 1850000000000000001
 
-    def handle(self, request: httpx.Request) -> httpx.Response:
+    def handle(self, request: httpx.Request) -> httpx.Response:  # noqa: PLR0911 - one per call
         path = request.url.path
         if path == "/2/oauth2/token":
             return self._refresh(request)
@@ -172,6 +174,14 @@ class FakeX:
                     }
                 },
             )
+        if path == "/2/media/metadata" and request.method == "POST":
+            body = json.loads(request.content)
+            assert set(body) == {"id", "metadata"}
+            assert len(body["metadata"]["alt_text"]["text"]) <= 1000
+            if self.alt_status != 200:
+                return httpx.Response(self.alt_status, json={"title": "Forbidden"})
+            self.alts.append(body)
+            return httpx.Response(200, json={"data": {"id": body["id"]}})
         if path == "/2/tweets":
             if self.post_raises is not None:
                 raise self.post_raises("synthetic", request=request)  # type: ignore[call-arg]
@@ -377,18 +387,33 @@ FRESH_SHOWS = (
 )
 
 
-def make_picture(
+def make_picture(  # noqa: PLR0913 - the picture folder's parts
     tmp: Path,
     taken_at: datetime,
     *,
     kind: str = "national",
     current: bool = True,
     shows: str = FRESH_SHOWS,
+    cards: tuple[str, ...] = ("dev-log", "waitlist"),
 ) -> Path:
-    """A Render step's folder: picture.json and a picture.png marked as the fresh one."""
+    """A Render step's folder: picture.json, the map's picture.png, and a card for each of
+    ``cards`` marked as the fresh one."""
     folder = tmp / "picture"
     folder.mkdir(exist_ok=True)
-    (folder / "picture.png").write_bytes(PNG + b"FRESH-PICTURE")
+    for stale in folder.iterdir():
+        stale.unlink()
+    (folder / "picture.png").write_bytes(PNG + b"MAP-ONLY")
+    for post in cards:
+        (folder / f"{post}.png").write_bytes(PNG + b"FRESH-PICTURE")
+        card = {
+            "post": post,
+            "style": "a",
+            "why": "SYNTHETIC: a is the first style that fits",
+            "alt": f"SYNTHETIC alt text of the fresh {post} card for the tests",
+            "file": f"{post}.png",
+            "fallback": False,
+        }
+        (folder / f"{post}.json").write_text(json.dumps(card))
     note = {
         "kind": kind,
         "query": "",

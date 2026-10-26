@@ -25,6 +25,7 @@ import httpx
 from pydantic import ValidationError
 
 from snowlight.social import seal
+from snowlight.social.cards import Card, Post
 from snowlight.social.content import Content, ContentError, Image, check_image, load
 from snowlight.social.issue import GitHub
 from snowlight.social.picture import FILE, NOTE, Taken
@@ -108,54 +109,82 @@ def _when(value: object) -> datetime | None:
         return None
 
 
-def fresh_picture(folder: Path | None, now: datetime, say: Callable[[str], None]) -> Image | None:
-    """The Render step's picture of this run, or ``None`` (the reason said) when there is
-    none, or it is malformed, or it is not from the last :data:`FRESH_FOR`."""
+CARD_OF: Final[Mapping[str, Post]] = {"dev_log": "dev-log", "waitlist": "waitlist"}
+"""The card each post style goes out with."""
+
+type Fresh = Mapping[str, Image]
+"""The run's fresh cards by post style."""
+
+
+def fresh_picture(folder: Path | None, now: datetime, say: Callable[[str], None]) -> Fresh:
+    """The Render step's fresh cards of this run by post style; none (the reason said) when
+    there is no picture, or it is malformed, or it is not from the last :data:`FRESH_FOR`.
+    A style whose card failed is left out (that post goes with the library's card)."""
     if folder is None:
-        return None
+        return {}
     note = folder / NOTE
     if not note.is_file():
         say("::warning::social: the Render step left no fresh picture")
-        return None
+        return {}
     try:
         taken = Taken.model_validate_json(note.read_text(encoding="utf-8"))
         check_image(folder / FILE)
     except (OSError, ValidationError, ContentError):
         say("::warning::social: the fresh picture is malformed; it is not used")
-        return None
+        return {}
     age = now - taken.taken_at
     if not timedelta(minutes=-2) <= age <= FRESH_FOR:
         say("::warning::social: the fresh picture is not from this run; it is not used")
-        return None
-    return Image(
-        id=f"fresh-{taken.taken_at.astimezone(UTC):%Y%m%dt%H%M}",
-        path=folder / FILE,
-        day=taken.taken_at.astimezone(UTC).date(),
-        shows=taken.shows,
-        fresh=taken.kind,
-        current=taken.current,
-    )
+        return {}
+    cards: dict[str, Image] = {}
+    for style, post in CARD_OF.items():
+        try:
+            card = Card.model_validate_json((folder / f"{post}.json").read_text(encoding="utf-8"))
+            check_image(folder / card.file)
+        except (OSError, ValidationError, ContentError):
+            say(f"::warning::social: no fresh {post} card; that post uses the library's card")
+            continue
+        if card.post != post or card.fallback:
+            say(f"::warning::social: the {post} card is not this run's; it is not used")
+            continue
+        cards[style] = Image(
+            id=f"fresh-{taken.taken_at.astimezone(UTC):%Y%m%dt%H%M}",
+            path=folder / card.file,
+            day=taken.taken_at.astimezone(UTC).date(),
+            shows=taken.shows,
+            fresh=taken.kind,
+            current=taken.current,
+            alt=card.alt,
+            style=style,
+        )
+    return cards
 
 
 def picture_for(
-    content: Content, fresh: Image | None, kinds: tuple[str, ...] | None, own: Image | None
+    content: Content,
+    fresh: Fresh,
+    style: str,
+    kinds: tuple[str, ...] | None,
+    own: Image | None,
 ) -> Image | None:
-    """A post's picture: the fresh one when its kind fits, else ``own``, else the library's
-    newest image (stored images keep their own day and description)."""
-    if fresh is not None and (kinds is None or fresh.fresh in kinds):
-        return fresh
-    return own or content.newest()
+    """A post's picture: the fresh card for its style when the picture's kind fits, else
+    ``own``, else the library's newest card (stored cards keep their own day and
+    description)."""
+    image = fresh.get(style)
+    if image is not None and (kinds is None or image.fresh in kinds):
+        return image
+    return own or content.newest(style)
 
 
 def _queued(
-    content: Content, taken: set[str], fresh: Image | None, say: Callable[[str], None]
+    content: Content, taken: set[str], fresh: Fresh, say: Callable[[str], None]
 ) -> tuple[Pick | None, bool]:
     """The oldest queued post that may go, and whether one was refused by the checks."""
     refused = False
     for item in content.queue:
         if item.slot in taken:
             continue
-        image = picture_for(content, fresh, item.pictures, item.image)
+        image = picture_for(content, fresh, item.style, item.pictures, item.image)
         problems = (
             ["it has no picture: no fresh one fits and the library is empty"]
             if image is None
@@ -187,7 +216,7 @@ class Run:
     github: GitHub | None
     run_id: str
     now: datetime
-    fresh: Image | None = None
+    fresh: Fresh = field(default_factory=dict)
 
     def say(self, line: str) -> None:
         self.deps.say(line)
@@ -210,13 +239,13 @@ class Run:
         if claimed is not None and self.now - claimed < QUIET:
             self.say("social: something was posted in the last 20 hours: no Haiku post")
             return None
-        image = picture_for(self.content, self.fresh, None, None)
-        if image is None:
-            self.say("::warning::social: no fresh picture and an empty library: no Haiku post")
-            return None
         style: Style = (
             "waitlist" if last is not None and last.get("style") == "dev_log" else "dev_log"
         )
+        image = picture_for(self.content, self.fresh, style, None, None)
+        if image is None:
+            self.say("::warning::social: no fresh picture and an empty library: no Haiku post")
+            return None
         since = (_when(last.get("posted_at")) or claimed) if last is not None else None
         writer = Writer(self.deps.haiku_client())
         commits = list(self.deps.commits(since))[:MAX_COMMITS]
@@ -318,6 +347,11 @@ class Run:
             media_id = x.upload_image(
                 tokens.access, image.path.name, image.path.read_bytes(), image.content_type
             )
+            if image.alt:
+                try:
+                    x.describe(tokens.access, media_id, image.alt)
+                except RefusedError as error:
+                    self.say(f"::warning::social: the alt text was not set ({error})")
             post_id = x.post(tokens.access, pick.text, media_id)
         except RefusedError as error:
             self.say(f"::error::social: {error}: nothing was posted")
@@ -382,7 +416,7 @@ def _start(env: Env, root: Path, deps: Deps, picture: Path | None) -> Run | int:
         return 1
     now = deps.now()
     fresh = fresh_picture(picture, now, say)
-    if fresh is None and (newest := content.newest()) is not None:
+    if not fresh and (newest := content.newest()) is not None:
         say(
             f"::warning::social: no fresh picture: a post uses the library's newest image,"
             f" {newest.id} from {newest.day.isoformat()}, as an older picture"

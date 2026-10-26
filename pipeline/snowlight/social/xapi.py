@@ -1,4 +1,4 @@
-"""The three X API v2 calls a post needs (checked against docs.x.com, October 2026).
+"""The X API v2 calls a post needs (checked against docs.x.com, October 2026).
 
 * **Refresh** (OAuth 2.0, confidential client): ``POST https://api.x.com/2/oauth2/token``,
   form ``grant_type=refresh_token&refresh_token=<token>``, HTTP Basic auth with the client
@@ -8,6 +8,9 @@
   (the file) and ``media_category=tweet_image`` (scope ``media.write``); the answer's
   ``data.id`` is the media id. A ``data.processing_info`` that is not done yet is polled with
   ``GET /2/media/upload?command=STATUS&media_id=<id>``.
+* **Alt text**: ``POST https://api.x.com/2/media/metadata`` with ``{"id": <media id>,
+  "metadata": {"alt_text": {"text": ...}}}`` (scope ``media.write``, at most 1,000
+  characters); HTTP 200.
 * **Post**: ``POST https://api.x.com/2/tweets`` with ``{"text": ..., "media": {"media_ids":
   [<id>]}}`` (scopes ``tweet.read tweet.write users.read``); HTTP 201 with ``data.id``.
 
@@ -207,6 +210,24 @@ class XClient:
             info = data_part.get("processing_info") if isinstance(data_part, dict) else None
         if isinstance(info, dict) and info.get("state") != "succeeded":
             raise RefusedError("the image was still processing")
+
+    def describe(self, access: str, media_id: str, alt: str) -> None:
+        """Set an uploaded image's alt text (asked once; a post goes without it on failure).
+
+        Raises:
+            RefusedError: X did not set it.
+        """
+        try:
+            response = self._client.post(
+                f"{self._api}/2/media/metadata",
+                json={"id": media_id, "metadata": {"alt_text": {"text": alt[:1000]}}},
+                headers={"Authorization": f"Bearer {access}"},
+                timeout=TIMEOUT,
+            )
+        except httpx.HTTPError as error:
+            raise RefusedError(f"the alt text got no answer ({type(error).__name__})") from None
+        if response.status_code != httpx.codes.OK:
+            raise RefusedError(f"X refused the alt text: {_say(response)}")
 
     def post(self, access: str, text: str, media_id: str) -> str:
         """Post the text with the image; the post's id. Sent once, never again.

@@ -1,12 +1,14 @@
 """What the posts are made of, read from the repository's ``social/`` folder.
 
 * ``social/facts.md``: the facts a post may state (:func:`snowlight.social.rules.parse_facts`).
-* ``social/images/<id>.json`` and the image it names: the library Haiku picks from. Each
-  description says exactly what the image shows and the day it was taken.
+* ``social/images/<id>.json`` and the card it names: the library a post falls back to when
+  the run's fresh card failed. Each is a finished card made from a real picture of the map,
+  dated on its face ("From <date>", never a clock), with a description of exactly what it
+  shows and the day it was taken, its alt text, and the kind of post it is labeled for.
 * ``social/queue/<id>.json``: posts written ahead, sent oldest first. A queued post goes out
-  with the run's fresh picture (:mod:`snowlight.social.picture`) when the picture is of a
-  kind its ``pictures`` list allows (any, without the list); else with its own image when it
-  names one, else with the library's newest image.
+  with the run's fresh card for its style (:mod:`snowlight.social.cards`) when the picture
+  is of a kind its ``pictures`` list allows (any, without the list); else with its own image
+  when it names one, else with the library's newest card for its style.
 
 Images are PNG or JPEG files under :data:`MAX_IMAGE_BYTES` (X's limit for a post image).
 """
@@ -38,7 +40,11 @@ class ImageEntry(BaseModel):
     id: str = Field(pattern=ID.pattern)
     file: str = Field(pattern=r"^[a-z0-9][a-z0-9.-]{0,60}\.(png|jpg)$")
     day: date
-    shows: str = Field(min_length=20, max_length=600)
+    shows: str = Field(min_length=20, max_length=800)
+    alt: str | None = Field(default=None, min_length=20, max_length=1000)
+    """The card's alt text (X's limit is 1,000 characters)."""
+    style: Literal["dev_log", "waitlist"] | None = None
+    """The kind of post the card is labeled for (any, when absent)."""
 
 
 class QueueEntry(BaseModel):
@@ -47,7 +53,7 @@ class QueueEntry(BaseModel):
     id: str = Field(pattern=r"^[0-9]{4}$")
     style: Literal["dev_log", "waitlist"]
     text: str = Field(min_length=1, max_length=600)
-    pictures: tuple[Literal["closings", "district", "national"], ...] | None = Field(
+    pictures: tuple[Literal["closings", "district", "national", "region"], ...] | None = Field(
         default=None, min_length=1
     )
     """The fresh picture kinds the text fits (any, when absent)."""
@@ -72,6 +78,10 @@ class Image:
     """The fresh picture's kind; ``None`` for a stored image (library or queue)."""
     current: bool = False
     """Whether a post may call what it shows current: only a fresh picture of live files."""
+    alt: str | None = None
+    """The alt text X shows for the image."""
+    style: str | None = None
+    """The kind of post a library card is labeled for (any, when ``None``)."""
 
     @property
     def content_type(self) -> str:
@@ -107,9 +117,11 @@ class Content:
     def image(self, image_id: str) -> Image | None:
         return next((image for image in self.images if image.id == image_id), None)
 
-    def newest(self) -> Image | None:
-        """The library's newest image (the latest day, then the last id): the fallback."""
-        return max(self.images, key=lambda image: (image.day, image.id), default=None)
+    def newest(self, style: str | None = None) -> Image | None:
+        """The library's newest card for ``style`` (the latest day, then the last id), else
+        its newest of any kind: the fallback."""
+        fitting = [image for image in self.images if image.style in (None, style)]
+        return max(fitting or self.images, key=lambda image: (image.day, image.id), default=None)
 
 
 def check_image(path: Path) -> None:
@@ -154,7 +166,12 @@ def load(root: Path) -> Content:
         check_image(social / "images" / entry.file)
         images.append(
             Image(
-                id=entry.id, path=social / "images" / entry.file, day=entry.day, shows=entry.shows
+                id=entry.id,
+                path=social / "images" / entry.file,
+                day=entry.day,
+                shows=entry.shows,
+                alt=entry.alt,
+                style=entry.style,
             )
         )
     queue: list[Queued] = []

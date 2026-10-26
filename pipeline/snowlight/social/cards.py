@@ -31,12 +31,14 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
-from typing import Final, Literal
+from typing import TYPE_CHECKING, Final, Literal
 
 import numpy as np
 import numpy.typing as npt
-from playwright.sync_api import Browser, Page
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:  # the browser is needed only to make a card, not to read one
+    from playwright.sync_api import Browser, Page
 
 from snowlight.social.picture import (
     HEIGHT,
@@ -445,7 +447,7 @@ FRAME: Final = """() => {
 }"""
 
 
-def rgb_of(page: Page, png: bytes) -> npt.NDArray[np.uint8]:
+def rgb_of(page: "Page", png: bytes) -> npt.NDArray[np.uint8]:
     """A PNG's pixels (height, width, 3), decoded by the browser."""
     url = "data:image/png;base64," + base64.b64encode(png).decode()
     width, height, data = page.evaluate(PIXELS, url)
@@ -468,7 +470,7 @@ def _template(style: str) -> str:
 
 
 def lay(  # noqa: PLR0913 - one layout's parts
-    page: Page,
+    page: "Page",
     candidate: Candidate,
     taken: Taken,
     post: Post,
@@ -530,7 +532,7 @@ def _first_line(error: Exception) -> str:
 
 
 def compose(  # noqa: PLR0913 - the card's parts
-    browser: Browser,
+    browser: "Browser",
     taken: Taken,
     map_png: Path,
     post: Post,
