@@ -4,6 +4,7 @@ same paths, and a stand-in ``window.snowlightMap`` whose glow layer counts the s
 closings file lights today (snowlight.social.render). Skipped where no Chromium is installed
 (the workflow installs one; this machine and CI need none)."""
 
+import argparse
 import json
 import threading
 from collections.abc import Iterator
@@ -18,6 +19,7 @@ from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import sync_playwright
 
 from snowlight.directory.points import encode
+from snowlight.social import cli
 from snowlight.social.picture import Taken
 from snowlight.social.render import (
     RenderError,
@@ -273,3 +275,13 @@ def test_the_pure_parts() -> None:
         directory_of(b"[]", POINTS)
     with pytest.raises(RenderError, match="malformed"):
         directory_of(META, b"nope")
+
+
+def test_the_render_command_takes_a_view_only_with_its_place(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    args = argparse.Namespace(
+        out="unused", site="", live_dir="", view="?at=40.9,-80.6,6.1", place="", fallback=True
+    )
+    assert cli._render(args) == 2
+    assert "--view and --place go together" in capsys.readouterr().out

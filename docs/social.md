@@ -2,8 +2,8 @@
 
 `.github/workflows/social-post.yml` posts on the X account @SnowlightMap by itself: queued
 posts written ahead, and once a day a short post Claude Haiku writes from the facts file.
-Every post carries one real image and passes the same checks first. Code:
-`pipeline/snowlight/social/`.
+Every post carries a branded card made fresh from the real map at post time and passes the
+same checks first. Code: `pipeline/snowlight/social/`.
 
 **To stop it:** Actions > **social-post** > **...** > **Disable workflow** (it works from
 GitHub mobile). Deleting the workflow file or removing the X secrets from the `x-posting`
@@ -15,15 +15,15 @@ own account as the managing one.
 
 ## What posts, and when
 
-- **Queued posts** (`social/queue/<NNNN>.json` and its image): a push to the default branch
+- **Queued posts** (`social/queue/<NNNN>.json`): a push to the default branch
   that changes `social/queue/` posts the oldest one not posted yet. The daily run posts one
   too if one is waiting. A queued post is posted at most once, ever.
 - **The daily post**: the scheduled run at 16:37 UTC (late morning in the US). With nothing
   queued, `ANTHROPIC_API_KEY` set and nothing posted in the last 20 hours, Haiku
   (`claude-haiku-5-5`) writes one post, in turn a dev log and a "join the waitlist" post,
-  from `social/facts.md`, the subjects of the commits since the last post, and one image it
-  picks from `social/images/`. Without the key the run says "no Anthropic key" and posts
-  only queued posts.
+  from `social/facts.md`, the subjects of the commits since the last post, and the run's
+  fresh card with its description (the only facts about the picture it may use). Without
+  the key the run says "no Anthropic key" and posts only queued posts.
 
 ## Caps (in code, tested)
 
@@ -55,16 +55,51 @@ answers `{ok, problems}`. Either check failing gives one more try with the probl
 a second failure means no post that day (the run log says why). A queued post that fails the
 checks is never sent and turns the run red.
 
-## The facts file and the images
+## The facts file
 
 `social/facts.md` is the only source of what a post may say. One fact a line, tagged
 **LIVE** (true and running now), **TESTING** (built, but in practice mode or behind the
 lock) or **COMING** (not on yet), with the words that name it. Keep it current: when
-something ships, move its fact to LIVE in the same change. Nothing private goes in it.
+something ships, move its fact to LIVE in the same change. Nothing private goes in it. A
+line printed on a card (the A card's "Every school closing in the US on one map, coming
+this winter", the B card's "Building Snowlight") must be a LIVE or COMING fact's words; a
+test holds them to it.
 
-`social/images/<id>.json` describes exactly what its image shows and the day it was taken;
-Haiku picks by that description. Images are real screenshots of the real site with real
-data, PNG or JPEG under 5 MB, never private screens (no admin view, no lock form).
+## The picture: a fresh card at post time
+
+The job's **Render** step (no secret; `snowlight social render`, `render.py`) makes every
+post's picture fresh:
+
+1. Headless Chromium (installed in the job) reads the site's lock check from its own page and
+   unlocks it in that browser only (never printed). Signed out, it opens the map at a view
+   where the site reads the school directory and `live/closings.json`, and keeps their bytes;
+   it reads `predictions/latest.json` from the same live root.
+2. `picture.py` picks the view from those files: the busiest picture-sized area of lit
+   schools when closings light any today; else the district with the highest chance of no
+   school (at least 10%), framed by its schools on the left; else the national map at night.
+   It writes the description (time with its zone, place by state, counts, chance) and the
+   same facts as fields. Nothing is said about closings when the closings file was a 404
+   (practice mode). No district is named.
+3. It opens that view served exactly those files, hides every piece of the site's interface
+   with a style in that page only, waits until the map is at rest (twice), checks that the
+   map lit as many schools as the description counts at the zoom asked, and takes a
+   1600 x 900 picture of the map alone.
+4. `cards.py` lays the Snowlight card over it for each kind of post (`dev-log`, `waitlist`)
+   from three templates in `pipeline/snowlight/social/cards/` (the site's Geist fonts, OFL):
+   **C stamp** for closings and chance pictures, **A broadcast** for calm ones, **B framed**
+   (the map whole in a frame, the words beside it) only where neither fits. A style fits
+   when its words, stamp and logo darken at most 3% of the map's lit-school pixels
+   (measured on the picture); the order is C, A, B for closings and districts and A, C, B
+   for calm maps. The log says which style and why. Every word, number, place and time on
+   the card comes from the picture's facts, never from Haiku: counts in the picture say "in
+   this view", the country's total says "across the US", the chance is a number on the card
+   (the map draws none). The alt text is built from the same facts and set on the image.
+
+A try that fails gets one more. When the map fails twice, or a card fails twice, that post
+goes with the library's newest card for its style: `social/images/<id>.png` and `.json`,
+real cards made the same way with `snowlight social render --fallback`, dated on their face
+("From Oct 26, 2026", never a clock, "now" or "live"), each with what it shows, its day and
+alt text. A post never calls an older card current.
 
 ## The X token
 
@@ -79,7 +114,8 @@ token changes every time it is used. Each run that posts:
 3. stores the new refresh token right away, sealed with AES-256-GCM under a key derived
    (HKDF-SHA256) from `X_CLIENT_SECRET`, with `UPDATE ... WHERE version = <read> AND lease =
 <this run>`: the version goes up by one, and a run that lost the row stores nothing;
-4. uploads the image (`POST /2/media/upload`, scope `media.write`) and posts
+4. uploads the card (`POST /2/media/upload`, scope `media.write`), sets its alt text
+   (`POST /2/media/metadata`; the post goes without it if X refuses) and posts
    (`POST /2/tweets`), recording the post id in D1.
 
 If X refuses the refresh token, the run opens one issue, **X posting stopped: refresh

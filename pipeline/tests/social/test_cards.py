@@ -36,6 +36,7 @@ from snowlight.social.cards import (
     lay,
     pick,
 )
+from snowlight.social.content import load
 from snowlight.social.picture import Box, Chance, Counts, Seen, Taken
 from snowlight.social.rules import parse_facts
 
@@ -541,3 +542,32 @@ def test_a_map_of_the_wrong_size_is_refused(browser: Browser, tmp_path: Path) ->
     small.write_bytes(png(np.zeros((90, 160, 3), dtype=np.uint8)))
     with pytest.raises(CardError, match="1600 x 900"):
         compose(browser, taken("national", CALM), small, "dev-log", tmp_path, say=print)
+
+
+def test_an_older_national_card_drops_the_days_chance() -> None:
+    # "Monday" on a dated card would read as the coming Monday.
+    old = taken("national", CALM)
+    assert "chance" not in c_slots(old, "dev-log", "left", fallback=True)
+    assert "chance" in c_slots(old, "dev-log", "left", fallback=False)
+    picture = a_facts(old, "dev-log", fallback=True)["picture"]
+    assert isinstance(picture, dict)
+    assert picture["top_chance"] is None
+    assert "forecast" not in b_card(old, "dev-log", "file:///m.png", fallback=True)
+    assert "chance" not in alt_text(old, "dev-log", fallback=True)
+    # A district card keeps its chance, dated.
+    assert c_slots(taken("district", DISTRICT), "dev-log", "right", fallback=True)["chance"] == (
+        "77%"
+    )
+
+
+def test_the_library_holds_dated_cards_for_both_styles() -> None:
+    images = load(REPO).images
+    assert {image.style for image in images} == {"dev_log", "waitlist"}
+    for image in images:
+        assert image.alt is not None
+        assert f"pictured on {image.day:%b} {image.day.day}, {image.day.year}" in image.alt
+        assert not re.search(r"\d:\d\d", image.alt), "a library card carries no clock"
+        assert image.fresh is None
+        assert not image.current
+        assert image.path.stat().st_size < MAX_BYTES
+        assert struct.unpack(">II", image.path.read_bytes()[16:24]) == (1600, 900)

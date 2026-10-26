@@ -243,7 +243,7 @@ def alt_text(taken: Taken, post: Post, *, fallback: bool) -> str:
         )
     else:
         text = f"The national Snowlight map at night, {when}, with state lines and city names"
-        if chance is not None and post == "dev-log":
+        if chance is not None and post == "dev-log" and not fallback:
             text += (
                 f", and the chance of no school {chance.day:%A}: at most 1% in every district"
                 if chance.at_most
@@ -279,6 +279,13 @@ def _pictograph(char: str) -> bool:
     return 0x1F000 <= code <= 0x1FAFF or 0x2600 <= code <= 0x27BF  # noqa: PLR2004
 
 
+def _dated_chance(taken: Taken, *, fallback: bool) -> bool:
+    """Whether a card shows the chance: always on a district picture (it is the picture's
+    point, and a fallback card dates it); on the national one only when fresh (an older
+    card's "Monday" would read as the coming one)."""
+    return taken.kind == "district" or (taken.kind == "national" and not fallback)
+
+
 def c_slots(taken: Taken, post: Post, anchor: str, *, fallback: bool) -> dict[str, object]:
     """Template C's slots (``cards/c/card.html``), filled by code from the facts."""
     seen = taken.seen
@@ -311,7 +318,7 @@ def c_slots(taken: Taken, post: Post, anchor: str, *, fallback: bool) -> dict[st
     else:
         slots["place"] = "United States"
     chance = seen.chance
-    if chance is not None and taken.kind in ("district", "national") and post == "dev-log":
+    if chance is not None and post == "dev-log" and _dated_chance(taken, fallback=fallback):
         slots["chance"] = chance.text
         slots["chanceDay"] = f"{chance.day:%a}"
         slots["chanceScope"] = chance.scope
@@ -352,7 +359,7 @@ def a_facts(taken: Taken, post: Post, *, fallback: bool) -> dict[str, object]:
         chance = seen.chance
         picture["top_chance"] = (
             None
-            if chance is None
+            if chance is None or fallback
             else {
                 "text": chance.text,
                 "day": chance.day.isoformat(),
@@ -380,7 +387,7 @@ def b_card(taken: Taken, post: Post, map_url: str, *, fallback: bool) -> dict[st
     if not fallback:
         card["time"] = clock(taken.taken_at)
     chance = seen.chance
-    if chance is not None and post == "dev-log":
+    if chance is not None and post == "dev-log" and not fallback:
         card["forecast"] = {
             "districts": chance.districts,
             "top": chance.text,

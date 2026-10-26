@@ -7,13 +7,15 @@
 # "no Anthropic key" and posts only queued posts). Caps live in the code (pipeline/snowlight/
 # social): one post a run, two a UTC day, one Haiku post a day, four Haiku calls a run.
 #
-# Pictures: every post goes with a picture taken fresh in this job (the Render step, which
-# holds no secret): headless Chromium opens the real site, https://snowlightmap.com, unlocks
-# it in that browser only, waits for the live files, and takes a 1600 x 900 PNG of what is
-# happening (the busiest area of lit-up schools, else the district with the highest chance,
-# else the national map at night), with a plain description of it that the post may use.
-# When the render fails twice, the post goes with the library's newest image (social/images)
-# as an older picture, never as current.
+# Pictures: every post goes with a branded card made fresh in this job (the Render step,
+# which holds no secret): headless Chromium opens the real site, https://snowlightmap.com,
+# unlocks it in that browser only, waits for the live files, hides the site's interface and
+# takes a 1600 x 900 picture of the map alone (the busiest area of lit-up schools, else the
+# district with the highest chance, else the national map at night), with a plain
+# description of it that the post may use. Then it lays the Snowlight card over it, in the
+# style that covers no lit school (pipeline/snowlight/social/cards), with every word filled
+# from that description. When the render fails twice, the post goes with the library's
+# newest dated card (social/images) as an older picture, never as current.
 #
 # Secrets: the X ones (X_CLIENT_ID, X_CLIENT_SECRET, X_REFRESH_TOKEN) and ANTHROPIC_API_KEY
 # are environment secrets of x-posting, which only the default branch may use; the Cloudflare
@@ -98,7 +100,7 @@ jobs:
       - name: Render
         if: steps.browser.outcome == 'success'
         continue-on-error: true
-        timeout-minutes: 10
+        timeout-minutes: 15 # two tries of two map views, then the cards (about 2 minutes)
         run: uv run --no-sync snowlight social render --out "$RUNNER_TEMP/picture"
 
       - name: Post
