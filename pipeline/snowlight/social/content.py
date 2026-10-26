@@ -46,8 +46,9 @@ class ImageEntry(BaseModel):
     style: Literal["dev_log", "waitlist"] | None = None
     """The kind of post the card is labeled for (any, when absent)."""
     tagline: str | None = Field(default=None, min_length=10, max_length=200)
-    """The line from the facts file baked into the card, if any: it must still be the text
-    of a LIVE or COMING fact, or the card is no longer true (re-render the library)."""
+    """The line from the facts file baked into the card, if any: it must still be words of a
+    LIVE fact or the whole text of a COMING one, or the card is no longer true (re-render the
+    library)."""
 
 
 class QueueEntry(BaseModel):
@@ -139,12 +140,14 @@ def check_image(path: Path) -> None:
 
 
 def _still_true(line: str, facts: Facts) -> bool:
-    """Whether a card's line is still the text of a LIVE or COMING fact."""
+    """Whether a card's line is still true per the facts: words of a LIVE fact's text (the
+    model line is part of the LIVE fact ``model``), or the whole text of a COMING fact, which
+    says itself that it is coming (a part of one could drop the "coming")."""
     wanted = line.strip().rstrip(".").lower()
     return any(
-        fact.text.strip().rstrip(".").lower() == wanted
+        (fact.status == "LIVE" and wanted in fact.text.lower())
+        or (fact.status == "COMING" and fact.text.strip().rstrip(".").lower() == wanted)
         for fact in facts.facts
-        if fact.status in ("LIVE", "COMING")
     )
 
 

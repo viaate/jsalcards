@@ -359,15 +359,19 @@ def test_an_adversarial_place_is_refused() -> None:
 
 def test_every_tagline_on_a_card_is_true_per_the_facts_file() -> None:
     facts = parse_facts((REPO / "social" / "facts.md").read_text(encoding="utf-8"))
-    true = [fact.text.lower() for fact in facts.facts if fact.status in ("LIVE", "COMING")]
+    true = [fact.text.lower() for fact in facts.facts if fact.status == "LIVE"]
     a = (HERE / "a" / "card.html").read_text(encoding="utf-8")
     b = (HERE / "b" / "card.html").read_text(encoding="utf-8")
     found = re.search(r"const TAGLINE = '([^']+)'", a)
     assert found is not None
     # B's dev-log kicker is the label "Dev log"; its headline is a line of the facts file.
     lines = [found.group(1), *(x for x in re.findall(r"'dev-log': '([^']+)'", b) if x != "Dev log")]
-    assert lines == ["Every school closing in the US on one map, coming this winter",
+    assert lines == ["Chances from a prediction model trained on real closing records",
                      "Building Snowlight"]  # fmt: skip
+    model = facts.get("model")
+    assert model is not None
+    assert model.status == "LIVE"
+    assert lines[0].lower() in model.text.lower(), "the A card's line is the LIVE model fact"
     for line in lines:
         assert any(line.lower() in fact for fact in true), line
     for html in (a, b, (HERE / "c" / "card.html").read_text(encoding="utf-8")):

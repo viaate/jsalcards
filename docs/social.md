@@ -27,6 +27,34 @@ own account as the managing one.
   the key the run says "no Anthropic key" and posts only queued posts. The 20-hour rule and
   the day's Haiku record keep the second slot from posting twice.
 
+## Model first, and no one else
+
+Two rules hold for every post, Haiku's and the queued ones alike, and for every card:
+
+- **Model first.** Each post states one plain fact about the prediction model behind the
+  chances, from the facts file's model section (the LIVE facts whose ids are `model` and
+  `model-*`): that Snowlight's chances come from a real statistical model trained on real
+  closing records, not a guess, and something concrete about it (the 2,388 real past school
+  days it is trained on, how it leans on a district's own records and its county's, state's
+  and region's, the weather service's winter alerts it sorts days by, the walk-forward test
+  on past winters it never saw, a new set about every 30 minutes). Haiku is given one of
+  them a day, in turn (`rules.model_fact_for`: seven LIVE model facts, so with the styles
+  alternating each fact pairs with both), and the deterministic check refuses a draft that
+  does not name it, or a post that names no model fact at all. A model fact that is TESTING
+  (the forecast reasons, the night-before outlook, the watch raise) or COMING (learning from
+  this winter's closings) is said as testing or coming, like any other. No accuracy number
+  or score is ever posted: the past records lean toward big storm days.
+- **No one else.** A post says what Snowlight does and never describes, names or compares
+  other products or sites. Refused: any competitor's name, "calculator(s)",
+  "competitor(s)", "unlike", "other apps", "other sites", "other predictors", "everyone
+  else", "better than", "more accurate", "most accurate", "AI", "AI-powered", "machine
+  learning", "formula", any "-er than" or "more ... than", "they guess", and "guess" in any
+  form except "not a guess" (about Snowlight's own chances). Haiku's second check refuses
+  any other comparison it sees.
+
+The A card's line on a dev log or waitlist card is the model line, "Chances from a
+prediction model trained on real closing records", words of the LIVE fact `model`.
+
 ## Caps (in code, tested)
 
 - At most **1 post a run**, **2 posts a UTC day** of every kind (the D1 claim that starts a
@@ -47,11 +75,15 @@ own account as the managing one.
 
 - at most 270 characters as X counts them; no URL, domain or @mention (the link is in the
   bio); at most one hashtag and one emoji; no `!!` and no em dash;
+- it names a LIVE model fact, and a Haiku post the day's (above);
 - no banned words: hype ("most accurate", "revolutionary", "AI-powered", "guaranteed",
   "never wrong", "better than"), other calculators or sites by name, "SDC", "formula",
   "reconstruction", station call letters;
 - hype and comparisons as whole words: "best", "only", "unlike", "vs", "precise",
-  "perfect", "spot on", "number one", "other apps";
+  "perfect", "spot on", "number one", "other apps", "others", "AI"; and every comparison
+  with, or description of, anyone else (above);
+- "you can now", "check your school", "available now" and the like only of the waitlist or
+  worded as coming: nobody can open the map before launch;
 - every number, in digits or in words ("fifty", "twenty-four", "first"), is in
   `social/facts.md` in the same form and used as the facts use it: a word next to it is next
   to it in the facts too ("24/7 in practice mode" passes, "24 schools" does not, nor "48
@@ -84,11 +116,14 @@ lock) or **COMING** (not on yet), with the words that name it (`| terms: ...`) a
 phrases that hold one of those words but name another fact (`| except: ...`, such as
 "closings reader", the LIVE reader, for the COMING closings on the map). Keep it current:
 when something ships, move its fact to LIVE in the same change. Nothing private goes in
-it. A line printed on a card (the A card's "Every school closing in the US on one map,
-coming this winter", the B card's "Building Snowlight") must be a LIVE or COMING fact's
-words; a test holds the templates to it, and a library card's line is kept in its JSON
-(`tagline`): when that line leaves the facts file (the aim goes LIVE and is reworded), the
-run stops red until the library is made again with `snowlight social render --fallback`.
+it. Every number in the model section comes from docs/predict.md and the committed model
+file, and a test checks them against both. A term is a word or phrase, never a bare number
+(a term "2,388" would split at its comma). A line printed on a card (the A card's "Chances
+from a prediction model trained on real closing records", the B card's "Building
+Snowlight") must be words of a LIVE fact; a test holds the templates to it, and a library
+card's line is kept in its JSON (`tagline`): when that line leaves the facts file (it must
+stay words of a LIVE fact, or the whole text of a COMING one), the run stops red until the
+library is made again with `snowlight social render --fallback`.
 
 ## The picture: a fresh card at post time
 
