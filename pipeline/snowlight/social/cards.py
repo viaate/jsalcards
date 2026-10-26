@@ -69,7 +69,7 @@ BANNED: Final = re.compile("[\u2012-\u2015!]")
 """Figure, en and em dashes, the horizontal bar, and "!" (emoji: :func:`_pictograph`)."""
 NOT_CURRENT: Final = re.compile(r"\b(now|live|today|tonight|this morning|currently)\b", re.I)
 CLOCK: Final = re.compile(r"\b(1[0-2]|[1-9]):[0-5]\d\s?(AM|PM)\b")
-NEVER: Final = re.compile(r"\b0 schools\b|\bno closings\b|\bnobody\b", re.I)
+NEVER: Final = re.compile(r"\b0 schools\b|\bno closings\b", re.I)
 
 
 class CardError(RuntimeError):
