@@ -91,7 +91,7 @@ class Deps:
     mask: Callable[[str], None]
     now: Callable[[], datetime] = lambda: datetime.now(UTC)
     commits: Callable[[datetime | None], Sequence[str]] = lambda _since: ()
-    anthropic: Callable[[], anthropic.Anthropic] = _anthropic
+    haiku_client: Callable[[], anthropic.Anthropic] = _anthropic
     db_pause: float = 3.0
 
 
@@ -168,7 +168,7 @@ class Run:
             "waitlist" if last is not None and last.get("style") == "dev_log" else "dev_log"
         )
         since = (_when(last.get("posted_at")) or claimed) if last is not None else None
-        writer = Writer(self.deps.anthropic())
+        writer = Writer(self.deps.haiku_client())
         commits = list(self.deps.commits(since))[:MAX_COMMITS]
         written = draft(
             writer, self.content, style=style, today=today, commits=commits, say=self.say
