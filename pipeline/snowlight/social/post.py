@@ -377,6 +377,8 @@ class Run:
             self.say(f"::error::social: the X token lacks the scopes {names}: nothing posts")
             self.stopped(f"The X token lacks the scopes {names}, which a post needs")
             return False
+        if self.chain_lost:
+            return True  # the token works for this run, but the chain stays stopped
         try:
             if self.store.refused_seed() is not None:
                 self.store.working()

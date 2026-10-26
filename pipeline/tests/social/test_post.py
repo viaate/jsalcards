@@ -389,6 +389,7 @@ def test_a_rotated_token_that_cannot_be_stored_opens_the_issue(
     assert "could not be stored" in runner.log
     assert len(world.x.posts) == 1, "the fresh access token still posts the claimed post"
     assert [issue["title"] for issue in world.github.issues] == [TITLE]
+    assert world.github.issues[0]["state"] == "open", "the issue stays open: the chain is lost"
     body = world.github.issues[0]["body"]
     assert body.startswith("X gave the posting workflow a new refresh token, but it could not")
     assert "X refused" not in body
