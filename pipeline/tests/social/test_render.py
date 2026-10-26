@@ -21,6 +21,7 @@ from snowlight.directory.points import encode
 from snowlight.social.picture import Taken
 from snowlight.social.render import (
     RenderError,
+    View,
     directory_of,
     live_root,
     lock_value,
@@ -52,28 +53,24 @@ else { document.getElementById('lock').hidden = false; }
 const NOW = Date.parse('__NOW__');
 const day = (offset) => new Date(NOW + offset * 3600000).toISOString().slice(0, 10);
 const today = day(-4) === day(-8) ? day(-4) : null;
-const stats = { dust: 0, frames: 0, glowCount: __GLOW_OFFSET__ };
+const stats = { dust: 0, frames: 0, glowCount: __GLOW_OFFSET__, dustInView: 0 };
+const at = new URLSearchParams(location.search).get('at');
+const zoom = (at ? Number(at.split(',')[2]) : 4.08) + __ZOOM_OFFSET__;
 window.snowlightMap = {
   ready: false,
   loaded() { return this.ready; }, areTilesLoaded() { return true; }, isMoving() { return false; },
+  getZoom() { return zoom; },
   getLayer(id) { return id === 'snowlight-glow' ? { implementation: { stats } } : undefined; },
 };
 (async () => {
   await fetch('/data/schools/meta.0a1b2c.json');
   await fetch('/data/schools/points.0a1b2c.bin');
-  stats.dust = 4;
+  // As the site: school dust only between zoom 5 and 10.
+  if (zoom > 5 && zoom < 10) { stats.dust = 4; stats.dustInView = 3; }
   const closings = await fetch('/live-root/v1/live/closings.json');
   if (closings.ok) {
     const file = await closings.json();
     for (const group of file.days) if (group.day === today) stats.glowCount += group.gaps.length;
-  }
-  const district = new URLSearchParams(location.search).get('district');
-  if (district !== null) {
-    const file = await (await fetch('/live-root/v1/predictions/latest.json')).json();
-    const column = file.days.indexOf(today ?? day(-4));
-    const row = file.districts[__DISTRICTS__.indexOf(district)];
-    const chance = row.days[column].p_no_school;
-    document.getElementById('panel').textContent = Math.round(chance * 100) + '%';
   }
   stats.frames = 1;
   window.snowlightMap.ready = true;
@@ -88,6 +85,7 @@ class Site:
     predictions: dict[str, Any] | None = None
     lock: bool = True
     glow_offset: int = 0
+    zoom_offset: float = 0.0
     requests: list[str] = field(default_factory=list)
 
 
@@ -111,7 +109,7 @@ def _handler(site: Site) -> type[BaseHTTPRequestHandler]:
                     PAGE.replace("__LOCK__", LOCK if site.lock else "")
                     .replace("__NOW__", site.now.isoformat().replace("+00:00", "Z"))
                     .replace("__GLOW_OFFSET__", str(site.glow_offset))
-                    .replace("__DISTRICTS__", json.dumps(DISTRICTS))
+                    .replace("__ZOOM_OFFSET__", str(site.zoom_offset))
                 )
                 if not site.lock:
                     page = page.replace("localStorage.getItem('sl-lock') === ''", "true")
@@ -178,9 +176,9 @@ def test_practice_mode_takes_the_national_map(served: tuple[Site, str], tmp_path
     taken = render(tmp_path, site=base, now=lambda: site.now, say=said.append)
     assert taken is not None
     assert taken.kind == "national"
-    assert "Not in the picture: Snowlight's chance of no school on December 10 is at most 1%" in (
-        taken.shows
-    )
+    assert (
+        "Not in the picture: Snowlight's chance of no school on Thursday, December 10 is at most 1%"
+    ) in taken.shows
     assert _png_size(tmp_path / "picture.png") == (1600, 900)
     note = Taken.model_validate_json((tmp_path / "picture.json").read_text())
     assert note == taken
@@ -203,25 +201,52 @@ def test_lit_schools_zoom_in_and_match_the_glow(served: tuple[Site, str], tmp_pa
     assert "Across the country the map shows 3 schools" in taken.shows
 
 
-def test_a_district_panel_must_show_its_chance(served: tuple[Site, str], tmp_path: Path) -> None:
+def test_a_high_chance_frames_its_district(served: tuple[Site, str], tmp_path: Path) -> None:
     site, base = served
     site.predictions = _predictions([0.02, 0.41])
     taken = render(tmp_path, site=base, now=lambda: site.now, say=lambda _line: None)
     assert taken is not None
     assert taken.kind == "district"
-    assert taken.query == "?district=2700001"
+    assert taken.query.startswith("?at=44.")
     assert "41%" in taken.shows
+    assert taken.seen.chance is not None
+    assert taken.seen.chance.text == "41%"
+    assert taken.seen.focus is not None
+
+
+def test_a_calm_region_must_draw_its_specks(served: tuple[Site, str], tmp_path: Path) -> None:
+    site, base = served
+    view = View("?at=42.9,-78.8,6.1", "western New York")
+    taken = render(tmp_path, site=base, now=lambda: site.now, say=lambda _line: None, view=view)
+    assert taken is not None
+    assert taken.kind == "region"
+    assert taken.seen.place == "western New York"
+    said: list[str] = []
+    far = View("?at=42.9,-78.8,11", "western New York")
+    assert render(tmp_path, site=base, now=lambda: site.now, say=said.append, view=far) is None
+    assert any("drew no school specks" in line for line in said)
 
 
 @pytest.mark.parametrize(
-    ("lock", "glow_offset", "problem"),
-    [(True, 1, "the map lit 1 schools; the description counts 0"), (False, 0, "no lock check")],
+    "case",
+    [
+        (True, 1, 0.0, "the map lit 1 schools; the description counts 0"),
+        (False, 0, 0.0, "no lock check"),
+        (True, 0, 0.5, "the map opened at zoom 7, not the 6.5 asked"),
+    ],
 )
 def test_a_picture_that_does_not_match_is_dropped_after_one_retry(
-    served: tuple[Site, str], tmp_path: Path, lock: bool, glow_offset: int, problem: str
+    served: tuple[Site, str], tmp_path: Path, case: tuple[bool, int, float, str]
 ) -> None:
     site, base = served
-    site.lock, site.glow_offset = lock, glow_offset
+    lock, glow_offset, zoom_offset, problem = case
+    site.lock, site.glow_offset, site.zoom_offset = lock, glow_offset, zoom_offset
+    if zoom_offset:
+        site.closings = {
+            "generated_at": "2026-12-10T12:05:00Z",
+            "directory": STAMP,
+            "days": [{"day": "2026-12-10", "gaps": [0], "statuses": [0]}],
+        }
     said: list[str] = []
     assert render(tmp_path, site=base, now=lambda: site.now, say=said.append) is None
     tries = [line for line in said if "picture try" in line]

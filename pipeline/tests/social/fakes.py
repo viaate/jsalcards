@@ -373,7 +373,7 @@ def queued(
 
 FRESH_SHOWS = (
     "SYNTHETIC fresh picture: the Snowlight map of the US at night taken at 11:37 AM Central"
-    " time on October 26, 2026: every school is a faint dot of light."
+    " time on October 26, 2026: black land, gray state lines and city names."
 )
 
 
@@ -396,6 +396,7 @@ def make_picture(
         "taken_at": taken_at.isoformat(),
         "current": current,
         "lit": 0,
+        "seen": {},
         "file": "picture.png",
     }
     (folder / "picture.json").write_text(json.dumps(note))

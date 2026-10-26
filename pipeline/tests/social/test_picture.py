@@ -9,13 +9,21 @@ import pytest
 
 from snowlight.directory.points import Points
 from snowlight.social.picture import (
+    DISTRICT_X,
+    WIDTH,
+    Counts,
     Directory,
     PictureError,
     busiest_view,
     chance_text,
     choose,
+    clock,
+    district_frame,
     lit_schools,
+    project,
+    region,
     today_everywhere,
+    unproject,
 )
 
 # Ten public schools: six around Buffalo, NY (36...), two in Pennsylvania (42...) near them,
@@ -101,6 +109,12 @@ def test_closings_zoom_to_the_busiest_window_and_say_what_glows() -> None:
     assert "Across the country the map shows 9 schools" in shows
     assert "updated at 6:05 AM Central time." in shows
     assert "Buffalo" not in shows, "no place below the state is named"
+    seen = picture.seen
+    assert seen.in_view == Counts(closed=5, delayed=1, remote=1, early_dismissal=0)
+    assert seen.states == ("New York", "Pennsylvania")
+    assert seen.lit == 9
+    assert seen.closings_read
+    assert seen.closings_at == at("2026-12-10T12:05")
 
 
 def test_an_old_closings_file_is_not_called_current() -> None:
@@ -117,26 +131,40 @@ def test_an_old_closings_file_is_not_called_current() -> None:
 
 
 @pytest.mark.parametrize(
-    ("file", "now"),
+    ("file", "now", "read"),
     [
-        # Another directory's file is not read by the page.
-        ({**closings([(0, 0)], "2026-12-10", "2026-12-10T12:05:00Z"), "directory": {}}, "12:10"),
+        # Another directory's file is not read by the page: nothing is said about closings.
+        (
+            {**closings([(0, 0)], "2026-12-10", "2026-12-10T12:05:00Z"), "directory": {}},
+            "12:10",
+            False,
+        ),
         # The hours between days light nothing.
-        (closings([(0, 0)], "2026-12-10", "2026-12-10T05:00:00Z"), "05:10"),
+        (closings([(0, 0)], "2026-12-10", "2026-12-10T05:00:00Z"), "05:10", True),
         # Yesterday's rows light nothing today.
-        (closings([(0, 0)], "2026-12-09", "2026-12-10T12:05:00Z"), "12:10"),
-        (None, "12:10"),
+        (closings([(0, 0)], "2026-12-09", "2026-12-10T12:05:00Z"), "12:10", True),
+        # Practice mode: a 404, nothing is said about closings.
+        (None, "12:10", False),
     ],
 )
-def test_no_lit_school_gives_the_national_map(file: dict[str, Any] | None, now: str) -> None:
+def test_no_lit_school_gives_the_national_map(
+    file: dict[str, Any] | None, now: str, read: bool
+) -> None:
     picture = choose(
         closings=file, predictions=None, directory=directory(), now=at(f"2026-12-10T{now}")
     )
     assert picture.kind == "national"
     assert picture.query == ""
     assert picture.lit == 0
-    assert "No school is lit up for weather on the map." in picture.shows
+    assert picture.seen.closings_read is read
+    assert ("No school is lit up for weather on the map." in picture.shows) is read
+    if not read:
+        assert "closing" not in picture.shows.lower()
+        assert "lit" not in picture.shows
     assert "at night" in picture.shows
+    # The site draws no school specks at the national zoom: the words never say it does.
+    assert "draws no school specks" in picture.shows
+    assert "dot" not in picture.shows
 
 
 def test_a_high_chance_opens_that_districts_panel() -> None:
@@ -156,12 +184,20 @@ def test_a_high_chance_opens_that_districts_panel() -> None:
         now=at("2026-12-10T15:00"),
     )
     assert picture.kind == "district"
-    assert picture.query == "?district=2700001"
-    assert picture.panel == "37%"
-    assert "public school district in Minnesota open" in picture.shows
-    assert "chance of no school on December 10 is 37%, the highest of any district" in (
+    assert picture.query.startswith("?at=")
+    assert "district" not in picture.query, "no panel opens: the map alone is pictured"
+    assert "schools of a public school district in Minnesota" in picture.shows
+    assert "chance of no school on Thursday, December 10 is 37%, the highest of any" in (
         picture.shows
     )
+    assert "The map does not draw the chance" in picture.shows
+    assert "2700001" not in picture.shows, "no district is named"
+    seen = picture.seen
+    assert seen.state == "Minnesota"
+    assert seen.chance is not None
+    assert (seen.chance.text, seen.chance.scope, seen.chance.districts) == ("37%", "district", 2)
+    assert seen.focus is not None
+    assert seen.in_view is None
 
 
 def test_a_calm_day_says_the_chance_is_not_in_the_picture() -> None:
@@ -173,16 +209,21 @@ def test_a_calm_day_says_the_chance_is_not_in_the_picture() -> None:
     )
     assert picture.kind == "national"
     assert (
-        "Not in the picture: Snowlight's chance of no school on October 26 is at most 1% in "
-        "every one of the 2 districts with a chance."
+        "Not in the picture: Snowlight's chance of no school on Monday, October 26 is at most 1%"
+        " in every one of the 2 districts with a chance."
     ) in picture.shows
+    assert picture.seen.chance is not None
+    assert picture.seen.chance.at_most
+    assert picture.seen.chance.text == "1%"
     some = choose(
         closings=None,
         predictions=predictions([0.06, None], ("2026-10-25", "2026-10-26")),
         directory=directory(),
         now=at("2026-10-26T16:37"),
     )
-    assert "highest chance of no school on October 26 in any district is 6%" in some.shows
+    assert "highest chance of no school on Monday, October 26 in any district is 6%" in some.shows
+    assert some.seen.chance is not None
+    assert (some.seen.chance.text, some.seen.chance.at_most) == ("6%", False)
     other = choose(
         closings=None,
         predictions={**predictions([0.5], ("2026-10-25", "2026-10-26")), "directory": {}},
@@ -257,3 +298,59 @@ def test_chances_are_written_as_the_page_writes_them() -> None:
         "99%",
         ">99%",
     ]
+
+
+def test_the_map_projection_round_trips_and_matches_maplibre() -> None:
+    x, y = project(np.asarray([0.0, -95.0]), np.asarray([0.0, 40.0]), 0.0)
+    assert (float(x[0]), float(y[0])) == pytest.approx((256.0, 256.0))
+    lon, lat = unproject(float(x[1]) * 8, float(y[1]) * 8, 3.0)
+    assert (lon, lat) == pytest.approx((-95.0, 40.0))
+
+
+def test_a_district_is_framed_on_the_left_with_its_box() -> None:
+    framed = district_frame(directory(), 0)
+    assert framed is not None
+    query, box = framed
+    lat, lon, zoom = (float(part) for part in query.removeprefix("?at=").split(","))
+    assert 7.0 <= zoom <= 12.0
+    # The six Buffalo schools sit around DISTRICT_X across the picture, inside the frame.
+    assert (box.x0 + box.x1) / 2 == pytest.approx(DISTRICT_X * WIDTH, abs=1)
+    assert 0 <= box.x0 < box.x1 <= 800
+    assert 0 <= box.y0 < box.y1 <= 900
+    # The center is east of the schools, so they land left of the middle.
+    assert lon > -78.775
+    assert 42.7 < lat < 43.0
+    empty = Directory(
+        "2026-10-14",
+        SCHOOLS,
+        (*DISTRICTS, "3600009"),
+        directory().points,
+    )
+    assert district_frame(empty, 2) is None
+
+
+def test_a_region_picture_is_calm_only() -> None:
+    picture = region(
+        query="?at=40.9,-80.6,6.1",
+        place="the Great Lakes and the Northeast",
+        closings=None,
+        directory=directory(),
+        now=at("2026-10-26T04:44"),
+    )
+    assert picture.kind == "region"
+    assert picture.seen.place == "the Great Lakes and the Northeast"
+    assert "each school in the directory drawn as a faint white speck" in picture.shows
+    assert "closing" not in picture.shows.lower()
+    with pytest.raises(PictureError, match="lit"):
+        region(
+            query="?at=40.9,-80.6,6.1",
+            place="the Great Lakes and the Northeast",
+            closings=closings([(0, 0)], "2026-12-10", "2026-12-10T12:05:00Z"),
+            directory=directory(),
+            now=at("2026-12-10T12:10"),
+        )
+
+
+def test_the_clock_carries_its_zone() -> None:
+    assert clock(at("2026-12-10T12:05")) == "6:05 AM CT"
+    assert clock(at("2026-07-10T23:59")) == "6:59 PM CT"

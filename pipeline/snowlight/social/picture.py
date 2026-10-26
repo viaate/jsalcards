@@ -1,23 +1,27 @@
 """What a post's fresh picture shows, worked out from the live files the deployed map reads.
 
 The picture is taken in the social-post workflow from the real site (:mod:`snowlight.social.
-render`). Before the browser opens, :func:`choose` reads the same files the page reads and
-picks the view:
+render`): the map alone, every piece of the site's interface hidden, then laid into a branded
+card (:mod:`snowlight.social.cards`). Before the browser opens, :func:`choose` reads the same
+files the page reads and picks the view:
 
 * **Closings on the map**: when ``live/closings.json`` holds schools for the day the map
   shows (the day that is today in every contiguous US time zone, 08:00 to 04:00 UTC, as
   ``web/src/data/closings.ts`` has it) under the deployed directory's stamp, the map is
-  zoomed (``?at=lat,lon,zoom``) to the window of the screen's size holding the most of them.
+  zoomed (``?at=lat,lon,zoom``) to the window of the picture's size holding the most of them.
 * **Else a high chance**: when a district's chance of no school today is at least
-  :data:`PANEL_MIN_CHANCE`, the district with the highest one, its panel open
-  (``?district=<id>``).
-* **Else the national map at night**, every school a dot.
+  :data:`PANEL_MIN_CHANCE`, the district with the highest one, framed by its schools on the
+  left of the picture (:data:`DISTRICT_X`), the right side left free for the card's number.
+  The map draws no chance, so the chance is a number on the card, never on the map.
+* **Else the national map at night**: black land, state lines and city names. The site draws
+  no school specks at this zoom (it draws them only between zoom 5 and 10).
 
-It also writes :attr:`Picture.shows`: the plain facts about the picture (the time, the place
-by state, the counts and the chance), the only things a post may say about it. No school,
-district or person is named. The browser is then served exactly the files described (the
-render answers the page's requests for them), and the render checks the page lit as many
-schools as the description counts.
+It also writes :attr:`Picture.shows`, the plain facts about the picture (the time, the place
+by state, the counts and the chance), the only things a post may say about it, and the same
+facts as fields (:class:`Seen`) for the card. No school, district or person is named. When
+``closings.json`` was not read (a 404 in practice mode, or another directory's file) nothing
+is said about closings at all. The browser is then served exactly the files described, and
+the render checks the page lit as many schools as the description counts.
 """
 
 import math
@@ -38,8 +42,15 @@ ZOOM: Final = 6.5
 """The zoom of a closings view: a few states across on a 1600 x 900 picture."""
 WIDTH: Final = 1600
 HEIGHT: Final = 900
+TILE: Final = 512
+"""MapLibre's tile size in CSS pixels: the world is ``TILE * 2**zoom`` pixels across."""
 PANEL_MIN_CHANCE: Final = 0.10
-"""The chance of no school that earns a district's panel instead of the national map."""
+"""The chance of no school that earns a district's view instead of the national map."""
+DISTRICT_X: Final = 0.34
+"""Where a district's schools are centered across the picture (the card's text goes right)."""
+DISTRICT_BOX: Final = (520.0, 560.0)
+"""The most a district's schools may span in the picture, in pixels (width, height)."""
+DISTRICT_ZOOMS: Final = (7.0, 12.0)
 FRESH: Final = timedelta(minutes=20)
 """How old a closings file may be and still be called live (web/src/state/freshness.ts)."""
 LEAD: Final = timedelta(minutes=2)
@@ -47,8 +58,10 @@ LEAD: Final = timedelta(minutes=2)
 EAST_OFFSET: Final = timedelta(hours=-4)
 WEST_OFFSET: Final = timedelta(hours=-8)
 SHOWN_ZONE: Final = ZoneInfo("America/Chicago")
-"""The zone the picture's browser and its description tell time in."""
+"""The zone the picture's browser, its description and its card tell time in."""
+ZONE_SHORT: Final = "CT"
 MAX_CANDIDATES: Final = 2000
+STATUS_KEYS: Final = ("closed", "delayed", "remote", "early_dismissal")
 STATUS_WORDS: Final = ("closed", "delayed", "remote", "dismissing early")
 
 STATES: Final[Mapping[str, str]] = {
@@ -66,7 +79,8 @@ STATES: Final[Mapping[str, str]] = {
 }  # fmt: skip
 """State names by the FIPS code a public school's or district's NCES id starts with."""
 
-type Kind = Literal["closings", "district", "national"]
+type Kind = Literal["closings", "district", "national", "region"]
+"""``region`` is a calm view at a chosen place and zoom, taken only for the image library."""
 
 FILE: Final = "picture.png"
 NOTE: Final = "picture.json"
@@ -93,6 +107,76 @@ class Directory:
         }
 
 
+class Box(BaseModel):
+    """A box in the 1600 x 900 picture, in pixels."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    x0: float
+    y0: float
+    x1: float
+    y1: float
+
+
+class Counts(BaseModel):
+    """Lit schools by status (the four the map draws)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    closed: int = Field(ge=0)
+    delayed: int = Field(ge=0)
+    remote: int = Field(ge=0)
+    early_dismissal: int = Field(ge=0)
+
+    @property
+    def total(self) -> int:
+        return self.closed + self.delayed + self.remote + self.early_dismissal
+
+    def as_list(self) -> list[int]:
+        return [self.closed, self.delayed, self.remote, self.early_dismissal]
+
+
+class Chance(BaseModel):
+    """A chance of no school the card may show as a number (the map draws none)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    text: str = Field(pattern=r"^(<1|>99|[1-9][0-9]?)%$")
+    """As the page writes it (:func:`chance_text`)."""
+    day: date
+    scope: Literal["district", "highest"]
+    """``district``: the pictured district's, the highest of any; ``highest``: the highest of
+    any district, not pictured (the national view)."""
+    districts: int = Field(ge=1)
+    """How many districts have a chance that day."""
+    at_most: bool
+    """Whether the highest chance rounds to 1% or less ("at most 1% in every district")."""
+
+
+class Seen(BaseModel):
+    """The picture's facts as fields: everything a card may print, filled by code."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    in_view: Counts | None = None
+    """Closings view: the lit schools inside the picture, by status."""
+    states: tuple[str, ...] = Field(default=(), max_length=2)
+    """Closings view: the states most of the lit public schools in view are in, most first."""
+    lit: int = Field(default=0, ge=0)
+    """How many schools the map lights across the country."""
+    closings_at: datetime | None = None
+    """When the closings file was written (closings view)."""
+    closings_read: bool = False
+    """Whether the page read a closings file of the deployed directory (not a 404)."""
+    chance: Chance | None = None
+    state: str | None = None
+    """District view: the district's state."""
+    focus: Box | None = None
+    """District view: the box its schools span in the picture."""
+    place: str | None = Field(default=None, max_length=60)
+    """Region view: the place's plain name."""
+
+
 @dataclass(frozen=True, slots=True)
 class Picture:
     """The view to take and what it shows."""
@@ -107,8 +191,7 @@ class Picture:
     :data:`FRESH` is not)."""
     lit: int
     """How many schools the page lights, across the country (the render checks it)."""
-    panel: str | None = None
-    """The chance the open panel shows, as the page writes it (the render checks it)."""
+    seen: Seen
 
 
 def today_everywhere(now: datetime) -> date | None:
@@ -118,10 +201,15 @@ def today_everywhere(now: datetime) -> date | None:
     return east if east == west else None
 
 
-def _clock(moment: datetime) -> str:
+def clock(moment: datetime) -> str:
+    """The time in the shown zone, with the zone: "6:42 AM CT"."""
     local = moment.astimezone(SHOWN_ZONE)
     hour = local.hour % 12 or 12
-    return f"{hour}:{local.minute:02d} {'AM' if local.hour < 12 else 'PM'} Central time"  # noqa: PLR2004
+    return f"{hour}:{local.minute:02d} {'AM' if local.hour < 12 else 'PM'} {ZONE_SHORT}"  # noqa: PLR2004
+
+
+def _clock(moment: datetime) -> str:
+    return clock(moment).removesuffix(ZONE_SHORT) + "Central time"
 
 
 def _day(moment: datetime) -> str:
@@ -168,6 +256,11 @@ class Lit:
     generated_at: datetime
 
 
+def closings_read(closings: Mapping[str, object] | None, directory: Directory) -> bool:
+    """Whether the page reads this closings file at all (one of the deployed directory)."""
+    return closings is not None and closings.get("directory") == directory.stamp()
+
+
 def lit_schools(
     closings: Mapping[str, object] | None, directory: Directory, now: datetime
 ) -> Lit | None:
@@ -180,7 +273,7 @@ def lit_schools(
     if closings is None:
         return None
     generated_at = _instant(closings.get("generated_at"), "closings.json")
-    if closings.get("directory") != directory.stamp():
+    if not closings_read(closings, directory):
         return None
     shown = today_everywhere(now)
     days = closings.get("days")
@@ -203,41 +296,51 @@ def lit_schools(
     return None
 
 
-def _window(lat: float) -> tuple[float, float]:
-    """The picture's span in degrees of longitude and latitude, centered at ``lat`` (one
-    512-pixel MapLibre tile spans 360 / 2^zoom degrees, web/src/state/url.ts)."""
-    scale = 360.0 / (512.0 * 2.0**ZOOM)
-    return WIDTH * scale, HEIGHT * scale * float(np.cos(np.radians(lat)))
+def project(
+    lon: npt.NDArray[np.float64], lat: npt.NDArray[np.float64], zoom: float
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Web Mercator world pixels at ``zoom``, as MapLibre draws them (512-pixel tiles)."""
+    world = TILE * 2.0**zoom
+    x = (lon + 180.0) / 360.0 * world
+    sin = np.sin(np.radians(np.clip(lat, -85.05, 85.05)))
+    y = (0.5 - np.log((1 + sin) / (1 - sin)) / (4 * np.pi)) * world
+    return x, y
 
 
-def _inside(
-    lon: npt.NDArray[np.float64], lat: npt.NDArray[np.float64], center: tuple[float, float]
-) -> npt.NDArray[np.bool_]:
-    width, height = _window(center[1])
-    return (np.abs(lon - center[0]) <= width / 2) & (np.abs(lat - center[1]) <= height / 2)
+def unproject(x: float, y: float, zoom: float) -> tuple[float, float]:
+    """The (lon, lat) of world pixel ``(x, y)`` at ``zoom``."""
+    world = TILE * 2.0**zoom
+    lon = x / world * 360.0 - 180.0
+    lat = math.degrees(math.atan(math.sinh(math.pi * (1 - 2 * y / world))))
+    return lon, lat
 
 
 def busiest_view(
     lon: npt.NDArray[np.float64], lat: npt.NDArray[np.float64]
 ) -> tuple[tuple[float, float], npt.NDArray[np.bool_]]:
-    """The center of the picture-sized window holding the most points, and which points it
-    holds. Candidates are the points themselves (every k-th one past
-    :data:`MAX_CANDIDATES`); ties go to the earlier point, so the choice is repeatable."""
-    step = max(1, len(lon) // MAX_CANDIDATES)
+    """The center (lon, lat) of the picture-sized window at :data:`ZOOM` holding the most
+    points, and which points it holds. Candidates are the points themselves (every k-th one
+    past :data:`MAX_CANDIDATES`); ties go to the earlier point, so the choice is repeatable."""
+    x, y = project(lon, lat, ZOOM)
+
+    def inside(cx: float, cy: float) -> npt.NDArray[np.bool_]:
+        held: npt.NDArray[np.bool_] = (np.abs(x - cx) <= WIDTH / 2) & (np.abs(y - cy) <= HEIGHT / 2)
+        return held
+
+    step = max(1, len(x) // MAX_CANDIDATES)
     best = -1
-    center = (float(lon[0]), float(lat[0]))
-    for index in range(0, len(lon), step):
-        candidate = (float(lon[index]), float(lat[index]))
-        count = int(_inside(lon, lat, candidate).sum())
+    center = (float(x[0]), float(y[0]))
+    for index in range(0, len(x), step):
+        count = int(inside(float(x[index]), float(y[index])).sum())
         if count > best:
-            best, center = count, candidate
-    held = _inside(lon, lat, center)
+            best, center = count, (float(x[index]), float(y[index]))
+    held = inside(*center)
     # Centered on the lit schools it holds, which keeps (nearly) all of them in view.
-    moved = (float(lon[held].mean()), float(lat[held].mean()))
-    moved_held = _inside(lon, lat, moved)
+    moved = (float(x[held].mean()), float(y[held].mean()))
+    moved_held = inside(*moved)
     if int(moved_held.sum()) >= int(held.sum()):
-        return moved, moved_held
-    return center, held
+        center, held = moved, moved_held
+    return unproject(center[0], center[1], ZOOM), held
 
 
 def _states(ids: Sequence[str]) -> list[str]:
@@ -251,10 +354,19 @@ def _and(names: Sequence[str]) -> str:
     return " and ".join(names)
 
 
-def _status_counts(statuses: npt.NDArray[np.int64]) -> str:
+def _counts(statuses: npt.NDArray[np.int64]) -> Counts:
     counts = np.bincount(statuses, minlength=4)
-    parts = [f"{int(counts[code])} {STATUS_WORDS[code]}" for code in range(4) if counts[code]]
-    return ", ".join(parts)
+    return Counts(
+        closed=int(counts[0]),
+        delayed=int(counts[1]),
+        remote=int(counts[2]),
+        early_dismissal=int(counts[3]),
+    )
+
+
+def _status_counts(counts: Counts) -> str:
+    values = counts.as_list()
+    return ", ".join(f"{values[code]} {STATUS_WORDS[code]}" for code in range(4) if values[code])
 
 
 def _closings_picture(lit: Lit, directory: Directory, now: datetime) -> Picture:
@@ -264,6 +376,7 @@ def _closings_picture(lit: Lit, directory: Directory, now: datetime) -> Picture:
     (center_lon, center_lat), held = busiest_view(lon, lat)
     in_view = lit.schools[held]
     states = _states([directory.school_ids[int(index)] for index in in_view])
+    counts = _counts(lit.statuses[held])
     total = len(lit.schools)
     current = -LEAD <= now - lit.generated_at <= FRESH
     updated = (
@@ -277,12 +390,19 @@ def _closings_picture(lit: Lit, directory: Directory, now: datetime) -> Picture:
     shows = (
         f"A picture of the Snowlight map taken at {_clock(now)} on {_day(now)}, zoomed to the "
         f"area with the most schools lit up for weather: {len(in_view)} schools glow in this "
-        f"view ({_status_counts(lit.statuses[held])}){place}. Across the country the map "
+        f"view ({_status_counts(counts)}){place}. Across the country the map "
         f"shows {total} schools closed, delayed, remote or dismissing early for {_day_of(lit.day)}."
         f" {updated}"
     )
     query = f"?at={center_lat:.4f},{center_lon:.4f},{ZOOM:g}"
-    return Picture("closings", query, shows, now, current, total)
+    seen = Seen(
+        in_view=counts,
+        states=tuple(states),
+        lit=total,
+        closings_at=lit.generated_at,
+        closings_read=True,
+    )
+    return Picture("closings", query, shows, now, current, total, seen)
 
 
 def _day_of(day: date) -> str:
@@ -350,6 +470,41 @@ def chance_text(chance: float) -> str:
     return f"{percent}%"
 
 
+def district_frame(directory: Directory, index: int) -> tuple[str, Box] | None:
+    """The ``?at=`` query that frames district ``index``'s schools on the left of the
+    picture (centered at :data:`DISTRICT_X`, spanning at most :data:`DISTRICT_BOX`), and the
+    box they span; ``None`` when the directory places no school in it."""
+    points = directory.points
+    mine = points.district == index
+    if not bool(mine.any()):
+        return None
+    lon = points.lon_e6[mine].astype(np.float64) / 1e6
+    lat = points.lat_e6[mine].astype(np.float64) / 1e6
+    x, y = project(lon, lat, 0.0)
+    span_x = max(float(x.max() - x.min()), 1e-9)
+    span_y = max(float(y.max() - y.min()), 1e-9)
+    fit = math.log2(min(DISTRICT_BOX[0] / span_x, DISTRICT_BOX[1] / span_y))
+    # Two decimals, as a link carries a zoom (web/src/state/url.ts), rounded down to fit.
+    zoom = math.floor(min(max(fit, DISTRICT_ZOOMS[0]), DISTRICT_ZOOMS[1]) * 100) / 100
+    scale = 2.0**zoom
+    mid_x = float(x.min() + x.max()) / 2 * scale
+    mid_y = float(y.min() + y.max()) / 2 * scale
+    lon_c, lat_c = unproject(mid_x + (WIDTH / 2 - DISTRICT_X * WIDTH), mid_y, zoom)
+    left = DISTRICT_X * WIDTH - mid_x
+    top = HEIGHT / 2 - mid_y
+    box = Box(
+        x0=round(float(x.min()) * scale + left, 1),
+        y0=round(float(y.min()) * scale + top, 1),
+        x1=round(float(x.max()) * scale + left, 1),
+        y1=round(float(y.max()) * scale + top, 1),
+    )
+    return f"?at={lat_c:.5f},{lon_c:.5f},{zoom:.2f}", box
+
+
+def _weekday(day: date) -> str:
+    return f"{day:%A}"
+
+
 def choose(
     *,
     closings: Mapping[str, object] | None,
@@ -366,51 +521,109 @@ def choose(
     lit = lit_schools(closings, directory, now)
     if lit is not None:
         return _closings_picture(lit, directory, now)
+    read = closings_read(closings, directory)
     today = today_everywhere(now) or (now + EAST_OFFSET).date()
     high = highest_chance(predictions, directory, today)
-    closings_line = "No school is lit up for weather on the map."
+    # Nothing is said about closings unless the page read a closings file (practice mode
+    # serves none: a 404 says nothing about schools).
+    closings_line = " No school is lit up for weather on the map." if read else ""
     if high is not None and high[0] >= PANEL_MIN_CHANCE:
-        chance, index, _ = high
-        district = directory.district_ids[index]
-        state = STATES.get(district[:2])
-        where = f" in {state}" if state else ""
-        shows = (
-            f"A picture of the Snowlight map taken at {_clock(now)} on {_day(now)}, with the "
-            f"panel of a public school district{where} open: its chance of no school on "
-            f"{_day_of(today)} is {chance_text(chance)}, the highest of any district that day. "
-            f"{closings_line}"
-        )
-        return Picture(
-            "district", f"?district={district}", shows, now, True, 0, chance_text(chance)
-        )
+        chance, index, counted = high
+        frame = district_frame(directory, index)
+        if frame is not None:
+            query, box = frame
+            district = directory.district_ids[index]
+            state = STATES.get(district[:2])
+            where = f" in {state}" if state else ""
+            shows = (
+                f"A picture of the Snowlight map taken at {_clock(now)} on {_day(now)}, zoomed "
+                f"to the schools of a public school district{where}: its chance of no school on "
+                f"{_weekday(today)}, {_day_of(today)} is {chance_text(chance)}, the highest of "
+                f"any district that day. The map does not draw the chance; the card shows it."
+                f"{closings_line}"
+            )
+            seen = Seen(
+                closings_read=read,
+                chance=Chance(
+                    text=chance_text(chance),
+                    day=today,
+                    scope="district",
+                    districts=counted,
+                    at_most=False,
+                ),
+                state=state,
+                focus=box,
+            )
+            return Picture("district", query, shows, now, True, 0, seen)
+    chance_seen: Chance | None = None
     if high is None:
         chance_line = ""
     elif high[0] == 0 or _percent(high[0]) <= 1:
         chance_line = (
-            f" Not in the picture: Snowlight's chance of no school on {_day_of(today)} is at most"
-            f" {max(1, _percent(high[0]))}% in every one of the {high[2]} districts with a chance."
+            f" Not in the picture: Snowlight's chance of no school on {_weekday(today)}, "
+            f"{_day_of(today)} is at most {max(1, _percent(high[0]))}% in every one of the "
+            f"{high[2]} districts with a chance."
         )
+        chance_seen = Chance(text="1%", day=today, scope="highest", districts=high[2], at_most=True)
     else:
         chance_line = (
-            f" Not in the picture: Snowlight's highest chance of no school on {_day_of(today)} in"
-            f" any district is {chance_text(high[0])}."
+            f" Not in the picture: Snowlight's highest chance of no school on {_weekday(today)},"
+            f" {_day_of(today)} in any district is {chance_text(high[0])}."
+        )
+        chance_seen = Chance(
+            text=chance_text(high[0]),
+            day=today,
+            scope="highest",
+            districts=high[2],
+            at_most=False,
         )
     shows = (
-        f"A picture of the Snowlight map of the US at night taken at {_clock(now)} on "
-        f"{_day(now)}: every school is a faint dot of light. {closings_line}{chance_line}"
+        f"A picture of the Snowlight map of the contiguous US at night taken at {_clock(now)} "
+        f"on {_day(now)}: black land, gray state lines and city names. At this zoom the map "
+        f"draws no school specks.{closings_line}{chance_line}"
     )
-    return Picture("national", "", shows, now, True, 0)
+    seen = Seen(closings_read=read, chance=chance_seen)
+    return Picture("national", "", shows, now, True, 0, seen)
+
+
+def region(
+    *,
+    query: str,
+    place: str,
+    closings: Mapping[str, object] | None,
+    directory: Directory,
+    now: datetime,
+) -> Picture:
+    """A calm view of ``place`` at a zoom where the map draws every school as a faint speck
+    (the image library's pictures; never chosen for a post by itself). Only when the map
+    lights no school.
+
+    Raises:
+        PictureError: the map lights schools now (take :func:`choose`'s view then).
+    """
+    now = now.astimezone(UTC)
+    if lit_schools(closings, directory, now) is not None:
+        raise PictureError("schools are lit: a calm region picture would leave them out")
+    read = closings_read(closings, directory)
+    closings_line = " No school is lit up for weather on the map." if read else ""
+    shows = (
+        f"A picture of the Snowlight map at night over {place}, taken at {_clock(now)} on "
+        f"{_day(now)}: each school in the directory drawn as a faint white speck, with gray "
+        f"state lines and city names.{closings_line}"
+    )
+    return Picture("region", query, shows, now, True, 0, Seen(closings_read=read, place=place))
 
 
 class Taken(BaseModel):
-    """``picture.json``: what the fresh picture shows, for the post step."""
+    """``picture.json``: what the fresh picture shows, for the cards and the post step."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     kind: Kind
     query: str = Field(max_length=80)
-    shows: str = Field(min_length=20, max_length=600)
+    shows: str = Field(min_length=20, max_length=800)
     taken_at: datetime
     current: bool
     lit: int = Field(ge=0)
+    seen: Seen
     file: str = Field(pattern=r"^picture\.png$")
