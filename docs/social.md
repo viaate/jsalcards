@@ -74,7 +74,7 @@ token changes every time it is used. Each run that posts:
    fingerprint of the secret the chain started from, so a newly pasted secret is noticed);
 3. stores the new refresh token right away, sealed with AES-256-GCM under a key derived
    (HKDF-SHA256) from `X_CLIENT_SECRET`, with `UPDATE ... WHERE version = <read> AND lease =
-   <this run>`: the version goes up by one, and a run that lost the row stores nothing;
+<this run>`: the version goes up by one, and a run that lost the row stores nothing;
 4. uploads the image (`POST /2/media/upload`, scope `media.write`) and posts
    (`POST /2/tweets`), recording the post id in D1.
 
@@ -93,11 +93,11 @@ itself when a refresh works again.
 
 ## Secrets (the owner adds them; never paste them anywhere else)
 
-| Secret | Where | What for |
-| --- | --- | --- |
-| `X_CLIENT_ID`, `X_CLIENT_SECRET`, `X_REFRESH_TOKEN` | environment `x-posting` | the X app and the first refresh token |
-| `ANTHROPIC_API_KEY` | environment `x-posting` | Haiku's daily post (a dedicated key with a monthly spend limit) |
-| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | repository (already there) | the D1 store |
+| Secret                                              | Where                      | What for                                                        |
+| --------------------------------------------------- | -------------------------- | --------------------------------------------------------------- |
+| `X_CLIENT_ID`, `X_CLIENT_SECRET`, `X_REFRESH_TOKEN` | environment `x-posting`    | the X app and the first refresh token                           |
+| `ANTHROPIC_API_KEY`                                 | environment `x-posting`    | Haiku's daily post (a dedicated key with a monthly spend limit) |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`     | repository (already there) | the D1 store                                                    |
 
 The `x-posting` environment is limited to the default branch. The workflow has no trigger a
 fork or pull request can fire (no `pull_request`, `pull_request_target` or
