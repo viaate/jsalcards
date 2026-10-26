@@ -9,6 +9,10 @@ Every post carries one real image and passes the same checks first. Code:
 GitHub mobile). Deleting the workflow file or removing the X secrets from the `x-posting`
 environment stops it too. Nothing else posts on the account.
 
+X asks that an account posting by itself carries its **Automated** label: on X, the
+account's Settings > Your account > Account information > Automation, with the owner's
+own account as the managing one.
+
 ## What posts, and when
 
 - **Queued posts** (`social/queue/<NNNN>.json` and its image): a push to the default branch
