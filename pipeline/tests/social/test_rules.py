@@ -95,16 +95,17 @@ def test_a_waitlist_post_must_point_at_the_bio() -> None:
     )
 
 
-def test_numbers_must_come_from_the_facts_or_the_image() -> None:
+def test_numbers_must_come_from_the_facts_and_never_from_the_picture() -> None:
     assert (
         problems("118,211 schools in 18,227 districts so far. The map is in private testing.") == []
     )
-    assert problems("The image is from 2026-10-20.") == []
+    found = problems("The image is from 2026-10-20.")
+    assert any("(the card shows the picture's)" in line for line in found), found
     assert any("the number 146" in line for line in problems("146 schools"))
 
 
 def test_a_stale_image_is_never_presented_as_now() -> None:
-    assert any("not from today" in line for line in problems("Snowlight right now", today=False))
+    assert any("an older one" in line for line in problems("Snowlight right now", today=False))
     assert problems("Snowlight right now") == []
 
 

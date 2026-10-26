@@ -510,7 +510,7 @@ def test_an_older_picture_is_never_called_current(tmp_path: Path, world: World) 
     now_text = FIRST.replace("Waitlist link", "Right now it is quiet. Waitlist link")
     runner = make(tmp_path, world, queue=[unpictured("0001", now_text)])
     assert runner() == 1
-    assert "it says 'right now' but the image is not from today" in runner.log
+    assert "it says 'right now' but the picture is an older one" in runner.log
     assert world.x.posts == []
     runner.picture = make_picture(tmp_path, at("2026-10-26T16:35:00"))
     assert runner() == 0, "the same words go with a current fresh picture"
@@ -774,3 +774,24 @@ def test_a_claim_a_stopped_run_left_is_never_sent_and_warned_about(
     assert world.x.posts == []
     assert "::warning::social: queue:0001 was claimed by run 999.1" in runner.log
     assert "delete its social_posts row" in runner.log
+
+
+def test_a_draft_after_a_thinking_block_is_read_from_its_text_block(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world)
+    runner.haiku = FakeAnthropic(
+        [{**GOOD_DEV_LOG, "_thinking": ""}, {**OK, "_thinking": "The draft is true."}]
+    )
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert world.x.posts[0]["text"] == GOOD_DEV_LOG["text"]
+
+
+def test_an_answer_cut_off_while_thinking_is_a_failed_try(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world)
+    cut = {"_thinking": "", "_only_thinking": True, "_stop": "max_tokens"}
+    runner.haiku = FakeAnthropic([dict(cut), dict(cut)])
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert world.x.posts == []
+    assert "Haiku stopped early (max_tokens)" in runner.log
+    assert "social: Haiku calls this run: 2" in runner.log

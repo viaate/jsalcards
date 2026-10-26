@@ -67,9 +67,16 @@ is live or available.
 - Never use these words: accurate, accuracy, revolutionary, AI-powered, guaranteed, never \
 wrong, better than, calculator, formula, reconstruction.
 - Never name a TV or radio station, a school, a district or a person.
+- Never use a superlative or a comparison: no "best", "only", "most", "unlike", "vs".
 - Keep it under 240 characters.
+- Write a number only as the facts use it, in digits as they write it; never spell a number \
+out unless the facts do. Never write a number, count, time or date from the picture's \
+description: the card shows those, labeled.
+- Never write "tomorrow", "next week", a weekday or a month unless the facts or the \
+picture's description use it the same way. Never give a launch date.
 - Say only what the image's description says about the image. Never call an older picture \
-current: no "today", "tonight", "this morning" or "right now" about it."""
+current: no "today", "now", "tonight", "currently", "just", "latest", "fresh" or a time \
+about it."""
 
 STYLES: Final[dict[Style, str]] = {
     "dev_log": "Style: a short dev log: one thing I built, fixed or learned, from the facts or "
@@ -81,7 +88,8 @@ STYLES: Final[dict[Style, str]] = {
 CHECKER: Final = """You check one draft post for the X account @SnowlightMap against the facts \
 below, which are the only things known to be true. Answer ok=false, with each problem as one \
 short line, when the draft: states anything the facts or the image description do not \
-support; calls a TESTING or COMING fact live or available; holds a number the facts do not; \
+support; calls a TESTING or COMING fact live or available; holds a number the facts do not, \
+or uses a fact's number for something else; gives a date or a launch day the facts do not; \
 holds a URL, domain or @mention; compares Snowlight with, or names, another site, app or \
 calculator; is hype, salesy or corporate; names a station, school, district or person; or \
 says anything about the image its description does not say, or presents an older picture \

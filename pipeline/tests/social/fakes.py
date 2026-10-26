@@ -312,6 +312,14 @@ class FakeAnthropic:
             )
         stop = answer.pop("_stop", "end_turn")
         text = answer.pop("_text", None)
+        thinking = answer.pop("_thinking", None)
+        content: list[dict[str, Any]] = []
+        if thinking is not None:  # Haiku 5.5 may think first (adaptive thinking)
+            content.append({"type": "thinking", "thinking": thinking, "signature": "c2lnbmVk"})
+        if not answer.pop("_only_thinking", False):
+            content.append(
+                {"type": "text", "text": text if text is not None else json.dumps(answer)}
+            )
         return httpx2.Response(
             200,
             json={
@@ -319,9 +327,7 @@ class FakeAnthropic:
                 "type": "message",
                 "role": "assistant",
                 "model": body["model"],
-                "content": [
-                    {"type": "text", "text": text if text is not None else json.dumps(answer)}
-                ],
+                "content": content,
                 "stop_reason": stop,
                 "stop_sequence": None,
                 "usage": {"input_tokens": 10, "output_tokens": 10},
