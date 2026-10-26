@@ -41,7 +41,16 @@ from snowlight.social.cards import Card, Post
 from snowlight.social.content import Content, ContentError, Image, check_image, load
 from snowlight.social.issue import REFUSED, TOKEN, GitHub, Issue
 from snowlight.social.picture import NOTE, Taken
-from snowlight.social.rules import MENTION, URL, Style, chances_shown, check, mentions_chance
+from snowlight.social.rules import (
+    MENTION,
+    URL,
+    Style,
+    chances_shown,
+    check,
+    closings_shown,
+    mentions_chance,
+    mentions_closings,
+)
 from snowlight.social.store import (
     D1,
     MAX_POSTS_PER_DAY,
@@ -134,14 +143,20 @@ type Fresh = Mapping[str, Image]
 """The run's fresh cards by post style."""
 
 
-def fresh_picture(
-    folder: Path | None, now: datetime, say: Callable[[str], None], *, chances: bool
+def fresh_picture(  # noqa: PLR0911 - one reason a return
+    folder: Path | None,
+    now: datetime,
+    say: Callable[[str], None],
+    *,
+    chances: bool,
+    closings: bool,
 ) -> Fresh:
     """The render job's fresh cards of this run by post style (handed over by
     :mod:`snowlight.social.relay`); none (the reason said) when there is no picture, or it is
     malformed, or it is not from the last :data:`FRESH_FOR`, or, without ``chances`` (the
-    facts file's switch), it gives a chance. A style whose card failed, or whose alt text
-    holds a link or a chance, is left out (that post goes with the library's card)."""
+    facts file's switch), it gives a chance, or, without ``closings``, it shows or speaks of
+    closings. A style whose card failed, or whose alt text holds a link, a chance or (without
+    ``closings``) closings, is left out (that post goes with the library's card)."""
     if folder is None:
         return {}
     note = folder / NOTE
@@ -162,6 +177,15 @@ def fresh_picture(
     ):
         say("::warning::social: the fresh picture gives a chance while chances are TESTING")
         return {}
+    if not closings and (
+        taken.kind == "closings"
+        or taken.lit
+        or taken.seen.lit
+        or taken.seen.closings_read
+        or mentions_closings(taken.shows)
+    ):
+        say("::warning::social: the fresh picture shows closings while they are not LIVE")
+        return {}
     cards: dict[str, Image] = {}
     for style, post in CARD_OF.items():
         try:
@@ -178,6 +202,9 @@ def fresh_picture(
             continue
         if not chances and mentions_chance(card.alt):
             say(f"::warning::social: the {post} card's alt text gives a chance; it is not used")
+            continue
+        if not closings and mentions_closings(card.alt):
+            say(f"::warning::social: the {post} card's alt text shows closings; it is not used")
             continue
         cards[style] = Image(
             id=f"fresh-{taken.taken_at.astimezone(UTC):%Y%m%dt%H%M}",
@@ -624,7 +651,13 @@ def _start(env: Env, root: Path, deps: Deps, picture: Path | None, begun: dateti
         say(f"::warning::social: the D1 store failed ({error}): nothing posts")
         return 1
     now = deps.now()
-    fresh = fresh_picture(picture, now, say, chances=chances_shown(content.facts))
+    fresh = fresh_picture(
+        picture,
+        now,
+        say,
+        chances=chances_shown(content.facts),
+        closings=closings_shown(content.facts),
+    )
     return Run(env, deps, content, store, secrets, github, run_id, now, begun, fresh)
 
 

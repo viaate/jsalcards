@@ -30,9 +30,30 @@ from snowlight.social.render import (
     lock_value,
     render,
 )
-from snowlight.social.rules import mentions_chance
+from snowlight.social.rules import (
+    Facts,
+    chances_shown,
+    closings_shown,
+    mentions_chance,
+    mentions_closings,
+    parse_facts,
+)
 
 LOCK = "c3ludGhldGlj"  # SYNTHETIC: this fixture's own lock value
+
+
+def switches(chances: str, closings: str) -> Facts:
+    """A SYNTHETIC facts file with the two switches as given and the A card's model line."""
+    return parse_facts(
+        f"- [{chances}] chances: SYNTHETIC chances. | terms: chance\n"
+        f"- [{closings}] closings: SYNTHETIC closings on the map. | terms: closings\n"
+        "- [LIVE] model: A prediction model trained on real closing records, not a guess.\n"
+    )
+
+
+SHOWN = switches("LIVE", "LIVE")
+NO_CHANCES = switches("TESTING", "LIVE")
+HELD_BACK = switches("TESTING", "COMING")
 SCHOOLS = ["360000100001", "360000100002", "360000100003", "270000100001"]
 DISTRICTS = ["3600001", "2700001"]
 STAMP = {"generated_on": "2026-10-14", "schools": 4, "districts": 2}
@@ -178,7 +199,7 @@ def test_practice_mode_takes_the_national_map(served: tuple[Site, str], tmp_path
     site, base = served
     site.predictions = _predictions([0.01, 0.01])
     said: list[str] = []
-    taken = render(tmp_path, chances=True, site=base, now=lambda: site.now, say=said.append)
+    taken = render(tmp_path, facts=SHOWN, site=base, now=lambda: site.now, say=said.append)
     assert taken is not None
     assert taken.kind == "national"
     assert (
@@ -198,7 +219,7 @@ def test_lit_schools_zoom_in_and_match_the_glow(served: tuple[Site, str], tmp_pa
         "directory": STAMP,
         "days": [{"day": "2026-12-10", "gaps": [0, 0, 1], "statuses": [0, 1, 0]}],
     }
-    taken = render(tmp_path, chances=True, site=base, now=lambda: site.now, say=lambda _line: None)
+    taken = render(tmp_path, facts=SHOWN, site=base, now=lambda: site.now, say=lambda _line: None)
     assert taken is not None
     assert taken.kind == "closings"
     assert taken.lit == 3
@@ -209,7 +230,7 @@ def test_lit_schools_zoom_in_and_match_the_glow(served: tuple[Site, str], tmp_pa
 def test_a_high_chance_frames_its_district(served: tuple[Site, str], tmp_path: Path) -> None:
     site, base = served
     site.predictions = _predictions([0.02, 0.41])
-    taken = render(tmp_path, chances=True, site=base, now=lambda: site.now, say=lambda _line: None)
+    taken = render(tmp_path, facts=SHOWN, site=base, now=lambda: site.now, say=lambda _line: None)
     assert taken is not None
     assert taken.kind == "district"
     assert taken.query.startswith("?at=44.")
@@ -223,7 +244,7 @@ def test_a_calm_region_must_draw_its_specks(served: tuple[Site, str], tmp_path: 
     site, base = served
     view = View("?at=42.9,-78.8,6.1", "western New York")
     taken = render(
-        tmp_path, chances=True, site=base, now=lambda: site.now, say=lambda _line: None, view=view
+        tmp_path, facts=SHOWN, site=base, now=lambda: site.now, say=lambda _line: None, view=view
     )
     assert taken is not None
     assert taken.kind == "region"
@@ -231,7 +252,7 @@ def test_a_calm_region_must_draw_its_specks(served: tuple[Site, str], tmp_path: 
     said: list[str] = []
     far = View("?at=42.9,-78.8,11", "western New York")
     assert (
-        render(tmp_path, chances=True, site=base, now=lambda: site.now, say=said.append, view=far)
+        render(tmp_path, facts=SHOWN, site=base, now=lambda: site.now, say=said.append, view=far)
         is None
     )
     assert any("drew no school specks" in line for line in said)
@@ -258,7 +279,7 @@ def test_a_picture_that_does_not_match_is_dropped_after_one_retry(
             "days": [{"day": "2026-12-10", "gaps": [0], "statuses": [0]}],
         }
     said: list[str] = []
-    assert render(tmp_path, chances=True, site=base, now=lambda: site.now, say=said.append) is None
+    assert render(tmp_path, facts=SHOWN, site=base, now=lambda: site.now, say=said.append) is None
     tries = [line for line in said if "picture try" in line]
     assert len(tries) == 2
     assert problem in tries[0]
@@ -304,7 +325,7 @@ def test_while_chances_are_testing_no_picture_or_card_gives_one(
     site, base = served
     site.predictions = _predictions([0.01, 0.74])
     said: list[str] = []
-    taken = render(tmp_path, chances=False, site=base, now=lambda: site.now, say=said.append)
+    taken = render(tmp_path, facts=NO_CHANCES, site=base, now=lambda: site.now, say=said.append)
     assert taken is not None
     assert taken.kind == "national"
     assert taken.seen.chance is None
@@ -315,7 +336,7 @@ def test_while_chances_are_testing_no_picture_or_card_gives_one(
         assert not mentions_chance(card.alt), card.alt
     assert not any("74" in line or "chance" in line.lower() for line in said), said
     # The same files with chances LIVE give the district's chance picture.
-    shown = render(tmp_path, chances=True, site=base, now=lambda: site.now, say=said.append)
+    shown = render(tmp_path, facts=SHOWN, site=base, now=lambda: site.now, say=said.append)
     assert shown is not None
     assert shown.kind == "district"
 
@@ -336,10 +357,43 @@ def test_the_render_command_reads_the_switch_from_the_facts_file(
         out=str(tmp_path), root=str(repo), site="", live_dir="", view="", place="", fallback=False
     )
     assert cli._render(args) == 1  # the fake made no picture
-    assert got["chances"] is False, "social/facts.md marks chances TESTING"
+    facts = got["facts"]
+    assert isinstance(facts, Facts)
+    assert not chances_shown(facts), "social/facts.md marks chances TESTING"
+    assert not closings_shown(facts), "social/facts.md marks closings COMING"
     assert got["out"] == tmp_path
     # No facts file: no picture at all (never a guess at the switch).
     got.clear()
     args.root = str(tmp_path)
     assert cli._render(args) == 1
     assert got == {}
+
+
+def test_while_closings_are_not_live_no_picture_or_card_shows_them(
+    served: tuple[Site, str], tmp_path: Path
+) -> None:
+    """The closings switch (SYNTHETIC closings): a file lighting three schools today while the
+    facts file marks closings COMING gives the calm national map, the page is served a 404
+    for the file (no glow), and neither the description, the cards' words nor their alt text
+    say anything of closings."""
+    site, base = served
+    site.closings = {
+        "generated_at": "2026-12-10T12:05:00Z",
+        "directory": STAMP,
+        "days": [{"day": "2026-12-10", "gaps": [0, 0, 1], "statuses": [0, 1, 0]}],
+    }
+    said: list[str] = []
+    taken = render(tmp_path, facts=HELD_BACK, site=base, now=lambda: site.now, say=said.append)
+    assert taken is not None
+    assert taken.kind == "national"
+    assert taken.lit == 0
+    assert not taken.seen.closings_read
+    assert not mentions_closings(taken.shows), taken.shows
+    assert not mentions_chance(taken.shows)
+    for post in ("dev-log", "waitlist"):
+        card = Card.model_validate_json((tmp_path / f"{post}.json").read_text())
+        assert not mentions_closings(card.alt), card.alt
+    # The same files with closings LIVE give the closings view.
+    shown = render(tmp_path, facts=SHOWN, site=base, now=lambda: site.now, say=said.append)
+    assert shown is not None
+    assert shown.kind == "closings"

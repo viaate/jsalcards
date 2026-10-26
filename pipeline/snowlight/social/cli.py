@@ -20,7 +20,7 @@ import httpx
 
 from snowlight.social import logscan
 from snowlight.social.post import Deps, run
-from snowlight.social.rules import FactsError, chances_shown, parse_facts
+from snowlight.social.rules import FactsError, chances_shown, closings_shown, parse_facts
 from snowlight.social.xapi import XClient
 
 SECRET_NAMES: Final = (
@@ -108,12 +108,13 @@ def _render(args: argparse.Namespace) -> int:
     except (OSError, FactsError) as error:
         output.say(f"::error::social: social/facts.md could not be read ({error})")
         return 1
-    chances = chances_shown(facts)
-    if not chances:
+    if not chances_shown(facts):
         output.say("social: chances are TESTING in social/facts.md: no picture gives a chance")
+    if not closings_shown(facts):
+        output.say("social: closings are not LIVE in social/facts.md: no picture shows closings")
     taken = render(
         Path(args.out),
-        chances=chances,
+        facts=facts,
         site=args.site or SITE,
         say=output.say,
         live=Path(args.live_dir) if args.live_dir else None,

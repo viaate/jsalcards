@@ -10,7 +10,9 @@ One attempt:
    the school directory (``schools/meta.*.json``, ``schools/points.*.bin``) and
    ``live/closings.json`` from the live root the page names (the site reads them only at the
    zooms it draws schools at, not at the national view). Read ``predictions/latest.json``
-   from the same root.
+   from the same root, only while the facts file marks chances LIVE. While it marks closings
+   not LIVE, the closings file is dropped: nothing is said about it and the page is served a
+   404 for it (as in practice mode), so no school glows in the picture.
 3. :func:`snowlight.social.picture.choose` picks the view and writes what it shows (or, for
    the image library only, :func:`snowlight.social.picture.region` a calm view asked for).
 4. Open that view with the page served exactly those live files, hide every piece of the
@@ -54,6 +56,7 @@ from snowlight.social.picture import (
     choose,
     region,
 )
+from snowlight.social.rules import Facts, chances_shown, closings_shown
 
 SITE: Final = "https://snowlightmap.com/"
 LOCK_KEY: Final = "sl-lock"
@@ -274,6 +277,17 @@ class Attempt:
             raise RenderError("the page did not ask for the closings file")
         return directory_of(meta.body, points.body), _json(closings), live_root(closings.url)
 
+    def hide_closings(self) -> None:
+        """Serve the page a 404 for the closings file from now on (no school glows)."""
+        kept = self.kept.get("closings")
+        if kept is not None:
+            self.kept["closings"] = Kept(
+                kept.url,
+                404,
+                {"content-type": "application/json", "access-control-allow-origin": "*"},
+                b"{}",
+            )
+
     def predictions(self, page: Page, root: str) -> Mapping[str, object] | None:
         if self.live is not None:
             path = self.live / PREDICTIONS
@@ -337,6 +351,7 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
     live: Path | None,
     view: View | None,
     chances: bool,
+    closings: bool,
 ) -> Taken:
     context = browser.new_context(
         viewport={"width": WIDTH, "height": HEIGHT},
@@ -363,25 +378,32 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
             page = context.new_page()
             attempt = Attempt(context, site, say, live=live)
             attempt.watch(page)
-            directory, closings, root = attempt.files(page)
+            directory, closings_file, root = attempt.files(page)
+            if not closings:
+                # Closings are not LIVE: the picture says nothing of them and the page is
+                # served a 404 for the file, so no school glows (practice mode's map).
+                attempt.hide_closings()
+                closings_file = None
             # While chances are TESTING the predictions are not even read (no picture of a
             # chance, and nothing about one in its description).
             predictions = attempt.predictions(page, root) if chances else None
             picture = (
                 choose(
-                    closings=closings,
+                    closings=closings_file,
                     predictions=predictions,
                     directory=directory,
                     now=now(),
                     chances=chances,
+                    closings_shown=closings,
                 )
                 if view is None
                 else region(
                     query=view.query,
                     place=view.place,
-                    closings=closings,
+                    closings=closings_file,
                     directory=directory,
                     now=now(),
+                    closings_shown=closings,
                 )
             )
             say(f"social: the picture is the {picture.kind} view {picture.query or '(national)'}")
@@ -412,7 +434,7 @@ def _proxy() -> dict[str, str] | None:
 def render(  # noqa: PLR0913 - the render's parts
     out: Path,
     *,
-    chances: bool,
+    facts: Facts,
     site: str = SITE,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
     say: Callable[[str], None],
@@ -428,10 +450,13 @@ def render(  # noqa: PLR0913 - the render's parts
 
     ``live`` serves the live files from a local folder instead of the live root (a dry run
     against a local build); ``view`` and ``fallback`` make the image library's dated cards.
-    The workflow passes none of them. ``chances`` is the facts file's switch
-    (:func:`snowlight.social.rules.chances_shown`): without it no picture or card gives a
-    chance.
+    The workflow passes none of them. ``facts`` holds the facts file's switches
+    (:func:`snowlight.social.rules.chances_shown`, :func:`snowlight.social.rules.closings_shown`):
+    without them no picture or card gives a chance or shows closings, and a card's line must be
+    words of a LIVE fact.
     """
+    chances = chances_shown(facts)
+    closings = closings_shown(facts)
     out.mkdir(parents=True, exist_ok=True)
     stale_files = [FILE, NOTE, *(f"{post}.{ext}" for post in POSTS for ext in ("png", "json"))]
     for stale in stale_files:
@@ -455,6 +480,7 @@ def render(  # noqa: PLR0913 - the render's parts
                         live=live,
                         view=view,
                         chances=chances,
+                        closings=closings,
                     )
                 except (RenderError, PictureError, PlaywrightError) as error:
                     say(f"::warning::social: picture try {attempt} failed: {_short(error)}")
@@ -463,7 +489,7 @@ def render(  # noqa: PLR0913 - the render's parts
                 (out / NOTE).write_text(taken.model_dump_json(indent=2) + "\n", encoding="utf-8")
                 say(f"social: the picture shows: {taken.shows}")
                 for post in POSTS:
-                    _card(browser, taken, out, post, fallback=fallback, chances=chances, say=say)
+                    _card(browser, taken, out, post, fallback=fallback, facts=facts, say=say)
                 return taken
         finally:
             browser.close()
@@ -477,15 +503,13 @@ def _card(  # noqa: PLR0913 - the card's parts
     post: Post,
     *,
     fallback: bool,
-    chances: bool,
+    facts: Facts,
     say: Callable[[str], None],
 ) -> None:
     """The card for ``post`` over the picture, tried twice; none after two failures."""
     for attempt in range(1, ATTEMPTS + 1):
         try:
-            compose(
-                browser, taken, out / FILE, post, out, fallback=fallback, chances=chances, say=say
-            )
+            compose(browser, taken, out / FILE, post, out, fallback=fallback, facts=facts, say=say)
         except (CardError, PlaywrightError) as error:
             say(f"::warning::social: the {post} card, try {attempt}, failed: {_short(error)}")
             for ext in ("png", "json"):

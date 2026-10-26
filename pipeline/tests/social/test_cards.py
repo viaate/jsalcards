@@ -38,11 +38,32 @@ from snowlight.social.cards import (
     pick,
     without_chances,
 )
-from snowlight.social.content import ContentError, _still_true, load
+from snowlight.social.content import ContentError, load
 from snowlight.social.picture import Box, Chance, Counts, Seen, Taken
-from snowlight.social.rules import mentions_chance, parse_facts
+from snowlight.social.rules import (
+    Facts,
+    mentions_chance,
+    mentions_closings,
+    parse_facts,
+    still_true,
+)
 
 REPO = Path(__file__).resolve().parents[3]
+
+
+def switches(chances: str, closings: str, model: str = "LIVE") -> Facts:
+    """A SYNTHETIC facts file with the two switches as given and the A card's model line."""
+    return parse_facts(
+        f"- [{chances}] chances: SYNTHETIC chances. | terms: chance\n"
+        f"- [{closings}] closings: SYNTHETIC closings on the map. | terms: closings\n"
+        f"- [{model}] model: A prediction model trained on real closing records, not a guess."
+        " | terms: model\n"
+    )
+
+
+SHOWN = switches("LIVE", "LIVE")
+NO_CHANCES = switches("TESTING", "LIVE")
+HELD_BACK = switches("TESTING", "COMING")
 TAKEN_AT = datetime(2026, 12, 10, 12, 42, tzinfo=UTC)  # 6:42 AM CT
 BLUE = (127, 212, 255)
 AMBER = (255, 190, 90)
@@ -228,6 +249,34 @@ def test_the_fit_threshold_is_a_small_share() -> None:
     assert Measure(1000, int(1000 * FIT_SHARE)).fits
     assert not Measure(1000, int(1000 * FIT_SHARE) + 1).fits
     assert Measure(0, 0).fits, "a calm map has no glow to cover"
+    assert not Measure(100_000, 1, schools=1).fits, "no lit school's centre, whatever the share"
+
+
+def test_one_school_under_the_lower_third_refuses_a_whatever_the_share() -> None:
+    """SYNTHETIC: a big storm far from A's words, and one lit school under them. Its few
+    pixels are well under the share's tolerance, but its centre is darkened: A does not fit,
+    and the stamp takes the card."""
+    picture = canvas()
+    picture[100:300, 1250:1500] = BLUE  # 50,000 lit pixels, clear of every style's words
+    picture[598:603, 398:403] = AMBER  # one school, 25 pixels, under A's lower third
+    spots = ((400, 600),)
+
+    def measure(candidate: Candidate) -> Measure:
+        if candidate == "b":
+            return Measure(glow=int(glow_mask(picture).sum()), covered=0)
+        card = picture.copy()
+        for box in WORDS[candidate]:
+            darken(card, box)
+        return cover(picture, card, spots)
+
+    a = measure("a")
+    assert a.share <= FIT_SHARE, "the share alone would let it pass"
+    assert a.schools == 1
+    assert not a.fits
+    assert "over 1 lit schools" in str(a)
+    chosen, why = pick(groups(taken("national", Seen())), measure)
+    assert chosen != "a"
+    assert "a covers" in why
 
 
 def test_the_preferred_order_follows_the_owner() -> None:
@@ -481,6 +530,12 @@ def test_counts_in_view_are_labeled_and_the_total_named(page: Page, maps: dict[s
     _, a = lay(page, "a", taken("closings", STORM), "dev-log", maps["storm"], fallback=False)
     assert "Mostly in Michigan and Ohio" in a
     assert "Across the US" in a
+    for word in ("Closed", "Delayed", "Remote", "Early dismissal"):
+        assert f"{word} in this view" in a, a
+    _, waitlist = lay(
+        page, "a", taken("closings", STORM), "waitlist", maps["storm"], fallback=False
+    )
+    assert "Closed in this view" in waitlist
     _, c_calm = lay(page, "c-left", taken("national", Seen()), "dev-log", maps["calm"],
                     fallback=False)  # fmt: skip
     assert "closed" not in c_calm, "nothing is said about closings from a 404"
@@ -549,7 +604,7 @@ def test_compose_writes_the_card_its_note_and_alt(
         maps["storm"],
         "dev-log",
         tmp_path,
-        chances=True,
+        facts=SHOWN,
         say=said.append,
     )
     assert card.style == "c", said
@@ -565,7 +620,7 @@ def test_compose_writes_the_card_its_note_and_alt(
         "waitlist",
         tmp_path,
         fallback=True,
-        chances=True,
+        facts=SHOWN,
         say=said.append,
     )
     assert old.fallback
@@ -577,7 +632,7 @@ def test_a_map_of_the_wrong_size_is_refused(browser: Browser, tmp_path: Path) ->
     small.write_bytes(png(np.zeros((90, 160, 3), dtype=np.uint8)))
     with pytest.raises(CardError, match="1600 x 900"):
         compose(
-            browser, taken("national", CALM), small, "dev-log", tmp_path, chances=True, say=print
+            browser, taken("national", CALM), small, "dev-log", tmp_path, facts=SHOWN, say=print
         )
 
 
@@ -643,11 +698,11 @@ def test_a_card_line_is_words_of_a_live_fact_or_a_whole_coming_one() -> None:
         "- [COMING] aim: Every school closing in the US on one map, coming this winter."
         " | terms: one map\n"
     )
-    assert _still_true("Chances from a prediction model trained on real closing records", facts)
-    assert _still_true("Every school closing in the US on one map, coming this winter", facts)
+    assert still_true("Chances from a prediction model trained on real closing records", facts)
+    assert still_true("Every school closing in the US on one map, coming this winter", facts)
     # Part of a COMING fact drops its "coming": a present-tense claim.
-    assert not _still_true("Every school closing in the US on one map", facts)
-    assert not _still_true("Chances from an AI trained on everything", facts)
+    assert not still_true("Every school closing in the US on one map", facts)
+    assert not still_true("Chances from an AI trained on everything", facts)
 
 
 def test_every_library_card_with_a_line_names_it() -> None:
@@ -693,6 +748,48 @@ def test_while_chances_are_testing_no_template_shows_a_chance(
             assert "A prediction model trained on real closing records, not a guess" in words
 
 
+def test_compose_while_closings_are_not_live(
+    browser: Browser, maps: dict[str, Path], tmp_path: Path
+) -> None:
+    """SYNTHETIC: a storm's closings picture while the facts file marks closings COMING gives
+    no card; a calm one gives a card whose words and alt text say nothing of closings."""
+    with pytest.raises(CardError, match="closings"):
+        compose(
+            browser, taken("closings", STORM), maps["storm"], "dev-log", tmp_path,
+            facts=HELD_BACK, say=print,
+        )  # fmt: skip
+    calm = taken("national", Seen())
+    for post in ("dev-log", "waitlist"):
+        card = compose(browser, calm, maps["calm"], post, tmp_path, facts=HELD_BACK, say=print)
+        assert not mentions_closings(card.alt), card.alt
+    spoken = calm.model_copy(update={"shows": "SYNTHETIC: 3 schools are closed in this view"})
+    with pytest.raises(CardError, match="speaks of closings"):
+        compose(browser, spoken, maps["calm"], "dev-log", tmp_path, facts=HELD_BACK, say=print)
+
+
+def test_the_a_cards_model_line_is_checked_against_the_runs_facts(
+    browser: Browser, maps: dict[str, Path], tmp_path: Path
+) -> None:
+    """SYNTHETIC: the facts file demotes the model fact; the A card's line is no longer true,
+    so A does not fit and the calm card takes another style."""
+    card = compose(
+        browser,
+        taken("national", Seen()),
+        maps["calm"],
+        "dev-log",
+        tmp_path,
+        facts=switches("TESTING", "COMING", model="TESTING"),
+        say=print,
+    )
+    assert card.style != "a"
+    assert "its model line is no longer a LIVE fact's words" in card.why
+    again = compose(
+        browser, taken("national", Seen()), maps["calm"], "dev-log", tmp_path,
+        facts=HELD_BACK, say=print,
+    )  # fmt: skip
+    assert again.style == "a"
+
+
 def test_compose_while_chances_are_testing(
     browser: Browser, maps: dict[str, Path], tmp_path: Path
 ) -> None:
@@ -704,12 +801,12 @@ def test_compose_while_chances_are_testing(
             maps["calm"],
             post,
             tmp_path,
-            chances=False,
+            facts=NO_CHANCES,
             say=print,
         )
         assert not mentions_chance(card.alt), card.alt
     with pytest.raises(CardError, match="district"):
         compose(
             browser, taken("district", DISTRICT), maps["calm"], "dev-log", tmp_path,
-            chances=False, say=print,
+            facts=NO_CHANCES, say=print,
         )  # fmt: skip

@@ -17,15 +17,22 @@ own account as the managing one.
 
 - **Queued posts** (`social/queue/<NNNN>.json`): a push to the default branch
   that changes `social/queue/` posts the oldest one not posted yet. The daily run posts one
-  too if one is waiting. A queued post is posted at most once, ever.
+  too if one is waiting. A queued post is posted at most once, ever. A queued post marked
+  `"fresh_only": true` (the first post, `0001`) goes only with a fresh card taken by the run
+  that posts it, of a kind its `pictures` list allows; while no fresh card fits, it waits
+  (the run ends red and says so) and holds the queue, and Haiku does not write in its place.
 - **The daily post**: the scheduled runs at 16:37 UTC (late morning in the US) and 20:41 UTC
   (a second slot, in case GitHub drops or delays the first). With nothing
   queued, `ANTHROPIC_API_KEY` set and nothing posted in the last 20 hours, Haiku
   (`claude-haiku-5-5`) writes one post, in turn a dev log and a "join the waitlist" post,
   from `social/facts.md`, the subjects of the commits since the last post, and the run's
   fresh card with its description (the only facts about the picture it may use). Without
-  the key the run says "no Anthropic key" and posts only queued posts. The 20-hour rule and
-  the day's Haiku record keep the second slot from posting twice.
+  the key the run says "no Anthropic key" and posts only queued posts. Haiku gets one try a
+  UTC day: the run records the day in D1 (`social_haiku_days`) before its first call, so
+  when that try fails (both drafts refused, X refuses the post, the run stops) the second
+  slot asks Haiku nothing that day; it writes only when the first slot never reached Haiku
+  (GitHub dropped it). The commit subjects Haiku sees leave out any with a digit, station
+  call letters, a link or (while chances are TESTING) a word of a chance.
 
 ## Model first, and no one else
 
@@ -45,12 +52,17 @@ Two rules hold for every post, Haiku's and the queued ones alike, and for every 
   this winter's closings) is said as testing or coming, like any other. No accuracy number
   or score is ever posted: the past records lean toward big storm days.
 - **No one else.** A post says what Snowlight does and never describes, names or compares
-  other products or sites. Refused: any competitor's name, "calculator(s)",
-  "competitor(s)", "unlike", "other apps", "other sites", "other predictors", "everyone
-  else", "better than", "more accurate", "most accurate", "AI", "AI-powered", "machine
-  learning", "formula", any "-er than" or "more ... than", "they guess", and "guess" in any
-  form except "not a guess" (about Snowlight's own chances). Haiku's second check refuses
-  any other comparison it sees.
+  other products, sites or people. Refused: any competitor's name, also run together or
+  spaced out ("Snowday Predictor", "Snow-Day Calculator": names are matched on the text with
+  spaces, hyphens and dots taken out), "snow day" or "snowday" followed by a product word
+  ("snow day sites", "snow day trackers", "snow day apps", "snow day predictions"),
+  "calculator(s)", "competitor(s)", "unlike", "other apps", "other sites", "other
+  predictors", "other people", "most people", "folks", "the usual", "famous", "popular",
+  "elsewhere", "out there", "the internet", "everyone else", "better than", "outperform",
+  "outdoes", "superior", "more accurate", "most accurate", "AI" (also "A I"), "ML",
+  "neural", "ChatGPT", "AI-powered", "machine learning", "formula", any "-er than" or "more
+  ... than", "they guess", and "guess" in any form except "not a guess" (about Snowlight's
+  own chances). Haiku's second check refuses any other comparison it sees.
 
 The A card's line on a dev log or waitlist card is the model line, "A prediction model
 trained on real closing records, not a guess", words of the LIVE fact `model`. It names no
@@ -69,14 +81,32 @@ the site still hides. One switch decides it: the status of the `chances` fact in
   drops a fresh card whose picture, description or alt text gives one (the post then goes
   with the library card); the library refuses a card whose description or alt text gives one;
 - the checks refuse any post that gives a chance: a percent sign, "percent", odds, "3 in 4",
-  or a level next to "chance" ("a high chance", "chances are low"); a sentence may still say
-  where the chances come from when it names a LIVE model fact ("each district's chance comes
-  from a statistical model trained on 2,388 real past school days"), and Haiku is told the
-  same;
+  or a level next to "chance" ("a high chance", "chances are low", "near nothing"); a
+  sentence may still say where the chances come from when it names a LIVE model fact ("each
+  district's chance comes from a statistical model trained on 2,388 real past school days"),
+  but only with no word that offers the chances to anyone ("see your district's chance",
+  "the chances are up", "posted for every district", "already checking", "now", "you"), and
+  Haiku is told the same;
 - the facts file itself may hold no chance number (parsing it fails otherwise).
 
 When the owner unlocks the site, the lead marks `chances` LIVE (with any numbers it should
 give) and chance cards and posts come back with no code change.
+
+## Closings while the reader is in practice mode
+
+The same kind of switch holds closings back: the status of the `closings` fact
+(`rules.closings_shown`). Until the lead marks it **LIVE** (the reader's finds are checked
+before anything goes public, even once `LIVE_PUBLISH` is on for the locked site):
+
+- the render job drops the closings file it read: the picture is never the closings view,
+  the page is served a 404 for the file (as in practice mode, so no school glows), and the
+  description says nothing of closings (not even "no school is lit up");
+- `cards.py` refuses a closings picture and any card or alt text with a word of closings on
+  the map ("closed", "closings", "delayed", "lit up", "glow"; the model's "closing records"
+  and the reader's "closing lists" are not closings on the map); the post job drops a fresh
+  picture or card that shows them, and the library refuses a card that does.
+
+Marking `closings` LIVE brings the closings view and its counts back with no code change.
 
 ## Caps (in code, tested)
 
@@ -84,8 +114,12 @@ give) and chance cards and posts come back with no code change.
   post holds the cap, so two runs cannot both pass it), and **1 Haiku post a UTC day** (its
   record is named by the day).
 - At most **4 Haiku calls a run** (write, check, and one more try of each), each capped at
-  **1,024 output tokens**, effort `low`, and no SDK retries. A day's Haiku cost is a fraction
-  of a cent.
+  **1,024 output tokens**, effort `low`, and no SDK retries, and **one Haiku try a UTC day**
+  (its D1 row is made before the first call), so at most 4 calls a day. An answer that says
+  the key, the model id or the request is wrong (HTTP 400, 401, 403, 404) stops at once and
+  the run ends red. A day's Haiku cost is a fraction of a cent.
+- While posting is stopped (the refused token, or a post X refused for good, below), a run
+  stops before anything else: no Haiku call, no claim, no refresh, no change to the issue.
 - X bills each post on the owner's prepaid credits. Keep the balance small and auto-recharge
   off: the most anything can ever spend is that balance.
 - The spending limits are the owner's to set (nothing here can set them): in the X developer
@@ -105,8 +139,14 @@ give) and chance cards and posts come back with no code change.
 - hype and comparisons as whole words: "best", "only", "unlike", "vs", "precise",
   "perfect", "spot on", "number one", "other apps", "others", "AI"; and every comparison
   with, or description of, anyone else (above);
-- "you can now", "check your school", "available now" and the like only of the waitlist or
-  worded as coming: nobody can open the map before launch;
+- "you can now", "check your school", "see your district", "find it on", "available now"
+  and the like only of the waitlist or worded as coming: nobody can open the map before
+  launch;
+- no accuracy claim, with or without a number ("always right", "called most snow days
+  right", "hit rate", "reliable", "correct", "track record"), nothing the facts do not say of
+  the product ("download", "the Snowlight app", "free", "schools use", "trusted by"), no
+  school or district by name ("... Public Schools", "... ISD"), and no run-together word of
+  letters and digits the facts do not hold ("v3");
 - every number, in digits or in words ("fifty", "twenty-four", "first"), is in
   `social/facts.md` in the same form and used as the facts use it: a word next to it is next
   to it in the facts too ("24/7 in practice mode" passes, "24 schools" does not, nor "48
@@ -124,12 +164,13 @@ give) and chance cards and posts come back with no code change.
 - a picture that is not current (a library card, or a fresh one of a stale closings file) is
   never called current: no "now", "today", "tonight", "currently", "as of", "just",
   "fresh", "latest" or clock time;
-- a waitlist post says "link in my bio".
+- a waitlist post, and any post that names the waitlist, says "link in my bio".
 
 A Haiku post also goes past a second Haiku call that checks it against the facts and
 answers `{ok, problems}`. Either check failing gives one more try with the problems shown;
-a second failure means no post that day (the run log says why). A queued post that fails the
-checks is never sent and turns the run red.
+a second failure means no post that day (the run log says why, and the day's D1 row keeps
+the second slot from asking again). A queued post that fails the checks is never sent and
+turns the run red.
 
 ## The facts file
 
@@ -181,10 +222,13 @@ with no sandbox; the secrets live only in the post job, which runs no browser:
    from three templates in `pipeline/snowlight/social/cards/` (the site's Geist fonts, OFL):
    **C stamp** for closings and chance pictures, **A broadcast** for calm ones, **B framed**
    (the map whole in a frame, the words beside it) only where neither fits. A style fits
-   when its words, stamp and logo darken at most 3% of the map's lit-school pixels
-   (measured on the picture: the bar allows a few halo pixels at a word's edge, never a
-   school's dot under a line of text); the order is C, A, B for closings and districts and
-   A, C, B for calm maps. When no style fits, no fresh card is made and the post goes with
+   when its words, stamp and logo darken no lit school's centre (every lit school in view is
+   measured where the picture puts it, one by one) and at most 3% of the map's lit-school
+   pixels (the halos' edges); the order is C, A, B for closings and districts and A, C, B
+   for calm maps. The A card's model line is checked against the run's facts file when the
+   card is laid: if the lead rewords or demotes the `model` fact, A no longer fits and the
+   card takes another style. On a closings picture the A card's status counts say "in this
+   view", like C's and B's. When no style fits, no fresh card is made and the post goes with
    the library's dated card. The log says which style and why. Every word, number, place and time on
    the card comes from the picture's facts, never from Haiku: counts in the picture say "in
    this view", the country's total says "across the US", the chance is a number on the card
@@ -212,25 +256,43 @@ token changes every time it is used. Each run that posts:
    token is stored yet or the secret is newer than the stored chain (the row keeps a keyed
    fingerprint of the secret the chain started from, so a newly pasted secret is noticed);
 3. stores the new refresh token right away, sealed with AES-256-GCM under a key derived
-   (HKDF-SHA256) from `X_CLIENT_SECRET`, with `UPDATE ... WHERE version = <read> AND lease =
-<this run>`: the version goes up by one, and a run that lost the row stores nothing;
+   (HKDF-SHA256) from `X_CLIENT_SECRET` and bound to the row and its new version (an older
+   sealed value written back does not open), with `UPDATE ... WHERE version = <read> AND
+lease = <this run>`: the version goes up by one, and a run that lost the row stores nothing
+   (the chain is then lost, and the run says so and opens the issue);
 4. uploads the card (`POST /2/media/upload`, scope `media.write`), sets its alt text
    (`POST /2/media/metadata`; the post goes without it if X refuses) and posts
    (`POST /2/tweets`), recording the post id in D1.
 
+The lease runs from when it is taken, and no refresh starts later than 6 minutes into the
+Post step (whose timeout is 10), so a refresh and the store of its rotated token always
+finish before the step can be killed.
+
 If X refuses the refresh token, the stored token does not open, the rotated token cannot
 be stored, or the token lacks a scope a post needs, the run opens one issue, **X posting
 stopped: refresh token**, that says which, with the steps below, and records which secret
-stopped; it never retries in a loop. Only an issue the workflow itself opened
+stopped. From then on every run stops before it picks anything while `X_REFRESH_TOKEN` is
+still that secret: no Haiku call, no claim, no refresh, and the issue is left as it is. Only an issue the workflow itself opened
 (`github-actions[bot]`) is ever updated or closed: anyone can open an issue with that title
 in a public repository, and the owner's steps never go into one a stranger wrote. When the
 rotated token could not be stored, the run still posts the post it claimed with the fresh
 access token, and ends red.
 
-A scheduled run with nothing to post refreshes once only when the chain stopped and the
-`X_REFRESH_TOKEN` secret is not the one that stopped (the owner pasted a new one): the new
-token is checked and the issue closes, without waiting for a post. The same refused secret
-is never tried again by itself.
+A run whose `X_REFRESH_TOKEN` is not the one that stopped (the owner pasted a new one)
+starts from it: a run with a post sends it, and a scheduled run with nothing to post
+refreshes once, so the new token is checked and the issue closes without waiting for a
+post. The same refused secret is never tried again by itself.
+
+### When X refuses a post (the owner)
+
+When X refuses a post or its image upload for good (HTTP 401, 402 or 403: no credits, no
+write permission, a duplicate), the run opens one issue, **X posting stopped: X refused the
+post**, with X's status and what it means, and holds posting: every run stops before it
+picks anything while that issue is open and `X_REFRESH_TOKEN` is unchanged. Fix the cause
+(add credits; give the app Read and write permission and paste a new refresh token; delete
+a duplicate's queue file), then close the issue: the next run tries once more and opens it
+again if X still refuses. A post that goes out closes it. Any other refusal (a 429, a 400)
+drops the claim, and a later run tries again.
 
 ### When the issue opens (the owner)
 
@@ -250,7 +312,9 @@ so it is never sent again by itself, and every run warns: "queue:NNNN was claime
 ... and never finished". Check @SnowlightMap. If the post is not there and should go,
 delete the row (Cloudflare dashboard > D1 > `snowlight-live-state` > Console:
 `DELETE FROM social_posts WHERE slot = 'queue:NNNN' AND state = 'claimed'`); the next run
-posts it.
+posts it. When a run posted but could not record it (it asks D1 three times), its log says
+"queue:NNNN is posted as <post id>, but its record stays claimed": mark it posted
+(`UPDATE social_posts SET state = 'posted', post_id = '<post id>' WHERE slot = 'queue:NNNN'`).
 
 ### Never drop the posts table
 
@@ -274,7 +338,8 @@ repository could name the environment and read the X secrets.
 
 The Cloudflare token is a repository secret, so any workflow on any branch could rewrite the
 `social_*` rows (it cannot open the sealed token, whose key comes from `X_CLIENT_SECRET`,
-but it could break the chain). If the owner wants that closed too: make a Cloudflare token
+and an older sealed value written back does not open, but it could break the chain: the
+run then opens the issue). If the owner wants that closed too: make a Cloudflare token
 with D1 edit rights only, add it as `CLOUDFLARE_API_TOKEN` (with `CLOUDFLARE_ACCOUNT_ID`) as
 **environment** secrets of `x-posting`; the job then uses those over the repository ones.
 

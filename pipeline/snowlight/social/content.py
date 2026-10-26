@@ -24,7 +24,16 @@ from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
-from snowlight.social.rules import Facts, Style, chances_shown, mentions_chance, parse_facts
+from snowlight.social.rules import (
+    Facts,
+    Style,
+    chances_shown,
+    closings_shown,
+    mentions_chance,
+    mentions_closings,
+    parse_facts,
+    still_true,
+)
 
 MAX_IMAGE_BYTES: Final = 5 * 1024 * 1024
 PNG: Final = b"\x89PNG\r\n\x1a\n"
@@ -146,23 +155,53 @@ def check_image(path: Path) -> None:
         raise ContentError(f"social image {path.name} is not the image its name says")
 
 
-def _still_true(line: str, facts: Facts) -> bool:
-    """Whether a card's line is still true per the facts: words of a LIVE fact's text (the
-    model line is part of the LIVE fact ``model``), or the whole text of a COMING fact, which
-    says itself that it is coming (a part of one could drop the "coming")."""
-    wanted = line.strip().rstrip(".").lower()
-    return any(
-        (fact.status == "LIVE" and wanted in fact.text.lower())
-        or (fact.status == "COMING" and fact.text.strip().rstrip(".").lower() == wanted)
-        for fact in facts.facts
-    )
-
-
 def _json(path: Path) -> object:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as error:
         raise ContentError(f"{path.name} is not readable JSON") from error
+
+
+def _library_image(path: Path, facts: Facts) -> Image:
+    """One library card from its JSON, still true per the facts file.
+
+    Raises:
+        ContentError: the file is malformed, or its card no longer fits the facts file.
+    """
+    try:
+        entry = ImageEntry.model_validate(_json(path))
+    except ValidationError as error:
+        raise ContentError(f"social/images/{path.name} is malformed") from error
+    if path.stem != entry.id:
+        raise ContentError(f"social/images/{path.name} names another id")
+    if entry.tagline is not None and not still_true(entry.tagline, facts):
+        raise ContentError(
+            f"social/images/{path.name}: its card's line is no longer in the facts file;"
+            " re-render the library (docs/social.md)"
+        )
+    if not chances_shown(facts) and (
+        mentions_chance(entry.shows) or mentions_chance(entry.alt or "")
+    ):
+        raise ContentError(
+            f"social/images/{path.name} gives a chance while chances are TESTING;"
+            " re-render the library (docs/social.md)"
+        )
+    if not closings_shown(facts) and (
+        mentions_closings(entry.shows) or mentions_closings(entry.alt or "")
+    ):
+        raise ContentError(
+            f"social/images/{path.name} shows closings while closings are not LIVE;"
+            " re-render the library (docs/social.md)"
+        )
+    check_image(path.parent / entry.file)
+    return Image(
+        id=entry.id,
+        path=path.parent / entry.file,
+        day=entry.day,
+        shows=entry.shows,
+        alt=entry.alt,
+        style=entry.style,
+    )
 
 
 def load(root: Path) -> Content:
@@ -178,37 +217,7 @@ def load(root: Path) -> Content:
         raise ContentError("social/facts.md is missing") from error
     except ValueError as error:
         raise ContentError(f"social/facts.md: {error}") from error
-    images: list[Image] = []
-    for path in sorted((social / "images").glob("*.json")):
-        try:
-            entry = ImageEntry.model_validate(_json(path))
-        except ValidationError as error:
-            raise ContentError(f"social/images/{path.name} is malformed") from error
-        if path.stem != entry.id:
-            raise ContentError(f"social/images/{path.name} names another id")
-        if entry.tagline is not None and not _still_true(entry.tagline, facts):
-            raise ContentError(
-                f"social/images/{path.name}: its card's line is no longer in the facts file;"
-                " re-render the library (docs/social.md)"
-            )
-        if not chances_shown(facts) and (
-            mentions_chance(entry.shows) or mentions_chance(entry.alt or "")
-        ):
-            raise ContentError(
-                f"social/images/{path.name} gives a chance while chances are TESTING;"
-                " re-render the library (docs/social.md)"
-            )
-        check_image(social / "images" / entry.file)
-        images.append(
-            Image(
-                id=entry.id,
-                path=social / "images" / entry.file,
-                day=entry.day,
-                shows=entry.shows,
-                alt=entry.alt,
-                style=entry.style,
-            )
-        )
+    images = [_library_image(path, facts) for path in sorted((social / "images").glob("*.json"))]
     queue: list[Queued] = []
     for path in sorted((social / "queue").glob("*.json")):
         try:
@@ -221,6 +230,10 @@ def load(root: Path) -> Content:
         if item.shows is not None and not chances_shown(facts) and mentions_chance(item.shows):
             raise ContentError(
                 f"social/queue/{path.name}: its picture gives a chance while chances are TESTING"
+            )
+        if item.shows is not None and not closings_shown(facts) and mentions_closings(item.shows):
+            raise ContentError(
+                f"social/queue/{path.name}: its picture shows closings while they are not LIVE"
             )
         if item.image is not None and item.day is not None and item.shows is not None:
             check_image(social / "queue" / item.image)

@@ -26,6 +26,7 @@ from snowlight.social.picture import (
     today_everywhere,
     unproject,
 )
+from snowlight.social.rules import mentions_closings
 
 # Ten public schools: six around Buffalo, NY (36...), two in Pennsylvania (42...) near them,
 # one in Minnesota (27...) and one in Texas (48...). Two districts: NY (3600001), MN (2700001).
@@ -97,6 +98,7 @@ def test_closings_zoom_to_the_busiest_window_and_say_what_glows() -> None:
     rows = [(0, 0), (1, 0), (2, 1), (3, 0), (4, 2), (5, 0), (6, 0), (8, 0), (9, 3)]
     picture = choose(
         chances=True,
+        closings_shown=True,
         closings=closings(rows, "2026-12-10", "2026-12-10T12:05:00Z"),
         predictions=None,
         directory=directory(),
@@ -128,6 +130,7 @@ def test_closings_zoom_to_the_busiest_window_and_say_what_glows() -> None:
 def test_an_old_closings_file_is_not_called_current() -> None:
     picture = choose(
         chances=True,
+        closings_shown=True,
         closings=closings([(0, 0)], "2026-12-10", "2026-12-10T11:00:00Z"),
         predictions=None,
         directory=directory(),
@@ -161,6 +164,7 @@ def test_no_lit_school_gives_the_national_map(
 ) -> None:
     picture = choose(
         chances=True,
+        closings_shown=True,
         closings=file,
         predictions=None,
         directory=directory(),
@@ -184,6 +188,7 @@ def test_no_lit_school_gives_the_national_map(
 def test_a_high_chance_opens_that_districts_panel() -> None:
     picture = choose(
         chances=True,
+        closings_shown=True,
         closings=None,
         predictions=predictions([0.04, 0.37], ("2026-12-09", "2026-12-10"), "2026-12-10T14:50:00Z"),
         directory=directory(),
@@ -194,6 +199,7 @@ def test_a_high_chance_opens_that_districts_panel() -> None:
     assert "chance" not in picture.shows
     picture = choose(
         chances=True,
+        closings_shown=True,
         closings=None,
         predictions=predictions([0.04, 0.37], ("2026-12-09", "2026-12-10"), "2026-12-09T18:00:00Z"),
         directory=directory(),
@@ -219,6 +225,7 @@ def test_a_high_chance_opens_that_districts_panel() -> None:
 def test_a_calm_day_says_the_chance_is_not_in_the_picture() -> None:
     picture = choose(
         chances=True,
+        closings_shown=True,
         closings=None,
         predictions=predictions([0.01, 0.01], ("2026-10-26", "2026-10-27")),
         directory=directory(),
@@ -234,6 +241,7 @@ def test_a_calm_day_says_the_chance_is_not_in_the_picture() -> None:
     assert picture.seen.chance.text == "1%"
     some = choose(
         chances=True,
+        closings_shown=True,
         closings=None,
         predictions=predictions([0.06, None], ("2026-10-26", "2026-10-27")),
         directory=directory(),
@@ -244,6 +252,7 @@ def test_a_calm_day_says_the_chance_is_not_in_the_picture() -> None:
     assert (some.seen.chance.text, some.seen.chance.at_most) == ("6%", False)
     other = choose(
         chances=True,
+        closings_shown=True,
         closings=None,
         predictions={**predictions([0.5], ("2026-10-26", "2026-10-27")), "directory": {}},
         directory=directory(),
@@ -286,6 +295,7 @@ def test_malformed_predictions_are_an_error() -> None:
     with pytest.raises(PictureError, match="days"):
         choose(
             chances=True,
+            closings_shown=True,
             closings=None,
             predictions={"directory": dict(STAMP), "generated_at": "2026-10-26T16:30:00Z"},
             directory=directory(),
@@ -294,6 +304,7 @@ def test_malformed_predictions_are_an_error() -> None:
     with pytest.raises(PictureError, match="district"):
         choose(
             chances=True,
+            closings_shown=True,
             closings=None,
             predictions={
                 "directory": dict(STAMP),
@@ -307,6 +318,7 @@ def test_malformed_predictions_are_an_error() -> None:
     with pytest.raises(PictureError, match="generated_at"):
         choose(
             chances=True,
+            closings_shown=True,
             closings=None,
             predictions={"directory": dict(STAMP), "days": ["2026-10-26"], "districts": []},
             directory=directory(),
@@ -370,6 +382,7 @@ def test_a_region_picture_is_calm_only() -> None:
         closings=None,
         directory=directory(),
         now=at("2026-10-26T04:44"),
+        closings_shown=True,
     )
     assert picture.kind == "region"
     assert picture.seen.place == "the Great Lakes and the Northeast"
@@ -382,6 +395,7 @@ def test_a_region_picture_is_calm_only() -> None:
             closings=closings([(0, 0)], "2026-12-10", "2026-12-10T12:05:00Z"),
             directory=directory(),
             now=at("2026-12-10T12:10"),
+            closings_shown=True,
         )
 
 
@@ -402,7 +416,12 @@ def test_a_stale_file_with_nothing_lit_says_nothing_and_is_not_current(
 ) -> None:
     file = closings([(0, 0)], "2026-12-09", generated_at)
     picture = choose(
-        chances=True, closings=file, predictions=None, directory=directory(), now=at(now)
+        chances=True,
+        closings_shown=True,
+        closings=file,
+        predictions=None,
+        directory=directory(),
+        now=at(now),
     )
     assert picture.kind == "national"
     assert not picture.current, "a stale calm map is never presented as current"
@@ -414,6 +433,7 @@ def test_a_stale_file_with_nothing_lit_says_nothing_and_is_not_current(
         closings=file,
         directory=directory(),
         now=at(now),
+        closings_shown=True,
     )
     assert not calm.current
     assert "lit up" not in calm.shows
@@ -423,6 +443,7 @@ def test_a_fresh_file_with_nothing_lit_says_so_and_is_current() -> None:
     file = closings([(0, 0)], "2026-12-09", "2026-12-10T12:05:00Z")
     picture = choose(
         chances=True,
+        closings_shown=True,
         closings=file,
         predictions=None,
         directory=directory(),
@@ -436,6 +457,7 @@ def test_a_stale_predictions_file_shows_no_chance() -> None:
     for stamp in ("2026-10-26T14:00:00Z", "2026-10-26T17:00:00Z"):  # 2.6 h old; 23 min ahead
         picture = choose(
             chances=True,
+            closings_shown=True,
             closings=None,
             predictions=predictions([0.5, 0.01], ("2026-10-26", "2026-10-27"), stamp),
             directory=directory(),
@@ -474,6 +496,7 @@ def test_the_chance_named_is_the_next_school_day_not_yet_under_way() -> None:
 def test_at_11_27_on_monday_the_card_and_description_name_tuesday() -> None:
     picture = choose(
         chances=True,
+        closings_shown=True,
         closings=None,
         predictions=predictions([0.01, 0.01], ("2026-10-26", "2026-10-27"), "2026-10-26T16:07:00Z"),
         directory=directory(),
@@ -485,6 +508,7 @@ def test_at_11_27_on_monday_the_card_and_description_name_tuesday() -> None:
     assert "Monday" not in picture.shows
     picture = choose(
         chances=True,
+        closings_shown=True,
         closings=None,
         predictions=predictions([0.01, 0.37], ("2026-10-26", "2026-10-27"), "2026-10-26T01:50:00Z"),
         directory=directory(),
@@ -494,6 +518,7 @@ def test_at_11_27_on_monday_the_card_and_description_name_tuesday() -> None:
     assert picture.seen.chance is None
     picture = choose(
         chances=True,
+        closings_shown=True,
         closings=None,
         predictions=predictions([0.01, 0.37], ("2026-12-10", "2026-12-11"), "2026-12-10T20:50:00Z"),
         directory=directory(),
@@ -508,10 +533,24 @@ def test_while_chances_are_testing_the_picture_gives_none() -> None:
     give the national map, and its description and facts hold no chance at all."""
     file = predictions([0.74, 0.01], ("2026-12-09", "2026-12-10"), "2026-12-09T18:00:00Z")
     now = at("2026-12-09T18:10")
-    shown = choose(chances=True, closings=None, predictions=file, directory=directory(), now=now)
+    shown = choose(
+        chances=True,
+        closings_shown=True,
+        closings=None,
+        predictions=file,
+        directory=directory(),
+        now=now,
+    )
     assert shown.kind == "district", "the same files with chances LIVE give the district"
     assert "74%" in shown.shows
-    hidden = choose(chances=False, closings=None, predictions=file, directory=directory(), now=now)
+    hidden = choose(
+        chances=False,
+        closings_shown=True,
+        closings=None,
+        predictions=file,
+        directory=directory(),
+        now=now,
+    )
     assert hidden.kind == "national"
     assert hidden.query == ""
     assert hidden.seen.chance is None
@@ -519,6 +558,64 @@ def test_while_chances_are_testing_the_picture_gives_none() -> None:
         assert word not in hidden.shows.lower(), word
     # The predictions are not read at all: a malformed file changes nothing.
     broken = choose(
-        chances=False, closings=None, predictions={"days": 3}, directory=directory(), now=now
+        chances=False,
+        closings_shown=True,
+        closings=None,
+        predictions={"days": 3},
+        directory=directory(),
+        now=now,
     )
     assert broken.shows == hidden.shows
+
+
+def test_each_lit_school_in_view_has_its_spot_in_the_picture() -> None:
+    rows = [(0, 0), (1, 0), (2, 1), (3, 0), (4, 2), (5, 0), (6, 0), (8, 0), (9, 3)]
+    picture = choose(
+        chances=False,
+        closings_shown=True,
+        closings=closings(rows, "2026-12-10", "2026-12-10T12:05:00Z"),
+        predictions=None,
+        directory=directory(),
+        now=at("2026-12-10T12:10"),
+    )
+    spots = picture.seen.spots
+    assert picture.seen.in_view is not None
+    assert len(spots) == picture.seen.in_view.total == 7
+    assert all(0 <= x < 1600 and 0 <= y < 900 for x, y in spots)
+
+
+def test_while_closings_are_not_live_lit_schools_give_the_calm_national_map() -> None:
+    """The closings switch (SYNTHETIC closings): a file lighting nine schools today, while
+    the facts file marks closings COMING, gives the national map with nothing said about
+    closings: no count, no state, no glow, not even "no school is lit up"."""
+    rows = [(0, 0), (1, 0), (2, 1), (3, 0), (4, 2), (5, 0), (6, 0), (8, 0), (9, 3)]
+    file = closings(rows, "2026-12-10", "2026-12-10T12:05:00Z")
+    picture = choose(
+        chances=False,
+        closings_shown=False,
+        closings=file,
+        predictions=None,
+        directory=directory(),
+        now=at("2026-12-10T12:10"),
+    )
+    assert picture.kind == "national"
+    assert picture.lit == 0
+    assert picture.current
+    seen = picture.seen
+    assert (seen.in_view, seen.states, seen.lit, seen.spots) == (None, (), 0, ())
+    assert not seen.closings_read
+    assert seen.closings_at is None
+    assert not mentions_closings(picture.shows), picture.shows
+    for word in ("New York", "Pennsylvania", "9", "lit", "glow"):
+        assert word not in picture.shows
+    calm = region(
+        query="?at=43,-79,6",
+        place="the Great Lakes",
+        closings=file,
+        directory=directory(),
+        now=at("2026-12-10T12:10"),
+        closings_shown=False,
+    )
+    assert calm.kind == "region"
+    assert not mentions_closings(calm.shows)
+    assert not calm.seen.closings_read

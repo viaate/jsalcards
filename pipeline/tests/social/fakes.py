@@ -380,7 +380,7 @@ def make_root(
                     "id": f"img-{n}",
                     "file": f"img-{n}.png",
                     "day": "2026-10-20",
-                    "shows": f"SYNTHETIC test image {n}: the national map at night, no glow",
+                    "shows": f"SYNTHETIC test image {n}: the national map at night",
                 }
             )
         )

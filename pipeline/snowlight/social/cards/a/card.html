@@ -218,7 +218,8 @@
           let line = [];
           if (p.kind === 'closings') {
             line = [{ text: placeText, main: true }];
-            out.chips = [...statusChips(null), ...across()];
+            // The statuses count the schools in this picture; the country's total says so.
+            out.chips = [...statusChips(null).map((c) => ({ ...c, word: `${c.word} in this view` })), ...across()];
           } else if (p.kind === 'district') {
             line = [{ text: placeText, main: true }];
             out.chips = [{ word: `Chance of no school ${k.day}`, value: p.chance_text }];

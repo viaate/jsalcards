@@ -1289,3 +1289,61 @@ def test_a_fresh_only_post_never_names_its_own_image(tmp_path: Path, world: Worl
     runner = make(tmp_path, world, queue=[item])
     assert runner() == 1
     assert "social/queue/0001.json is malformed" in runner.log
+
+
+# -- closings stay off the posts' pictures until the facts file marks them LIVE ---------------
+
+CLOSINGS_SHOWS = (
+    "SYNTHETIC: a picture of the Snowlight map zoomed to the area with the most schools lit up"
+    " for weather: 7 schools glow in this view (5 closed, 2 delayed), mostly in New York."
+)
+
+
+def test_a_fresh_closings_picture_is_not_used_while_closings_are_not_live(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[unpictured("0001", FIRST)])
+    runner.picture = make_picture(tmp_path, runner.clock.at, kind="closings", shows=CLOSINGS_SHOWS)
+    assert runner() == 0
+    assert "the fresh picture shows closings while they are not LIVE" in runner.log
+    assert b"FRESH-PICTURE" not in world.x.uploaded[0], "the library card went instead"
+    assert "lit up" not in runner.log.split("social: picture:")[-1]
+
+
+def test_a_fresh_card_whose_alt_text_shows_closings_is_not_used(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[unpictured("0001", FIRST)])
+    folder = make_picture(tmp_path, runner.clock.at)
+    note = folder / "dev-log.json"
+    card = json.loads(note.read_text())
+    card["alt"] = "SYNTHETIC alt text: the map with 7 schools closed in this view"
+    note.write_text(json.dumps(card))
+    runner.picture = folder
+    assert runner() == 0
+    assert "the dev-log card's alt text shows closings" in runner.log
+    assert b"FRESH-PICTURE" not in world.x.uploaded[0]
+
+
+def test_with_closings_live_a_closings_picture_goes_out(tmp_path: Path, world: World) -> None:
+    facts = fakes.FACTS.replace("- [COMING] closings:", "- [LIVE] closings:")
+    runner = Runner(
+        make_root(tmp_path, queue=[unpictured("0001", FIRST)], facts=facts),
+        world,
+        Clock(at("2026-10-26T16:37:00")),
+    )
+    runner.picture = make_picture(tmp_path, at("2026-10-26T16:35:00"), kind="closings")
+    assert runner() == 0
+    assert b"FRESH-PICTURE" in world.x.uploaded[0]
+
+
+def test_a_library_card_that_shows_closings_stops_the_run_while_they_are_not_live(
+    tmp_path: Path, world: World
+) -> None:
+    root = make_root(tmp_path, queue=[unpictured("0001", FIRST)])
+    note = root / "social" / "images" / "img-1.json"
+    entry = json.loads(note.read_text())
+    entry["shows"] += ". 40 schools are lit up for weather."
+    note.write_text(json.dumps(entry))
+    with pytest.raises(ContentError, match="shows closings while closings are not LIVE"):
+        load(root)

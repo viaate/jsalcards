@@ -5,15 +5,19 @@
 # drops the first) posts a queued post if one is waiting, else one post Claude Haiku writes
 # from social/facts.md, once the ANTHROPIC_API_KEY secret is in the x-posting environment
 # (until then it says "no Anthropic key" and posts only queued posts). Caps live in the code
-# (pipeline/snowlight/social): one post a run, two a UTC day, one Haiku post a day, four
-# Haiku calls a run; nothing posted in the last 20 hours before a Haiku post.
+# (pipeline/snowlight/social): one post a run, two a UTC day, one Haiku post a day, one Haiku
+# try a day of at most four calls (the 20:41 run asks Haiku only when the 16:37 one never
+# did); nothing posted in the last 20 hours before a Haiku post. While posting is stopped
+# (X refused the token, or refused a post for good) a run asks Haiku nothing and sends
+# nothing until the owner acts on the open issue.
 #
 # Pictures: every post goes with a branded card made fresh in the render job, which holds
 # no secret and has no environment: headless Chromium opens the real site,
 # https://snowlightmap.com, unlocks it in that browser only, waits for the live files, hides
 # the site's interface and takes a 1600 x 900 picture of the map alone (the busiest area of
 # lit-up schools, else the district with the highest chance, else the dark national map;
-# while social/facts.md marks chances TESTING no picture, card or post gives a chance), with
+# while social/facts.md marks chances TESTING no picture, card or post gives a chance, and
+# while it marks closings not LIVE no picture or card shows or counts closings), with
 # a plain description of it that the post may use. Then it lays the Snowlight card over
 # it, in the style that covers no lit school (pipeline/snowlight/social/cards), with every
 # word filled from that description. The cards reach the post job through the render job's
@@ -128,7 +132,7 @@ jobs:
     permissions:
       contents: read
       actions: read # the render job's log, which carries the cards
-      issues: write # the one "X posting stopped: refresh token" issue
+      issues: write # the owner's "X posting stopped: ..." issues
     defaults:
       run:
         working-directory: pipeline

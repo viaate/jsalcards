@@ -5,7 +5,10 @@ render`): the map alone, every piece of the site's interface hidden, then laid i
 card (:mod:`snowlight.social.cards`). Before the browser opens, :func:`choose` reads the same
 files the page reads and picks the view:
 
-* **Closings on the map**: when ``live/closings.json`` holds schools for the day the map
+* **Closings on the map** (only while the facts file marks closings LIVE: until then the
+  reader runs in practice mode and its finds are checked before anything goes public, so the
+  file is not read at all and nothing is said about closings): when ``live/closings.json``
+  holds schools for the day the map
   shows (the day that is today in every contiguous US time zone, 08:00 to 04:00 UTC, as
   ``web/src/data/closings.ts`` has it) under the deployed directory's stamp, the map is
   zoomed (``?at=lat,lon,zoom``) to the window of the picture's size holding the most of them.
@@ -194,6 +197,9 @@ class Seen(BaseModel):
     """District view: the box its schools span in the picture."""
     place: str | None = Field(default=None, max_length=60)
     """Region view: the place's plain name."""
+    spots: tuple[tuple[int, int], ...] = ()
+    """Closings view: where each lit school in view sits in the picture (x, y pixels), so a
+    card's words are measured against every one of them (:func:`snowlight.social.cards.cover`)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -394,6 +400,12 @@ def _closings_picture(lit: Lit, directory: Directory, now: datetime) -> Picture:
     lat = points.lat_e6[lit.schools].astype(np.float64) / 1e6
     (center_lon, center_lat), held = busiest_view(lon, lat)
     in_view = lit.schools[held]
+    x, y = project(lon[held], lat[held], ZOOM)
+    cx, cy = project(np.array([center_lon]), np.array([center_lat]), ZOOM)
+    spots = tuple(
+        (round(float(px - cx[0] + WIDTH / 2)), round(float(py - cy[0] + HEIGHT / 2)))
+        for px, py in zip(x, y, strict=True)
+    )
     states = _states([directory.school_ids[int(index)] for index in in_view])
     counts = _counts(lit.statuses[held])
     total = len(lit.schools)
@@ -420,6 +432,7 @@ def _closings_picture(lit: Lit, directory: Directory, now: datetime) -> Picture:
         lit=total,
         closings_at=lit.generated_at,
         closings_read=True,
+        spots=spots,
     )
     return Picture("closings", query, shows, now, current, total, seen)
 
@@ -584,24 +597,30 @@ def _weekday(day: date) -> str:
     return f"{day:%A}"
 
 
-def choose(
+def choose(  # noqa: PLR0913 - the live files, the time and the facts file's switches
     *,
     closings: Mapping[str, object] | None,
     predictions: Mapping[str, object] | None,
     directory: Directory,
     now: datetime,
     chances: bool,
+    closings_shown: bool,
 ) -> Picture:
     """The view to take at ``now`` and its description (see the module's docstring).
 
     ``chances`` is the facts file's switch (:func:`snowlight.social.rules.chances_shown`):
     without it the predictions are not read at all, so the picture is never a district's
-    chance and its description and facts hold no chance.
+    chance and its description and facts hold no chance. ``closings_shown``
+    (:func:`snowlight.social.rules.closings_shown`) is the closings switch: without it the
+    closings file is not read at all, so the picture is never a closings view and its
+    description and facts say nothing about closings.
 
     Raises:
         PictureError: a live file is malformed (the run then falls back to the library).
     """
     now = now.astimezone(UTC)
+    if not closings_shown:
+        closings = None
     lit = lit_schools(closings, directory, now)
     if lit is not None:
         return _closings_picture(lit, directory, now)
@@ -687,22 +706,25 @@ def calm_closings(
     return "", False
 
 
-def region(
+def region(  # noqa: PLR0913 - the view, the live files, the time and the switch
     *,
     query: str,
     place: str,
     closings: Mapping[str, object] | None,
     directory: Directory,
     now: datetime,
+    closings_shown: bool,
 ) -> Picture:
     """A calm view of ``place`` at a zoom where the map draws every school as a faint speck
     (the image library's pictures; never chosen for a post by itself). Only when the map
-    lights no school.
+    lights no school. Without ``closings_shown`` the closings file is not read.
 
     Raises:
         PictureError: the map lights schools now (take :func:`choose`'s view then).
     """
     now = now.astimezone(UTC)
+    if not closings_shown:
+        closings = None
     if lit_schools(closings, directory, now) is not None:
         raise PictureError("schools are lit: a calm region picture would leave them out")
     read = closings_read(closings, directory)

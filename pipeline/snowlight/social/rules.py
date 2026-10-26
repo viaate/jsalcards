@@ -620,6 +620,18 @@ NOW_WORDS: Final = (
 """Words that call a picture current: refused when it is an older one."""
 CHANCES_ID: Final = "chances"
 """The facts file's switch: chances are shown in posts and cards only while this fact is LIVE."""
+CLOSINGS_ID: Final = "closings"
+"""The facts file's switch for closings: a picture, card or alt text shows or counts closings
+only while this fact is LIVE (practice-mode closings are checked before anything goes
+public)."""
+CLOSINGS_WORDS: Final = re.compile(
+    r"\b(?:closed|closings?(?!\s+(?:records?|lists?|reader))|closures?|delay(?:s|ed)?"
+    r"|lit\s+up|lights?\s+up|glow\w*|dismissing\s+early|early\s+dismissal)\b",
+    re.IGNORECASE,
+)
+"""Any word of closings on the map (not the reader, its lists or the model's closing
+records): what a picture's description, alt text and card hold none of while closings are not
+LIVE."""
 CHANCE_NUMBER: Final = re.compile(
     r"[%\uff05\ufe6a\u2030]|\bper\s?cent|\bpercent|\bpct\b|\bodds\b|\b\d+\s*(?:in|out of)\s*\d+\b"
     r"|\b(?:one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:in|out of)\s+"
@@ -717,6 +729,30 @@ def chances_shown(facts: Facts) -> bool:
     without it shows none."""
     fact = facts.get(CHANCES_ID)
     return fact is not None and fact.status == "LIVE"
+
+
+def still_true(line: str, facts: Facts) -> bool:
+    """Whether a card's line is still true per the facts: words of a LIVE fact's text (the
+    model line is part of the LIVE fact ``model``), or the whole text of a COMING fact, which
+    says itself that it is coming (a part of one could drop the "coming")."""
+    wanted = line.strip().rstrip(".").lower()
+    return any(
+        (fact.status == "LIVE" and wanted in fact.text.lower())
+        or (fact.status == "COMING" and fact.text.strip().rstrip(".").lower() == wanted)
+        for fact in facts.facts
+    )
+
+
+def closings_shown(facts: Facts) -> bool:
+    """Whether pictures and cards may show closings: only while the facts file marks the
+    ``closings`` fact LIVE. A file without it shows none."""
+    fact = facts.get(CLOSINGS_ID)
+    return fact is not None and fact.status == "LIVE"
+
+
+def mentions_closings(text: str) -> bool:
+    """Whether ``text`` holds any word of closings on the map (:data:`CLOSINGS_WORDS`)."""
+    return CLOSINGS_WORDS.search(text) is not None
 
 
 def mentions_chance(text: str) -> bool:

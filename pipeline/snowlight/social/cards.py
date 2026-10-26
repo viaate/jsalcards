@@ -11,17 +11,21 @@ step took it, under Snowlight's own words, laid out by one of three templates th
 
 The style is chosen by code, never at random (:func:`pick`): the preferred order is C, A, B
 for a closings or district picture and A, C, B for a calm one, and a style fits only when
-its words, stamp and logo darken at most :data:`FIT_SHARE` of the lit-school pixels of the
-map (:func:`cover`; the owner's objection to A was its text over lit schools). B covers no
-pixel of the map by construction (checked on its layout). When no style fits, no fresh card
-is made (the post goes with the library's dated card). The choice and its measures are
-logged.
+its words, stamp and logo darken no lit school's centre (each school in view is measured
+where the picture puts it, :attr:`snowlight.social.picture.Seen.spots`) and at most
+:data:`FIT_SHARE` of the lit-school pixels of the map, for the halos' edges (:func:`cover`;
+the owner's objection to A was its text over lit schools). B covers no pixel of the map by
+construction (checked on its layout). When no style fits, no fresh card is made (the post
+goes with the library's dated card). The choice and its measures are logged. The A card's
+model line is laid only while it is still words of a LIVE fact of the run's facts file
+(:func:`snowlight.social.rules.still_true`); otherwise A does not fit.
 
 Every word, number, place and time on a card comes from the picture's facts
 (:class:`snowlight.social.picture.Taken`), filled by code; none comes from Haiku. In-view
 counts are labeled "in this view" and the country's total "across the US"; nothing is said
-about closings from a practice-mode 404; no district is named; a fallback card shows its own
-date, never a clock, "now" or "live". The alt text is built here from the same facts
+about closings from a practice-mode 404, nor at all while the facts file marks closings not
+LIVE (:func:`without_closings`); no district is named; a fallback card shows its own date,
+never a clock, "now" or "live". The alt text is built here from the same facts
 (:func:`alt_text`). A card is 1600 x 900, under 5 MB, every word inside a 64 px margin.
 """
 
@@ -49,11 +53,34 @@ from snowlight.social.picture import (
     Taken,
     clock,
 )
-from snowlight.social.rules import mentions_chance
+from snowlight.social.rules import (
+    Facts,
+    chances_shown,
+    closings_shown,
+    mentions_chance,
+    mentions_closings,
+    still_true,
+)
 
 HERE: Final = Path(__file__).parent / "cards"
+
+
+def _a_tagline() -> str:
+    found = re.search(
+        r"const TAGLINE = '([^']+)';", (HERE / "a" / "card.html").read_text(encoding="utf-8")
+    )
+    if found is None:
+        raise RuntimeError("cards/a/card.html names no TAGLINE")
+    return found.group(1)
+
+
+A_TAGLINE: Final = _a_tagline()
+"""The A card's model line, as its template lays it."""
 FIT_SHARE: Final = 0.03
-"""The most of the map's lit-school pixels a style's words may darken and still fit."""
+"""The most of the map's lit-school pixels a style's words may darken and still fit (halo
+edges: no lit school's centre may be darkened at all, :data:`SPOT`)."""
+SPOT: Final = 1
+"""How far around a lit school's centre (in pixels, each way) nothing may be darkened."""
 MARGIN: Final = 64
 """Every word and the logo stay this far inside the card's edges."""
 MAX_BYTES: Final = 5 * 1024 * 1024
@@ -85,6 +112,8 @@ class Measure:
     glow: int
     covered: int
     refused: str | None = None
+    schools: int = 0
+    """How many lit schools' centres the layout darkens (none may be)."""
     """Why the layout could not be used at all (the template refused the facts, a word left
     the margin, or B would crop the map)."""
 
@@ -94,12 +123,13 @@ class Measure:
 
     @property
     def fits(self) -> bool:
-        return self.refused is None and self.share <= FIT_SHARE
+        return self.refused is None and self.schools == 0 and self.share <= FIT_SHARE
 
     def __str__(self) -> str:
         if self.refused is not None:
             return f"not usable: {self.refused}"
-        return f"covers {self.covered} of {self.glow} lit pixels ({self.share:.1%})"
+        schools = f", over {self.schools} lit schools" if self.schools else ""
+        return f"covers {self.covered} of {self.glow} lit pixels ({self.share:.1%}){schools}"
 
 
 class Card(BaseModel):
@@ -168,12 +198,26 @@ def _luminance(rgb: npt.NDArray[np.uint8]) -> npt.NDArray[np.float64]:
     return lum + 0.0722 * values[..., 2]
 
 
-def cover(map_rgb: npt.NDArray[np.uint8], card_rgb: npt.NDArray[np.uint8]) -> Measure:
+def cover(
+    map_rgb: npt.NDArray[np.uint8],
+    card_rgb: npt.NDArray[np.uint8],
+    spots: Sequence[tuple[int, int]] = (),
+) -> Measure:
     """The lit-school pixels of the map the card darkens below half their brightness (its
-    words, badges, stamps, halos and scrims), with the map at the same place in both."""
+    words, badges, stamps, halos and scrims), with the map at the same place in both, and
+    how many of the lit schools at ``spots`` have a darkened pixel within :data:`SPOT` of
+    their centre."""
     mask = glow_mask(map_rgb)
     darker = _luminance(card_rgb) < 0.5 * _luminance(map_rgb)
-    return Measure(glow=int(mask.sum()), covered=int((mask & darker).sum()))
+    height, width = darker.shape
+    schools = 0
+    for x, y in spots:
+        if not (0 <= x < width and 0 <= y < height):
+            continue
+        window = darker[max(0, y - SPOT) : y + SPOT + 1, max(0, x - SPOT) : x + SPOT + 1]
+        if window.any():
+            schools += 1
+    return Measure(glow=int(mask.sum()), covered=int((mask & darker).sum()), schools=schools)
 
 
 def _month_day(moment: datetime) -> str:
@@ -553,20 +597,25 @@ def compose(  # noqa: PLR0913 - the card's parts
     out: Path,
     *,
     fallback: bool = False,
-    chances: bool,
+    facts: Facts,
     say: Callable[[str], None],
 ) -> Card:
     """The card for ``post`` over the map picture, written to ``out/<post>.png`` and
-    ``out/<post>.json``; the style chosen by :func:`pick`. Without ``chances`` (the facts
-    file's switch, :func:`snowlight.social.rules.chances_shown`) the card, its alt text and
-    the picture's description give no chance (:func:`without_chances`).
+    ``out/<post>.json``; the style chosen by :func:`pick`. While ``facts`` marks chances not
+    LIVE (:func:`snowlight.social.rules.chances_shown`) the card, its alt text and the
+    picture's description give no chance (:func:`without_chances`), and while it marks
+    closings not LIVE they say nothing of closings (:func:`without_closings`).
 
     Raises:
-        CardError: no style gave a true, whole card, or a chance would show while chances
-            are TESTING.
+        CardError: no style gave a true, whole card, or a chance or closings would show
+            while the facts file holds them back.
     """
+    chances = chances_shown(facts)
+    closings = closings_shown(facts)
     if not chances:
         taken = without_chances(taken)
+    if not closings:
+        without_closings(taken)
     context = browser.new_context(
         viewport={"width": WIDTH, "height": HEIGHT}, device_scale_factor=1, color_scheme="dark"
     )
@@ -583,13 +632,17 @@ def compose(  # noqa: PLR0913 - the card's parts
                 png, words = lay(page, candidate, taken, post, map_png, fallback=fallback)
             except CardError as error:
                 return Measure(glow=0, covered=0, refused=str(error))
+            if candidate == "a" and A_TAGLINE in words and not still_true(A_TAGLINE, facts):
+                return Measure(
+                    glow=0, covered=0, refused="its model line is no longer a LIVE fact's words"
+                )
             if candidate == "b":
                 frame = page.evaluate(FRAME)
                 if not frame["whole"] or frame["copyRight"] > frame["frameLeft"]:
                     return Measure(glow=0, covered=0, refused="b would crop or cover the map")
                 result = Measure(glow=int(glow_mask(map_rgb).sum()), covered=0)
             else:
-                result = cover(map_rgb, rgb_of(scratch, png))
+                result = cover(map_rgb, rgb_of(scratch, png), taken.seen.spots)
             laid[candidate] = Laid(png, words, result)
             return result
 
@@ -600,6 +653,8 @@ def compose(  # noqa: PLR0913 - the card's parts
         alt = alt_text(taken, post, fallback=fallback)
         if not chances and (mentions_chance(laid[chosen].words) or mentions_chance(alt)):
             raise CardError("the card would give a chance while chances are TESTING")
+        if not closings and (mentions_closings(laid[chosen].words) or mentions_closings(alt)):
+            raise CardError("the card would show closings while closings are not LIVE")
     finally:
         context.close()
     out.mkdir(parents=True, exist_ok=True)
@@ -632,6 +687,31 @@ def without_chances(taken: Taken) -> Taken:
     if taken.seen.chance is None:
         return taken
     return taken.model_copy(update={"seen": taken.seen.model_copy(update={"chance": None})})
+
+
+def without_closings(taken: Taken) -> None:
+    """Check that a picture shows and says nothing of closings, for a card while the facts
+    file marks closings not LIVE (the reader's finds are checked before anything goes
+    public).
+
+    Raises:
+        CardError: the picture is a closings view, counts lit schools, read a closings file,
+            or its description speaks of closings.
+    """
+    seen = taken.seen
+    if (
+        taken.kind == "closings"
+        or taken.lit
+        or seen.lit
+        or seen.in_view is not None
+        or seen.states
+        or seen.spots
+        or seen.closings_read
+        or seen.closings_at is not None
+    ):
+        raise CardError("a picture of closings while closings are not LIVE")
+    if mentions_closings(taken.shows):
+        raise CardError("the picture's description speaks of closings while they are not LIVE")
 
 
 def load_card(folder: Path, post: Post) -> tuple[Card, Path] | None:
