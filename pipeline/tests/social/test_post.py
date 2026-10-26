@@ -1347,3 +1347,7 @@ def test_a_library_card_that_shows_closings_stops_the_run_while_they_are_not_liv
     note.write_text(json.dumps(entry))
     with pytest.raises(ContentError, match="shows closings while closings are not LIVE"):
         load(root)
+    runner = Runner(root, world, Clock(at("2026-10-26T16:37:00")))
+    assert runner() == 1
+    assert world.x.posts == []
+    assert world.x.refreshes == 0
