@@ -177,6 +177,8 @@ export interface WhyLineView {
   readonly points: string;
   /** "Blue Valley and Olathe, next door, canceled." */
   readonly text: string;
+  /** A line under it that says what it counted (the outlook's cases), or none. */
+  readonly help?: string;
 }
 
 export interface WhyView {
@@ -910,6 +912,11 @@ function same(a: number, b: number): boolean {
  */
 export const FORECAST_WINDOW_END_UTC_HOUR = 18;
 
+/** The outlook's record (S7-F): 5 AM on the school day, what the district woke up to. */
+const OUTLOOK_RECORD_HOUR = 5;
+/** The hour the outlook's feel is read at: 7 AM on the school day. */
+const OUTLOOK_BUS_HOUR = 7;
+
 /** Where the forecast's window ends on a school day: 18:00 UTC that day. */
 function windowEnd(day: LocalDate): Date {
   const [year = 0, month = 1, date = 1] = day.split('-').map(Number);
@@ -923,8 +930,17 @@ function reasonInput(
   day: LocalDate,
   nameOf: NameOf,
   said: Said,
+  place: { readonly timeZone: string; readonly state: string | null },
 ): ReasonInput | null {
   switch (reason.kind) {
+    case 'outlook':
+      return {
+        ...reason,
+        state: place.state,
+        day,
+        record: atLocalHour(day, OUTLOOK_RECORD_HOUR, place.timeZone),
+        busTime: atLocalHour(day, OUTLOOK_BUS_HOUR, place.timeZone),
+      };
     case 'snow_total':
       return {
         ...reason,
@@ -1010,8 +1026,11 @@ export function whyView(input: {
   readonly now: Date;
   readonly zones: Zones;
   readonly said?: Said;
+  /** The district's state ("KS"), for an outlook's share across its districts. */
+  readonly state?: string | null;
 }): WhyView | null {
   const { detail, chance, day, district, nameOf, now, zones } = input;
+  const state = input.state ?? null;
   const said = input.said ?? NOTHING_SAID;
   const why = detail.why;
   const percent = Math.round(chance * 100);
@@ -1023,12 +1042,16 @@ export function whyView(input: {
     const base: BaseInput = why.base;
     const lines: WhyLineView[] = [];
     for (const reason of why.reasons) {
-      const words = reasonInput(reason, detail, day, nameOf, said);
+      const words = reasonInput(reason, detail, day, nameOf, said, {
+        timeZone: zones.school,
+        state,
+      });
       if (words === null) return null;
       lines.push({
         key: reason.kind,
         points: chanceFormat.points(reason.points),
         text: chanceFormat.reason(words, district, now, zones),
+        ...(words.kind === 'outlook' ? { help: chanceFormat.outlookHelp(words, zones) } : {}),
       });
     }
     return {
@@ -1133,7 +1156,7 @@ export function chanceView(input: ChanceInput): ChanceView | null {
     moved,
     moments,
     chart,
-    why: whyView({ detail, chance: noSchool, day, district, nameOf, now, zones, said }),
+    why: whyView({ detail, chance: noSchool, day, district, nameOf, now, zones, said, state }),
     delay,
     countdown: (at, clock) => {
       try {

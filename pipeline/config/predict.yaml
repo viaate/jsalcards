@@ -23,6 +23,7 @@ weather:
   window_from: "18:00"        # an alert counts when it overlaps [18:00 D-1, 09:00 D) local
   window_until: "09:00"
   covered_share: 0.5          # a district's class covers at least this share of its schools
+                              # (the outlook's words say "half": web/src/copy-chance.ts)
   memory_hours: 30            # live alerts kept this long after they were last seen
 
 # The pooled rates (spec c.1). Round 1 used m = 1024 everywhere with own 1024 and levels 64 days:
@@ -99,6 +100,10 @@ serve:
   announces: false            # a district's usual posting time is its forecasts' announces_at
   reasons_gate_override: ""   # names the lead who signed off on serving terms whose backtest v2 gate failed; empty: refused
   neighbors_max_age_minutes: 60  # a closings file older than this says nothing of the districts next door
+  # S7-F (docs/predict.md, "The night-before outlook"): with PREDICT_OUTLOOK on, a district whose zone
+  # has no forecast run under 3 hours old gets the issued-alerts-only chance (identity, the lead's
+  # decision of 2026-10-20), or the pass goes dark (dark). Off and shadow publish as before either way.
+  forecast_stale: identity
 
 # Automatic learning (S7-L, spec addenda c and d): 'snowlight predict learn', nightly inside the
 # predict workflow. Live-read district-days become labels by the archive's rules; a storm situation

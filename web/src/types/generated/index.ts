@@ -509,6 +509,11 @@ export interface PredictionsFile {
   /** The local days forecast, consecutive, today first. */
   readonly days: readonly LocalDate[];
   readonly districts: readonly DistrictForecast[];
+  /**
+   * When the weather service issued the forecast the outlook reasons read (S7-F); given with any
+   * outlook reason, and before generated_at.
+   */
+  readonly forecast_at?: UtcInstant | null;
   /** Each distinct outlook the schools' days name, once; every one is named. */
   readonly outlooks?: readonly DayForecast[];
   /** The private schools (no district), sorted by school, each once. */
@@ -725,6 +730,40 @@ export interface NoThreat {
  */
 export type OutlookIndex = number;
 
+/**
+ * The night-before outlook (S7-F, spec-f s. 8): before 5 AM on the day, with no warning
+ * issued yet, how the cases like this one ended. The share of cases like this whose 5 AM
+ * record was each class, at the district's place, weighs the district's own chance under
+ * each class; ``points`` is that chance's whole percent less the base's.
+ *
+ * ``now``: the class issued and the heads-up at the file's time, as ``c0 * 6 + heads-up``
+ * (``c0`` 0 none or 1 advisory; heads-up 0 none, 1 winter storm watch, 2 extreme cold watch,
+ * 3 cold weather advisory, 4 hurricane watch, 5 tropical storm watch). ``f``: the forecast
+ * the case was counted under, as ``[kind, low, high]`` (kind 0 snow in whole inches, 1 ice
+ * in hundredths of an inch, 2 how cold it feels at 7 AM in whole degrees F; low and high are
+ * the district's schools' least and most, rounded outward, so the range is true of every
+ * school); absent when the forecast is quiet (fewer than half the schools forecast 0.5
+ * inches of snow or more, fewer than half 0.01 inches of ice or more, and fewer than half a
+ * feel of 10 F or colder). ``like``: the cases counted, ``[low bucket, high bucket, heads-up]``
+ * (buckets 0 quiet, 1-5 snow 0.5-2, 2-4, 4-6, 6-9, 9+ inches, 6-8 ice 0.01-0.10, 0.10-0.25,
+ * 0.25+ inches, 9-12 feels 10 to 0, 0 to -10, -10 to -20, -20 F or colder, 13 unknown;
+ * heads-up 6 for any). ``to``: the class whose cases moved the chance most the way it moved.
+ * ``share``: the share of the cases counted at ``scope`` (0 the district's state, 1 its
+ * region, 2 the nation) whose 5 AM record was ``to``, true of their raw count: 100 only when
+ * every one of them was, 99 when nearly all but not all were, 1 when some but nearly none
+ * were (the website says the ends as "every", "almost every" and "almost no").
+ */
+export interface OutlookReason {
+  readonly kind: 'outlook';
+  readonly points: Points;
+  readonly now: number;
+  readonly like: readonly [low_bucket: number, high_bucket: number, heads_up: number];
+  readonly to: number;
+  readonly share: number;
+  readonly scope: number;
+  readonly f?: readonly [kind: number, low: number, high: number] | null;
+}
+
 /** One day in the district's record: its snow and what the district did. */
 export interface PastDay {
   readonly day: LocalDate;
@@ -808,6 +847,7 @@ export interface PreviousChance {
 
 /** One reason, of a kind, and the points it adds. */
 export type ReasonPoints =
+  | OutlookReason
   | SnowTotalReason
   | RecordReason
   | NeighborsReason

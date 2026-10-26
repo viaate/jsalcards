@@ -26,7 +26,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from enum import Enum
-from typing import Final, cast
+from typing import Final, Protocol, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -67,7 +67,7 @@ from snowlight.predict.pool import (
     propensities,
     publish_rates,
 )
-from snowlight.predict.reasons import DayInputs, moved
+from snowlight.predict.reasons import DayInputs, Moved, moved
 from snowlight.predict.share import points_of, says_true
 from snowlight.predict.situations import (
     SITUATIONS,
@@ -90,11 +90,13 @@ from snowlight.schemas.predictions import (
     DistrictForecast,
     Forecast,
     NoThreat,
+    OutlookReason,
     PredictionsFile,
     PreviousChance,
     SchoolForecast,
     Why,
 )
+from snowlight.schemas.vocab import Reason
 
 SCHEMA_VERSION: Final = 1
 PRIVATE: Final = 0x01
@@ -106,6 +108,22 @@ FLOOR: Final = 0.01
 CONTIGUOUS: Final = (-125.0, 24.3, -66.8, 49.5)
 """The contiguous states' box (west, south, east, north), for a school with no known state."""
 SITUATION_POSITION: Final = {item.key: i for i, item in enumerate(SITUATIONS)}
+OUTLOOK_REASON: Final = (Reason.WINTER_STORM, Reason.ICE, Reason.EXTREME_COLD)
+"""The weather an outlook line's forecast kind names (snow, ice, feels)."""
+
+
+class OutlookLines(Protocol):
+    """The outlook's chances and lines a file carries (S7-F,
+    :class:`snowlight.predict.outlook_serve.Chances`): by (district, day index)."""
+
+    @property
+    def p(self) -> npt.NDArray[np.float64]: ...
+
+    @property
+    def delay(self) -> npt.NDArray[np.float64]: ...
+
+    @property
+    def lines(self) -> Mapping[tuple[int, int], OutlookReason]: ...
 
 
 class ServeError(RuntimeError):
@@ -307,6 +325,9 @@ class ServeModel:
     q_rate: npt.NDArray[np.float64] = field(default_factory=lambda: np.zeros((0, 0)))
     """The delay rate among days with school before rounding, (deployed districts, situations):
     the reasons keep it when they move the chance of no school (empty: taken from ``q``)."""
+    p_rate: npt.NDArray[np.float64] = field(default_factory=lambda: np.zeros((0, 0)))
+    """The chance of no school before rounding, (deployed districts, situations): the outlook
+    (S7-F) mixes these, then rounds once (empty: taken from ``p``)."""
     announce: tuple[int | None, ...] = ()
     """Per deployed district, its usual posting time in minutes from the school day's midnight
     (:mod:`snowlight.predict.announce`), or ``None``; empty: none known."""
@@ -816,6 +837,7 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
         p=p[rows],
         q=q[rows],
         q_rate=delay.p[rows],
+        p_rate=no_school.p[rows],
         own=no_school.own[rows],
         scope=no_school.scope[rows],
         effective=effective,
@@ -1016,6 +1038,8 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     posted: Neighbors = UNREAD,
     reasons: bool = False,
     announces: bool = False,
+    outlook: "OutlookLines | None" = None,
+    forecast_at: datetime | None = None,
 ) -> PredictionsFile:
     """The predictions file of one pass (see the module docstring): every district, and with
     ``private_classes`` (from :func:`unit_classes`) every served private school; ``fit``: what
@@ -1026,7 +1050,11 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     where ``fit`` allows; off, every chance is the base alone, as before piece 3. Private
     schools keep the base alone (each school's own amounts would make each outlook its own and
     overflow the shared table). ``announces``: each district's usual posting time, where known,
-    is its forecasts' ``announces_at``.
+    is its forecasts' ``announces_at``. ``outlook``: the night-before outlook's chances and
+    lines (S7-F, :mod:`snowlight.predict.outlook_serve`): a district-day with a line publishes
+    the outlook's chance, its base the class issued's own (never on a day said open), and the
+    file names the forecast's time, ``forecast_at``; a ``fit`` with no reasons carries no line
+    (every chance the issued-alerts-only one, as with no outlook).
 
     Raises:
         TableError: the private schools' outlooks are more than the file may hold.
@@ -1057,6 +1085,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
                 else None
             )
             usual = model.announce[index] if announces and model.announce else None
+            line = outlook.lines.get((index, d)) if outlook is not None and fit.reasons else None
             outlooks.append(
                 _forecast(
                     _Cell(
@@ -1081,6 +1110,9 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
                     extra=extra,
                     limits=(model.artifact.settings.floor, model.artifact.settings.ceiling),
                     announces=announces_at(usual, day, model.time_zone[index]),
+                    outlook=None
+                    if line is None or outlook is None
+                    else (float(outlook.p[index, d]), float(outlook.delay[index, d]), line),
                 )
             )
         entries.append(
@@ -1114,6 +1146,9 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
         schools=schools,
         outlooks=table,
         zones=zones,
+        forecast_at=forecast_at
+        if forecast_at is not None and outlook is not None and outlook.lines and fit.reasons
+        else None,
     )
 
 
@@ -1268,6 +1303,7 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     extra: DayInputs | None = None,
     limits: tuple[float, float] = (FLOOR, 0.99),
     announces: datetime | None = None,
+    outlook: tuple[float, float, OutlookReason] | None = None,
 ) -> Forecast:
     """One unit's forecast for one school day. ``said_open``: the unit said school is on that
     day, so its chance of no school is the floor and of a delay 0 (:mod:`snowlight.predict.
@@ -1279,7 +1315,9 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     p, q = cell.p, cell.q
     floor = FLOOR if said_open else None
     lines = None
-    if floor is None and extra is not None:
+    if floor is None and outlook is not None:
+        lines = Moved(p_no_school=outlook[0], p_delay=outlook[1], reasons=(outlook[2],))
+    elif floor is None and extra is not None:
         lines = moved(
             p,
             q,
@@ -1316,11 +1354,16 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     )
     if lines is not None:
         why = Why(base=why.base, reasons=lines.reasons)
+    weather = reasons_for(situation.weather)
+    if outlook is not None and floor is None and outlook[2].f is not None:
+        # The outlook's forecast is weather forecast (spec-f s. 8): snow, ice or cold.
+        named = OUTLOOK_REASON[outlook[2].f[0]]
+        weather = weather if named in weather else (*weather, named)
     return Forecast(
         state="forecast",
         p_no_school=shown,
         p_delay=0.0 if said_open else q if lines is None else lines.p_delay,
-        reasons=reasons_for(situation.weather),
+        reasons=weather,
         previous=previous,
         announces_at=announces,
         why=why,

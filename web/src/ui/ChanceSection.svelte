@@ -149,6 +149,9 @@
           <li class="row is-reason">
             <span class="label"><span class="num">{line.points}</span></span>
             <p>{line.text}</p>
+            {#if line.help !== undefined}
+              <p class="help">{line.help}</p>
+            {/if}
           </li>
         {/each}
       </ol>
@@ -372,6 +375,14 @@
 
   .m-count {
     white-space: nowrap;
+  }
+
+  /* What an outlook line counted, under it in the sentence's column, quieter. */
+  .help {
+    grid-column: 2;
+    margin-top: 4px;
+    font: var(--type-small);
+    color: var(--text-2);
   }
 
   /* How the chance adds up: open, a short sentence a reason, right under the chart. */

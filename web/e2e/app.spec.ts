@@ -1071,6 +1071,88 @@ function syntheticPredictions(): string {
   });
 }
 
+/** SYNTHETIC: that Monday at 8:05 PM in Kansas City, the evening before, nothing issued yet. */
+const OUTLOOK_NOW = new Date('2026-01-13T02:05:00Z');
+const OUTLOOK_FORECAST_AT = '2026-01-12T22:46:00Z';
+
+/**
+ * SYNTHETIC: one night-before outlook line (S7-F) for Shawnee Mission (district 1) on Tuesday,
+ * over the base, as the pipeline writes it with PREDICT_OUTLOOK on (it is shadow: the site
+ * shows none yet). Three nights: 6 to 9 inches with nothing out (+45), a cold night (+12), and
+ * an advisory out with the snow gone from the forecast (−9).
+ */
+const OUTLOOK_NIGHTS = {
+  snow: {
+    chance: 0.46,
+    base: { kind: 'similar_days', points: 1 },
+    reasons: [0],
+    line: {
+      kind: 'outlook',
+      points: 45,
+      now: 0,
+      f: [0, 6, 9],
+      like: [4, 4, 0],
+      to: 5,
+      share: 60,
+      scope: 0,
+    },
+  },
+  cold: {
+    chance: 0.13,
+    base: { kind: 'similar_days', points: 1 },
+    reasons: [2],
+    line: {
+      kind: 'outlook',
+      points: 12,
+      now: 0,
+      f: [2, -22, -15],
+      like: [11, 11, 0],
+      to: 3,
+      share: 33,
+      scope: 0,
+    },
+  },
+  fading: {
+    chance: 0.03,
+    base: { kind: 'alert', points: 12, alert: 'winter_weather_advisory' },
+    reasons: [0],
+    line: { kind: 'outlook', points: -9, now: 6, like: [0, 0, 0], to: 0, share: 25, scope: 0 },
+  },
+} as const;
+
+function outlookPredictions(night: keyof typeof OUTLOOK_NIGHTS): string {
+  const { chance, base, reasons, line } = OUTLOOK_NIGHTS[night];
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: OUTLOOK_NOW.toISOString().replace('.000Z', 'Z'),
+    forecast_at: OUTLOOK_FORECAST_AT,
+    directory: STAMP,
+    days: ['2026-01-12', '2026-01-13'],
+    districts: [
+      {
+        district: 1,
+        time_zone: ZONE,
+        neighbors: [2, 0],
+        days: [
+          { state: 'no_threat' },
+          {
+            state: 'forecast',
+            p_no_school: chance,
+            p_delay: 0.02,
+            reasons,
+            why: { base, reasons: [line] },
+          },
+        ],
+      },
+    ],
+  });
+}
+
+/** SYNTHETIC: the live file of that evening at 8:00 PM, Monday's two made-up statuses only. */
+function outlookClosings(): string {
+  return syntheticClosings().replace('"2026-01-12T12:42:00Z"', '"2026-01-13T02:00:00Z"');
+}
+
 /** SYNTHETIC: that Monday at 1:05 AM in Kansas City, a day and a half before Tuesday's buses. */
 const SHAPE_NOW = new Date('2026-01-12T07:05:00Z');
 const SHAPE_BUSES = '2026-01-13T13:00:00Z';
@@ -2402,6 +2484,144 @@ test.describe('with data staged', () => {
     await expect.poll(async () => (await panel.boundingBox())?.width).toBeCloseTo(368, 0);
     expect(problems).toEqual([]);
     await context.close();
+  });
+
+  test('the chance section with the night-before outlook: its line and what it counted add up to the chance', async ({
+    browser,
+  }) => {
+    // A first flight into streets (FIRST_FLIGHT_MS), and with SNOWLIGHT_OUTLOOK_SHOTS set, the
+    // three nights at a desktop's and a phone's width for the owner to read the words.
+    test.setTimeout(480_000);
+    const shots = process.env.SNOWLIGHT_OUTLOOK_SHOTS ?? '';
+    const layouts = shots === '' ? [{ phone: false }] : [{ phone: false }, { phone: true }];
+    for (const { phone } of layouts) {
+      const context = await browser.newContext({
+        viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 900 },
+        ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
+        timezoneId: ZONE,
+        serviceWorkers: 'block',
+      });
+      const page = await context.newPage();
+      await fixDate(page, OUTLOOK_NOW);
+      const { problems } = watch(page);
+      let night: keyof typeof OUTLOOK_NIGHTS = 'snow';
+      await page.route('**/data/predictions/latest.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body: outlookPredictions(night) }),
+      );
+      // The live file of that evening, so the header's update time is the scene's.
+      await page.route('**/data/live/closings.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body: outlookClosings() }),
+      );
+      const panel = page.locator('aside.detail');
+      const section = panel.locator('.chance');
+      for (const [i, name] of (['snow', 'cold', 'fading'] as const).entries()) {
+        night = name;
+        if (i === 0) {
+          await page.goto(`${site}?school=${SHAWNEE_MISSION_EAST}`);
+        } else {
+          await showSchool(page, null);
+          await expect(panel).toHaveCount(0);
+          await showSchool(page, SHAWNEE_MISSION_EAST);
+        }
+        const { chance, line } = OUTLOOK_NIGHTS[name];
+        await expect(section.locator('.number')).toHaveText(
+          `${String(Math.round(chance * 100))}%`,
+          {
+            timeout: 60_000,
+          },
+        );
+        const rows = section.locator('.sum > li');
+        await expect(rows).toHaveCount(2);
+        const input = {
+          kind: 'outlook' as const,
+          points: line.points,
+          c0: line.now >= 6 ? (1 as const) : (0 as const),
+          heads: line.now % 6,
+          forecast:
+            'f' in line
+              ? {
+                  kind: (['snow', 'ice', 'feels'] as const)[line.f[0]],
+                  low: line.f[1],
+                  high: line.f[2],
+                }
+              : null,
+          like: { low: line.like[0], high: line.like[1], heads: line.like[2] },
+          to: line.to,
+          share: line.share,
+          scope: 'state' as const,
+          state: 'KS',
+          at: new Date(OUTLOOK_FORECAST_AT),
+          generatedAt: OUTLOOK_NOW,
+          day: '2026-01-13',
+          record: new Date('2026-01-13T11:00:00Z'),
+          busTime: new Date('2026-01-13T13:00:00Z'),
+        };
+        const zones = { school: ZONE, viewer: ZONE };
+        const text = chanceFormat.reason(input, 'Shawnee Mission', OUTLOOK_NOW, zones);
+        await expect(rows.nth(1).locator('p').first()).toHaveText(text);
+        if (name === 'snow') {
+          // The words themselves, as the owner reads them (spec-f s. 8's first example).
+          const S = '\u00a0';
+          await expect(rows.nth(1).locator('p').first()).toHaveText(
+            `No winter storm warning, winter advisory or winter storm watch covers half of Shawnee Mission’s schools yet, but the weather service’s 4:46${S}PM forecast has 6 to 9 inches of snow at Shawnee Mission’s schools between 6${S}PM Monday and 12${S}PM Tuesday. Across Kansas districts, in 3 of 5 cases like this, a winter storm warning was out by 5${S}AM.`,
+          );
+          await expect(rows.nth(1).locator('.help')).toHaveText(
+            'A case is one district at one hour between 7:30 and 10:30 PM the night before, with no winter storm warning, winter advisory or winter storm watch covering half of its schools yet, and half or more of its schools forecast 6 inches of snow or more but fewer than half 9 or more.',
+          );
+        }
+        await expect(rows.nth(1).locator('.help')).toHaveText(
+          chanceFormat.outlookHelp(input, zones),
+        );
+        await expect(rows.nth(1).locator('.num')).toHaveText(chanceFormat.points(line.points));
+        // The sum adds up to the headline.
+        const numbers = (await section.locator('.sum .num').allTextContents()).map((found) =>
+          Number(found.replace('−', '-')),
+        );
+        expect(numbers.reduce((sum, n) => sum + n, 0)).toBe(Math.round(chance * 100));
+        // Nothing in the panel scrolls sideways at this width.
+        const sideways = await panel.evaluate((node) => node.scrollWidth - node.clientWidth);
+        expect(sideways).toBeLessThanOrEqual(0);
+        if (shots !== '') {
+          await section.locator('.why').scrollIntoViewIfNeeded();
+          const file = path.join(shots, `${name}-${phone ? 'phone' : 'desktop'}.png`);
+          // On a phone the sheet scrolls inside itself: bring the sum to its top, then the screen.
+          if (phone) {
+            // Up to full height, so the whole line and what it counted fit on the screen.
+            if ((await panel.getAttribute('data-detent')) !== 'full') {
+              await panel.locator('.grip').tap();
+              await expect(panel).toHaveAttribute('data-detent', 'full');
+            }
+            await section.locator('.why').evaluate((node) => {
+              let box = node.parentElement;
+              while (box !== null && box.scrollHeight <= box.clientHeight) box = box.parentElement;
+              if (box !== null) {
+                const top = node.getBoundingClientRect().top - box.getBoundingClientRect().top;
+                box.scrollTop += top - 16;
+              }
+            });
+            // A line too long for that: its foot, what it counted, at the screen's foot.
+            await rows
+              .nth(1)
+              .locator('.help')
+              .evaluate((node) => {
+                let box = node.parentElement;
+                while (box !== null && box.scrollHeight <= box.clientHeight) {
+                  box = box.parentElement;
+                }
+                const over = node.getBoundingClientRect().bottom - (window.innerHeight - 16);
+                if (box !== null && over > 0) box.scrollTop += over;
+              });
+            const line = await rows.nth(1).boundingBox();
+            const help = await rows.nth(1).locator('.help').boundingBox();
+            expect(line?.y ?? -1).toBeGreaterThanOrEqual(0);
+            expect((help?.y ?? 844) + (help?.height ?? 0)).toBeLessThanOrEqual(844);
+            await page.screenshot({ path: file });
+          } else await panel.screenshot({ path: file });
+        }
+      }
+      expect(problems).toEqual([]);
+      await context.close();
+    }
   });
 
   test('the chance section for a viewer in New York: each time the school’s, its zone under it, clear of its words, at 1440 and 320 px', async ({

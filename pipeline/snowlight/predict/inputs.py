@@ -12,7 +12,7 @@
 
 import os
 import ssl
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -26,6 +26,7 @@ from snowlight.directory.deployed import DeployedEditionError, Reader
 from snowlight.directory.points import PointsFormatError, decode
 from snowlight.predict.publish import Dark, DarkError
 from snowlight.predict.serve import DeployedDirectory
+from snowlight.predict.situations import HEADS_UP_BY_CODE
 from snowlight.schemas.directory import DirectoryEdition, SchoolDirectoryMeta, written_edition
 from snowlight.sources.nws.alerts import (
     ACCEPT,
@@ -37,7 +38,7 @@ from snowlight.sources.nws.alerts import (
 )
 from snowlight.sources.nws.http import HttpCache, parse_iso_utc
 from snowlight.sources.nws.iem import FINAL_AFTER, PROVISIONAL_MAX_AGE, WATCHWARN_URL
-from snowlight.weather.hazards import CONUS_STATES
+from snowlight.weather.hazards import ALERT_TYPES, CONUS_STATES
 from snowlight.weights.archive import EventRow, read_rows, request_window
 
 USER_AGENT: Final = f"snowlight-predict/{__version__} (+https://snowlightmap.com)"
@@ -211,6 +212,17 @@ HISTORY_EVENTS: Final = (
     "Lake Effect Snow Advisory",
 )
 """The NWS event names of the class-making VTEC codes (:data:`CLASS_BY_CODE`)."""
+HEADS_UP_EVENTS: Final = tuple(
+    kind.event
+    for kind in ALERT_TYPES
+    if any(
+        f"{phenomena}.{significance}" in HEADS_UP_BY_CODE for phenomena, significance in kind.codes
+    )
+)
+"""The NWS event names of the heads-up VTEC codes (:data:`HEADS_UP_BY_CODE`, retired ones too)."""
+PRODUCT_EVENTS: Final = HISTORY_EVENTS + HEADS_UP_EVENTS
+"""What the outlook's product log rebuilds from (S7-F): the classes' products and the
+heads-ups'. The alert memory's own read stays :data:`HISTORY_EVENTS`."""
 HISTORY_PAGES: Final = 40
 
 
@@ -221,8 +233,17 @@ class AlertsHistory:
 
     http: httpx.Client
 
-    def read(self, start: datetime, end: datetime) -> list[NwsAlert]:
-        """Every class-making product issued from ``start`` to ``end``, page by page, each once.
+    def read(
+        self,
+        start: datetime,
+        end: datetime,
+        *,
+        events: tuple[str, ...] = HISTORY_EVENTS,
+        before: Callable[[], bool] | None = None,
+    ) -> list[NwsAlert]:
+        """Every product of ``events`` (the class-making ones by default) issued from ``start``
+        to ``end``, page by page, each once. ``before``, asked before every page, says whether
+        there is still time to read it (the outlook's bounded read; ``None``: no limit).
 
         The feed pages newest first. It is read to its end, and also stops, whole, at a page
         that holds nothing new: a ``next`` link already followed or a page of products already
@@ -230,20 +251,22 @@ class AlertsHistory:
         rest are older still). A fresh start once went dark at the page bound on such a feed.
 
         Raises:
-            DarkError: a page cannot be read, or there are more pages of new products than
-                allowed (the error says how far back they reached).
+            DarkError: a page cannot be read, there are more pages of new products than
+                allowed (the error says how far back they reached), or ``before`` said no.
         """
         params: dict[str, str] | None = {
             "start": start.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "end": end.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "status": "actual",
-            "event": ",".join(HISTORY_EVENTS),
+            "event": ",".join(events),
             "limit": "500",
         }
         url = HISTORY_URL
         found: dict[str, NwsAlert] = {}
         followed: set[str] = set()
         for _page in range(HISTORY_PAGES):
+            if before is not None and not before():
+                raise DarkError(Dark.MEMORY, "alert history: the time for this read is up")
             try:
                 response = self.http.get(url, params=params, headers={"Accept": ACCEPT})
             except httpx.HTTPError as error:

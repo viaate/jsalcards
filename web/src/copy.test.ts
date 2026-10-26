@@ -12,6 +12,8 @@ import { areaFormat } from './copy-area';
 import { chanceCopy, chanceFormat } from './copy-chance';
 import type { BaseInput, ReasonInput, Zones } from './copy-chance';
 import { format } from './copy-format';
+
+const NBSP_CHAR = '\u00a0';
 import { diagCopy } from './copy-diag';
 import { waitlistCopy } from './copy-waitlist';
 
@@ -1852,6 +1854,274 @@ describe('format', () => {
       ).toEqual([]);
       // One minus sign.
       expect(outputs.filter((text) => /(^|\s)-\d/u.test(text))).toEqual([]);
+    });
+
+    describe('the night-before outlook (S7-F)', () => {
+      const S = NBSP_CHAR;
+      /** Monday Jan 12, 2026, 8:05 PM in Kansas City; the school day is Tuesday. */
+      const outlook = (
+        part: Partial<Extract<ReasonInput, { kind: 'outlook' }>>,
+      ): Extract<ReasonInput, { kind: 'outlook' }> => ({
+        kind: 'outlook',
+        points: 45,
+        c0: 0,
+        heads: 0,
+        forecast: { kind: 'snow', low: 6, high: 9 },
+        like: { low: 4, high: 4, heads: 0 },
+        to: 5,
+        share: 60,
+        scope: 'state',
+        state: 'KS',
+        at: at('2026-01-12T22:46:00Z'),
+        generatedAt: at('2026-01-13T02:05:00Z'),
+        day: '2026-01-13',
+        record: at('2026-01-13T11:00:00Z'),
+        busTime: at('2026-01-13T13:00:00Z'),
+        ...part,
+      });
+      const say = (input: ReasonInput, district: string, zones = here): string =>
+        chanceFormat.reason(input, district, at('2026-01-13T02:05:00Z'), zones);
+
+      it('says the three example lines the owner approves before the outlook shows', () => {
+        expect(say(outlook({}), 'Olathe')).toBe(
+          `No winter storm warning, winter advisory or winter storm watch covers half of Olathe’s schools yet, but the weather service’s 4:46${S}PM forecast has 6 to 9 inches of snow at Olathe’s schools between 6${S}PM Monday and 12${S}PM Tuesday. Across Kansas districts, in 3 of 5 cases like this, a winter storm warning was out by 5${S}AM.`,
+        );
+        expect(
+          say(
+            outlook({
+              points: 12,
+              forecast: { kind: 'feels', low: -22, high: -15 },
+              like: { low: 11, high: 11, heads: 0 },
+              to: 3,
+              share: 33,
+              state: 'ND',
+              at: at('2026-01-13T02:16:00Z'),
+            }),
+            'Fargo',
+          ),
+        ).toBe(
+          `No extreme cold warning, extreme cold watch or cold weather advisory covers half of Fargo’s schools yet, but the weather service’s 8:16${S}PM forecast has it feeling like −22 to −15${S}F at 7${S}AM Tuesday at Fargo’s schools. Across North Dakota districts, in 1 of 3 cases like this, an extreme cold warning was out by 5${S}AM.`,
+        );
+        const ohio: Zones = { school: 'America/New_York', viewer: 'America/New_York' };
+        expect(
+          say(
+            outlook({
+              points: -9,
+              c0: 1,
+              forecast: null,
+              like: { low: 0, high: 0, heads: 0 },
+              to: 0,
+              share: 25,
+              state: 'OH',
+              at: at('2026-01-13T02:16:00Z'),
+              record: at('2026-01-13T10:00:00Z'),
+            }),
+            'Lakota',
+            ohio,
+          ),
+        ).toBe(
+          `A winter advisory is out, but the weather service’s 9:16${S}PM forecast has little or no snow at most of Lakota’s schools and little or no ice at most of them. Across Ohio districts, in 1 of 4 cases like this, the weather service had called off the advisory by 5${S}AM.`,
+        );
+      });
+
+      it('joins what is out and the forecast with but only where they go opposite ways', () => {
+        const quiet = { forecast: null, like: { low: 0, high: 0, heads: 0 } } as const;
+        // Nothing out and a quiet forecast both read low: never "but", and never "now", which
+        // would say the forecast changed when nothing says it did.
+        const calm = say(outlook({ ...quiet, points: 1 }), 'Olathe');
+        expect(calm).toBe(
+          `No winter storm warning, winter advisory or winter storm watch covers half of Olathe’s schools yet, and the weather service’s 4:46${S}PM forecast has little or no snow at most of Olathe’s schools and little or no ice at most of them. Across Kansas districts, in 3 of 5 cases like this, a winter storm warning was out by 5${S}AM.`,
+        );
+        const joined = (part: Partial<Extract<ReasonInput, { kind: 'outlook' }>>): string =>
+          /, (and|but) the weather service/u.exec(say(outlook(part), 'Olathe'))?.[1] ?? '';
+        const snow = { kind: 'snow', low: 6, high: 9 } as const;
+        for (const points of [5, -5]) {
+          expect(joined({ ...quiet, points })).toBe('and');
+          expect(joined({ ...quiet, c0: 1, to: 0, points })).toBe('but');
+          expect(joined({ ...quiet, heads: 1, points })).toBe('but');
+        }
+        expect(joined({ forecast: snow, points: 5 })).toBe('but');
+        expect(joined({ forecast: snow, points: -5, to: 1 })).toBe('and');
+        expect(joined({ forecast: snow, heads: 1, points: 5 })).toBe('and');
+        expect(joined({ forecast: snow, heads: 1, points: -5, to: 1 })).toBe('but');
+        for (const c0 of [0, 1] as const) {
+          for (const heads of [0, 1, 3]) {
+            for (const points of [4, -4]) {
+              const to = c0 === 0 ? (points > 0 ? 5 : 1) : points > 0 ? 5 : 0;
+              expect(say(outlook({ c0, heads, to, points, ...quiet }), 'Olathe')).not.toMatch(
+                /\bnow\b/u,
+              );
+            }
+          }
+        }
+      });
+
+      it('words a watch, a forecast inside its window, the region and the nation', () => {
+        expect(
+          say(outlook({ heads: 1, at: at('2026-01-13T03:46:00Z'), scope: 'region' }), 'Olathe'),
+        ).toBe(
+          `A winter storm watch is out, and the weather service’s 9:46${S}PM forecast has 6 to 9 inches of snow at Olathe’s schools between then and 12${S}PM Tuesday. Across districts in Olathe’s region, in 3 of 5 cases like this, a winter storm warning was out by 5${S}AM.`,
+        );
+        expect(say(outlook({ c0: 1, heads: 2, scope: 'nation', share: 64 }), 'Olathe')).toContain(
+          'A winter advisory and an extreme cold watch are out, and',
+        );
+        expect(say(outlook({ scope: 'nation', share: 64 }), 'Olathe')).toContain(
+          'Across the country, in more than 3 of 5 cases like this',
+        );
+        expect(say(outlook({ share: 1 }), 'Olathe')).toContain('in almost no case like this');
+        expect(say(outlook({ share: 99 }), 'Olathe')).toContain('in almost every case like this');
+        expect(say(outlook({ share: 100 }), 'Olathe')).toContain(', in every case like this,');
+        expect(say(outlook({ forecast: { kind: 'snow', low: 0, high: 2 } }), 'Olathe')).toContain(
+          'has up to 2 inches of snow',
+        );
+        expect(
+          say(outlook({ forecast: { kind: 'ice', low: 0.1, high: 0.23 }, to: 6 }), 'Olathe'),
+        ).toContain(
+          'No ice storm warning, winter advisory or winter storm watch covers half of Olathe’s schools yet, but the weather service’s',
+        );
+        expect(
+          say(outlook({ forecast: { kind: 'ice', low: 0.1, high: 0.23 }, to: 6 }), 'Olathe'),
+        ).toContain('has 0.10 to 0.23 inches of ice at Olathe’s schools');
+        // Read from New York, the hours say Kansas City's zone.
+        expect(say(outlook({}), 'Olathe', east)).toContain(
+          `4:46${S}PM${S}CT forecast has 6 to 9 inches of snow at Olathe’s schools between 6${S}PM${S}CT Monday and 12${S}PM${S}CT Tuesday`,
+        );
+        // The school day by its weekday, never "today" or "tomorrow": a file made at 11:37 PM
+        // Monday says the same true words at 11:40 PM and, still on screen, at 12:20 AM Tuesday.
+        const late = outlook({
+          at: at('2026-01-13T05:16:00Z'),
+          generatedAt: at('2026-01-13T05:37:00Z'),
+        });
+        const before = chanceFormat.reason(late, 'Olathe', at('2026-01-13T05:40:00Z'), here);
+        const after = chanceFormat.reason(late, 'Olathe', at('2026-01-13T06:20:00Z'), here);
+        expect(before).toBe(after);
+        expect(after).toContain(`between then and 12${S}PM Tuesday.`);
+        expect(after).not.toMatch(/\b(today|tomorrow|tonight)\b/u);
+        // So does the feel, after midnight about the next school day: 1:05 AM Monday, Tuesday.
+        const feels = outlook({
+          forecast: { kind: 'feels', low: -22, high: -15 },
+          like: { low: 11, high: 11, heads: 0 },
+          to: 3,
+          at: at('2026-01-12T06:46:00Z'),
+          generatedAt: at('2026-01-12T07:05:00Z'),
+        });
+        expect(chanceFormat.reason(feels, 'Olathe', at('2026-01-12T07:05:00Z'), here)).toContain(
+          `feeling like −22 to −15${S}F at 7${S}AM Tuesday at Olathe’s schools`,
+        );
+        // An advisory is the class: a winter weather, freezing rain or lake effect snow
+        // advisory. Never one product the contract does not say.
+        for (const c0 of [0, 1] as const) {
+          for (const to of [0, 1, 5]) {
+            if (to === c0) continue;
+            const words = say(outlook({ c0, to, points: to > c0 ? 20 : -9 }), 'Olathe');
+            expect(words).not.toMatch(/(?<!cold )weather advisory/u);
+            expect(chanceFormat.outlookHelp(outlook({ c0, to }), here)).not.toMatch(
+              /(?<!cold )weather advisory/u,
+            );
+          }
+        }
+        expect(say(outlook({ to: 1, points: 8 }), 'Olathe')).toContain(
+          `a winter advisory was out by 5${S}AM.`,
+        );
+        // Nothing a line cannot say truly.
+        expect(() => say(outlook({ state: null }), 'Olathe')).toThrow(RangeError);
+        expect(() => say(outlook({ to: 0 }), 'Olathe')).toThrow(RangeError);
+        expect(() => say(outlook({ heads: 7 }), 'Olathe')).toThrow(RangeError);
+      });
+
+      it('says what the cases counted on the help line', () => {
+        expect(chanceFormat.outlookHelp(outlook({}), here)).toBe(
+          'A case is one district at one hour between 7:30 and 10:30 PM the night before, with no winter storm warning, winter advisory or winter storm watch covering half of its schools yet, and half or more of its schools forecast 6 inches of snow or more but fewer than half 9 or more.',
+        );
+        const help = (part: Partial<Extract<ReasonInput, { kind: 'outlook' }>>): string =>
+          chanceFormat.outlookHelp(outlook(part), here);
+        expect(help({ like: { low: 3, high: 5, heads: 0 } })).toContain(
+          'half or more of its schools forecast 4 inches of snow or more.',
+        );
+        expect(help({ like: { low: 0, high: 13, heads: 6 } })).toBe(
+          'A case is one district at one hour between 7:30 and 10:30 PM the night before, with no warning or winter advisory covering half of its schools yet, with or without a watch or a cold weather advisory, and any forecast.',
+        );
+        expect(help({ c0: 1, like: { low: 6, high: 7, heads: 1 } })).toContain(
+          'with a winter advisory and a winter storm watch out, and half or more of its schools forecast 0.01 inches of ice or more but fewer than half 0.25 or more.',
+        );
+        expect(help({ like: { low: 10, high: 11, heads: 2 } })).toContain(
+          `with an extreme cold watch out and no warning or winter advisory covering half of its schools yet, and half or more of its schools forecast to feel 0${S}F or colder at 7 AM but fewer than half −20${S}F or colder.`,
+        );
+        expect(help({ like: { low: 0, high: 0, heads: 0 } })).toContain(
+          `fewer than half of its schools forecast 0.5 inches of snow or more, fewer than half 0.01 inches of ice or more and fewer than half a feel of 10${S}F or colder at 7 AM.`,
+        );
+        expect(help({ generatedAt: at('2026-01-12T23:00:00Z') })).toContain(
+          'between 4:30 and 7:30 PM the day before',
+        );
+        expect(help({ generatedAt: at('2026-01-12T15:00:00Z') })).toContain(
+          'before 10:30 AM the day before',
+        );
+        expect(() => help({ generatedAt: at('2026-01-13T12:00:00Z') })).toThrow(RangeError);
+        expect(() => help({ like: { low: 2, high: 7, heads: 0 } })).toThrow(RangeError);
+      });
+
+      it('keeps the house style in every outlook line', () => {
+        const outputs: string[] = [];
+        for (const c0 of [0, 1] as const) {
+          for (const heads of [0, 1, 2, 3, 4, 5]) {
+            for (const to of [0, 1, 2, 3, 4, 5, 6, 7]) {
+              if (to === c0) continue;
+              for (const forecast of [
+                null,
+                { kind: 'snow', low: 6, high: 9 },
+                { kind: 'ice', low: 0, high: 0.12 },
+                { kind: 'feels', low: -30, high: 4 },
+              ] as const) {
+                for (const points of [-9, 45]) {
+                  for (const share of [1, 60, 99, 100]) {
+                    const input = outlook({ c0, heads, to, forecast, points, share });
+                    outputs.push(say(input, 'Olathe'), chanceFormat.outlookHelp(input, here));
+                  }
+                }
+              }
+            }
+          }
+        }
+        for (const [low, high] of [
+          [0, 0],
+          [1, 1],
+          [1, 5],
+          [6, 8],
+          [9, 12],
+          [0, 13],
+        ] as const) {
+          for (const heads of [0, 1, 6]) {
+            outputs.push(chanceFormat.outlookHelp(outlook({ like: { low, high, heads } }), here));
+          }
+        }
+        // A district's and a state's names are names: only the words around them are copy.
+        const words = outputs.map((text) =>
+          text.replaceAll('Olathe', 'olathe').replaceAll('Kansas', 'kansas'),
+        );
+        expect(allProblems(words)).toEqual([]);
+        expect(
+          outputs.filter((text) => /\b(should|could|around|about|might|may|likely)\b/u.test(text)),
+        ).toEqual([]);
+        expect(outputs.filter((text) => /(^|\s)-\d/u.test(text))).toEqual([]);
+        // What is out is a 50% value: "nothing out" is said of half the schools, never of all.
+        expect(
+          outputs.filter(
+            (text) =>
+              text.startsWith('No ') && !text.includes('covers half of Olathe’s schools yet,'),
+          ),
+        ).toEqual([]);
+        expect(
+          outputs.filter(
+            (text) => text.includes('with no ') && !text.includes('covering half of its schools'),
+          ),
+        ).toEqual([]);
+        // The class is a winter advisory (three products), and a cold weather advisory is an
+        // advisory: never "no advisory" beside one.
+        expect(outputs.filter((text) => /(?<!cold )weather advisory/u.test(text))).toEqual([]);
+        expect(outputs.filter((text) => /no (warning or )?advisory/u.test(text))).toEqual([]);
+        // No relative day: a file outlives midnight.
+        expect(outputs.filter((text) => /\b(today|tomorrow|tonight)\b/u.test(text))).toEqual([]);
+      });
     });
   });
 

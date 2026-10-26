@@ -32,7 +32,7 @@ import sys
 import tempfile
 import time
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Final
@@ -61,9 +61,11 @@ from snowlight.predict import (
     train,
     tuning_cli,
 )
+from snowlight.predict import outlook_learn as ol
 from snowlight.predict.alerts_live import (
     LiveEvent,
     Memory,
+    ProductLog,
     UgcIndex,
     alerts_digest,
     live_events,
@@ -89,6 +91,31 @@ from snowlight.predict.labels import Outcome
 from snowlight.predict.live_labels import record_snapshots
 from snowlight.predict.nowcast import UNREAD, Neighbors, neighbors_posted
 from snowlight.predict.opens import NOTHING_SAID, OpensError, SaidOpen, said_open
+from snowlight.predict.outlook import Outlook, OutlookMode
+from snowlight.predict.outlook_live import (
+    READ_ATTEMPTS,
+    READ_TIMEOUT,
+    Budget,
+    ReadForecast,
+    Taken,
+    as_shown,
+    as_shown_percent,
+    forecast_reader,
+    outlook_mode_of,
+    published_percent,
+    stale_line,
+    take_record,
+)
+from snowlight.predict.outlook_record import RECORD_PATH, STATE_DAYS, Record, carried, merged
+from snowlight.predict.outlook_serve import (
+    Chances,
+    OutlookServe,
+    after_rows,
+    district_states,
+    inputs_of,
+    outlook_chances,
+)
+from snowlight.predict.outlook_states import slot_at
 from snowlight.predict.publish import (
     Dark,
     DarkError,
@@ -287,6 +314,12 @@ def _serve_inputs(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--model", type=Path, default=artifact_module.ARTIFACT_PATH)
     parser.add_argument("--terms", type=Path, default=terms_file.TERMS_PATH)
+    parser.add_argument(
+        "--outlook-model",
+        type=Path,
+        default=PIPELINE_ROOT / "data" / "predict" / "model-f.json.gz",
+        help="the outlook's v3 rates and T (read with PREDICT_OUTLOOK shadow or on)",
+    )
     parser.add_argument("--state", type=Path, default=DEFAULT_STATE)
     parser.add_argument("--weather-cache", type=Path, default=PIPELINE_ROOT / ".cache" / "weather")
     parser.add_argument("--host", choices=("github", "dir"), default="github")
@@ -899,7 +932,53 @@ class Pass:
     """The committed model's SHA-256 (the terms name the model they were fit over)."""
     forecast: Callable[[ServeModel, tuple[date, ...], datetime], Forecasts] | None = None
     """The NDFD forecast at the class snapshot (:mod:`snowlight.predict.forecast_live`)."""
+    outlook_mode: OutlookMode = OutlookMode.OFF
+    """``PREDICT_OUTLOOK`` (S7-F, :mod:`snowlight.predict.outlook_live`): off leaves the pass
+    exactly as S7-L's."""
+    outlook_model: Callable[[], tuple[artifact_module.ModelArtifact, Outlook]] | None = None
+    """The v3 rates and ``T`` (``data/predict/model-f.json.gz``), read when the outlook is
+    shadow or on."""
+    outlook_forecast: ReadForecast | None = None
+    """The NDFD forecast the outlook reads (the newest run at a moment)."""
+    outlook_learned: artifact_module.Learned | None = None
+    """What the live days taught the v3 rates (``predictions/outlook/learned-rates.json``),
+    used with them; ``None``: the committed v3 rates alone."""
+    outlook_newest: Callable[[datetime], datetime | None] | None = None
+    """The newest complete NDFD run that counts at a moment (the loop's check for a new run
+    with the outlook on); ``None``, or ``None`` back: not known."""
+    outlook_budget: Budget | None = None
+    """The time limit on the outlook's reads, started once per pass where the outlook's work
+    begins (on: before its product log, in the pass; shadow: at the record step); its forecast
+    reader checks it before every request and :attr:`product_history` before every page;
+    ``None``: no limit (tests' readers)."""
+    product_history: Callable[[datetime, datetime], Sequence[NwsAlert]] | None = None
+    """The NWS alert history the outlook's product log rebuilds from: the classes' products and
+    the heads-ups' (:data:`~snowlight.predict.inputs.PRODUCT_EVENTS`), read apart from the alert
+    memory's (:attr:`history`, whose events and bound stay as they are) and within
+    :attr:`outlook_budget`; ``None``: :meth:`alert_history` (tests' histories hold both)."""
+    _products_retry: datetime | None = None
+    """After the record step's product log rebuild failed: no new try before this time."""
     _built: tuple[object, ServeModel] | None = None
+    _outlook: tuple[object, OutlookServe] | None = None
+    _record_names: Record | None = None
+    """The directory content and LEAIDs the last pass's outlook record was of (a new content
+    in the same run carries the record over by LEAID)."""
+    _history: tuple[tuple[datetime, datetime], Sequence[NwsAlert]] | None = None
+
+    def alert_history(self, start: datetime, end: datetime) -> Sequence[NwsAlert]:
+        """The NWS alert products issued in a span (:attr:`history`), asked once per span: the
+        alert memory, and the outlook's product log when there is no :attr:`product_history`
+        (tests), rebuild from one read.
+
+        Raises:
+            DarkError: there is no history to read.
+        """
+        if self.history is None:
+            raise DarkError(Dark.MEMORY, "no alert history to rebuild from")
+        if self._history is None or self._history[0] != (start, end):
+            self._history = ((start, end), self.history(start, end))
+        return self._history[1]
+
     _index: tuple[object, UgcIndex] | None = None
     _heights: tuple[object, npt.NDArray[np.float64] | None] | None = None
 
@@ -929,6 +1008,24 @@ class Pass:
                     _warn(refused)
             self._built = (directory.stamp, built)
         return self._built[1]
+
+    def outlook_serve(self, directory: DeployedDirectory) -> OutlookServe:
+        """The outlook's v3 rates and ``T`` on this directory (built once per directory).
+
+        Raises:
+            ServeError: no outlook model is given, or its rates do not build.
+        """
+        if self._outlook is None or self._outlook[0] != directory.stamp:
+            if self.outlook_model is None:
+                raise ServeError("the outlook is on but no outlook model is given")
+            rates, found = self.outlook_model()
+            built, why = learn.serving_model(
+                directory, rates, self.outlook_learned, self.config, self.zone_fallback
+            )
+            if why is not None:
+                _warn(f"outlook: v3 rates: {why}")
+            self._outlook = (directory.stamp, OutlookServe.of(built, found))
+        return self._outlook[1]
 
     def ugc_index(self, directory: DeployedDirectory) -> UgcIndex:
         """The schools of each UGC (built once per directory)."""
@@ -1023,12 +1120,82 @@ def remember(
         if run.history is None:
             raise DarkError(Dark.MEMORY, "the alert memory has a gap and no history to fill it")
         lead = timedelta(hours=config.serve.history_lead_hours)
-        memory.rebuild(run.history(reach - lead, now), now)
+        memory.rebuild(run.alert_history(reach - lead, now), now)
         state.memory_since = reach
     counted = memory.update(events, now, withdrawn(feed.alerts))
     state.memory = memory.as_json()
     state.observed_at = now
     return counted
+
+
+PRODUCTS_RETRY: Final = timedelta(minutes=30)
+"""After the record step's product log rebuild fails, how long before it tries again (the
+passes between record nothing; the next sample hour's grace is 15 minutes)."""
+
+
+def remember_products(
+    run: Pass, feed: Any, now: datetime, reach: datetime, *, back_off: bool = False
+) -> ProductLog:
+    """Take the feed into the outlook's product log (S7-F) and return it. As :func:`remember`:
+    the log is whole since ``state.products_since`` while the feed was read at least every
+    ``memory_gap_minutes``, and rebuilt from the NWS alert history when it does not reach back
+    to ``reach``: the classes' products and the heads-ups' (:attr:`Pass.product_history`), so
+    a watch whose current product came after a sample hour still stood at it.
+
+    ``back_off`` (the record step): a rebuild that fails is not tried again for
+    :data:`PRODUCTS_RETRY`, so a history that is down cannot hold back pass after pass.
+
+    Raises:
+        DarkError: it must be rebuilt and cannot be (``alert_memory``), or a failed rebuild is
+            backing off.
+    """
+    config = run.config
+    state = run.state
+    log = ProductLog.from_json(config.weather.memory_hours, state.products)
+    gap = timedelta(minutes=config.serve.memory_gap_minutes)
+    if state.products_observed is None or now - state.products_observed > gap:
+        state.products_since = None
+    if state.products_since is None or state.products_since > reach:
+        if run.history is None and run.product_history is None:
+            raise DarkError(Dark.MEMORY, "the product log has a gap and no history to fill it")
+        retry = run._products_retry
+        if back_off and retry is not None and now < retry:
+            raise DarkError(
+                Dark.MEMORY,
+                f"the product log's history read failed; no new try before {retry:%H:%MZ}",
+            )
+        lead = timedelta(hours=config.serve.history_lead_hours)
+        try:
+            products = (
+                run.product_history(reach - lead, now)
+                if run.product_history is not None
+                else run.alert_history(reach - lead, now)
+            )
+        except DarkError:
+            if back_off:
+                run._products_retry = now + PRODUCTS_RETRY
+            raise
+        run._products_retry = None
+        log.take(products, now)
+        state.products_since = reach
+    log.take(feed.alerts, now)
+    state.products = log.as_json()
+    state.products_observed = now
+    return log
+
+
+@dataclass(slots=True)
+class _Made:
+    """A pass's file and what the outlook's record reads of it."""
+
+    made: PredictionsFile
+    data: bytes
+    packed: int
+    after: dict[date, frozenset[int]]
+    log: ProductLog | None = None
+    chances: Chances | None = None
+    said: SaidOpen = NOTHING_SAID
+    """The units that said school is on at the pass (their chance shows the floor)."""
 
 
 def one_pass(run: Pass, *, grid: bool = True) -> int:
@@ -1037,6 +1204,10 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
 
     The alerts it was made from count as handled (``state.alerts_digest``) only when it
     published or found nothing to change: a dark pass leaves them, so the loop tries again.
+
+    With ``PREDICT_OUTLOOK`` on, the file is the outlook's (:func:`_outlook_file`); shadow or
+    on, a pass that published (or found nothing to change) then takes the outlook's private
+    record (:func:`_outlook_after`), which can never change the file or darken the pass.
     """
     config = run.config
     now = run.now()
@@ -1051,7 +1222,8 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
         events = live_events(feed)
         check_collapse(winter_count(events), run.state, config.serve)
         days = pass_days(now, config)
-        counted = remember(run, feed, events, now, memory_reach(days, model.time_zone, window))
+        reach = memory_reach(days, model.time_zone, window)
+        counted = remember(run, feed, events, now, reach)
         classes, private_classes, whole_zones, said_heights = _classes(
             run, model, directory, counted, days, now, window
         )
@@ -1064,14 +1236,44 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
             now=now,
             window=window,
         )
-        made, data, packed = _pass_file(run, model, days, now, classes, private_classes)
-        checked(data)
+        if run.outlook_mode is OutlookMode.ON:
+            if run.outlook_budget is not None:
+                run.outlook_budget.start()  # once per pass: the record step goes on with it
+            log = remember_products(run, feed, now, reach)
+            built = _outlook_file(run, directory, counted, days, now, window, log)
+        else:
+            built = _pass_file(run, model, days, now, classes, private_classes)
+        checked(built.data)
     except DarkError as error:
         _err(f"predict: dark ({error})")
         return EXIT_DARK
     except ServeError as error:
         _err(f"predict: dark ({type(error).__name__}: {error})")
         return EXIT_DARK
+    code = _publish_pass(
+        run, built, model, directory, events, days, now, grid=grid, said_heights=said_heights
+    )
+    if code == 0 and run.outlook_mode is not OutlookMode.OFF:
+        _outlook_after(run, model, directory, classes, days, now, window, feed, built)
+    return code
+
+
+def _publish_pass(  # noqa: PLR0913, PLR0917 - the pass, its file and what its lines say
+    run: Pass,
+    built: _Made,
+    model: ServeModel,
+    directory: DeployedDirectory,
+    events: list[LiveEvent],
+    days: tuple[date, date],
+    now: datetime,
+    *,
+    grid: bool,
+    said_heights: str | None,
+) -> int:
+    """Upload the pass's file when due (see :func:`one_pass`): 0 published or unchanged, 3
+    dark."""
+    config = run.config
+    made, data, packed = built.made, built.data, built.packed
     if run.write is not None:
         write_bytes_atomic(run.write, data)
     digest = content_digest(data)
@@ -1106,6 +1308,252 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
     _out(f"predict: uploaded {key}")
     _after_publish(run, made, directory, now)
     return 0
+
+
+def _outlook_forecasts(
+    run: Pass, model: ServeModel, days: tuple[date, ...], now: datetime
+) -> Forecasts:
+    """The newest forecast run at the pass for the outlook; when it cannot be read, none (every
+    district then gets the issued-alerts-only chance, and the pass says so)."""
+    if run.outlook_forecast is None:
+        return Forecasts(unread={day: dict.fromkeys(set(model.time_zone), "error") for day in days})
+    # Only the days still before 5 AM somewhere: from then on the outlook is the identity.
+    zones = sorted(set(model.time_zone))
+    wanted = tuple(day for day in days if any(slot_at(day, zone, now) > 0 for zone in zones))
+    if not wanted:
+        return Forecasts()
+    try:
+        found = run.outlook_forecast(model, wanted, now, None, None)
+    except (OSError, ValueError, ndfd.NdfdError) as error:
+        _warn(f"outlook: forecast {type(error).__name__}: the issued-alerts-only chance this pass")
+        return Forecasts(unread={day: dict.fromkeys(set(model.time_zone), "error") for day in days})
+    for problem in found.problems[:3]:
+        _warn(f"outlook: forecast: {problem}")
+    return found
+
+
+def _outlook_chances(  # noqa: PLR0913, PLR0917 - the pass, the outlook, the days, the day-after
+    run: Pass,
+    serve: OutlookServe,
+    directory: DeployedDirectory,
+    log: ProductLog,
+    days: tuple[date, ...],
+    now: datetime,
+    window: Window,
+    after: dict[date, frozenset[int]],
+) -> tuple[Chances, datetime | None]:
+    """The outlook's chances at the pass (:func:`~snowlight.predict.outlook_serve.
+    outlook_chances`) and the forecast run its lines read (``forecast_at``): a line whose
+    district read another run gives way to the identity, so every line is of that run."""
+    config = run.config
+    model = serve.rates
+    c0, heads = district_states(
+        model,
+        log.events_at(now),
+        run.ugc_index(directory),
+        days,
+        now,
+        window,
+        config.weather.covered_share,
+        run.school_heights(directory),
+        config.serve.elevation_margin_feet,
+    )
+    forecasts = _outlook_forecasts(run, model, days, now)
+    inputs = inputs_of(
+        model, c0, heads, after_rows(after, days, len(model.time_zone)), days, forecasts, now
+    )
+    settings = model.artifact.settings
+    chances = outlook_chances(serve, inputs, floor=settings.floor, ceiling=settings.ceiling)
+    runs = {
+        found.run_time
+        for (i, d) in chances.lines
+        if (found := forecasts.get(days[d], i)) is not None and found.run_time is not None
+    }
+    at = max(runs) if runs else None
+    for i, d in list(chances.lines):
+        found = forecasts.get(days[d], i)
+        if found is None or found.run_time != at:
+            del chances.lines[(i, d)]
+            chances.p[i, d], chances.delay[i, d] = chances.base[i, d], chances.base_delay[i, d]
+            chances.applied[i, d] = False
+    return chances, at if chances.lines else None
+
+
+def _outlook_file(  # noqa: PLR0913, PLR0917 - the pass, the directory, the alerts and the days
+    run: Pass,
+    directory: DeployedDirectory,
+    counted: list[LiveEvent],
+    days: tuple[date, date],
+    now: datetime,
+    window: Window,
+    log: ProductLog,
+) -> _Made:
+    """The file of a pass with the outlook on: every chance from the v3 rates, the class as
+    issued under rule D2, and the outlook's line where it moves the chance (spec-f s. 7);
+    private schools keep their base alone. The reasons' terms of piece 3 are not used (they
+    were fit over the v2 rates). Its reads use the time :func:`one_pass` started."""
+    serve = run.outlook_serve(directory)
+    model = serve.rates
+    config = run.config
+    share = config.weather.covered_share
+    classes, _heads = district_states(
+        model,
+        log.events_at(now),
+        run.ugc_index(directory),
+        days,
+        now,
+        window,
+        share,
+        run.school_heights(directory),
+        config.serve.elevation_margin_feet,
+    )
+    _found, private_classes = unit_classes(
+        model,
+        counted,
+        run.ugc_index(directory),
+        days,
+        now,
+        window,
+        share,
+        run.school_heights(directory),
+        config.serve.elevation_margin_feet,
+    )
+    holder: dict[str, Chances] = {}
+
+    def outlook(after: dict[date, frozenset[int]]) -> tuple[Chances, datetime | None]:
+        chances, at = _outlook_chances(run, serve, directory, log, days, now, window, after)
+        holder["chances"] = chances
+        if chances.stale and config.serve.forecast_stale == "dark":
+            raise DarkError(
+                Dark.FORECAST, f"{chances.stale:,} district-days have no forecast run under 3 hours"
+            )
+        line = stale_line(chances)
+        if line is not None:
+            _out(f"predict: {line}")
+        return chances, at
+
+    built = _pass_file(run, model, days, now, classes, private_classes, outlook=outlook)
+    built.log = log
+    built.chances = holder.get("chances")
+    return built
+
+
+def _outlook_after(  # noqa: PLR0913, PLR0917 - the pass, its models, alerts, days and file
+    run: Pass,
+    model: ServeModel,
+    directory: DeployedDirectory,
+    classes: npt.NDArray[np.int64],
+    days: tuple[date, date],
+    now: datetime,
+    window: Window,
+    feed: Any,
+    built: _Made,
+) -> None:
+    """Take the outlook's private record after a pass (:mod:`snowlight.predict.outlook_record`):
+    with the outlook shadow, the chance it would show beside the file's; on, the file's beside
+    the v2 rates' (``classes``: the v2 path's). Any error is warned and records nothing: the
+    pass and its file stand as they are."""
+    mode = run.outlook_mode.value
+    if run.outlook_budget is not None and run.outlook_mode is OutlookMode.SHADOW:
+        run.outlook_budget.start()  # on started it in the pass, before its product log
+    try:
+        serve = run.outlook_serve(directory)
+        log = built.log
+        if log is None:
+            reach = memory_reach(days, model.time_zone, window)
+            log = remember_products(run, feed, now, reach, back_off=True)
+        count = len(directory.district_ids)
+        chances = built.chances
+        if chances is None:
+            chances, _at = _outlook_chances(
+                run, serve, directory, log, days, now, window, built.after
+            )
+        # Both chances as a district's page shows them: the floor where it said school is on.
+        chances = replace(chances, p=as_shown(chances.p, built.said, days))
+        if run.outlook_mode is OutlookMode.ON:
+            v2 = as_shown_percent(_v2_percent(model, classes, built.after, days), built.said, days)
+
+            def published(d: int) -> npt.NDArray[np.int64]:
+                return v2[:, d]
+
+        else:
+
+            def published(d: int) -> npt.NDArray[np.int64]:
+                return published_percent(built.made, count, d)
+
+        if run.outlook_forecast is None:
+            raise ServeError("no forecast reader for the outlook's samples")
+        leaids = tuple(directory.district_ids)
+        record, moved = carried(
+            run.state.outlook, learn.content_key(directory), leaids, run._record_names
+        )
+        if moved is not None:
+            _out(f"predict ({mode}): {moved}")
+        run._record_names = Record(record.content, count, leaids=leaids)
+        taken = take_record(
+            record,
+            serve=serve,
+            log=log,
+            ugcs=run.ugc_index(directory),
+            days=days,
+            now=now,
+            window=window,
+            share=run.config.weather.covered_share,
+            read=run.outlook_forecast,
+            published=published,
+            chances=chances,
+        )
+        oldest = now.astimezone(UTC).date() - timedelta(days=STATE_DAYS)
+        kept = record.kept(oldest)
+        kept.leaids = None  # the host's record keeps them; the pass state stays small
+        run.state.outlook = kept.as_json()
+        run.state.outlook_health = _health(now, chances, built, taken)
+        for line in (stale_line(chances) if run.outlook_mode is OutlookMode.SHADOW else None,
+                     taken.line()):  # fmt: skip
+            if line is not None:
+                _out(f"predict ({mode}): {line}")
+    except Exception as error:  # the record never touches the pass
+        detail = f" ({error})" if isinstance(error, DarkError) else ""  # our own words only
+        _warn(f"outlook {mode}: {type(error).__name__}: nothing recorded this pass{detail}")
+
+
+def _health(now: datetime, chances: Chances, built: _Made, taken: Taken) -> dict[str, object]:
+    """The state's note of the last outlook pass (``state.outlook_health``)."""
+    return {
+        "at": now.astimezone(UTC).isoformat(),
+        "stale": chances.stale,
+        "unknown": chances.unknown,
+        "unsaid": chances.unsaid,
+        "no_rate": chances.no_rate,
+        "lines": len(chances.lines),
+        "samples": taken.samples,
+        "skipped": taken.skipped,
+        "forecast_at": None
+        if built.made.forecast_at is None
+        else built.made.forecast_at.isoformat(),
+        "forecast_run": None if chances.run_time is None else chances.run_time.isoformat(),
+    }
+
+
+def _v2_percent(
+    model: ServeModel,
+    classes: npt.NDArray[np.int64],
+    after: dict[date, frozenset[int]],
+    days: tuple[date, ...],
+) -> npt.NDArray[np.int64]:
+    """The v2 rates' chance of each district (the base alone), in whole percent, (districts,
+    days); 255 on a day that is not a school day."""
+    from snowlight.predict.serve import SITUATION_POSITION  # noqa: PLC0415
+    from snowlight.predict.situations import Situation, WeatherClass  # noqa: PLC0415
+
+    found = np.full(classes.shape, 255, dtype=np.int64)
+    for d, day in enumerate(days):
+        if not is_school_day(day):
+            continue
+        for i in range(classes.shape[0]):
+            situation = Situation.of(WeatherClass(int(classes[i, d])), i in after.get(day, ()))
+            found[i, d] = round(float(model.p[i, SITUATION_POSITION[situation.key]]) * 100)
+    return found
 
 
 def _classes(  # noqa: PLR0913, PLR0917 - the pass, its model and directory, alerts and days
@@ -1163,9 +1611,14 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
     now: datetime,
     classes: npt.NDArray[np.int64],
     private_classes: npt.NDArray[np.int64] | None,
-) -> tuple[PredictionsFile, bytes, int]:
-    """The pass's file within the size budget (:func:`fitted`), its bytes and gzip size; the
-    host's files it reads (the last file, the day timelines, the opens) are read once."""
+    *,
+    outlook: Callable[[dict[date, frozenset[int]]], tuple[Chances, datetime | None]] | None = None,
+) -> _Made:
+    """The pass's file within the size budget (:func:`fitted`), its bytes and gzip size, and
+    the day-after sets it was made with; the host's files it reads (the last file, the day
+    timelines, the opens) are read once. ``outlook``: the outlook's chances and its forecast's
+    time from the day-after sets (the outlook on: the file carries its lines, and the reasons'
+    terms are not used)."""
     last = _last_file(run)
     timelines: dict[date, DayTimeline | None] = {}
     closed_on = _closed_on(run, model, timelines)
@@ -1174,10 +1627,21 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
     serve = run.config.serve
     forecasts: Forecasts = NO_FORECASTS
     posted: Neighbors = UNREAD
-    if serve.reasons and model.terms.fits:
+    after = {
+        day: (closed_on(previous_school_day(day)) or frozenset())
+        if is_school_day(day)
+        else frozenset()
+        for day in days
+    }
+    chances: Chances | None = None
+    forecast_at: datetime | None = None
+    reasons = serve.reasons and outlook is None
+    if outlook is not None:
+        chances, forecast_at = outlook(after)
+    elif serve.reasons and model.terms.fits:
         forecasts = _forecasts(run, model, days, now)
         posted = _neighbors(run, model, days, now)
-    return fitted(
+    made, data, packed = fitted(
         lambda fit: forecast_file(
             model,
             classes,
@@ -1191,11 +1655,14 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
             fit=fit,
             forecasts=forecasts,
             posted=posted,
-            reasons=serve.reasons,
+            reasons=reasons,
             announces=serve.announces,
+            outlook=chances,
+            forecast_at=forecast_at,
         ),
         run.config.serve,
     )
+    return _Made(made, data, packed, after, chances=chances, said=said)
 
 
 def _forecasts(run: Pass, model: ServeModel, days: tuple[date, ...], now: datetime) -> Forecasts:
@@ -1401,6 +1868,11 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
 
     config = PredictConfig.load(args.config)
     mode = mode_of(env.get("PREDICT_PUBLISH"))
+    try:
+        outlook_mode = outlook_mode_of(env.get("PREDICT_OUTLOOK"))
+    except ValueError as error:
+        _warn(f"{error}: the outlook is off")
+        outlook_mode = OutlookMode.OFF
     host = make_host(args, env) if mode is not Mode.OFF else None
     model_bytes = Path(args.model).read_bytes()
     committed = artifact_module.ModelArtifact.from_bytes(model_bytes)
@@ -1433,6 +1905,9 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
             points.lon_e6.astype(np.float64) * 1e-6, points.lat_e6.astype(np.float64) * 1e-6, areas
         )
 
+    outlook = _outlook_parts(
+        config, Path(args.outlook_model), host, mode, outlook_mode, history.read
+    )
     return Pass(
         config=config,
         mode=mode,
@@ -1451,7 +1926,54 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
         terms=terms,
         model_sha256=artifact_module.sha256_of(model_bytes),
         forecast=_live_forecast(config) if config.serve.reasons else None,
+        **outlook,
     )
+
+
+def _outlook_parts(  # noqa: PLR0913, PLR0917  # pragma: no cover - the files, the host and AWS
+    config: PredictConfig,
+    path: Path,
+    host: Host | None,
+    mode: Mode,
+    outlook_mode: OutlookMode,
+    read_history: Callable[..., list[NwsAlert]],
+) -> dict[str, Any]:
+    """The outlook's parts of a pass (:func:`outlook_parts`, over the real readers)."""
+    from snowlight.predict.inputs import PRODUCT_EVENTS  # noqa: PLC0415
+
+    def parts() -> dict[str, Any]:
+        budget = Budget()
+
+        def product_history(start: datetime, end: datetime) -> Sequence[NwsAlert]:
+            return read_history(start, end, events=PRODUCT_EVENTS, before=budget.left)
+
+        read = _outlook_model(path, host, mode)
+        read()  # read now: a file that does not read turns the outlook off, never a pass dark
+        return {
+            "outlook_model": read,
+            "outlook_forecast": _outlook_reader(config, budget),
+            "outlook_newest": _outlook_newest() if outlook_mode is OutlookMode.ON else None,
+            "outlook_learned": _outlook_learned(path, host, mode),
+            "outlook_budget": budget,
+            "product_history": product_history,
+        }
+
+    return outlook_parts(outlook_mode, parts)
+
+
+def outlook_parts(outlook_mode: OutlookMode, parts: Callable[[], dict[str, Any]]) -> dict[str, Any]:
+    """The outlook's parts of a pass: none with it off; with it shadow or on, ``parts()``, or,
+    when any of them fails to build (a missing ``model-f.json.gz``, a host that does not read,
+    anything), a warning and the outlook off. Only the outlook's own inputs are built here, so
+    nothing of the outlook can stop a run before its first pass."""
+    if outlook_mode is OutlookMode.OFF:
+        return {"outlook_mode": OutlookMode.OFF}
+    try:
+        found = parts()
+    except Exception as error:  # any failure of the outlook's inputs
+        _warn(f"outlook {outlook_mode.value}: {type(error).__name__}: {error}: the outlook is off")
+        return {"outlook_mode": OutlookMode.OFF}
+    return {"outlook_mode": outlook_mode, **found}
 
 
 def _load_heights(args: argparse.Namespace) -> Loaded:  # pragma: no cover - the release
@@ -1520,6 +2042,83 @@ def _live_forecast(
         )
 
     return read
+
+
+def _outlook_model(
+    path: Path, host: Host | None, mode: Mode
+) -> Callable[[], tuple[artifact_module.ModelArtifact, Outlook]]:  # pragma: no cover - the file
+    """Reads the v3 rates and ``T`` (``data/predict/model-f.json.gz``) once, with the live cases
+    S7-L swapped in (``predictions/outlook/learned.json`` on the host, when it was made over
+    this artifact and reads)."""
+    from snowlight.predict import outlook as outlook_module  # noqa: PLC0415
+
+    found: list[tuple[artifact_module.ModelArtifact, Outlook]] = []
+
+    def read() -> tuple[artifact_module.ModelArtifact, Outlook]:
+        if not found:
+            data = path.read_bytes()
+            rates = outlook_module.read_rates(path)
+            _rates, table = outlook_module.read_artifact(path)
+            learned = None
+            if host is not None and mode.key is not None:
+                key = f"{mode.key.split('/', 1)[0]}/{ol.LEARNED_PATH}"
+                try:
+                    learned = host.read(key)
+                except PublishError as error:
+                    _warn(f"{key} unreadable ({error}); the committed outlook serves")
+            table, why = ol.served_outlook(table, learned, artifact_module.sha256_of(data))
+            if why is not None:
+                _warn(f"outlook: {why}")
+            found.append((rates, table))
+        return found[0]
+
+    return read
+
+
+def _outlook_learned(
+    path: Path, host: Host | None, mode: Mode
+) -> artifact_module.Learned | None:  # pragma: no cover - the live host
+    """The v3 rates' learned file on the host, when it was made over this ``model-f.json.gz``
+    and reads (else ``None`` and why)."""
+    key = mode.key
+    if host is None or key is None:
+        return None
+    where = f"{key.split('/', 1)[0]}/{ol.RATES_LEARNED_PATH}"
+    try:
+        data = host.read(where)
+    except PublishError as error:
+        _warn(f"{where} unreadable ({error}); the committed v3 rates")
+        return None
+    found, why = learn.read_learned(data, artifact_module.sha256_of(path.read_bytes()))
+    if why is not None:
+        _warn(f"outlook: {why}; the committed v3 rates")
+    return found
+
+
+def _outlook_reader(config: PredictConfig, budget: Budget) -> ReadForecast:  # pragma: no cover
+    """Reads the NDFD runs from AWS for the outlook (:func:`~snowlight.predict.outlook_live.
+    forecast_reader`): short request limits, few tries, and every request inside ``budget``."""
+    http = forecast_history._client()
+    http.timeout = READ_TIMEOUT
+    fetcher = forecast_history.Fetcher(http, attempts=READ_ATTEMPTS, before=budget.check)
+    return forecast_reader(fetcher, config.weather.covered_share)
+
+
+def _outlook_newest() -> Callable[[datetime], datetime | None]:  # pragma: no cover - AWS
+    """The newest complete NDFD run that counts at a moment, from the AWS day listings (the
+    previous UTC day's too, for the first hours after 00Z); ``None`` when they do not list."""
+    http = forecast_history._client()
+    http.timeout = READ_TIMEOUT
+    fetcher = forecast_history.Fetcher(http, attempts=READ_ATTEMPTS)
+
+    def newest(now: datetime) -> datetime | None:
+        around = forecast_history.Listings(fetcher.get).around(now.astimezone(UTC).date())
+        if around.error is not None:
+            return None
+        run = ndfd.newest_run(list(ndfd.assemble_runs(around.listed).runs), now)
+        return None if run is None else run.time
+
+    return newest
 
 
 def _make_notifier(  # pragma: no cover - the real world
@@ -1648,6 +2247,8 @@ def loop(run: Pass, until: datetime, clock: Loop, save: Callable[[State], None])
                 changed = alerts_digest(live_events(feed)) != run.state.alerts_digest
             except Exception:
                 changed = False
+        if not on_grid and not changed:
+            changed = outlook_changed(run, last_pass, now)
         gap_ok = last_pass is None or now - last_pass >= timedelta(minutes=serve.min_gap_minutes)
         if on_grid or ((changed or retry) and gap_ok):
             code = safe_pass(run, grid=on_grid)
@@ -1665,6 +2266,39 @@ def loop(run: Pass, until: datetime, clock: Loop, save: Callable[[State], None])
         wake = min(clock.now() + timedelta(minutes=serve.check_minutes), grid_at, until)
         clock.sleep(max(1.0, (wake - clock.now()).total_seconds()))
     return dark
+
+
+PERIOD_HOURS: Final = 6
+"""The forecast's snow and ice periods end every 6 hours (00, 06, 12, 18 UTC)."""
+
+
+def outlook_changed(run: Pass, last: datetime | None, now: datetime) -> bool:
+    """With the outlook on, whether a pass is due for it between grid passes (spec-f s. 7): a
+    slot boundary or 05:00 passed in a district's zone since the last pass, a forecast period
+    ended, or a newer forecast run counts than the last pass read. Never with the outlook off
+    or shadow (their passes stay S7-L's), and never on an error (the grid passes stand)."""
+    if run.outlook_mode is not OutlookMode.ON or last is None:
+        return False
+    try:
+        if int(now.timestamp()) // (PERIOD_HOURS * 3600) != int(last.timestamp()) // (
+            PERIOD_HOURS * 3600
+        ):
+            return True
+        built = run._built
+        zones = sorted(set(built[1].time_zone)) if built is not None else []
+        days = pass_days(now, run.config)
+        for zone in zones:
+            for day in days:
+                if slot_at(day, zone, last) != slot_at(day, zone, now):
+                    return True
+        if run.outlook_newest is not None:
+            newest = run.outlook_newest(now)
+            read = run.state.outlook_health.get("forecast_run")
+            if newest is not None and newest.isoformat() != read:
+                return True
+    except Exception:
+        return False
+    return False
 
 
 def _warn(text: str) -> None:
@@ -1824,6 +2458,17 @@ class LearnRun:
     snapshots: Mapping[str, object]
     build: Callable[[artifact_module.Learned | None], ServeModel]
     now: datetime
+    outlook_mode: OutlookMode = OutlookMode.OFF
+    """``PREDICT_OUTLOOK``: shadow or on, the step also learns the outlook
+    (:mod:`snowlight.predict.outlook_learn`)."""
+    outlook_state: Mapping[str, object] = field(default_factory=dict)
+    """The passes' outlook record (their private state)."""
+    outlook: Callable[[], tuple[OutlookServe, str]] | None = None
+    """The v3 rates on the deployed directory with the committed ``T``, and the artifact's
+    SHA-256."""
+    outlook_build: Callable[[artifact_module.Learned | None], ServeModel] | None = None
+    """Builds the v3 rates' serving model with a learned file (or none): the v3 rates learn
+    from the 05:00 record's labels under their own no-worse swap (spec-f s. 10)."""
 
 
 def learn_once(run: LearnRun) -> int:
@@ -1876,7 +2521,140 @@ def learn_once(run: LearnRun) -> int:
             _err(f"predict learn: error: {error}: the served model is as it was")
             return 1
     _out(f"predict learn: {decision.why}")
+    if run.outlook_mode is not OutlookMode.OFF:
+        _learn_outlook(run, labeling.store)
     return learn.EXIT_KEPT if decision.kind == "keep" else 0
+
+
+def _learn_outlook(run: LearnRun, store: learn.LearnStore) -> None:
+    """The outlook's learning step (:mod:`snowlight.predict.outlook_learn`): it never changes
+    the step's own outcome; an error is warned and writes nothing."""
+    try:
+        if run.outlook is None:
+            raise ServeError("no outlook model is given")
+        serve, sha = run.outlook()
+        step = outlook_step(run, store, serve, sha)
+        if step.files:
+            run.host.write(step.files)
+            if any(run.host.read(key) != data for key, data in step.files.items()):
+                raise PublishError("the files read back are not the ones written")
+        for line in step.lines:
+            _out(f"predict learn: {line}")
+    except Exception as error:  # the outlook never touches the step's own outcome
+        _warn(f"predict learn: outlook: {type(error).__name__}: nothing written")
+
+
+def _learn_v3_rates(
+    run: LearnRun, record: Record, sha: str, step: ol.Step
+) -> learn.LearnStore | None:
+    """The v3 rates' S7-L (spec-f s. 10, (1)): the live days labeled under the 05:00 record's
+    class (``predictions/outlook/learn.json``) and the refit swapped in under S7-L's own
+    no-worse check (``predictions/outlook/learned-rates.json``, over ``model-f.json.gz``).
+    Returns the store, or ``None`` when its file does not read (then nothing of it is
+    written)."""
+    if run.outlook_build is None:
+        return None
+    store_key = f"{run.prefix}/{ol.RATES_STORE_PATH}"
+    learned_key = f"{run.prefix}/{ol.RATES_LEARNED_PATH}"
+    try:
+        stored = run.host.read(store_key)
+        store = learn.LearnStore.empty() if stored is None else learn.LearnStore.from_bytes(stored)
+    except ValueError:
+        step.lines.append("outlook: the v3 rates' labels do not read: nothing of them changes")
+        return None
+    current, why = learn.read_learned(run.host.read(learned_key), sha)
+    if why is not None:
+        step.lines.append(f"outlook: v3 rates: {why}; the committed v3 rates")
+    model = run.outlook_build(None)
+    labeling = learn.label_new_days(
+        store,
+        run.source,
+        learn.directory_of(model),
+        ol.morning_snapshots(record),
+        run.config,
+        run.now,
+    )
+    if labeling.added:
+        step.files[store_key] = labeling.store.to_bytes()
+        step.lines.append(
+            "outlook: v3 rates labeled " + ", ".join(day.isoformat() for day in labeling.added)
+        )
+    decision = learn.decide(labeling.store, current, run.outlook_build, sha, run.config, run.now)
+    step.lines.append(f"outlook: v3 rates: {decision.why}")
+    if decision.kind in ("swap", "reset") and decision.learned is not None:
+        step.files[learned_key] = decision.learned.to_bytes()
+    return labeling.store
+
+
+def _host_record(run: LearnRun, model: ServeModel, step: ol.Step) -> Record:
+    """The host's record with the passes' days taken in (written when it changed). A record of
+    another directory content is carried over by LEAID (:func:`~snowlight.predict.
+    outlook_record.carried`), so a new directory loses none of the days not yet counted."""
+    content = learn.content_key(model.directory)
+    record_key = f"{run.prefix}/{RECORD_PATH}"
+    stored = run.host.read(record_key)
+    try:
+        kept = json.loads(stored) if stored else None
+    except ValueError:
+        kept = None
+        step.lines.append("outlook: the host's record does not read: it starts again")
+    leaids = tuple(model.directory.district_ids)
+    host_record, moved = carried(kept, content, leaids)
+    state_record, state_moved = carried(run.outlook_state, content, leaids, Record.read_any(kept))
+    step.lines.extend(line for line in (moved, state_moved) if line is not None)
+    record = merged(host_record, state_record, model.time_zone)
+    record.leaids = leaids
+    data = json.dumps(record.as_json(), sort_keys=True, separators=(",", ":")).encode()
+    if data != stored:
+        step.files[record_key] = data
+    return record
+
+
+def outlook_step(run: LearnRun, store: learn.LearnStore, serve: OutlookServe, sha: str) -> ol.Step:
+    """What the outlook's learning step writes (see :mod:`snowlight.predict.outlook_learn`)."""
+    step = ol.Step()
+    model = serve.rates
+    cases_key = f"{run.prefix}/{ol.CASES_PATH}"
+    learned_key = f"{run.prefix}/{ol.LEARNED_PATH}"
+    record = _host_record(run, model, step)
+    found = run.host.read(cases_key)
+    cases = ol.LiveCases.empty() if found is None else ol.LiveCases.from_bytes(found)
+    cases, added = ol.count_days(cases, record, model.time_zone, serve.state_index, run.now)
+    if added:
+        step.files[cases_key] = cases.to_bytes()
+        step.lines.append(
+            "outlook: counted the live cases of " + ", ".join(d.isoformat() for d in added)
+        )
+    current: ol.LearnedOutlook | None = None
+    held = run.host.read(learned_key)
+    if held is not None:
+        try:
+            current = ol.LearnedOutlook.from_bytes(held)
+        except ValueError:
+            step.lines.append(
+                "outlook: the learned T does not validate: judged against the committed T"
+            )
+        if current is not None and current.artifact_sha256 != sha:
+            current = None
+    rates_store = _learn_v3_rates(run, record, sha, step)
+    rows = store.rows()
+    if rates_store is not None and rates_store.days:
+        rows = pl.concat([rows, rates_store.rows()]).unique(["district", "day"], keep="first")
+    labels = ol.labels_of(rows, model.directory.district_ids)
+    decision = ol.decide(
+        serve.outlook, current, cases, sha, run.now, ol.e20_score(serve, record, labels)
+    )
+    step.lines.append(decision.why)
+    if decision.kind == "swap" and decision.learned is not None:
+        step.files[learned_key] = decision.learned.to_bytes()
+        current = decision.learned
+    served = ol.with_live(serve.outlook, current.days if current is not None else [])
+    made = ol.report(serve, served, record, labels, run.now, run.model)
+    report_key = f"{run.prefix}/{ol.REPORT_PATH}"
+    if ol.report_changed(run.host.read(report_key), made):
+        step.files[report_key] = json.dumps(made, sort_keys=True).encode()
+    step.lines.append(ol.summary_line(made))
+    return step
 
 
 NO_STATE_WHERE: Final = (
@@ -1951,6 +2729,39 @@ def _run_learn(args: argparse.Namespace, scratch: Path) -> int:  # pragma: no co
         else:
             _out(f"predict learn: {NO_STATE}: {NO_STATE_WHERE}")
         sha = artifact_module.sha256_of(Path(args.model).read_bytes())
+        outlook_path = Path(args.outlook_model)
+
+        outlook_built: dict[str, Any] = {}
+
+        def outlook_rates() -> artifact_module.ModelArtifact:
+            from snowlight.predict import outlook as outlook_module  # noqa: PLC0415
+
+            if "rates" not in outlook_built:
+                outlook_built["rates"] = outlook_module.read_rates(outlook_path)
+            found: artifact_module.ModelArtifact = outlook_built["rates"]
+            return found
+
+        def outlook_build(learned: artifact_module.Learned | None) -> ServeModel:
+            # The committed v3 rates' model is built once (the outlook and the v3 rates' own
+            # learning both start from it); a learned one each time it is asked for.
+            if learned is not None:
+                return build_model(
+                    directory, outlook_rates(), run.config, run.zone_fallback, learned
+                )
+            if "model" not in outlook_built:
+                outlook_built["model"] = build_model(
+                    directory, outlook_rates(), run.config, run.zone_fallback
+                )
+            found: ServeModel = outlook_built["model"]
+            return found
+
+        def outlook_of() -> tuple[OutlookServe, str]:
+            from snowlight.predict import outlook as outlook_module  # noqa: PLC0415
+
+            _rates, table = outlook_module.read_artifact(outlook_path)
+            sha_f = artifact_module.sha256_of(outlook_path.read_bytes())
+            return OutlookServe.of(outlook_build(None), table), sha_f
+
     except (ConfigError, ValueError, OSError, ServeError, PublishError, StateError) as error:
         _err(f"predict learn: error: {type(error).__name__}: the served model is as it was")
         return 1
@@ -1967,5 +2778,9 @@ def _run_learn(args: argparse.Namespace, scratch: Path) -> int:  # pragma: no co
                 directory, committed, run.config, run.zone_fallback, learned
             ),
             now=datetime.now(UTC),
+            outlook_mode=run.outlook_mode,
+            outlook_state=run.state.outlook,
+            outlook=outlook_of,
+            outlook_build=outlook_build,
         )
     )

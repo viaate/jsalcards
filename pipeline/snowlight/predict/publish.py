@@ -35,7 +35,7 @@ with no districts at once (an immediate dark that stays dark).
 import gzip
 import hashlib
 import json
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
@@ -106,6 +106,9 @@ class Dark(StrEnum):
     OPENS = "opens_unreadable"
     MEMORY = "alert_memory"
     HELD = "held"
+    FORECAST = "forecast_stale"
+    """The outlook is on, its forecast is stale and ``serve.forecast_stale`` is ``dark``
+    (S7-F; the lead chose ``identity``: the issued-alerts-only chance is served instead)."""
 
 
 class DarkError(RuntimeError):
@@ -192,6 +195,19 @@ class State:
     """Each district's weather class per school day as the passes up to its training snapshot
     saw it (:func:`snowlight.predict.live_labels.record_snapshots`): what the live days'
     labels are counted under."""
+    products: list[dict[str, object]] = field(default_factory=list)
+    """The outlook's product log (S7-F, :class:`snowlight.predict.alerts_live.ProductLog`):
+    kept only while ``PREDICT_OUTLOOK`` is shadow or on."""
+    products_since: datetime | None = None
+    """Since when the product log holds every outlook-code product (as ``memory_since``)."""
+    products_observed: datetime | None = None
+    """The last time the product log took in the feed."""
+    outlook: dict[str, object] = field(default_factory=dict)
+    """The outlook's private record of the newest days (:mod:`snowlight.predict.outlook_record`),
+    which ``predict learn`` moves to the host."""
+    outlook_health: dict[str, object] = field(default_factory=dict)
+    """The last outlook pass: when, the forecast run it read, and how many rows it gave the
+    issued-alerts-only chance for a stale forecast."""
 
     def as_json(self) -> dict[str, object]:
         """For the state store."""
@@ -209,7 +225,21 @@ class State:
             "memory_since": when(self.memory_since),
             "observed_at": when(self.observed_at),
             "snapshots": self.snapshots,
-        }
+        } | self._outlook_json(when)
+
+    def _outlook_json(self, when: Callable[[datetime | None], str | None]) -> dict[str, object]:
+        """The outlook's keys, only when it keeps any (so a pass with the outlook off keeps
+        the state it kept before S7-F F3, byte for byte)."""
+        found: dict[str, object] = {}
+        if self.products or self.products_since is not None:
+            found["products"] = self.products
+            found["products_since"] = when(self.products_since)
+            found["products_observed"] = when(self.products_observed)
+        if self.outlook:
+            found["outlook"] = self.outlook
+        if self.outlook_health:
+            found["outlook_health"] = self.outlook_health
+        return found
 
     @classmethod
     def from_json(cls, value: Mapping[str, object]) -> "State":
@@ -223,6 +253,11 @@ class State:
         since = value.get("memory_since")
         observed = value.get("observed_at")
         snapshots = value.get("snapshots")
+        products = value.get("products")
+        products_since = value.get("products_since")
+        products_observed = value.get("products_observed")
+        outlook = value.get("outlook")
+        health = value.get("outlook_health")
         return cls(
             digest=digest if isinstance(digest, str) else None,
             uploaded_at=datetime.fromisoformat(uploaded) if isinstance(uploaded, str) else None,
@@ -233,6 +268,15 @@ class State:
             memory_since=datetime.fromisoformat(since) if isinstance(since, str) else None,
             observed_at=datetime.fromisoformat(observed) if isinstance(observed, str) else None,
             snapshots=dict(snapshots) if isinstance(snapshots, dict) else {},
+            products=list(products) if isinstance(products, list) else [],
+            products_since=datetime.fromisoformat(products_since)
+            if isinstance(products_since, str)
+            else None,
+            products_observed=datetime.fromisoformat(products_observed)
+            if isinstance(products_observed, str)
+            else None,
+            outlook=dict(outlook) if isinstance(outlook, dict) else {},
+            outlook_health=dict(health) if isinstance(health, dict) else {},
         )
 
 

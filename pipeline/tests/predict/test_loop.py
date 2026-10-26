@@ -1,6 +1,7 @@
 """The serving loop: the grid and heartbeat, retries after a dark pass, the day file, the alert
 memory across a lost state, the hold, cancelled warnings, and the worst-case file size."""
 
+import json
 import math
 import random
 from collections.abc import Mapping
@@ -29,6 +30,7 @@ from snowlight.schemas.predictions import (
     AlertBase,
     DistrictForecast,
     Forecast,
+    OutlookReason,
     PastDay,
     PastRecord,
     PooledBase,
@@ -626,3 +628,75 @@ def test_the_worst_case_file_fits_the_size_budget() -> None:
         assert packed <= SETTINGS.budget_gzip_bytes
     with pytest.raises(DarkError, match="size"):
         check_budget(bare + b" " * (SETTINGS.budget_raw_bytes - len(bare) + 1), SETTINGS)
+
+
+LONGEST_OUTLOOK: Final = OutlookReason(
+    kind="outlook", points=-99, now=11, f=(1, 99.99, 119.99), like=(13, 13, 6), to=7, share=100,
+    scope=2,
+)  # fmt: skip
+"""An outlook line of 107 bytes: with its base at 100 points (a byte longer than the worst
+case's 57) and the chance at 1%, each day is as long as with the longest line (108 bytes,
+docs/predict.md: ``points`` -100), and its sum adds up."""
+OUTLOOK_FITS_SHARE: Final = 0.15
+"""With an outlook line on this share of the district-days (both days) of the worst case and
+every private school with no previous chance (:attr:`serve.Fit.NO_PREVIOUS`), the file keeps
+every line; a night with lines on every district-day falls to :attr:`serve.Fit.NO_REASONS`."""
+
+
+def with_outlook_lines(data: bytes, share: float) -> bytes:
+    """The worst-case file with the longest outlook line, three weather reasons and the file's
+    forecast time on both days of the first ``share`` of its districts (an outlook line comes
+    only under no class or an advisory; the warning base kept here is longer than either)."""
+    made = PredictionsFile.from_json_bytes(data)
+    count = math.ceil(len(made.districts) * share)
+
+    def lined(day: Forecast | Any) -> Forecast | Any:
+        if not isinstance(day, Forecast):
+            return day
+        base = day.why.base.model_copy(update={"points": 100})
+        return day.model_copy(
+            update={
+                "p_no_school": 0.01,
+                "reasons": (Reason.WINTER_STORM, Reason.ICE, Reason.EXTREME_COLD),
+                "why": Why(base=base, reasons=(LONGEST_OUTLOOK,)),
+            }
+        )
+
+    entries = tuple(
+        entry.model_copy(update={"days": tuple(lined(day) for day in entry.days)})
+        if i < count
+        else entry
+        for i, entry in enumerate(made.districts)
+    )
+    return made.model_copy(
+        update={"districts": entries, "forecast_at": made.generated_at - timedelta(minutes=21)}
+    ).to_json_bytes()
+
+
+def test_the_outlook_worst_case_falls_to_the_issued_alerts_only_chances_and_never_dark() -> None:
+    """Spec-f s. 9's worst case with the private schools' table (which s. 9 predates): an
+    outlook line on every district-day on both days does not fit at any step that keeps lines,
+    so such a night falls to :attr:`serve.Fit.NO_REASONS` (every chance the issued-alerts-only
+    one, no line, no ``forecast_at``: never a false or a dark chance), which fits (above). On
+    up to :data:`OUTLOOK_FITS_SHARE` of the district-days, the lines are kept. The lead picks
+    the size policy before ``on`` (docs/predict.md, Size)."""
+    assert len(json.dumps(LONGEST_OUTLOOK.to_json_value(), separators=(",", ":"))) == 107
+    model = artifact.load()
+    districts = math.ceil(len(model.districts) * GROWTH)
+    schools = math.ceil(len(model.private) * GROWTH)
+    least = worst_case_file(
+        districts, districts, schools=schools, outlooks=MAX_OUTLOOKS, records=False,
+        previous=False,
+    )  # fmt: skip
+    # The least step that keeps the lines is over the budget with a line on every
+    # district-day, so every step before it is too (each holds more: records, previous chances).
+    assert len(with_outlook_lines(least, 1.0)) > SETTINGS.budget_raw_bytes
+    # The districts alone with every line fit, but the pass keeps the private schools'
+    # chances (every school gets a chance every day) and drops the lines instead.
+    districts_only = worst_case_file(districts, districts, records=False, previous=False)
+    assert len(with_outlook_lines(districts_only, 1.0)) <= SETTINGS.budget_raw_bytes
+    # A night with lines on 15% of the district-days keeps them at NO_PREVIOUS.
+    some = with_outlook_lines(least, OUTLOOK_FITS_SHARE)
+    packed = check_budget(some, SETTINGS)
+    assert len(some) <= SETTINGS.budget_raw_bytes
+    assert packed <= SETTINGS.budget_gzip_bytes

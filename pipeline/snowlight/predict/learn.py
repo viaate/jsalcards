@@ -67,6 +67,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Annotated, Final, Literal
 
 import numpy as np
+import numpy.typing as npt
 import polars as pl
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -99,6 +100,7 @@ from snowlight.predict.live_labels import (
     lit_of,
     snapshot_classes,
 )
+from snowlight.predict.outlook import OutlookMode, chance
 from snowlight.predict.serve import DeployedDirectory, ServeError, ServeModel, build_model
 from snowlight.predict.situations import Situation, WeatherClass, Window
 
@@ -548,8 +550,7 @@ def score(
     kept = held.filter(pl.col("district").is_in(list(position)))
     rows = np.array([position[d] for d in kept["district"].to_list()], dtype=np.int64)
     k = kept["situation"].to_numpy().astype(np.int64)
-    p = model.p[rows, k] if rows.size else np.zeros(0)
-    q = model.q[rows, k] if rows.size else np.zeros(0)
+    p, q = served_chances(model, rows, k)
     y = kept["y"].to_numpy().astype(np.float64)
     yd = kept["delayed"].to_numpy().astype(np.float64)
     storm = kept["storm"].to_numpy().astype(np.bool_)
@@ -571,6 +572,32 @@ def score(
         out_of_bound=sum(1 for item in bins if item.rows >= minimum and not item.within()),
         situations=per,
     )
+
+
+def served_chances(
+    model: ServeModel, rows: npt.NDArray[np.int64], situation: npt.NDArray[np.int64]
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """The chances of no school and of a delay the model publishes for each held-out row (its
+    deployed district ``rows``, its ``situation``), through the one chance function the
+    serving pass and the outlook's backtest use (:func:`snowlight.predict.outlook.chance`,
+    spec-f s. 10): a labeled day is the morning of, so the outlook is the identity and the
+    chance is the situation's own published rate, exactly as served."""
+    if not rows.size:
+        return np.zeros(0), np.zeros(0)
+    p_table = model.p_rate if model.p_rate.size else model.p
+    q_table = model.q_rate if model.q_rate.size else model.q
+    own = np.zeros(rows.size, dtype=np.int64)
+    found = chance(
+        p_table[rows, situation][:, None],
+        q_table[rows, situation][:, None],
+        own,
+        None,
+        np.zeros(rows.size, dtype=np.bool_),
+        mode=OutlookMode.OFF,
+        floor=model.artifact.settings.floor,
+        ceiling=model.artifact.settings.ceiling,
+    )
+    return found.p, found.delay
 
 
 def _worse(name: str, mine: float, theirs: float, tolerance: float = 0.0) -> str | None:

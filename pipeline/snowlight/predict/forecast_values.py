@@ -53,6 +53,9 @@ class Forecasts:
     by_day: Mapping[date, Mapping[int, DistrictForecast]] = field(default_factory=dict)
     problems: tuple[str, ...] = ()
     """Zones and days that had no usable run, and why (the pass reports them)."""
+    unread: Mapping[date, Mapping[str, str]] = field(default_factory=dict)
+    """Per day, the zones with no forecast and why: ``stale`` (no run counts: the newest is
+    over the maximum age or none is listed) or ``error`` (the listing or a run did not read)."""
 
     def get(self, day: date, district: int) -> DistrictForecast | None:
         """A district's forecast for ``day``, or ``None`` when none was read."""

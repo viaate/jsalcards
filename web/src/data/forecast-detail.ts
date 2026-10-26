@@ -157,7 +157,101 @@ export type ReasonDetail =
       readonly at: Date | null;
     }
   /** The district or the school said school is on: it takes the chance down to the floor. */
-  | { readonly kind: 'said_open'; readonly points: number };
+  | { readonly kind: 'said_open'; readonly points: number }
+  | OutlookDetail;
+
+/** The forecast kind an outlook line reads: snow, ice, or how cold it feels at 7 AM. */
+export type OutlookKind = 'snow' | 'ice' | 'feels';
+
+/**
+ * The night-before outlook (S7-F, pipeline/snowlight/schemas/predictions.py OutlookReason):
+ * before 5 AM on the day with no warning yet, how the cases like this one ended. `c0` and
+ * `heads` are what was out at the file's time; `forecast` the forecast's kind and its least
+ * and most over the district's schools (null: little or no snow or ice); `like` the cases
+ * counted (bucket range and heads-up, 6 for any); `to` the weather class the cases moved the
+ * chance toward; `share` the percent of those cases at `scope` whose 5 AM record was `to`.
+ * `at` is the forecast's time and `generatedAt` the file's, from which the line's hours come.
+ */
+export interface OutlookDetail {
+  readonly kind: 'outlook';
+  readonly points: number;
+  readonly c0: 0 | 1;
+  readonly heads: number;
+  readonly forecast: {
+    readonly kind: OutlookKind;
+    readonly low: number;
+    readonly high: number;
+  } | null;
+  readonly like: { readonly low: number; readonly high: number; readonly heads: number };
+  readonly to: number;
+  readonly share: number;
+  readonly scope: 'state' | 'region' | 'nation';
+  readonly at: Date;
+  readonly generatedAt: Date;
+}
+
+const OUTLOOK_KINDS: readonly OutlookKind[] = ['snow', 'ice', 'feels'];
+const OUTLOOK_SCOPES = ['state', 'region', 'nation'] as const;
+const HEADS_UPS = 6;
+const BUCKETS = 14;
+const CLASSES = 8;
+
+/** An outlook line's forecast range, as the contract states it: null where it is quiet. */
+function outlookRange(value: unknown): OutlookDetail['forecast'] | undefined {
+  if (value === undefined || value === null) return null;
+  if (!Array.isArray(value) || value.length !== 3) return undefined;
+  const [kind, low, high] = value as readonly unknown[];
+  if (!isWhole(kind, 0, 2) || typeof low !== 'number' || typeof high !== 'number') return undefined;
+  if (!Number.isFinite(low) || !Number.isFinite(high) || low > high) return undefined;
+  const named = OUTLOOK_KINDS[kind];
+  if (named === undefined) return undefined;
+  if (named === 'ice') {
+    const hundredths = (n: number): boolean => Math.abs(Math.round(n * 100) - n * 100) < 1e-6;
+    return low >= 0 && high <= 120 && hundredths(low) && hundredths(high)
+      ? { kind: named, low, high }
+      : undefined;
+  }
+  if (!Number.isInteger(low) || !Number.isInteger(high)) return undefined;
+  if (named === 'snow') return low >= 0 && high <= 120 ? { kind: named, low, high } : undefined;
+  return low >= -80 && high <= 130 ? { kind: named, low, high } : undefined;
+}
+
+/** An outlook line, checked as the contract states it, or null. */
+function outlookOf(
+  reason: Fields,
+  points: number,
+  times: { readonly forecastAt: Date | null; readonly generatedAt: Date },
+): OutlookDetail | null {
+  const { now, like, to, share, scope } = reason;
+  const { forecastAt, generatedAt } = times;
+  // The line names the forecast's time: a file without it says no outlook line truly.
+  if (forecastAt === null || forecastAt > generatedAt) return null;
+  if (!isWhole(now, 0, 2 * HEADS_UPS - 1) || !isWhole(to, 0, CLASSES - 1)) return null;
+  if (!isWhole(share, 1, 100) || !isWhole(scope, 0, 2)) return null;
+  const c0 = Math.floor(now / HEADS_UPS);
+  if (to === c0 || (c0 !== 0 && c0 !== 1)) return null;
+  if (!Array.isArray(like) || like.length !== 3) return null;
+  const [low, high, heads] = like as readonly unknown[];
+  if (!isWhole(low, 0, BUCKETS - 1) || !isWhole(high, low, BUCKETS - 1)) return null;
+  if (!isWhole(heads, 0, HEADS_UPS)) return null;
+  const forecast = outlookRange(reason.f);
+  if (forecast === undefined) return null;
+  const named = OUTLOOK_SCOPES[scope];
+  if (named === undefined) return null;
+  return {
+    kind: 'outlook',
+    points,
+    c0,
+    heads: now % HEADS_UPS,
+    forecast,
+    like: { low, high, heads },
+    to,
+    share,
+    scope: named,
+    at: forecastAt,
+    generatedAt,
+  };
+}
 
 export interface WhyDetail {
   readonly base: BaseDetail;
@@ -360,7 +454,11 @@ function issuedAt(value: unknown): Date | null | undefined {
 const ADDS = new Set(['wind_chill', 'cold', 'icy_roads', 'ice']);
 const TAKES_AWAY = new Set(['sun', 'said_open']);
 
-function reasonOf(value: unknown, districts: number): ReasonDetail | null {
+function reasonOf(
+  value: unknown,
+  districts: number,
+  times: { readonly forecastAt: Date | null; readonly generatedAt: Date },
+): ReasonDetail | null {
   const reason = fields(value);
   if (reason === null || !isWhole(reason.points, -100, 100) || reason.points === 0) return null;
   const { points } = reason;
@@ -434,6 +532,8 @@ function reasonOf(value: unknown, districts: number): ReasonDetail | null {
         ? { kind: 'ice', points, inches, at }
         : null;
     }
+    case 'outlook':
+      return outlookOf(reason, points, times);
     default:
       return null;
   }
@@ -442,6 +542,8 @@ function reasonOf(value: unknown, districts: number): ReasonDetail | null {
 /** What a sum's parts are checked against: the district's neighbors, buses and chart. */
 interface WhyContext {
   readonly districts: number;
+  readonly forecastAt: Date | null;
+  readonly generatedAt: Date;
   readonly neighbors: readonly number[];
   readonly busesAt: Date | null;
   readonly hours: HoursDetail | null;
@@ -475,7 +577,7 @@ function whyOf(value: unknown, context: WhyContext): WhyDetail | null {
   // A compact file leaves a base with no reasons as the base alone.
   const list = why?.reasons ?? [];
   if (base === null || !Array.isArray(list)) return null;
-  const reasons = list.map((item) => reasonOf(item, context.districts));
+  const reasons = list.map((item) => reasonOf(item, context.districts, context));
   if (!reasons.every((item): item is ReasonDetail => item !== null)) return null;
   if (new Set(reasons.map((item) => item.kind)).size !== reasons.length) return null;
   if (!reasons.every((item) => agrees(item, context))) return null;
@@ -549,6 +651,11 @@ export interface DetailContext {
   readonly districts: number;
   /** The file's time: what already happened is before it. */
   readonly generatedAt: Date;
+  /**
+   * When the forecast the file's outlook lines read was issued (its `forecast_at`), or null
+   * where the file gives none: an outlook line then does not read, and nor does its sum.
+   */
+  readonly forecastAt?: Date | null;
   /** The district's neighbors, as the file lists them. */
   readonly neighbors: readonly number[];
   /** The district's time zone, where its days and wall-clock times are. */
@@ -596,7 +703,12 @@ export function forecastDetail(value: unknown, context: DetailContext): Forecast
     announcesAt,
     busesAt,
     hours,
-    why: whyOf(forecast.why, { ...context, busesAt, hours }),
+    why: whyOf(forecast.why, {
+      ...context,
+      forecastAt: context.forecastAt ?? null,
+      busesAt,
+      hours,
+    }),
     thin: thinOf(forecast.why),
     record: recordOf(forecast.record, day),
     events: eventsOf(forecast.events, generatedAt),

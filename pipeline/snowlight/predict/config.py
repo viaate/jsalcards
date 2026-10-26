@@ -2,7 +2,7 @@
 
 from datetime import date, time
 from pathlib import Path
-from typing import Final
+from typing import Final, Literal
 
 import yaml  # type: ignore[import-untyped, unused-ignore]
 from pydantic import BaseModel, ConfigDict, Field
@@ -110,6 +110,10 @@ class ServeSettings(_Settings):
     alone."""
     neighbors_max_age_minutes: int = Field(default=60, ge=1)
     """A closings file older than this says nothing of the districts next door."""
+    forecast_stale: Literal["identity", "dark"] = "identity"
+    """S7-F with the outlook on: a district whose zone has no forecast run under 3 hours old
+    gets the issued-alerts-only chance (``identity``, the lead's decision of 2026-10-20: every
+    school gets a chance every day), or the pass goes dark (``dark``, ``Dark.FORECAST``)."""
 
 
 class LearnSettings(_Settings):

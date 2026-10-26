@@ -534,6 +534,107 @@
       "minimum": 0,
       "type": "integer"
     },
+    "OutlookReason": {
+      "additionalProperties": false,
+      "description": "The night-before outlook (S7-F, spec-f s. 8): before 5 AM on the day, with no warning\nissued yet, how the cases like this one ended. The share of cases like this whose 5 AM\nrecord was each class, at the district's place, weighs the district's own chance under\neach class; ``points`` is that chance's whole percent less the base's.\n\n``now``: the class issued and the heads-up at the file's time, as ``c0 * 6 + heads-up``\n(``c0`` 0 none or 1 advisory; heads-up 0 none, 1 winter storm watch, 2 extreme cold watch,\n3 cold weather advisory, 4 hurricane watch, 5 tropical storm watch). ``f``: the forecast\nthe case was counted under, as ``[kind, low, high]`` (kind 0 snow in whole inches, 1 ice\nin hundredths of an inch, 2 how cold it feels at 7 AM in whole degrees F; low and high are\nthe district's schools' least and most, rounded outward, so the range is true of every\nschool); absent when the forecast is quiet (fewer than half the schools forecast 0.5\ninches of snow or more, fewer than half 0.01 inches of ice or more, and fewer than half a\nfeel of 10 F or colder). ``like``: the cases counted, ``[low bucket, high bucket, heads-up]``\n(buckets 0 quiet, 1-5 snow 0.5-2, 2-4, 4-6, 6-9, 9+ inches, 6-8 ice 0.01-0.10, 0.10-0.25,\n0.25+ inches, 9-12 feels 10 to 0, 0 to -10, -10 to -20, -20 F or colder, 13 unknown;\nheads-up 6 for any). ``to``: the class whose cases moved the chance most the way it moved.\n``share``: the share of the cases counted at ``scope`` (0 the district's state, 1 its\nregion, 2 the nation) whose 5 AM record was ``to``, true of their raw count: 100 only when\nevery one of them was, 99 when nearly all but not all were, 1 when some but nearly none\nwere (the website says the ends as \"every\", \"almost every\" and \"almost no\").",
+      "properties": {
+        "f": {
+          "anyOf": [
+            {
+              "maxItems": 3,
+              "minItems": 3,
+              "prefixItems": [
+                {
+                  "maximum": 2,
+                  "minimum": 0,
+                  "title": "kind",
+                  "type": "integer"
+                },
+                {
+                  "maximum": 130.0,
+                  "minimum": -80.0,
+                  "title": "low",
+                  "type": "number"
+                },
+                {
+                  "maximum": 130.0,
+                  "minimum": -80.0,
+                  "title": "high",
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "const": "outlook",
+          "type": "string"
+        },
+        "like": {
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "exclusiveMaximum": 14,
+              "minimum": 0,
+              "title": "low_bucket",
+              "type": "integer"
+            },
+            {
+              "exclusiveMaximum": 14,
+              "minimum": 0,
+              "title": "high_bucket",
+              "type": "integer"
+            },
+            {
+              "maximum": 6,
+              "minimum": 0,
+              "title": "heads_up",
+              "type": "integer"
+            }
+          ],
+          "type": "array"
+        },
+        "now": {
+          "exclusiveMaximum": 12,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        },
+        "scope": {
+          "maximum": 2,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "share": {
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "to": {
+          "exclusiveMaximum": 8,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "points",
+        "now",
+        "like",
+        "to",
+        "share",
+        "scope"
+      ],
+      "title": "OutlookReason",
+      "type": "object"
+    },
     "PastDay": {
       "additionalProperties": false,
       "description": "One day in the district's record: its snow and what the district did.",
@@ -748,6 +849,7 @@
           "ice": "#/$defs/IceReason",
           "icy_roads": "#/$defs/IcyRoadsReason",
           "neighbors": "#/$defs/NeighborsReason",
+          "outlook": "#/$defs/OutlookReason",
           "record": "#/$defs/RecordReason",
           "said_open": "#/$defs/SaidOpenReason",
           "snow_stops": "#/$defs/SnowStopsReason",
@@ -759,6 +861,9 @@
         "propertyName": "kind"
       },
       "oneOf": [
+        {
+          "$ref": "#/$defs/OutlookReason"
+        },
         {
           "$ref": "#/$defs/SnowTotalReason"
         },
@@ -1225,6 +1330,17 @@
         "$ref": "#/$defs/DistrictForecast"
       },
       "type": "array"
+    },
+    "forecast_at": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the weather service issued the forecast the outlook reasons read (S7-F); given with any outlook reason, and before generated_at."
     },
     "generated_at": {
       "$ref": "#/$defs/UtcInstant"

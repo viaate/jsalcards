@@ -864,6 +864,8 @@ first step with a notice, and nothing fails.
              persist-credentials: false
          - name: Stamp the probe
            run: printf '{"n":%s,"t":"%s"}\n' "${{ github.run_number }}" "$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)" > probe.json
+         - name: Keep the learning files off the site
+           run: rm -rf v1*/predictions/learn*.json v1*/predictions/outlook
          - uses: actions/upload-pages-artifact@v3
            with:
              path: .
@@ -875,6 +877,17 @@ first step with a notice, and nothing fails.
    `PREDICT_PUBLISH` to `shadow`, run **predict** once, and open
    `https://viaate.github.io/snowlight-live/v1-shadow/predictions/latest.json`; it must load
    (and `README.md` too). Then set `PREDICT_PUBLISH` back to `on` (or delete it).
+
+   The learning step's files (`predictions/learn.json`, `learned.json`, and the outlook's
+   `predictions/outlook/`: its private record, cases, learned T and internal report) sit
+   beside `latest.json` in the hosting repository. Their contents are public-safe (model
+   chances, NOAA-derived states and counts, never list text), but they are not for the site:
+   the step "Keep the learning files off the site" leaves them out of what Pages serves, so
+   the S7-F chances recorded in shadow are not fetchable from the site before `on`. The passes
+   and the learning step read them through the GitHub contents API, never from Pages, so
+   leaving them out changes nothing they read. They remain readable wherever the hosting
+   repository itself is readable (its visibility is the owner's); the lead confirms this with
+   the owner before the first shadow night.
 
 The token is never written to a log, a file or a chat.
 
@@ -1605,3 +1618,162 @@ chance from S7-F (lead decision `Dark.FORECAST`).
 - Verdict: nothing turns on. The outlook stays off (F3 builds shadow), and only live labels
   can show whether it helps (300 live storm rows on 8 or more dates, the research plan's T5).
 The full report is internal (`report.md`, `metrics.json`).
+
+## The night-before outlook on the passes (S7-F, piece F3: shadow, nothing visible)
+
+`PREDICT_OUTLOOK` (the predict workflow's environment, `vars.PREDICT_OUTLOOK`, default
+`shadow` there; unset is `off`) switches it. The owner chose to test it quietly first: it runs
+in shadow until it proves itself on real storms (300 or more live storm rows on 8 or more
+dates) and the owner approves its words; the lead then sets it `on`.
+
+- **off**: the pass is S7-L's, byte for byte (`tests/predict/test_outlook_serve.py` holds a
+  synthetic night of 44 passes to the bytes the pass wrote before this piece,
+  `tests/predict/golden/off_night.json`), and it keeps no outlook state.
+- **shadow** (landed): the file is exactly off's (the same golden). After a pass has published,
+  or found nothing to change, it takes the outlook's private record; any error there is a
+  warning, never a dark pass. It reads the newest forecast run itself (the newest at the pass,
+  at most 3 hours old) and keeps the alerts it saw as products (`state.products`, beside the
+  alert memory: every class and heads-up product with its sent time, cancels and upgrades
+  included), so it rebuilds what stood at any moment of the last 30 hours. When the log does not
+  reach back far enough (the first shadow pass, a gap in the feed over `memory_gap_minutes`, a
+  lost cache), it is rebuilt from the NWS alert history of the classes' products and the
+  heads-ups' (`inputs.PRODUCT_EVENTS`: winter storm, extreme cold, hurricane and tropical storm
+  watches and cold weather advisories, retired codes too), so a watch whose current product was
+  sent after a sample hour still stood at it. That read is the product log's own: the alert
+  memory's read keeps its events and its 40-page bound. Its reads have 90 seconds a pass
+  (`outlook_live.READ_SECONDS`, started once per pass where the outlook's work begins: the
+  record step in shadow, before the product log in the pass with `on`): the forecast reader
+  checks it before every request (requests of 10 seconds, 5 to connect, two tries, and a day
+  listing that failed is not asked again in the pass) and the history read before every page.
+  So an AWS feed or an NWS history that is slow or down holds the loop's next pass back by at
+  most 90 seconds and one request under way; what it did not read in time is not read (a
+  skipped sample, never imputed). A rebuild that fails in the record step is not tried again
+  for 30 minutes (`cli.PRODUCTS_RETRY`), and those passes record nothing (a warning that says
+  why). With the outlook on, the file's classes come from the product log, so a log that cannot
+  be rebuilt within that time darkens the pass (`alert_memory`, as the alert memory's own
+  rebuild does) and the next pass tries again: never a class from a log with a gap. Its inputs (the v3 file, the
+  learned files on the host) are read before the first pass: any that fails turns the outlook
+  off for the run with a warning, never a dark run.
+- **on**: every chance from the v3 rates (`data/predict/model-f.json.gz`, the 05:00 record's),
+  the class as issued under rule D2, and the outlook's line where it moves the whole percent:
+  the base keeps its points, the line `outlook` takes the rest, and the file names the
+  forecast's time (`forecast_at`). Private schools keep their base alone; piece 3's reasons are
+  not used (they were fit over the v2 rates). The loop also starts a pass between grid passes
+  when a slot boundary or 5 AM passes in a district's zone, a forecast period ends (00, 06, 12,
+  18 UTC) or a newer complete forecast run counts.
+
+**What the outlook gives the issued-alerts-only chance instead** (the identity, exactly the
+class's own rate, with no outlook line; with the outlook on that is the v3 rates' rate, the
+rates every chance of an `on` file comes from, not the v2 rates' of the file with the outlook
+off, a test pins it with v3 rates that differ; the lead decision of 2026-10-20 says "exactly
+the S7-L output", and the lead confirms before `on` that this means `on`'s own rates): a warning issued, 5 AM on the day or later, no
+forecast run under 3 hours old for the district's zone (the lead's decision of 2026-10-20,
+`serve.forecast_stale: identity`; `dark` would darken the pass, `Dark.FORECAST`), a bucket that
+reads unknown, a forecast range that cannot be stated true of every school, a class with no
+rate (the own-class guard: no number is ever published from a NaN), a line no class or place
+can say truly, and a district that read another run than the file's `forecast_at`. The pass
+counts each in its line (`predict: outlook: issued-alerts-only chance (identity) for ...`) and
+in `state.outlook_health`. A file over the size budget drops the outlook's lines at
+`Fit.NO_REASONS` (every chance the issued-alerts-only one) before it drops any school.
+
+**The line.** `OutlookReason {kind: "outlook", points, now, f, like, to, share, scope}`
+(`pipeline/snowlight/schemas/predictions.py`): what was out (`now`: class issued x 6 +
+heads-up), the forecast kind and the district's schools' least and most, rounded outward
+(snow in whole inches, ice in hundredths, feels in whole degrees; absent when the forecast is
+quiet), the cases counted (`like`), the class whose term moved the chance most the way it
+moved (`to`), the raw share of the counted cases at the most specific place with 20 nights or
+more that counts `to` at all (`scope` 0 state, 1 region, 2 nation; a share true of the raw
+count by `share.says_true`, and exact at its ends: 100 only when every case counted ended in
+`to`, said "in every case like this", 99 "in almost every case" when nearly all but not all
+did, 1 "in almost no case" when some but nearly none did). The web words it (`web/src/copy-chance.ts`, `outlookReason` and
+`outlookHelp`), with the slot and the window derived from `generated_at` and the school day
+(the slot table is shared, `tests/predict/golden/outlook_slots.json`). The owner approves the
+words before `on`; the three example lines are in the internal shots folder of this piece.
+Each word is true of its inputs: the class and the heads-up are each the district's 50% value
+(the strongest that, with stronger ones, covers half its eligible schools), so nothing out is
+said as "No winter storm warning, winter advisory or winter storm watch covers half of
+Olathe's schools yet"; the advisory class (winter weather, freezing rain and lake effect snow
+advisories) is "a winter advisory", as the base copy names it; the school day is named by its
+weekday ("12 PM Tuesday"), never "tomorrow", since a file stays on screen past midnight; a
+quiet forecast is said per kind ("little or no snow at most of Lakota's schools and little or
+no ice at most of them": the two halves need not be the same schools). A file made before 5 AM
+keeps its line on screen until the next file (at most the 90 minutes every chance may age):
+with the outlook on, the loop starts a pass at 5 AM in each zone, which replaces it within
+minutes.
+
+**The class issued.** On reads each district's class from the product log under rule D2
+(`outlook_serve.district_states`: an event counts from its issue until it is cancelled or
+upgraded, and an empty span never counts), the v2 file from the alert memory
+(`serve.unit_classes`: an event counts from its issue while the memory holds it). Both apply
+the schools' heights. Through the synthetic night of the tests (a watch upgraded to a warning,
+an advisory issued then cancelled, a cold watch replaced by a cold advisory) they give the same
+class at every pass (`tests/predict/test_outlook_bounds.py`). They can differ when the memory
+keeps an event the product log has seen withdrawn, or one whose span is empty; private schools
+keep the v2 path's class.
+
+**The private record** (`snowlight/predict/outlook_record.py`). Per school day and district:
+at each of the 21 sample hours, the class issued, the heads-up and the forecast bucket as they
+stood at that hour exactly (taken by the first pass within 15 minutes after it; a zone whose
+forecast did not read is not taken, never imputed; a stale run reads as bucket 13 as in the
+history); the 8 PM chances, the published one and S7-F's as `on` would show it; and the 5 AM
+record (the label class), taken by the first pass between 5 and 9 AM as of 5 AM exactly. The
+passes keep the newest 3 days in their state (the Actions cache); `predict learn` merges them
+into `predictions/outlook/record.json` on the live host beside `learn.json` (10 school days),
+counts each finished day's cases into `predictions/outlook/cases.json` (counts by state, cell
+and 5 AM class, frozen once counted), and writes the internal report
+`predictions/outlook/report.json`. Model chances and NOAA-derived states only: no list text.
+The site never reads any of them.
+
+**T learns** (`snowlight/predict/outlook_learn.py`). With more than 7 live days counted, a
+candidate T counted over the committed one plus the live days before the newest 7 is judged
+on those 7 days' cases against every T that has not counted them and is not the candidate
+itself (`outlook_learn.judges`): the committed T (the archive alone) always, and the served T
+without those 7 days when that differs from both. It needs a log loss no worse than each, every
+calibration bin of 2,000 cases or more within its bound (GF5's rule), and with 300 or more
+labeled E20 rows of those days an E20 Brier no worse than each. Then T refit over every live
+day is swapped in (`predictions/outlook/learned.json`, made over the committed artifact's
+SHA-256; the passes read it, a file made over another artifact or that does not validate is
+ignored). No judge has seen the held-out days: the served T with them in it would be judged on
+days it counted, and once T swaps nightly the served T without them is the candidate itself, a
+check that could never reject. So T can take in a new live day every night, while live days
+that hurt T on the days after them (a fault in taking the record, a stretch unlike the archive)
+keep the served T until a candidate beats the archive's T again (a test replays such a run);
+a run with no new live day changes nothing. The report
+is written only when it says something new (its time aside), so a run that learned nothing adds
+no commit to the live host. A new directory edition carries the record over by LEAID (the
+host's record keeps its districts' LEAIDs): a district keeps its days, a new one reads as not
+taken, and no day not yet counted is lost. The learning step's own outcome (its exit code, its
+v2 swap) never depends on the outlook's: an error there is a warning and writes nothing.
+`learn.score` now scores through `outlook.chance` (the identity on a labeled morning, exactly
+the published rates, a test holds it).
+
+**Size.** The outlook's longest line is 108 bytes. With every district carrying one on both
+days and the private schools' table full (9,000 outlooks, no previous chances), the file is
+18.93 MB: over the 16.5 MB budget, which spec-f s. 9 counted before the private schools
+(contract C3) took its room. On such a night the pass publishes the issued-alerts-only chances
+(`Fit.NO_REASONS`, no line and no `forecast_at`) and keeps every school; the districts alone
+with every line come to 15.05 MB. With lines on 15% of the district-days the worst case keeps
+them (about 19% fit). `tests/predict/test_loop.py` asserts all three. Real files run about
+6.3 MB. The lead picks the policy before `on`: as built, every school keeps a chance and the
+lines go first.
+
+**The v3 rates learn too.** The same learning step labels the live days under the 5 AM
+record's class (the record's morning part read as the passes' class snapshots, so S7-L's
+labeling rules are unchanged) into `predictions/outlook/learn.json`, and swaps a refit of the
+v3 rates in under S7-L's own no-worse check (`predictions/outlook/learned-rates.json`, made over
+`model-f.json.gz`). The passes use it with the v3 rates (shadow and on); a file made over
+another artifact, or that does not build, is ignored. The v2 store and its swap are untouched.
+
+**Before `on`, the lead decides** (none changes a file while the outlook is shadow): the size
+policy (above: the lines go first on the biggest nights); the tgftp fallback (below); that the
+identity of the Dark.FORECAST decision is `on`'s own v3 rates' issued-alerts-only chance (the
+class's rate under 5 AM labels, not the v2 rates' 9 PM one); that a file made before 5 AM keeps
+its line on screen after 5 AM until the next file (The line, above); that the learning files
+stay off the site (the Pages step); and the owner approves the line's words from the shots of
+this piece (they changed from the spec's examples: "a winter advisory", "covers half of",
+weekdays, the quiet forecast per kind, "in every case").
+
+**Not built here.** The tgftp fallback for a stale AWS listing (a stale run serves the
+identity instead; the lead decides before `on`), and the triggers in shadow (shadow keeps off's
+pass schedule: grid passes take every sample). The outlook's reader keeps a run's values only
+while a read can still use them (4 hours, `outlook_live.RUNS_KEPT`).

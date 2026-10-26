@@ -624,25 +624,34 @@ def _codes(  # noqa: PLR0913, PLR0917 - one sample of one zone
 # --- listing ------------------------------------------------------------------------------------
 
 
-class Fetcher:  # pragma: no cover - the network
-    """GETs and range reads with retries (NCEI's THREDDS answers 503 at times), counting bytes."""
+class Fetcher:
+    """GETs and range reads with retries (NCEI's THREDDS answers 503 at times), counting bytes.
+    ``before``: called before every request and every wait between tries; it raises
+    :class:`~snowlight.predict.ndfd.NdfdError` to stop (the serving outlook's time limit)."""
 
     def __init__(
         self,
         client: httpx.Client,
         attempts: int = 6,
         range_attempts: int = ndfd.RANGE_ATTEMPTS,
+        before: Callable[[], None] | None = None,
     ) -> None:
         self.client = client
         self.attempts = attempts
         self.range_attempts = range_attempts
+        self.before = before
         self.bytes = 0
         self.requests = 0
         self._lock = threading.Lock()
 
+    def _check(self) -> None:
+        if self.before is not None:
+            self.before()
+
     def _get(self, url: str, headers: Mapping[str, str] | None = None) -> httpx.Response:
         error: Exception | None = None
         for attempt in range(self.attempts):
+            self._check()
             try:
                 response = self.client.get(url, headers=headers)
             except httpx.HTTPError as failed:
@@ -654,7 +663,9 @@ class Fetcher:  # pragma: no cover - the network
                         self.requests += 1
                     return response
                 error = RuntimeError(f"HTTP {response.status_code} for {url}")
-            clock.sleep(min(60.0, 2.0**attempt))
+            if attempt + 1 < self.attempts:
+                self._check()
+                clock.sleep(min(60.0, 2.0**attempt))
         raise ndfd.NdfdError(f"{url}: {error}")
 
     def get(self, url: str) -> bytes:
@@ -671,7 +682,7 @@ class Fetcher:  # pragma: no cover - the network
             raise ndfd.NdfdError(f"HTTP {response.status_code} for {url}")
         return response.content
 
-    def ranged(self, url: str) -> ndfd.Ranged:
+    def ranged(self, url: str) -> ndfd.Ranged:  # pragma: no cover - the network
         """Range reads of one file, each checked to hold the bytes the file holds there and
         tried again when not (:func:`snowlight.predict.ndfd.steady_reader`)."""
 
@@ -686,9 +697,13 @@ class Fetcher:  # pragma: no cover - the network
                 url,
             )
 
-        return ndfd.steady_reader(fetch, self.range_attempts, clock.sleep)
+        return ndfd.steady_reader(fetch, self.range_attempts, self._sleep)
 
-    def opener(self) -> Opener:
+    def _sleep(self, seconds: float) -> None:  # pragma: no cover - the network
+        self._check()
+        clock.sleep(seconds)
+
+    def opener(self) -> Opener:  # pragma: no cover - the network
         """Opens a listed file."""
         return lambda listed: self.ranged(listed.url)
 
@@ -781,10 +796,13 @@ class Around:
 
 @dataclass(slots=True)
 class Listings:
-    """Day listings, each read once (a day that did not list is asked again next time)."""
+    """Day listings, each read once (a day that did not list is asked again next time, unless
+    ``again`` is false: the serving outlook keeps one ``Listings`` per pass, so a feed that is
+    down costs a pass one try per day, not one per read)."""
 
     fetch: Callable[[str], bytes]
     days: dict[date, DayListing] = field(default_factory=dict)
+    again: bool = True
 
     def around(self, night: date) -> Around:
         """The files of UTC days D-1 and D (every run a night's samples can use)."""
@@ -793,7 +811,7 @@ class Listings:
         errors: list[str] = []
         for day in (night - timedelta(days=1), night):
             known = self.days.get(day)
-            if known is None or known.error is not None:
+            if known is None or (known.error is not None and self.again):
                 known = self.days[day] = list_day_safely(self.fetch, day)
             if known.error is not None:
                 errors.append(f"{day}: {known.error}")

@@ -31,7 +31,7 @@ unknown in training. Nothing here is ever a guess.
 """
 
 import math
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from datetime import date, datetime, timedelta
 
 import numpy as np
@@ -151,13 +151,24 @@ def forecasts(  # noqa: PLR0913, PLR0917 - the schools, the days, the runs and t
     runs_for: Callable[[date], Sequence[Run] | None],
     read: ReadRun,
     share: float,
+    *,
+    moment: Callable[[date, str], datetime] | None = None,
+    zones: Collection[str] | None = None,
 ) -> Forecasts:
     """Every deciding district's forecast on ``days`` (``index_of``: LEAID to its deployed
     index). ``runs_for(day)`` lists the runs a night can use (``None``: the listing did not
-    read). A refused run gives way to the one before it, as in the history."""
-    groups = history.zone_groups(schools)
+    read). A refused run gives way to the one before it, as in the history.
+
+    ``moment(day, zone)``: when each zone's forecast is read (the newest run that counts then,
+    at most 3 hours old); by default the class snapshot (:func:`snapshot_at`). The outlook
+    (S7-F) reads the newest run at the pass, and a sample hour's at that hour. ``zones``: only
+    these zones' districts (all by default)."""
+    groups = [
+        group for group in history.zone_groups(schools) if zones is None or group.zone in zones
+    ]
     by_day: dict[date, dict[int, DistrictForecast]] = {}
     problems: list[str] = []
+    unread: dict[date, dict[str, str]] = {}
     for day in days:
         mine: dict[int, DistrictForecast] = {}
         by_day[day] = mine
@@ -166,11 +177,13 @@ def forecasts(  # noqa: PLR0913, PLR0917 - the schools, the days, the runs and t
         runs = runs_for(day)
         if runs is None:
             problems.append(f"{day}: the forecast runs did not list")
+            unread[day] = {group.zone: "error" for group in groups}
             continue
         for group in groups:
-            at = snapshot_at(day, group.zone, now)
+            at = snapshot_at(day, group.zone, now) if moment is None else moment(day, group.zone)
             usable = list(runs)
             values = None
+            failed = False
             while True:
                 run = ndfd.newest_run(usable, at)
                 if run is None:
@@ -180,6 +193,7 @@ def forecasts(  # noqa: PLR0913, PLR0917 - the schools, the days, the runs and t
                 except ndfd.NdfdError as error:
                     problems.append(f"{day} {group.zone}: run {run.time:%H:%MZ}: {error}")
                     values = None
+                    failed = True
                     break
                 if values.refused is None:
                     break
@@ -187,12 +201,13 @@ def forecasts(  # noqa: PLR0913, PLR0917 - the schools, the days, the runs and t
                 values = None
             if values is None:
                 problems.append(f"{day} {group.zone}: no run counts at {at:%Y-%m-%d %H:%MZ}")
+                unread.setdefault(day, {})[group.zone] = "error" if failed else "stale"
                 continue
             for k, found in zone_forecasts(values, group, day, at, share).items():
                 index = index_of.get(schools.districts[k])
                 if index is not None:
                     mine[index] = found
-    return Forecasts(by_day, tuple(problems))
+    return Forecasts(by_day, tuple(problems), unread)
 
 
 def bus_times(day: date, zones: Sequence[str]) -> list[datetime]:

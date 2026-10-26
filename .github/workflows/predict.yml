@@ -56,6 +56,10 @@ jobs:
     env:
       LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
       PREDICT_PUBLISH: ${{ vars.PREDICT_PUBLISH || 'on' }}
+      # The night-before outlook (S7-F, docs/predict.md): shadow publishes exactly as off and
+      # keeps the outlook's chances privately (predictions/outlook/ on the live host) until it
+      # proves itself on real storms and the owner approves its words; the lead sets on.
+      PREDICT_OUTLOOK: ${{ vars.PREDICT_OUTLOOK || 'shadow' }}
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - id: token

@@ -291,7 +291,39 @@ export type ReasonInput =
       readonly at?: Date | null;
     }
   /** The district or the school said school is on: the chance drops to the floor. */
-  | { readonly kind: 'said_open'; readonly points: number };
+  | { readonly kind: 'said_open'; readonly points: number }
+  | OutlookInput;
+
+/**
+ * The night-before outlook (S7-F): what was out at the file's time (`c0` 0 nothing, 1 a
+ * winter advisory; `heads` its heads-up, 0 none), the forecast's kind and its least and most
+ * over the district's schools (null: little or no snow or ice), the cases counted (`like`),
+ * the class they moved the chance toward (`to`), and the percent of them at `scope` whose
+ * 5 AM record was `to`. `at` is the forecast's time and `generatedAt` the file's; `day` the
+ * school day, `record` its 5 AM and `busTime` its 7 AM on the school's clock.
+ */
+export interface OutlookInput {
+  readonly kind: 'outlook';
+  readonly points: number;
+  readonly c0: 0 | 1;
+  readonly heads: number;
+  readonly forecast: {
+    readonly kind: 'snow' | 'ice' | 'feels';
+    readonly low: number;
+    readonly high: number;
+  } | null;
+  readonly like: { readonly low: number; readonly high: number; readonly heads: number };
+  readonly to: number;
+  readonly share: number;
+  readonly scope: 'state' | 'region' | 'nation';
+  /** The district's state ("KS"), for a share across its districts. */
+  readonly state: string | null;
+  readonly at: Date;
+  readonly generatedAt: Date;
+  readonly day: string;
+  readonly record: Date;
+  readonly busTime: Date;
+}
 
 /** Where a chance moved from: the run before, and when it was made. */
 export interface MovedInput {
@@ -876,7 +908,263 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
     }
     case 'said_open':
       return `${district} said school is on.`;
+    case 'outlook':
+      return outlookReason(input, district, zones);
   }
+}
+
+// The outlook (S7-F) ---------------------------------------------------------------------------
+
+/** The heads-ups by index (spec-f s. 2), with their article. */
+const HEADS_UPS = [
+  '',
+  'a winter storm watch',
+  'an extreme cold watch',
+  'a cold weather advisory',
+  'a hurricane watch',
+  'a tropical storm watch',
+] as const;
+/** `like`'s heads-up for "with or without one". */
+const ANY_HEADS_UP = 6;
+
+/** What the cases moved the chance toward, by weather class value, with its article. */
+const OUT_BY_FIVE = [
+  '',
+  'a winter advisory',
+  'a hurricane or tropical storm warning',
+  'an extreme cold warning',
+  'a lake effect snow warning',
+  'a winter storm warning',
+  'an ice storm warning',
+  'a blizzard warning',
+] as const;
+
+/**
+ * With nothing out, exactly the products the outlook's forecast kind is weighed against. The
+ * class and the heads-up are each a district's 50% value (pipeline outlook_serve.district_states:
+ * the strongest that, with stronger ones, covers half its eligible schools), so "nothing out"
+ * is said as none of them covering half its schools, true of every school. "Winter advisory"
+ * is the class (winter weather, freezing rain or lake effect snow advisory), as WEATHER_DAYS
+ * names it.
+ */
+const NOT_YET = {
+  snow: 'winter storm warning, winter advisory or winter storm watch',
+  ice: 'ice storm warning, winter advisory or winter storm watch',
+  feels: 'extreme cold warning, extreme cold watch or cold weather advisory',
+} as const;
+
+/** The 50% rule as the outlook's words say it. */
+const HALF_ITS = 'half of its schools';
+
+/** The forecast buckets' lower ends (snow and ice) or warmer ends (feels), by bucket. */
+const SNOW_FROM = ['0.5', '2', '4', '6', '9'] as const;
+const ICE_FROM = ['0.01', '0.10', '0.25'] as const;
+const FEELS_FROM = [10, 0, -10, -20] as const;
+const LAST_BUCKET = 13;
+
+/** The hours a slot's cases were counted at (spec-f s. 5), by slot 1 to 7. */
+const SLOT_HOURS = [
+  '',
+  'before 10:30 AM the day before',
+  'between 10:30 AM and 1:30 PM the day before',
+  'between 1:30 and 4:30 PM the day before',
+  'between 4:30 and 7:30 PM the day before',
+  'between 7:30 and 10:30 PM the night before',
+  'between 10:30 PM and 1:30 AM the night before',
+  'between 1:30 and 5 AM the night before',
+] as const;
+
+/** A sentence's first letter in capitals. */
+function sentenceCase(text: string): string {
+  return `${text.slice(0, 1).toUpperCase()}${text.slice(1)}`;
+}
+
+/**
+ * The slot (1 to 7) of a moment for school day `day` in `timeZone`, or 0 from 5 AM on the day
+ * (the outlook no longer applies): pipeline/snowlight/predict/outlook_states.py `slot_at`,
+ * held to it by the shared golden table (tests/predict/golden/outlook_slots.json).
+ */
+function outlookSlot(at: Date, day: string, timeZone: string): number {
+  const local = localDay(at, timeZone);
+  const parts = dateTimeFormat('clock', timeZone).formatToParts(checkInstant(at));
+  const minutes = (Number(part(parts, 'hour')) % 24) * 60 + Number(part(parts, 'minute'));
+  const dayBefore = dayOf(new Date(parseLocalDate(day).getTime() - MS_PER_DAY), 'UTC');
+  if (local > day) return 0;
+  if (local === day) return minutes >= 5 * 60 ? 0 : minutes < 90 ? 6 : 7;
+  if (local < dayBefore) return 1;
+  const edges = [630, 810, 990, 1170, 1350];
+  return 1 + edges.filter((edge) => minutes >= edge).length;
+}
+
+/**
+ * The forecast's snow and ice window on a school day: 00:00 to 18:00 UTC on the day
+ * (pipeline/snowlight/predict/ndfd.py window_ends), the periods the outlook counts.
+ */
+function outlookWindow(day: string): { readonly from: Date; readonly until: Date } {
+  const start = parseLocalDate(day).getTime();
+  return { from: new Date(start), until: new Date(start + 18 * HOUR_MS) };
+}
+
+/**
+ * A time on a school day's clock with its weekday: "12 PM Tuesday". Never "today" or
+ * "tomorrow": a file stays on screen past midnight, and a weekday stays true.
+ */
+function onDay(at: Date, zones: Zones): string {
+  return `${clock(at, zones)} ${weekday(dayOf(at, zones.school))}`;
+}
+
+/** "6 to 9 inches", "up to 2 inches", "3 inches": a range true of every school. */
+function wholeInches(low: number, high: number): string {
+  return low === 0 && high > 0 ? `up to ${inchWords(high, high)}` : inchWords(low, high);
+}
+
+/** Ice in hundredths: "0.10 to 0.23 inches", "up to 0.05 inches". */
+function iceInches(low: number, high: number): string {
+  const text = (n: number): string => n.toFixed(2);
+  if (low === high) return `${text(high)} inches`;
+  return low === 0 ? `up to ${text(high)} inches` : `${text(low)} to ${text(high)} inches`;
+}
+
+/** How cold, as a range: "−22 to −15 F", "−8 F". */
+function degreeRange(low: number, high: number): string {
+  if (low === high) return degrees(low);
+  const signed = (n: number): string => `${n < 0 ? MINUS : ''}${String(Math.abs(Math.round(n)))}`;
+  return `${signed(low)} to ${signed(high)}${NBSP}F`;
+}
+
+/** The outlook's line: what is out, the forecast, and how the cases like it ended. */
+function outlookReason(input: OutlookInput, district: string, zones: Zones): string {
+  const { c0, heads, forecast, scope, share, to, at, day } = input;
+  const named = HEADS_UPS[heads];
+  const outcome = OUT_BY_FIVE[to];
+  if (named === undefined || outcome === undefined || to === c0) {
+    throw new RangeError('copy: an outlook names a heads-up or a class it does not have');
+  }
+  const up = input.points > 0;
+  const kind = forecast?.kind ?? 'snow';
+  const schools = `${district}’s schools`;
+  // "But" only where the forecast goes the other way from what is out: nothing out reads low
+  // and something out high; a quiet forecast reads low, and any other the way the chance moved.
+  const somethingOut = c0 === 1 || heads > 0;
+  const forecastHigh = forecast !== null && up;
+  const joined = somethingOut === forecastHigh ? 'and' : 'but';
+  let opening: string;
+  if (!somethingOut) {
+    opening = `No ${NOT_YET[kind]} covers half of ${schools} yet, ${joined}`;
+  } else {
+    const out =
+      c0 === 1 && heads > 0
+        ? `A winter advisory and ${named} are out`
+        : c0 === 1
+          ? 'A winter advisory is out'
+          : `${sentenceCase(named)} is out`;
+    opening = `${out}, ${joined}`;
+  }
+  const when = `the weather service’s ${clock(at, zones)} forecast`;
+  let said: string;
+  if (forecast === null) {
+    // Quiet: under half reach 0.5 inches of snow, and under half 0.01 inches of ice, each
+    // on its own (two halves that need not be the same schools).
+    said = `${when} has little or no snow at most of ${schools} and little or no ice at most of them`;
+  } else if (forecast.kind === 'feels') {
+    said = `${when} has it feeling like ${degreeRange(forecast.low, forecast.high)} at ${onDay(input.busTime, zones)} at ${schools}`;
+  } else {
+    const { from, until } = outlookWindow(day);
+    const span = at >= from ? 'between then and' : `between ${onDay(from, zones)} and`;
+    const amount =
+      forecast.kind === 'snow'
+        ? `${wholeInches(forecast.low, forecast.high)} of snow`
+        : `${iceInches(forecast.low, forecast.high)} of ice`;
+    said = `${when} has ${amount} at ${schools} ${span} ${onDay(until, zones)}`;
+  }
+  let where: string;
+  if (scope === 'state') {
+    const name = STATES.find(([code]) => code === input.state)?.[1];
+    if (name === undefined) throw new RangeError('copy: a state share needs its state');
+    where = `Across ${name} districts`;
+  } else {
+    where = scope === 'region' ? `Across districts in ${district}’s region` : 'Across the country';
+  }
+  let count: string;
+  // The ends are exact: 100 is every case (the pipeline sends it only then), 99 nearly all
+  // but not all, 1 some but nearly none.
+  if (share <= 1) count = 'in almost no case like this';
+  else if (share >= 100) count = 'in every case like this';
+  else if (share >= 99) count = 'in almost every case like this';
+  else {
+    const found = shareOf(share);
+    count = `in ${found.more ? 'more than ' : ''}${String(found.some)} of ${String(found.of)} cases like this`;
+  }
+  const by = clock(input.record, zones);
+  const ended =
+    to === 0
+      ? c0 === 1
+        ? `the weather service had called off the advisory by ${by}`
+        : `nothing was out by ${by}`
+      : `${outcome} was out by ${by}`;
+  return `${opening} ${said}. ${where}, ${count}, ${ended}.`;
+}
+
+/** What the cases an outlook counted had out, as its help line says it (each a 50% value). */
+function outlookCasesHad(input: OutlookInput): string {
+  const { c0, like } = input;
+  const named = HEADS_UPS[like.heads];
+  const kind = input.forecast?.kind ?? 'snow';
+  const any = 'with or without a watch or a cold weather advisory';
+  if (c0 === 0) {
+    if (like.heads === 0) return `with no ${NOT_YET[kind]} covering ${HALF_ITS} yet`;
+    if (like.heads === ANY_HEADS_UP) {
+      return `with no warning or winter advisory covering ${HALF_ITS} yet, ${any}`;
+    }
+    if (named === undefined) throw new RangeError('copy: no such heads-up');
+    return `with ${named} out and no warning or winter advisory covering ${HALF_ITS} yet`;
+  }
+  if (like.heads === 0) {
+    return `with a winter advisory out and no watch or cold weather advisory covering ${HALF_ITS}`;
+  }
+  if (like.heads === ANY_HEADS_UP) return `with a winter advisory out, ${any}`;
+  if (named === undefined) throw new RangeError('copy: no such heads-up');
+  return `with a winter advisory and ${named} out`;
+}
+
+/** What the cases an outlook counted had forecast, as its help line says it. */
+function outlookCasesForecast(low: number, high: number): string {
+  const half = 'half or more of its schools forecast';
+  if (low === 0 && high === LAST_BUCKET) return 'any forecast';
+  if (low === 0 && high === 0) {
+    // Quiet: each of the three under half on its own, never one half of schools under all three.
+    const under = 'fewer than half of its schools forecast';
+    return `${under} 0.5 inches of snow or more, fewer than half 0.01 inches of ice or more and fewer than half a feel of ${degrees(10)} or colder at 7 AM`;
+  }
+  if (low >= 1 && high <= 5) {
+    const upper = high < 5 ? ` but fewer than half ${SNOW_FROM[high] ?? ''} or more` : '';
+    return `${half} ${SNOW_FROM[low - 1] ?? ''} inches of snow or more${upper}`;
+  }
+  if (low >= 6 && high <= 8) {
+    const upper = high < 8 ? ` but fewer than half ${ICE_FROM[high - 5] ?? ''} or more` : '';
+    return `${half} ${ICE_FROM[low - 6] ?? ''} inches of ice or more${upper}`;
+  }
+  if (low >= 9 && high <= 12) {
+    const at = (bucket: number): string => degrees(FEELS_FROM[bucket - 9] ?? 0);
+    const upper = high < 12 ? ` but fewer than half ${at(high + 1)} or colder` : '';
+    return `${half} to feel ${at(low)} or colder at 7 AM${upper}`;
+  }
+  throw new RangeError(`copy: no cases like buckets ${String(low)} to ${String(high)}`);
+}
+
+/**
+ * The outlook's help line, from the cases it counted: "A case is one district at one hour
+ * between 7:30 and 10:30 PM the night before, with no winter storm warning, winter advisory or
+ * winter storm watch covering half of its schools yet, and half or more of its schools
+ * forecast 6 inches of snow or more but fewer than half 9 or more." True of the cases' 50%
+ * values, as the line above it is true of every school.
+ */
+function outlookHelp(input: OutlookInput, zones: Zones): string {
+  const slot = outlookSlot(input.generatedAt, input.day, zones.school);
+  const hours = SLOT_HOURS[slot];
+  if (slot === 0 || hours === undefined) throw new RangeError('copy: no outlook from 5 AM on');
+  const forecast = outlookCasesForecast(input.like.low, input.like.high);
+  return `A case is one district at one hour ${hours}, ${outlookCasesHad(input)}, and ${forecast}.`;
 }
 
 export const chanceFormat = /* @__PURE__ */ deepFreeze({
@@ -907,6 +1195,9 @@ export const chanceFormat = /* @__PURE__ */ deepFreeze({
   shareOf,
   baseReason,
   reason,
+  outlookHelp,
+  outlookSlot,
+  outlookWindow,
 });
 
 export type ChanceFormat = typeof chanceFormat;

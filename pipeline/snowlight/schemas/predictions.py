@@ -49,7 +49,7 @@ schools, nearest first, at most :data:`MAX_NEIGHBORS`.
 
 from datetime import date, datetime, timedelta
 from itertools import pairwise
-from typing import Annotated, Literal, Self
+from typing import Annotated, Final, Literal, Self
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import AfterValidator, Field, model_validator
@@ -576,8 +576,87 @@ class SaidOpenReason(CompactModel):
         return self
 
 
+OUTLOOK_SNOW: Final = 0
+OUTLOOK_ICE: Final = 1
+OUTLOOK_FEELS: Final = 2
+OUTLOOK_HEADS_UPS: Final = 6
+"""Heads-up indexes 0 (none) to 5 (spec-f s. 2); ``like`` names 6 for "any"."""
+OUTLOOK_BUCKETS: Final = 14
+OUTLOOK_CLASSES: Final = 8
+"""The weather classes ``to`` names, by value: none, advisory, tropical, cold, lake_snow,
+snow_warning, ice, blizzard (``snowlight.predict.situations.WeatherClass``)."""
+
+
+def _hundredths(value: float) -> bool:
+    return round(value, 2) == value
+
+
+class OutlookReason(CompactModel):
+    """The night-before outlook (S7-F, spec-f s. 8): before 5 AM on the day, with no warning
+    issued yet, how the cases like this one ended. The share of cases like this whose 5 AM
+    record was each class, at the district's place, weighs the district's own chance under
+    each class; ``points`` is that chance's whole percent less the base's.
+
+    ``now``: the class issued and the heads-up at the file's time, as ``c0 * 6 + heads-up``
+    (``c0`` 0 none or 1 advisory; heads-up 0 none, 1 winter storm watch, 2 extreme cold watch,
+    3 cold weather advisory, 4 hurricane watch, 5 tropical storm watch). ``f``: the forecast
+    the case was counted under, as ``[kind, low, high]`` (kind 0 snow in whole inches, 1 ice
+    in hundredths of an inch, 2 how cold it feels at 7 AM in whole degrees F; low and high are
+    the district's schools' least and most, rounded outward, so the range is true of every
+    school); absent when the forecast is quiet (fewer than half the schools forecast 0.5
+    inches of snow or more, fewer than half 0.01 inches of ice or more, and fewer than half a
+    feel of 10 F or colder). ``like``: the cases counted, ``[low bucket, high bucket, heads-up]``
+    (buckets 0 quiet, 1-5 snow 0.5-2, 2-4, 4-6, 6-9, 9+ inches, 6-8 ice 0.01-0.10, 0.10-0.25,
+    0.25+ inches, 9-12 feels 10 to 0, 0 to -10, -10 to -20, -20 F or colder, 13 unknown;
+    heads-up 6 for any). ``to``: the class whose cases moved the chance most the way it moved.
+    ``share``: the share of the cases counted at ``scope`` (0 the district's state, 1 its
+    region, 2 the nation) whose 5 AM record was ``to``, true of their raw count: 100 only when
+    every one of them was, 99 when nearly all but not all were, 1 when some but nearly none
+    were (the website says the ends as "every", "almost every" and "almost no")."""
+
+    kind: Literal["outlook"]
+    points: Points
+    now: Annotated[int, Field(ge=0, lt=2 * OUTLOOK_HEADS_UPS)]
+    f: (
+        tuple[
+            Annotated[int, Field(ge=OUTLOOK_SNOW, le=OUTLOOK_FEELS, title="kind")],
+            Annotated[float, Field(ge=-80.0, le=130.0, title="low")],
+            Annotated[float, Field(ge=-80.0, le=130.0, title="high")],
+        ]
+        | None
+    ) = None
+    like: tuple[
+        Annotated[int, Field(ge=0, lt=OUTLOOK_BUCKETS, title="low_bucket")],
+        Annotated[int, Field(ge=0, lt=OUTLOOK_BUCKETS, title="high_bucket")],
+        Annotated[int, Field(ge=0, le=OUTLOOK_HEADS_UPS, title="heads_up")],
+    ]
+    to: Annotated[int, Field(ge=0, lt=OUTLOOK_CLASSES)]
+    share: Annotated[int, Field(ge=1, le=100)]
+    scope: Annotated[int, Field(ge=0, le=2)]
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        if self.like[0] > self.like[1]:
+            raise ValueError("outlook like: its low bucket is above its high one")
+        if self.to == self.now // OUTLOOK_HEADS_UPS:
+            raise ValueError("outlook to: the class issued now moves nothing")
+        if self.f is not None:
+            kind, low, high = self.f
+            if low > high:
+                raise ValueError("outlook f: its low is above its high")
+            whole = kind != OUTLOOK_ICE
+            if whole and (low != int(low) or high != int(high)):
+                raise ValueError("outlook f: snow and feels are whole numbers")
+            if not whole and not (_hundredths(low) and _hundredths(high)):
+                raise ValueError("outlook f: ice is in hundredths of an inch")
+            if kind != OUTLOOK_FEELS and (low < 0 or high > 120):  # noqa: PLR2004
+                raise ValueError("outlook f: an amount is 0 to 120 inches")
+        return self
+
+
 type ReasonPoints = Annotated[
-    SnowTotalReason
+    OutlookReason
+    | SnowTotalReason
     | RecordReason
     | NeighborsReason
     | TimingReason
@@ -888,12 +967,29 @@ class PredictionsFile(CompactModel):
             description="Each distinct time zone the schools name, once; every one is named.",
         ),
     ] = ()
+    forecast_at: UtcInstant | None = Field(
+        default=None,
+        description=(
+            "When the weather service issued the forecast the outlook reasons read (S7-F); "
+            "given with any outlook reason, and before generated_at."
+        ),
+    )
 
     @model_validator(mode="after")
     def _check(self) -> Self:
         for earlier, later in pairwise(self.days):
             if later - earlier != timedelta(days=1):
                 raise ValueError("days must be consecutive")
+        if self.forecast_at is not None and self.forecast_at > self.generated_at:
+            raise ValueError("forecast_at: the forecast is issued before the file")
+        if self.forecast_at is None and any(
+            isinstance(reason, OutlookReason)
+            for entry in self.districts
+            for day in entry.days
+            if isinstance(day, Forecast)
+            for reason in day.why.reasons
+        ):
+            raise ValueError("an outlook reason needs the file's forecast_at")
         previous = -1
         for position, entry in enumerate(self.districts):
             where = f"districts[{position}]"

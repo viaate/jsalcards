@@ -122,15 +122,17 @@ def _events(alert: NwsAlert, codes: Mapping[str, object] = CLASS_BY_CODE) -> lis
     return found
 
 
-def withdrawn(alerts: Iterable[NwsAlert]) -> list[tuple[str, frozenset[str]]]:
-    """The (event key, zones) that ``CAN`` and ``UPG`` products take back."""
+def withdrawn(
+    alerts: Iterable[NwsAlert], codes: Mapping[str, object] = CLASS_BY_CODE
+) -> list[tuple[str, frozenset[str]]]:
+    """The (event key, zones) that ``CAN`` and ``UPG`` products of ``codes`` take back."""
     found: list[tuple[str, frozenset[str]]] = []
     for alert in alerts:
         if alert.status != "Actual" or not alert.ugc:
             continue
         for vtec in alert.vtec:
             code = f"{vtec.phenomena}.{vtec.significance}"
-            if code in CLASS_BY_CODE and vtec.action in WITHDRAWN_ACTIONS:
+            if code in codes and vtec.action in WITHDRAWN_ACTIONS:
                 found.append((f"{vtec.office}.{code}.{vtec.etn:04d}", frozenset(alert.ugc)))
     return found
 
@@ -264,6 +266,194 @@ class Memory:
                 event, datetime.fromisoformat(str(item["last_seen"]))
             )
         return memory
+
+
+# --- S7-F: every product as issued, for the states at any moment (rule D2, spec-f s. 3) ------
+
+OUTLOOK_CODES: Final = {**CLASS_BY_CODE, **HEADS_UP_BY_CODE}
+"""The codes the outlook's states read: the class-making ones and the heads-ups."""
+
+
+@dataclass(frozen=True, slots=True)
+class Product:
+    """One product of one event for some zones, as the feed (or the alert history) gave it: a
+    counting one (``withdraws`` false: its span, from its ``sent``) or a ``CAN``/``UPG`` that
+    takes the zones back from its ``sent`` on."""
+
+    key: str
+    ugcs: frozenset[str]
+    code: str
+    sent: datetime
+    start: datetime | None
+    end: datetime | None
+    action: str
+    withdraws: bool
+    last_seen: datetime
+    elevation: ElevationLimit | None = None
+
+    @property
+    def identity(self) -> tuple[str, frozenset[str], str, str]:
+        """What tells two products apart (the same product seen on two polls is one)."""
+        return (self.key, self.ugcs, self.sent.isoformat(), self.action)
+
+
+def products_of(alert: NwsAlert, now: datetime) -> list[Product]:
+    """The outlook-code products of one alert, seen at ``now``: each counting VTEC string as
+    :func:`live_events` reads it (any :data:`OUTLOOK_CODES` code), and each ``CAN`` or ``UPG``
+    string as a withdrawal (``EXP`` is a natural end: its span says it)."""
+    if alert.status != "Actual" or not alert.ugc:
+        return []
+    found: list[Product] = []
+    zones = frozenset(alert.ugc)
+    for vtec in alert.vtec:
+        code = f"{vtec.phenomena}.{vtec.significance}"
+        if code not in OUTLOOK_CODES:
+            continue
+        key = f"{vtec.office}.{code}.{vtec.etn:04d}"
+        if vtec.action in WITHDRAWN_ACTIONS:
+            found.append(Product(key, zones, code, alert.sent, None, None, vtec.action, True, now))
+    for event in _events(alert, OUTLOOK_CODES):
+        found.append(
+            Product(
+                event.key,
+                event.ugcs,
+                event.event.code,
+                event.event.issued,
+                event.event.start,
+                event.event.end,
+                event.action,
+                False,
+                now,
+                event.elevation,
+            )
+        )
+    return found
+
+
+@dataclass(slots=True)
+class ProductLog:
+    """Every outlook-code product seen in the last ``hours`` (the pass's private state, beside
+    :class:`Memory`, which it leaves as it is): with it a pass rebuilds the class issued and the
+    heads-up at any moment it covers (:meth:`events_at`), so a sample hour a pass records a few
+    minutes late, or the 05:00 record a pass takes at 05:40, reads exactly what stood then.
+
+    Rule D2 on the live path: a ``CAN`` or ``UPG`` takes its zones back from its own ``sent``,
+    never before; at the moment now that is the live memory's rule (it drops them at once)."""
+
+    hours: int
+    products: dict[tuple[str, frozenset[str], str, str], Product] = field(default_factory=dict)
+
+    def take(self, alerts: Iterable[NwsAlert], now: datetime) -> None:
+        """Take in the products of ``alerts`` as seen at ``now``, and forget those last seen
+        more than ``hours`` before."""
+        for alert in alerts:
+            for product in products_of(alert, now):
+                kept = self.products.get(product.identity)
+                if kept is None or kept.last_seen <= now:
+                    self.products[product.identity] = product
+        horizon = now - timedelta(hours=self.hours)
+        self.products = {k: p for k, p in self.products.items() if p.last_seen >= horizon}
+
+    def events_at(self, as_of: datetime) -> list[LiveEvent]:
+        """The events that stood at ``as_of`` (class-making and heads-ups): every product sent
+        by then, replayed in the order sent as :meth:`Memory.rebuild` replays the alert
+        history (withdrawals first within one moment), each event as its newest product by then
+        gave it, less the zones withdrawn by then; an event whose product left the feed before
+        ``as_of`` ends when it was last seen, as :meth:`Memory.update` ends it."""
+        seen: dict[tuple[str, frozenset[str]], Product] = {}
+        ordered = sorted(
+            (p for p in self.products.values() if p.sent <= as_of),
+            key=lambda p: (p.sent, not p.withdraws, p.key, sorted(p.ugcs)),
+        )
+        for product in ordered:
+            if product.withdraws:
+                for entry in [item for item in seen if item[0] == product.key]:
+                    taken = seen.pop(entry)
+                    left = entry[1] - product.ugcs
+                    if left:
+                        seen[(product.key, left)] = replace(taken, ugcs=left)
+                continue
+            entry = (product.key, product.ugcs)
+            kept = seen.get(entry)
+            if kept is None or kept.sent <= product.sent:
+                seen[entry] = product
+        found: list[LiveEvent] = []
+        for (key, ugcs), product in sorted(
+            seen.items(), key=lambda pair: (pair[0][0], sorted(pair[0][1]))
+        ):
+            assert product.start is not None  # noqa: S101 - a counting product has its span
+            end = product.end
+            if product.last_seen < as_of:
+                end = product.last_seen if end is None else min(end, product.last_seen)
+            found.append(
+                LiveEvent(
+                    key=key,
+                    ugcs=ugcs,
+                    event=Event(
+                        code=product.code, issued=product.sent, start=product.start, end=end
+                    ),
+                    action=product.action,
+                    elevation=product.elevation,
+                )
+            )
+        return found
+
+    def as_json(self) -> list[dict[str, object]]:
+        """The log, for the state store."""
+
+        def when(moment: datetime | None) -> str | None:
+            return None if moment is None else moment.isoformat()
+
+        return [
+            {
+                "key": p.key,
+                "ugcs": sorted(p.ugcs),
+                "code": p.code,
+                "sent": p.sent.isoformat(),
+                "start": when(p.start),
+                "end": when(p.end),
+                "action": p.action,
+                "withdraws": p.withdraws,
+                "last_seen": p.last_seen.isoformat(),
+                **({} if p.elevation is None else {"elevation": p.elevation.as_json()}),
+            }
+            for _k, p in sorted(
+                self.products.items(),
+                key=lambda pair: (pair[0][0], sorted(pair[0][1]), pair[0][2], pair[0][3]),
+            )
+        ]
+
+    @classmethod
+    def from_json(cls, hours: int, items: Iterable[Mapping[str, object]]) -> "ProductLog":
+        """The log the state store kept; an entry that does not read is left out (the pass
+        then reads that event as not issued, and a sample it would change is skipped only if
+        the log is rebuilt: :func:`snowlight.predict.cli.remember`)."""
+        log = cls(hours)
+        for item in items:
+            try:
+                start, end = item.get("start"), item.get("end")
+                try:
+                    elevation = ElevationLimit.from_json(item.get("elevation"))
+                except ValueError:
+                    elevation = None
+                product = Product(
+                    key=str(item["key"]),
+                    ugcs=frozenset(str(ugc) for ugc in item["ugcs"]),  # type: ignore[attr-defined]
+                    code=str(item["code"]),
+                    sent=datetime.fromisoformat(str(item["sent"])),
+                    start=None if start is None else datetime.fromisoformat(str(start)),
+                    end=None if end is None else datetime.fromisoformat(str(end)),
+                    action=str(item["action"]),
+                    withdraws=bool(item["withdraws"]),
+                    last_seen=datetime.fromisoformat(str(item["last_seen"])),
+                    elevation=elevation,
+                )
+            except (KeyError, TypeError, ValueError):
+                continue
+            if not product.withdraws and product.start is None:
+                continue
+            log.products[product.identity] = product
+        return log
 
 
 @dataclass(frozen=True, slots=True)
