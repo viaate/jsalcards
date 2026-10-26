@@ -123,6 +123,8 @@ def test_malformed_facts_are_refused() -> None:
         parse_facts("- [LIVE] Bad: x")
     with pytest.raises(FactsError, match="needs its terms"):
         parse_facts("- [COMING] alerts: Phone alerts.")
+    with pytest.raises(FactsError, match="a term needs a word"):
+        parse_facts("- [LIVE] days: Trained on 2,388 days. | terms: 2,388, trained on")
     with pytest.raises(FactsError, match="repeats"):
         parse_facts("- [LIVE] a: x\n- [LIVE] a: y")
     with pytest.raises(FactsError, match="no facts"):

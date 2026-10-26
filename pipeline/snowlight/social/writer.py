@@ -7,8 +7,10 @@ the schema, is a failed attempt. :class:`Writer` makes at most :data:`MAX_CALLS`
 run, each capped at :data:`MAX_TOKENS` tokens, and the SDK retries nothing
 (``max_retries=0``), so a run's spend is bounded by those two numbers.
 
-The flow (:func:`draft`): write; check it with :func:`snowlight.social.rules.check`; if that
-passes, ask Haiku to check it against the facts. Either check failing gives one more try with
+The flow (:func:`draft`): write, stating the day's model fact
+(:func:`snowlight.social.rules.model_fact_for`: the LIVE model facts in turn); check it with
+:func:`snowlight.social.rules.check` (which also holds it to that model fact); if that passes,
+ask Haiku to check it against the facts. Either check failing gives one more try with
 the problems shown; a second failure means no post today.
 """
 
@@ -22,7 +24,7 @@ import anthropic
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from snowlight.social.content import Content, Image
-from snowlight.social.rules import Style, check
+from snowlight.social.rules import Fact, Style, check, model_fact_for
 
 MODEL: Final = "claude-haiku-5-5"
 MAX_TOKENS: Final = 1024
@@ -53,9 +55,14 @@ REVIEW_SCHEMA: Final[dict[str, Any]] = {
 }
 
 VOICE: Final = """You write one post for the X account @SnowlightMap. I am the young founder \
-building Snowlight, a live national map of US school closings, and the post is in my own \
-voice: first person ("I"), casual, specific, short, plain words. Never corporate, never hype, \
-never salesy. Everything in it must be true.
+building Snowlight, a national map of US school closings with a snow day chance for every \
+school district, and the post is in my own voice: first person ("I"), casual, specific, short, \
+plain words. Never corporate, never hype, never salesy. Everything in it must be true.
+
+Model first: every post states the one fact about Snowlight's prediction model it is given, \
+plainly and specifically, so people learn that Snowlight's chances come from a real \
+statistical model trained on real closing records, not a guess. Say what the model does; \
+"not a guess" is fine.
 
 Hard rules:
 - Use ONLY the facts below. Never add a claim, number, feature, date or plan they do not hold.
@@ -63,11 +70,16 @@ Hard rules:
 is live or available.
 - No URL, no domain name, no @mention. The link is in my bio.
 - At most one hashtag and at most one emoji (none is fine). Never "!!". No em dashes.
-- Never compare Snowlight with any other site, app or calculator, and never name one.
-- Never use these words: accurate, accuracy, revolutionary, AI-powered, guaranteed, never \
-wrong, better than, calculator, formula, reconstruction.
+- Say only what Snowlight does. Never describe, name or compare any other product, site, app, \
+calculator or predictor, and never talk about what others do: no "unlike", "other apps", \
+"other sites", "everyone else", "better than", "more accurate", "they guess", no "-er than".
+- Never use these words: AI, accurate, accuracy, revolutionary, AI-powered, machine learning, \
+guaranteed, never wrong, better than, calculator, formula, reconstruction, competitor. Never \
+give an accuracy number or a score.
 - Never name a TV or radio station, a school, a district or a person.
 - Never use a superlative or a comparison: no "best", "only", "most", "unlike", "vs".
+- Nobody can use the map yet: never say "check your school", "you can now" or "available \
+now"; only the waitlist is open.
 - Keep it under 240 characters.
 - Write a number only as the facts use it, in digits as they write it; never spell a number \
 out unless the facts do. Never write a number, count, time or date from the picture's \
@@ -79,10 +91,11 @@ current: no "today", "now", "tonight", "currently", "just", "latest", "fresh" or
 about it."""
 
 STYLES: Final[dict[Style, str]] = {
-    "dev_log": "Style: a short dev log: one thing I built, fixed or learned, from the facts or "
-    "the recent work. You may end with 'Waitlist link in my bio.'",
-    "waitlist": "Style: ask people to join the waitlist, with one concrete reason from the "
-    "facts. It MUST include the words 'link in my bio'.",
+    "dev_log": "Style: a short dev log: one thing I built, fixed or learned about the "
+    "prediction model, from the facts or the recent work. You may end with 'Waitlist link in "
+    "my bio.'",
+    "waitlist": "Style: ask people to join the waitlist, with the model fact as the reason. It "
+    "MUST include the words 'link in my bio'.",
 }
 
 CHECKER: Final = """You check one draft post for the X account @SnowlightMap against the facts \
@@ -93,7 +106,9 @@ or uses a fact's number for something else; gives a date or a launch day the fac
 holds a URL, domain or @mention; compares Snowlight with, or names, another site, app or \
 calculator; is hype, salesy or corporate; names a station, school, district or person; or \
 says anything about the image its description does not say, or presents an older picture \
-as current. Otherwise ok=true with no problems."""
+as current; does not state the model fact it was given, or states it more strongly than the \
+facts do (an accuracy, a score, or "always"); or describes, names or compares any other \
+product, site, app or predictor, or what others do. Otherwise ok=true with no problems."""
 
 
 class Draft(BaseModel):
@@ -190,19 +205,30 @@ def _library(images: Sequence[Image]) -> str:
     return "\n".join(f"- {image.id}: {image.describe()}" for image in images)
 
 
-def write_prompt(
+def write_prompt(  # noqa: PLR0913 - the prompt's parts
     content: Content,
     style: Style,
     today: date,
     commits: Sequence[str],
     problems: Sequence[str],
+    *,
+    model_fact: Fact | None = None,
 ) -> str:
-    """What the writer is asked (facts, images, recent work, the style, earlier problems)."""
+    """What the writer is asked (facts, the day's model fact, images, recent work, the style,
+    earlier problems)."""
     parts = [
         f"Today is {today.isoformat()}.",
         STYLES[style],
         f"Set kind to {style}.",
         "Facts (the only things you may state):\n" + content.facts.text.strip(),
+        *(
+            [
+                f"Model fact for this post (state it in my own words, numbers exactly as "
+                f"written, and put {model_fact.id} in facts_used): {model_fact.text}"
+            ]
+            if model_fact is not None
+            else []
+        ),
         "The picture (set image_id to its id; the post must fit what it shows, and may say "
         "about it only what its description says):\n" + _library(content.images),
     ]
@@ -219,13 +245,16 @@ def write_prompt(
     return "\n\n".join(parts)
 
 
-def review_prompt(content: Content, written: Written, today: date) -> str:
+def review_prompt(
+    content: Content, written: Written, today: date, model_fact: Fact | None = None
+) -> str:
     return "\n\n".join(
         [
             f"Today is {today.isoformat()}.",
             "Facts:\n" + content.facts.text.strip(),
             f"Image: {written.image.describe()}",
             f"Kind: {written.style}",
+            *([f"Model fact it was given: {model_fact.text}"] if model_fact is not None else []),
             f"Draft:\n{written.text}",
         ]
     )
@@ -242,9 +271,14 @@ def draft(  # noqa: PLR0913 - the run's parts
 ) -> Written | None:
     """The day's post, or ``None`` when both tries fail a check (each problem is said)."""
     problems: list[str] = []
+    model_fact = model_fact_for(content.facts, today)
+    if model_fact is not None:
+        say(f"social: the model fact for {today.isoformat()} is {model_fact.id}")
     for attempt in range(1, ATTEMPTS + 1):
         try:
-            got = writer.write(write_prompt(content, style, today, commits, problems))
+            got = writer.write(
+                write_prompt(content, style, today, commits, problems, model_fact=model_fact)
+            )
         except AnswerError as error:
             problems = [str(error)]
             say(f"social: try {attempt}: {error}")
@@ -258,6 +292,8 @@ def draft(  # noqa: PLR0913 - the run's parts
         unknown = [fact for fact in got.facts_used if content.facts.get(fact) is None]
         if unknown:
             problems.append("facts_used names facts that are not in the file")
+        if model_fact is not None and model_fact.id not in got.facts_used:
+            problems.append(f"facts_used must name the model fact {model_fact.id}")
         if image is not None:
             problems += check(
                 got.text,
@@ -265,13 +301,14 @@ def draft(  # noqa: PLR0913 - the run's parts
                 facts=content.facts,
                 image_description=image.describe(),
                 image_is_today=image.current,
+                model_fact=model_fact,
             )
         if not problems and image is not None:
             written = Written(
                 text=got.text, image=image, style=style, facts_used=tuple(got.facts_used)
             )
             try:
-                verdict = writer.review(review_prompt(content, written, today))
+                verdict = writer.review(review_prompt(content, written, today, model_fact))
             except AnswerError as error:
                 problems = [str(error)]
                 say(f"social: try {attempt}: the check failed: {error}")

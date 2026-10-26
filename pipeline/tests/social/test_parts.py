@@ -13,6 +13,7 @@ from snowlight.cli import main
 from snowlight.social import logscan, seal
 from snowlight.social.cli import Output, commits
 from snowlight.social.content import ContentError, load
+from snowlight.social.rules import model_fact_for
 from snowlight.social.writer import MAX_CALLS, AnswerError, CallCapError, Writer, draft
 from snowlight.social.xapi import (
     RefreshRefusedError,
@@ -213,6 +214,56 @@ def test_the_writer_refuses_an_unknown_image_kind_or_fact(tmp_path: Path) -> Non
     )
     assert written is not None
     assert written.image.id == "img-1"
+
+
+MODEL_FACTS = (
+    fakes.FACTS + "- [LIVE] model: The chances come from a prediction model, not a guess."
+    " | terms: prediction model, model, not a guess\n"
+    "- [LIVE] model-days: The model is trained on 2,388 real past school days."
+    " | terms: trained on, past school days\n"
+    "- [LIVE] model-tested: I tested the model walk-forward on past winters."
+    " | terms: walk-forward, past winters\n"
+    "- [COMING] model-learning: The model will learn from this winter. | terms: learn from\n"
+)
+
+
+def test_every_haiku_post_states_the_days_model_fact(tmp_path: Path) -> None:
+    content = load(make_root(tmp_path, facts=MODEL_FACTS))
+    day = date(2026, 10, 26)
+    fact = model_fact_for(content.facts, day)
+    assert fact is not None
+    assert [item.id for item in content.facts.model] == ["model", "model-days", "model-tested"]
+    stated = {
+        "model": "Dev log: the chances come from a prediction model, not a guess.",
+        "model-days": "Dev log: the model is trained on 2,388 real past school days.",
+        "model-tested": "Dev log: I tested the model walk-forward on past winters.",
+    }[fact.id]
+    other = next(item for item in content.facts.model if item.id not in {fact.id, "model"})
+    vague = {**GOOD, "text": "Dev log: the closings reader runs 24/7 in practice mode."}
+    wrong = {**GOOD, "text": stated, "facts_used": [other.id]}
+    right = {**GOOD, "text": stated, "facts_used": [fact.id]}
+    haiku = FakeAnthropic([dict(vague), dict(wrong), dict(right), {"ok": True, "problems": []}])
+    said: list[str] = []
+    writer = Writer(haiku.client())
+    args = {"style": "dev_log", "today": day, "commits": [], "say": said.append}
+    assert draft(writer, content, **args) is None  # type: ignore[arg-type]
+    assert f"the model fact for 2026-10-26 is {fact.id}" in said[0]
+    assert "it says nothing about the prediction model" in said[1]
+    assert f"facts_used must name the model fact {fact.id}" in said[2]
+    prompt = haiku.requests[0]["messages"][0]["content"]
+    assert "Model fact for this post (state it in my own words" in prompt
+    assert fact.text in prompt
+    system = haiku.requests[0]["system"]
+    assert "Model first" in system
+    assert "Never describe, name or compare any other product" in system
+    written = draft(Writer(haiku.client()), content, **args)  # type: ignore[arg-type]
+    assert written is not None
+    assert written.facts_used == (fact.id,)
+    review = haiku.requests[-1]
+    assert f"Model fact it was given: {fact.text}" in review["messages"][0]["content"]
+    assert "does not state the model fact it was given" in review["system"]
+    # The next day asks for the next model fact.
+    assert model_fact_for(content.facts, date(2026, 10, 27)) != fact
 
 
 def test_logscan_finds_secret_shapes_and_spares_ordinary_log_lines() -> None:

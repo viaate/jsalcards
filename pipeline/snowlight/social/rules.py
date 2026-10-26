@@ -5,6 +5,18 @@ a domain or an @mention, more than one hashtag or emoji, ``!!``, a banned word (
 competitor, the private model's words), or, for a waitlist post, no "link in my bio"; and
 for what it claims:
 
+* **Model first.** When the facts file holds LIVE model facts (ids ``model`` and
+  ``model-*``), every post names one of them by its terms, and a Haiku post the one it was
+  given for the day (:func:`model_fact_for`, rotating): Snowlight's chances come from a real
+  prediction model trained on real closing records.
+* **No one else.** A post says what Snowlight does and never describes, names or compares
+  other products or sites: competitor names, "calculator", "competitor", "unlike", "other
+  apps", "everyone else", "better than", "more accurate", "AI", any "-er than" or "more ...
+  than", and any "guess" but "not a guess" are refused (:data:`BANNED`, :data:`HYPE`,
+  :data:`OTHERS`).
+* **Nothing to use yet.** "You can now", "check your school", "available now" and the like
+  only of the waitlist, or worded as coming: the map is behind a lock until launch.
+
 * **Not live called live.** A sentence that names a TESTING or COMING fact (by its terms)
   must say it is in testing or coming, and may never hold a live claim ("is live", "shows
   up", "ships", "works for everyone") or a negation of testing ("no longer", "done testing",
@@ -32,6 +44,7 @@ import re
 import unicodedata
 from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import date
 from typing import Final, Literal
 
 type Status = Literal["LIVE", "TESTING", "COMING"]
@@ -222,6 +235,26 @@ BANNED: Final = (
     "next-level",
     "number one",
     "#1",
+    "snow day predictor",
+    "snowdaypredictor",
+    "snow day bot",
+    "snowdaybot",
+    "snowday calculator",
+    "unlike other",
+    "unlike most",
+    "unlike any",
+    "everyone else",
+    "anyone else",
+    "nobody else",
+    "no one else",
+    "the competition",
+    "ai-driven",
+    "ai driven",
+    "artificial intelligence",
+    "machine learning",
+    "more reliable",
+    "most reliable",
+    "smarter",
 )
 """Banned anywhere in a post (as text: ``calculator`` also bans ``calculators``)."""
 HYPE: Final = (
@@ -240,8 +273,63 @@ HYPE: Final = (
     "other apps",
     "other site",
     "other sites",
+    "other website",
+    "other websites",
+    "other predictor",
+    "other predictors",
+    "other predictions",
+    "other tools",
+    "other services",
+    "other forecasters",
+    "other models",
+    "others",
+    "the rest",
+    "ai",
+    "a.i.",
 )
 """Banned as whole words: superlatives, comparisons and the other apps and sites."""
+OTHERS: Final = re.compile(
+    r"\b(?!rather\b)[a-z]+er\s+(?:[a-z]+\s+){0,2}than\b"
+    r"|\b(?:more|less|fewer|worse)\s+(?:[a-z]+\s+){0,2}than\b"
+    r"|\b(?:most|many|other|some|those|these|their)\s+(?:snow[ -]?day\s+)?"
+    r"(?:apps?|sites?|websites?|predictors?|calculators?|tools?|services?|forecasters?|guessers?)\b"
+    r"|\bthey\s+(?:just\s+)?guess|\blike\s+(?:they|them|others|the\s+rest|everyone)\b",
+    re.IGNORECASE,
+)
+"""A comparison with, or a description of, someone else's product."""
+GUESS: Final = re.compile(r"\bguess", re.IGNORECASE)
+NOT_A_GUESS: Final = re.compile(
+    r"\b(?:not|never|isn't|aren't)\s+(?:a\s+|just\s+a\s+)?guess(?:es|work)?\b", re.IGNORECASE
+)
+"""The one way a post may say "guess": of Snowlight's own chances, that they are not one."""
+ACCESS: Final = (
+    "you can now",
+    "you can see",
+    "you can check",
+    "you can look up",
+    "you can find",
+    "you can search",
+    "you can use",
+    "check your school",
+    "look up your school",
+    "see your school",
+    "find your school",
+    "go check",
+    "try it",
+    "try snowlight",
+    "available now",
+    "now available",
+    "is available",
+    "are available",
+    "open to everyone",
+    "works for everyone",
+    "for everyone now",
+    "public now",
+    "now public",
+    "is public",
+    "are public",
+)
+"""Words that say people can use Snowlight now: true only of the waitlist until launch."""
 SDC: Final = re.compile(r"\bsdc\b", re.IGNORECASE)
 NOT_LIVE_WORDS: Final[dict[Status, tuple[str, ...]]] = {
     "LIVE": (),
@@ -379,6 +467,23 @@ class Facts:
     def get(self, fact_id: str) -> Fact | None:
         return next((fact for fact in self.facts if fact.id == fact_id), None)
 
+    @property
+    def model(self) -> tuple[Fact, ...]:
+        """The LIVE facts about the prediction model (``model`` and ``model-*``), in file
+        order: one of them is in every post."""
+        return tuple(
+            fact
+            for fact in self.facts
+            if fact.status == "LIVE" and (fact.id == "model" or fact.id.startswith("model-"))
+        )
+
+
+def model_fact_for(facts: Facts, day: date) -> Fact | None:
+    """The model fact a Haiku post states on ``day``: the LIVE model facts in turn, one a day
+    (with styles alternating, an odd count pairs each fact with both styles)."""
+    model = facts.model
+    return model[day.toordinal() % len(model)] if model else None
+
 
 class FactsError(ValueError):
     """The facts file is malformed."""
@@ -408,6 +513,9 @@ def parse_facts(text: str) -> Facts:
         status: Status = match["status"]  # type: ignore[assignment]
         if status != "LIVE" and not terms:
             raise FactsError(f"facts line {number}: a {status} fact needs its terms")
+        if any(not re.search("[a-z]", term) for term in terms):
+            # "2,388" would split into "2" and "388", and "2" names the fact in "24/7".
+            raise FactsError(f"facts line {number}: a term needs a word, not a number")
         facts.append(
             Fact(id=match["id"], status=status, text=match["text"], terms=terms, other=other)
         )
@@ -520,10 +628,19 @@ def _named(sentence: str, facts: Facts) -> list[tuple[Fact, str]]:
 def _claims(sentence: str, facts: Facts) -> list[str]:
     """What a sentence wrongly says is live (see the module's docstring)."""
     named = _named(sentence, facts)
+    problems: list[str] = []
+    if (
+        (access := _has(sentence, ACCESS))
+        and not any(fact.id == "waitlist" for fact, _ in named)
+        and not _has(sentence, NOT_LIVE)
+    ):
+        problems.append(
+            f"it says people can use Snowlight now ('{access}'); until launch only the waitlist"
+            " is open"
+        )
     claim = _has(sentence, LIVE_CLAIMS)
     if claim is None and (negation := NEGATIONS.search(sentence)) is not None:
         claim = negation.group().lower()
-    problems: list[str] = []
     if claim is not None:
         problems += [
             f"it calls '{term}' live ('{claim}'), but that is {fact.status} ({fact.id})"
@@ -533,7 +650,7 @@ def _claims(sentence: str, facts: Facts) -> list[str]:
         if not named:
             problems.append(f"it says something is live ('{claim}') but names no LIVE fact")
         return problems
-    return [
+    return problems + [
         f"it names '{term}' without saying it is {fact.status.lower()} ({fact.id})"
         for fact, term in named
         if fact.status != "LIVE" and not _has(sentence, NOT_LIVE)
@@ -565,21 +682,39 @@ def _numbers(text: str, facts: Facts, image_description: str) -> list[str]:
     return problems
 
 
+def _names(text: str, fact: Fact) -> bool:
+    return _has(_without(text, fact.other), fact.terms) is not None
+
+
+def _model_first(text: str, facts: Facts, model_fact: Fact | None) -> list[str]:
+    """Every post names a LIVE model fact, and a Haiku post the one it was given."""
+    model = facts.model
+    if not model:
+        return []
+    if not any(_names(text, fact) for fact in model):
+        return ["it says nothing about the prediction model: every post states one LIVE model fact"]
+    if model_fact is not None and not _names(text, model_fact):
+        return [f"it does not state the model fact it was given ({model_fact.id})"]
+    return []
+
+
 def _a_facts_hours(before: str, facts: Facts) -> bool:
     """Whether a clock time ending ``before`` closes hours the facts give ("4 to 9 AM")."""
     hours = re.search(r"\d{1,2} to \d{1,2}\s?\S+$", before.rstrip(".,;"))
     return hours is not None and hours.group().lower() in facts.said.lower()
 
 
-def check(  # noqa: PLR0912 - one rule a branch
+def check(  # noqa: PLR0912, PLR0913 - one rule a branch; the post and what it is checked against
     text: str,
     *,
     style: Style,
     facts: Facts,
     image_description: str,
     image_is_today: bool,
+    model_fact: Fact | None = None,
 ) -> list[str]:
-    """The problems with a post; empty when it may be sent."""
+    """The problems with a post; empty when it may be sent. ``model_fact`` is the model fact
+    a Haiku post was given to state (:func:`model_fact_for`)."""
     problems: list[str] = []
     lowered = text.lower()
     if not text.strip():
@@ -604,6 +739,11 @@ def check(  # noqa: PLR0912 - one rule a branch
         problems.append(f"it says '{word}' (hype or a comparison)")
     if SDC.search(text):
         problems.append("it says 'SDC'")
+    if match := OTHERS.search(text):
+        problems.append(f"it compares or describes others ('{match.group().lower()}')")
+    if GUESS.search(NOT_A_GUESS.sub(" ", text)):
+        problems.append("it says 'guess' other than 'not a guess'")
+    problems += _model_first(text, facts, model_fact)
     if CALL_SIGN.search(text):
         problems.append("it names a station's call letters")
     if style == "waitlist" and "link in my bio" not in lowered:
