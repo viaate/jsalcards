@@ -13,6 +13,7 @@ from snowlight.notify import cli as notify_cli
 from snowlight.places import cli as places_cli
 from snowlight.predict import cli as predict_cli
 from snowlight.replays import cli as replays_cli
+from snowlight.social import cli as social_cli
 from snowlight.sources.nces import cli as nces_cli
 from snowlight.sources.stations import cli as stations_cli
 from snowlight.weather import cli as alerts_cli
@@ -38,6 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     mirror_cli.register(commands)
     nces_cli.register(commands)
     elevation_cli.register(commands)
+    social_cli.register(commands)
     return parser
 
 
