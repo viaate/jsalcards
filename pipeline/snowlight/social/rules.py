@@ -10,12 +10,23 @@ for what it claims:
   given for the day (:func:`model_fact_for`, rotating): Snowlight's chances come from a real
   prediction model trained on real closing records.
 * **No one else.** A post says what Snowlight does and never describes, names or compares
-  other products or sites: competitor names, "calculator", "competitor", "unlike", "other
-  apps", "everyone else", "better than", "more accurate", "AI", any "-er than" or "more ...
-  than", and any "guess" but "not a guess" are refused (:data:`BANNED`, :data:`HYPE`,
-  :data:`OTHERS`).
-* **Nothing to use yet.** "You can now", "check your school", "available now" and the like
-  only of the waitlist, or worded as coming: the map is behind a lock until launch.
+  other products, sites or people: competitor names (also run together or spaced out,
+  :data:`NAMES`, matched on the text with spaces, hyphens and dots taken out), "snow day"
+  followed by a product word ("snow day sites", "snow day trackers": :data:`SNOW_DAY_THING`),
+  "calculator", "competitor", "unlike", "other apps", "other people", "folks", "the usual",
+  "famous", "popular", "elsewhere", "out there", "everyone else", "better than",
+  "outperform", "superior", "more accurate", "AI", "ML", "neural", "ChatGPT", any "-er than"
+  or "more ... than", and any "guess" but "not a guess" are refused (:data:`BANNED`,
+  :data:`HYPE`, :data:`OTHER_PEOPLE`, :data:`OTHERS`).
+* **No accuracy, no made-up product.** No accuracy claim with or without a number ("always
+  right", "called most snow days right", "hit rate", "reliable", "correct": :data:`ACCURACY`),
+  and nothing the facts do not say about the product or who uses it ("download", "the app",
+  "free", "schools use", "trusted by": :data:`PRODUCT`). No school, district or station is
+  named (:data:`DISTRICT_NAME`, :data:`CALL_SIGN`), and no version or other run-together
+  letter-and-digit word the facts do not hold ("v3").
+* **Nothing to use yet.** "You can now", "check your school", "see your district", "find it
+  on" and the like only of the waitlist, or worded as coming: the map is behind a lock until
+  launch. A post that names the waitlist says "link in my bio".
 
 * **Not live called live.** A sentence that names a TESTING or COMING fact (by its terms)
   must say it is in testing or coming, and may never hold a live claim ("is live", "shows
@@ -33,7 +44,9 @@ for what it claims:
   percent, no "percent", no odds and no level ("a high chance", "chances are low"), and the
   facts file itself may hold no percent then. A sentence may still say where the chances come
   from when it names a LIVE model fact whose own words speak of them ("each district's chance
-  comes from a statistical model").
+  comes from a statistical model"), but only with no word that offers them to anyone
+  (:data:`OFFERED`: "see your district's chance", "chances are up", "posted", "already
+  checking", "now", "you").
 * **Older pictures.** When the picture is not current, nothing in the post says it is: no
   "now", "today", "currently", "as of", "just", "fresh", "latest" or a clock time.
 
@@ -258,11 +271,42 @@ BANNED: Final = (
     "ai driven",
     "artificial intelligence",
     "machine learning",
+    "machine-learning",
+    "deep learning",
     "more reliable",
     "most reliable",
     "smarter",
+    "outperform",
+    "superior",
+    "chatgpt",
 )
 """Banned anywhere in a post (as text: ``calculator`` also bans ``calculators``)."""
+NAMES: Final = (
+    "snowdaycalculator",
+    "snowdaypredictor",
+    "snowdayprediction",
+    "snowdayai",
+    "snowdaywatch",
+    "snowdaybot",
+    "snowdaydetector",
+    "snowdaychecker",
+    "snowdaytracker",
+    "accuweather",
+    "weatherchannel",
+    "perryweather",
+    "chatgpt",
+    "openai",
+)
+"""Other products' names as they read with spaces, hyphens and dots taken out ("Snowday
+Predictor", "Snow-Day Calculator", "snow day A.I.")."""
+SNOW_DAY_THING: Final = re.compile(
+    r"\bsnow[\s-]?days?\s+(?:[a-z']+\s+)?(?:sites?|websites?|apps?|trackers?|predictors?"
+    r"|predictions?|tools?|services?|calculators?|bots?|forecasters?|guessers?|pages?"
+    r"|accounts?|checkers?|detectors?)\b",
+    re.IGNORECASE,
+)
+""""snow day" followed by a product word: a post about Snowlight never needs to say it of
+others."""
 HYPE: Final = (
     "best",
     "only",
@@ -292,13 +336,99 @@ HYPE: Final = (
     "the rest",
     "ai",
     "a.i.",
+    "ml",
+    "gpt",
+    "llm",
+    "neural",
+    "outdo",
+    "outdoes",
+    "outdid",
+    "outperforms",
+    "famous",
+    "popular",
+    "elsewhere",
+    "out there",
+    "the usual",
+    "gut",
 )
 """Banned as whole words: superlatives, comparisons and the other apps and sites."""
+OTHER_PEOPLE: Final = (
+    "other people",
+    "most people",
+    "many people",
+    "lots of people",
+    "some people",
+    "a lot of people",
+    "folks",
+    "everybody else",
+    "the internet",
+)
+"""Other people as a contrast ("other people eyeball the radar"): a post says what Snowlight
+does."""
+ACCURACY: Final = (
+    "always right",
+    "right about",
+    "never misses",
+    "never miss",
+    "hit rate",
+    "track record",
+    "nailed",
+    "nails it",
+    "correct",
+    "correctly",
+    "reliable",
+    "reliably",
+    "trustworthy",
+    "brier",
+    "calibrated",
+    "error rate",
+    "success rate",
+)
+"""Accuracy claims with or without a number: the past records lean toward storm days, so no
+accuracy is ever posted."""
+ACCURACY_CALL: Final = re.compile(
+    r"\b(?:call(?:s|ed)?|get(?:s)?|got|gotten|predict(?:s|ed)?|guess(?:es|ed)?)\b"
+    r"(?:\s+[a-z']+){0,4}\s+right\b",
+    re.IGNORECASE,
+)
+""""called most snow days right", "gets it right"."""
+PRODUCT: Final = (
+    "download",
+    "downloads",
+    "app store",
+    "play store",
+    "the snowlight app",
+    "our app",
+    "my app",
+    "free",
+    "schools use",
+    "parents use",
+    "families use",
+    "people use",
+    "teachers use",
+    "used by",
+    "trusted by",
+    "trust",
+    "trusts",
+)
+"""What the facts never say of the product: an app to download, a price, who uses it."""
+DISTRICT_NAME: Final = re.compile(
+    r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Public\s+Schools|School\s+District|City\s+Schools"
+    r"|County\s+Schools|Area\s+Schools|Community\s+Schools|Unified|Schools|Academy"
+    r"|High\s+School|Middle\s+School|Elementary)\b|\b(?:ISD|CISD|USD|CUSD|UFSD|CSD)\b"
+)
+"""A school or district by name ("Bozeman Public Schools", "Katy ISD"): never named."""
+SPACED_AI: Final = re.compile(r"\bA\.?\s+I\b\.?|\bM\.\s?L\.")
+""""A I" and "M.L." spelled apart."""
+LETTERS_AND_DIGITS: Final = re.compile(r"\b(?=[a-z0-9]*[a-z])(?=[a-z0-9]*\d)[a-z0-9]+\b", re.I)
+"""A word run together of letters and digits ("v3", "2x", "5th"): only as the facts write it."""
 OTHERS: Final = re.compile(
     r"\b(?!rather\b)[a-z]+er\s+(?:[a-z]+\s+){0,2}than\b"
     r"|\b(?:more|less|fewer|worse)\s+(?:[a-z]+\s+){0,2}than\b"
-    r"|\b(?:most|many|other|some|those|these|their)\s+(?:snow[ -]?day\s+)?"
-    r"(?:apps?|sites?|websites?|predictors?|calculators?|tools?|services?|forecasters?|guessers?)\b"
+    r"|\b(?:most|many|other|some|those|these|their|popular|famous|big|usual)\s+"
+    r"(?:snow[ -]?day\s+)?"
+    r"(?:apps?|sites?|websites?|predictors?|calculators?|tools?|services?|forecasters?|guessers?"
+    r"|trackers?|bots?|pages?|accounts?)\b"
     r"|\bthey\s+(?:just\s+)?guess|\blike\s+(?:they|them|others|the\s+rest|everyone)\b",
     re.IGNORECASE,
 )
@@ -334,8 +464,50 @@ ACCESS: Final = (
     "now public",
     "is public",
     "are public",
+    "see your",
+    "look up your",
+    "check your",
+    "find your",
+    "find it",
+    "pull up",
+    "up on snowlight",
+    "is up on",
+    "are up on",
+    "already checking",
+    "already using",
+    "already use",
 )
 """Words that say people can use Snowlight now: true only of the waitlist until launch."""
+OFFERED: Final = (
+    "you",
+    "your",
+    "yours",
+    "see",
+    "look",
+    "looking",
+    "check",
+    "checking",
+    "find",
+    "view",
+    "posted",
+    "are up",
+    "is up",
+    "up on",
+    "up for",
+    "already",
+    "now",
+    "here",
+    "today",
+    "tonight",
+    "visible",
+    "everyone",
+    "anyone",
+    "parents",
+    "families",
+)
+"""Words that offer a TESTING thing to someone ("see your district's chance", "the chances
+are up", "posted for every district"): a sentence naming the TESTING chances by a LIVE model
+fact's words is excused only without them."""
 SDC: Final = re.compile(r"\bsdc\b", re.IGNORECASE)
 NOT_LIVE_WORDS: Final[dict[Status, tuple[str, ...]]] = {
     "LIVE": (),
@@ -495,6 +667,10 @@ LEVEL: Final = (
     "falling",
     "minimal",
     "flat",
+    "nothing",
+    "near-zero",
+    "slight",
+    "certain",
 )
 """Words that give a chance's level, refused near "chance" while chances are TESTING."""
 CLOCK: Final = re.compile(r"\b\d{1,2}(?::\d{2})?\s?(?:a\.?m\.?|p\.?m\.?)(?![a-z])", re.IGNORECASE)
@@ -731,7 +907,11 @@ def _claims(sentence: str, facts: Facts) -> list[str]:
         for fact, term in named
         if fact.status != "LIVE"
         and not _has(sentence, NOT_LIVE)
-        and not (fact.status == "TESTING" and any(_speaks_of(other, term) for other in live))
+        and not (
+            fact.status == "TESTING"
+            and any(_speaks_of(other, term) for other in live)
+            and not _has(sentence, OFFERED)
+        )
     ]
 
 
@@ -813,6 +993,37 @@ def _a_facts_hours(before: str, facts: Facts) -> bool:
     return hours is not None and hours.group().lower() in facts.said.lower()
 
 
+def _others_and_claims(text: str, facts: Facts) -> list[str]:
+    """Banned words, other products and people, accuracy and product claims, names and
+    run-together letters and digits (see the module's docstring)."""
+    problems: list[str] = []
+    lowered = text.lower()
+    problems += [f"it says '{word.strip()}'" for word in BANNED if word in lowered]
+    squashed = re.sub(r"[^a-z0-9]", "", unicodedata.normalize("NFKC", text).lower())
+    problems += [f"it names another product ('{name}')" for name in NAMES if name in squashed]
+    if match := SNOW_DAY_THING.search(text):
+        problems.append(f"it speaks of other snow day products ('{match.group().lower()}')")
+    if word := _has(text, HYPE):
+        problems.append(f"it says '{word}' (hype or a comparison)")
+    if word := _has(text, OTHER_PEOPLE):
+        problems.append(f"it describes what others do ('{word}'); say what Snowlight does")
+    if (word := _has(text, ACCURACY)) or (call := ACCURACY_CALL.search(text)):
+        said = word or (call.group().lower() if call else "")
+        problems.append(f"it claims accuracy ('{said}'); no accuracy is ever posted")
+    if word := _has(text, PRODUCT):
+        problems.append(f"it says '{word}', which the facts do not say of Snowlight")
+    if match := DISTRICT_NAME.search(text):
+        problems.append(f"it names a school or district ('{match.group()}')")
+    if match := SPACED_AI.search(text):
+        problems.append(f"it says '{match.group()}' (AI or ML words)")
+    said_lower = facts.said.lower()
+    for match in LETTERS_AND_DIGITS.finditer(text):
+        if match.group().lower() not in said_lower:
+            problems.append(f"it writes '{match.group()}', which the facts do not")
+            break
+    return problems
+
+
 def check(  # noqa: PLR0912, PLR0913 - one rule a branch; the post and what it is checked against
     text: str,
     *,
@@ -843,9 +1054,7 @@ def check(  # noqa: PLR0912, PLR0913 - one rule a branch; the post and what it i
         problems.append("it has '!!'")
     if "\u2014" in text:
         problems.append("it has an em dash")
-    problems += [f"it says '{word.strip()}'" for word in BANNED if word in lowered]
-    if word := _has(text, HYPE):
-        problems.append(f"it says '{word}' (hype or a comparison)")
+    problems += _others_and_claims(text, facts)
     if SDC.search(text):
         problems.append("it says 'SDC'")
     if match := OTHERS.search(text):
@@ -857,6 +1066,8 @@ def check(  # noqa: PLR0912, PLR0913 - one rule a branch; the post and what it i
         problems.append("it names a station's call letters")
     if style == "waitlist" and "link in my bio" not in lowered:
         problems.append("a waitlist post must say 'link in my bio'")
+    elif "waitlist" in lowered and "link in my bio" not in lowered:
+        problems.append("a post that names the waitlist must say 'link in my bio'")
     if not chances_shown(facts):
         problems += _chance_given(text)
         if mentions_chance(image_description):

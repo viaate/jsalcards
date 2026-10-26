@@ -411,3 +411,102 @@ def test_marking_chances_live_lets_a_chance_number_from_the_facts_be_posted() ->
         check(text, style="dev_log", facts=live, image_description=FRESH, image_is_today=True) == []
     )
     assert check(text, style="dev_log", facts=FACTS, image_description=FRESH, image_is_today=True)
+
+
+# -- the critics' adversarial drafts (round 1): each must be refused ---------------------------
+
+COMPARISONS = [
+    "Most snow day trackers are vibes. Mine is a prediction model trained on real closing"
+    " records. Link in my bio.",
+    "The usual snow day sites don't use real records. Snowlight's prediction model does."
+    " Link in my bio.",
+    "The big snow day sites never show their work. My prediction model is trained on real"
+    " closing records. Link in my bio.",
+    "Popular snow day trackers run on vibes. Snowlight runs on a prediction model. Link in my bio.",
+    "Real records, not vibes like the famous snow day site. Snowlight uses a prediction model."
+    " Link in my bio.",
+    "Snowday Predictor uses vibes. I use a prediction model. Link in my bio.",
+    "Snow-Day Calculator style sliders are not a prediction model. Link in my bio.",
+    "Not like SnowDay.AI: Snowlight's chances come from a prediction model. Link in my bio.",
+    "Other people eyeball the radar. I built a prediction model trained on real closing"
+    " records. Link in my bio.",
+    "Lots of folks just look at the radar and hope. I built a prediction model instead. Link"
+    " in my bio.",
+    "Most people go with a gut feeling about snow days. My chances come from a prediction"
+    " model, not a guess. Link in my bio.",
+    "No hype, no vibes like you see elsewhere: a prediction model trained on real closing"
+    " records. Link in my bio.",
+    "There are lots of snow day predictions out there. Mine come from a statistical model"
+    " trained on 2,388 real past school days. Link in my bio.",
+    "Chatgpt can't tell you this, but my prediction model trained on real closing records"
+    " can. Link in my bio.",
+    "Snowlight's prediction model outperforms the snow day apps. Link in my bio.",
+    "Snowlight's prediction model outdoes every snow day app out there. Link in my bio.",
+    "A prediction model trained on real closing records, superior to snow day apps. Link in"
+    " my bio.",
+]
+CHANCE_OFFERED = [
+    "See your district's chance from the prediction model. Link in my bio.",
+    "Look up your district's chance from the prediction model. Link in my bio.",
+    "The model's chances for every district are up on Snowlight. Link in my bio.",
+    "The prediction model's chances are posted for every district. Link in my bio.",
+    "Your district's chance comes from a prediction model. Find it on Snowlight. Link in my bio.",
+    "Parents are already checking each district's chance from the prediction model. Link in"
+    " my bio.",
+    "Every district now gets a chance from the prediction model, refreshed every 30 minutes"
+    " for you. Link in my bio.",
+]
+ACCURACY_AND_PRODUCT = [
+    "The prediction model is always right about snow days. Link in my bio.",
+    "I tested the model walk-forward on past winters and it called most snow days right."
+    " Waitlist link in my bio.",
+    "Walk-forward on past winters, the model's hit rate held up on days it never saw. Link in"
+    " my bio.",
+    "The prediction model is reliable: trained on real closing records. Link in my bio.",
+    "Snowlight's model has chances near nothing for now in every district. Link in my bio.",
+    "Download the Snowlight app: its chances come from a prediction model. Link in my bio.",
+    "Schools use Snowlight's prediction model. Link in my bio.",
+    "Snowlight is free forever, with a prediction model. Link in my bio.",
+    "Parents trust the prediction model behind Snowlight. Link in my bio.",
+    "The prediction model ran for Bozeman Public Schools. Link in my bio.",
+    "The prediction model ran for Katy ISD. Link in my bio.",
+    "Snowlight's chances come from an A I model, not a guess. Link in my bio.",
+    "Snowlight's chances come from a ML prediction model, not a guess. Link in my bio.",
+    "Snowlight's chances come from a neural net prediction model, not a guess. Link in my bio.",
+    "Snowlight's prediction model v3 is trained on real closing records. Link in my bio.",
+    "Dev log: the prediction model is trained on real closing records. Join the waitlist.",
+]
+
+
+@pytest.mark.parametrize("text", COMPARISONS + CHANCE_OFFERED + ACCURACY_AND_PRODUCT)
+@pytest.mark.parametrize("style", ["dev_log", "waitlist"])
+def test_comparisons_offers_accuracy_and_product_claims_are_refused(
+    text: str, style: Style
+) -> None:
+    assert problems(text, style=style), text
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Dev log: the model sorts each school day by the National Weather Service winter alerts"
+        " over the district. Waitlist link in my bio.",
+        "Snowlight's chances come from a prediction model trained on real closing records, not"
+        " a guess. Join the waitlist, link in my bio.",
+        "I tested the model walk-forward on past winters, so it never saw the days it was scored"
+        " on. Link in my bio.",
+        "Private schools get their own chance from the same kind of model, trained on 661 real"
+        " past private school days with a known outcome.",
+        "The model works out a new set of chances about every 30 minutes. Waitlist link in my bio.",
+        "Dev log: for each kind of weather day, the model uses a district's own recorded days"
+        " where it has enough, and leans on its county, state and region where it has fewer.",
+    ],
+)
+def test_plain_true_model_posts_still_pass(text: str) -> None:
+    style: Style = "waitlist" if "link in my bio" in text.lower() else "dev_log"
+    assert problems(text, style=style) == []
+
+
+def test_the_first_post_still_passes() -> None:
+    first = json.loads((REPO / "social" / "queue" / "0001.json").read_text(encoding="utf-8"))
+    assert problems(first["text"]) == []

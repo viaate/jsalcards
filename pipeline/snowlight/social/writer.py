@@ -90,15 +90,21 @@ is live or available.
 - No URL, no domain name, no @mention. The link is in my bio.
 - At most one hashtag and at most one emoji (none is fine). Never "!!". No em dashes.
 - Say only what Snowlight does. Never describe, name or compare any other product, site, app, \
-calculator or predictor, and never talk about what others do: no "unlike", "other apps", \
-"other sites", "everyone else", "better than", "more accurate", "they guess", no "-er than".
+calculator, tracker or predictor, and never talk about what other people do: no "unlike", \
+"other apps", "other sites", "other people", "folks", "popular", "famous", "the usual", "out \
+there", "elsewhere", "everyone else", "better than", "more accurate", "they guess", no "-er \
+than", and never "snow day" followed by "site", "app", "tracker" or "predictor".
+- Never claim accuracy in any words: no "always right", "called it", "gets it right", "hit \
+rate", "reliable", "correct". Never mention an app, a download, a price ("free") or who uses \
+or trusts Snowlight.
 - Never use these words: AI, accurate, accuracy, revolutionary, AI-powered, machine learning, \
 guaranteed, never wrong, better than, calculator, formula, reconstruction, competitor. Never \
 give an accuracy number or a score.
 - Never name a TV or radio station, a school, a district or a person.
 - Never use a superlative or a comparison: no "best", "only", "most", "unlike", "vs".
-- Nobody can use the map yet: never say "check your school", "you can now" or "available \
-now"; only the waitlist is open.
+- Nobody can use the map yet: never say "check your school", "see your district", "you can \
+now" or "available now", and never say the chances are up, posted or there to see; only the \
+waitlist is open. If you mention the waitlist, say "link in my bio".
 - Keep it under 240 characters.
 - Write a number only as the facts use it, in digits as they write it; never spell a number \
 out unless the facts do. Never write a number, count, time or date from the picture's \
@@ -126,8 +132,9 @@ holds a URL, domain or @mention; compares Snowlight with, or names, another site
 calculator; is hype, salesy or corporate; names a station, school, district or person; or \
 says anything about the image its description does not say, or presents an older picture \
 as current; does not state the model fact it was given, or states it more strongly than the \
-facts do (an accuracy, a score, or "always"); or describes, names or compares any other \
-product, site, app or predictor, or what others do. Otherwise ok=true with no problems."""
+facts do (an accuracy in any words, a score, or "always"); mentions an app, a download, a \
+price or who uses Snowlight; or describes, names or compares any other product, site, app, \
+tracker or predictor, or what other people do. Otherwise ok=true with no problems."""
 
 
 HIDDEN: Final = """The chances are TESTING: the site is locked while I test them. Never give \
