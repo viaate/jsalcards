@@ -99,3 +99,25 @@ def test_the_log_check_is_logscan(workflow: dict[Any, Any]) -> None:
     assert str(logscan.PREFIXES).replace("'", '"') in script
     assert "> /dev/null" in script
     assert '.jobs[] | select(.name == "post")' in script
+
+
+def test_the_picture_is_rendered_before_the_post_without_secrets(
+    workflow: dict[Any, Any],
+) -> None:
+    steps = workflow["jobs"]["post"]["steps"]
+    names = [step.get("name") for step in steps]
+    assert names.index("Install the picture's browser") < names.index("Render")
+    assert names.index("Render") < names.index("Post")
+    sync = next(step for step in steps if step.get("run", "").startswith("uv sync"))
+    assert sync["run"] == "uv sync --locked --no-dev --group render"
+    browser, render = (
+        steps[names.index(name)] for name in ("Install the picture's browser", "Render")
+    )
+    for step in (browser, render):
+        assert step["continue-on-error"] is True, "a failed render falls back, it never stops"
+        assert "env" not in step
+        assert "secrets." not in yaml.safe_dump(step)
+    assert "playwright install --with-deps --only-shell chromium" in browser["run"]
+    assert render["run"] == 'uv run --no-sync snowlight social render --out "$RUNNER_TEMP/picture"'
+    post = steps[names.index("Post")]
+    assert post["run"].endswith('--picture "$RUNNER_TEMP/picture"')
