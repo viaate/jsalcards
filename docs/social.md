@@ -295,9 +295,15 @@ network at all:
 2. `picture.py` picks the view from those files: the busiest picture-sized area of lit
    schools when closings light any today; else, only while chances are LIVE, the district
    with the highest chance of no school (at least 10%), framed by its schools on the left;
-   else the dark national map (the
-   words never say "night": the map is dark at any hour). It writes the description (time
-   with its zone, place by state, counts, chance) and the same facts as fields. Nothing is
+   else a region's city lights: one of a short list of populous windows (the Northeast
+   corridor, the Great Lakes, the Mid-Atlantic, the Texas triangle, the Front Range, the
+   Pacific Northwest, Southern California: `picture.REGIONS`), at a zoom where the site draws
+   every school as a faint speck, rotated by the day so posts vary; the render checks the
+   page drew specks in view and tries the next region (two a try); only when every region
+   tried fails, the dark national map (the site draws no school specks at that zoom, so alone
+   it reads as an empty black map; the words never say "night": the map is dark at any hour).
+   It writes the description (time with its zone, place by state, counts, chance) and the
+   same facts as fields. Nothing is
    said about closings when the closings file was a 404 (practice mode), and neither when it
    is older than 20 minutes: a stopped reader's empty file is no sign that nothing is
    closed, so that picture is not current and the post may not call it so. A chance is shown

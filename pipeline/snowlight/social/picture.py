@@ -18,9 +18,14 @@ files the page reads and picks the view:
   framed by its schools on the left of the picture (:data:`DISTRICT_X`), the right side left
   free for the card's number.
   The map draws no chance, so the chance is a number on the card, never on the map.
-* **Else the national map**: the site's dark map, near-black land, state lines and city
-  names (dark at any hour: the words never say "night"). The site draws no school specks at
-  this zoom (it draws them only between zoom 5 and 10).
+* **Else a region's city lights** (:func:`calm_regions`, taken by
+  :mod:`snowlight.social.render`): one of :data:`REGIONS`, populous windows at a zoom where the
+  site draws every school as a faint speck (zoom 5 to 10), rotated by the day so posts vary.
+  The render checks the page drew specks in view and tries the next region when it did not.
+* **Else the national map** (only when every region tried failed): the site's dark map,
+  near-black land, state lines and city names (dark at any hour: the words never say
+  "night"). The site draws no school specks at this zoom (it draws them only between zoom 5
+  and 10), so alone it reads as an empty black map.
 
 It also writes :attr:`Picture.shows`, the plain facts about the picture (the time, the place
 by state, the counts and the chance), the only things a post may say about it, and the same
@@ -102,7 +107,37 @@ STATES: Final[Mapping[str, str]] = {
 """State names by the FIPS code a public school's or district's NCES id starts with."""
 
 type Kind = Literal["closings", "district", "national", "region"]
-"""``region`` is a calm view at a chosen place and zoom, taken only for the image library."""
+"""``region`` is a calm view at a chosen place and zoom: a post's view when nothing is lit
+(:func:`calm_regions`), or one asked for by hand for the image library."""
+
+
+@dataclass(frozen=True, slots=True)
+class Region:
+    """A populous window the map shows as city lights (every school a faint speck)."""
+
+    place: str
+    lat: float
+    lon: float
+    zoom: float
+
+    @property
+    def query(self) -> str:
+        return f"?at={self.lat:.4f},{self.lon:.4f},{self.zoom:g}"
+
+
+REGIONS: Final[tuple[Region, ...]] = (
+    Region("the Northeast corridor", 40.6000, -74.4000, 6.6),
+    Region("the Great Lakes", 42.3000, -85.2000, 6.3),
+    Region("the Mid-Atlantic", 38.9000, -77.6000, 7.0),
+    Region("the Texas triangle", 30.6000, -96.9000, 6.8),
+    Region("the Front Range", 39.7000, -105.0000, 7.4),
+    Region("the Pacific Northwest", 46.9000, -122.6000, 7.0),
+    Region("Southern California", 33.9000, -117.8000, 7.4),
+)
+"""The calm views a post may take when nothing is lit, each at a zoom between 5 and 10 (where
+the site draws school specks), rotated by the day (:func:`calm_regions`)."""
+REGION_TRIES: Final = 2
+"""How many regions one render attempt tries before it takes the national map."""
 
 FILE: Final = "picture.png"
 NOTE: Final = "picture.json"
@@ -706,6 +741,33 @@ def calm_closings(
     return "", False
 
 
+def calm_regions(now: datetime) -> tuple[Region, ...]:
+    """:data:`REGIONS` in the order a post on ``now``'s day (in the shown zone) tries them:
+    rotated by the day, so each day's posts open on a different place."""
+    day = now.astimezone(SHOWN_ZONE).date().toordinal()
+    start = day % len(REGIONS)
+    return REGIONS[start:] + REGIONS[:start]
+
+
+def view_states(directory: Directory, query: str) -> list[str]:
+    """The states most of the directory's public schools in an ``?at=lat,lon,zoom`` view are
+    in, most first, at most two (none for a query that is not one)."""
+    parts = query.removeprefix("?at=").split(",")
+    if not query.startswith("?at=") or len(parts) != 3:  # noqa: PLR2004
+        return []
+    try:
+        lat, lon, zoom = (float(part) for part in parts)
+    except ValueError:
+        return []
+    points = directory.points
+    x, y = project(
+        points.lon_e6.astype(np.float64) / 1e6, points.lat_e6.astype(np.float64) / 1e6, zoom
+    )
+    cx, cy = project(np.array([lon]), np.array([lat]), zoom)
+    held = (np.abs(x - cx[0]) <= WIDTH / 2) & (np.abs(y - cy[0]) <= HEIGHT / 2)
+    return _states([directory.school_ids[int(index)] for index in np.flatnonzero(held)])
+
+
 def region(  # noqa: PLR0913 - the view, the live files, the time and the switch
     *,
     query: str,
@@ -715,9 +777,10 @@ def region(  # noqa: PLR0913 - the view, the live files, the time and the switch
     now: datetime,
     closings_shown: bool,
 ) -> Picture:
-    """A calm view of ``place`` at a zoom where the map draws every school as a faint speck
-    (the image library's pictures; never chosen for a post by itself). Only when the map
-    lights no school. Without ``closings_shown`` the closings file is not read.
+    """A calm view of ``place`` at a zoom where the map draws every school as a faint speck:
+    a post's view when nothing is lit (:func:`calm_regions`), or the image library's. Only
+    when the map lights no school. Without ``closings_shown`` the closings file is not read.
+    The description names the states most of the view's public schools are in.
 
     Raises:
         PictureError: the map lights schools now (take :func:`choose`'s view then).
@@ -729,9 +792,11 @@ def region(  # noqa: PLR0913 - the view, the live files, the time and the switch
         raise PictureError("schools are lit: a calm region picture would leave them out")
     read = closings_read(closings, directory)
     closings_line, current = calm_closings(closings, read, now)
+    states = view_states(directory, query)
+    mostly = f", mostly {_and(states)}" if states else ""
     shows = (
-        f"A picture of the dark Snowlight map over {place}, taken at {_clock(now)} on "
-        f"{_day(now)}: schools drawn as faint white specks, with gray "
+        f"A picture of the dark Snowlight map over {place}{mostly}, taken at {_clock(now)} on "
+        f"{_day(now)}: schools drawn as faint white specks, like city lights, with gray "
         f"state lines and city names.{closings_line}"
     )
     seen = Seen(closings_read=read, place=place)

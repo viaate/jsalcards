@@ -10,11 +10,13 @@ import pytest
 from snowlight.directory.points import Points
 from snowlight.social.picture import (
     DISTRICT_X,
+    REGIONS,
     WIDTH,
     Counts,
     Directory,
     PictureError,
     busiest_view,
+    calm_regions,
     chance_day,
     chance_text,
     choose,
@@ -25,6 +27,7 @@ from snowlight.social.picture import (
     region,
     today_everywhere,
     unproject,
+    view_states,
 )
 from snowlight.social.rules import mentions_closings
 
@@ -397,6 +400,39 @@ def test_a_region_picture_is_calm_only() -> None:
             now=at("2026-12-10T12:10"),
             closings_shown=True,
         )
+
+
+def test_the_calm_regions_are_city_lights_rotated_by_the_day() -> None:
+    """Every region is at a zoom where the site draws school specks (5 to 10, never the bare
+    national map), named plainly, and each day opens on the next one in turn."""
+    assert len(REGIONS) >= 5
+    for place in REGIONS:
+        assert 5 < place.zoom < 10, place
+        assert place.query.startswith("?at=")
+        assert len(place.place) <= 60
+    first = calm_regions(at("2026-10-27T14:00"))
+    second = calm_regions(at("2026-10-28T14:00"))
+    assert sorted(first, key=REGIONS.index) == list(REGIONS)
+    assert second[0] == first[1]
+    # The day is the shown zone's: 03:00 UTC on Oct 28 is still Oct 27 in Central time.
+    assert calm_regions(at("2026-10-28T03:00"))[0] == first[0]
+
+
+def test_a_region_s_description_names_the_states_of_the_schools_in_view() -> None:
+    assert view_states(directory(), "?at=42.9,-78.8,7") == ["New York", "Pennsylvania"]
+    assert view_states(directory(), "?at=30.27,-97.74,7.5") == ["Texas"]
+    assert view_states(directory(), "") == []
+    picture = region(
+        query="?at=42.9,-78.8,7",
+        place="the Great Lakes",
+        closings=None,
+        directory=directory(),
+        now=at("2026-10-27T14:00"),
+        closings_shown=True,
+    )
+    assert "over the Great Lakes, mostly New York and Pennsylvania, taken at" in picture.shows
+    assert "Buffalo" not in picture.shows
+    assert "District" not in picture.shows
 
 
 def test_the_clock_carries_its_zone() -> None:

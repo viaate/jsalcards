@@ -21,7 +21,7 @@ from playwright.sync_api import sync_playwright
 from snowlight.directory.points import encode
 from snowlight.social import cli
 from snowlight.social.cards import Card
-from snowlight.social.picture import Taken
+from snowlight.social.picture import REGION_TRIES, Taken, calm_regions
 from snowlight.social.render import (
     GL_ARGS,
     HOSTS,
@@ -96,7 +96,7 @@ window.snowlightMap = {
   await fetch('/data/schools/meta.0a1b2c.json');
   await fetch('/data/schools/points.0a1b2c.bin');
   // As the site: school dust only between zoom 5 and 10.
-  if (zoom > 5 && zoom < 10) { stats.dust = 4; stats.dustInView = 3; }
+  if (zoom > 5 && zoom < 10) { stats.dust = 4; stats.dustInView = __DUST_IN_VIEW__; }
   const closings = await fetch('/live-root/v1/live/closings.json');
   if (closings.ok) {
     const file = await closings.json();
@@ -116,6 +116,7 @@ class Site:
     lock: bool = True
     glow_offset: int = 0
     zoom_offset: float = 0.0
+    dust_in_view: int = 3
     requests: list[str] = field(default_factory=list)
 
 
@@ -140,6 +141,7 @@ def _handler(site: Site) -> type[BaseHTTPRequestHandler]:
                     .replace("__NOW__", site.now.isoformat().replace("+00:00", "Z"))
                     .replace("__GLOW_OFFSET__", str(site.glow_offset))
                     .replace("__ZOOM_OFFSET__", str(site.zoom_offset))
+                    .replace("__DUST_IN_VIEW__", str(site.dust_in_view))
                 )
                 if not site.lock:
                     page = page.replace("localStorage.getItem('sl-lock') === ''", "true")
@@ -322,6 +324,31 @@ def test_the_render_command_takes_a_view_only_with_its_place(
     assert "--view and --place go together" in capsys.readouterr().out
 
 
+def test_a_calm_map_is_the_day_s_city_lights_never_the_bare_national_map(
+    served: tuple[Site, str], tmp_path: Path
+) -> None:
+    """Nothing lit and no chance shown: the day's first region, specks checked in the page,
+    with its states in the description; the national map only when every region tried drew
+    no specks in view."""
+    site, base = served
+    said: list[str] = []
+    taken = render(tmp_path, facts=NO_CHANCES, site=base, now=lambda: site.now, say=said.append)
+    assert taken is not None
+    first = calm_regions(site.now)[0]
+    assert (taken.kind, taken.query, taken.seen.place) == ("region", first.query, first.place)
+    assert f"over {first.place}" in taken.shows
+    assert "faint white specks" in taken.shows
+    assert any(f"region view {first.query}" in line for line in said), said
+    site.dust_in_view = 0
+    said.clear()
+    bare = render(tmp_path, facts=NO_CHANCES, site=base, now=lambda: site.now, say=said.append)
+    assert bare is not None
+    assert bare.kind == "national"
+    tried = [line for line in said if "drew no school specks" in line]
+    assert len(tried) == REGION_TRIES, said
+    assert any("every region tried failed" in line for line in said), said
+
+
 def test_while_chances_are_testing_no_picture_or_card_gives_one(
     served: tuple[Site, str], tmp_path: Path
 ) -> None:
@@ -332,7 +359,7 @@ def test_while_chances_are_testing_no_picture_or_card_gives_one(
     said: list[str] = []
     taken = render(tmp_path, facts=NO_CHANCES, site=base, now=lambda: site.now, say=said.append)
     assert taken is not None
-    assert taken.kind == "national"
+    assert taken.kind == "region"
     assert taken.seen.chance is None
     assert not mentions_chance(taken.shows)
     assert "/live-root/v1/predictions/latest.json" not in site.requests
@@ -386,7 +413,7 @@ def test_while_closings_are_not_live_no_picture_or_card_shows_them(
     served: tuple[Site, str], tmp_path: Path
 ) -> None:
     """The closings switch (SYNTHETIC closings): a file lighting three schools today while the
-    facts file marks closings COMING gives the calm national map, the page is served a 404
+    facts file marks closings COMING gives a calm region's map, the page is served a 404
     for the file (no glow), and neither the description, the cards' words nor their alt text
     say anything of closings."""
     site, base = served
@@ -398,7 +425,7 @@ def test_while_closings_are_not_live_no_picture_or_card_shows_them(
     said: list[str] = []
     taken = render(tmp_path, facts=HELD_BACK, site=base, now=lambda: site.now, say=said.append)
     assert taken is not None
-    assert taken.kind == "national"
+    assert taken.kind == "region"
     assert taken.lit == 0
     assert not taken.seen.closings_read
     assert not mentions_closings(taken.shows), taken.shows

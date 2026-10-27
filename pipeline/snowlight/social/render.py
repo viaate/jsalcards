@@ -13,8 +13,12 @@ One attempt:
    from the same root, only while the facts file marks chances LIVE. While it marks closings
    not LIVE, the closings file is dropped: nothing is said about it and the page is served a
    404 for it (as in practice mode), so no school glows in the picture.
-3. :func:`snowlight.social.picture.choose` picks the view and writes what it shows (or, for
-   the image library only, :func:`snowlight.social.picture.region` a calm view asked for).
+3. :func:`snowlight.social.picture.choose` picks the view and writes what it shows. When it
+   is the national map with nothing on it (nothing lit, no chance shown), the day's regions
+   (:func:`snowlight.social.picture.calm_regions`) are tried first: city lights, every school
+   a faint speck, checked in the page; the national map only when every region tried fails.
+   For the image library, :func:`snowlight.social.picture.region` takes a calm view asked
+   for.
 4. Open that view with the page served exactly those live files, hide every piece of the
    site's interface with a style injected in this page only (:data:`MAP_ONLY`), wait until
    the map is at rest with every tile in (:data:`SETTLED`, twice), check that it lit as many
@@ -61,12 +65,14 @@ from snowlight.social.picture import (
     FILE,
     HEIGHT,
     NOTE,
+    REGION_TRIES,
     SHOWN_ZONE,
     WIDTH,
     Directory,
     Picture,
     PictureError,
     Taken,
+    calm_regions,
     choose,
     region,
 )
@@ -476,8 +482,25 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
                     closings_shown=closings,
                 )
             )
-            say(f"social: the picture is the {picture.kind} view {picture.query or '(national)'}")
-            attempt.take(page, picture, out)
+            if view is None and picture.kind == "national" and picture.seen.chance is None:
+                # Nothing lit: a region's city lights, never the bare national map (the site
+                # draws no school specks at that zoom), unless every region tried fails.
+                picture = _calm(
+                    attempt,
+                    page,
+                    picture,
+                    out,
+                    closings=closings_file,
+                    directory=directory,
+                    shown=closings,
+                    now=now,
+                )
+            else:
+                say(
+                    f"social: the picture is the {picture.kind} view"
+                    f" {picture.query or '(national)'}"
+                )
+                attempt.take(page, picture, out)
         except (RenderError, PictureError, PlaywrightError) as error:
             # No message that leaves this attempt carries the lock value.
             raise RenderError(_short(error).replace(value, "[lock]")) from None
@@ -493,6 +516,45 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
         seen=picture.seen,
         file=FILE,
     )
+
+
+def _calm(  # noqa: PLR0913 - the attempt and the live files
+    attempt: Attempt,
+    page: Page,
+    national: Picture,
+    out: Path,
+    *,
+    closings: Mapping[str, object] | None,
+    directory: Directory,
+    shown: bool,
+    now: Callable[[], datetime],
+) -> Picture:
+    """The picture of a calm map, taken: the day's regions in turn (:func:`calm_regions`, at
+    most :data:`REGION_TRIES`), each checked to draw school specks in view; the national map
+    only when every region tried failed. A region whose map did not settle ends the tries (a
+    slow page would only fail again), so the attempt stays within the step's time."""
+    for place in calm_regions(now())[:REGION_TRIES]:
+        picture = region(
+            query=place.query,
+            place=place.place,
+            closings=closings,
+            directory=directory,
+            now=now(),
+            closings_shown=shown,
+        )
+        attempt.say(f"social: the picture is the region view {picture.query} ({place.place})")
+        try:
+            attempt.take(page, picture, out)
+        except RenderError as error:
+            attempt.say(f"::warning::social: the {place.place} view failed: {_short(error)}")
+            (out / FILE).unlink(missing_ok=True)
+            if "did not settle" in str(error):
+                break
+            continue
+        return picture
+    attempt.say("social: every region tried failed: the picture is the national view")
+    attempt.take(page, national, out)
+    return national
 
 
 def launch(chromium: BrowserType, *, sandbox: bool, say: Callable[[str], None]) -> Browser:
