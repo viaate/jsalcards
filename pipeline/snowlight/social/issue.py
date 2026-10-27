@@ -7,6 +7,14 @@
   for good (no credits, no write permission, a duplicate). The owner fixes it and closes the
   issue (or pastes a new refresh token); the next run then tries once more. Closed with a
   comment by the next run that posts.
+* :data:`SKIPPED` ("X posting: a post was skipped"): X refused one post twice with the same
+  answer (an image or text X does not take): that post is skipped for good, and the others go
+  on. The owner fixes or removes it and closes the issue.
+
+The :data:`TOKEN` issue's body ends with a hidden line naming the stored chain's version when
+the chain stopped (:data:`MARK`, a count, nothing secret): while that issue is open and the
+chain is still at that version, from the same secret, every run stops, even when the database
+could not record the stop (:meth:`GitHub.stopped_at`).
 
 Each is opened (or, when already open, its body brought up to date) with the job's
 ``GITHUB_TOKEN`` (``issues: write``). Nothing in it comes from X but the HTTP status and
@@ -17,6 +25,7 @@ repository anyone can open an issue with the same title, and the owner's steps f
 token must never go into, or close, an issue a stranger wrote and can edit.
 """
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Final
@@ -26,7 +35,10 @@ import httpx
 API: Final = "https://api.github.com"
 TITLE: Final = "X posting stopped: refresh token"
 REFUSED_TITLE: Final = "X posting stopped: X refused the post"
+SKIPPED_TITLE: Final = "X posting: a post was skipped"
 TIMEOUT: Final = httpx.Timeout(20.0, connect=10.0)
+MARK: Final = "<!-- snowlight-social: the token chain stopped at version {version} -->"
+MARKED: Final = re.compile(r"<!-- snowlight-social: the token chain stopped at version (\d+) -->")
 BOT: Final = "github-actions[bot]"
 """The author of the workflow's own issues (the job's ``GITHUB_TOKEN``)."""
 
@@ -67,6 +79,16 @@ once more, and opens this issue again if X still refuses.
 
 docs/social.md has the details."""
 
+SKIPPED_BODY: Final = """{why} ({when}). That post is skipped from now on: no run sends it \
+again, and the other posts go on.
+
+X's answer (an HTTP 4xx such as 400 or 413) usually means it does not take that post's image \
+or text: an image too large or of a kind it does not take, or text it will not post. To post \
+it after all, fix the file and give it a new id (a new file name in `social/queue`), or \
+delete it. Then close this issue.
+
+docs/social.md has the details."""
+
 
 @dataclass(frozen=True, slots=True)
 class Issue:
@@ -78,6 +100,7 @@ class Issue:
 
 TOKEN: Final = Issue(TITLE, BODY, "The refresh token works again; posting continues.")
 REFUSED: Final = Issue(REFUSED_TITLE, REFUSED_BODY, "X took a post again; posting continues.")
+SKIPPED: Final = Issue(SKIPPED_TITLE, SKIPPED_BODY, "")
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,7 +116,7 @@ class GitHub:
             "X-GitHub-Api-Version": "2022-11-28",
         }
 
-    def _open_issue(self, client: httpx.Client, issue: Issue) -> int | None:
+    def _open_item(self, client: httpx.Client, issue: Issue) -> dict[str, object] | None:
         response = client.get(
             f"{self.api}/repos/{self.repository}/issues",
             params={"state": "open", "creator": BOT, "per_page": 100},
@@ -109,8 +132,40 @@ class GitHub:
                 and isinstance(item.get("number"), int)
                 and _by_the_workflow(item)
             ):
-                return int(item["number"])
+                return item
         return None
+
+    def _open_issue(self, client: httpx.Client, issue: Issue) -> int | None:
+        item = self._open_item(client, issue)
+        number = item.get("number") if item is not None else None
+        return number if isinstance(number, int) else None
+
+    def stopped_at(self, client: httpx.Client) -> int | None:
+        """The chain version the open :data:`TOKEN` issue says the chain stopped at, or
+        ``None`` (no open issue of the workflow's own, or no such line in it).
+
+        Raises:
+            httpx.HTTPError: GitHub could not be reached or refused.
+        """
+        item = self._open_item(client, TOKEN)
+        body = item.get("body") if item is not None else None
+        found = MARKED.search(body) if isinstance(body, str) else None
+        return int(found.group(1)) if found else None
+
+    def is_closed(self, client: httpx.Client, number: int) -> bool:
+        """Whether the workflow's own issue ``number`` is closed.
+
+        Raises:
+            httpx.HTTPError: GitHub could not be reached or refused.
+        """
+        response = client.get(
+            f"{self.api}/repos/{self.repository}/issues/{number}",
+            headers=self._headers(),
+            timeout=TIMEOUT,
+        )
+        response.raise_for_status()
+        item = response.json()
+        return isinstance(item, dict) and _by_the_workflow(item) and item.get("state") == "closed"
 
     def is_open(self, client: httpx.Client, issue: Issue = TOKEN) -> bool:
         """Whether the workflow's own ``issue`` is open.
@@ -120,13 +175,24 @@ class GitHub:
         """
         return self._open_issue(client, issue) is not None
 
-    def report(self, client: httpx.Client, why: str, now: datetime, issue: Issue = TOKEN) -> int:
-        """Open the issue, or update the open one; its number.
+    def report(
+        self,
+        client: httpx.Client,
+        why: str,
+        now: datetime,
+        issue: Issue = TOKEN,
+        *,
+        version: int | None = None,
+    ) -> int:
+        """Open the issue, or update the open one; its number. ``version`` (the chain's when
+        it stopped) goes into the body as the hidden :data:`MARK` line.
 
         Raises:
             httpx.HTTPError: GitHub could not be reached or refused.
         """
         body = issue.body.format(why=why.rstrip("."), when=now.strftime("%Y-%m-%d %H:%M UTC"))
+        if version is not None:
+            body += "\n\n" + MARK.format(version=version)
         number = self._open_issue(client, issue)
         if number is None:
             response = client.post(

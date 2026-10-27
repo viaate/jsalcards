@@ -799,10 +799,24 @@ def test_an_answer_cut_off_while_thinking_is_a_failed_try(tmp_path: Path, world:
     runner = make(tmp_path, world)
     cut = {"_thinking": "", "_only_thinking": True, "_stop": "max_tokens"}
     runner.haiku = FakeAnthropic([dict(cut), dict(cut)])
-    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    # Both tries ran out at the cap: the day's post is lost to it, so the run ends red with a
+    # warning the lead sees (MAX_TOKENS may need raising), and each call's tokens are logged.
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 1
     assert world.x.posts == []
     assert "Haiku stopped early (max_tokens)" in runner.log
-    assert "social: Haiku calls this run: 2" in runner.log
+    assert "social: Haiku calls this run: 2 (output tokens each, of at most 1024: 10, 10)" in (
+        runner.log
+    )
+    assert "::warning::social: 2 of Haiku's answers ran out at 1024 tokens" in runner.log
+
+
+def test_one_answer_cut_off_then_a_good_one_posts_green(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world)
+    cut = {"_thinking": "", "_only_thinking": True, "_stop": "max_tokens"}
+    runner.haiku = FakeAnthropic([dict(cut), dict(GOOD_DEV_LOG), dict(OK)])
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert len(world.x.posts) == 1
+    assert "ran out at" not in runner.log
 
 
 def test_the_cards_handed_over_by_the_render_jobs_log_go_out(tmp_path: Path, world: World) -> None:
@@ -1238,9 +1252,12 @@ def test_a_post_x_refuses_for_good_holds_posting_until_the_issue_is_closed(
     world.github.issues[0]["state"] = "closed"  # the owner fixed it and closed the issue
     runner.clock.at += timedelta(hours=1)
     assert runner() == 0
-    assert "the owner closed the issue about X's refusal: trying again" in runner.log
+    assert "the owner closed issue #1 about X's refusal: trying again" in runner.log
     assert len(world.x.posts) == 1
-    assert world.d1.row("SELECT held FROM social_token") == {"held": None}
+    assert world.d1.row("SELECT held, held_issue FROM social_token") == {
+        "held": None,
+        "held_issue": None,
+    }
 
 
 def test_a_new_secret_lifts_a_hold_and_a_post_closes_the_issue(
@@ -1351,3 +1368,197 @@ def test_a_library_card_that_shows_closings_stops_the_run_while_they_are_not_liv
     assert runner() == 1
     assert world.x.posts == []
     assert world.x.refreshes == 0
+
+
+# -- round 2: stops and holds that outlast a failed record, refusals that end, lost answers ----
+
+
+def test_a_stop_the_database_could_not_record_still_stops_the_next_runs(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002"), queued("0003")])
+    assert runner() == 0
+    world.x.valid.clear()  # X now refuses the stored token
+    world.d1.fail_next = ["UPDATE social_token SET refused"] * 2
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 1, "a stop that was not recorded ends the run red"
+    assert "the stopped chain could not be recorded" in runner.log
+    assert world.d1.row("SELECT refused FROM social_token") == {"refused": None}
+    (issue,) = world.github.issues
+    assert "<!-- snowlight-social: the token chain stopped at version 1 -->" in issue["body"]
+    refreshes = world.x.refreshes
+    for event in ("push", "schedule"):
+        runner.clock.at += timedelta(hours=1)
+        assert runner(event) == 0
+        assert "posting is stopped until a new X_REFRESH_TOKEN is pasted" in runner.log
+    assert world.x.refreshes == refreshes, "the refused token is never sent to X again"
+    # A new secret starts it again, and the issue closes.
+    new_seed = fakes.token("Rn")
+    world.x.valid.add(new_seed)
+    runner.clock.at += timedelta(hours=1)
+    assert runner(X_REFRESH_TOKEN=new_seed) == 0
+    assert len(world.x.posts) == 2
+    assert world.github.issues[0]["state"] == "closed"
+
+
+def test_an_open_token_issue_left_from_a_chain_that_works_again_stops_nothing(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002")])
+    assert runner() == 0
+    # An open bot issue marked at an older version (its close failed when the chain worked).
+    world.github.issues.append(
+        {
+            "number": 1,
+            "state": "open",
+            "user": fakes.BOT_USER,
+            "title": TITLE,
+            "body": "X refused it.\n\n"
+            "<!-- snowlight-social: the token chain stopped at version 0 -->",
+        }
+    )
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 0
+    assert len(world.x.posts) == 2
+
+
+def test_a_stranger_s_issue_with_the_mark_stops_nothing(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002")])
+    assert runner() == 0
+    world.github.issues.append(
+        {
+            "number": 1,
+            "state": "open",
+            "user": fakes.STRANGER,
+            "title": TITLE,
+            "body": "<!-- snowlight-social: the token chain stopped at version 1 -->",
+        }
+    )
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 0
+    assert len(world.x.posts) == 2
+
+
+def _issues_api_down(world: World) -> None:
+    working = world.github.handle
+
+    def broken(request: httpx.Request) -> httpx.Response:
+        if request.method in ("POST", "PATCH"):
+            return httpx.Response(500, json={})
+        return working(request)
+
+    world.github.handle = broken  # type: ignore[method-assign]
+    world.restore_github = working  # type: ignore[attr-defined]
+
+
+def test_a_hold_whose_issue_could_not_be_opened_holds_until_its_issue_is_opened_and_closed(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    working = world.github.handle
+    _issues_api_down(world)
+    world.x.post_status = 402
+    assert runner() == 1
+    assert world.github.issues == []
+    assert world.d1.row("SELECT held_issue FROM social_token") == {"held_issue": None}
+    refreshes, uploads = world.x.refreshes, world.x.uploads
+    for _ in range(3):
+        runner.clock.at += timedelta(hours=1)
+        assert runner() == 1, "red while the owner has no issue"
+        assert "the owner's issue was not opened then: opening it now" in runner.log
+        assert "the owner closed" not in runner.log
+    assert (world.x.refreshes, world.x.uploads) == (refreshes, uploads), "nothing sent"
+    world.github.handle = working  # type: ignore[method-assign]
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 1
+    assert [issue["title"] for issue in world.github.issues] == [REFUSED_TITLE]
+    assert "HTTP 402" in world.github.issues[0]["body"]
+    assert world.d1.row("SELECT held_issue FROM social_token") == {"held_issue": 1}
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 0
+    assert "issue #1 says what to do" in runner.log
+    world.x.post_status = 201
+    world.github.issues[0]["state"] = "closed"
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 0
+    assert "the owner closed issue #1 about X's refusal: trying again" in runner.log
+    assert len(world.x.posts) == 1
+
+
+def test_a_post_x_refuses_twice_with_a_400_is_skipped_and_the_rest_go_on(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002")])
+    world.x.upload_status = 400
+    assert runner() == 1
+    assert "one more such refusal skips it" in runner.log
+    assert world.github.issues == []
+    runner.clock.at += timedelta(hours=4)
+    assert runner() == 1
+    assert "X refused queue:0001 2 times in a row (HTTP 400): it is skipped for good" in (
+        runner.log
+    )
+    assert [issue["title"] for issue in world.github.issues] == ["X posting: a post was skipped"]
+    assert world.d1.row("SELECT state FROM social_posts WHERE slot = 'queue:0001'") == {
+        "state": "skipped"
+    }
+    world.x.upload_status = 200
+    uploads = world.x.uploads
+    runner.clock.at += timedelta(minutes=10)
+    assert runner() == 0, "the skipped post never goes again, and counts toward no cap"
+    assert world.x.uploads == uploads + 1
+    assert [post["text"] for post in world.x.posts] == [queued("0002")["text"]]
+    assert world.d1.row("SELECT slot FROM social_posts WHERE state = 'posted'") == {
+        "slot": "queue:0002"
+    }
+
+
+@pytest.mark.parametrize("status", [429, 500])
+def test_a_rate_limit_or_a_server_error_is_never_counted_toward_a_skip(
+    tmp_path: Path, world: World, status: int
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    world.x.upload_status = status
+    for _ in range(3):
+        assert runner() == 1
+        runner.clock.at += timedelta(hours=4)
+    assert world.d1.row("SELECT COUNT(*) AS n FROM social_posts") == {"n": 0}
+    world.x.upload_status = 200
+    assert runner() == 0
+    assert len(world.x.posts) == 1
+
+
+def test_a_refusal_after_a_refresh_whose_answer_was_lost_says_so_in_the_issue(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002"), queued("0003")])
+    assert runner() == 0
+    world.x.refresh_status = 503
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 1
+    assert world.d1.row("SELECT lease FROM social_token") == {"lease": None}
+    assert world.d1.row("SELECT unknown FROM social_token")["unknown"] is not None  # type: ignore[index]
+    world.x.refresh_status = 200
+    world.x.valid.clear()  # X had taken that refresh: the stored token is spent
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 1
+    (issue,) = world.github.issues
+    assert "got no answer, so X most likely took that refresh and spent the token" in issue["body"]
+
+
+def test_the_cloudflare_token_only_ever_goes_to_cloudflare(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    # A setting naming another host is ignored: the World refuses any host it does not know.
+    assert runner(CLOUDFLARE_API_URL="https://elsewhere.test/client/v4") == 0
+    assert len(world.x.posts) == 1
+    from snowlight.social.store import API, CloudflareSecrets  # noqa: PLC0415
+
+    secrets = CloudflareSecrets.from_env(
+        {
+            "CLOUDFLARE_API_TOKEN": "t",
+            "CLOUDFLARE_ACCOUNT_ID": "a",
+            "CLOUDFLARE_API_URL": "https://elsewhere.test",
+        }
+    )
+    assert secrets is not None
+    assert secrets.api == API == "https://api.cloudflare.com/client/v4"

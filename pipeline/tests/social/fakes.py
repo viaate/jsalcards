@@ -21,7 +21,7 @@ import anthropic
 import httpx
 import httpx2
 
-CF_API = "https://cf.test/client/v4"
+CF_API = "https://api.cloudflare.com/client/v4"
 ACCOUNT = "acct-test"
 DATABASE_ID = "99999999-8888-7777-6666-555555555555"
 X_API = "https://api.x.com"
@@ -53,7 +53,6 @@ def env(**extra: str) -> dict[str, str]:
         "X_REFRESH_TOKEN": SEED,
         "CLOUDFLARE_API_TOKEN": CF_TOKEN,
         "CLOUDFLARE_ACCOUNT_ID": ACCOUNT,
-        "CLOUDFLARE_API_URL": CF_API,
         "GITHUB_TOKEN": GITHUB_TOKEN,
         "GITHUB_REPOSITORY": "owner/repo",
         "GITHUB_RUN_ID": "1001",
@@ -270,6 +269,8 @@ class FakeGitHub:
             return httpx.Response(201, json=issue)
         number = int(path.split("/")[5])
         issue = next(issue for issue in self.issues if issue["number"] == number)
+        if request.method == "GET" and path == f"/repos/owner/repo/issues/{number}":
+            return httpx.Response(200, json=issue)
         if request.method == "PATCH":
             issue.update(json.loads(request.content))
             return httpx.Response(200, json=issue)
@@ -287,7 +288,7 @@ class World:
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         host = request.url.host
-        if host == "cf.test":
+        if host == "api.cloudflare.com":
             return self.d1.handle(request)
         if host == "api.x.com":
             return self.x.handle(request)

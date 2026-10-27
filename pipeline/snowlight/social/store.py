@@ -2,9 +2,10 @@
 
 Reached over the Cloudflare API with the repository secrets ``CLOUDFLARE_API_TOKEN`` and
 ``CLOUDFLARE_ACCOUNT_ID``. The database is found by its exact name and never created here
-(the live reader owns it); this module adds only its own two tables, ``social_token`` and
-``social_posts``, runs only its own fixed statements with every value bound as a parameter,
-and never logs an answer's body: an error names the HTTP status only.
+(the live reader owns it); this module adds only its own tables (``social_token``,
+``social_posts``, ``social_haiku_days`` and ``social_refusals``), runs only its own fixed
+statements with every value bound as a parameter, and never logs an answer's body: an error
+names the HTTP status only.
 
 **The token chain** (``social_token``, one row, ``id = 1``): ``version`` counts the stored
 refresh tokens, ``sealed`` holds the newest (:mod:`snowlight.social.seal`), ``seed`` the
@@ -22,8 +23,12 @@ run calls Haiku, claims a slot or sends that token to X again. A run whose secre
 fingerprint differs (the owner pasted a new one) refreshes from the new secret, so the new
 token is checked and the owner's issue closes; a refused one is never tried again by itself.
 ``held`` holds the fingerprint of the secret in use when X refused a post or an image upload
-for good (HTTP 401, 402 or 403: no credits, no write permission, a duplicate): every run stops
-before it picks a post until the owner closes that issue or pastes a new secret.
+for good (HTTP 401, 402 or 403: no credits, no write permission, a duplicate), with the owner's
+issue (``held_issue``) and X's answer (``held_why``): every run stops before it picks a post
+until the owner closes that issue or pastes a new secret. A hold whose issue could not be
+opened stays, and each run tries to open it, so it is never lifted as "closed" by an issue
+that never was. ``unknown`` holds when a refresh got no answer (X may have spent the token
+then), so a later refusal of that token says so; a stored rotation clears it.
 
 **The Haiku days** (``social_haiku_days``): one row a UTC day Haiku was asked to write, made
 before the first call with an ``INSERT ... WHERE NOT EXISTS``, so a day gets one try of at
@@ -35,9 +40,12 @@ claimed before anything is sent with one ``INSERT ... SELECT ... WHERE`` that al
 the day's cap, so a slot is posted at most once and a day never holds more than
 :data:`MAX_POSTS_PER_DAY` posts. ``state`` is ``claimed``, then ``posted`` (with the post id)
 or ``uncertain`` (X may have posted it: never sent again). A post X refused is deleted, so a
-later run may try it again. A ``claimed`` row older than :data:`STALE_CLAIM` belongs to a
-run that stopped mid-send: it may or may not be posted, so it is never sent again by itself,
-and every run warns about it until the owner deletes the row (docs/social.md).
+later run may try it again, except that :data:`REFUSALS_TO_SKIP` refusals in a row with the
+same 4xx (not 429, not one that holds posting; counted in ``social_refusals``) keep it as
+``skipped``: never sent again and counted toward no cap, with the owner's issue. A
+``claimed`` row older than :data:`STALE_CLAIM` belongs to a run that stopped mid-send: it may
+or may not be posted, so it is never sent again by itself, and every run warns about it until
+the owner deletes the row (docs/social.md).
 
 Nothing else records what was posted: the ``social_posts`` table must never be dropped, and
 a posted queue file is removed from ``social/queue`` (docs/social.md).
@@ -71,13 +79,19 @@ STORE_TRIES: Final = 3
 TABLES: Final = (
     "CREATE TABLE IF NOT EXISTS social_token (id INTEGER PRIMARY KEY CHECK (id = 1),"
     " version INTEGER NOT NULL, sealed TEXT NOT NULL, seed TEXT NOT NULL, lease TEXT,"
-    " lease_until TEXT, refused TEXT, held TEXT, updated_at TEXT NOT NULL)",
+    " lease_until TEXT, refused TEXT, held TEXT, held_issue INTEGER, held_why TEXT,"
+    " unknown TEXT, updated_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS social_posts (slot TEXT PRIMARY KEY, kind TEXT NOT NULL,"
     " style TEXT NOT NULL, day TEXT NOT NULL, state TEXT NOT NULL, image TEXT NOT NULL,"
     " post_id TEXT, claimed_at TEXT NOT NULL, posted_at TEXT, run TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS social_haiku_days (day TEXT PRIMARY KEY, state TEXT NOT NULL,"
     " run TEXT NOT NULL, at TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS social_refusals (slot TEXT PRIMARY KEY, count INTEGER NOT NULL,"
+    " status INTEGER NOT NULL, at TEXT NOT NULL)",
 )
+REFUSALS_TO_SKIP: Final = 2
+"""How many times X may refuse one slot with the same kind of answer (a 4xx other than 429
+and :data:`snowlight.social.xapi.FOR_GOOD`) before the slot is skipped for good."""
 
 type Value = str | int | None
 type Row = dict[str, Any]
@@ -97,9 +111,15 @@ class ChainBusyError(StoreError):
 
 @dataclass(frozen=True, slots=True)
 class CloudflareSecrets:
+    """The Cloudflare API token and account. The token only ever goes to :data:`API`: no
+    setting, in the environment or anywhere else, sends it to another host."""
+
     token: str = field(repr=False)
     account: str = field(repr=False)
-    api: str = API
+
+    @property
+    def api(self) -> str:
+        return API
 
     @classmethod
     def from_env(cls, env: Mapping[str, str]) -> "CloudflareSecrets | None":
@@ -107,7 +127,7 @@ class CloudflareSecrets:
         account = env.get("CLOUDFLARE_ACCOUNT_ID", "")
         if not token or not account:
             return None
-        return cls(token=token, account=account, api=env.get("CLOUDFLARE_API_URL") or API)
+        return cls(token=token, account=account)
 
 
 @dataclass(frozen=True, slots=True)
@@ -243,6 +263,18 @@ class Chain:
     version: int
     sealed: str = field(repr=False)
     seed: str = field(repr=False)
+    unknown: str | None = None
+    """When a refresh from this token got no answer (X may have spent it), or ``None``."""
+
+
+@dataclass(frozen=True, slots=True)
+class Held:
+    """Posting held since X refused a post for good: the secret's fingerprint then, the
+    owner's issue (``None`` when it could not be opened) and X's answer (status and code)."""
+
+    seed: str
+    issue: int | None
+    why: str
 
 
 class Store:
@@ -252,14 +284,16 @@ class Store:
         self.db = db
 
     def prepare(self) -> None:
-        """Make the two tables when they are not there yet."""
+        """Make the social tables when they are not there yet."""
         for sql in TABLES:
             self.db.run(sql)
 
     # -- the token chain ---------------------------------------------------------------
 
-    def take_chain(self, run: str, now: datetime) -> Chain:
-        """Lease the token chain to this run.
+    def take_chain(self, run: str, now: datetime, seed: str) -> Chain:
+        """Lease the token chain to this run. A new row starts from ``seed``, the fingerprint
+        of the secret this run refreshes from (so a stop on that secret can be told apart
+        from a newer one, :meth:`chain_seed`).
 
         Raises:
             ChainBusyError: another run holds it, or took it first.
@@ -267,18 +301,19 @@ class Store:
         """
         until = _iso(now + LEASE)
         rows = self.db.run(
-            "SELECT version, sealed, seed, lease, lease_until FROM social_token WHERE id = 1"
+            "SELECT version, sealed, seed, lease, lease_until, unknown FROM social_token"
+            " WHERE id = 1"
         ).rows
         if not rows:
             made = self.db.run(
                 "INSERT INTO social_token (id, version, sealed, seed, lease, lease_until,"
-                " updated_at) VALUES (1, 0, '', '', ?, ?, ?)",
-                (run, until, _iso(now)),
+                " updated_at) VALUES (1, 0, '', ?, ?, ?, ?)",
+                (seed, run, until, _iso(now)),
                 retry=False,
             )
             if made.changes != 1:
                 raise ChainBusyError("another run started the token chain first")
-            return Chain(version=0, sealed="", seed="")
+            return Chain(version=0, sealed="", seed=seed)
         row = rows[0]
         version = row.get("version")
         if not isinstance(version, int):
@@ -290,8 +325,12 @@ class Store:
         )
         if taken.changes != 1:
             raise ChainBusyError("another run holds the token chain")
+        unknown = row.get("unknown")
         return Chain(
-            version=version, sealed=str(row.get("sealed") or ""), seed=str(row.get("seed") or "")
+            version=version,
+            sealed=str(row.get("sealed") or ""),
+            seed=str(row.get("seed") or ""),
+            unknown=unknown if isinstance(unknown, str) and unknown else None,
         )
 
     def store_chain(self, chain: Chain, run: str, sealed: str, seed: str, now: datetime) -> int:
@@ -309,7 +348,8 @@ class Store:
             try:
                 swapped = self.db.run(
                     "UPDATE social_token SET version = ?, sealed = ?, seed = ?, lease = NULL,"
-                    " lease_until = NULL, refused = NULL, updated_at = ? WHERE id = 1"
+                    " lease_until = NULL, refused = NULL, unknown = NULL, updated_at = ?"
+                    " WHERE id = 1"
                     " AND version = ?"
                     " AND lease = ?",
                     (new, sealed, seed, _iso(now), chain.version, run),
@@ -340,24 +380,59 @@ class Store:
         """Record that the chain started from ``seed`` (a fingerprint) stopped."""
         self.db.run("UPDATE social_token SET refused = ? WHERE id = 1", (seed,))
 
+    def refresh_unknown(self, run: str, now: datetime) -> None:
+        """Record that this run's refresh got no answer: X may have spent the stored token
+        (a later refusal of it then most likely has that cause). Also gives the lease back."""
+        self.db.run(
+            "UPDATE social_token SET unknown = ?, lease = NULL, lease_until = NULL WHERE id = 1"
+            " AND lease = ?",
+            (_iso(now), run),
+        )
+
+    def chain_seed(self) -> tuple[int, str] | None:
+        """The stored chain's version and the fingerprint of the secret it started from, or
+        ``None`` before the first run."""
+        rows = self.db.run("SELECT version, seed FROM social_token WHERE id = 1").rows
+        if not rows or not isinstance(rows[0].get("version"), int):
+            return None
+        return int(rows[0]["version"]), str(rows[0].get("seed") or "")
+
     def working(self) -> None:
         """Record that the chain works again (a refresh worked with every scope)."""
         self.db.run("UPDATE social_token SET refused = NULL WHERE id = 1")
 
-    def hold(self, seed: str) -> None:
-        """Record that X refused a post for good while ``seed`` (a fingerprint) was in use."""
-        self.db.run("UPDATE social_token SET held = ? WHERE id = 1", (seed,))
+    def hold(self, seed: str, issue: int | None, why: str) -> None:
+        """Record that X refused a post for good while ``seed`` (a fingerprint) was in use,
+        with the owner's issue (``None``: it could not be opened) and X's answer."""
+        self.db.run(
+            "UPDATE social_token SET held = ?, held_issue = ?, held_why = ? WHERE id = 1",
+            (seed, issue, why),
+        )
+
+    def held_issue(self, issue: int) -> None:
+        """Record the owner's issue of a hold whose issue could not be opened before."""
+        self.db.run("UPDATE social_token SET held_issue = ? WHERE id = 1", (issue,))
 
     def unhold(self) -> None:
         """Record that posting may be tried again (the owner closed the issue, or a new
         secret is in place)."""
-        self.db.run("UPDATE social_token SET held = NULL WHERE id = 1")
+        self.db.run(
+            "UPDATE social_token SET held = NULL, held_issue = NULL, held_why = NULL WHERE id = 1"
+        )
 
-    def held_seed(self) -> str | None:
-        """The fingerprint of the secret in use when X refused a post for good, or ``None``."""
-        rows = self.db.run("SELECT held FROM social_token WHERE id = 1").rows
-        value = rows[0].get("held") if rows else None
-        return value if isinstance(value, str) and value else None
+    def held(self) -> Held | None:
+        """The hold on posting since X refused a post for good, or ``None``."""
+        rows = self.db.run("SELECT held, held_issue, held_why FROM social_token WHERE id = 1").rows
+        if not rows:
+            return None
+        seed, issue, why = rows[0].get("held"), rows[0].get("held_issue"), rows[0].get("held_why")
+        if not isinstance(seed, str) or not seed:
+            return None
+        return Held(
+            seed=seed,
+            issue=issue if isinstance(issue, int) and issue > 0 else None,
+            why=str(why or "X refused a post"),
+        )
 
     def refused_seed(self) -> str | None:
         """The fingerprint of the secret whose chain stopped, or ``None`` when it works."""
@@ -375,21 +450,45 @@ class Store:
     # -- the posts ---------------------------------------------------------------------
 
     def taken_slots(self) -> set[str]:
-        """Every slot claimed, posted or uncertain."""
+        """Every slot claimed, posted, uncertain or skipped (X refused it twice)."""
         return {str(row["slot"]) for row in self.db.run("SELECT slot FROM social_posts").rows}
 
     def posts_on(self, day: str) -> int:
-        rows = self.db.run("SELECT COUNT(*) AS n FROM social_posts WHERE day = ?", (day,)).rows
+        rows = self.db.run(
+            "SELECT COUNT(*) AS n FROM social_posts WHERE day = ? AND state != 'skipped'", (day,)
+        ).rows
         n = rows[0].get("n") if rows else 0
         return n if isinstance(n, int) else 0
 
     def last_post(self) -> Row | None:
-        """The newest claimed row (any state), or ``None``."""
+        """The newest claimed row (claimed, posted or uncertain), or ``None``."""
         rows = self.db.run(
             "SELECT slot, kind, style, claimed_at, posted_at FROM social_posts"
-            " ORDER BY claimed_at DESC LIMIT 1"
+            " WHERE state != 'skipped' ORDER BY claimed_at DESC LIMIT 1"
         ).rows
         return rows[0] if rows else None
+
+    def refused(self, slot: str, status: int, now: datetime) -> int:
+        """Count one more refusal of ``slot`` by X (a 4xx that is not for good); how many
+        there were with this status in a row (another status starts the count again)."""
+        self.db.run(
+            "INSERT INTO social_refusals (slot, count, status, at) VALUES (?, 1, ?, ?)"
+            " ON CONFLICT (slot) DO UPDATE SET count = CASE WHEN status = excluded.status"
+            " THEN count + 1 ELSE 1 END, status = excluded.status, at = excluded.at",
+            (slot, status, _iso(now)),
+        )
+        rows = self.db.run("SELECT count FROM social_refusals WHERE slot = ?", (slot,)).rows
+        count = rows[0].get("count") if rows else None
+        return count if isinstance(count, int) else 1
+
+    def skip(self, slot: str, run: str) -> None:
+        """Keep this run's claim on ``slot`` as ``skipped``: X refused it
+        :data:`REFUSALS_TO_SKIP` times, so no run sends it again (it counts toward no cap)."""
+        self.db.run(
+            "UPDATE social_posts SET state = 'skipped' WHERE slot = ? AND run = ?"
+            " AND state = 'claimed'",
+            (slot, run),
+        )
 
     def claim(  # noqa: PLR0913 - one row's columns
         self, slot: str, *, kind: str, style: str, image: str, run: str, now: datetime
@@ -408,7 +507,7 @@ class Store:
                 "INSERT INTO social_posts (slot, kind, style, day, state, image, claimed_at,"
                 " run) SELECT ?, ?, ?, ?, 'claimed', ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM"
                 " social_posts WHERE slot = ?) AND (SELECT COUNT(*) FROM social_posts WHERE"
-                " day = ?) < ?",
+                " day = ? AND state != 'skipped') < ?",
                 (slot, kind, style, day, image, _iso(now), run, slot, day, MAX_POSTS_PER_DAY),
                 retry=False,
             )

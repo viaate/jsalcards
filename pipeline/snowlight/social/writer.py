@@ -189,6 +189,11 @@ class Writer:
     def __init__(self, client: anthropic.Anthropic) -> None:
         self._client = client
         self.calls = 0
+        self.output_tokens: list[int] = []
+        """Each answered call's output tokens (thinking included), in order."""
+        self.cut_off = 0
+        """How many calls ended at :data:`MAX_TOKENS` (``max_tokens``): Haiku 5.5 thinks
+        first, and its thinking counts toward the cap."""
 
     def _ask(self, system: str, prompt: str, schema: dict[str, Any]) -> object:
         if self.calls >= MAX_CALLS:
@@ -213,6 +218,9 @@ class Writer:
             raise AnswerError(f"the Anthropic API answered HTTP {error.status_code}") from None
         except anthropic.APIError as error:
             raise AnswerError(f"the Anthropic API failed ({type(error).__name__})") from None
+        self.output_tokens.append(response.usage.output_tokens)
+        if response.stop_reason == "max_tokens":
+            self.cut_off += 1
         if response.stop_reason == "refusal":
             raise AnswerError("Haiku declined to answer")
         if response.stop_reason != "end_turn":

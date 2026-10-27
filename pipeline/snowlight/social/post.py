@@ -5,16 +5,21 @@
 3. Stop before anything else while posting is stopped for the current secret: the token
    chain stopped (X refused the refresh token, the stored token did not open or could not
    be stored, a scope is missing) and ``X_REFRESH_TOKEN`` is still the secret it stopped
-   with; or X refused a post for good (:data:`snowlight.social.xapi.FOR_GOOD`) and its
-   issue is still open. No Haiku call, no claim and no refresh: the owner's issue says what
-   to do, and a new secret (or, for a refused post, closing the issue) starts it again.
+   with (or the open token issue says the chain stopped at the stored version from this
+   secret, when the database could not record the stop); or X refused a post for good
+   (:data:`snowlight.social.xapi.FOR_GOOD`) and its issue is still open, or was never opened
+   (each run then tries to open it). No Haiku call, no claim and no refresh: the owner's
+   issue says what to do, and a new secret (or, for a refused post, closing the issue) starts
+   it again.
 4. Pick the post: the oldest queued post not posted yet that passes the checks (one marked
    ``fresh_only`` waits, and holds the queue, until a fresh card fits it); else, on the
    daily scheduled run only, with ``ANTHROPIC_API_KEY`` set, nothing posted in the last
    :data:`QUIET` and Haiku not yet asked today, one post Haiku writes (styles alternate).
 5. Claim its slot in D1 (the claim also holds the day's cap), take the token chain, refresh,
    store the rotated token, upload the image and post. Every failure after the claim drops
-   the claim, except a post X may have made (``uncertain``: never sent again).
+   the claim, except a post X may have made (``uncertain``: never sent again) and a post X
+   refused twice in a row with the same 4xx (``skipped``: never sent again, with the owner's
+   issue; a 429 or a 5xx is never counted).
 6. A scheduled run with nothing to post still refreshes once when the chain stopped and the
    ``X_REFRESH_TOKEN`` secret is not the one that stopped (the owner pasted a new one), so the
    new token is checked and the owner's issue closes without waiting for a post.
@@ -39,7 +44,7 @@ from pydantic import ValidationError
 from snowlight.social import seal
 from snowlight.social.cards import Card, Post
 from snowlight.social.content import Content, ContentError, Image, check_image, load
-from snowlight.social.issue import REFUSED, TOKEN, GitHub, Issue
+from snowlight.social.issue import REFUSED, SKIPPED, TOKEN, GitHub, Issue
 from snowlight.social.picture import NOTE, Taken
 from snowlight.social.rules import (
     MENTION,
@@ -54,13 +59,21 @@ from snowlight.social.rules import (
 from snowlight.social.store import (
     D1,
     MAX_POSTS_PER_DAY,
+    REFUSALS_TO_SKIP,
     ChainBusyError,
     CloudflareSecrets,
     MissingDatabaseError,
     Store,
     StoreError,
 )
-from snowlight.social.writer import FatalAnswerError, Writer, draft, usable_commits
+from snowlight.social.writer import (
+    ATTEMPTS,
+    MAX_TOKENS,
+    FatalAnswerError,
+    Writer,
+    draft,
+    usable_commits,
+)
 from snowlight.social.xapi import (
     NEEDED_SCOPES,
     RefreshRefusedError,
@@ -302,6 +315,8 @@ class Run:
     """Something the owner or the lead must look at happened (the run ends red)."""
     sent: bool = False
     """The post request went to X (from then on the claim is never dropped)."""
+    version: int = 0
+    """The stored chain's version after this run's refresh."""
 
     def say(self, line: str) -> None:
         self.deps.say(line)
@@ -357,7 +372,17 @@ class Run:
             )
             self.red = True
             written = None
-        self.say(f"social: Haiku calls this run: {writer.calls}")
+        self.say(
+            f"social: Haiku calls this run: {writer.calls} (output tokens each, of at most"
+            f" {MAX_TOKENS}: {', '.join(map(str, writer.output_tokens)) or 'none'})"
+        )
+        if written is None and writer.cut_off >= ATTEMPTS:
+            self.say(
+                f"::warning::social: {writer.cut_off} of Haiku's answers ran out at {MAX_TOKENS}"
+                " tokens (its thinking counts): the day's post was lost to the cap, so the lead"
+                " may raise MAX_TOKENS in pipeline/snowlight/social/writer.py (docs/social.md)"
+            )
+            self.red = True
         try:
             self.store.end_haiku_day(day, self.run_id, "failed" if written is None else "drafted")
         except StoreError:
@@ -367,18 +392,21 @@ class Run:
             return None
         return Pick(slot, "haiku", style, written.text, written.image)
 
-    def issue(self, why: str, issue: Issue = TOKEN) -> None:
+    def issue(self, why: str, issue: Issue = TOKEN, *, version: int | None = None) -> int | None:
+        """Open or update the owner's ``issue``; its number, or ``None`` when it could not be
+        (the reason said)."""
         if self.github is None:
             self.say("::warning::social: no GITHUB_TOKEN: the owner's issue is not opened")
-            return
+            return None
         try:
-            number = self.github.report(self.deps.http, why, self.now, issue)
+            number = self.github.report(self.deps.http, why, self.now, issue, version=version)
         except httpx.HTTPError as error:
             self.say(
                 f"::warning::social: the owner's issue was not opened ({type(error).__name__})"
             )
-            return
+            return None
         self.say(f"social: issue #{number} tells the owner what to do ({issue.title})")
+        return number
 
     def drop(self, pick: Pick) -> None:
         try:
@@ -402,40 +430,79 @@ class Run:
         """Whether posting is stopped for the current secret (see the module's docstring):
         said once, before any pick, Haiku call, claim or refresh."""
         refused = self.store.refused_seed()
-        if refused is not None and refused == self.seed:
+        if (refused is not None and refused == self.seed) or self.stop_unrecorded():
             self.say(
                 "::warning::social: posting is stopped until a new X_REFRESH_TOKEN is pasted"
                 " (the open issue says how): this run sends nothing"
             )
             return True
-        held = self.store.held_seed()
+        return self.still_held()
+
+    def stop_unrecorded(self) -> bool:
+        """Whether the open token issue says the chain stopped at the stored chain's version,
+        from the current secret: the stop holds even when the database could not record it
+        (a GitHub error here leaves it to the database)."""
+        if self.github is None:
+            return False
+        try:
+            marked = self.github.stopped_at(self.deps.http)
+        except httpx.HTTPError as error:
+            self.say(f"::warning::social: the token issue was not read ({type(error).__name__})")
+            return False
+        return marked is not None and self.store.chain_seed() == (marked, self.seed)
+
+    def still_held(self) -> bool:
+        """Whether the hold since X refused a post for good still stands: until a new
+        secret is pasted, or the owner closes the issue that was opened for it. A hold whose
+        issue could not be opened stays, and its issue is opened now."""
+        held = self.store.held()
         if held is None:
             return False
-        if held != self.seed:
+        if held.seed != self.seed:
             self.say("social: X_REFRESH_TOKEN is new since X refused a post: trying again")
             self.store.unhold()
             return False
+        if held.issue is None:
+            self.say(
+                "::warning::social: posting is held since X refused a post, and the owner's"
+                " issue was not opened then: opening it now; this run sends nothing"
+            )
+            if (number := self.issue(held.why, REFUSED)) is not None:
+                try:
+                    self.store.held_issue(number)
+                except StoreError:
+                    self.say("::warning::social: the issue of the hold could not be recorded")
+            self.red = True
+            return True
         try:
-            still = self.github is None or self.github.is_open(self.deps.http, REFUSED)
+            closed = self.github is not None and self.github.is_closed(self.deps.http, held.issue)
         except httpx.HTTPError:
-            still = True
-        if not still:
-            self.say("social: the owner closed the issue about X's refusal: trying again")
+            closed = False
+        if closed:
+            self.say(
+                f"social: the owner closed issue #{held.issue} about X's refusal: trying again"
+            )
             self.store.unhold()
             return False
         self.say(
-            "::warning::social: posting is stopped since X refused a post (the open issue"
+            f"::warning::social: posting is stopped since X refused a post (issue #{held.issue}"
             " says what to do; close it once fixed): this run sends nothing"
         )
         return True
 
-    def stopped(self, why: str) -> None:
-        """The chain stopped: open the owner's issue, and record which secret it was."""
-        self.issue(why)
+    def stopped(self, why: str, version: int) -> None:
+        """The chain stopped at ``version``: open the owner's issue (marked with the version),
+        and record which secret it was. When that record fails the run ends red, and the
+        open issue stops the next runs (:meth:`stop_unrecorded`)."""
+        self.issue(why, version=version)
         try:
             self.store.stopped(self.seed)
         except StoreError:
-            self.say("::warning::social: the stopped chain could not be recorded")
+            self.say(
+                "::error::social: the stopped chain could not be recorded; the open issue stops"
+                " the next runs"
+            )
+            self.red = True
 
     def refresh(self) -> Tokens | None:  # noqa: PLR0911 - one reason a return
         """The tokens, with the rotated refresh token stored; ``None`` when no token came
@@ -450,13 +517,13 @@ class Run:
             )
             return None
         try:
-            chain = self.store.take_chain(self.run_id, self.deps.now())
+            chain = self.store.take_chain(self.run_id, self.deps.now(), self.seed)
         except (ChainBusyError, StoreError) as error:
             self.say(f"::warning::social: the token chain is not free ({error}): nothing posts")
             return None
         seed = self.seed
         if chain.version == 0 or not chain.sealed or chain.seed != seed:
-            token, source = self.secrets.refresh_seed, "the X_REFRESH_TOKEN secret"
+            token, source, stored = self.secrets.refresh_seed, "the X_REFRESH_TOKEN secret", False
         else:
             try:
                 token = seal.unseal(chain.sealed, self.secrets.client_secret, version=chain.version)
@@ -466,22 +533,35 @@ class Run:
                 self.stopped(
                     "The refresh token stored for the posting workflow could not be opened"
                     " (it is sealed with X_CLIENT_SECRET for its version; was that secret"
-                    " changed, or an older stored value written back?)"
+                    " changed, or an older stored value written back?)",
+                    chain.version,
                 )
                 return None
             self.deps.mask(token)
-            source = f"the stored token (version {chain.version})"
+            source, stored = f"the stored token (version {chain.version})", True
         try:
             tokens = self.deps.x.refresh(self.secrets.client_id, self.secrets.client_secret, token)
         except RefreshRefusedError as error:
             self.say(f"::error::social: {error} (from {source})")
             self.release_chain()
             answer = str(error).removeprefix("X refused the refresh token: ")
-            self.stopped(f"X refused the refresh token the posting workflow uses ({answer})")
+            lost = (
+                f"; an earlier run's refresh of this token at {chain.unknown} got no answer, so"
+                " X most likely took that refresh and spent the token then"
+                if chain.unknown is not None and stored
+                else ""
+            )
+            self.stopped(
+                f"X refused the refresh token the posting workflow uses ({answer}){lost}",
+                chain.version,
+            )
             return None
         except RefreshUnknownError as error:
             self.say(f"::error::social: {error}; the next run tries again")
-            self.release_chain()
+            try:
+                self.store.refresh_unknown(self.run_id, self.deps.now())
+            except StoreError:
+                self.release_chain()
             return None
         sealed = seal.seal(tokens.refresh, self.secrets.client_secret, version=chain.version + 1)
         try:
@@ -492,7 +572,8 @@ class Run:
             self.stopped(
                 "X gave the posting workflow a new refresh token, but the stored token row"
                 " changed under the run, so it was not stored and the next run has no token"
-                " that works"
+                " that works",
+                chain.version,
             )
             self.chain_lost = True
             return tokens
@@ -500,7 +581,8 @@ class Run:
             self.say(f"::error::social: the rotated token could not be stored ({error})")
             self.stopped(
                 "X gave the posting workflow a new refresh token, but it could not be stored"
-                " in the D1 database, so the next run has no token that works"
+                " in the D1 database, so the next run has no token that works",
+                chain.version,
             )
             self.chain_lost = True
             return tokens
@@ -508,6 +590,7 @@ class Run:
             f"social: refreshed from {source}; the rotated token is stored sealed"
             f" (version {version})"
         )
+        self.version = version
         return tokens
 
     def usable(self, tokens: Tokens) -> bool:
@@ -517,7 +600,7 @@ class Run:
         if missing:
             names = ", ".join(missing)
             self.say(f"::error::social: the X token lacks the scopes {names}: nothing posts")
-            self.stopped(f"The X token lacks the scopes {names}, which a post needs")
+            self.stopped(f"The X token lacks the scopes {names}, which a post needs", self.version)
             return False
         if self.chain_lost:
             return True  # the token works for this run, but the chain stays stopped
@@ -551,14 +634,45 @@ class Run:
         return 0 if tokens is not None and self.usable(tokens) else 1
 
     def held(self, why: str) -> None:
-        """X refused a post for good: open the owner's issue and hold posting."""
-        self.issue(why, REFUSED)
+        """X refused a post for good: open the owner's issue and hold posting (with the
+        issue's number, so a hold whose issue was not opened is never lifted as "closed")."""
+        number = self.issue(why, REFUSED)
         try:
-            self.store.hold(self.seed)
+            self.store.hold(self.seed, number, why)
         except StoreError:
             self.say("::warning::social: the hold on posting could not be recorded")
 
-    def send(self, pick: Pick) -> int:
+    def refused(self, pick: Pick, error: RefusedError) -> None:
+        """X refused ``pick`` with a 4xx that is not for good (nor 429): count it; at
+        :data:`REFUSALS_TO_SKIP` in a row with that status the slot is skipped for good and
+        the owner's issue says so, else the claim is dropped for one more try."""
+        status = error.status or 0
+        try:
+            count = self.store.refused(pick.slot, status, self.deps.now())
+        except StoreError:
+            self.say(f"::warning::social: the refusal of {pick.slot} could not be counted")
+            count = 1
+        if count < REFUSALS_TO_SKIP:
+            self.say(
+                f"social: X refused {pick.slot} (HTTP {status}); one more such refusal skips it"
+            )
+            self.drop(pick)
+            return
+        try:
+            self.store.skip(pick.slot, self.run_id)
+        except StoreError:
+            self.say(f"::warning::social: {pick.slot} could not be marked skipped")
+            self.drop(pick)
+        self.say(
+            f"::error::social: X refused {pick.slot} {count} times in a row (HTTP {status}):"
+            " it is skipped for good"
+        )
+        self.issue(
+            f"X refused the post {pick.slot} {count} times in a row ({str(error).strip()})",
+            SKIPPED,
+        )
+
+    def send(self, pick: Pick) -> int:  # noqa: PLR0912 - one answer of X's a branch
         """Refresh, upload and post a claimed pick; the exit code."""
         tokens = self.refresh()
         if tokens is None or not self.usable(tokens):
@@ -579,9 +693,14 @@ class Run:
             post_id = x.post(tokens.access, pick.text, media_id)
         except RefusedError as error:
             self.say(f"::error::social: {error}: nothing was posted")
-            self.drop(pick)
+            status = error.status
             if error.for_good:
+                self.drop(pick)
                 self.held(f"X refused a post of the posting workflow ({str(error).strip()})")
+            elif status is not None and 400 <= status < 500 and status != 429:  # noqa: PLR2004
+                self.refused(pick, error)
+            else:
+                self.drop(pick)
             return 1
         except UnknownOutcomeError as error:
             self.say(
@@ -670,7 +789,7 @@ def run(env: Env, root: Path, event: str, deps: Deps, picture: Path | None = Non
     one = started
     try:
         if one.halted():
-            return 0
+            return 1 if one.red else 0
         for row in one.store.stale_claims(one.now):
             one.say(
                 f"::warning::social: {row.get('slot')} was claimed by run {row.get('run')} at"
