@@ -5,12 +5,13 @@ current are refused, and true drafts pass (every draft here is SYNTHETIC)."""
 import gzip
 import json
 import re
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from snowlight.social.content import load
+from snowlight.social.picture import REGIONS, Region, choose, region
 from snowlight.social.rules import (
     FactsError,
     Style,
@@ -22,6 +23,8 @@ from snowlight.social.rules import (
     parse_facts,
     weight,
 )
+from social.test_picture import closings as closings_file
+from social.test_picture import directory as picture_directory
 
 REPO = Path(__file__).resolve().parents[3]
 FACTS = load(REPO).facts
@@ -50,6 +53,14 @@ def problems(text: str, *, current: bool = True, style: Style = "dev_log") -> li
     [
         # Not live called live, in plain words and by negation.
         "Closings are live on Snowlight.",
+        # Running but private: never live, public or for everyone (closings and glow are
+        # LIVE and private until launch), and never "coming" (they are here).
+        "Closed schools glow for everyone.",
+        "Closings are live now.",
+        "Every school in the US glows like city lights on Snowlight now.",
+        "Anyone can see closed schools glow.",
+        "Closings on the map are coming this winter. Waitlist link in my bio.",
+        "Closings and phone alerts are coming this winter.",
         "Real time closings are live in Ohio.",
         "Closed schools now show up on Snowlight for every state.",
         "Snowlight shows closings for every state, updated every 5 minutes.",
@@ -124,8 +135,8 @@ def test_an_older_picture_is_never_called_current(text: str) -> None:
         " not a guess. Waitlist link in my bio.",
         "Dev log: I taught the closings reader to check closing lists every 5 minutes from 4 to"
         " 9 AM. The chances come from a statistical model. Waitlist link in my bio.",
-        "Closings on the map are coming this winter. Until then, every district gets a chance"
-        " from a prediction model. Waitlist link in my bio.",
+        "Phone alerts are coming this winter. Until then, every district gets a chance from a"
+        " prediction model. Waitlist link in my bio.",
         "The map is still in private testing, and its chances come from a statistical model,"
         " not a guess.",
         "Snowlight's school directory holds 118,211 schools in 18,227 districts, and each one"
@@ -292,6 +303,15 @@ def test_model_facts_rotate_one_a_day_through_every_live_one() -> None:
     seen = [model_fact_for(FACTS, start + timedelta(days=n)) for n in range(len(model))]
     assert {fact.id for fact in seen if fact is not None} == {fact.id for fact in model}
     assert model_fact_for(FACTS, start) != model_fact_for(FACTS, start + timedelta(days=1))
+
+
+def test_a_day_s_three_haiku_tries_each_state_a_different_model_fact() -> None:
+    """Two tries of one day never get the same model fact (with the same style they would
+    risk the same post, which X refuses as a duplicate)."""
+    for n in range(10):
+        day = date(2026, 10, 27) + timedelta(days=n)
+        turns = [model_fact_for(FACTS, day, turn) for turn in range(3)]
+        assert len({fact.id for fact in turns if fact is not None}) == 3, (day, turns)
 
 
 def test_the_model_facts_hold_only_numbers_from_the_runbook_and_the_model_file() -> None:
@@ -504,22 +524,49 @@ def test_plain_true_model_posts_still_pass(text: str) -> None:
     assert problems(text, style=style) == []
 
 
-# The pictures a queued post may go with, worded as picture.py words them (SYNTHETIC times,
-# places and counts): the day's region when nothing is lit, the closings view when schools
-# are, each "taken for this post".
-REGION_SHOWS = (
-    "A picture of the dark Snowlight map over the Great Lakes, mostly Michigan and Ohio, taken"
-    " at 8:07 AM Central time on October 28, 2026: schools drawn as faint white specks, like"
-    " city lights, with gray state lines and city names. No school is lit up for weather on"
-    " the map. (taken for this post)"
-)
-CLOSINGS_SHOWS = (
-    "A picture of the Snowlight map taken at 6:12 AM Central time on December 10, 2026, zoomed"
-    " to the area with the most schools lit up for weather: 14 schools glow in this view (11"
-    " closed, 3 delayed), mostly in Michigan. Across the country the map shows 20 schools"
-    " closed, delayed, remote or dismissing early for December 10. The closings were updated"
-    " at 6:05 AM Central time. (taken for this post)"
-)
+def _shows() -> dict[str, list[str]]:
+    """The pictures a queued post may go with, as picture.py words them over the SYNTHETIC
+    test directory and closings files (so a change of its wording is checked here too): every
+    calm region, with and without "mostly", and closings views (public schools by state,
+    private schools by the view's place, few and many), each "taken for this post"."""
+    now = datetime(2026, 12, 10, 12, 10, tzinfo=UTC)
+    calm = closings_file([], "2026-12-10", "2026-12-10T12:05:00Z")
+    regions = [
+        region(
+            query=place.query,
+            place=place.place,
+            closings=calm,
+            directory=picture_directory(),
+            now=now,
+            closings_shown=True,
+        ).shows
+        for place in (*REGIONS, Region("the Great Lakes", 42.9, -78.8, 7.0))
+    ]
+    lit = [
+        [(0, 0), (1, 0), (2, 1), (3, 0), (4, 2), (5, 0), (6, 0), (8, 0), (9, 3)],
+        [(0, 0), (1, 1)],
+        [(6, 0), (7, 1)],
+    ]
+    views = [
+        choose(
+            chances=False,
+            closings_shown=True,
+            closings=closings_file(rows, "2026-12-10", "2026-12-10T12:05:00Z"),
+            predictions=None,
+            directory=picture_directory(),
+            now=now,
+        ).shows
+        for rows in lit
+    ]
+    assert any("mostly" in text for text in regions)
+    assert any("mostly" not in text for text in regions)
+    return {
+        "region": [f"{text} (taken for this post)" for text in regions],
+        "closings": [f"{text} (taken for this post)" for text in views],
+    }
+
+
+SHOWS = _shows()
 QUEUE = sorted((REPO / "social" / "queue").glob("*.json"))
 
 
@@ -539,16 +586,16 @@ def test_every_queued_post_passes_the_real_rules_with_every_picture_it_may_go_wi
     item = next(entry for entry in content.queue if entry.id == path.stem)
     assert item.pictures is not None, "a queued post names the pictures its words fit"
     assert set(item.pictures) <= {"closings", "region"}, "never the bare national map"
-    shows = {"closings": CLOSINGS_SHOWS, "region": REGION_SHOWS}
     for kind in item.pictures:
-        found = check(
-            item.text,
-            style=item.style,
-            facts=FACTS,
-            image_description=shows[kind],
-            image_is_today=True,
-        )
-        assert found == [], (kind, found)
+        for shows in SHOWS[kind]:
+            found = check(
+                item.text,
+                style=item.style,
+                facts=FACTS,
+                image_description=shows,
+                image_is_today=True,
+            )
+            assert found == [], (kind, shows, found)
     older = content.newest(item.style)
     assert older is not None
     found = check(
@@ -943,7 +990,7 @@ R3_TRUE = [
     ),
     (
         "model",
-        "Spent the night on the prediction model. It's fit to real past school days where I"
+        "Spent the night on the prediction model. It's built on real past school days where I"
         " know what happened, so the chances aren't a guess.",
     ),
     (
@@ -953,8 +1000,8 @@ R3_TRUE = [
     ),
     (
         "model-tested",
-        "I tested the model walk-forward on past winters: each winter scored by a"
-        " model fit only to the winters before it, so it never saw those days.",
+        "I tested the model on past winters one winter at a time, each with a model built only"
+        " from the winters before it, so it never saw those days.",
     ),
     (
         "model-alerts",
@@ -964,7 +1011,7 @@ R3_TRUE = [
     (
         "model",
         "Snowlight's chances come from a prediction model, not a guess. Phone alerts are"
-        " coming this winter, and the map stays in private testing.",
+        " coming this winter, and the map is still in private testing.",
     ),
     (
         "model",
@@ -1011,9 +1058,9 @@ def test_true_paraphrases_of_live_facts_pass(fact: str, text: str) -> None:
 
 
 def test_a_commit_subject_s_words_join_the_vocabulary_only_when_shown() -> None:
-    text = "Dev log: I fixed the card legend." + MODEL_3
-    assert any("'card', 'legend'" in line for line in checked(text, style="dev_log"))
-    assert checked(text, style="dev_log", commits=("Fix the card legend on small screens",)) == []
+    text = "Dev log: I fixed the stamp legend." + MODEL_3
+    assert any("'stamp', 'legend'" in line for line in checked(text, style="dev_log"))
+    assert checked(text, style="dev_log", commits=("Fix the stamp legend on small screens",)) == []
 
 
 def test_a_known_hashtag_is_outside_the_vocabulary_and_any_other_is_a_word() -> None:
@@ -1024,7 +1071,9 @@ def test_a_known_hashtag_is_outside_the_vocabulary_and_any_other_is_a_word() -> 
 def test_a_hype_word_is_fine_only_as_a_fact_s_own_words() -> None:
     assert not any(
         "hype" in line
-        for line in checked("Each winter was scored by a model fit only to the winters before it.")
+        for line in checked(
+            "Each winter was scored by a model built only from the winters before it."
+        )
     )
     assert any("'only'" in line for line in checked("Snowlight is the only prediction model."))
 
@@ -1032,16 +1081,19 @@ def test_a_hype_word_is_fine_only_as_a_fact_s_own_words() -> None:
 # -- the owner's voice (Oct 27): personal, plain, one hook and the waitlist ask ----------------
 
 PLAIN_VOICE = [
-    "Stayed up late wiring the closings reader into Snowlight. Real closings go in within"
-    " minutes, and the chances come from a real prediction model, not a guess. Waitlist link"
-    " in my bio.",
+    "I switched on the closings reader for Snowlight: real closings go in within minutes. The"
+    " chances come from a real prediction model, not a guess. Waitlist link in my bio.",
     "Does your school usually call a snow day in the evening, or in the morning? I'm testing a"
     " night-before outlook for the model, quietly in the background. Waitlist link in my bio.",
     "When a school is closed or delayed for weather, it glows on my private test map like city"
     " lights seen from space. The model behind the chances is built on real closing records,"
     " not a guess. Waitlist link in my bio.",
-    "I'm building Snowlight alone: a private test map of every school in the US. Built on real"
+    "I'm building Snowlight: a private test map of every school in the US. Built on real"
     " closing records, not a guess. Link in my bio to get on the waitlist.",
+    "Closed schools glow like city lights on my private test map. Built on real closing"
+    " records, not a guess. Waitlist link in my bio.",
+    "Every school closing in the US on one map, coming this winter. Built on real closing"
+    " records, not a guess. Waitlist link in my bio.",
 ]
 
 
@@ -1065,7 +1117,40 @@ def test_the_plain_model_words_name_the_model_fact() -> None:
         "My school calls a snow day early. The prediction model is not a guess." + LINK,
         "Stayed up late, and the model called it right." + LINK,
         "The map is live, built on real closing records." + LINK,
+        # No fact says the founder works alone, or when: no "alone", "late" or "honestly".
+        "I'm building Snowlight alone, built on real closing records." + LINK,
+        "Stayed up late on the prediction model, not a guess." + LINK,
+        "Honestly, the prediction model is not a guess." + LINK,
     ],
 )
 def test_the_voice_words_let_no_claim_through(text: str) -> None:
     assert problems(text, style="waitlist"), text
+
+
+@pytest.mark.parametrize(
+    ("text", "said"),
+    [
+        ("Closed schools glow for everyone.", "'for everyone' of 'closed'"),
+        ("Closings are live now.", "it stays private until launch (closings)"),
+        (
+            "Every school in the US glows like city lights on Snowlight now.",
+            "'now' of 'glows'",
+        ),
+        ("Anyone can see which schools are closed.", "private until launch"),
+        ("Closings and phone alerts are coming this winter.", "'closings' is coming"),
+    ],
+)
+def test_running_but_private_closings_and_glow_are_never_public_or_coming(
+    text: str, said: str
+) -> None:
+    """The closings and their glow are LIVE (the reader runs, the map lights them) but
+    private until launch (``| private`` in the facts file): refused by these rules alone,
+    with the model fact and the link, as on the base commit when they were COMING."""
+    found = problems(text + MODEL + LINK, style="waitlist")
+    assert any(said in line for line in found), found
+
+
+def test_the_private_marker_is_on_the_closings_and_the_glow_only() -> None:
+    assert {fact.id for fact in FACTS.facts if fact.private} == {"closings", "glow"}
+    with pytest.raises(FactsError, match="only a LIVE fact is marked private"):
+        parse_facts("- [COMING] x: SYNTHETIC. | terms: x | private\n")

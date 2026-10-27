@@ -1,7 +1,7 @@
 {
   "id": "0007",
   "style": "waitlist",
-  "text": "I'm building Snowlight alone: a private test map of every school in the US. The chances come from a prediction model trained on real closing records, not a guess. Link in my bio to get on the waitlist.",
+  "text": "I'm building Snowlight: a private test map of every school in the US. The chances come from a prediction model trained on real closing records, not a guess. Link in my bio to get on the waitlist.",
   "pictures": [
     "closings",
     "region"

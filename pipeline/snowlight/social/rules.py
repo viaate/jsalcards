@@ -44,16 +44,23 @@ for what it claims:
   on" and the like only of the waitlist, or worded as coming: the map is behind a lock until
   launch. A post that names the waitlist says "link in my bio".
 
-* **Not live called live.** Each TESTING or COMING term is judged where it stands: a word
-  that says it is not live must be said of it (:func:`_excused`: next to it in its clause, or
-  nearer to it than to anything else not live, or as "testing them" after it), and only a
-  word true of it (a COMING fact is "coming", never "in testing" or "in practice"; "practice"
-  excuses only the reader's practice mode). "Closings glow on the map; notifications are
-  coming" names the closings with nothing said of them. A term with "already", "works", "is
-  on", "turned on" or "ends" near it is refused whatever else is said (:data:`ALREADY`). A
-  sentence with a live claim ("is live", "shows up", "ships", "works for everyone") or a
-  negation of testing ("no longer", "done testing", "practice is over") may name no TESTING or
-  COMING fact, and must name a LIVE one ("Snowlight is live" is refused).
+* **Not live called live.** Each TESTING or COMING term is judged where it stands: a word that
+  says it is not live must be said of it (:func:`_excused`: next to it in its clause, or nearer
+  to it than to anything else not live, or as "testing them" after it), and only a word true of
+  it (a COMING fact is "coming", never "in testing"; "practice" excuses only a fact whose text
+  speaks of practice mode, and none does now). "The outlook runs on the map; notifications are
+  coming" names the outlook with nothing said of it. A term with "already", "works", "is on",
+  "turned on" or "ends" near it is refused whatever else is said (:data:`ALREADY`). A sentence
+  with a live claim ("is live", "shows up", "ships", "works for everyone") or a negation of
+  testing ("no longer", "done testing", "practice is over") may name no TESTING or COMING fact,
+  and must name a LIVE one ("Snowlight is live" is refused).
+* **Running but private.** A LIVE fact marked ``| private`` (the closings and their glow: real
+  and running, but shown only on the locked map until launch) is never called live or public
+  either: a live claim in its sentence, or a word that offers it to people (:data:`PUBLIC`:
+  "for everyone", "anyone", "public", "now") in its clause, is refused unless that clause
+  says it is private or in testing ("Closed schools glow on my private test map").
+* **Live called coming.** A LIVE term a coming word speaks of ("Closings and phone alerts are
+  coming") is refused: it is not coming, it is here.
 * **Numbers.** Every number, in digits or in words (``fifty``, ``twenty-four``, ``first``),
   must be in ``social/facts.md`` in the same form and used as the facts use it: a word near it
   is near it in the facts too, the word right after it (its noun) is among the facts' first
@@ -103,7 +110,7 @@ LIGHT: Final = ((0, 4351), (8192, 8205), (8208, 8223), (8242, 8247))
 
 FACT_LINE: Final = re.compile(
     r"^- \[(?P<status>LIVE|TESTING|COMING)\] (?P<id>[a-z0-9][a-z0-9-]*): (?P<text>.+?)"
-    r"(?: \| terms: (?P<terms>.+?))?(?: \| except: (?P<except>.+))?$"
+    r"(?: \| terms: (?P<terms>.+?))?(?: \| except: (?P<except>.+?))?(?P<private> \| private)?$"
 )
 DOTS: Final = re.compile("[\u00b7\u2022\u2024\u2027\u2219\u22c5\u3002\ufe52\uff0e\uff61]")
 """Characters that read as a dot in a domain ("snowlight\u2024com")."""
@@ -737,7 +744,7 @@ NOT_LIVE_WORDS: Final[dict[Status, tuple[str, ...]]] = {
 (:func:`_excuses`): a COMING fact only by the COMING words (closings, the glow, notifications
 and the model's learning are not "in testing" or "in practice": they are not on at all), a
 TESTING fact by either list, and "practice" only a fact whose own text speaks of practice
-mode (the reader's practice, never the map, the glow or the closings). "Before launch" is a
+mode (no fact does now: the owner switched the reader on). "Before launch" is a
 TESTING word only ("only I can open it before launch"): "before launch I put every closed
 school on the map" calls the closings done."""
 NOT_LIVE: Final = tuple(dict.fromkeys(NOT_LIVE_WORDS["TESTING"] + NOT_LIVE_WORDS["COMING"]))
@@ -816,6 +823,37 @@ LIVE_CLAIMS: Final = (
     "showing up",
 )
 """A sentence holding one says what it names is live."""
+PUBLIC: Final = (
+    "for everyone",
+    "everyone",
+    "anyone",
+    "anybody",
+    "for all",
+    "public",
+    "publicly",
+    "available",
+    "open to",
+    "right now",
+    "now",
+)
+"""Words that offer a running but private thing (a LIVE fact marked ``| private``) to people
+or call it out in the open: refused in its clause unless the clause says it is private or in
+testing (:data:`PRIVATE_WORDS`)."""
+PRIVATE_WORDS: Final = (
+    "private",
+    "privately",
+    "testing",
+    "test",
+    "tests",
+    "behind a lock",
+    "locked",
+    "only i ",
+    "before launch",
+    "until launch",
+)
+"""Words that say a running thing is still private (the TESTING not-live words that fit it)."""
+COMING_WORDS: Final = ("coming", "soon", "on the way")
+"""Words that say a thing is coming: never of a LIVE fact (:func:`_live_called_coming`)."""
 NEGATIONS: Final = re.compile(
     r"\bno longer\b|\bnot\b[^.?!]*\banymore\b|\bnot (?:in |a )?(?:testing|practice|test)\b"
     r"|\b(?:done|finished|through|out of|past|over|wrapped(?: up)?|left|leaves|leaving|exited"
@@ -851,8 +889,7 @@ CHANCES_ID: Final = "chances"
 """The facts file's switch: chances are shown in posts and cards only while this fact is LIVE."""
 CLOSINGS_ID: Final = "closings"
 """The facts file's switch for closings: a picture, card or alt text shows or counts closings
-only while this fact is LIVE (practice-mode closings are checked before anything goes
-public)."""
+only while this fact is LIVE."""
 CLOSINGS_WORDS: Final = re.compile(
     r"\b(?:closed|closings?(?!\s+(?:records?|lists?|reader))|closures?|delay(?:s|ed)?"
     r"|lit\s+up|lights?\s+up|glow\w*|dismissing\s+early|early\s+dismissal)\b",
@@ -1011,7 +1048,7 @@ VOICE_WORDS: Final = frozenset(
     carefully soon testing tested test tests coming next planned plan yet launch winter
     private privately trial tuning tune tuned lock locked behind until quiet teach taught few
     far everyone snowlight now right look
-    late wiring wire wired question questions usually call alone ever honestly
+    wiring wire wired question questions usually call ever
     """.split()  # noqa: SIM905 - a word list reads best as text
 )
 """Plain words of the founder's own voice a post may use besides the words of the facts, the
@@ -1019,7 +1056,8 @@ picture's description and the recent work (:func:`vocabulary`): what I did ("spe
 on", "fixed", "built"), when ("this week"), the not-live words, and the waitlist's "link in my
 bio", and a question to the reader ("does your school usually call a snow day in the
 evening?"; "calls" stays an accuracy word). Nothing here names a product, a person, a place,
-a level or a quality."""
+a level or a quality, and nothing here claims a fact about the founder or a time ("alone",
+"late", "honestly" are not here: no fact says so)."""
 FUNCTION_WORDS: Final = frozenset(
     """
     a an the and or but nor so yet of to in on at by for from with without into onto upon over
@@ -1052,6 +1090,9 @@ class Fact:
     terms: tuple[str, ...]
     other: tuple[str, ...] = ()
     """Phrases that hold one of the terms but name another fact (``except:``)."""
+    private: bool = False
+    """A LIVE fact marked ``| private``: running, but shown only behind the lock until launch,
+    so never called live or public (:func:`_private_called_public`)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1116,11 +1157,17 @@ def mentions_chance(text: str) -> bool:
     return CHANCE_WORDS.search(text) is not None
 
 
-def model_fact_for(facts: Facts, day: date) -> Fact | None:
-    """The model fact a Haiku post states on ``day``: the LIVE model facts in turn, one a day
-    (with styles alternating, an odd count pairs each fact with both styles)."""
+TRIES_PER_DAY: Final = 3
+"""The Haiku tries a day the model facts turn through (``post.MAX_HAIKU_PER_DAY``)."""
+
+
+def model_fact_for(facts: Facts, day: date, turn: int = 0) -> Fact | None:
+    """The model fact a Haiku post states on ``day``'s try ``turn`` (0 to
+    :data:`TRIES_PER_DAY` - 1): the LIVE model facts in turn, the next one each day and each
+    try, so a day's tries each state a different one (with three or more) and two drafts of
+    one day are never the same post."""
     model = facts.model
-    return model[day.toordinal() % len(model)] if model else None
+    return model[(day.toordinal() + turn) % len(model)] if model else None
 
 
 class FactsError(ValueError):
@@ -1154,8 +1201,18 @@ def parse_facts(text: str) -> Facts:
         if any(not re.search("[a-z]", term) for term in terms):
             # "2,388" would split into "2" and "388", and "2" names the fact in "24/7".
             raise FactsError(f"facts line {number}: a term needs a word, not a number")
+        private = match["private"] is not None
+        if private and status != "LIVE":
+            raise FactsError(f"facts line {number}: only a LIVE fact is marked private")
         facts.append(
-            Fact(id=match["id"], status=status, text=match["text"], terms=terms, other=other)
+            Fact(
+                id=match["id"],
+                status=status,
+                text=match["text"],
+                terms=terms,
+                other=other,
+                private=private,
+            )
         )
     ids = [fact.id for fact in facts]
     if not facts:
@@ -1335,7 +1392,7 @@ def _same_use(mine: Use, theirs: Use, *, strict: bool, digits: bool) -> bool:
 
 def used_as_in(post: str, item: str, sources: Iterable[str], *, strict: bool = False) -> bool:
     """Whether every use of ``item`` in the post is a use of it in one of ``sources``
-    (:func:`_same_use`): ``24/7 in practice mode`` matches the facts; ``24 schools`` would
+    (:func:`_same_use`): ``runs 24/7`` matches the facts; ``24 schools`` would
     not, and neither does ``launching tomorrow`` from ``today and tomorrow``."""
     known = [use for source in sources for use in _uses_of(source, item)]
     return all(
@@ -1743,10 +1800,89 @@ def _claims(sentence: str, facts: Facts) -> list[str]:
             for fact, term in named
             if fact.status != "LIVE"
         ]
+        problems += [
+            f"it calls '{term}' live ('{claim}'), but it stays private until launch ({fact.id})"
+            for fact, term in named
+            if fact.private
+        ]
         if not named:
             problems.append(f"it says something is live ('{claim}') but names no LIVE fact")
         return problems
-    return problems + _judged(sentence, facts)
+    return (
+        problems
+        + _private_called_public(sentence, facts)
+        + _live_called_coming(sentence, facts)
+        + _judged(sentence, facts)
+    )
+
+
+def _terms_named(text: str, facts: Facts, boundaries: list[int], *, live: bool) -> list[Named]:
+    """Every term of the LIVE facts (``live``) or of the others in ``text``, except inside a
+    longer term of any fact (see :func:`_not_live_named`)."""
+    every = [
+        span for fact in facts.facts for span in _spans(_without(text, fact.other), fact.terms)
+    ]
+    return [
+        Named(fact, term, span, _clause_of(boundaries, span[0]))
+        for fact in facts.facts
+        if (fact.status == "LIVE") == live
+        for term in fact.terms
+        for span in _spans(_without(text, fact.other), [term])
+        if not any(
+            start <= span[0] and span[1] <= end and end - start > span[1] - span[0]
+            for start, end in every
+        )
+    ]
+
+
+def _private_called_public(sentence: str, facts: Facts) -> list[str]:
+    """A running but private thing (a LIVE fact marked ``| private``) offered to people or
+    called out in the open (:data:`PUBLIC`) in its clause, with nothing in the clause that
+    says it is private (:data:`PRIVATE_WORDS`): "Closed schools glow for everyone", "Every
+    school glows like city lights on Snowlight now"."""
+    text = _without(sentence.replace("\u2019", "'"), VAGUE)
+    boundaries = [match.start() for match in CLAUSE.finditer(text)]
+    starts = _clause_starts(text)
+    for one in _terms_named(text, facts, boundaries, live=True):
+        if not one.fact.private:
+            continue
+        end = starts[one.clause + 1] if one.clause + 1 < len(starts) else len(text)
+        clause = text[starts[one.clause] : end]
+        if _has(clause, PRIVATE_WORDS):
+            continue
+        for word in _spans(text, PUBLIC):
+            if _clause_of(boundaries, word[0]) == one.clause and (
+                _gap(text, one.span, word) <= EXCUSE_GAP
+            ):
+                said = text[word[0] : word[1]]
+                return [
+                    f"it says '{said}' of '{one.term}', but it stays private until launch"
+                    f" ({one.fact.id})"
+                ]
+    return []
+
+
+def _live_called_coming(sentence: str, facts: Facts) -> list[str]:
+    """A LIVE term a coming word after it speaks of (:data:`COMING_WORDS`, through a list of
+    terms as :func:`_listed` reads one): "Closings and phone alerts are coming this winter"
+    calls the closings coming, though they are LIVE."""
+    text = _without(sentence.replace("\u2019", "'"), VAGUE)
+    boundaries = [match.start() for match in CLAUSE.finditer(text)]
+    live = _terms_named(text, facts, boundaries, live=True)
+    named = live + _terms_named(text, facts, boundaries, live=False)
+    for one in live:
+        for word in _spans(text, COMING_WORDS):
+            if word[0] < one.span[1] or _clause_of(boundaries, word[0]) != one.clause:
+                continue
+            in_clause = [other for other in named if other.clause == one.clause]
+            run = _listed(text, one, word, in_clause)
+            if run is not None and _gap(text, run.span, word) <= EXCUSE_GAP:
+                said = text[word[0] : word[1]]
+                return [
+                    f"it says '{one.term}' is {said}, but that is LIVE ({one.fact.id}): say"
+                    " what it does now"
+                ]
+    return []
 
 
 def _speaks_of(fact: Fact, term: str) -> bool:

@@ -2,8 +2,8 @@
 
 HAIKU_POSTS = off
 
-The line above switches the daily post Claude Haiku writes (docs/social.md, "The Haiku
-writer's switch"). While it says `off`, only the queued posts the lead wrote and checked go
+The line above switches the posts Claude Haiku writes, up to three a day (docs/social.md,
+"The Haiku writer's switch"). While it says `off`, only the queued posts the lead wrote and checked go
 out, and no run calls Anthropic, even with ANTHROPIC_API_KEY set. The lead sets it to `on`
 once the checks on Haiku's drafts have passed one more review round.
 
@@ -15,6 +15,8 @@ names of people, schools, districts or stations. Each line is one fact:
 - LIVE: true and running now.
 - TESTING: built, but behind the lock or switched off; a post must say so.
 - COMING: not built or not on yet; a post must say it is coming.
+- `| private` after a LIVE fact: real and running, but shown only behind the lock (and on the
+  cards posted here) until launch; a post never calls it live, public or there for everyone.
 
 The lead keeps this file current: when something ships, move its fact to LIVE in the same
 change that ships it.
@@ -37,7 +39,7 @@ past records lean toward big storm days, so a score on them would not be a fair 
 - [LIVE] model-private: Private schools get their own chance from the same kind of model, trained on 661 real past private school days with a known outcome. | terms: private school days, their own chance
 - [LIVE] model-places: For each kind of weather day, the model uses a district's own recorded days where it has enough of them, and leans on the records of its nearby districts, county, state, region and the whole country where it has fewer. | terms: own record, own recorded days, recorded days, nearby districts, whole country
 - [LIVE] model-alerts: The model sorts each school day by the National Weather Service winter alerts over the district, such as a winter weather advisory, a winter storm warning, an ice storm warning or a blizzard warning, or none, and the chance moves when those alerts change. | terms: weather service, winter alert, winter alerts, winter storm warning, advisory, blizzard warning, ice storm warning
-- [LIVE] model-tested: I tested the model walk-forward on past winters: each winter was scored by a model fit only to the winters before it, so it never saw the days it was scored on. | terms: walk-forward, past winters, never saw
+- [LIVE] model-tested: I tested the model on past winters one winter at a time, each with a model built only from the winters before it, so it never got to peek at the answers for the days it was scored on. | terms: walk-forward, past winters, one winter at a time, never saw, peek at the answers
 - [LIVE] model-refresh: The model works out a new set of chances about every 30 minutes, and sooner when the weather service changes its winter alerts. | terms: every 30 minutes, new set of chances
 - [TESTING] model-reasons: Reasons from the weather forecast, like how much snow or ice is on the way, are built into the model but switched off while I test them; no chance uses the forecast yet. | terms: forecast, forecasts, forecasted, how much snow, inches, reasons
 - [TESTING] model-outlook: A night-before outlook, which would weigh the evening's alerts and forecasts for the next morning, is built and was scored on past winters; I am testing it quietly in the background, so no chance anyone sees uses it yet. | terms: night-before, night before, outlook, outlooks
@@ -53,8 +55,8 @@ past records lean toward big storm days, so a score on them would not be a fair 
 - [TESTING] map: The map is in private testing behind a lock; only I can open it before launch. It is a near-black map of the US with every school on it. | terms: the map, map, the site, the app, website
 - [TESTING] search: On the map you can search by school, city or ZIP code. | terms: search, zip code, zip codes
 - [TESTING] chances: Every school day the model works out a chance of no school and a chance of a delayed start, today and tomorrow, for every public school district and every private school in the lower 48 states. While I test them they show only on the locked map, so no post or picture gives a chance number. | terms: chance, chances, snow day chances, odds, prediction, predictions, delayed start
-- [LIVE] closings: Real school closings and delays go into Snowlight within minutes of the reader finding them, and they stay private until launch. | terms: closings, closing, closed, closures, closure, closes, delays, delayed, school is closed, schools are closed, which schools | except: closings reader, closing lists, closing records, delayed start, delayed starts
-- [LIVE] glow: Every school that is closed, delayed, remote or dismissing early for weather glows like city lights seen from space. | terms: glow, glows, glowing, lights up, light up, lit up, city lights
+- [LIVE] closings: Real school closings and delays go into Snowlight within minutes of the reader finding them; until launch they show only behind the lock, and on the cards I post here. | terms: closings, closing, closed, closures, closure, closes, delays, delayed, school is closed, schools are closed, which schools | except: closings reader, closing lists, closing records, delayed start, delayed starts | private
+- [LIVE] glow: Every school that is closed, delayed, remote or dismissing early for weather glows like city lights seen from space. | terms: glow, glows, glowing, lights up, light up, lit up, city lights | private
 - [COMING] aim: Every school closing in the US on one map, coming this winter. | terms: every school closing, one map
 - [COMING] notifications: Notifications on your phone when your school closes or its chance jumps. | terms: notification, notifications, notify, push alert, push alerts, phone alert, phone alerts, text alert, text alerts, alert you, alerts you, alerted, text, texts, phone
 - [COMING] launch: Snowlight goes live this winter; the plan is to launch before the first real snow. | terms: launch, launches, launching, launched, goes live, go live, going live
