@@ -18,9 +18,11 @@
    (:data:`HAIKU_SWITCH`, read once a run; off, no run calls Anthropic),
    ``ANTHROPIC_API_KEY`` set, nothing posted in the last :data:`QUIET` and Haiku asked fewer
    than :data:`MAX_HAIKU_PER_DAY` times today, one post Haiku writes (styles alternate, the
-   model fact turns with each try, and a draft the same as a recent Haiku post is dropped).
-5. Claim its slot in D1 (the claim also holds the day's cap), take the token chain, refresh,
-   store the rotated token, upload the image and post. Every failure after the claim drops
+   model fact turns with each try, and a draft the same as a recent post of any kind, or a
+   queued one, is dropped).
+5. Keep the post's mark (:func:`draft_mark`, ``social_marks``), then claim its slot in D1
+   (the claim also holds the day's cap), take the token chain, refresh, store the rotated
+   token, upload the image and post. Every failure after the claim drops
    the claim, except a post X may have made (``uncertain``: never sent again, with the
    owner's issue, and the run ends red; any 2xx answer but a 201 with the post's id is one)
    and a post X refused twice in a row with the same 4xx (``skipped``: never sent again, with
@@ -481,17 +483,22 @@ class Run:
         return Pick(slot, "haiku", style, written.text, written.image)
 
     def new_mark(self, text: str, key: str) -> str | None:
-        """The draft's mark (:func:`draft_mark`), or ``None`` when a Haiku post of the last
-        :data:`RECENT` said the same (X refuses a duplicate), or when they could not be read."""
+        """The draft's mark (:func:`draft_mark`), or ``None`` when it says the same as a post
+        of any kind claimed in the last :data:`RECENT` (queued or Haiku), or a post still in
+        the queue (X refuses a duplicate, and that refusal holds all posting), or when the
+        recent posts could not be read."""
         mark = draft_mark(text)
         try:
-            recent = self.store.haiku_marks(self.now - RECENT, key)
+            recent = self.store.haiku_marks(self.now - RECENT, key) | self.store.recent_marks(
+                self.now - RECENT, f"haiku:{key}"
+            )
         except StoreError:
-            self.say("::warning::social: the recent Haiku posts could not be read: no post")
+            self.say("::warning::social: the recent posts could not be read: no Haiku post")
             return None
-        if mark in recent:
+        queued = {draft_mark(item.text) for item in self.content.queue}
+        if mark in recent or mark in queued:
             self.say(
-                "::warning::social: Haiku's draft says the same as a recent Haiku post (X"
+                "::warning::social: Haiku's draft says the same as a recent or queued post (X"
                 " refuses a duplicate): no post from this try"
             )
             return None
@@ -1006,6 +1013,10 @@ def run(env: Env, root: Path, event: str, deps: Deps, picture: Path | None = Non
             one.say(f"social: the day's cap of {MAX_POSTS_PER_DAY} posts is reached")
         elif pick is None:
             pick = one.haiku(event, taken)
+        if pick is not None:
+            # Kept before the claim, so a claimed post always has its mark (a later Haiku
+            # draft that says the same is dropped); a failed write claims nothing.
+            one.store.mark(pick.slot, draft_mark(pick.text), one.now)
         if pick is not None and not one.store.claim(
             pick.slot,
             kind=pick.kind,

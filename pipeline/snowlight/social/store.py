@@ -3,9 +3,9 @@
 Reached over the Cloudflare API with the repository secrets ``CLOUDFLARE_API_TOKEN`` and
 ``CLOUDFLARE_ACCOUNT_ID``. The database is found by its exact name and never created here
 (the live reader owns it); this module adds only its own tables (``social_token``,
-``social_posts``, ``social_haiku_days`` and ``social_refusals``), runs only its own fixed
-statements with every value bound as a parameter, and never logs an answer's body: an error
-names the HTTP status only.
+``social_posts``, ``social_haiku_days``, ``social_refusals`` and ``social_marks``), runs only
+its own fixed statements with every value bound as a parameter, and never logs an answer's
+body: an error names the HTTP status only.
 
 **The token chain** (``social_token``, one row, ``id = 1``): ``version`` counts the stored
 refresh tokens, ``sealed`` holds the newest (:mod:`snowlight.social.seal`), ``seed`` the
@@ -49,6 +49,13 @@ same 4xx (not 429, not one that holds posting; counted in ``social_refusals``) k
 or may not be posted, so it is never sent again by itself, and every run warns about it until
 the owner deletes the row (docs/social.md).
 
+**The marks** (``social_marks``): one row a slot, written just before its claim, with a short
+mark of the post's words (:func:`snowlight.social.post.draft_mark`), queued or Haiku: a
+posted queue file is removed, so this is what lets a Haiku draft be held against every recent
+post (X refuses a duplicate with a 403, which holds all posting). A mark counts only while its
+slot is in ``social_posts`` (a claim dropped before X got the post is gone, and its mark with
+it).
+
 Nothing else records what was posted: the ``social_posts`` table must never be dropped, and
 a posted queue file is removed from ``social/queue`` (docs/social.md).
 """
@@ -90,6 +97,8 @@ TABLES: Final = (
     " run TEXT NOT NULL, at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS social_refusals (slot TEXT PRIMARY KEY, count INTEGER NOT NULL,"
     " status INTEGER NOT NULL, at TEXT NOT NULL, run TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS social_marks (slot TEXT PRIMARY KEY, mark TEXT NOT NULL,"
+    " at TEXT NOT NULL)",
 )
 REFUSALS_TO_SKIP: Final = 2
 """How many times X may refuse one slot with the same kind of answer (a 4xx other than 429
@@ -606,6 +615,26 @@ class Store:
             (_iso(since), but),
         ).rows
         return {str(row.get("state")).removeprefix("drafted ") for row in rows}
+
+    def mark(self, slot: str, mark: str, now: datetime) -> None:
+        """Keep the mark of the post about to be claimed for ``slot`` (the same slot's mark is
+        replaced: a queued post edited after a refusal is held by its new words)."""
+        self.db.run(
+            "INSERT INTO social_marks (slot, mark, at) VALUES (?, ?, ?) ON CONFLICT (slot)"
+            " DO UPDATE SET mark = excluded.mark, at = excluded.at",
+            (slot, mark, _iso(now)),
+        )
+
+    def recent_marks(self, since: datetime, but: str) -> set[str]:
+        """The marks of the posts of every kind claimed since ``since`` that X may have been
+        sent (the slot still in ``social_posts``: posted, uncertain, claimed or skipped), but
+        the slot ``but``."""
+        rows = self.db.run(
+            "SELECT m.mark AS mark FROM social_marks AS m JOIN social_posts AS p"
+            " ON p.slot = m.slot WHERE p.claimed_at >= ? AND m.slot != ?",
+            (_iso(since), but),
+        ).rows
+        return {str(row.get("mark")) for row in rows}
 
     def haiku_day(self, day: str) -> str | None:
         """How ``day``'s Haiku try went (``writing``, ``failed``, ``drafted <mark>``), or

@@ -140,9 +140,9 @@ about it."""
 STYLES: Final[dict[Style, str]] = {
     "dev_log": "Style: behind the scenes of building it, in my words: one thing I built, "
     "fixed or am testing, only as the facts or the recent work say it, or a "
-    "question to the reader ('Does your school usually call a snow day in the evening, or in "
-    "the morning?'), or how a chance moves in one plain sentence. End with 'Waitlist link in "
-    "my bio.'",
+    "question to the reader ('Does your district usually close for an ice storm warning?'), "
+    "or how a chance moves in one plain sentence. Never repeat a queued post or an example "
+    "word for word. End with 'Waitlist link in my bio.'",
     "waitlist": "Style: the waitlist ask, warm and short, with the model fact as the reason "
     "or a countdown to winter ('Snowlight goes live this winter.'). It MUST include the words "
     "'link in my bio'.",

@@ -335,7 +335,7 @@ def test_at_most_three_haiku_posts_a_day_even_when_asked_again(
     assert len(world.x.posts) == 3
 
 
-def test_two_failed_haiku_drafts_mean_no_post_today_within_four_calls(
+def test_two_failed_haiku_drafts_mean_no_post_from_that_try_within_four_calls(
     tmp_path: Path, world: World
 ) -> None:
     runner = make(tmp_path, world)
@@ -1289,10 +1289,62 @@ def test_a_draft_the_same_as_a_recent_haiku_post_is_never_sent(
         runner.clock.at = at(when)
         runner.haiku = FakeAnthropic([dict(draft), dict(OK)])
         assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
-        assert ("says the same as a recent Haiku post" in runner.log) is (draft is same)
+        assert ("says the same as a recent or queued post" in runner.log) is (draft is same)
     assert [post["text"] for post in world.x.posts] == [GOOD_DEV_LOG["text"], GOOD_DRAFT["text"]]
     states = [row["state"] for row in world.d1.rows("SELECT state FROM social_haiku_days")]
     assert states[2:] == ["failed", "failed"]
+
+
+def test_a_draft_the_same_as_a_posted_queued_post_is_never_sent(
+    tmp_path: Path, world: World
+) -> None:
+    """A queued post goes out and its file is removed from the queue (the lead's step): its
+    mark stays in ``social_marks``, so a later Haiku draft with the same words (case and
+    punctuation aside) is dropped as a failed try, with no call to X."""
+    text = str(GOOD_DEV_LOG["text"]) + " Waitlist link in my bio."
+    runner = make(tmp_path, world, queue=[queued("0001", text)], when="2026-10-26T13:07:00")
+    assert runner("schedule") == 0
+    assert [post["text"] for post in world.x.posts] == [text]
+    assert world.d1.row("SELECT slot, mark FROM social_marks") == {
+        "slot": "queue:0001",
+        "mark": draft_mark(text),
+    }
+    (tmp_path / "social" / "queue" / "0001.json").unlink()
+    (tmp_path / "social" / "queue" / "0001.png").unlink()
+    refreshes = world.x.refreshes
+    runner.clock.at = at("2026-10-27T13:07:00")
+    # The day's first Haiku post follows a dev log, so it is a waitlist post.
+    same = {**GOOD_DRAFT, "text": text.lower().replace(":", " -").replace(".", "")}
+    runner.haiku = FakeAnthropic([dict(same), dict(OK)])
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert "says the same as a recent or queued post" in runner.log
+    assert len(world.x.posts) == 1
+    assert world.x.refreshes == refreshes, "no call to X for a dropped draft"
+    assert world.d1.row("SELECT state FROM social_haiku_days") == {"state": "failed"}
+
+
+def test_a_draft_the_same_as_a_post_still_queued_is_never_sent(
+    tmp_path: Path, world: World
+) -> None:
+    """A queued post that waits (refused by the checks today) would later go out after a Haiku
+    post with its words, and X would refuse it: such a draft is dropped too."""
+    text = str(GOOD_DEV_LOG["text"]) + " Waitlist link in my bio."
+    runner = make(tmp_path, world, queue=[queued("0001", text + "!!")], when="2026-10-27T13:07:00")
+    runner.haiku = FakeAnthropic([{**GOOD_DEV_LOG, "text": text}, dict(OK)])
+    runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY)
+    assert "queued post 0001 is refused: it has '!!'" in runner.log
+    assert "says the same as a recent or queued post" in runner.log
+    assert world.x.posts == []
+
+
+def test_a_mark_that_cannot_be_kept_claims_nothing(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    world.d1.fail_next += ["INSERT INTO social_marks"] * 2  # the first and its one retry
+    assert runner() == 1
+    assert world.x.posts == []
+    assert world.d1.row("SELECT COUNT(*) AS n FROM social_posts") == {"n": 0}
+    assert runner() == 0
+    assert len(world.x.posts) == 1
 
 
 def test_a_haiku_post_x_did_not_take_is_never_sent_again_and_counts_as_a_try(
