@@ -520,9 +520,44 @@ ACCURACY: Final = (
     "on point",
     "on target",
     "trust",
+    "knows when",
+    "know when",
+    "knows if",
+    "know if",
+    "knows whether",
+    "knows which",
+    "will close",
+    "will be closed",
+    "will be delayed",
+    "will have a snow day",
+    "will get a snow day",
+    "tells you if",
+    "tell you if",
+    "tells you whether",
+    "tell you whether",
 )
-"""Accuracy claims with or without a number: the past records lean toward storm days, so no
-accuracy is ever posted."""
+"""Accuracy and certainty claims with or without a number ("knows when your school will
+close"): the past records lean toward storm days, so no accuracy is ever posted, and a chance
+is never a promise of what a school will do."""
+SNOW_COMING: Final = re.compile(
+    r"\b(?:snow|snowfall|snowstorm|storms?(?!\s+(?:warnings?|watch(?:es)?)\b)|snow\s+days?"
+    r"|ice(?!\s+storm)|blizzard(?!\s+warnings?))\b"
+    r"[^.?!;:,]{0,40}?\b(?:coming|on\s+the\s+way|ahead|soon|is\s+due|are\s+due|incoming"
+    r"|headed|heading|expected|will)\b",
+    re.IGNORECASE,
+)
+"""A forecast of the weather or of snow days ("Snow days in Colorado are coming", "a storm is
+on the way"): no fact gives one (the forecast reasons are TESTING), so it is refused in any
+clause that does not speak of the launch (the launch fact says "before the first real snow"),
+and never of the facts' own "how much snow or ice is on the way" (the forecast reasons)."""
+NOT_FORECASTS: Final = ("how much snow or ice is on the way", "how much snow", "first real snow")
+LIT_PLACE: Final = re.compile(
+    r"\bglows? in this view \([^)]*\), (?:mostly )?in (?!a view\b)(?P<place>[^.]+)\.", re.IGNORECASE
+)
+"""Where a closings picture's description says its lit schools are ("2 schools glow in this
+view (2 closed), in New Mexico."): the only states a sentence of closings may name. A view's
+own place ("in a view over Ohio and Kentucky") says where the view is, not where a lit
+school is, and a calm region view lights none."""
 ACCURACY_CALL: Final = re.compile(
     r"\b(?:call(?:s|ed)?|get(?:s)?|got|gotten|predict(?:s|ed)?|guess(?:es|ed)?)\b"
     r"(?:\s+[a-z']+){0,4}\s+right\b",
@@ -826,19 +861,99 @@ LIVE_CLAIMS: Final = (
 PUBLIC: Final = (
     "for everyone",
     "everyone",
+    "everybody",
     "anyone",
     "anybody",
     "for all",
     "public",
     "publicly",
     "available",
+    "visible",
     "open to",
+    "open for",
+    "up for",
+    "is up",
+    "are up",
     "right now",
     "now",
+    "people",
+    "parents",
+    "families",
+    "you",
+    "you'll",
+    "you're",
+    "you've",
+    "your",
+    "yours",
+    "for you",
+    "to see",
+    "see",
+    "seeing",
+    "look",
+    "looking",
+    "look for",
+    "check",
+    "checking",
+    "find",
+    "finding",
+    "find out",
+    "view",
+    "viewing",
+    "watch",
+    "watching",
+    "follow",
+    "track",
+    "tracking",
+    "catch",
+    "spot",
+    "get",
+    "gets",
+    "getting",
+    "join",
+    "joining",
+    "post",
+    "posts",
+    "posted",
+    "posting",
+    "share",
+    "shares",
+    "shared",
+    "sharing",
+    "here",
 )
 """Words that offer a running but private thing (a LIVE fact marked ``| private``) to people
-or call it out in the open: refused in its clause unless the clause says it is private or in
-testing (:data:`PRIVATE_WORDS`)."""
+or call it out in the open: who may see it ("for everyone", "you", "parents", "for you"), what
+they may do with it ("see", "check", "look for", "find out", "get", "join ... to see"), that
+it is out ("is up", "up for", "open for", "now"), or that I hand it out ("I post them here"):
+refused anywhere in its clause unless the clause says it is private or in testing
+(:data:`PRIVATE_WORDS`). The waitlist is one email at launch, so joining it shows no one the
+closings either. "Get" and "watch" of the facts' own phrases ("schools get closed", "a winter
+storm watch") are not offers (:data:`NOT_OFFERS`)."""
+NOT_OFFERS: Final = (
+    "get closed",
+    "gets closed",
+    "got closed",
+    "get delayed",
+    "gets delayed",
+    "got delayed",
+    "winter storm watch",
+    "storm watch",
+)
+"""Phrases that hold a word of :data:`PUBLIC` but offer nothing."""
+COVERAGE: Final = re.compile(
+    r"\b(?:every|each|all(?:\s+the)?|any)\s+(?:state|states|district|districts|town|towns|city"
+    r"|cities|county|counties|region|regions|corner)\b"
+    r"|\ball\s+(?:50|fifty|48|forty-eight)\b"
+    r"|\bevery\s+(?:closed\s+|single\s+)?school(?:s)?\b(?!\s+(?:that|which|who|when)\b)"
+    r"|\b(?:in|across|around|throughout|over|all\s+over)\s+(?:the\s+)?(?:us|u\.s\.?|usa"
+    r"|united\s+states|country|nation|america|lower\s+48)\b"
+    r"|\b(?:nationwide|nationally|countrywide|everywhere|coast\s+to\s+coast|whole\s+country)\b",
+    re.IGNORECASE,
+)
+"""Words that say the closings cover the country ("for every state", "every closed school in
+the US", "nationwide"): no LIVE fact says so (the reader checks the lists it reads, and the aim
+of every school closing in the US on one map is COMING), so a clause holding a private term
+may say none of them unless it names the aim, a COMING fact."""
 PRIVATE_WORDS: Final = (
     "private",
     "privately",
@@ -1837,28 +1952,34 @@ def _terms_named(text: str, facts: Facts, boundaries: list[int], *, live: bool) 
 
 def _private_called_public(sentence: str, facts: Facts) -> list[str]:
     """A running but private thing (a LIVE fact marked ``| private``) offered to people or
-    called out in the open (:data:`PUBLIC`) in its clause, with nothing in the clause that
-    says it is private (:data:`PRIVATE_WORDS`): "Closed schools glow for everyone", "Every
-    school glows like city lights on Snowlight now"."""
-    text = _without(sentence.replace("\u2019", "'"), VAGUE)
+    called out in the open (:data:`PUBLIC`) anywhere in its clause, with nothing in the clause
+    that says it is private (:data:`PRIVATE_WORDS`): "Closed schools glow for everyone", "Join
+    the waitlist to see school closings", "Look for your school glowing when it closes", "I
+    post the closings here". Or said to cover the country (:data:`COVERAGE`) in a clause that
+    does not name the COMING aim: "Real closings for every state"."""
+    text = _without(_without(sentence.replace("\u2019", "'"), VAGUE), NOT_OFFERS)
     boundaries = [match.start() for match in CLAUSE.finditer(text)]
     starts = _clause_starts(text)
+    aims = {fact.id for fact in facts.facts if fact.status == "COMING"}
     for one in _terms_named(text, facts, boundaries, live=True):
         if not one.fact.private:
             continue
         end = starts[one.clause + 1] if one.clause + 1 < len(starts) else len(text)
         clause = text[starts[one.clause] : end]
+        if (wide := COVERAGE.search(clause)) is not None and not any(
+            fact.id in aims for fact, _ in _named(clause, facts)
+        ):
+            return [
+                f"it says '{wide.group().lower()}' of '{one.term}', but no fact says the"
+                f" closings cover that ({one.fact.id})"
+            ]
         if _has(clause, PRIVATE_WORDS):
             continue
-        for word in _spans(text, PUBLIC):
-            if _clause_of(boundaries, word[0]) == one.clause and (
-                _gap(text, one.span, word) <= EXCUSE_GAP
-            ):
-                said = text[word[0] : word[1]]
-                return [
-                    f"it says '{said}' of '{one.term}', but it stays private until launch"
-                    f" ({one.fact.id})"
-                ]
+        if (said := _has(clause, PUBLIC)) is not None:
+            return [
+                f"it says '{said}' of '{one.term}', but it stays private until launch, and"
+                f" the waitlist is one email at launch ({one.fact.id})"
+            ]
     return []
 
 
@@ -2016,6 +2137,45 @@ def _others_and_claims(text: str, facts: Facts) -> list[str]:  # noqa: PLR0912 -
     return problems
 
 
+def _closings_places(text: str, image_description: str) -> list[str]:
+    """A state named in a sentence of closings (:data:`CLOSINGS_WORDS`) that the picture's
+    description does not give as where its lit schools are (:data:`LIT_PLACE`): "A school in
+    Ohio is closed" under a view over Ohio and Kentucky whose one lit school is in Kentucky,
+    or "Schools in Colorado are closed" under a calm view of the Front Range."""
+    found = LIT_PLACE.search(" ".join(image_description.split()))
+    lit = found.group("place") if found is not None else ""
+    problems: list[str] = []
+    for sentence in _sentences(text):
+        if CLOSINGS_WORDS.search(sentence) is None:
+            continue
+        for match in STATES.finditer(sentence):
+            state = " ".join(match.group().split())
+            if state not in lit:
+                problems.append(
+                    f"it puts closings in {state}, but the picture's description does not say"
+                    " its lit schools are there"
+                )
+    return problems
+
+
+def _forecasts(text: str, facts: Facts) -> list[str]:
+    """A forecast of snow or snow days (:data:`SNOW_COMING`) in a clause that does not speak
+    of the launch."""
+    launch = facts.get("launch")
+    for sentence in _sentences(text):
+        for clause in _clauses(sentence):
+            plain = _without(clause, NOT_FORECASTS)
+            if (match := SNOW_COMING.search(plain)) is None:
+                continue
+            if launch is not None and _has(clause, launch.terms):
+                continue
+            return [
+                f"it forecasts the weather or snow days ('{match.group().lower()}'); no fact"
+                " gives a forecast"
+            ]
+    return []
+
+
 def check(  # noqa: PLR0912, PLR0913, PLR0915 - one rule a branch; the post and its sources
     text: str,
     *,
@@ -2075,6 +2235,8 @@ def check(  # noqa: PLR0912, PLR0913, PLR0915 - one rule a branch; the post and 
     for state in sorted({" ".join(match.group().split()) for match in STATES.finditer(text)}):
         if state not in " ".join(f"{image_description} {facts.said}".split()):
             problems.append(f"it names {state}, which the picture's description does not")
+    problems += _closings_places(text, image_description)
+    problems += _forecasts(text, facts)
     if not chances_shown(facts):
         problems += _chance_given(text)
         if mentions_chance(image_description):

@@ -8,10 +8,12 @@ import re
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
+import numpy as np
 import pytest
 
+from snowlight.directory.points import Points
 from snowlight.social.content import load
-from snowlight.social.picture import REGIONS, Region, choose, region
+from snowlight.social.picture import REGIONS, Directory, Region, choose, region
 from snowlight.social.rules import (
     FactsError,
     Style,
@@ -546,6 +548,7 @@ def _shows() -> dict[str, list[str]]:
         [(0, 0), (1, 0), (2, 1), (3, 0), (4, 2), (5, 0), (6, 0), (8, 0), (9, 3)],
         [(0, 0), (1, 1)],
         [(6, 0), (7, 1)],
+        [(2, 0)],
     ]
     views = [
         choose(
@@ -1134,7 +1137,7 @@ def test_the_voice_words_let_no_claim_through(text: str) -> None:
         ("Closings are live now.", "it stays private until launch (closings)"),
         (
             "Every school in the US glows like city lights on Snowlight now.",
-            "'now' of 'glows'",
+            "'every school' of 'glows'",
         ),
         ("Anyone can see which schools are closed.", "private until launch"),
         ("Closings and phone alerts are coming this winter.", "'closings' is coming"),
@@ -1154,3 +1157,194 @@ def test_the_private_marker_is_on_the_closings_and_the_glow_only() -> None:
     assert {fact.id for fact in FACTS.facts if fact.private} == {"closings", "glow"}
     with pytest.raises(FactsError, match="only a LIVE fact is marked private"):
         parse_facts("- [COMING] x: SYNTHETIC. | terms: x | private\n")
+
+
+# -- round 3: the running but private closings are never offered, said to cover the country,
+# or put in a state the picture does not light (each with the model fact and the link) -------
+
+MODEL_R3 = " The chances come from a real prediction model, not a guess."
+OFFERS_R3 = [
+    # Offers of the private closings (the waitlist is one email at launch).
+    "Join the waitlist to see school closings within minutes.",
+    "Get real school closings within minutes.",
+    "Find out which schools are closed within minutes.",
+    "Closings glow on Snowlight for you to see.",
+    "I post the closings here within minutes.",
+    "Check which schools are closed on Snowlight.",
+    "See which schools are closed, in minutes.",
+    "The glow is open for you to see.",
+    "Look for your school glowing when it closes.",
+    "Closed schools glow on Snowlight for you within minutes.",
+    "When your school closes, it glows on Snowlight within minutes.",
+    "Your school's closing glows on Snowlight within minutes of the call.",
+    "Watch closed schools light up within minutes.",
+    "Closings are up for every state.",
+    "Parents can find out which schools are closed.",
+    "I share the closings here as they come in.",
+    # Coverage no fact gives (the aim is COMING).
+    "Real closings for every state, within minutes.",
+    "Phone alerts are next; closings show for every state.",
+    "Every closed school in the US glows today.",
+    "Closings in every state glow as they happen.",
+    "Closed schools glow across the US tonight.",
+    "Closings go into Snowlight nationwide within minutes.",
+]
+
+
+@pytest.mark.parametrize("text", OFFERS_R3)
+@pytest.mark.parametrize("kind", ["region", "closings"])
+def test_round_three_offers_and_coverage_of_the_private_closings_are_refused(
+    text: str, kind: str
+) -> None:
+    """Refused by the private rule itself (not by the vocabulary or another rule), with each
+    real picture description of its kind."""
+    for shows in SHOWS[kind]:
+        found = check(
+            text + MODEL_R3 + LINK,
+            style="dev_log",
+            facts=FACTS,
+            image_description=shows,
+            image_is_today=True,
+        )
+        refused = ("stays private until launch", "cover that")
+        assert any(word in line for line in found for word in refused), (shows, found)
+
+
+TRUE_PRIVATE_R3 = [
+    "Closed schools glow on my private test map.",
+    "Real closings go into Snowlight within minutes, and they show on my private test map.",
+    "When a school is closed or delayed for weather, it glows on my private test map like city"
+    " lights seen from space.",
+    "Closed schools glow on the map while I test it.",
+    "Every school closing in the US on one map, coming this winter.",
+    "Every school that is closed for weather glows on my private test map.",
+    "When schools get closed for weather, they glow on my private test map.",
+]
+
+
+@pytest.mark.parametrize("text", TRUE_PRIVATE_R3)
+def test_true_words_of_the_private_closings_still_pass(text: str) -> None:
+    for kind in ("region", "closings"):
+        for shows in SHOWS[kind]:
+            found = check(
+                text + MODEL_R3 + LINK,
+                style="dev_log",
+                facts=FACTS,
+                image_description=shows,
+                image_is_today=True,
+            )
+            assert found == [], (text, shows, found)
+
+
+def _private_view(lat: float, lon: float) -> str:
+    """The real closings description of one lit private school (an id naming no state) at
+    ``lat, lon`` near Buffalo (SYNTHETIC), said as "in a view over New York"."""
+    directory = picture_directory()
+    points = directory.points
+    here = Directory(
+        directory.generated_on,
+        (*directory.school_ids, "A0000001"),
+        directory.district_ids,
+        Points(
+            lon_e6=np.append(points.lon_e6, np.int32(round(lon * 1e6))),
+            lat_e6=np.append(points.lat_e6, np.int32(round(lat * 1e6))),
+            district=np.append(points.district, np.uint32(2)),
+            kind=np.append(points.kind, np.uint8(1)),
+            district_count=points.district_count,
+        ),
+    )
+    file = closings_file([(10, 0)], "2026-12-10", "2026-12-10T12:05:00Z")
+    file["directory"] = here.stamp()
+    picture = choose(
+        chances=False,
+        closings_shown=True,
+        closings=file,
+        predictions=None,
+        directory=here,
+        now=datetime(2026, 12, 10, 12, 10, tzinfo=UTC),
+    )
+    assert "in a view over" in picture.shows, picture.shows
+    return picture.shows + " (taken for this post)"
+
+
+@pytest.mark.parametrize(
+    ("text", "shows"),
+    [
+        # A lit private school near a state line: the view's place is not where it is
+        # (Covington KY under a view over Ohio and Kentucky, Vancouver WA over Oregon).
+        ("A school in New York is closed this morning.", "private"),
+        ("A school in Pennsylvania is closed this morning.", "private"),
+        # A calm region view lights no school, whatever state it names.
+        ("A school in New York is closed this morning.", "region"),
+        ("Schools in Pennsylvania are closed.", "region"),
+    ],
+)
+def test_closings_are_put_only_in_a_state_the_picture_says_its_lit_schools_are_in(
+    text: str, shows: str
+) -> None:
+    description = (
+        _private_view(42.91, -78.86)
+        if shows == "private"
+        else next(text for text in SHOWS["region"] if "New York" in text)
+    )
+    assert "New York" in description
+    found = check(
+        text + MODEL_R3 + LINK,
+        style="dev_log",
+        facts=FACTS,
+        image_description=description,
+        image_is_today=True,
+    )
+    assert any("puts closings in" in line or "does not" in line for line in found), found
+
+
+def test_a_state_holding_the_lit_schools_may_be_named_with_them() -> None:
+    lit = next(text for text in SHOWS["closings"] if ", in New York." in text)
+    assert (
+        check(
+            "A school in New York is closed this morning." + MODEL_R3 + LINK,
+            style="dev_log",
+            facts=FACTS,
+            image_description=lit,
+            image_is_today=True,
+        )
+        == []
+    )
+
+
+@pytest.mark.parametrize(
+    ("text", "said"),
+    [
+        ("Snowlight knows when your school will close.", "claims accuracy"),
+        ("The model knows if your school will be closed.", "claims accuracy"),
+        ("Snow days in Colorado are coming.", "forecasts"),
+        ("A storm is on the way, and snow days with it.", "forecasts"),
+        ("Snow will close schools this week.", "forecasts"),
+    ],
+)
+def test_certainty_and_forecasts_are_refused(text: str, said: str) -> None:
+    for shows in SHOWS["region"]:
+        found = check(
+            text + MODEL_R3 + LINK,
+            style="dev_log",
+            facts=FACTS,
+            image_description=shows,
+            image_is_today=True,
+        )
+        assert any(said in line for line in found), (shows, found)
+
+
+def test_the_launch_and_the_forecast_reasons_are_not_forecasts() -> None:
+    for text in (
+        "Snowlight goes live this winter, and I plan to launch before the first real snow.",
+        "I'm testing reasons from the weather forecast, like how much snow or ice is on the way.",
+        "When a winter storm warning goes up, the chance there moves with it.",
+    ):
+        found = check(
+            text + MODEL_R3 + LINK,
+            style="dev_log",
+            facts=FACTS,
+            image_description=FRESH,
+            image_is_today=True,
+        )
+        assert not any("forecasts" in line for line in found), (text, found)
