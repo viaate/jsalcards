@@ -17,7 +17,8 @@
    daily scheduled run only, with the Haiku writer switched on in ``social/facts.md``
    (:data:`HAIKU_SWITCH`, read once a run; off, no run calls Anthropic),
    ``ANTHROPIC_API_KEY`` set, nothing posted in the last :data:`QUIET` and Haiku asked fewer
-   than :data:`MAX_HAIKU_PER_DAY` times today, one post Haiku writes (styles alternate).
+   than :data:`MAX_HAIKU_PER_DAY` times today, one post Haiku writes (styles alternate, the
+   model fact turns with each try, and a draft the same as a recent Haiku post is dropped).
 5. Claim its slot in D1 (the claim also holds the day's cap), take the token chain, refresh,
    store the rotated token, upload the image and post. Every failure after the claim drops
    the claim, except a post X may have made (``uncertain``: never sent again, with the
@@ -37,6 +38,7 @@ calls, each at most
 into the step, so the refresh and its store always finish before the step's timeout.
 """
 
+import hashlib
 import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
@@ -102,14 +104,18 @@ Render step times out after 15 minutes, and the post job starts right after it).
 REFRESH_BY: Final = timedelta(minutes=6)
 """The latest a refresh may start, from the start of the run: the Post step times out after
 10 minutes, and the refresh and the store of the rotated token need room before that."""
-QUIET: Final = timedelta(hours=4)
-"""Haiku writes only when nothing was posted for this long (the three daily runs are at least
-4.5 hours apart)."""
+QUIET: Final = timedelta(hours=3)
+"""Haiku writes only when nothing was posted for this long. The three daily runs are at least
+4.5 hours apart (13:07 and 17:37 UTC), so a run GitHub starts up to 90 minutes late still
+leaves the next one room."""
+RECENT: Final = timedelta(days=14)
+"""How far back a Haiku draft is held against earlier Haiku posts (X refuses a duplicate
+post, and a refusal for good holds all posting until the owner acts)."""
 MAX_HAIKU_PER_DAY: Final = 3
 """Haiku tries in one UTC day (each of at most :data:`snowlight.social.writer.MAX_CALLS`
 calls, its row made before the first call), so at most this many Haiku posts a day."""
 HAIKU_SWITCH: Final = re.compile(r"^HAIKU_POSTS[ \t]*=[ \t]*(\S+)[ \t]*$", re.MULTILINE)
-"""The switch for the daily post Haiku writes: a line of ``social/facts.md`` (docs/social.md,
+"""The switch for the posts Haiku writes: a line of ``social/facts.md`` (docs/social.md,
 "The Haiku writer's switch"). Only one such line, saying ``on``, switches it on; no line, a
 line saying anything else, or two lines leave it off, and then no run calls Anthropic."""
 ACCOUNT: Final = "SnowlightMap"
@@ -185,6 +191,13 @@ class Deps:
     commits: Callable[[datetime | None], Sequence[str]] = lambda _since: ()
     haiku_client: Callable[[], anthropic.Anthropic] = _anthropic
     db_pause: float = 3.0
+
+
+def draft_mark(text: str) -> str:
+    """A short mark of a post's words (case, spacing and punctuation aside), kept with its
+    Haiku try so a later draft that says the same is never sent (X refuses a duplicate)."""
+    words = " ".join(re.findall(r"[a-z0-9]+", text.lower()))
+    return hashlib.sha256(words.encode()).hexdigest()[:16]
 
 
 def haiku_on(facts: Facts) -> bool:
@@ -405,7 +418,8 @@ class Run:
         last = self.store.last_post()
         claimed = _when(last.get("claimed_at")) if last is not None else None
         if claimed is not None and self.now - claimed < QUIET:
-            self.say("social: something was posted in the last 4 hours: no Haiku post")
+            hours = QUIET.total_seconds() / 3600
+            self.say(f"social: something was posted in the last {hours:g} hours: no Haiku post")
             return None
         style: Style = (
             "waitlist" if last is not None and last.get("style") == "dev_log" else "dev_log"
@@ -431,11 +445,12 @@ class Run:
                 today=today,
                 commits=commits[:MAX_COMMITS],
                 say=self.say,
+                turn=tries,
             )
         except FatalAnswerError as error:
             self.say(
-                f"::error::social: {error}: no Haiku post today; check ANTHROPIC_API_KEY and the"
-                " model id (docs/social.md)"
+                f"::error::social: {error}: no Haiku post from this try; check ANTHROPIC_API_KEY"
+                " and the model id (docs/social.md)"
             )
             self.red = True
             written = None
@@ -446,18 +461,41 @@ class Run:
         if written is None and writer.cut_off >= ATTEMPTS:
             self.say(
                 f"::warning::social: {writer.cut_off} of Haiku's answers ran out at {MAX_TOKENS}"
-                " tokens (its thinking counts): the day's post was lost to the cap, so the lead"
+                " tokens (its thinking counts): this try's post was lost to the cap, so the lead"
                 " may raise MAX_TOKENS in pipeline/snowlight/social/writer.py (docs/social.md)"
             )
             self.red = True
+        mark = None if written is None else self.new_mark(written.text, key)
         try:
-            self.store.end_haiku_day(key, self.run_id, "failed" if written is None else "drafted")
+            self.store.end_haiku_day(
+                key, self.run_id, "failed" if mark is None else f"drafted {mark}"
+            )
         except StoreError:
             self.say(f"::warning::social: how Haiku's try for {key} went was not recorded")
-        if written is None:
-            self.say("::warning::social: no Haiku draft passed: no post today")
+        if written is None or mark is None:
+            self.say(
+                "::warning::social: no Haiku draft passed: no post from this try (a later run"
+                f" today may try again, up to {MAX_HAIKU_PER_DAY} tries a day)"
+            )
             return None
         return Pick(slot, "haiku", style, written.text, written.image)
+
+    def new_mark(self, text: str, key: str) -> str | None:
+        """The draft's mark (:func:`draft_mark`), or ``None`` when a Haiku post of the last
+        :data:`RECENT` said the same (X refuses a duplicate), or when they could not be read."""
+        mark = draft_mark(text)
+        try:
+            recent = self.store.haiku_marks(self.now - RECENT, key)
+        except StoreError:
+            self.say("::warning::social: the recent Haiku posts could not be read: no post")
+            return None
+        if mark in recent:
+            self.say(
+                "::warning::social: Haiku's draft says the same as a recent Haiku post (X"
+                " refuses a duplicate): no post from this try"
+            )
+            return None
+        return mark
 
     def issue(self, why: str, issue: Issue = TOKEN, *, version: int | None = None) -> int | None:
         """Open or update the owner's ``issue``; its number, or ``None`` when it could not be

@@ -594,8 +594,22 @@ class Store:
         value = rows[0].get("n") if rows else 0
         return int(value) if isinstance(value, int | str) else 0
 
+    def haiku_marks(self, since: datetime, but: str) -> set[str]:
+        """The marks of the Haiku drafts made since ``since`` that X may have been sent
+        (their rows' ``drafted <mark>`` state, :func:`snowlight.social.post.draft_mark`, with
+        the try's slot still in ``social_posts``: posted, uncertain, claimed or skipped; a
+        claim dropped before X got the post is gone), but the try ``but``."""
+        rows = self.db.run(
+            "SELECT h.state AS state FROM social_haiku_days AS h JOIN social_posts AS p"
+            " ON p.slot = 'haiku:' || h.day WHERE h.at >= ? AND h.day != ?"
+            " AND h.state LIKE 'drafted %'",
+            (_iso(since), but),
+        ).rows
+        return {str(row.get("state")).removeprefix("drafted ") for row in rows}
+
     def haiku_day(self, day: str) -> str | None:
-        """How ``day``'s Haiku try went (``writing``, ``failed``, ``drafted``), or ``None``."""
+        """How ``day``'s Haiku try went (``writing``, ``failed``, ``drafted <mark>``), or
+        ``None``."""
         rows = self.db.run("SELECT state FROM social_haiku_days WHERE day = ?", (day,)).rows
         value = rows[0].get("state") if rows else None
         return str(value) if value is not None else None

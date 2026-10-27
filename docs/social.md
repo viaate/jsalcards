@@ -1,7 +1,7 @@
 # Posts on X (@SnowlightMap): runbook
 
 `.github/workflows/social-post.yml` posts on the X account @SnowlightMap by itself: queued
-posts written ahead, and once a day a short post Claude Haiku writes from the facts file
+posts written ahead, and up to three short posts a day Claude Haiku writes from the facts file
 (**switched off for now**: see "The Haiku writer's switch" below). Every post carries a
 branded card made fresh from the real map at post time and passes the same checks first.
 Code: `pipeline/snowlight/social/`.
@@ -28,7 +28,7 @@ own account as the managing one.
   asked for at least one post a day and 2 to 3 is best, so the queue holds nine posts (three
   days) until the Haiku writer is switched on. With the Haiku writer switched
   on (below; it is **off** now), nothing queued, `ANTHROPIC_API_KEY` set and nothing posted
-  in the last 4 hours, Haiku
+  in the last 3 hours, Haiku
   (`claude-haiku-5-5`) writes one post, in turn a dev log and a "join the waitlist" post,
   from `social/facts.md`, the subjects of the commits since the last post, and the run's
   fresh card with its description (the only facts about the picture it may use). Without
@@ -102,10 +102,12 @@ Two rules hold for every post, Haiku's and the queued ones alike, and for every 
   zero-width space. Haiku's second check is a second net, never the only one.
 
 The C card (the first style tried on every picture) leads with one short headline from the
-card library (`cards.HEADLINES`, 2 to 6 words: "A real model, not a guess", "Real closing
-records, not a guess", "Closings reader runs 24/7", "The Snowlight waitlist is open", and over
-lit schools "Real school closings and delays" or "Like city lights seen from space"), each
-words of a LIVE fact, checked against the run's facts file and rotated by the picture's day;
+card library (`cards.HEADLINES`, 2 to 6 plain words: "A real model, not a guess", "Built on
+real past school days", "The Snowlight waitlist is open", and over lit schools "Real school
+closings and delays" or "Like city lights seen from space"), each words of a LIVE fact, with
+no insider name a parent would not know ("reader", "records", "24/7": `cards.INSIDER`),
+checked against the run's facts file and rotated by the run's slot of the day
+(`picture.slot_of`: morning, noon and evening), so a day's three cards differ;
 the place, time and badge sit small under it and the map fills the rest. The A card's line
 is the short model line, "A real model, not a guess", words of the LIVE fact `model`. Neither
 names a chance, so they stay while chances are TESTING (below).
@@ -141,12 +143,17 @@ The same kind of switch holds closings back: the status of the `closings` fact
 (`LIVE_PUBLISH=on`, Oct 27, 2026): the render job reads `live/closings.json`, the picture is
 the closings view when schools are lit, and the card counts them. The `glow` fact is LIVE with
 it, and the reader's practice mode is gone from the facts, so a post that says "practice" is
-refused. The map itself stays **TESTING** (locked): no LIVE fact's text speaks of the map, so
-a post that puts closings "on the map" still says the map is in private testing. Were the
+refused. Both carry `| private`: they are real and running but shown only behind the lock (and
+on the cards posted here) until launch, so a post never calls them live, public or there for
+everyone ("Closed schools glow for everyone", "Closings are live now" and "Every school glows
+like city lights on Snowlight now" are refused), nor coming ("Closings and phone alerts are
+coming" is refused: they are here). The map itself stays **TESTING** (locked): no LIVE fact's
+text speaks of the map, so a post that puts closings "on the map" still says the map is in
+private testing. Were the
 lead ever to mark `closings` not LIVE again:
 
 - the render job drops the closings file it read: the picture is never the closings view,
-  the page is served a 404 for the file (as in practice mode, so no school glows), and the
+  the page is served a 404 for the file (so no school glows), and the
   description says nothing of closings (not even "no school is lit up");
 - `cards.py` refuses a closings picture and any card or alt text with a word of closings on
   the map ("closed", "closings", "delayed", "lit up", "glow"; the model's "closing records"
@@ -159,9 +166,13 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
 
 - At most **1 post a run**, **3 posts a UTC day** of every kind (the D1 claim that starts a
   post holds the cap, so two runs cannot both pass it; `store.MAX_POSTS_PER_DAY`), and
-  **3 Haiku tries a UTC day**, at least **4 hours** after the last post
-  (`post.MAX_HAIKU_PER_DAY`, `post.QUIET`; each try's record and its post's slot are named
-  `<day>#<n>`, so a post goes at most once).
+  **3 Haiku tries a UTC day**, at least **3 hours** after the last post
+  (`post.MAX_HAIKU_PER_DAY`, `post.QUIET`; the 13:07 and 17:37 runs are 4.5 hours apart, so a
+  morning run GitHub starts up to 90 minutes late still leaves the noon run room; each try's
+  record and its post's slot are named `<day>#<n>`, so a post goes at most once). Each try
+  of a day states a different model fact (`rules.model_fact_for`), and a draft that says the
+  same as a Haiku post X was sent in the last 14 days is dropped (its mark is kept on the try's
+  record; X refuses a duplicate, and a refusal for good would hold all posting).
 - At most **4 Haiku calls a run** (write, check, and one more try of each), each capped at
   **1,024 output tokens**, effort `low`, and no SDK retries, and **3 Haiku tries a UTC day**
   (each try's D1 row is made before its first call), so at most 12 calls a day. An answer that says
@@ -228,7 +239,7 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
   `social/facts.md` in the same form and used as the facts use it: a word near it is near it
   in the facts too, the word right after it (its noun) is among the facts' first three after
   it, and a number in digits shares a word before it in its sentence with the facts' own
-  sentence ("24/7 in practice mode" passes, "24 schools" does not, nor "11 states" from "11
+  sentence ("the reader runs 24/7" passes, "24 schools" does not, nor "11 states" from "11
   past winters", "661 snow days" from "661 real past private school days", or "the reader
   checks 118,211 schools" from "the directory holds 118,211 schools"). A number from the
   picture's description is never written in a post: the card carries every count, time and
@@ -247,7 +258,8 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
   later in the sentence ("and I will keep polishing it" covers nothing). A word about one
   thing never covers another ("Phone alerts are coming; closed schools glow" is refused for
   the glow), "more coming" covers nothing, a COMING thing is only "coming" (never "in
-  testing" or "in practice"), and "practice" covers only the reader's practice mode.
+  testing"), and "practice" covers only a fact whose text speaks of practice mode (none
+  does now).
   "Already", "works", "is on", "turned on" or "ends" next to such a thing refuses it
   outright. A sentence that names one holds no live claim ("is live", "shows up", "ships",
   "works for everyone", "public now") and no end of testing ("no longer", "done testing",
@@ -268,15 +280,16 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
 
 A Haiku post also goes past a second Haiku call that checks it against the facts and
 answers `{ok, problems}`. Either check failing gives one more try with the problems shown;
-a second failure means no post that day (the run log says why, and the day's D1 row keeps
-the second slot from asking again). A queued post that fails the checks is never sent and
+a second failure means no post from that try (the run log says why); the failed try counts
+as one of the day's three, and a later run that day may try again. A queued post that fails the checks is never sent and
 turns the run red.
 
 ## The facts file
 
 `social/facts.md` is the only source of what a post may say. One fact a line, tagged
-**LIVE** (true and running now), **TESTING** (built, but in practice mode or behind the
-lock) or **COMING** (not on yet), with the words that name it (`| terms: ...`) and the
+**LIVE** (true and running now; `| private` when it shows only behind the lock until
+launch), **TESTING** (built, but behind the lock or switched off) or **COMING** (not on yet),
+with the words that name it (`| terms: ...`) and the
 phrases that hold one of those words but name another fact (`| except: ...`, such as
 "closings reader", the LIVE reader, for the COMING closings on the map). Keep it current:
 when something ships, move its fact to LIVE in the same change. Nothing private goes in
@@ -309,18 +322,24 @@ network at all:
    it reads `predictions/latest.json` from the same live root, only while the facts file
    marks chances LIVE.
 2. `picture.py` picks the view from those files: the busiest picture-sized area of lit
-   schools when closings light any today; else, only while chances are LIVE, the district
+   schools when closings light any today, zoomed closer (up to zoom 9.5) while every lit
+   school of it still fits the middle of the picture, so a few lit schools fill the card with
+   their glow and the specks around them; else, only while chances are LIVE, the district
    with the highest chance of no school (at least 10%), framed by its schools on the left;
    else a region's city lights: one of a short list of populous windows (the Northeast
    corridor, the Great Lakes, the Mid-Atlantic, the Texas triangle, the Front Range, the
    Pacific Northwest, Southern California: `picture.REGIONS`), at a zoom where the site draws
-   every school as a faint speck, rotated by the day so posts vary; the render checks the
-   page drew specks in view and tries the next region (two a try); only when every region
-   tried fails, the dark national map (the site draws no school specks at that zoom, so alone
+   every school as a faint speck, rotated by the run's slot so each of a day's posts opens on
+   a different place; the render checks the page drew specks in view and tries the next
+   region (two a try) when it drew none; any other failure (the map did not settle, the
+   browser timed out) ends the attempt; only when every region tried drew no specks, the dark
+   national map (the site draws no school specks at that zoom, so alone
    it reads as an empty black map; the words never say "night": the map is dark at any hour).
    It writes the description (time with its zone, place by state, counts, chance) and the
-   same facts as fields. Nothing is
-   said about closings when the closings file was a 404 (practice mode), and neither when it
+   same facts as fields. A place is "mostly" its states only when they hold more than half of
+   the schools counted (a second state only with at least 15%); lit private schools, whose ids
+   name no state, are placed by the view ("in a view over New Mexico"). Nothing is
+   said about closings when the closings file was a 404, and neither when it
    is older than 20 minutes: a stopped reader's empty file is no sign that nothing is
    closed, so that picture is not current and the post may not call it so. A chance is shown
    only from a predictions file at most 90 minutes old, and only for the next school day not
@@ -491,7 +510,7 @@ queued file from `social/queue/` once it is posted.
 | --------------------------------------------------- | -------------------------- | ---------------------------------------------------------------- |
 | `X_CLIENT_ID`, `X_CLIENT_SECRET`, `X_REFRESH_TOKEN` | environment `x-posting`    | the X app and the first refresh token                            |
 | `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`           | environment `x-posting`    | the account's OAuth 1.0a pair, exchanged once to start the chain |
-| `ANTHROPIC_API_KEY`                                 | environment `x-posting`    | Haiku's daily post (a dedicated key with a monthly spend limit)  |
+| `ANTHROPIC_API_KEY`                                 | environment `x-posting`    | Haiku's posts (a dedicated key with a monthly spend limit)       |
 | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`     | repository (already there) | the D1 store                                                     |
 
 The `x-posting` environment must be limited to the default branch, and only the owner can

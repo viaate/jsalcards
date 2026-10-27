@@ -1,4 +1,4 @@
-"""The daily post Claude Haiku writes, and Haiku's second check of it.
+"""The posts Claude Haiku writes (up to three a day), and Haiku's second check of each.
 
 Both calls go through the official ``anthropic`` SDK (``client.messages.create`` with
 ``output_config``: ``effort: low`` and a JSON schema ``format``, so the first text block is
@@ -11,7 +11,8 @@ The flow (:func:`draft`): write, stating the day's model fact
 (:func:`snowlight.social.rules.model_fact_for`: the LIVE model facts in turn); check it with
 :func:`snowlight.social.rules.check` (which also holds it to that model fact); if that passes,
 ask Haiku to check it against the facts. Either check failing gives one more try with
-the problems shown; a second failure means no post today. An answer that says the key, the
+the problems shown; a second failure means no post from this try (a later run that day may
+try again, up to three tries a day). An answer that says the key, the
 model id or the request is wrong (HTTP 400, 401, 403, 404) stops at once
 (:class:`FatalAnswerError`): no second try, and the run ends red.
 
@@ -361,14 +362,16 @@ def draft(  # noqa: PLR0912, PLR0913 - one check a branch; the run's parts
     today: date,
     commits: Sequence[str],
     say: Callable[[str], None],
+    turn: int = 0,
 ) -> Written | None:
-    """The day's post, or ``None`` when both tries fail a check (each problem is said).
+    """The post of ``today``'s Haiku try ``turn`` (0 for the day's first), or ``None`` when
+    both attempts fail a check (each problem is said).
 
     Raises:
         FatalAnswerError: the API refused a call in a way no retry can change.
     """
     problems: list[str] = []
-    model_fact = model_fact_for(content.facts, today)
+    model_fact = model_fact_for(content.facts, today, turn)
     if model_fact is not None:
         say(f"social: the model fact for {today.isoformat()} is {model_fact.id}")
     for attempt in range(1, ATTEMPTS + 1):
