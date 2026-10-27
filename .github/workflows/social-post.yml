@@ -189,8 +189,10 @@ jobs:
         run: |
           set -euo pipefail
           job=$(gh api "repos/$REPOSITORY/actions/runs/$RUN_ID/attempts/$ATTEMPT/jobs" --jq '.jobs[] | select(.name == "render") | .id')
+          # Actions logs color their command lines with terminal escape sequences, which
+          # gh refuses to print without --allow-escape-sequences; the log goes to a file here.
           for try in 1 2 3 4 5 6; do
-            if gh api "repos/$REPOSITORY/actions/jobs/$job/logs" > "$RUNNER_TEMP/render.log" 2> /dev/null; then break; fi
+            if gh api --allow-escape-sequences "repos/$REPOSITORY/actions/jobs/$job/logs" > "$RUNNER_TEMP/render.log" 2> /dev/null; then break; fi
             sleep 10
           done
           status=0
@@ -237,15 +239,17 @@ jobs:
             echo "::notice::log-check: the post job never started, so it has no log to read"
             exit 0
           fi
+          # Actions logs color their command lines with terminal escape sequences, which
+          # gh refuses to print without --allow-escape-sequences; the log goes to a pipe here.
           for try in 1 2 3 4 5 6; do
-            if gh api "repos/$REPOSITORY/actions/jobs/$job/logs" > /dev/null 2>&1; then break; fi
+            if gh api --allow-escape-sequences "repos/$REPOSITORY/actions/jobs/$job/logs" > /dev/null 2>&1; then break; fi
             sleep 10
           done
           # The log is read from the API into the scanner's standard input, never saved. The
           # scanner is the same rule as pipeline/snowlight/social/logscan.py: a run of 30 or
           # more token characters with upper case, lower case and a digit, or a known key
           # prefix. It prints line numbers and lengths only.
-          gh api "repos/$REPOSITORY/actions/jobs/$job/logs" | python3 -c '
+          gh api --allow-escape-sequences "repos/$REPOSITORY/actions/jobs/$job/logs" | python3 -c '
           import re, sys
           run = re.compile(r"[A-Za-z0-9_\-~+=.]{30,}")
           prefixes = ("sk-ant-", "ghs_", "ghp_", "gho_", "github_pat_")

@@ -195,10 +195,17 @@ def test_the_log_check_reads_every_post_job_that_was_not_skipped(
     assert check["if"] == "always() && needs.post.result != 'skipped'"
 
 
-FAKE_GH = """#!/bin/sh
+# Like the runner's gh: it refuses to print a body holding a terminal escape sequence (an
+# Actions log colors its command lines) unless it is given --allow-escape-sequences.
+FAKE_GH = """#!/bin/bash
 case "$*" in
   *"/attempts/"*) printf '%s\\n' "$FAKE_JOBS" ;;
-  *"/logs"*) printf '%s\\n' "$FAKE_LOG" ;;
+  *"/logs"*)
+    if [[ "$FAKE_LOG" == *$'\\e'* && " $* " != *" --allow-escape-sequences "* ]]; then
+      echo "the response contains terminal escape sequences" >&2
+      exit 1
+    fi
+    printf '%s\\n' "$FAKE_LOG" ;;
   *) exit 1 ;;
 esac
 """
@@ -237,6 +244,33 @@ def test_a_cancelled_post_job_that_ran_is_scanned(workflow: dict[Any, Any], tmp_
     code, out = _log_check(workflow, tmp_path, "42 7", "Post\nall masked: ***\n")
     assert code == 0
     assert "log-check: 0 secret-shaped values, 0 stop commands" in out
+
+
+def test_a_post_job_log_with_colored_lines_is_scanned(
+    workflow: dict[Any, Any], tmp_path: Path
+) -> None:
+    colored = "\x1b[36;1muv run --no-sync snowlight social post\x1b[0m"
+    code, out = _log_check(workflow, tmp_path, "42 7", f"Post\n{colored}\nall masked: ***\n")
+    assert code == 0
+    assert "log-check: 0 secret-shaped values, 0 stop commands" in out
+    leaked = "token " + "Ab1" * 12
+    code, out = _log_check(workflow, tmp_path, "42 7", f"Post\n{colored}\n{leaked}\n")
+    assert code == 1
+    assert "secret-shaped value in the post job log at line 3" in out
+
+
+def test_every_log_read_lets_gh_print_the_logs_escape_sequences(
+    workflow: dict[Any, Any],
+) -> None:
+    reads = [
+        line
+        for job in workflow["jobs"].values()
+        for step in job["steps"]
+        for line in step.get("run", "").splitlines()
+        if "/logs" in line and "gh api" in line
+    ]
+    assert len(reads) == 3  # the render job's log once, the post job's log twice
+    assert all("gh api --allow-escape-sequences " in line for line in reads)
 
 
 @pytest.mark.parametrize("jobs", ["42 0", ""])
