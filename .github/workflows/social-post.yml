@@ -19,7 +19,8 @@
 # and reaching only the site, its live files and its map tiles, opens the real site,
 # https://snowlightmap.com, unlocks it in that browser only, waits for the live files, hides
 # the site's interface and takes a 1600 x 900 picture of the map alone (the busiest area of
-# lit-up schools, else the district with the highest chance, else the dark national map;
+# lit-up schools, else the district with the highest chance, else a region's city lights
+# rotated by the day, else the dark national map;
 # while social/facts.md marks chances TESTING no picture, card or post gives a chance, and
 # while it marks closings not LIVE no picture or card shows or counts closings), with
 # a plain description of it that the post may use. Then it lays the Snowlight card over
@@ -132,7 +133,7 @@ jobs:
         id: render
         if: steps.browser.outcome == 'success'
         continue-on-error: true
-        timeout-minutes: 15 # two tries of two map views, then the cards (about 2 minutes)
+        timeout-minutes: 15 # two tries of up to four map views (the files, up to two regions, the national map), then the cards (about 2 minutes)
         run: uv run --no-sync snowlight social render --sandbox --out "$RUNNER_TEMP/picture"
 
       # The cards, as base64 lines of this job's log, and their digest as the job's output.
