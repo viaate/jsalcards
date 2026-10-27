@@ -251,6 +251,9 @@ def _pass(alerts: ReaderAlerts, now: datetime, **overrides: object) -> None:
 
 def test_the_reader_conditions(tmp_path: Path) -> None:
     alerts, book = _reader(tmp_path)
+    _pass(alerts, NOW - timedelta(minutes=10), share=0.4)
+    _pass(alerts, NOW - timedelta(minutes=5), share=0.4)
+    assert set(book.open) == set()  # health opens on the third low pass in a row
     _pass(alerts, NOW, published=False, refused_alert=True, share=0.4)
     assert set(book.open) == {"gate", "health"}
     _pass(alerts, NOW + timedelta(minutes=5), share=0.7)
@@ -367,3 +370,20 @@ def test_a_notice_reaches_the_log_when_the_reader_is_killed() -> None:
         "::warning::live v1-shadow alerts open gate",
         "pulse kept",
     ]
+
+
+def test_a_single_low_pass_opens_no_health_alert(tmp_path: Path) -> None:
+    """The soak's dips: one pass under 60% when a half-hour's sources come due, then clean."""
+    alerts, book = _reader(tmp_path)
+    for minutes in range(0, 120, 5):
+        dip = minutes % 30 == 10
+        _pass(alerts, NOW + timedelta(minutes=minutes), share=0.3 if dip else 0.97)
+        assert "health" not in book.open, minutes
+    _pass(alerts, NOW + timedelta(minutes=120), share=0.3)
+    _pass(alerts, NOW + timedelta(minutes=125), share=0.3)
+    _pass(alerts, NOW + timedelta(minutes=130), share=0.97)
+    _pass(alerts, NOW + timedelta(minutes=135), share=0.3)
+    assert "health" not in book.open  # a clean pass starts the count again
+    _pass(alerts, NOW + timedelta(minutes=140), share=0.3)
+    _pass(alerts, NOW + timedelta(minutes=145), share=0.2)
+    assert book.open["health"].detail == {"healthy_permille": 200}

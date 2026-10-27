@@ -1,7 +1,8 @@
 """The live reader's alerts (S8-E section 4): where each goes depends on the mode.
 
 **Kinds** (:class:`Kind`): ``gate`` (2 refused passes in a row; clears when a pass
-publishes), ``health`` (healthy share under 60%; clears after 2 passes at 60% or more),
+publishes), ``health`` (healthy share under 60% for 3 passes in a row; clears after 2 passes
+at 60% or more),
 ``source`` (a daily digest of the sources erroring 3 hours or more inside their windows that
 were not erroring in the 24 hours before), ``breaker`` (the breaker or the spike hold fired;
 clears after 2 clean passes), ``edition`` (a mismatch, a blank, an unreadable deployment, or
@@ -420,6 +421,10 @@ COLD_MIN_ROWS: Final = 20
 COLD_SHARE: Final = 0.25
 HEALTH_MIN: Final = 0.6
 CLEAN_PASSES: Final = 2
+HEALTH_PASSES: Final = 3
+"""Passes in a row under :data:`HEALTH_MIN` before ``health`` opens. The share dips for a single
+pass when a half-hour's sources come due together (31 such dips in the 48-hour soak, each over
+by the next pass), which is no reading problem; a real one lasts."""
 AHEAD_ALERT: Final = timedelta(minutes=15)
 SOURCE_HOURS: Final = timedelta(hours=3)
 SOURCE_BASELINE: Final = timedelta(hours=24)
@@ -476,6 +481,7 @@ class ReaderAlerts:
 
     book: AlertBook
     good_health: int = 0
+    bad_health: int = 0
     clean: int = 0
     ahead_since: datetime | None = None
     errors: SourceErrors = field(default_factory=SourceErrors)
@@ -498,8 +504,11 @@ class ReaderAlerts:
         if share is not None:
             if share < HEALTH_MIN:
                 self.good_health = 0
-                book.set(Kind.HEALTH, True, now, {"healthy_permille": round(share * 1000)})
+                self.bad_health += 1
+                if self.bad_health >= HEALTH_PASSES:
+                    book.set(Kind.HEALTH, True, now, {"healthy_permille": round(share * 1000)})
             else:
+                self.bad_health = 0
                 self.good_health += 1
                 if self.good_health >= CLEAN_PASSES:
                     book.set(Kind.HEALTH, False, now)

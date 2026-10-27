@@ -238,7 +238,7 @@ Where an alert goes depends on the mode:
 | Kind | Opens when | Clears when |
 |---|---|---|
 | `gate` | 2 refused passes in a row | a pass publishes |
-| `health` | healthy share under 60% | 2 passes at 60% or more |
+| `health` | healthy share under 60% for 3 passes in a row (a single low pass is the half-hour's sources coming due together) | 2 passes at 60% or more |
 | `source` | the daily digest (after 15:00 UTC): sources erring 3 h or more inside their windows that did not err in the 24 h before | the next digest has none |
 | `breaker` | the breaker or the spike hold fired | 2 clean passes |
 | `edition` | a mismatch, a blank, an unreadable deployment, or code ahead of the deploy for 15 min | the handshake is good |
