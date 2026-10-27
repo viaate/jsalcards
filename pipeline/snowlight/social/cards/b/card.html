@@ -99,7 +99,7 @@
         },
         address: 'snowlightmap.com',
         unitLit: (n, past) =>
-          `${n === 1 ? 'school' : 'schools'} ${past ? (n === 1 ? 'was' : 'were') + ' ' : ''}lit up for weather`,
+          `${n === 1 ? 'school' : 'schools'} ${past ? (n === 1 ? 'was' : 'were') + ' ' : ''}lit up`,
         // picture._states: at most two states, most first. "In" when they hold every lit school in view.
         place: (states, cover) => (states.length ? `${cover ? 'In' : 'Mostly in'} ${and(states)}` : ''),
         inView: (n, states, cover) =>

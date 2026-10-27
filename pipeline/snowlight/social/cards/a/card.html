@@ -460,7 +460,7 @@
           parts[0] = parts[0].replace(/^([\d,]+) /, (m, v) => `${v} ${v === '1' ? 'school' : 'schools'} `);
           const where = p.states.length ? `, mostly in ${and(p.states)}` : '';
           s =
-            `The Snowlight map ${when}, zoomed to the area with the most schools lit up for weather${where}: ` +
+            `The Snowlight map ${when}, zoomed to the area with the most schools lit up${where}: ` +
             `${and(parts)} in this view` +
             (p.lit > k.inView ? `, and ${n(p.lit)} lit up across the country` : '') +
             (p.current || f.isFallback ? '' : `, with closings last updated at ${k.updated.clock}`);
