@@ -693,7 +693,7 @@ def test_a_library_card_whose_line_left_the_facts_file_is_refused(tmp_path: Path
     images.mkdir()
     source = next(
         path
-        for path in sorted((REPO / "social" / "images").glob("*national*dev-log.json"))
+        for path in sorted((REPO / "social" / "images").glob("*dev-log.json"))
         if json.loads(path.read_text(encoding="utf-8")).get("tagline")
     )
     entry = json.loads(source.read_text(encoding="utf-8"))
@@ -726,9 +726,17 @@ def test_a_card_line_is_words_of_a_live_fact_or_a_whole_coming_one() -> None:
     assert not still_true("Chances from an AI trained on everything", facts)
 
 
-def test_every_library_card_with_a_line_names_it() -> None:
-    for path in sorted((REPO / "social" / "images").glob("*national*.json")):
-        assert json.loads(path.read_text(encoding="utf-8")).get("tagline"), path.name
+def test_every_library_card_names_its_line_and_none_is_the_bare_national_map() -> None:
+    """Every library card is a C card with its headline kept in its JSON (checked against the
+    facts file at load), over a region's city lights: never the bare national map."""
+    paths = sorted((REPO / "social" / "images").glob("*.json"))
+    assert paths
+    for path in paths:
+        entry = json.loads(path.read_text(encoding="utf-8"))
+        assert entry.get("tagline"), path.name
+        assert entry["alt"].endswith(f"captioned {entry['tagline']}."), path.name
+        assert "national" not in path.name
+        assert "faint white specks" in entry["shows"], path.name
 
 
 # Chances while the site is locked (F): no card, card word or alt text gives a chance.

@@ -356,7 +356,10 @@ network at all:
 
 A try that fails gets one more. When the map fails twice, or a card fails twice, that post
 goes with the library's newest card for its style: `social/images/<id>.png` and `.json`,
-real cards made the same way with `snowlight social render --fallback`, dated on their face
+real cards made the same way with `snowlight social render --fallback` (now C cards over the
+Northeast corridor's city lights from Oct 27, 2026, made with `--view` and a local live folder
+holding no closings file, so neither card nor description says anything of closings; never
+the bare national map), dated on their face
 ("From Oct 26, 2026", never a clock, "now" or "live"), each with what it shows, its day and
 alt text. A post never calls an older card current.
 
