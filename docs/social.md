@@ -62,7 +62,13 @@ Two rules hold for every post, Haiku's and the queued ones alike, and for every 
   "outdoes", "superior", "more accurate", "most accurate", "AI" (also "A I"), "ML",
   "neural", "ChatGPT", "AI-powered", "machine learning", "formula", any "-er than" or "more
   ... than", "they guess", and "guess" in any form except "not a guess" (about Snowlight's
-  own chances). Haiku's second check refuses any other comparison it sees.
+  own chances). Refused too: what others do or use ("instead of", "rivals",
+  "alternatives", "the radar", "rumors", "vibes", "tricks", "weatherman", "the news", "TV"),
+  any plural of a product word ("news sites", "TV stations", "weather apps"), uniqueness
+  ("the first", "the biggest", "the largest", "unique", "unmatched", "one of a kind"), "SDC"
+  however it is spaced or dotted ("S.D.C.", "S D C"), and any letter outside the Latin
+  script or invisible character, so a name cannot hide behind a Cyrillic letter or a
+  zero-width space. Haiku's second check is a second net, never the only one.
 
 The A card's line on a dev log or waitlist card is the model line, "A prediction model
 trained on real closing records, not a guess", words of the LIVE fact `model`. It names no
@@ -120,6 +126,15 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
   the run ends red. A day's Haiku cost is a fraction of a cent.
 - While posting is stopped (the refused token, or a post X refused for good, below), a run
   stops before anything else: no Haiku call, no claim, no refresh, no change to the issue.
+  The stop holds even when the database could not record it (the open token issue carries
+  the chain's version, and the run that could not record it ends red), and a hold whose
+  issue could not be opened stays until its issue is opened and closed.
+- A post X refuses twice in a row with the same 4xx (not a 429, not one that holds posting)
+  is skipped for good, with an issue, **X posting: a post was skipped**; the other posts go
+  on, and a skipped post counts toward no cap. A 429 or a 5xx is never counted.
+- Each run logs every Haiku call's output tokens. When both of a day's tries run out at the
+  1,024-token cap (Haiku 5.5 thinks first, and its thinking counts), the run ends red with a
+  warning: the cap, not the draft, cost that day's post.
 - X bills each post on the owner's prepaid credits. Keep the balance small and auto-recharge
   off: the most anything can ever spend is that balance.
 - The spending limits are the owner's to set (nothing here can set them): in the X developer
@@ -143,24 +158,38 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
   and the like only of the waitlist or worded as coming: nobody can open the map before
   launch;
 - no accuracy claim, with or without a number ("always right", "called most snow days
-  right", "hit rate", "reliable", "correct", "track record"), nothing the facts do not say of
-  the product ("download", "the Snowlight app", "free", "schools use", "trusted by"), no
-  school or district by name ("... Public Schools", "... ISD"), and no run-together word of
-  letters and digits the facts do not hold ("v3");
+  right", "hit rate", "reliable", "correct", "track record", "rarely wrong", "proven", "it
+  works", "held up", "scored well", "precision", "count on", "science-backed"), nothing the
+  facts do not say of the product or its maker ("download", "the Snowlight app", "free",
+  "schools use", "trusted by", "love", "we", "our team", "investors", "backed by", "daily
+  emails", "never shared", "growing"), no hype words ("huge", "massive"), no school, district
+  or person by name ("... Public Schools", "Lincoln High's", "... ISD", "my friend Jake"), no
+  state the picture's description does not name, and no run-together word of letters and
+  digits the facts do not hold ("v3");
 - every number, in digits or in words ("fifty", "twenty-four", "first"), is in
-  `social/facts.md` in the same form and used as the facts use it: a word next to it is next
-  to it in the facts too ("24/7 in practice mode" passes, "24 schools" does not, nor "48
-  schools" from "the lower 48 states"). A number from the picture's description is never
-  written in a post: the card carries every count, time and chance, labeled. What this
-  cannot see (a fact's number in a true-looking but misleading sentence that shares a word
-  with the fact) is left to the second check;
+  `social/facts.md` in the same form and used as the facts use it: a word near it is near it
+  in the facts too, the word right after it (its noun) is among the facts' first three after
+  it, and a number in digits shares a word before it in its sentence with the facts' own
+  sentence ("24/7 in practice mode" passes, "24 schools" does not, nor "11 states" from "11
+  past winters", "661 snow days" from "661 real past private school days", or "the reader
+  checks 118,211 schools" from "the directory holds 118,211 schools"). A number from the
+  picture's description is never written in a post: the card carries every count, time and
+  chance, labeled;
 - "tomorrow", "next week", a weekday or a month only as the facts or the picture's
   description use them; never a launch date;
-- a sentence that names a TESTING or COMING fact (by its terms, such as "closings",
-  "closed", "alerts", "text", "the map", "search") says it is testing or coming, and holds
-  no live claim ("is live", "shows up", "ships", "works for everyone", "public now") and no
-  end of testing ("no longer", "done testing", "practice is over"); a live claim that names
-  no LIVE fact ("Snowlight is live") is refused too;
+- each TESTING or COMING thing a post names (by its terms, such as "closings", "closed",
+  "alerts", "text", "the map", "search") is said to be testing or coming by a word said of
+  it: next to it in its clause, or nearer to it than to anything else not live, or as
+  "testing them" after it. A word about one thing never covers another ("Closings glow on
+  the map; notifications are coming" is refused for the closings), "more coming" covers
+  nothing, a COMING thing is only "coming" (never "in testing" or "in practice"), and
+  "practice" covers only the reader's practice mode. "Already", "works", "is on", "turned
+  on" or "ends" next to such a thing refuses it outright. A sentence that names one holds no
+  live claim ("is live", "shows up", "ships", "works for everyone", "public now") and no end
+  of testing ("no longer", "done testing", "practice is over"); a live claim that names no
+  LIVE fact ("Snowlight is live") is refused too;
+- while chances are TESTING, no chance in other words either: "a coin flip", "near
+  certain", "probably", "likely", "expects", "watching" near a closing word;
 - a picture that is not current (a library card, or a fresh one of a stale closings file) is
   never called current: no "now", "today", "tonight", "currently", "as of", "just",
   "fresh", "latest" or clock time;
@@ -193,8 +222,14 @@ library is made again with `snowlight social render --fallback`.
 
 The workflow's **render** job makes every post's picture fresh (`snowlight social render`,
 `render.py`). It runs on its own machine with no secret, no environment and read-only
-repository access, because its browser reads the live site and a third party's map tiles
-with no sandbox; the secrets live only in the post job, which runs no browser:
+repository access, and writes no cache, because its browser reads the live site and a third
+party's map tiles; the secrets live only in the post job, which runs no browser. The browser
+reaches only snowlightmap.com, viaate.github.io (the live files) and tiles.openfreemap.org:
+every other request is aborted and its host said in the log. It runs in Chromium's own
+sandbox (the job first allows the unprivileged user namespaces that sandbox needs on Ubuntu
+24.04); if the runner still cannot start it, the log says so in a warning and the browser
+runs without it, still reaching only those hosts. The card pages it lays out next reach no
+network at all:
 
 1. Headless Chromium (installed in the job) reads the site's lock check from its own page and
    unlocks it in that browser only (never printed). Signed out, it opens the map at a view
@@ -272,7 +307,13 @@ If X refuses the refresh token, the stored token does not open, the rotated toke
 be stored, or the token lacks a scope a post needs, the run opens one issue, **X posting
 stopped: refresh token**, that says which, with the steps below, and records which secret
 stopped. From then on every run stops before it picks anything while `X_REFRESH_TOKEN` is
-still that secret: no Haiku call, no claim, no refresh, and the issue is left as it is. Only an issue the workflow itself opened
+still that secret: no Haiku call, no claim, no refresh, and the issue is left as it is. The
+issue's body ends with a hidden line naming the stored chain's version when it stopped (a
+count, nothing secret): if the database could not record the stop, the run ends red, and
+every later run still stops while that issue is open and the chain is at that version from
+the same secret. When an earlier refresh got no answer (a timeout), the row records it, and
+a later refusal of that token says in the issue that the lost refresh most likely spent it;
+the owner's steps are the same. Only an issue the workflow itself opened
 (`github-actions[bot]`) is ever updated or closed: anyone can open an issue with that title
 in a public repository, and the owner's steps never go into one a stranger wrote. When the
 rotated token could not be stored, the run still posts the post it claimed with the fresh
@@ -291,8 +332,16 @@ post**, with X's status and what it means, and holds posting: every run stops be
 picks anything while that issue is open and `X_REFRESH_TOKEN` is unchanged. Fix the cause
 (add credits; give the app Read and write permission and paste a new refresh token; delete
 a duplicate's queue file), then close the issue: the next run tries once more and opens it
-again if X still refuses. A post that goes out closes it. Any other refusal (a 429, a 400)
-drops the claim, and a later run tries again.
+again if X still refuses. A post that goes out closes it. The hold keeps the number of the
+issue it opened: if GitHub would not open the issue, the hold stays (never lifted as if the
+owner had closed it), every run tries to open it again and ends red, and nothing is sent
+until it is opened and then closed.
+
+Any other refusal of a post (a 400, a 413) drops the claim once, and a later run tries
+again; a second refusal in a row with the same status skips that post for good (`skipped`
+in `social_posts`, the count in `social_refusals`) and opens **X posting: a post was
+skipped**: fix the file and give it a new id, or delete it, then close the issue. A 429 or a
+5xx is never counted.
 
 ### When the issue opens (the owner)
 
@@ -342,6 +391,8 @@ and an older sealed value written back does not open, but it could break the cha
 run then opens the issue). If the owner wants that closed too: make a Cloudflare token
 with D1 edit rights only, add it as `CLOUDFLARE_API_TOKEN` (with `CLOUDFLARE_ACCOUNT_ID`) as
 **environment** secrets of `x-posting`; the job then uses those over the repository ones.
+The poster sends the Cloudflare token to `https://api.cloudflare.com` only: no setting, in
+the environment or anywhere else, points it at another host.
 
 The workflow has no trigger a
 fork or pull request can fire (no `pull_request`, `pull_request_target` or
