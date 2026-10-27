@@ -51,6 +51,7 @@ from snowlight.social.picture import (
     SHOWN_ZONE,
     STATUS_WORDS,
     WIDTH,
+    Counts,
     Taken,
     clock,
 )
@@ -93,6 +94,7 @@ HEADLINES: Final[Mapping[tuple[str, str], tuple[str, ...]]] = {
     ("waitlist", "any"): ("The Snowlight waitlist is open",),
     ("dev-log", "closings"): (
         "Real school closings and delays",
+        "Real school closings",
         "Like city lights seen from space",
     ),
     ("dev-log", "any"): (
@@ -183,10 +185,12 @@ def headline_for(taken: Taken, post: Post, facts: Facts) -> str | None:
     ``facts`` (:func:`snowlight.social.rules.still_true`), with no word of closings unless
     the facts file marks them LIVE and the picture is of them; ``None`` when none is."""
     lines = HEADLINES.get((post, taken.kind)) or HEADLINES[(post, "any")]
+    counts = taken.seen.in_view
     fitting = [
         line
         for line in lines
         if still_true(line, facts)
+        and (taken.kind != "closings" or _fits_counts(line, counts))
         and HEADLINE_WORDS[0] <= len(line.split()) <= HEADLINE_WORDS[1]
         and (not mentions_closings(line) or (closings_shown(facts) and taken.kind == "closings"))
         and not mentions_chance(line)
@@ -194,6 +198,15 @@ def headline_for(taken: Taken, post: Post, facts: Facts) -> str | None:
     if not fitting:
         return None
     return fitting[day_of(taken).toordinal() % len(fitting)]
+
+
+def _fits_counts(line: str, counts: Counts | None) -> bool:
+    """Whether a headline's status words are all in view: "closings" only over closed
+    schools and "delays" only over delayed ones (a card never reads as more than it shows)."""
+    lowered = line.lower()
+    if "closing" in lowered and (counts is None or counts.closed == 0):
+        return False
+    return "delay" not in lowered or (counts is not None and counts.delayed > 0)
 
 
 def pick(

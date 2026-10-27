@@ -907,3 +907,44 @@ def test_the_stamp_lays_a_headline_small_and_inside_the_margin(
         )  # fmt: skip
     alt = alt_text(calm, "dev-log", fallback=False, headline="A real model, not a guess")
     assert alt.endswith("captioned A real model, not a guess.")
+
+
+def test_the_waitlist_stamp_over_lit_schools_carries_their_counts(
+    page: Page, maps: dict[str, Path]
+) -> None:
+    """The waitlist card's badge is the link; the lit schools in view still show, counted
+    from the picture's facts and labeled "in this view", with the country's total named."""
+    _, words = lay(
+        page, "c-right", taken("closings", STORM), "waitlist", maps["storm"], fallback=False,
+        headline="The Snowlight waitlist is open",
+    )  # fmt: skip
+    assert "snowlightmap.com" in words
+    assert "1,843" in words
+    assert "schools closed in this view" in words
+    assert "5,021" in words
+    assert "lit up across the US" in words
+
+
+def test_a_closings_headline_says_only_the_statuses_in_view() -> None:
+    facts = real_facts()
+    only_closed = STORM.model_copy(
+        update={"in_view": Counts(closed=2, delayed=0, remote=0, early_dismissal=0)}
+    )
+    lines = {
+        headline_for(
+            taken("closings", only_closed).model_copy(
+                update={"taken_at": datetime(2026, 12, d, 14, tzinfo=UTC)}
+            ),
+            "dev-log",
+            facts,
+        )
+        for d in range(1, 8)
+    }
+    assert "Real school closings and delays" not in lines
+    assert "Real school closings" in lines
+    only_delayed = STORM.model_copy(
+        update={"in_view": Counts(closed=0, delayed=4, remote=0, early_dismissal=0)}
+    )
+    assert headline_for(taken("closings", only_delayed), "dev-log", facts) == (
+        "Like city lights seen from space"
+    )

@@ -207,6 +207,42 @@
         rest.hidden = rest.children.length === 0;
       }
 
+      // The waitlist card over lit schools: the link is its badge, and every lit status in
+      // view goes in the row along the bottom-left, the first labeled "in this view".
+      function countRow(values, total) {
+        const rest = $('rest');
+        rest.replaceChildren();
+        let first = true;
+        STATUSES.forEach((key, i) => {
+          if (values[i] === 0) return;
+          const li = document.createElement('li');
+          const m = document.createElement('i');
+          m.className = `mark ${CLASS[key]}`;
+          const c = document.createElement('span');
+          c.className = 'count';
+          c.textContent = number.format(values[i]);
+          const w = document.createElement('span');
+          w.textContent = first
+            ? `${values[i] === 1 ? 'school' : 'schools'} ${STATUS_WORD[key]} in this view`
+            : STATUS_WORD[key];
+          first = false;
+          li.append(m, c, w);
+          rest.append(li);
+        });
+        const inView = values.reduce((a, b) => a + b, 0);
+        if (Number.isInteger(total) && total > inView) {
+          const li = document.createElement('li');
+          const c = document.createElement('span');
+          c.className = 'count';
+          c.textContent = number.format(total);
+          const w = document.createElement('span');
+          w.textContent = 'lit up across the US';
+          li.append(c, w);
+          rest.append(li);
+        }
+        rest.hidden = rest.children.length === 0;
+      }
+
       // picture.py: the district view's chance is the highest of any district that day; the
       // national view's is "at most 1% in every district" when it rounds to 1% or less.
       function chanceBadge(chance, day, scope) {
@@ -316,6 +352,7 @@
           chanceBadge(slots.chance, slots.chanceDay, slots.chanceScope);
         } else if (kind === 'waitlist') {
           linkBadge(slots.link ?? 'snowlightmap.com');
+          if (lit > 0) countRow(values, slots.total);
         } else if (lit > 0) {
           statusBadge(values, slots.total);
         } else if (slots.chance != null) {
