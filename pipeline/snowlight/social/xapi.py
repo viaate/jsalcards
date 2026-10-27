@@ -56,7 +56,13 @@ class RefreshRefusedError(XError):
 
 
 class RefreshUnknownError(XError):
-    """No usable answer to the refresh (network, 5xx): the token may or may not be spent."""
+    """No usable answer to the refresh. ``maybe_spent``: X may have taken the refresh and
+    spent the token (no answer, a 5xx, or a 200 without the tokens); not after an answer that
+    says X did not take it (429 or another 4xx)."""
+
+    def __init__(self, message: str, *, maybe_spent: bool = True) -> None:
+        super().__init__(message)
+        self.maybe_spent = maybe_spent
 
 
 class ScopeError(XError):
@@ -136,7 +142,8 @@ class XClient:
 
         Raises:
             RefreshRefusedError: X answered 400 or 401 (the token or the client is refused).
-            RefreshUnknownError: no answer, a 5xx, or an answer without the tokens.
+            RefreshUnknownError: no answer, a 5xx, an answer without the tokens (each may
+                have spent the token), or a 429 or another 4xx (X did not take it).
         """
         basic = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
         self._mask(basic)
@@ -155,7 +162,11 @@ class XClient:
         if response.status_code in (400, 401):
             raise RefreshRefusedError(f"X refused the refresh token: {_say(response)}")
         if response.status_code != httpx.codes.OK or not isinstance(body, dict):
-            raise RefreshUnknownError(f"the token refresh failed: {_say(response)}")
+            raise RefreshUnknownError(
+                f"the token refresh failed: {_say(response)}",
+                maybe_spent=response.status_code >= httpx.codes.INTERNAL_SERVER_ERROR
+                or response.status_code == httpx.codes.OK,
+            )
         access = body.get("access_token")
         if not isinstance(access, str) or not access:
             raise RefreshUnknownError("the token answer holds no access token")

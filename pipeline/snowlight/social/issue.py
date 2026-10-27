@@ -12,9 +12,12 @@
   on. The owner fixes or removes it and closes the issue.
 
 The :data:`TOKEN` issue's body ends with a hidden line naming the stored chain's version when
-the chain stopped (:data:`MARK`, a count, nothing secret): while that issue is open and the
-chain is still at that version, from the same secret, every run stops, even when the database
-could not record the stop (:meth:`GitHub.stopped_at`).
+the chain stopped and the first :data:`SEED_SHOWN` hex characters of the keyed fingerprint of
+the secret that was refused (:data:`MARK`: a count and an HMAC under the client secret, nothing
+that can be turned back into a token): while that issue is open, the chain is still at that
+version and ``X_REFRESH_TOKEN`` is still that secret, every run stops, even when the database
+could not record the stop (:meth:`GitHub.stopped_at`), whichever secret the stored chain
+started from.
 
 Each is opened (or, when already open, its body brought up to date) with the job's
 ``GITHUB_TOKEN`` (``issues: write``). Nothing in it comes from X but the HTTP status and
@@ -37,8 +40,13 @@ TITLE: Final = "X posting stopped: refresh token"
 REFUSED_TITLE: Final = "X posting stopped: X refused the post"
 SKIPPED_TITLE: Final = "X posting: a post was skipped"
 TIMEOUT: Final = httpx.Timeout(20.0, connect=10.0)
-MARK: Final = "<!-- snowlight-social: the token chain stopped at version {version} -->"
-MARKED: Final = re.compile(r"<!-- snowlight-social: the token chain stopped at version (\d+) -->")
+MARK: Final = "<!-- snowlight-social: the token chain stopped at version {version} seed {seed} -->"
+MARKED: Final = re.compile(
+    r"<!-- snowlight-social: the token chain stopped at version (\d+)(?: seed ([0-9a-f]{12}))? -->"
+)
+SEED_SHOWN: Final = 12
+"""How many hex characters of the keyed fingerprint of the refused secret the mark holds: enough
+to tell one pasted secret from another, nothing that can be turned back into it."""
 BOT: Final = "github-actions[bot]"
 """The author of the workflow's own issues (the job's ``GITHUB_TOKEN``)."""
 
@@ -140,23 +148,26 @@ class GitHub:
         number = item.get("number") if item is not None else None
         return number if isinstance(number, int) else None
 
-    def stopped_at(self, client: httpx.Client) -> int | None:
-        """The chain version the open :data:`TOKEN` issue says the chain stopped at, or
-        ``None`` (no open issue of the workflow's own, or no such line in it).
+    def stopped_at(self, client: httpx.Client) -> tuple[int, str | None] | None:
+        """The chain version the open :data:`TOKEN` issue says the chain stopped at, with the
+        fingerprint prefix of the refused secret (``None`` in a mark written before it was
+        kept), or ``None`` (no open issue of the workflow's own, or no such line in it).
 
         Raises:
             httpx.HTTPError: GitHub could not be reached or refused.
+            ValueError: GitHub's answer was not JSON.
         """
         item = self._open_item(client, TOKEN)
         body = item.get("body") if item is not None else None
         found = MARKED.search(body) if isinstance(body, str) else None
-        return int(found.group(1)) if found else None
+        return (int(found.group(1)), found.group(2)) if found else None
 
     def is_closed(self, client: httpx.Client, number: int) -> bool:
         """Whether the workflow's own issue ``number`` is closed.
 
         Raises:
             httpx.HTTPError: GitHub could not be reached or refused.
+            ValueError: GitHub's answer was not JSON.
         """
         response = client.get(
             f"{self.api}/repos/{self.repository}/issues/{number}",
@@ -172,10 +183,11 @@ class GitHub:
 
         Raises:
             httpx.HTTPError: GitHub could not be reached or refused.
+            ValueError: GitHub's answer was not JSON.
         """
         return self._open_issue(client, issue) is not None
 
-    def report(
+    def report(  # noqa: PLR0913 - the issue, its words and its hidden mark
         self,
         client: httpx.Client,
         why: str,
@@ -183,16 +195,19 @@ class GitHub:
         issue: Issue = TOKEN,
         *,
         version: int | None = None,
+        seed: str = "",
     ) -> int:
         """Open the issue, or update the open one; its number. ``version`` (the chain's when
-        it stopped) goes into the body as the hidden :data:`MARK` line.
+        it stopped) and the first :data:`SEED_SHOWN` characters of ``seed`` (the keyed
+        fingerprint of the refused secret) go into the body as the hidden :data:`MARK` line.
 
         Raises:
             httpx.HTTPError: GitHub could not be reached or refused.
+            ValueError: GitHub's answer was not JSON.
         """
         body = issue.body.format(why=why.rstrip("."), when=now.strftime("%Y-%m-%d %H:%M UTC"))
         if version is not None:
-            body += "\n\n" + MARK.format(version=version)
+            body += "\n\n" + MARK.format(version=version, seed=seed[:SEED_SHOWN])
         number = self._open_issue(client, issue)
         if number is None:
             response = client.post(
@@ -209,7 +224,8 @@ class GitHub:
                 timeout=TIMEOUT,
             )
         response.raise_for_status()
-        made = response.json().get("number")
+        answer = response.json()
+        made = answer.get("number") if isinstance(answer, dict) else None
         return made if isinstance(made, int) else (number or 0)
 
     def resolve(self, client: httpx.Client, issue: Issue = TOKEN) -> int | None:
@@ -217,6 +233,7 @@ class GitHub:
 
         Raises:
             httpx.HTTPError: GitHub could not be reached or refused.
+            ValueError: GitHub's answer was not JSON.
         """
         number = self._open_issue(client, issue)
         if number is None:

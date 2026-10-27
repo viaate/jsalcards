@@ -3,6 +3,7 @@ the secrets, the secrets reach only the post step, actions are pinned by full SH
 log check is the same rule as :mod:`snowlight.social.logscan`."""
 
 import re
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -186,9 +187,62 @@ def test_the_render_job_writes_no_cache(workflow: dict[Any, Any]) -> None:
     assert "cache" not in yaml.safe_dump([s for s in render["steps"] if "run" in s]).lower()
 
 
-def test_the_log_check_reads_only_a_post_job_that_ran(workflow: dict[Any, Any]) -> None:
+def test_the_log_check_reads_every_post_job_that_was_not_skipped(
+    workflow: dict[Any, Any],
+) -> None:
     check = workflow["jobs"]["log-check"]
     assert check["needs"] == "post"
-    assert check["if"] == (
-        "always() && (needs.post.result == 'success' || needs.post.result == 'failure')"
+    assert check["if"] == "always() && needs.post.result != 'skipped'"
+
+
+FAKE_GH = """#!/bin/sh
+case "$*" in
+  *"/attempts/"*) printf '%s\\n' "$FAKE_JOBS" ;;
+  *"/logs"*) printf '%s\\n' "$FAKE_LOG" ;;
+  *) exit 1 ;;
+esac
+"""
+
+
+def _log_check(workflow: dict[Any, Any], tmp_path: Path, jobs: str, log: str) -> tuple[int, str]:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir(exist_ok=True)
+    gh = bin_dir / "gh"
+    gh.write_text(FAKE_GH)
+    gh.chmod(0o755)
+    script = workflow["jobs"]["log-check"]["steps"][0]["run"]
+    done = subprocess.run(  # noqa: S603 - the workflow's own step, with a fake gh
+        ["/bin/bash", "-c", script],
+        env={
+            "PATH": f"{bin_dir}:/usr/bin:/bin",
+            "REPOSITORY": "owner/repo",
+            "RUN_ID": "1",
+            "ATTEMPT": "1",
+            "FAKE_JOBS": jobs,
+            "FAKE_LOG": log,
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
     )
+    return done.returncode, done.stdout
+
+
+def test_a_cancelled_post_job_that_ran_is_scanned(workflow: dict[Any, Any], tmp_path: Path) -> None:
+    leaked = "token " + "Ab1" * 12
+    code, out = _log_check(workflow, tmp_path, "42 7", f"Post\n{leaked}\n")
+    assert code == 1
+    assert "secret-shaped value in the post job log at line 2" in out
+    code, out = _log_check(workflow, tmp_path, "42 7", "Post\nall masked: ***\n")
+    assert code == 0
+    assert "log-check: 0 secret-shaped values, 0 stop commands" in out
+
+
+@pytest.mark.parametrize("jobs", ["42 0", ""])
+def test_a_post_job_that_never_started_has_no_log_and_passes(
+    workflow: dict[Any, Any], tmp_path: Path, jobs: str
+) -> None:
+    code, out = _log_check(workflow, tmp_path, jobs, "")
+    assert code == 0
+    assert "the post job never started" in out

@@ -84,6 +84,9 @@ from snowlight.social.xapi import (
     XClient,
 )
 
+GITHUB_ERRORS: Final = (httpx.HTTPError, ValueError)
+"""What a GitHub call may raise: no answer, an error status, or an answer that is not JSON (a
+proxy's or GitHub's error page): each is said in one line and left to the database."""
 FRESH_FOR: Final = timedelta(minutes=40)
 """How old the render job's picture may be when the post step reads it (the render job's
 Render step times out after 15 minutes, and the post job starts right after it)."""
@@ -399,8 +402,10 @@ class Run:
             self.say("::warning::social: no GITHUB_TOKEN: the owner's issue is not opened")
             return None
         try:
-            number = self.github.report(self.deps.http, why, self.now, issue, version=version)
-        except httpx.HTTPError as error:
+            number = self.github.report(
+                self.deps.http, why, self.now, issue, version=version, seed=self.seed
+            )
+        except GITHUB_ERRORS as error:
             self.say(
                 f"::warning::social: the owner's issue was not opened ({type(error).__name__})"
             )
@@ -439,17 +444,28 @@ class Run:
         return self.still_held()
 
     def stop_unrecorded(self) -> bool:
-        """Whether the open token issue says the chain stopped at the stored chain's version,
-        from the current secret: the stop holds even when the database could not record it
-        (a GitHub error here leaves it to the database)."""
+        """Whether the open token issue says the chain stopped at the stored chain's version
+        and names the current secret (its fingerprint's first characters): the stop holds even
+        when the database could not record it, whichever secret the stored chain started from
+        (a newly pasted secret that X refused too is never sent again). A mark without the
+        fingerprint holds only for the secret the stored chain started from. A GitHub error
+        here leaves it to the database."""
         if self.github is None:
             return False
         try:
             marked = self.github.stopped_at(self.deps.http)
-        except httpx.HTTPError as error:
+        except GITHUB_ERRORS as error:
             self.say(f"::warning::social: the token issue was not read ({type(error).__name__})")
             return False
-        return marked is not None and self.store.chain_seed() == (marked, self.seed)
+        if marked is None:
+            return False
+        version, seed = marked
+        stored = self.store.chain_seed()
+        if seed is not None:
+            return (stored[0] if stored is not None else 0) == version and self.seed.startswith(
+                seed
+            )
+        return stored == (version, self.seed)
 
     def still_held(self) -> bool:
         """Whether the hold since X refused a post for good still stands: until a new
@@ -476,7 +492,7 @@ class Run:
             return True
         try:
             closed = self.github is not None and self.github.is_closed(self.deps.http, held.issue)
-        except httpx.HTTPError:
+        except GITHUB_ERRORS:
             closed = False
         if closed:
             self.say(
@@ -503,6 +519,20 @@ class Run:
                 " the next runs"
             )
             self.red = True
+
+    def unknown(self, error: RefreshUnknownError) -> None:
+        """The refresh got no usable answer: the lease goes back, and when X may have taken
+        the refresh (:attr:`RefreshUnknownError.maybe_spent`) that is recorded, so a later
+        refusal of the token names its likely cause. After a 429 or another 4xx X did not take
+        it, so nothing is recorded."""
+        self.say(f"::error::social: {error}; the next run tries again")
+        if not error.maybe_spent:
+            self.release_chain()
+            return
+        try:
+            self.store.refresh_unknown(self.run_id, self.deps.now())
+        except StoreError:
+            self.release_chain()
 
     def refresh(self) -> Tokens | None:  # noqa: PLR0911 - one reason a return
         """The tokens, with the rotated refresh token stored; ``None`` when no token came
@@ -557,11 +587,7 @@ class Run:
             )
             return None
         except RefreshUnknownError as error:
-            self.say(f"::error::social: {error}; the next run tries again")
-            try:
-                self.store.refresh_unknown(self.run_id, self.deps.now())
-            except StoreError:
-                self.release_chain()
+            self.unknown(error)
             return None
         sealed = seal.seal(tokens.refresh, self.secrets.client_secret, version=chain.version + 1)
         try:
@@ -613,7 +639,7 @@ class Run:
             try:
                 if (closed := self.github.resolve(self.deps.http)) is not None:
                     self.say(f"social: closed issue #{closed}")
-            except httpx.HTTPError as error:
+            except GITHUB_ERRORS as error:
                 self.say(f"::warning::social: the issue was not closed ({type(error).__name__})")
         return True
 
@@ -648,7 +674,7 @@ class Run:
         the owner's issue says so, else the claim is dropped for one more try."""
         status = error.status or 0
         try:
-            count = self.store.refused(pick.slot, status, self.deps.now())
+            count = self.store.refused(pick.slot, status, self.deps.now(), self.run_id)
         except StoreError:
             self.say(f"::warning::social: the refusal of {pick.slot} could not be counted")
             count = 1
@@ -729,7 +755,7 @@ class Run:
             try:
                 if (closed := self.github.resolve(self.deps.http, REFUSED)) is not None:
                     self.say(f"social: closed issue #{closed}")
-            except httpx.HTTPError as error:
+            except GITHUB_ERRORS as error:
                 self.say(f"::warning::social: the issue was not closed ({type(error).__name__})")
         return 1 if self.chain_lost or self.red else 0
 

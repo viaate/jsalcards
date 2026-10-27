@@ -23,6 +23,7 @@ from snowlight.social import cli
 from snowlight.social.cards import Card
 from snowlight.social.picture import Taken
 from snowlight.social.render import (
+    GL_ARGS,
     HOSTS,
     RenderError,
     View,
@@ -464,6 +465,34 @@ def test_the_guard_aborts_every_other_host_and_says_it_once(
         "social: the picture's browser blocked a request to outside.invalid",
         "social: the picture's browser blocked a request to snowlightmap.com.outside.invalid",
     ]
+
+
+def test_the_guard_closes_every_websocket_and_the_browser_keeps_webrtc_off_udp(
+    served: tuple[Site, str],
+) -> None:
+    _site, base = served
+    said: list[str] = []
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        try:
+            context = browser.new_context()
+            blocked = guard(context, HOSTS | {"127.0.0.1"}, said.append)
+            page = context.new_page()
+            page.goto(base + "nothing-here", wait_until="load")
+            opened = page.evaluate(
+                """() => new Promise((done) => {
+                  const socket = new WebSocket('wss://outside.invalid/socket');
+                  socket.onopen = () => socket.send('x');
+                  socket.onclose = () => done('closed');
+                  setTimeout(() => done('timeout'), 5000);
+                })"""
+            )
+        finally:
+            browser.close()
+    assert opened == "closed"
+    assert "outside.invalid" in blocked
+    assert said == ["social: the picture's browser blocked a WebSocket to outside.invalid"]
+    assert "--force-webrtc-ip-handling-policy=disable_non_proxied_udp" in GL_ARGS
 
 
 class _Chromium:

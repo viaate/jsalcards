@@ -60,7 +60,10 @@ class Runner:
         self.haiku: FakeAnthropic | None = None
 
     def __call__(self, event: str = "push", **extra: str) -> int:
-        environment = fakes.env(GITHUB_ACTIONS="true", **extra)
+        # Each run has its own run id, as on GitHub.
+        environment = fakes.env(
+            **{"GITHUB_ACTIONS": "true", "GITHUB_RUN_ID": str(1001 + len(self.logs)), **extra}
+        )
         stream = io.StringIO()
         output = Output(environment, stream)
 
@@ -1385,7 +1388,11 @@ def test_a_stop_the_database_could_not_record_still_stops_the_next_runs(
     assert "the stopped chain could not be recorded" in runner.log
     assert world.d1.row("SELECT refused FROM social_token") == {"refused": None}
     (issue,) = world.github.issues
-    assert "<!-- snowlight-social: the token chain stopped at version 1 -->" in issue["body"]
+    mark = seal.fingerprint(fakes.SEED, fakes.CLIENT_SECRET)[:12]
+    assert (
+        f"<!-- snowlight-social: the token chain stopped at version 1 seed {mark} -->"
+        in (issue["body"])
+    )
     refreshes = world.x.refreshes
     for event in ("push", "schedule"):
         runner.clock.at += timedelta(hours=1)
@@ -1562,3 +1569,141 @@ def test_the_cloudflare_token_only_ever_goes_to_cloudflare(tmp_path: Path, world
     )
     assert secrets is not None
     assert secrets.api == API == "https://api.cloudflare.com/client/v4"
+
+
+# -- round 3: a refused new secret whose stop was not recorded, a lost refusal count, GitHub
+# pages that are not JSON, and a refresh X did not take ---------------------------------------
+
+
+def test_a_refused_new_secret_whose_stop_was_not_recorded_is_sent_to_x_once(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002"), queued("0003")])
+    assert runner() == 0  # the chain is at version 1 from SEED
+    bad = fakes.token("Bd")  # the owner pastes a token X refuses too
+    world.d1.fail_next = ["UPDATE social_token SET refused"] * 50
+    before = world.x.refreshes
+    codes = []
+    for _ in range(3):
+        runner.clock.at += timedelta(hours=1)
+        codes.append(runner(X_REFRESH_TOKEN=bad))
+    assert codes == [1, 0, 0]
+    assert world.x.refreshes - before == 1, "the refused new secret is sent to X once"
+    (issue,) = world.github.issues
+    mark = seal.fingerprint(bad, fakes.CLIENT_SECRET)[:12]
+    assert f"stopped at version 1 seed {mark} -->" in issue["body"]
+    assert seal.fingerprint(bad, fakes.CLIENT_SECRET) not in issue["body"]
+    assert world.d1.row("SELECT version, refused FROM social_token") == {
+        "version": 1,
+        "refused": None,
+    }
+    # Another new secret is not the marked one: it is tried.
+    good = fakes.token("Gd")
+    world.x.valid.add(good)
+    runner.clock.at += timedelta(hours=1)
+    assert runner(X_REFRESH_TOKEN=good) == 0
+    assert len(world.x.posts) == 2
+    assert world.github.issues[0]["state"] == "closed"
+
+
+def test_a_refused_new_secret_whose_stop_was_not_recorded_asks_haiku_no_more(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")], when="2026-10-25T10:00:00")
+    assert runner() == 0
+    bad = fakes.token("Bd")
+    world.d1.fail_next = ["UPDATE social_token SET refused"] * 50
+    calls = 0
+    before = world.x.refreshes
+    for when, draft in (
+        ("2026-10-26T16:37:00", GOOD_DRAFT),
+        ("2026-10-27T16:37:00", GOOD_DEV_LOG),
+        ("2026-10-28T16:37:00", GOOD_DRAFT),
+    ):
+        runner.clock.at = at(when)
+        runner.haiku = FakeAnthropic([dict(draft), dict(OK)])
+        runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY, X_REFRESH_TOKEN=bad)
+        calls += len(runner.haiku.requests)
+    assert world.x.refreshes - before == 1
+    assert calls == 2, "only the first day's try is spent before the stop"
+
+
+def test_a_refusal_counted_twice_by_a_lost_answer_counts_once(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002")])
+    world.x.upload_status = 400
+    world.d1.fail_next = ["ran:INSERT INTO social_refusals"]
+    assert runner() == 1
+    assert world.d1.row("SELECT count FROM social_refusals") == {"count": 1}
+    assert world.d1.row("SELECT COUNT(*) AS n FROM social_posts WHERE state = 'skipped'") == {
+        "n": 0
+    }
+    assert world.github.issues == []
+    # A second refusal by another run is the second: the post is skipped then.
+    runner.clock.at += timedelta(hours=4)
+    assert runner() == 1
+    assert world.d1.row("SELECT state FROM social_posts WHERE slot = 'queue:0001'") == {
+        "state": "skipped"
+    }
+
+
+def test_a_github_page_that_is_not_json_is_one_warning_and_the_post_goes(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    working = world.github.handle
+
+    def page(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, content=b"<html>oops</html>")
+        return working(request)
+
+    world.github.handle = page  # type: ignore[method-assign]
+    assert runner() == 0
+    assert len(world.x.posts) == 1
+    assert "the token issue was not read (JSONDecodeError)" in runner.log
+    assert "Traceback" not in runner.log
+
+
+def test_a_github_page_that_is_not_json_never_breaks_a_held_or_stopped_run(
+    tmp_path: Path, world: World
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002")])
+    world.x.post_status = 402  # X refuses the post for good: posting is held with an issue
+    assert runner() == 1
+    working = world.github.handle
+
+    def page(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, content=b"<html>oops</html>")
+        return working(request)
+
+    world.github.handle = page  # type: ignore[method-assign]
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 0
+    assert "posting is stopped since X refused a post" in runner.log
+    world.x.valid.clear()
+    world.x.post_status = 201
+    runner.clock.at += timedelta(hours=1)
+    runner(X_REFRESH_TOKEN=fakes.token("Nw"))
+    assert "Traceback" not in runner.log
+
+
+@pytest.mark.parametrize("status", [429, 403])
+def test_a_refresh_x_did_not_take_records_no_lost_answer(
+    tmp_path: Path, world: World, status: int
+) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002"), queued("0003")])
+    assert runner() == 0
+    world.x.refresh_status = status
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 1
+    assert world.d1.row("SELECT unknown, lease FROM social_token") == {
+        "unknown": None,
+        "lease": None,
+    }
+    world.x.refresh_status = 200
+    world.x.valid.clear()
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 1
+    (issue,) = world.github.issues
+    assert "most likely took that refresh" not in issue["body"]

@@ -50,6 +50,7 @@ from playwright.sync_api import (
     BrowserType,
     Page,
     Route,
+    WebSocketRoute,
     sync_playwright,
 )
 from playwright.sync_api import Error as PlaywrightError
@@ -86,7 +87,14 @@ ZOOM_SLACK: Final = 0.05
 FILES_VIEW: Final = "?at=40.9000,-80.6000,6.1"
 """A view where the site reads the school directory and the closings file (it reads them
 only between zoom 5 and 10): the Great Lakes and the Northeast."""
-GL_ARGS: Final = ("--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader")
+GL_ARGS: Final = (
+    "--use-gl=angle",
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader",
+    "--force-webrtc-ip-handling-policy=disable_non_proxied_udp",
+)
+"""The browser's switches: WebGL in software, and WebRTC kept off direct UDP (the host list of
+:func:`guard` covers requests and WebSockets; this covers the one channel a route cannot)."""
 HOSTS: Final = frozenset({"snowlightmap.com", "viaate.github.io", "tiles.openfreemap.org"})
 """The only hosts the picture's browser may reach (and the ``--site`` host, for a dry run
 against a local build): the site, its live files and its map tiles. Every other request is
@@ -232,7 +240,8 @@ def allowed(url: str, hosts: Collection[str]) -> bool:
 
 
 def guard(context: BrowserContext, hosts: Collection[str], say: Callable[[str], None]) -> set[str]:
-    """Abort every request of ``context`` to a host outside ``hosts``; the blocked hosts, each
+    """Abort every request of ``context`` to a host outside ``hosts``, and close every
+    WebSocket (the site opens none; a route cannot see one otherwise); the blocked hosts, each
     said once (the host only: never a path or a query)."""
     blocked: set[str] = set()
 
@@ -247,7 +256,15 @@ def guard(context: BrowserContext, hosts: Collection[str], say: Callable[[str], 
             say(f"social: the picture's browser blocked a request to {host}")
         route.abort("blockedbyclient")
 
+    def socket(route: WebSocketRoute) -> None:
+        host = urlsplit(route.url).hostname or urlsplit(route.url).scheme
+        if host not in blocked:
+            blocked.add(host)
+            say(f"social: the picture's browser blocked a WebSocket to {host}")
+        route.close()
+
     context.route("**/*", handler)
+    context.route_web_socket(re.compile(".*"), socket)
     return blocked
 
 

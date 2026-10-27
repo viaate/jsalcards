@@ -212,9 +212,10 @@ jobs:
 
   log-check:
     needs: post
-    # Only a post job that ran has a log: a cancelled one (a newer run queued behind it) or a
-    # skipped one has none to read.
-    if: always() && (needs.post.result == 'success' || needs.post.result == 'failure')
+    # Every post job that was not skipped is read, a cancelled one too (a manual cancel or the
+    # job's timeout, after its Post step ran with the secrets); one cancelled before it started
+    # (a newer run queued behind it) has no steps and no log, which the step says and passes.
+    if: always() && needs.post.result != 'skipped'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -228,7 +229,13 @@ jobs:
           ATTEMPT: ${{ github.run_attempt }}
         run: |
           set -euo pipefail
-          job=$(gh api "repos/$REPOSITORY/actions/runs/$RUN_ID/attempts/$ATTEMPT/jobs" --jq '.jobs[] | select(.name == "post") | .id')
+          info=$(gh api "repos/$REPOSITORY/actions/runs/$RUN_ID/attempts/$ATTEMPT/jobs" --jq '.jobs[] | select(.name == "post") | "\(.id) \(.steps | length)"')
+          job=${info%% *}
+          steps=${info##* }
+          if [ -z "$job" ] || [ "$steps" = "0" ]; then
+            echo "::notice::log-check: the post job never started, so it has no log to read"
+            exit 0
+          fi
           for try in 1 2 3 4 5 6; do
             if gh api "repos/$REPOSITORY/actions/jobs/$job/logs" > /dev/null 2>&1; then break; fi
             sleep 10

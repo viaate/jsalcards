@@ -87,7 +87,7 @@ TABLES: Final = (
     "CREATE TABLE IF NOT EXISTS social_haiku_days (day TEXT PRIMARY KEY, state TEXT NOT NULL,"
     " run TEXT NOT NULL, at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS social_refusals (slot TEXT PRIMARY KEY, count INTEGER NOT NULL,"
-    " status INTEGER NOT NULL, at TEXT NOT NULL)",
+    " status INTEGER NOT NULL, at TEXT NOT NULL, run TEXT NOT NULL)",
 )
 REFUSALS_TO_SKIP: Final = 2
 """How many times X may refuse one slot with the same kind of answer (a 4xx other than 429
@@ -468,14 +468,18 @@ class Store:
         ).rows
         return rows[0] if rows else None
 
-    def refused(self, slot: str, status: int, now: datetime) -> int:
+    def refused(self, slot: str, status: int, now: datetime, run: str) -> int:
         """Count one more refusal of ``slot`` by X (a 4xx that is not for good); how many
-        there were with this status in a row (another status starts the count again)."""
+        there were with this status in a row (another status starts the count again). A run
+        counts once: when the statement is sent again after its answer was lost, the row
+        already names this run and the count stays."""
         self.db.run(
-            "INSERT INTO social_refusals (slot, count, status, at) VALUES (?, 1, ?, ?)"
-            " ON CONFLICT (slot) DO UPDATE SET count = CASE WHEN status = excluded.status"
-            " THEN count + 1 ELSE 1 END, status = excluded.status, at = excluded.at",
-            (slot, status, _iso(now)),
+            "INSERT INTO social_refusals (slot, count, status, at, run) VALUES (?, 1, ?, ?, ?)"
+            " ON CONFLICT (slot) DO UPDATE SET count = CASE"
+            " WHEN social_refusals.run = excluded.run THEN social_refusals.count"
+            " WHEN social_refusals.status = excluded.status THEN social_refusals.count + 1"
+            " ELSE 1 END, status = excluded.status, at = excluded.at, run = excluded.run",
+            (slot, status, _iso(now), run),
         )
         rows = self.db.run("SELECT count FROM social_refusals WHERE slot = ?", (slot,)).rows
         count = rows[0].get("count") if rows else None

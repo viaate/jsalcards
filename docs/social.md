@@ -147,6 +147,17 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
 
 - at most 270 characters as X counts them; no URL, domain or @mention (the link is in the
   bio); at most one hashtag and one emoji; no `!!` and no em dash;
+- a closed vocabulary: every word is a word of the facts file (a fact's text, terms or
+  excepted phrases), of the picture's description, of the commit subjects Haiku was shown,
+  a small word ("the", "and", "it") or one of the plain words of my voice in
+  `rules.VOICE_WORDS` ("dev log", "built", "fixed", "spent", "night", "join", "link",
+  "bio"), in any plural, past or -ing form; a hashtag only from `rules.HASHTAGS`. So no post
+  can name or describe anything the facts do not ("SDCalc", "influencers", "online",
+  "industry-leading", "gold standard"), claim accuracy in new words ("results",
+  "confident"), invent a feature, a hire, a partner or a user ("iPhone", "hired",
+  "partnered", "a bunch of you"), or give a level or a place ("could close", "the
+  Rockies"). Haiku is told the same list. The other checks below still hold for the words
+  the facts do give;
 - it names a LIVE model fact, and a Haiku post the day's (above);
 - no banned words: hype ("most accurate", "revolutionary", "AI-powered", "guaranteed",
   "never wrong", "better than"), other calculators or sites by name, "SDC", "formula",
@@ -179,17 +190,30 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
   description use them; never a launch date;
 - each TESTING or COMING thing a post names (by its terms, such as "closings", "closed",
   "alerts", "text", "the map", "search") is said to be testing or coming by a word said of
-  it: next to it in its clause, or nearer to it than to anything else not live, or as
-  "testing them" after it. A word about one thing never covers another ("Closings glow on
-  the map; notifications are coming" is refused for the closings), "more coming" covers
-  nothing, a COMING thing is only "coming" (never "in testing" or "in practice"), and
-  "practice" covers only the reader's practice mode. "Already", "works", "is on", "turned
-  on" or "ends" next to such a thing refuses it outright. A sentence that names one holds no
-  live claim ("is live", "shows up", "ships", "works for everyone", "public now") and no end
-  of testing ("no longer", "done testing", "practice is over"); a live claim that names no
-  LIVE fact ("Snowlight is live") is refused too;
+  it, in its own clause only (commas, semicolons, colons, dashes, "but" and "and I" part
+  clauses): next to it, or as near to it as to anything else not live in that clause, with
+  any other thing between them only as an item of one list or a place phrase ("phone alerts
+  and closings are coming", "closings on the map start this winter"), never across a verb
+  ("closed schools glow and phone alerts are coming" is refused); or as a clause of its own
+  holding nothing but the not-live words right after ("Every school closing on one map,
+  coming this winter"); or, for a TESTING thing only, as "testing it" or "testing them"
+  later in the sentence ("and I will keep polishing it" covers nothing). A word about one
+  thing never covers another ("Phone alerts are coming; closed schools glow" is refused for
+  the glow), "more coming" covers nothing, a COMING thing is only "coming" (never "in
+  testing" or "in practice"), and "practice" covers only the reader's practice mode.
+  "Already", "works", "is on", "turned on" or "ends" next to such a thing refuses it
+  outright. A sentence that names one holds no live claim ("is live", "shows up", "ships",
+  "works for everyone", "public now") and no end of testing ("no longer", "done testing",
+  "practice is over", "left testing", "graduated from testing", "out of beta"); a live claim
+  that names no LIVE fact ("Snowlight is live") is refused too. "You can ..." is said only
+  of the waitlist or as what people will do ("at launch you can search"): a testing word
+  never covers it ("you can search by ZIP code while I keep testing" is refused);
 - while chances are TESTING, no chance in other words either: "a coin flip", "near
-  certain", "probably", "likely", "expects", "watching" near a closing word;
+  certain", "probably", "likely", "could", "might", "looking", "expects", "watching", "per
+  the model" near a closing word, or "up", "down" or "hot" near "chance"; and never a place's
+  chance ("Denver's chance");
+- no more email than the waitlist fact gives (one email at launch): never "emails" or "an
+  email every morning";
 - a picture that is not current (a library card, or a fresh one of a stale closings file) is
   never called current: no "now", "today", "tonight", "currently", "as of", "just",
   "fresh", "latest" or clock time;
@@ -225,7 +249,8 @@ The workflow's **render** job makes every post's picture fresh (`snowlight socia
 repository access, and writes no cache, because its browser reads the live site and a third
 party's map tiles; the secrets live only in the post job, which runs no browser. The browser
 reaches only snowlightmap.com, viaate.github.io (the live files) and tiles.openfreemap.org:
-every other request is aborted and its host said in the log. It runs in Chromium's own
+every other request is aborted and its host said in the log, every WebSocket is closed (the
+site opens none), and WebRTC is kept off direct UDP. It runs in Chromium's own
 sandbox (the job first allows the unprivileged user namespaces that sandbox needs on Ubuntu
 24.04); if the runner still cannot start it, the log says so in a warning and the browser
 runs without it, still reaching only those hosts. The card pages it lays out next reach no
@@ -308,12 +333,17 @@ be stored, or the token lacks a scope a post needs, the run opens one issue, **X
 stopped: refresh token**, that says which, with the steps below, and records which secret
 stopped. From then on every run stops before it picks anything while `X_REFRESH_TOKEN` is
 still that secret: no Haiku call, no claim, no refresh, and the issue is left as it is. The
-issue's body ends with a hidden line naming the stored chain's version when it stopped (a
-count, nothing secret): if the database could not record the stop, the run ends red, and
-every later run still stops while that issue is open and the chain is at that version from
-the same secret. When an earlier refresh got no answer (a timeout), the row records it, and
-a later refusal of that token says in the issue that the lost refresh most likely spent it;
-the owner's steps are the same. Only an issue the workflow itself opened
+issue's body ends with a hidden line naming the stored chain's version when it stopped and
+the first 12 hex characters of the keyed fingerprint of the refused secret (an HMAC under
+`X_CLIENT_SECRET`: nothing that can be turned back into a token): if the database could not
+record the stop, the run ends red, and every later run still stops while that issue is open,
+the chain is at that version and `X_REFRESH_TOKEN` is still that secret, also when it was a
+newly pasted secret that X refused too. When an earlier refresh got no answer (a timeout or
+a 5xx), the row records it, and a later refusal of that token says in the issue that the
+lost refresh most likely spent it; the owner's steps are the same. A 429 or another answer
+that says X did not take the refresh records nothing: the next run simply tries again. A
+GitHub answer that is not JSON (an error page) is one warning line, and the database
+decides. Only an issue the workflow itself opened
 (`github-actions[bot]`) is ever updated or closed: anyone can open an issue with that title
 in a public repository, and the owner's steps never go into one a stranger wrote. When the
 rotated token could not be stored, the run still posts the post it claimed with the fresh
@@ -339,7 +369,8 @@ until it is opened and then closed.
 
 Any other refusal of a post (a 400, a 413) drops the claim once, and a later run tries
 again; a second refusal in a row with the same status skips that post for good (`skipped`
-in `social_posts`, the count in `social_refusals`) and opens **X posting: a post was
+in `social_posts`, the count in `social_refusals`, where each run counts once even when its
+answer was lost and the count was sent again) and opens **X posting: a post was
 skipped**: fix the file and give it a new id, or delete it, then close the issue. A 429 or a
 5xx is never counted.
 
@@ -401,7 +432,9 @@ post step alone, masks every token it derives, prints every line as one plain li
 no outside text (Haiku's answers, an error) can turn into a workflow command, writes nothing
 to files, artifacts, caches or the step summary, pins its two actions by full commit SHA
 and `uv` by version, and runs the browser in a job of its own. Its `log-check` job reads the
-post job's own log and fails on any secret-shaped value or a command that stops masking. If a key ever leaks,
+post job's own log, also of a post job that was cancelled or timed out after it started,
+and fails on any secret-shaped value or a command that stops masking (a post job cancelled
+before it started has no log, which it says). If a key ever leaks,
 regenerate it in the X or Anthropic console and paste the new one.
 
 ## What the log shows
