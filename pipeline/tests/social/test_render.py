@@ -467,7 +467,7 @@ def test_the_guard_aborts_every_other_host_and_says_it_once(
     ]
 
 
-def test_the_guard_closes_every_websocket_and_the_browser_keeps_webrtc_off_udp(
+def test_the_guard_keeps_every_websocket_off_the_network_and_webrtc_off_udp(
     served: tuple[Site, str],
 ) -> None:
     _site, base = served
@@ -479,19 +479,22 @@ def test_the_guard_closes_every_websocket_and_the_browser_keeps_webrtc_off_udp(
             blocked = guard(context, HOSTS | {"127.0.0.1"}, said.append)
             page = context.new_page()
             page.goto(base + "nothing-here", wait_until="load")
+            # The test server speaks no WebSocket: a socket that reached it would fail. One
+            # that opens was answered by the guard's stand-in, which reaches no server.
             opened = page.evaluate(
-                """() => new Promise((done) => {
-                  const socket = new WebSocket('wss://outside.invalid/socket');
-                  socket.onopen = () => socket.send('x');
-                  socket.onclose = () => done('closed');
+                """(url) => new Promise((done) => {
+                  const socket = new WebSocket(url);
+                  socket.onopen = () => done('stand-in');
+                  socket.onerror = () => done('reached the network');
                   setTimeout(() => done('timeout'), 5000);
-                })"""
+                })""",
+                base.replace("http", "ws", 1) + "socket",
             )
         finally:
             browser.close()
-    assert opened == "closed"
-    assert "outside.invalid" in blocked
-    assert said == ["social: the picture's browser blocked a WebSocket to outside.invalid"]
+    assert opened == "stand-in"
+    assert "127.0.0.1" in blocked
+    assert said == ["social: the picture's browser blocked a WebSocket to 127.0.0.1"]
     assert "--force-webrtc-ip-handling-policy=disable_non_proxied_udp" in GL_ARGS
 
 

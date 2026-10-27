@@ -240,9 +240,10 @@ def allowed(url: str, hosts: Collection[str]) -> bool:
 
 
 def guard(context: BrowserContext, hosts: Collection[str], say: Callable[[str], None]) -> set[str]:
-    """Abort every request of ``context`` to a host outside ``hosts``, and close every
-    WebSocket (the site opens none; a route cannot see one otherwise); the blocked hosts, each
-    said once (the host only: never a path or a query)."""
+    """Abort every request of ``context`` to a host outside ``hosts``, and answer every
+    WebSocket with a stand-in that reaches no server (the site opens none; a request route
+    cannot see one); the blocked hosts, each said once (the host only: never a path or a
+    query)."""
     blocked: set[str] = set()
 
     def handler(route: Route) -> None:
@@ -257,11 +258,12 @@ def guard(context: BrowserContext, hosts: Collection[str], say: Callable[[str], 
         route.abort("blockedbyclient")
 
     def socket(route: WebSocketRoute) -> None:
+        # Never connect_to_server: the page gets a socket that reaches no server at all.
+        # (Closing it from this handler would wait on the page forever in the sync API.)
         host = urlsplit(route.url).hostname or urlsplit(route.url).scheme
         if host not in blocked:
             blocked.add(host)
             say(f"social: the picture's browser blocked a WebSocket to {host}")
-        route.close()
 
     context.route("**/*", handler)
     context.route_web_socket(re.compile(".*"), socket)

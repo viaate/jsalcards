@@ -249,8 +249,8 @@ The workflow's **render** job makes every post's picture fresh (`snowlight socia
 repository access, and writes no cache, because its browser reads the live site and a third
 party's map tiles; the secrets live only in the post job, which runs no browser. The browser
 reaches only snowlightmap.com, viaate.github.io (the live files) and tiles.openfreemap.org:
-every other request is aborted and its host said in the log, every WebSocket is closed (the
-site opens none), and WebRTC is kept off direct UDP. It runs in Chromium's own
+every other request is aborted and its host said in the log, every WebSocket gets a
+stand-in that reaches no server (the site opens none), and WebRTC is kept off direct UDP. It runs in Chromium's own
 sandbox (the job first allows the unprivileged user namespaces that sandbox needs on Ubuntu
 24.04); if the runner still cannot start it, the log says so in a warning and the browser
 runs without it, still reaching only those hosts. The card pages it lays out next reach no
