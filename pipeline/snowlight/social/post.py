@@ -769,7 +769,7 @@ class Run:
             return 0
         self.say(f"social: {self.secrets.name} is new since the chain stopped: checking it")
         tokens = self.refresh()
-        return 0 if tokens is not None and self.usable(tokens) else 1
+        return 0 if tokens is not None and self.usable(tokens) and not self.chain_lost else 1
 
     def held(self, why: str) -> None:
         """X refused a post for good: open the owner's issue and hold posting (with the
@@ -877,6 +877,11 @@ def _start(env: Env, root: Path, deps: Deps, picture: Path | None, begun: dateti
     except ContentError as error:
         say(f"::error::social: {error}")
         return 1
+    if bool(env.get("X_ACCESS_TOKEN")) != bool(env.get("X_ACCESS_TOKEN_SECRET")):
+        say(
+            "::warning::social: only one of X_ACCESS_TOKEN and X_ACCESS_TOKEN_SECRET is set, so"
+            " the pair is not used: set both (docs/social.md)"
+        )
     secrets = XSecrets.from_env(env)
     if secrets is None:
         say(

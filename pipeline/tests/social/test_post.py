@@ -1878,7 +1878,7 @@ def test_a_refused_pair_opens_the_issue_and_is_never_sent_again(
     world.x.pair = (fakes.token("Oa"), fakes.token("Os"))  # not the pair in the secrets
     runner = make(tmp_path, world, queue=[queued("0001")])
     assert runner(**_pair()) == 1
-    assert "X refused the token exchange: HTTP 400 (invalid_request)" in runner.log
+    assert "X refused the token exchange: HTTP 400 (invalid_grant)" in runner.log
     (issue,) = world.github.issues
     assert issue["title"] == TITLE
     assert "X_ACCESS_TOKEN" in issue["body"]
@@ -1920,6 +1920,65 @@ def test_half_a_pair_leaves_the_chain_on_the_refresh_token(tmp_path: Path, world
     runner = make(tmp_path, world, queue=[queued("0001")])
     assert runner(X_ACCESS_TOKEN=PAIR[0]) == 0
     assert world.x.exchanges == 0
+    assert "only one of X_ACCESS_TOKEN and X_ACCESS_TOKEN_SECRET is set" in runner.log
     assert "from the X_REFRESH_TOKEN secret" in runner.log
     assert runner(X_REFRESH_TOKEN="", X_ACCESS_TOKEN=PAIR[0]) == 0
     assert "nothing posts" in runner.log
+
+
+def test_a_post_refused_under_the_pair_names_the_pair_and_a_new_pair_lifts_the_hold(
+    tmp_path: Path, world: World
+) -> None:
+    world.x.pair = PAIR
+    world.x.post_status = 401
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    assert runner(**_pair()) == 1
+    (issue,) = world.github.issues
+    assert issue["title"] == REFUSED_TITLE
+    assert "X_ACCESS_TOKEN_SECRET" in issue["body"]
+    assert "X_REFRESH_TOKEN" not in issue["body"], (
+        "a refresh token never lifts a hold under the pair"
+    )
+    world.x.post_status = 201
+    runner.clock.at += timedelta(hours=1)
+    assert runner(**_pair()) == 0
+    assert world.x.posts == [], "held while the issue is open and the pair is the same"
+    fresh = (fakes.token("Ob"), fakes.token("Ot"))
+    world.x.pair = fresh
+    runner.clock.at += timedelta(hours=1)
+    assert runner(X_ACCESS_TOKEN=fresh[0], X_ACCESS_TOKEN_SECRET=fresh[1]) == 0
+    assert "X_ACCESS_TOKEN pair is new since X refused a post" in runner.log
+    assert len(world.x.posts) == 1
+    assert world.x.exchanges == 2
+
+
+def test_a_scheduled_run_with_nothing_to_post_checks_a_new_pair_and_closes_the_issue(
+    tmp_path: Path, world: World
+) -> None:
+    world.x.scope = "tweet.read tweet.write users.read offline.access"
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    assert runner() == 1
+    assert "lacks the scopes media.write" in runner.log
+    (tmp_path / "social" / "queue" / "0001.json").unlink()
+    world.x.pair = PAIR
+    runner.clock.at += timedelta(hours=1)
+    assert runner("schedule", **_pair()) == 0
+    assert "X_ACCESS_TOKEN pair is new since the chain stopped: checking it" in runner.log
+    assert world.x.exchanges == 1
+    assert world.github.issues[0]["state"] == "closed"
+    runner.clock.at += timedelta(hours=1)
+    assert runner("schedule", **_pair()) == 0
+    assert world.x.exchanges == 1, "a working chain is never exchanged again"
+
+
+def test_the_stored_chain_goes_on_from_one_exchange_across_runs(
+    tmp_path: Path, world: World
+) -> None:
+    world.x.pair = PAIR
+    runner = make(tmp_path, world, queue=[queued(f"000{n}") for n in range(1, 4)])
+    for _ in range(3):
+        assert runner(**_pair()) == 0
+        runner.clock.at += timedelta(hours=8)
+    assert world.x.exchanges == 1
+    assert world.x.refreshes == 2
+    assert len(world.x.posts) == 3

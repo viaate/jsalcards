@@ -384,8 +384,8 @@ in a public repository, and the owner's steps never go into one a stranger wrote
 rotated token could not be stored, the run still posts the post it claimed with the fresh
 access token, and ends red.
 
-A run whose `X_REFRESH_TOKEN` is not the one that stopped (the owner pasted a new one)
-starts from it: a run with a post sends it, and a scheduled run with nothing to post
+A run whose secret (`X_REFRESH_TOKEN`, or the `X_ACCESS_TOKEN` pair) is not the one that
+stopped (the owner pasted a new one) starts from it: a run with a post sends it, and a scheduled run with nothing to post
 refreshes once, so the new token is checked and the issue closes without waiting for a
 post. The same refused secret is never tried again by itself.
 
@@ -394,9 +394,10 @@ post. The same refused secret is never tried again by itself.
 When X refuses a post or its image upload for good (HTTP 401, 402 or 403: no credits, no
 write permission, a duplicate), the run opens one issue, **X posting stopped: X refused the
 post**, with X's status and what it means, and holds posting: every run stops before it
-picks anything while that issue is open and `X_REFRESH_TOKEN` is unchanged. Fix the cause
-(add credits; give the app Read and write permission and paste a new refresh token; delete
-a duplicate's queue file), then close the issue: the next run tries once more and opens it
+picks anything while that issue is open and the chain's secret (`X_REFRESH_TOKEN`, or the
+`X_ACCESS_TOKEN` pair while both are set) is unchanged. Fix the cause (add credits; give
+the app Read and write permission and set a new `X_ACCESS_TOKEN` pair; delete a duplicate's
+queue file), then close the issue: the next run tries once more and opens it
 again if X still refuses. A post that goes out closes it. The hold keeps the number of the
 issue it opened: if GitHub would not open the issue, the hold stays (never lifted as if the
 owner had closed it), every run tries to open it again and ends red, and nothing is sent

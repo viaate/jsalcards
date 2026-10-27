@@ -213,19 +213,25 @@ class XClient:
             )
         except httpx.HTTPError as error:
             raise RefreshUnknownError(
-                f"the token exchange got no answer ({type(error).__name__})"
+                f"the token exchange got no answer ({type(error).__name__})", maybe_spent=False
             ) from None
         body = _json(response)
         if response.status_code in (400, 401, 403):
             raise RefreshRefusedError(f"X refused the token exchange: {_say(response)}")
         if response.status_code != httpx.codes.OK or not isinstance(body, dict):
-            raise RefreshUnknownError(f"the token exchange failed: {_say(response)}")
+            raise RefreshUnknownError(
+                f"the token exchange failed: {_say(response)}", maybe_spent=False
+            )
         access, refresh = body.get("access_token"), body.get("refresh_token")
         if not isinstance(access, str) or not access:
-            raise RefreshUnknownError("the exchange answer holds no access token")
+            raise RefreshUnknownError(
+                "the exchange answer holds no access token", maybe_spent=False
+            )
         self._mask(access)
         if not isinstance(refresh, str) or not refresh:
-            raise RefreshUnknownError("the exchange answer holds no refresh token")
+            raise RefreshUnknownError(
+                "the exchange answer holds no refresh token", maybe_spent=False
+            )
         self._mask(refresh)
         scope = body.get("scope")
         scopes = frozenset(scope.split()) if isinstance(scope, str) else frozenset()

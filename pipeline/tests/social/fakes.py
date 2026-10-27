@@ -153,6 +153,8 @@ class FakeX:
     exchange_scope: str = "tweet.read tweet.write users.read offline.access media.write"
     exchange_status: int = 200
     exchanges: int = 0
+    family: set[str] = field(default_factory=set)
+    """The refresh tokens descended from the last exchange: a new exchange ends them all."""
 
     def handle(self, request: httpx.Request) -> httpx.Response:  # noqa: PLR0911 - one per call
         path = request.url.path
@@ -246,6 +248,8 @@ class FakeX:
             self.valid.discard(form["refresh_token"])
             rotated = token("Rr")
             self.valid.add(rotated)
+            if form["refresh_token"] in self.family:
+                self.family.add(rotated)
             body["refresh_token"] = rotated
         return httpx.Response(200, json=body)
 
@@ -263,10 +267,11 @@ class FakeX:
         if self.exchange_status != 200:
             return httpx.Response(self.exchange_status, json={"error": "server_error"})
         if self.pair is None or (form["subject_token"], form["oauth_token_secret"]) != self.pair:
-            return httpx.Response(400, json={"error": "invalid_request"})
+            return httpx.Response(400, json={"error": "invalid_grant"})
         access, refresh = token("At"), token("Rx")
         self.issued.append(access)
-        self.valid = {value for value in self.valid if not value.startswith("Rx")} | {refresh}
+        self.valid = (self.valid - self.family) | {refresh}
+        self.family = {refresh}
         return httpx.Response(
             200,
             json={

@@ -19,7 +19,8 @@ The :data:`TOKEN` issue's body ends with a hidden line naming the stored chain's
 the chain stopped and the first :data:`SEED_SHOWN` hex characters of the keyed fingerprint of
 the secret that was refused (:data:`MARK`: a count and an HMAC under the client secret, nothing
 that can be turned back into a token): while that issue is open, the chain is still at that
-version and ``X_REFRESH_TOKEN`` is still that secret, every run stops, even when the database
+version and the chain's secret (``X_REFRESH_TOKEN``, or the ``X_ACCESS_TOKEN`` pair) is still
+that secret, every run stops, even when the database
 could not record the stop (:meth:`GitHub.stopped_at`), whichever secret the stored chain
 started from.
 
@@ -55,21 +56,22 @@ to tell one pasted secret from another, nothing that can be turned back into it.
 BOT: Final = "github-actions[bot]"
 """The author of the workflow's own issues (the job's ``GITHUB_TOKEN``)."""
 
-BODY: Final = """{why} ({when}), so nothing posts on @SnowlightMap until a new refresh token \
-is in place. It is not retried.
+BODY: Final = """{why} ({when}), so nothing posts on @SnowlightMap until new X secrets are in \
+place. It is not retried.
 
 To start it again:
 
 1. Open the X developer console, the app of @SnowlightMap, **Keys and tokens** (the app's \
 permission must be **Read and write**).
 2. Under **OAuth 1.0 Keys**, next to **Access Token** (for @SnowlightMap), click \
-**Generate**: it shows an Access Token and an Access Token Secret.
+**Generate** (or **Regenerate**): it shows an Access Token and an Access Token Secret.
 3. On GitHub: Settings > Environments > **x-posting** > Environment secrets: set \
 `X_ACCESS_TOKEN` to the Access Token and `X_ACCESS_TOKEN_SECRET` to the Access Token Secret \
 (edit each, or add it if missing), save. Never paste them anywhere else. The run exchanges \
 the pair once for a token with every scope it needs (tweet.read, tweet.write, users.read, \
 offline.access, media.write); X's own OAuth 2.0 token generator leaves media.write out. \
-While both are set, `X_REFRESH_TOKEN` is not used.
+While both are set, `X_REFRESH_TOKEN` is not used. If the OAuth 2.0 client secret was \
+regenerated too, also update `X_CLIENT_SECRET`.
 4. Nothing else to do: the next scheduled run (daily, 16:37 and 20:41 UTC) sees that the \
 secrets are new and starts from them, even when it has nothing to post, and this issue \
 closes itself once the new token works with every scope above.
@@ -85,14 +87,17 @@ What X's answer means, and what to do:
 move to a plan that allows posting, in the X developer console.
 - **HTTP 403**: the app may not post for @SnowlightMap, or X took the post for a duplicate. \
 In the X developer console, the app's **User authentication settings** must give **Read and \
-write** permission; after changing them, generate a new access token and refresh token and \
-paste the refresh token into `X_REFRESH_TOKEN` (Settings > Environments > **x-posting**). If \
-the post was a duplicate, delete its file from `social/queue`.
-- **HTTP 401**: X refused the token for this call: generate a new token pair and paste the \
-refresh token into `X_REFRESH_TOKEN`.
+write** permission; after changing them, set a new pair (below). If the post was a \
+duplicate, delete its file from `social/queue`.
+- **HTTP 401**: X refused the token for this call: set a new pair (below).
 
-When it is fixed, close this issue (or paste a new `X_REFRESH_TOKEN`): the next run tries \
-once more, and opens this issue again if X still refuses.
+A new pair: in the X developer console, **Keys and tokens** > **OAuth 1.0 Keys** > **Access \
+Token** (for @SnowlightMap) > **Generate** (or **Regenerate**); then on GitHub, Settings > \
+Environments > **x-posting**, set `X_ACCESS_TOKEN` to the Access Token and \
+`X_ACCESS_TOKEN_SECRET` to the Access Token Secret. Never paste them anywhere else.
+
+When it is fixed, close this issue (or set a new pair): the next run tries once more, and \
+opens this issue again if X still refuses.
 
 docs/social.md has the details."""
 
