@@ -1627,14 +1627,15 @@
 
       /*
         Where the chances come from: one quiet line under the when line, a step below it. On a
-        phone narrower than 390px its size steps down with the width (its words need 22.9 times
-        their size in each of two lines; 23.3 leaves room), so it keeps to two lines down to the
-        page's smallest size, 13px, at 343px wide. Narrower than that it gives way below.
+        phone narrower than 408px its size steps down with the width (its words need 22.9 times
+        their size in each of two lines, and up to 23.8 where a browser hints the font; 24.5 leaves
+        room for both), so it keeps to two lines down to the page's smallest size, 13px, at 359px
+        wide. Narrower than that it gives way below.
       */
       .wl-model {
         margin: 6px 0 0;
         color: var(--text-2);
-        font-size: clamp(13px, calc((100vw - 2 * var(--wl-edge)) / 23.3), 15px);
+        font-size: clamp(13px, calc((100vw - 2 * var(--wl-edge)) / 24.5), 15px);
         line-height: 1.47;
         letter-spacing: -0.01em;
         text-wrap: balance;
@@ -2082,7 +2083,7 @@
       /*
         The line on the chances shows only where it keeps to two lines and the page still fits
         the screen with it; everywhere else it gives way, and the page is as it was without it.
-        Two lines: a phone narrower than 343px (2 x 20px + 23.3 x 13px) would need three. One
+        Two lines: a phone narrower than 359px (2 x 20px + 24.5 x 13px) could need three. One
         screen: each height below is the least that holds the line with every other part of the
         page, in each of the page's own size steps (the waitlist e2e checks both on a grid of
         screens and both headlines). A phone: 600-640px tall, where the short-screen rules above
@@ -2092,7 +2093,7 @@
         it needs more: 687px on a phone; 706px, 682px and 716px on wider windows (up to 800px,
         up to 1024px, and wider), and on its side 414px, or 394px from 800px wide.
       */
-      @media (max-width: 342.98px),
+      @media (max-width: 358.98px),
         (max-width: 639.98px) and (max-height: 599.98px),
         (max-width: 639.98px) and (min-height: 640.02px) and (max-height: 655.98px),
         (min-width: 640px) and (max-width: 799.98px) and (max-height: 380.98px),

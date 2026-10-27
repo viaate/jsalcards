@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { chromium, expect, test } from '@playwright/test';
 import type { Page, Request, Route } from '@playwright/test';
 
 import { waitlistCopy } from '../src/copy-waitlist.ts';
@@ -560,7 +560,8 @@ test.describe('the waitlist', () => {
       { width: 412, height: 915, text: true, chrome: true },
       { width: 375, height: 667, text: true, chrome: false },
       { width: 360, height: 640, text: true, chrome: false },
-      // Under 343px wide it would take three lines: an iPhone mini zoomed, a folding phone's cover.
+      // Under 359px wide it could take three lines: an iPhone mini zoomed, a folding phone's cover.
+      { width: 352, height: 780, text: false, chrome: false },
       { width: 320, height: 640, text: false, chrome: false },
       { width: 280, height: 653, text: false, chrome: false },
       // Too short to hold it with the form: the smallest iPhone, a height just past the short-screen rules.
@@ -625,6 +626,43 @@ test.describe('the waitlist', () => {
         }
         await context.close();
       }
+    }
+  });
+
+  test('keeps the line on the chances to two lines on every phone width, with the font hinted or not', async () => {
+    // Hinting a font can widen its words by a few percent (it widened them past two lines in CI),
+    // so the line is checked in a browser that hints fully as well as in one that does not: at
+    // each width where its size steps with the width (359px to 408px), then at its full size on
+    // wider phones up to where the wide rules start, where a wider column only leaves more room.
+    // Both headlines size the line alike.
+    const widths: number[] = [];
+    for (let width = 359; width <= 408; width += 1) widths.push(width);
+    for (let width = 416; width < 640; width += 16) widths.push(width);
+    widths.push(639);
+    for (const hinting of ['none', 'full']) {
+      const browser = await chromium.launch({ args: [`--font-render-hinting=${hinting}`] });
+      const context = await browser.newContext({
+        viewport: { width: 390, height: 900 },
+        baseURL: WAITLIST_URL,
+        hasTouch: true,
+        isMobile: true,
+      });
+      const page = await context.newPage();
+      await page.goto('/', { waitUntil: 'load' });
+      await page.evaluate(() => document.fonts.ready.then(() => undefined));
+      const line = page.locator('#waitlist .wl-model');
+      for (const width of widths) {
+        await page.setViewportSize({ width, height: 900 });
+        const lines = await line.evaluate(
+          (element) =>
+            element.getBoundingClientRect().height /
+            parseFloat(getComputedStyle(element).lineHeight),
+        );
+        expect(Math.round(lines), `${hinting} ${String(width)}`).toBe(2);
+      }
+      await page.setViewportSize({ width: 358, height: 900 });
+      await expect(line, `${hinting} 358`).toBeHidden();
+      await browser.close();
     }
   });
 
