@@ -99,14 +99,19 @@ jobs:
       - name: Install the picture's browser
         id: browser
         continue-on-error: true
-        timeout-minutes: 8
+        timeout-minutes: 10
         run: |
-          if ! uv run --no-sync playwright install --with-deps --only-shell chromium > "$RUNNER_TEMP/browser.log" 2>&1; then
+          # Two tries of at most 4 minutes each: the install took 16 s on one run and hung to
+          # the step's limit on the next, so a stuck try is cut short and tried once more.
+          for try in 1 2; do
+            if timeout 240 uv run --no-sync playwright install --with-deps --only-shell chromium > "$RUNNER_TEMP/browser.log" 2>&1; then
+              rm -f "$RUNNER_TEMP/browser.log"
+              exit 0
+            fi
             tail -n 20 "$RUNNER_TEMP/browser.log"
-            echo "::warning::social: the picture's browser did not install"
-            exit 1
-          fi
-          rm -f "$RUNNER_TEMP/browser.log"
+            echo "::warning::social: the picture's browser did not install (try $try)"
+          done
+          exit 1
 
       # Chromium's own sandbox needs unprivileged user namespaces, which Ubuntu 24.04 may
       # restrict; this throwaway runner allows them so the browser can sandbox itself (if it
