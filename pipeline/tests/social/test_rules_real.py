@@ -17,6 +17,7 @@ from snowlight.social.picture import REGIONS, Directory, Region, choose, region
 from snowlight.social.rules import (
     FactsError,
     Style,
+    _closings_places,
     chances_shown,
     check,
     emoji_count,
@@ -1384,3 +1385,13 @@ def test_the_queue_varies_its_model_fact() -> None:
         and any(re.search(rf"\b{re.escape(term)}\b", text) for term in fact.terms)
     }
     assert len(named) >= 4, named
+
+
+def test_a_state_inside_another_state_name_is_not_where_the_lit_schools_are() -> None:
+    """Whole state names: "Virginia" is not where the lit schools are when they are all in
+    West Virginia (a substring test let it through)."""
+    shows = (
+        "A picture of the Snowlight map: 3 schools glow in this view (3 closed), in West Virginia."
+    )
+    assert _closings_places("A school in Virginia is closed.", shows)
+    assert _closings_places("Schools in West Virginia are closed.", shows) == []

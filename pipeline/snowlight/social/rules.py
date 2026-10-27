@@ -1175,6 +1175,8 @@ VOICE_WORDS: Final = frozenset(
     private privately trial tuning tune tuned lock locked behind until quiet teach taught few
     far everyone snowlight now right look
     wiring wire wired question questions usually call ever
+    favorite fun love quick poll families parents students kids forget plus really little
+    something ready hope hey folks
     """.split()  # noqa: SIM905 - a word list reads best as text
 )
 """Plain words of the founder's own voice a post may use besides the words of the facts, the
@@ -1183,7 +1185,9 @@ on", "fixed", "built"), when ("this week"), the not-live words, and the waitlist
 bio", and a question to the reader ("does your school usually call a snow day in the
 evening?"; "calls" stays an accuracy word). Nothing here names a product, a person, a place,
 a level or a quality, and nothing here claims a fact about the founder or a time ("alone",
-"late", "honestly" are not here: no fact says so)."""
+"late", "honestly", "months" are not here: no fact says so). The owner's own warmth is ("my
+favorite part", "quick poll", "private school families, I didn't forget you"): an opinion or a
+greeting, never a fact a reader could check."""
 FUNCTION_WORDS: Final = frozenset(
     """
     a an the and or but nor so yet of to in on at by for from with without into onto upon over
@@ -2162,7 +2166,9 @@ def _closings_places(text: str, image_description: str) -> list[str]:
     Ohio is closed" under a view over Ohio and Kentucky whose one lit school is in Kentucky,
     or "Schools in Colorado are closed" under a calm view of the Front Range."""
     found = LIT_PLACE.search(" ".join(image_description.split()))
-    lit = found.group("place") if found is not None else ""
+    place = found.group("place") if found is not None else ""
+    # Whole state names, never a substring: "Virginia" is not in "West Virginia".
+    lit = {" ".join(match.group().split()) for match in STATES.finditer(place)}
     problems: list[str] = []
     for sentence in _sentences(text):
         if CLOSINGS_WORDS.search(sentence) is None:
