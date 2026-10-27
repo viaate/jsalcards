@@ -793,7 +793,7 @@ TRUE_2 = [
     "Every school closing in the US on one map, coming this winter.",
     "The closings reader runs 24/7, checking closing lists, and the map is in private testing.",
     "Closed schools glow on the map while I test it.",
-    "Schools glow and phone alerts are coming.",
+    "Schools glow on my private test map, and phone alerts are coming.",
     # Numbers as the facts use them.
     "The prediction model is trained on records of 11 past winters.",
     "Snowlight's school directory holds 118,211 schools in 18,227 districts.",
@@ -1188,6 +1188,9 @@ OFFERS_R3 = [
     "Closings in every state glow as they happen.",
     "Closed schools glow across the US tonight.",
     "Closings go into Snowlight nationwide within minutes.",
+    # A coming word in the clause reads as both coming.
+    "Closed schools glow and phone alerts are coming.",
+    "Schools glow and phone alerts are coming soon.",
 ]
 
 
@@ -1206,7 +1209,7 @@ def test_round_three_offers_and_coverage_of_the_private_closings_are_refused(
             image_description=shows,
             image_is_today=True,
         )
-        refused = ("stays private until launch", "cover that")
+        refused = ("stays private until launch", "cover that", "not coming")
         assert any(word in line for line in found for word in refused), (shows, found)
 
 

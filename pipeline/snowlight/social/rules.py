@@ -1966,8 +1966,10 @@ def _private_called_public(sentence: str, facts: Facts) -> list[str]:
     called out in the open (:data:`PUBLIC`) anywhere in its clause, with nothing in the clause
     that says it is private (:data:`PRIVATE_WORDS`): "Closed schools glow for everyone", "Join
     the waitlist to see school closings", "Look for your school glowing when it closes", "I
-    post the closings here". Or said to cover the country (:data:`COVERAGE`) in a clause that
-    does not name the COMING aim: "Real closings for every state"."""
+    post the closings here". Or with a coming word in that clause, which reads as both coming
+    ("Closed schools glow and phone alerts are coming"). Or said to cover the country
+    (:data:`COVERAGE`) in a clause that does not name the COMING aim: "Real closings for every
+    state"."""
     text = _without(_without(sentence.replace("\u2019", "'"), VAGUE), NOT_OFFERS)
     boundaries = [match.start() for match in CLAUSE.finditer(text)]
     starts = _clause_starts(text)
@@ -1986,6 +1988,12 @@ def _private_called_public(sentence: str, facts: Facts) -> list[str]:
             ]
         if _has(clause, PRIVATE_WORDS):
             continue
+        if (coming := _has(clause, COMING_WORDS)) is not None:
+            # "Closed schools glow and phone alerts are coming" reads as both coming.
+            return [
+                f"it says '{coming}' in the clause of '{one.term}', which is here, not coming"
+                f" ({one.fact.id}): part them, or say it is private"
+            ]
         if (said := _has(clause, PUBLIC)) is not None:
             return [
                 f"it says '{said}' of '{one.term}', but it stays private until launch, and"
