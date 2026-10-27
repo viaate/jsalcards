@@ -4,6 +4,7 @@ current are refused, and true drafts pass (every draft here is SYNTHETIC)."""
 
 import gzip
 import json
+import re
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -15,9 +16,11 @@ from snowlight.social.rules import (
     Style,
     chances_shown,
     check,
+    emoji_count,
     model_fact_for,
     numbers_in,
     parse_facts,
+    weight,
 )
 
 REPO = Path(__file__).resolve().parents[3]
@@ -369,12 +372,6 @@ def test_a_picture_description_with_a_chance_is_refused_while_chances_are_testin
     assert "the picture's description gives a chance while chances are TESTING" in found
 
 
-def test_the_first_post_names_the_chances_only_as_the_model_s() -> None:
-    text = json.loads((REPO / "social" / "queue" / "0001.json").read_text(encoding="utf-8"))
-    assert "%" not in text["text"]
-    assert problems(text["text"]) == []
-
-
 def _facts_with_chances(status: str, text: str) -> str:
     real = (REPO / "social" / "facts.md").read_text(encoding="utf-8")
     lines = [
@@ -507,9 +504,67 @@ def test_plain_true_model_posts_still_pass(text: str) -> None:
     assert problems(text, style=style) == []
 
 
-def test_the_first_post_still_passes() -> None:
-    first = json.loads((REPO / "social" / "queue" / "0001.json").read_text(encoding="utf-8"))
-    assert problems(first["text"]) == []
+# The pictures a queued post may go with, worded as picture.py words them (SYNTHETIC times,
+# places and counts): the day's region when nothing is lit, the closings view when schools
+# are, each "taken for this post".
+REGION_SHOWS = (
+    "A picture of the dark Snowlight map over the Great Lakes, mostly Michigan and Ohio, taken"
+    " at 8:07 AM Central time on October 28, 2026: schools drawn as faint white specks, like"
+    " city lights, with gray state lines and city names. No school is lit up for weather on"
+    " the map. (taken for this post)"
+)
+CLOSINGS_SHOWS = (
+    "A picture of the Snowlight map taken at 6:12 AM Central time on December 10, 2026, zoomed"
+    " to the area with the most schools lit up for weather: 14 schools glow in this view (11"
+    " closed, 3 delayed), mostly in Michigan. Across the country the map shows 20 schools"
+    " closed, delayed, remote or dismissing early for December 10. The closings were updated"
+    " at 6:05 AM Central time. (taken for this post)"
+)
+QUEUE = sorted((REPO / "social" / "queue").glob("*.json"))
+
+
+def test_the_queue_holds_posts() -> None:
+    """Three runs a day post from it until the Haiku writer is on (the lead refills it)."""
+    assert QUEUE, "the queue is empty: the scheduled runs have nothing to post"
+
+
+@pytest.mark.parametrize("path", QUEUE, ids=[path.stem for path in QUEUE])
+def test_every_queued_post_passes_the_real_rules_with_every_picture_it_may_go_with(
+    path: Path,
+) -> None:
+    """Each queued post, in the owner's voice, against the real facts file: with a fresh card
+    of each kind its ``pictures`` allow, and with the library's dated card it goes with when
+    the render fails (an older picture, so nothing in it may call the picture current)."""
+    content = load(REPO)
+    item = next(entry for entry in content.queue if entry.id == path.stem)
+    assert item.pictures is not None, "a queued post names the pictures its words fit"
+    assert set(item.pictures) <= {"closings", "region"}, "never the bare national map"
+    shows = {"closings": CLOSINGS_SHOWS, "region": REGION_SHOWS}
+    for kind in item.pictures:
+        found = check(
+            item.text,
+            style=item.style,
+            facts=FACTS,
+            image_description=shows[kind],
+            image_is_today=True,
+        )
+        assert found == [], (kind, found)
+    older = content.newest(item.style)
+    assert older is not None
+    found = check(
+        item.text,
+        style=item.style,
+        facts=FACTS,
+        image_description=older.describe(),
+        image_is_today=False,
+    )
+    assert found == [], ("library", found)
+    assert 100 <= weight(item.text) <= 220, "the owner's voice: short"
+    assert emoji_count(item.text) <= 1
+    assert "link in my bio" in item.text.lower()
+    for jargon in ("statistical model", "known outcome", "walk-forward", "practice"):
+        assert jargon not in item.text.lower(), jargon
+    assert not re.search("[!\u2014]", item.text)
 
 
 # -- the critics' adversarial drafts (round 2): each must be refused, with the model fact and

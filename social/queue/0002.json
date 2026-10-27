@@ -1,0 +1,9 @@
+{
+  "id": "0002",
+  "style": "dev_log",
+  "text": "Stayed up late wiring the closings reader into Snowlight. Real closings go in within minutes, and the chances come from a real prediction model, not a guess. Waitlist link in my bio.",
+  "pictures": [
+    "closings",
+    "region"
+  ]
+}

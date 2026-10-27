@@ -1,0 +1,9 @@
+{
+  "id": "0010",
+  "style": "dev_log",
+  "text": "Dev log: I tested the model on past winters it never saw, each winter scored by a model fit only to the winters before it. The closings reader runs 24/7, checking school closing lists. Waitlist link in my bio.",
+  "pictures": [
+    "closings",
+    "region"
+  ]
+}

@@ -19,7 +19,7 @@ own account as the managing one.
 - **Queued posts** (`social/queue/<NNNN>.json`): a push to the default branch
   that changes `social/queue/` posts the oldest one not posted yet. The daily run posts one
   too if one is waiting. A queued post is posted at most once, ever. A queued post marked
-  `"fresh_only": true` (the first post, `0001`) goes only with a fresh card taken by the run
+  `"fresh_only": true` (the first post, `0001`, posted Oct 27 and removed) goes only with a fresh card taken by the run
   that posts it, of a kind its `pictures` list allows; while no fresh card fits, it waits
   (the run ends red and says so) and holds the queue, and Haiku does not write in its place.
 - **The scheduled posts**: three runs a day, at good times for US parents and students:
