@@ -26,7 +26,7 @@ interface Finding {
   message: string;
 }
 interface CheckCopy {
-  problems: (text: string) => string[];
+  problems: (text: string, file?: string) => string[];
   copyLeaves: (node: unknown) => [string, string][];
   scanIndexHtml: (html: string, copyTree: unknown, file: string) => Promise<Finding[]>;
   scanManifest: (json: string, file: string, copyTree: unknown) => Finding[];
@@ -48,11 +48,11 @@ const MINUS = '\u2212';
 const strings = copyLeaves(copy);
 
 /** Every problem in a list of strings, as "text: problem" lines, for one readable failure. */
-function allProblems(texts: Iterable<string | null>): string[] {
+function allProblems(texts: Iterable<string | null>, file?: string): string[] {
   const found: string[] = [];
   for (const text of new Set(texts)) {
     if (text === null) continue;
-    for (const problem of problems(text)) found.push(`${JSON.stringify(text)}: ${problem}`);
+    for (const problem of problems(text, file)) found.push(`${JSON.stringify(text)}: ${problem}`);
   }
   return found;
 }
@@ -316,6 +316,49 @@ describe('house style rules', () => {
     expect(problems('Uses AI-driven maps')).toContain('banned phrase "AI"');
     expect(problems('Said')).toEqual([]);
     expect(problems('Air quality')).toEqual([]);
+  });
+
+  describe('“prediction model”, allowed on the waitlist page alone (owner, Oct 26, 2026)', () => {
+    const waitlist = 'src/copy-waitlist.ts';
+    const line = waitlistCopy.model;
+
+    it('passes the waitlist page’s line, held in src/copy-waitlist.ts', () => {
+      expect(line).toBe(
+        'Snow day chances for every school in the lower 48, from a prediction model trained on real closings.',
+      );
+      expect(problems(line, waitlist)).toEqual([]);
+    });
+
+    it.each([
+      undefined,
+      'src/copy.ts',
+      'src/copy-chance.ts',
+      'src/copy-area.ts',
+      'src/copy-diag.ts',
+    ])('bans the phrase in any other copy module (%s)', (file) => {
+      expect(problems(line, file)).toContain('banned phrase "model"');
+      expect(problems('Chances from a prediction model', file)).toContain('banned phrase "model"');
+    });
+
+    it.each([
+      'Our model says so',
+      'From a model trained on real closings',
+      'Two prediction models',
+      'A modeled chance',
+      'Modeling every school',
+      'Prediction model chances',
+      'A prediction model and a model',
+    ])('bans %j even in src/copy-waitlist.ts', (text) => {
+      expect(problems(text, waitlist)).toContain('banned phrase "model"');
+      expect(problems(text)).toContain('banned phrase "model"');
+    });
+
+    it('lifts no other rule there', () => {
+      expect(problems('A prediction model might say', waitlist)).toEqual(['banned phrase "might"']);
+      expect(problems('A prediction model, powered by data', waitlist)).toEqual([
+        'banned phrase "powered by"',
+      ]);
+    });
   });
 });
 
@@ -689,7 +732,12 @@ describe('format', () => {
       expect(Object.isFrozen(chanceCopy)).toBe(true);
       expect(allProblems(copyLeaves(chanceCopy).map(([, text]) => text))).toEqual([]);
       expect(Object.isFrozen(waitlistCopy)).toBe(true);
-      expect(allProblems(copyLeaves(waitlistCopy).map(([, text]) => text))).toEqual([]);
+      expect(
+        allProblems(
+          copyLeaves(waitlistCopy).map(([, text]) => text),
+          'src/copy-waitlist.ts',
+        ),
+      ).toEqual([]);
       expect(Object.isFrozen(diagCopy)).toBe(true);
       expect(allProblems(copyLeaves(diagCopy).map(([, text]) => text))).toEqual([]);
       expect(chanceFormat.weekday('2026-01-13')).toBe('Tuesday');
@@ -2598,6 +2646,48 @@ mark(document.body, copy.search.label, 3);
     );
   }, 30_000);
 
+  it('passes “prediction model” in src/copy-waitlist.ts and its page alone, and “model” nowhere', async () => {
+    const line =
+      'Snow day chances for every school in the lower 48, from a prediction model trained on real closings.';
+    await expectFindings(
+      {
+        'src/copy.ts': `export const copy = {
+  appName: 'Snowlight',
+  chance: '${line}',
+};
+`,
+        'src/copy-chance.ts': `export const chanceCopy = { how: '${line}' };
+`,
+        'src/copy-waitlist.ts': `export const waitlistCopy = {
+  model: '${line}',
+  meta: { description: 'Every school on one map. ${line}' },
+  bad: 'A model trained on real closings.',
+  worse: 'Two prediction models.',
+};
+`,
+        'index.html': `<!doctype html>
+<html lang="en">
+  <head>
+    <title>%copy.appName%</title>
+    <meta name="description" content="%copy.waitlist.meta.description%" />
+  </head>
+  <body>
+    <p>%copy.waitlist.model%</p>
+    <p>%copy.chance%</p>
+  </body>
+</html>
+`,
+      },
+      [
+        ['src/copy.ts', 'export const', 'banned phrase "model" in copy.chance'],
+        ['src/copy-chance.ts', 'export const', 'banned phrase "model" in chanceCopy.how'],
+        ['src/copy-waitlist.ts', 'export const', 'banned phrase "model" in waitlistCopy.bad'],
+        ['src/copy-waitlist.ts', 'export const', 'banned phrase "model" in waitlistCopy.worse'],
+        ['index.html', '%copy.chance%', 'banned phrase "model" in text'],
+      ],
+    );
+  }, 30_000);
+
   it('reads the copy modules that load later as part of copy.ts, and no other module', async () => {
     await expectFindings(
       {
@@ -3639,6 +3729,29 @@ ${aliases}
       'dist/index.html exclamation mark in text: "Closed!"',
       'dist/manifest.webmanifest description "Sorry" is not copy.manifest.description "Schools on one map."',
       'dist/manifest.webmanifest banned phrase "sorry" in description: "Sorry"',
+      served,
+    ]);
+  }, 30_000);
+
+  it('passes “prediction model” on a built or served page only as one whole waitlist string', async () => {
+    const line =
+      'Snow day chances for every school in the lower 48, from a prediction model trained on real closings.';
+    const root = project({
+      'src/copy.ts': cleanCopy,
+      'src/copy-waitlist.ts': `export const waitlistCopy = { model: '${line}' };
+`,
+      'dist/index.html': `<title>Snowlight</title><p>${line}</p><p>From a prediction model.</p><p>Closings. ${line}</p>`,
+      'public/404.html': `<title>Snowlight</title><p>${line}</p><p>A prediction model.</p>`,
+    });
+    const served = 'public/404.html banned phrase "model" in text: "A prediction model."';
+    expect(
+      (await lintProject({ root })).findings.map(({ file, message }) => `${file} ${message}`),
+    ).toEqual([served]);
+    const { findings } = await lintProject({ root, dist: 'dist' });
+    expect(findings.map(({ file, message }) => `${file} ${message}`)).toEqual([
+      'dist/index.html banned phrase "model" in text: "From a prediction model."',
+      // A string that holds the line and more is not the waitlist's string (cut short in the message).
+      'dist/index.html banned phrase "model" in text: "Closings. Snow day chances for every school in the lower …"',
       served,
     ]);
   }, 30_000);

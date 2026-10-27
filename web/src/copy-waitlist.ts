@@ -36,6 +36,22 @@ export const waitlistCopy = /* @__PURE__ */ deepFreeze({
   headline,
   when,
 
+  /**
+   * Under `when`: where the chances come from, in the owner's words (Oct 26, 2026), and the
+   * one string allowed to say "prediction model" (scripts/check-copy.mjs BANNED_EXCEPTIONS).
+   * Each part is true of what docs/predict.md says ships:
+   * - "every school in the lower 48": `snowlight predict` gives every public school district,
+   *   and every private school of the contiguous states, a chance (docs/predict.md lines 3-4,
+   *   and 319-326: "Alaska and Hawaii get none, as their districts get none"), so it says the
+   *   lower 48, not the US.
+   * - "a prediction model trained on real closings": the model as fit (docs/predict.md line 15
+   *   on) is fit to labeled school days, each label read from a real closing list kept that
+   *   morning (lines 17-20: 1,547 no-school district-days among them), and its walk-forward
+   *   backtest trains each fold on those labels alone (lines 118-121).
+   */
+  model:
+    'Snow day chances for every school in the lower 48, from a prediction model trained on real closings.',
+
   form: {
     /** The email field's label, read aloud and shown as its placeholder. */
     email: 'Email address',

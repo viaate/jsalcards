@@ -57,7 +57,9 @@
  *
  * The one exception to the house style is the license-required map
  * attribution inside MapLibre's collapsed attribution control; it is not
- * customer copy and is never scanned.
+ * customer copy and is never scanned. The one exception to a banned word is
+ * BANNED_EXCEPTIONS: "prediction model" on the waitlist page, held in
+ * src/copy-waitlist.ts alone (owner, Oct 26, 2026).
  *
  * Usage: node scripts/check-copy.mjs [--root <web dir>] [--dist <build dir>] [--json]
  */
@@ -91,6 +93,9 @@ export const COPY_MODULES = [
   'src/copy-waitlist.ts',
   'src/copy-diag.ts',
 ];
+
+/** The waitlist page's words (src/copy-waitlist.ts), filled into pages under copy.waitlist. */
+const WAITLIST_MODULE = 'src/copy-waitlist.ts';
 
 // House style --------------------------------------------------------------------------
 
@@ -143,6 +148,21 @@ export const BANNED = [
 ];
 
 /**
+ * The one exception to BANNED, by the owner's decision of Oct 26, 2026: the public waitlist
+ * page tells strangers that Snowlight's chances come from a real prediction model, in the
+ * owner's own words ("Snow day chances for every school in the lower 48, from a prediction
+ * model trained on real closings."). So the two-word phrase "prediction model", exactly so,
+ * passes in a string held in src/copy-waitlist.ts (the waitlist page's marketing copy) and in
+ * nothing else: "model" alone, its other forms ("models", "modeled") and the phrase in any
+ * other copy module (copy.ts, copy-chance.ts and the rest) stay banned, as the app says
+ * nothing of how it works.
+ * @type {ReadonlyArray<{ label: string, phrase: string, file: string }>}
+ */
+export const BANNED_EXCEPTIONS = [
+  { label: 'model', phrase: 'prediction model', file: WAITLIST_MODULE },
+];
+
+/**
  * Words that keep a capital letter anywhere in a sentence. Anything else
  * capitalized after a sentence's first word reads as Title Case.
  */
@@ -190,6 +210,24 @@ const IOS_NAME = new RegExp(`${BEFORE}(?:${IOS_NAMES.join('|')})${AFTER}`, 'gu')
 /** @type {ReadonlyArray<readonly [string, RegExp]> | undefined} */
 let bannedPatterns;
 
+/**
+ * A copy of `text` with each BANNED_EXCEPTIONS phrase of `label` that `file` may hold blanked
+ * out, so that ban does not see it; `text` itself when there is none.
+ * @param {string} text
+ * @param {string} label
+ * @param {string | undefined} file
+ * @returns {string}
+ */
+function withoutExceptions(text, label, file) {
+  let checked = text;
+  for (const exception of BANNED_EXCEPTIONS) {
+    if (exception.label !== label || exception.file !== file) continue;
+    const phrase = new RegExp(`${BEFORE}${exception.phrase}${AFTER}`, 'gu');
+    checked = checked.replace(phrase, (found) => ' '.repeat(found.length));
+  }
+  return checked;
+}
+
 /** @returns {ReadonlyArray<readonly [string, RegExp]>} */
 function compiledBanned() {
   bannedPatterns ??= BANNED.map(
@@ -214,20 +252,23 @@ const EDGE_PUNCTUATION = /^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu;
 /**
  * House-style problems in one customer-facing string; empty when it is fine.
  * @param {string} text
+ * @param {string} [file] The copy module that holds the string, from the web root
+ *   ('src/copy-waitlist.ts'), where one is known: only BANNED_EXCEPTIONS read it.
  * @returns {string[]}
  */
-export function problems(text) {
+export function problems(text, file) {
   /** @type {string[]} */
   const found = [];
   if (text.length === 0) return ['empty string'];
 
   for (const [label, pattern] of compiledBanned()) {
-    for (const match of text.matchAll(pattern)) {
+    const checked = withoutExceptions(text, label, file);
+    for (const match of checked.matchAll(pattern)) {
       // "May" before a day number is the month: "May 4".
       const month =
         label === 'may' &&
         match[0] === 'May' &&
-        /^\s+\d/u.test(text.slice(match.index + match[0].length));
+        /^\s+\d/u.test(checked.slice(match.index + match[0].length));
       if (!month) {
         found.push(`banned phrase "${label}"`);
         break;
@@ -5733,6 +5774,21 @@ function lookup(tree, dotted) {
 }
 
 /**
+ * The copy module a built page's string is held in, for problems(): src/copy-waitlist.ts when
+ * the string is one of the waitlist's words (the copy tree's `waitlist`) whole.
+ * @param {string} text
+ * @param {unknown} copyTree
+ * @returns {string | undefined}
+ */
+function holderOf(text, copyTree) {
+  const waitlist = lookup(copyTree, 'waitlist');
+  return copyLeaves(waitlist).some(([, leaf]) => leaf === text) ? WAITLIST_MODULE : undefined;
+}
+
+/** A page string written as one placeholder of the waitlist's words, and nothing else. */
+const WAITLIST_PLACEHOLDER = /^%copy\.waitlist\.[A-Za-z0-9_.]+%$/u;
+
+/**
  * index.html: every visible string is a %copy.path% placeholder, every
  * placeholder names a string in copy.ts, the filled-in page passes the house
  * style, and no CSS `content` writes text.
@@ -5800,8 +5856,10 @@ export async function scanIndexHtml(html, copyTree, file, cssShown = new Set()) 
   // Filling placeholders never adds or removes a visible string, so the two lists line up.
   const shown = htmlStrings(parse(rendered, PAGE_PARSE), shownAttributes);
   shown.forEach(({ text, line, column, where }, index) => {
-    const origin = raw[index] ?? { line, column };
-    for (const problem of problems(text)) {
+    const origin = raw[index] ?? { line, column, text: '' };
+    // The source's own placeholder says where the string is held.
+    const holder = WAITLIST_PLACEHOLDER.test(origin.text.trim()) ? WAITLIST_MODULE : undefined;
+    for (const problem of problems(text, holder)) {
       findings.push({
         file,
         line: origin.line,
@@ -6012,7 +6070,7 @@ export async function lintProject({ root: given = WEB_ROOT, dist } = {}) {
     // copy.ts's own strings; the waitlist's are checked below as the module that holds them.
     for (const [key, text] of copyLeaves(exported?.copy)) {
       scanned.strings += 1;
-      for (const problem of problems(text)) {
+      for (const problem of problems(text, 'src/copy.ts')) {
         findings.push({
           file: 'src/copy.ts',
           line: 1,
@@ -6023,7 +6081,7 @@ export async function lintProject({ root: given = WEB_ROOT, dist } = {}) {
     }
     for (const [file, key, text] of project.copyRuntime?.later ?? []) {
       scanned.strings += 1;
-      for (const problem of problems(text)) {
+      for (const problem of problems(text, relative(file))) {
         findings.push({
           file: relative(file),
           line: 1,
@@ -6116,7 +6174,7 @@ export async function lintProject({ root: given = WEB_ROOT, dist } = {}) {
         scanned.html += 1;
         const tree = project.html.parse(await readFile(file, 'utf8'), PAGE_PARSE);
         for (const { text, line, column, where } of htmlStrings(tree, project.cssAttributes)) {
-          for (const problem of problems(text)) {
+          for (const problem of problems(text, holderOf(text, copyTree))) {
             findings.push({
               file: name,
               line,

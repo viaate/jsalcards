@@ -57,6 +57,16 @@ const shownError = (page: Page) => page.locator('#wl-error [data-error]:visible'
 const isAppScript = (url: string): boolean =>
   /\/assets\/(?:index|maplibre|basemap)[-.]/.test(new URL(url).pathname);
 
+/** The line on the chances is the waitlist's alone: not in the app's words, nor in a script it loads. */
+async function expectNoModelLine(page: Page, urls: readonly string[]): Promise<void> {
+  expect(await page.evaluate(() => document.body.innerText)).not.toContain(waitlistCopy.model);
+  const scripts = urls.filter((url) => new URL(url).pathname.endsWith('.js'));
+  expect(scripts.filter(isAppScript).length).toBeGreaterThan(0);
+  for (const url of scripts) {
+    expect(await (await page.request.get(url)).text(), url).not.toContain(waitlistCopy.model);
+  }
+}
+
 test.describe('without VITE_WAITLIST_KIT_FORM', () => {
   test('is the site as before: the code screen, the app script, no waitlist', async ({ page }) => {
     await page.goto('/', { waitUntil: 'load' });
@@ -65,6 +75,8 @@ test.describe('without VITE_WAITLIST_KIT_FORM', () => {
     await expect(page.locator('head script[type="module"][src*="/assets/index-"]')).toHaveCount(1);
     await expect(page.locator('meta[property="og:image"]')).toHaveCount(0);
     await expect(page.locator('main.stage')).toBeVisible();
+    await expect(page.getByText(waitlistCopy.model)).toHaveCount(0);
+    expect(await (await page.request.get('/')).text()).not.toContain(waitlistCopy.model);
     const privacy = await page.request.get('/privacy.html');
     // The preview server answers unknown paths with the page itself; the build has no privacy page.
     expect(await privacy.text()).not.toContain(waitlistCopy.privacy.intro);
@@ -84,6 +96,8 @@ test.describe('the waitlist', () => {
     await expect(page).toHaveTitle(waitlistCopy.meta.shareTitle);
     await expect(page.locator('#waitlist h1')).toHaveText(waitlistCopy.headline);
     await expect(page.getByText('Coming this winter.')).toBeVisible();
+    // Where the chances come from, under the when line (owner, Oct 26, 2026).
+    await expect(page.getByText(waitlistCopy.model, { exact: true })).toBeVisible();
     await expect(page.getByPlaceholder(waitlistCopy.form.email)).toBeVisible();
     await expect(page.getByRole('button', { name: waitlistCopy.form.join })).toBeVisible();
     // The build's Kit form sends a confirmation email first (the default), and the line says so.
@@ -363,7 +377,9 @@ test.describe('the waitlist', () => {
     await expect(page).toHaveTitle(copy.appName);
     await expect(page.locator('main.stage')).toBeVisible();
     await expect(page.locator('.search input')).toBeVisible();
+    await expect(page.getByText(waitlistCopy.model)).toHaveCount(0);
     await expect.poll(() => urls.filter(isAppScript).length).toBeGreaterThan(0);
+    await expectNoModelLine(page, urls);
     expect(await page.evaluate(() => localStorage.getItem('sl-lock'))).toBe('MjM4MQ==');
     expect(errors).toEqual([]);
   });
@@ -390,6 +406,8 @@ test.describe('the waitlist', () => {
     await expect(page.locator('main.stage')).toBeVisible();
     await expect(page.locator('html')).toHaveClass(/is-app/);
     await expect(page).toHaveTitle(copy.appName);
+    await expect(page.getByText(waitlistCopy.model)).toHaveCount(0);
+    await expectNoModelLine(page, urls);
     expect(await page.evaluate(() => (window as unknown as { __seen: string[] }).__seen)).toEqual(
       [],
     );
@@ -532,6 +550,84 @@ test.describe('the waitlist', () => {
     }
   });
 
+  test('shows the line on the chances only where it keeps to two lines and the page to one screen', async ({
+    browser,
+  }) => {
+    // Each screen with whether the line shows under the text headline and under the chrome one.
+    const screens: { width: number; height: number; text: boolean; chrome: boolean }[] = [
+      // Phones: an iPhone, a tall Android, the common small sizes.
+      { width: 390, height: 844, text: true, chrome: true },
+      { width: 412, height: 915, text: true, chrome: true },
+      { width: 375, height: 667, text: true, chrome: false },
+      { width: 360, height: 640, text: true, chrome: false },
+      // Under 343px wide it would take three lines: an iPhone mini zoomed, a folding phone's cover.
+      { width: 320, height: 640, text: false, chrome: false },
+      { width: 280, height: 653, text: false, chrome: false },
+      // Too short to hold it with the form: the smallest iPhone, a height just past the short-screen rules.
+      { width: 320, height: 568, text: false, chrome: false },
+      { width: 360, height: 648, text: false, chrome: false },
+      // Wider windows, a short laptop, and phones on their side.
+      { width: 1440, height: 900, text: true, chrome: true },
+      { width: 1280, height: 720, text: true, chrome: true },
+      { width: 1366, height: 657, text: false, chrome: false },
+      { width: 640, height: 600, text: false, chrome: false },
+      { width: 800, height: 600, text: false, chrome: false },
+      { width: 750, height: 342, text: false, chrome: false },
+      { width: 844, height: 390, text: true, chrome: false },
+      { width: 932, height: 430, text: true, chrome: true },
+    ];
+    for (const [headline, url] of [
+      ['text', WAITLIST_URL],
+      ['chrome', WAITLIST_CHROME_URL],
+    ] as const) {
+      for (const screen of screens) {
+        const { width, height } = screen;
+        const where = `${headline} ${String(width)}x${String(height)}`;
+        const phone = width < 640;
+        const context = await browser.newContext({
+          viewport: { width, height },
+          baseURL: url,
+          hasTouch: phone,
+          isMobile: phone,
+        });
+        const page = await context.newPage();
+        await page.goto('/', { waitUntil: 'load' });
+        await page.evaluate(() => document.fonts.ready.then(() => undefined));
+        const overflow = () =>
+          page.evaluate(
+            () => (document.getElementById('waitlist')?.scrollHeight ?? 0) - window.innerHeight,
+          );
+        const line = page.locator('#waitlist .wl-model');
+        await expect(line, where).toHaveText(waitlistCopy.model);
+        await expect(page.locator('#wl-form'), where).toBeInViewport({ ratio: 1 });
+        if (screen[headline]) {
+          await expect(line, where).toBeVisible();
+          const lines = await line.evaluate(
+            (element) =>
+              element.getBoundingClientRect().height /
+              parseFloat(getComputedStyle(element).lineHeight),
+          );
+          expect(Math.round(lines), where).toBeLessThanOrEqual(2);
+          // Under the when line, and never louder than it.
+          const sizes = await page.evaluate(() =>
+            ['.wl-when', '.wl-model'].map((selector) => {
+              const element = document.querySelector(`#waitlist ${selector}`);
+              return element === null ? 0 : parseFloat(getComputedStyle(element).fontSize);
+            }),
+          );
+          expect(sizes[1] ?? 0, where).toBeLessThan(sizes[0] ?? 0);
+          // It makes the page scroll no further than it would without it.
+          const shown = await overflow();
+          await page.addStyleTag({ content: '#waitlist .wl-model { display: none !important; }' });
+          expect(shown, where).toBeLessThanOrEqual(Math.max(await overflow(), 0));
+        } else {
+          await expect(line, where).toBeHidden();
+        }
+        await context.close();
+      }
+    }
+  });
+
   test('shows every error in view on a short phone screen, as with its keyboard up', async ({
     browser,
   }) => {
@@ -609,6 +705,8 @@ test.describe('the waitlist', () => {
     // Playwright's text search skips <noscript>, so these lines are found by their place.
     await expect(page.locator('.wl-when')).toHaveText(waitlistCopy.when);
     await expect(page.locator('.wl-when')).toBeVisible();
+    await expect(page.locator('.wl-model')).toHaveText(waitlistCopy.model);
+    await expect(page.locator('.wl-model')).toBeVisible();
     const email = page.getByPlaceholder(waitlistCopy.form.email);
     await expect(email).toBeVisible();
     await expect(page.getByRole('button', { name: waitlistCopy.form.join })).toBeVisible();
