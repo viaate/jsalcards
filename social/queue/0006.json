@@ -1,7 +1,7 @@
 {
   "id": "0006",
   "style": "dev_log",
-  "text": "When the weather service issues a winter storm warning over a district, the chance there moves with it. The chances come from a real prediction model, not a guess. Waitlist link in my bio.",
+  "text": "When the weather service issues a winter storm warning over a district, the chance there moves with it. That's how I built the model. Waitlist link in my bio.",
   "pictures": [
     "closings",
     "region"

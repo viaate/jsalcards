@@ -1,7 +1,7 @@
 {
   "id": "0002",
   "style": "dev_log",
-  "text": "I switched on the closings reader for Snowlight: real closings go in within minutes. The chances come from a real prediction model, not a guess. Waitlist link in my bio.",
+  "text": "New for Snowlight: real school closings go into it within minutes, and they glow on my private test map. The model works out a new set of chances about every 30 minutes. Waitlist link in my bio.",
   "pictures": [
     "closings",
     "region"

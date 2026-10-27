@@ -102,8 +102,8 @@ Two rules hold for every post, Haiku's and the queued ones alike, and for every 
   zero-width space. Haiku's second check is a second net, never the only one.
 
 The C card (the first style tried on every picture) leads with one short headline from the
-card library (`cards.HEADLINES`, 2 to 6 plain words: "A real model, not a guess", "Built on
-real past school days", "The Snowlight waitlist is open", and over lit schools "Real school
+card library (`cards.HEADLINES`, 2 to 6 plain words: "A snow day model, not a guess", "A
+real snow day model", "The Snowlight waitlist is open", and over lit schools "Real school
 closings and delays" or "Like city lights seen from space"), each words of a LIVE fact, with
 no insider name a parent would not know ("reader", "records", "24/7": `cards.INSIDER`),
 checked against the run's facts file and rotated by the run's slot of the day
@@ -146,8 +146,19 @@ it, and the reader's practice mode is gone from the facts, so a post that says "
 refused. Both carry `| private`: they are real and running but shown only behind the lock (and
 on the cards posted here) until launch, so a post never calls them live, public or there for
 everyone ("Closed schools glow for everyone", "Closings are live now" and "Every school glows
-like city lights on Snowlight now" are refused), nor coming ("Closings and phone alerts are
-coming" is refused: they are here). The map itself stays **TESTING** (locked): no LIVE fact's
+like city lights on Snowlight now" are refused), nor offers them to anyone: a clause that
+names them may hold no word of who sees them or what to do with them ("you", "your school",
+"parents", "see", "check", "look for", "find out", "get", "join the waitlist to see", "is up",
+"I post them here", "now": `rules.PUBLIC`) unless it says they are private or in testing (the
+waitlist is one email at launch, so it opens nothing either), and no word that they cover
+the country ("for every state", "every closed school in the US", "nationwide":
+`rules.COVERAGE`) but the COMING aim's. They are not coming either ("Closings and phone
+alerts are coming" is refused: they are here). A sentence of closings names a state only
+where the picture's description puts its lit schools ("in New Mexico", "mostly in Nevada"),
+never a view's own place ("in a view over Ohio and Kentucky", which a lit school across the
+line may be in) or a calm region's state. No post forecasts snow or snow days ("Snow days in
+Colorado are coming") or says Snowlight knows what a school will do ("knows when your school
+will close"). The map itself stays **TESTING** (locked): no LIVE fact's
 text speaks of the map, so a post that puts closings "on the map" still says the map is in
 private testing. Were the
 lead ever to mark `closings` not LIVE again:
@@ -167,12 +178,17 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
 - At most **1 post a run**, **3 posts a UTC day** of every kind (the D1 claim that starts a
   post holds the cap, so two runs cannot both pass it; `store.MAX_POSTS_PER_DAY`), and
   **3 Haiku tries a UTC day**, at least **3 hours** after the last post
-  (`post.MAX_HAIKU_PER_DAY`, `post.QUIET`; the 13:07 and 17:37 runs are 4.5 hours apart, so a
-  morning run GitHub starts up to 90 minutes late still leaves the noon run room; each try's
-  record and its post's slot are named `<day>#<n>`, so a post goes at most once). Each try
-  of a day states a different model fact (`rules.model_fact_for`), and a draft that says the
-  same as a Haiku post X was sent in the last 14 days is dropped (its mark is kept on the try's
-  record; X refuses a duplicate, and a refusal for good would hold all posting).
+  (`post.MAX_HAIKU_PER_DAY`, `post.QUIET`; each try's record and its post's slot are named
+  `<day>#<n>`, so a post goes at most once). The spacing is 3 hours, not the 4 the first
+  plan named, by the lead's choice: the 13:07 and 17:37 runs are 4.5 hours apart, and with 4
+  hours a morning run GitHub starts more than 30 minutes late would leave the noon run no
+  Haiku post; with 3 hours it may start up to 90 minutes late. Each try of a day states a
+  different model fact (`rules.model_fact_for`), and a draft that says the same as any post
+  claimed in the last 14 days, queued or Haiku, or as a post still in the queue, is dropped
+  as a failed try with no call to X: every post's mark (`post.draft_mark`, its words with case
+  and punctuation aside) is kept in the `social_marks` table just before its claim, since a
+  posted queue file is removed, and X refuses a duplicate with a 403 that would hold all
+  posting.
 - At most **4 Haiku calls a run** (write, check, and one more try of each), each capped at
   **1,024 output tokens**, effort `low`, and no SDK retries, and **3 Haiku tries a UTC day**
   (each try's D1 row is made before its first call), so at most 12 calls a day. An answer that says
@@ -186,9 +202,10 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
 - A post X refuses twice in a row with the same 4xx (not a 429, not one that holds posting)
   is skipped for good, with an issue, **X posting: a post was skipped**; the other posts go
   on, and a skipped post counts toward no cap. A 429 or a 5xx is never counted.
-- Each run logs every Haiku call's output tokens. When both of a day's tries run out at the
+- Each run logs every Haiku call's output tokens. When both drafts of a try run out at the
   1,024-token cap (Haiku 5.5 thinks first, and its thinking counts), the run ends red with a
-  warning: the cap, not the draft, cost that day's post.
+  warning: the cap, not the draft, cost that try's post (a later run that day may try again,
+  up to 3 tries a day).
 - X bills each post on the owner's prepaid credits. Keep the balance small and auto-recharge
   off: the most anything can ever spend is that balance.
 - The spending limits are the owner's to set (nothing here can set them): in the X developer
@@ -338,7 +355,9 @@ network at all:
    it reads as an empty black map; the words never say "night": the map is dark at any hour).
    It writes the description (time with its zone, place by state, counts, chance) and the
    same facts as fields. A place is "mostly" its states only when they hold more than half of
-   the schools counted (a second state only with at least 15%); lit private schools, whose ids
+   the schools counted (a second state only with at least 15%), and "in" them when they hold
+   every lit school in view (one lit school is "1 school glows ... in Nevada", and the C stamp
+   says "In Nevada"); lit private schools, whose ids
    name no state, are placed by the view ("in a view over New Mexico"). Nothing is
    said about closings when the closings file was a 404, and neither when it
    is older than 20 minutes: a stopped reader's empty file is no sign that nothing is
@@ -363,7 +382,12 @@ network at all:
    line (and C's headline) is checked against the run's facts file when the
    card is laid: if the lead rewords or demotes the `model` fact, A no longer fits and the
    card takes another style. On a closings picture the A card's status counts say "in this
-   view", like C's and B's. When no style fits, no fresh card is made and the post goes with
+   view", like C's and B's. A closings map whose lit schools make fewer than 200 lit-school
+   pixels (a few schools glow, each a dot) gets a light ring round each lit spot on the C card
+   (`cards.RING_UNDER`; spots within 24 pixels share one ring), so a scroller finds them: the
+   ring is light on the dark map, never over a lit school's centre, and darkens no lit pixel.
+   A calm region card over a stale closings file (the reader stopped) gives its date only, no
+   clock, so it never reads as "nothing closed at 7:07". When no style fits, no fresh card is made and the post goes with
    the library's dated card. The log says which style and why. Every word, number, place and time on
    the card comes from the picture's facts, never from Haiku: counts in the picture say "in
    this view", the country's total says "across the US", the chance is a number on the card

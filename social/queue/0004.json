@@ -1,7 +1,7 @@
 {
   "id": "0004",
   "style": "dev_log",
-  "text": "When a school is closed or delayed for weather, it glows on my private test map like city lights seen from space. The model behind the chances is built on real closing records, not a guess. Waitlist link in my bio.",
+  "text": "When a school is closed or delayed for weather, it glows on my private test map like city lights. The model leans on each district's own recorded days and its nearby districts. Waitlist link in my bio.",
   "pictures": [
     "closings",
     "region"

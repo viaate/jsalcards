@@ -1348,3 +1348,36 @@ def test_the_launch_and_the_forecast_reasons_are_not_forecasts() -> None:
             image_is_today=True,
         )
         assert not any("forecasts" in line for line in found), (text, found)
+
+
+def test_the_writer_s_examples_repeat_no_queued_post() -> None:
+    """A Haiku draft that copies its style guide's example question must not open with a
+    queued post's words (X refuses a duplicate): no example question is in a queued post."""
+    from snowlight.social.writer import STYLES  # noqa: PLC0415 - this check only
+
+    quoted = [
+        example.lower()
+        for text in STYLES.values()
+        for example in re.findall(r"'([^']{12,}\?)'", text)
+    ]
+    assert quoted
+    for path in QUEUE:
+        text = json.loads(path.read_text(encoding="utf-8"))["text"].lower()
+        for example in quoted:
+            assert example not in text, (path.stem, example)
+
+
+def test_the_queue_varies_its_model_fact() -> None:
+    """Three posts a day for three days: the "real prediction model, not a guess" line in at
+    most three of them, and the others on the model's other LIVE facts in plain words."""
+    texts = [json.loads(path.read_text(encoding="utf-8"))["text"].lower() for path in QUEUE]
+    same = [text for text in texts if "not a guess" in text or "real prediction model" in text]
+    assert len(same) <= 3, same
+    named = {
+        fact.id
+        for text in texts
+        for fact in FACTS.model
+        if fact.id != "model"
+        and any(re.search(rf"\b{re.escape(term)}\b", text) for term in fact.terms)
+    }
+    assert len(named) >= 4, named

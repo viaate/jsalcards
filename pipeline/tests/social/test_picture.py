@@ -2,7 +2,9 @@
 (snowlight.social.picture)."""
 
 import math
+import os
 from datetime import UTC, date, datetime
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -38,6 +40,7 @@ from snowlight.social.picture import (
     unproject,
     view_states,
 )
+from snowlight.social.render import directory_of
 from snowlight.social.rules import mentions_closings
 
 # Ten public schools: six around Buffalo, NY (36...), two in Pennsylvania (42...) near them,
@@ -450,7 +453,20 @@ def _ids(counts: dict[str, int], private: int = 0) -> list[str]:
 
 # The public schools in each calm region's view in the deployed directory (Oct 27, 2026,
 # points.021e180ccc.bin), by state: the top three, then the rest as one state each. Sums from
-# the probe that found 'mostly' false for five of seven regions.
+# the probe that found 'mostly' false for five of seven regions. They hold for these views
+# only (REAL_REGION_QUERIES, pinned below): a change to a region's place or zoom fails
+# test_the_region_share_snapshot_is_of_the_regions_views until the shares are probed again, and
+# with the deployed directory at hand (SNOWLIGHT_SCHOOLS, or web/public/data/schools after a
+# local build) test_the_real_directory_still_gives_the_snapshot_s_states recomputes them.
+REAL_REGION_QUERIES = {
+    "the Northeast corridor": "?at=40.6000,-74.4000,6.6",
+    "the Great Lakes": "?at=42.3000,-85.2000,6.3",
+    "the Mid-Atlantic": "?at=38.9000,-77.6000,7",
+    "the Texas triangle": "?at=30.6000,-96.9000,6.8",
+    "the Front Range": "?at=39.7000,-105.0000,7.4",
+    "the Pacific Northwest": "?at=46.9000,-122.6000,7",
+    "Southern California": "?at=33.9000,-117.8000,7.4",
+}
 REAL_REGION_SHARES = {
     "the Northeast corridor": ({"36": 4080, "42": 2772, "34": 2481}, 15330, []),
     "the Great Lakes": ({"17": 3508, "26": 3249, "39": 3072}, 15356, []),
@@ -476,6 +492,32 @@ def test_mostly_is_said_only_of_states_that_hold_most_of_a_real_region(place: st
         spread[f"{60 + index % 30:02d}"] += 1
     ids = _ids(top) + [f"{code}{index:010d}" for code, n in spread.items() for index in range(n)]
     assert _states(ids) == named
+
+
+def test_the_region_share_snapshot_is_of_the_regions_views() -> None:
+    assert {view.place: view.query for view in REGIONS} == REAL_REGION_QUERIES
+
+
+def _deployed_schools() -> Path | None:
+    for folder in (
+        os.environ.get("SNOWLIGHT_SCHOOLS"),
+        Path(__file__).resolve().parents[3] / "web" / "public" / "data" / "schools",
+    ):
+        if folder and any(Path(folder).glob("points.*.bin")):
+            return Path(folder)
+    return None
+
+
+@pytest.mark.skipif(_deployed_schools() is None, reason="no deployed school directory here")
+def test_the_real_directory_still_gives_the_snapshot_s_states() -> None:
+    folder = _deployed_schools()
+    assert folder is not None
+    real = directory_of(
+        next(folder.glob("meta.*.json")).read_bytes(),
+        next(folder.glob("points.*.bin")).read_bytes(),
+    )
+    for view in REGIONS:
+        assert view_states(real, view.query) == REAL_REGION_SHARES[view.place][2], view
 
 
 def test_mostly_needs_more_than_half_and_a_second_state_a_real_share() -> None:

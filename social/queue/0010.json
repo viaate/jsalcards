@@ -1,7 +1,7 @@
 {
   "id": "0010",
   "style": "dev_log",
-  "text": "Dev log: I tested the model on past winters one winter at a time, each with a model built only from the winters before it, so it never got to peek at the answers. Waitlist link in my bio.",
+  "text": "Dev log: I tested the model on past winters one winter at a time, so it never got to peek at the answers. Waitlist link in my bio.",
   "pictures": [
     "closings",
     "region"

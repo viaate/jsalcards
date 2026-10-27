@@ -56,9 +56,20 @@ for what it claims:
   and must name a LIVE one ("Snowlight is live" is refused).
 * **Running but private.** A LIVE fact marked ``| private`` (the closings and their glow: real
   and running, but shown only on the locked map until launch) is never called live or public
-  either: a live claim in its sentence, or a word that offers it to people (:data:`PUBLIC`:
-  "for everyone", "anyone", "public", "now") in its clause, is refused unless that clause
-  says it is private or in testing ("Closed schools glow on my private test map").
+  either: a live claim in its sentence, or a word that offers it to people anywhere in its
+  clause (:data:`PUBLIC`: "for everyone", "you", "your school", "see", "check", "find out",
+  "get", "join ... to see", "is up", "I post them here", "now"), is refused unless that
+  clause says it is private or in testing ("Closed schools glow on my private test map"); the
+  waitlist is one email at launch, so it opens nothing either. No clause of it may say it
+  covers the country ("for every state", "nationwide": :data:`COVERAGE`) unless it names the
+  COMING aim.
+* **Closings in their place.** A sentence of closings names a state only where the picture's
+  description says its lit schools are ("in New Mexico", "mostly in Nevada":
+  :data:`LIT_PLACE`), never a view's own place ("in a view over Ohio and Kentucky") or a
+  calm region's state.
+* **No forecasts, no certainty.** No forecast of snow or snow days ("Snow days in Colorado are
+  coming": :data:`SNOW_COMING`) but of the launch, and no "knows when", "will close" or "tells
+  you if" (:data:`ACCURACY`).
 * **Live called coming.** A LIVE term a coming word speaks of ("Closings and phone alerts are
   coming") is refused: it is not coming, it is here.
 * **Numbers.** Every number, in digits or in words (``fifty``, ``twenty-four``, ``first``),

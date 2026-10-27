@@ -9,7 +9,7 @@
 # and the ANTHROPIC_API_KEY secret is in the x-posting environment (until then it says
 # "no Anthropic key" and posts only queued posts). Caps live in the code
 # (pipeline/snowlight/social): one post a run, three a UTC day, at most three Haiku tries a
-# UTC day of at most four calls each (one a run); nothing posted in the last 4 hours before a
+# UTC day of at most four calls each (one a run); nothing posted in the last 3 hours before a
 # Haiku post. While posting is stopped
 # (X refused the token, or refused a post for good) a run asks Haiku nothing and sends
 # nothing until the owner acts on the open issue.
@@ -20,7 +20,7 @@
 # https://snowlightmap.com, unlocks it in that browser only, waits for the live files, hides
 # the site's interface and takes a 1600 x 900 picture of the map alone (the busiest area of
 # lit-up schools, else the district with the highest chance, else a region's city lights
-# rotated by the day, else the dark national map;
+# rotated by the run's slot (morning, noon, evening), else the dark national map;
 # while social/facts.md marks chances TESTING no picture, card or post gives a chance, and
 # while it marks closings not LIVE no picture or card shows or counts closings), with
 # a plain description of it that the post may use. Then it lays the Snowlight card over
