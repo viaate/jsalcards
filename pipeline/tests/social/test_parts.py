@@ -13,6 +13,7 @@ from snowlight.cli import main
 from snowlight.social import logscan, seal
 from snowlight.social.cli import Output, commits
 from snowlight.social.content import ContentError, load
+from snowlight.social.post import haiku_on
 from snowlight.social.rules import chances_shown, model_fact_for, parse_facts
 from snowlight.social.writer import (
     MAX_CALLS,
@@ -149,14 +150,76 @@ def test_upload_and_post_outcomes() -> None:
     def no_id(_r: httpx.Request) -> httpx.Response:
         return httpx.Response(201, json={"data": {}})
 
-    with pytest.raises(UnknownOutcomeError, match="no post id"):
+    with pytest.raises(UnknownOutcomeError, match="not a 201 with the post's id"):
         _x(httpx.MockTransport(no_id)).post("t", "x", "1")
+
+    def moved(_r: httpx.Request) -> httpx.Response:
+        return httpx.Response(302)
+
+    with pytest.raises(RefusedError, match="HTTP 302") as refused:
+        _x(httpx.MockTransport(moved)).post("t", "x", "1")
+    assert refused.value.status == 302
 
     def limited(_r: httpx.Request) -> httpx.Response:
         return httpx.Response(429, json={"errors": [{"title": "Too Many Requests"}]})
 
     with pytest.raises(RefusedError, match=r"HTTP 429 \(Too Many Requests\)"):
         _x(httpx.MockTransport(limited)).post("t", "x", "1")
+
+
+@pytest.mark.parametrize(
+    ("status", "body"),
+    [
+        pytest.param(200, b"", id="200-empty"),
+        pytest.param(200, b'{"data": {"id": "1850000000000000002", "text": "x"}}', id="200-id"),
+        pytest.param(201, b"<html><body>Created</body></html>", id="201-not-json"),
+        pytest.param(201, b'{"errors": [{"title": "Service Unavailable"}]}', id="201-errors"),
+        pytest.param(201, b'{"data": {"id": "18500x"}}', id="201-bad-id"),
+        pytest.param(202, b'{"data": {"id": "1850000000000000002"}}', id="202"),
+        pytest.param(204, b"", id="204"),
+    ],
+)
+def test_a_2xx_post_answer_without_a_201_post_id_is_unknown_never_a_refusal(
+    status: int, body: bytes
+) -> None:
+    """X may have made the post: never a refusal, which would drop the claim and send it again."""
+
+    def odd(_r: httpx.Request) -> httpx.Response:
+        return httpx.Response(status, content=body)
+
+    with pytest.raises(UnknownOutcomeError, match=f"HTTP {status}"):
+        _x(httpx.MockTransport(odd)).post("t", "x", "1")
+
+
+def test_a_201_with_the_post_id_is_posted() -> None:
+    def made(_r: httpx.Request) -> httpx.Response:
+        return httpx.Response(201, json={"data": {"id": "1850000000000000002", "text": "x"}})
+
+    assert _x(httpx.MockTransport(made)).post("t", "x", "1") == "1850000000000000002"
+
+
+@pytest.mark.parametrize(
+    ("header", "on"),
+    [
+        ("HAIKU_POSTS = on", True),
+        ("HAIKU_POSTS=ON", True),
+        ("HAIKU_POSTS = off", False),
+        ("", False),
+        ("HAIKU_POSTS = yes", False),
+        ("  HAIKU_POSTS = on", False),
+        ("HAIKU_POSTS = on\n\nHAIKU_POSTS = on", False),
+        ("HAIKU_POSTS = on\n\nHAIKU_POSTS = off", False),
+    ],
+)
+def test_only_one_haiku_posts_on_line_switches_the_haiku_writer_on(header: str, on: bool) -> None:
+    facts = fakes.FACTS.replace("HAIKU_POSTS = on", header)
+    assert haiku_on(parse_facts(facts)) is on
+
+
+def test_the_haiku_writer_ships_switched_off() -> None:
+    real = (Path(__file__).resolve().parents[3] / "social" / "facts.md").read_text(encoding="utf-8")
+    assert "\nHAIKU_POSTS = off\n" in real
+    assert haiku_on(parse_facts(real)) is False
 
 
 def _content(tmp_path: Path) -> object:

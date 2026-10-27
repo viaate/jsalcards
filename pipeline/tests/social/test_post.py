@@ -16,10 +16,10 @@ import pytest
 from snowlight.social import logscan, seal
 from snowlight.social.cli import Output
 from snowlight.social.content import ContentError, load
-from snowlight.social.issue import REFUSED_TITLE, TITLE
+from snowlight.social.issue import REFUSED_TITLE, TITLE, UNCERTAIN_TITLE
 from snowlight.social.post import Deps, run
 from snowlight.social.store import TABLES
-from snowlight.social.xapi import XClient
+from snowlight.social.xapi import RefusedError, XClient
 from social import fakes
 from social.fakes import (
     FRESH_SHOWS,
@@ -244,6 +244,48 @@ def test_haiku_writes_the_daily_post_and_styles_alternate(tmp_path: Path, world:
     assert len(world.x.posts) == 3
 
 
+@pytest.mark.parametrize(
+    ("line", "on"),
+    [
+        pytest.param("HAIKU_POSTS = on", True, id="on"),
+        pytest.param("HAIKU_POSTS = off", False, id="off"),
+        pytest.param("", False, id="no-line"),
+    ],
+)
+def test_the_haiku_writer_switch_decides_whether_any_run_calls_anthropic(
+    tmp_path: Path, world: World, line: str, on: bool
+) -> None:
+    """With the key set, a switched-off writer is never asked: a scheduled run posts the
+    queued post that is due, and neither a scheduled nor a push run with nothing queued calls
+    Anthropic. Switched on, the next day's scheduled run has Haiku write, as before."""
+    runner = Runner(
+        make_root(
+            tmp_path,
+            queue=[queued("0001")],
+            facts=fakes.FACTS.replace("HAIKU_POSTS = on", line),
+        ),
+        world,
+        Clock(at("2026-10-26T16:37:00")),
+    )
+    runner.haiku = FakeAnthropic([dict(GOOD_DRAFT), dict(OK)])
+    key = fakes.ANTHROPIC_KEY
+    assert runner("schedule", ANTHROPIC_API_KEY=key) == 0
+    assert [post["text"] for post in world.x.posts] == [queued("0001")["text"]]
+    assert ("Haiku writer is off" in runner.log) is not on
+    runner.clock.at = at("2026-10-27T16:37:00")
+    assert runner("push", ANTHROPIC_API_KEY=key) == 0
+    assert runner.haiku.requests == []
+    assert runner("schedule", ANTHROPIC_API_KEY=key) == 0
+    if on:
+        assert len(runner.haiku.requests) == 2
+        assert world.x.posts[-1]["text"] == GOOD_DRAFT["text"]
+        return
+    assert "nothing queued, and the Haiku writer is off: no post" in runner.log
+    assert runner.haiku.requests == [], "no Anthropic call"
+    assert len(world.x.posts) == 1
+    assert world.d1.row("SELECT COUNT(*) AS n FROM social_haiku_days") == {"n": 0}
+
+
 def test_no_haiku_post_within_20_hours_of_the_last_post(tmp_path: Path, world: World) -> None:
     runner = make(tmp_path, world, queue=[queued("0001")], when="2026-10-26T01:00:00")
     assert runner() == 0
@@ -339,10 +381,80 @@ def test_a_post_x_may_have_made_is_never_sent_again(tmp_path: Path, world: World
     assert runner() == 1
     assert "it may be posted" in runner.log
     assert world.d1.row("SELECT state FROM social_posts") == {"state": "uncertain"}
+    assert [issue["title"] for issue in world.github.issues] == [UNCERTAIN_TITLE]
     world.x.post_raises = None
     runner.clock.at += timedelta(days=1)
     assert runner() == 0
     assert world.x.posts == []
+
+
+@pytest.mark.parametrize(
+    ("status", "body"),
+    [
+        pytest.param(200, b"", id="200-empty"),
+        pytest.param(201, b"<html><body>Created</body></html>", id="201-not-json"),
+        pytest.param(201, b'{"errors": [{"title": "Service Unavailable"}]}', id="201-errors-only"),
+        pytest.param(202, b'{"data": {"id": "1850000000000000002"}}', id="202"),
+        pytest.param(204, b"", id="204"),
+    ],
+)
+def test_a_2xx_post_answer_without_a_201_post_id_keeps_the_claim_and_opens_the_issue(
+    tmp_path: Path, world: World, status: int, body: bytes
+) -> None:
+    """X made the post and answered oddly: the slot stays (uncertain), is never sent again,
+    the owner's issue says how to check, and the run ends red."""
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    world.x.post_answer = (status, body)
+    assert runner() == 1
+    assert len(world.x.posts) == 1
+    assert world.d1.row("SELECT state, post_id FROM social_posts") == {
+        "state": "uncertain",
+        "post_id": None,
+    }
+    assert f"X answered the post with HTTP {status}" in runner.log
+    assert "it may be posted, so queue:0001 is never sent again" in runner.log
+    assert "nothing was posted" not in runner.log
+    assert world.d1.row("SELECT COUNT(*) AS n FROM social_refusals") == {"n": 0}
+    (issue,) = world.github.issues
+    assert issue["title"] == UNCERTAIN_TITLE
+    assert issue["body"].startswith(
+        f"The post queue:0001 went to X, and X answered the post with HTTP {status}"
+    )
+    world.x.post_answer = None
+    for event in ("push", "schedule"):
+        runner.clock.at += timedelta(hours=12)
+        assert runner(event) == 0
+    assert len(world.x.posts) == 1, "never sent again"
+    assert world.d1.row("SELECT state FROM social_posts") == {"state": "uncertain"}
+    assert [(issue["title"], issue["state"]) for issue in world.github.issues] == [
+        (UNCERTAIN_TITLE, "open")
+    ]
+
+
+def test_a_201_answer_with_the_post_id_records_the_post(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    world.x.post_answer = (201, b'{"data": {"id": "1850000000000000077", "text": "x"}}')
+    assert runner() == 0
+    assert world.d1.row("SELECT state, post_id FROM social_posts") == {
+        "state": "posted",
+        "post_id": "1850000000000000077",
+    }
+    assert world.github.issues == []
+
+
+def test_a_2xx_refusal_after_the_post_request_never_drops_the_claim(
+    tmp_path: Path, world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The rule on ``sent``, held in the run too: a refusal with a 2xx status keeps the claim."""
+
+    def odd(_self: XClient, _access: str, _text: str, _media_id: str) -> str:
+        raise RefusedError("X refused the post: HTTP 200", status=200)
+
+    monkeypatch.setattr(XClient, "post", odd)
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    assert runner() == 1
+    assert world.d1.row("SELECT state FROM social_posts") == {"state": "uncertain"}
+    assert [issue["title"] for issue in world.github.issues] == [UNCERTAIN_TITLE]
 
 
 def test_a_post_x_refused_is_tried_again_by_a_later_run(tmp_path: Path, world: World) -> None:

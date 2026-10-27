@@ -263,9 +263,14 @@ class XClient:
     def post(self, access: str, text: str, media_id: str) -> str:
         """Post the text with the image; the post's id. Sent once, never again.
 
+        Only a 201 whose JSON holds the post's id (``data.id``) is posted. Any other 2xx (a
+        200, 202 or 204, or a 201 without that id) may have made the post, so it is never a
+        refusal: its outcome is unknown.
+
         Raises:
-            RefusedError: X answered without posting, or the request never left.
-            UnknownOutcomeError: the request was sent and no answer came (or a 5xx).
+            RefusedError: X answered 3xx or 4xx (it did not post), or the request never left.
+            UnknownOutcomeError: the request was sent and no answer came, a 5xx, or a 2xx
+                that does not give the post's id.
         """
         try:
             response = self._client.post(
@@ -282,11 +287,17 @@ class XClient:
             raise UnknownOutcomeError(f"the post got no answer ({type(error).__name__})") from None
         if response.status_code >= 500:  # noqa: PLR2004 - HTTP 5xx
             raise UnknownOutcomeError(f"X answered the post with {_say(response)}")
+        if not httpx.codes.is_success(response.status_code):
+            raise RefusedError(f"X refused the post: {_say(response)}", status=response.status_code)
         body = _json(response)
         data_part = body.get("data") if isinstance(body, dict) else None
-        if response.status_code != httpx.codes.CREATED or not isinstance(data_part, dict):
-            raise RefusedError(f"X refused the post: {_say(response)}", status=response.status_code)
-        post_id = data_part.get("id")
-        if not isinstance(post_id, str) or not post_id.isdigit():
-            raise UnknownOutcomeError("the post answer holds no post id")
+        post_id = data_part.get("id") if isinstance(data_part, dict) else None
+        if (
+            response.status_code != httpx.codes.CREATED
+            or not isinstance(post_id, str)
+            or not post_id.isdigit()
+        ):
+            raise UnknownOutcomeError(
+                f"X answered the post with {_say(response)}, not a 201 with the post's id"
+            )
         return post_id

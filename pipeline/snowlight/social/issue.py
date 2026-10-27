@@ -10,6 +10,10 @@
 * :data:`SKIPPED` ("X posting: a post was skipped"): X refused one post twice with the same
   answer (an image or text X does not take): that post is skipped for good, and the others go
   on. The owner fixes or removes it and closes the issue.
+* :data:`UNCERTAIN` ("X posting: check whether a post went out"): a post request went to X
+  and its outcome is unknown (no answer, a 5xx, or a 2xx without the post's id): X may have
+  made it, so it is never sent again by itself, and the others go on. The owner checks the
+  account, records the post or deletes its row, and closes the issue.
 
 The :data:`TOKEN` issue's body ends with a hidden line naming the stored chain's version when
 the chain stopped and the first :data:`SEED_SHOWN` hex characters of the keyed fingerprint of
@@ -39,6 +43,7 @@ API: Final = "https://api.github.com"
 TITLE: Final = "X posting stopped: refresh token"
 REFUSED_TITLE: Final = "X posting stopped: X refused the post"
 SKIPPED_TITLE: Final = "X posting: a post was skipped"
+UNCERTAIN_TITLE: Final = "X posting: check whether a post went out"
 TIMEOUT: Final = httpx.Timeout(20.0, connect=10.0)
 MARK: Final = "<!-- snowlight-social: the token chain stopped at version {version} seed {seed} -->"
 MARKED: Final = re.compile(
@@ -97,6 +102,23 @@ delete it. Then close this issue.
 
 docs/social.md has the details."""
 
+UNCERTAIN_BODY: Final = """{why} ({when}). X may have made that post, so no run sends it \
+again by itself; the other posts go on.
+
+Check @SnowlightMap, then in the Cloudflare dashboard > D1 > `snowlight-live-state` > \
+Console (every such post: `SELECT slot, claimed_at FROM social_posts WHERE state = \
+'uncertain'`):
+
+- **The post is on the account**: record it with the number at the end of its address \
+(x.com/SnowlightMap/status/NUMBER): `UPDATE social_posts SET state = 'posted', post_id = \
+'NUMBER' WHERE slot = 'SLOT'`, with SLOT the slot named above (such as `queue:0001`).
+- **It is not there** and should go: `DELETE FROM social_posts WHERE slot = 'SLOT' AND state \
+= 'uncertain'`; the next run posts it.
+
+Then close this issue.
+
+docs/social.md has the details."""
+
 
 @dataclass(frozen=True, slots=True)
 class Issue:
@@ -109,6 +131,7 @@ class Issue:
 TOKEN: Final = Issue(TITLE, BODY, "The refresh token works again; posting continues.")
 REFUSED: Final = Issue(REFUSED_TITLE, REFUSED_BODY, "X took a post again; posting continues.")
 SKIPPED: Final = Issue(SKIPPED_TITLE, SKIPPED_BODY, "")
+UNCERTAIN: Final = Issue(UNCERTAIN_TITLE, UNCERTAIN_BODY, "")
 
 
 @dataclass(frozen=True, slots=True)

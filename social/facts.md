@@ -1,5 +1,12 @@
 # Snowlight facts for posts on @SnowlightMap
 
+HAIKU_POSTS = off
+
+The line above switches the daily post Claude Haiku writes (docs/social.md, "The Haiku
+writer's switch"). While it says `off`, only the queued posts the lead wrote and checked go
+out, and no run calls Anthropic, even with ANTHROPIC_API_KEY set. The lead sets it to `on`
+once the checks on Haiku's drafts have passed one more review round.
+
 The only things a post may state (docs/social.md). Public facts only: nothing private, no
 names of people, schools, districts or stations. Each line is one fact:
 `- [STATUS] id: text | terms: words that name it in a post`, optionally

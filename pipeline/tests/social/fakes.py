@@ -135,6 +135,8 @@ class FakeX:
     processing: list[str] = field(default_factory=list)
     post_status: int = 201
     post_raises: type[Exception] | None = None
+    post_answer: tuple[int, bytes] | None = None
+    """An odd 2xx answer to a post X makes anyway: its status and raw body."""
     rotate: bool = True
     refreshes: int = 0
     uploads: int = 0
@@ -199,6 +201,8 @@ class FakeX:
                 )
             self.posts.append(body)
             self.next_id += 1
+            if self.post_answer is not None:
+                return httpx.Response(self.post_answer[0], content=self.post_answer[1])
             return httpx.Response(
                 201, json={"data": {"id": str(self.next_id), "text": body["text"]}}
             )
@@ -351,6 +355,8 @@ class FakeAnthropic:
 
 
 FACTS = """# Facts (SYNTHETIC test copy)
+
+HAIKU_POSTS = on
 
 - [LIVE] waitlist: The waitlist is open; the link is in my bio.
 - [LIVE] reader: The closings reader runs 24/7 in practice mode and checks lists every 5\

@@ -1,9 +1,10 @@
 # Posts on X (@SnowlightMap): runbook
 
 `.github/workflows/social-post.yml` posts on the X account @SnowlightMap by itself: queued
-posts written ahead, and once a day a short post Claude Haiku writes from the facts file.
-Every post carries a branded card made fresh from the real map at post time and passes the
-same checks first. Code: `pipeline/snowlight/social/`.
+posts written ahead, and once a day a short post Claude Haiku writes from the facts file
+(**switched off for now**: see "The Haiku writer's switch" below). Every post carries a
+branded card made fresh from the real map at post time and passes the same checks first.
+Code: `pipeline/snowlight/social/`.
 
 **To stop it:** Actions > **social-post** > **...** > **Disable workflow** (it works from
 GitHub mobile). Deleting the workflow file or removing the X secrets from the `x-posting`
@@ -22,8 +23,9 @@ own account as the managing one.
   that posts it, of a kind its `pictures` list allows; while no fresh card fits, it waits
   (the run ends red and says so) and holds the queue, and Haiku does not write in its place.
 - **The daily post**: the scheduled runs at 16:37 UTC (late morning in the US) and 20:41 UTC
-  (a second slot, in case GitHub drops or delays the first). With nothing
-  queued, `ANTHROPIC_API_KEY` set and nothing posted in the last 20 hours, Haiku
+  (a second slot, in case GitHub drops or delays the first). With the Haiku writer switched
+  on (below; it is **off** now), nothing queued, `ANTHROPIC_API_KEY` set and nothing posted
+  in the last 20 hours, Haiku
   (`claude-haiku-5-5`) writes one post, in turn a dev log and a "join the waitlist" post,
   from `social/facts.md`, the subjects of the commits since the last post, and the run's
   fresh card with its description (the only facts about the picture it may use). Without
@@ -33,6 +35,30 @@ own account as the managing one.
   slot asks Haiku nothing that day; it writes only when the first slot never reached Haiku
   (GitHub dropped it). The commit subjects Haiku sees leave out any with a digit, station
   call letters, a link or (while chances are TESTING) a word of a chance.
+
+## The Haiku writer's switch
+
+The first line under the title of `social/facts.md` switches the daily Haiku post:
+
+```text
+HAIKU_POSTS = off
+```
+
+It is **off** now. While it is off, only the queued posts in `social/queue/` go out, each
+written and checked by the lead (starting with `0001`), and no run calls Anthropic at all,
+even with `ANTHROPIC_API_KEY` set: a scheduled run posts the next queued post if one is due,
+else nothing, and every run says "the Haiku writer is off" in its log. It is off because the
+deterministic checks on Haiku's drafts get one more review round first: the last round found
+drafts that still pass them while comparing Snowlight with other products in allowed words,
+calling a not-live feature live, or claiming accuracy with "right". Queued posts are not
+affected: the lead writes and reviews each one.
+
+The run reads the line once, when it starts. Only one line `HAIKU_POSTS = on` switches the
+writer on; no line, any other value, or two such lines leave it off. **To turn it on** (the
+lead, once that round passes): change the line to `HAIKU_POSTS = on` in a commit on the
+default branch, with `ANTHROPIC_API_KEY` in the `x-posting` environment (a dedicated key with
+a monthly spend limit). The next scheduled run with nothing queued then has Haiku write, with
+every cap below. Changing it back to `off` stops it the same way.
 
 ## Model first, and no one else
 
@@ -395,6 +421,20 @@ delete the row (Cloudflare dashboard > D1 > `snowlight-live-state` > Console:
 posts it. When a run posted but could not record it (it asks D1 three times), its log says
 "queue:NNNN is posted as <post id>, but its record stays claimed": mark it posted
 (`UPDATE social_posts SET state = 'posted', post_id = '<post id>' WHERE slot = 'queue:NNNN'`).
+
+### When X's answer does not confirm a post (the owner)
+
+Only an HTTP 201 whose answer holds the post's id records a post. When the post request went
+to X and no such answer came (no answer at all, a 5xx, or any other 2xx: a 200, 202 or 204,
+or a 201 without the id), X may have made the post, so it is never a refusal: the slot stays
+`uncertain` in `social_posts` and no run sends it again by itself, the other posts go on, the
+run ends red and it opens (or brings up to date) one issue, **X posting: check whether a
+post went out**. Check @SnowlightMap. If the post is there, record it
+(`UPDATE social_posts SET state = 'posted', post_id = '<its id>' WHERE slot = 'queue:NNNN'`);
+if it is not and should go, delete its row
+(`DELETE FROM social_posts WHERE slot = 'queue:NNNN' AND state = 'uncertain'`) and the next
+run posts it. Then close the issue. Every such post:
+`SELECT slot, claimed_at FROM social_posts WHERE state = 'uncertain'`.
 
 ### Never drop the posts table
 

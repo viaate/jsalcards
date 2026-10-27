@@ -13,13 +13,16 @@
    it again.
 4. Pick the post: the oldest queued post not posted yet that passes the checks (one marked
    ``fresh_only`` waits, and holds the queue, until a fresh card fits it); else, on the
-   daily scheduled run only, with ``ANTHROPIC_API_KEY`` set, nothing posted in the last
-   :data:`QUIET` and Haiku not yet asked today, one post Haiku writes (styles alternate).
+   daily scheduled run only, with the Haiku writer switched on in ``social/facts.md``
+   (:data:`HAIKU_SWITCH`, read once a run; off, no run calls Anthropic),
+   ``ANTHROPIC_API_KEY`` set, nothing posted in the last :data:`QUIET` and Haiku not yet
+   asked today, one post Haiku writes (styles alternate).
 5. Claim its slot in D1 (the claim also holds the day's cap), take the token chain, refresh,
    store the rotated token, upload the image and post. Every failure after the claim drops
-   the claim, except a post X may have made (``uncertain``: never sent again) and a post X
-   refused twice in a row with the same 4xx (``skipped``: never sent again, with the owner's
-   issue; a 429 or a 5xx is never counted).
+   the claim, except a post X may have made (``uncertain``: never sent again, with the
+   owner's issue, and the run ends red; any 2xx answer but a 201 with the post's id is one)
+   and a post X refused twice in a row with the same 4xx (``skipped``: never sent again, with
+   the owner's issue; a 429 or a 5xx is never counted).
 6. A scheduled run with nothing to post still refreshes once when the chain stopped and the
    ``X_REFRESH_TOKEN`` secret is not the one that stopped (the owner pasted a new one), so the
    new token is checked and the owner's issue closes without waiting for a post.
@@ -31,6 +34,7 @@ day; one Haiku post a UTC day (its slot is the day); one Haiku try a UTC day (it
 into the step, so the refresh and its store always finish before the step's timeout.
 """
 
+import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
@@ -44,11 +48,12 @@ from pydantic import ValidationError
 from snowlight.social import seal
 from snowlight.social.cards import Card, Post
 from snowlight.social.content import Content, ContentError, Image, check_image, load
-from snowlight.social.issue import REFUSED, SKIPPED, TOKEN, GitHub, Issue
+from snowlight.social.issue import REFUSED, SKIPPED, TOKEN, UNCERTAIN, GitHub, Issue
 from snowlight.social.picture import NOTE, Taken
 from snowlight.social.rules import (
     MENTION,
     URL,
+    Facts,
     Style,
     chances_shown,
     check,
@@ -95,6 +100,10 @@ REFRESH_BY: Final = timedelta(minutes=6)
 10 minutes, and the refresh and the store of the rotated token need room before that."""
 QUIET: Final = timedelta(hours=20)
 """Haiku writes only when nothing was posted for this long."""
+HAIKU_SWITCH: Final = re.compile(r"^HAIKU_POSTS[ \t]*=[ \t]*(\S+)[ \t]*$", re.MULTILINE)
+"""The switch for the daily post Haiku writes: a line of ``social/facts.md`` (docs/social.md,
+"The Haiku writer's switch"). Only one such line, saying ``on``, switches it on; no line, a
+line saying anything else, or two lines leave it off, and then no run calls Anthropic."""
 ACCOUNT: Final = "SnowlightMap"
 MAX_COMMITS: Final = 30
 
@@ -141,6 +150,11 @@ class Deps:
     commits: Callable[[datetime | None], Sequence[str]] = lambda _since: ()
     haiku_client: Callable[[], anthropic.Anthropic] = _anthropic
     db_pause: float = 3.0
+
+
+def haiku_on(facts: Facts) -> bool:
+    """Whether the facts file switches the Haiku writer on (:data:`HAIKU_SWITCH`)."""
+    return [value.lower() for value in HAIKU_SWITCH.findall(facts.text)] == ["on"]
 
 
 def _when(value: object) -> datetime | None:
@@ -312,12 +326,16 @@ class Run:
     begun: datetime
     """When the run started (the refresh's time budget, :data:`REFRESH_BY`)."""
     fresh: Fresh = field(default_factory=dict)
+    haiku_on: bool = False
+    """Whether the facts file switches the Haiku writer on (read once, when the run starts)."""
     chain_lost: bool = False
     """The rotated token could not be stored (the run may still post, and ends red)."""
     red: bool = False
     """Something the owner or the lead must look at happened (the run ends red)."""
     sent: bool = False
-    """The post request went to X (from then on the claim is never dropped)."""
+    """The post request went to X (from then on the claim is never dropped): only X's own
+    3xx or 4xx answer, which says it did not post, or a request that never reached X lets it
+    go; any 2xx without the post's id, a 5xx, no answer or an error keeps it ``uncertain``."""
     version: int = 0
     """The stored chain's version after this run's refresh."""
 
@@ -327,6 +345,9 @@ class Run:
     def haiku(self, event: str, taken: set[str]) -> Pick | None:  # noqa: PLR0911 - one reason a return
         """The day's Haiku post, when every condition for one holds."""
         today = self.now.date()
+        if not self.haiku_on:
+            self.say("social: nothing queued, and the Haiku writer is off: no post")
+            return None
         if event != "schedule":
             self.say("social: nothing queued; Haiku writes only on the daily scheduled run")
             return None
@@ -412,6 +433,21 @@ class Run:
             return None
         self.say(f"social: issue #{number} tells the owner what to do ({issue.title})")
         return number
+
+    def uncertain(self, pick: Pick, why: str) -> None:
+        """The post request went to X and its outcome is unknown: the claim stays, marked
+        ``uncertain`` (never sent again by itself), the owner's issue says how to check the
+        account, and the run ends red."""
+        self.say(
+            f"::error::social: {why}: it may be posted, so {pick.slot} is never sent again"
+            f" (check @{ACCOUNT})"
+        )
+        try:
+            self.store.uncertain(pick.slot, self.run_id)
+        except StoreError:
+            self.say(f"::warning::social: {pick.slot} stays claimed (never sent again)")
+        self.issue(f"The post {pick.slot} went to X, and {why}", UNCERTAIN)
+        self.red = True
 
     def drop(self, pick: Pick) -> None:
         try:
@@ -718,8 +754,12 @@ class Run:
             self.sent = True
             post_id = x.post(tokens.access, pick.text, media_id)
         except RefusedError as error:
-            self.say(f"::error::social: {error}: nothing was posted")
             status = error.status
+            if self.sent and status is not None and httpx.codes.is_success(status):
+                # A 2xx to the post request is never a refusal (the rule on ``sent``).
+                self.uncertain(pick, str(error))
+                return 1
+            self.say(f"::error::social: {error}: nothing was posted")
             if error.for_good:
                 self.drop(pick)
                 self.held(f"X refused a post of the posting workflow ({str(error).strip()})")
@@ -729,14 +769,7 @@ class Run:
                 self.drop(pick)
             return 1
         except UnknownOutcomeError as error:
-            self.say(
-                f"::error::social: {error}: it may be posted, so {pick.slot} is never sent"
-                f" again (check @{ACCOUNT})"
-            )
-            try:
-                self.store.uncertain(pick.slot, self.run_id)
-            except StoreError:
-                self.say(f"::warning::social: {pick.slot} stays claimed (never sent again)")
+            self.uncertain(pick, str(error))
             return 1
         self.say(
             f"social: posted {pick.slot} as {post_id}: https://x.com/{ACCOUNT}/status/{post_id}"
@@ -795,6 +828,12 @@ def _start(env: Env, root: Path, deps: Deps, picture: Path | None, begun: dateti
     except StoreError as error:
         say(f"::warning::social: the D1 store failed ({error}): nothing posts")
         return 1
+    switched_on = haiku_on(content.facts)
+    if not switched_on:
+        say(
+            "social: the Haiku writer is off (HAIKU_POSTS in social/facts.md): only queued"
+            " posts go out, and no run calls Anthropic"
+        )
     now = deps.now()
     fresh = fresh_picture(
         picture,
@@ -803,7 +842,7 @@ def _start(env: Env, root: Path, deps: Deps, picture: Path | None, begun: dateti
         chances=chances_shown(content.facts),
         closings=closings_shown(content.facts),
     )
-    return Run(env, deps, content, store, secrets, github, run_id, now, begun, fresh)
+    return Run(env, deps, content, store, secrets, github, run_id, now, begun, fresh, switched_on)
 
 
 def run(env: Env, root: Path, event: str, deps: Deps, picture: Path | None = None) -> int:
@@ -857,16 +896,14 @@ def run(env: Env, root: Path, event: str, deps: Deps, picture: Path | None = Non
 
 def _send(one: Run, pick: Pick) -> int:
     """Send a claimed pick; an error nothing else caught drops the claim when nothing went to
-    X, and marks it ``uncertain`` (never sent again) when the post request did."""
+    X, and marks it ``uncertain`` (never sent again, with the owner's issue) when the post
+    request did."""
     try:
         return one.send(pick)
     except (StoreError, OSError) as error:
         one.say(f"::error::social: the post stopped ({type(error).__name__}: {error})")
         if one.sent:
-            try:
-                one.store.uncertain(pick.slot, one.run_id)
-            except StoreError:
-                one.say(f"::warning::social: {pick.slot} stays claimed (never sent again)")
+            one.uncertain(pick, f"the run stopped after sending it ({type(error).__name__})")
         else:
             one.drop(pick)
         return 1

@@ -3,8 +3,9 @@
 # A push to the default branch that changes social/queue/ (or this file) posts the oldest
 # queued post not posted yet. The daily schedule (16:37 UTC, and 20:41 UTC in case GitHub
 # drops the first) posts a queued post if one is waiting, else one post Claude Haiku writes
-# from social/facts.md, once the ANTHROPIC_API_KEY secret is in the x-posting environment
-# (until then it says "no Anthropic key" and posts only queued posts). Caps live in the code
+# from social/facts.md, once its HAIKU_POSTS line says on (off now: no run calls Anthropic)
+# and the ANTHROPIC_API_KEY secret is in the x-posting environment (until then it says
+# "no Anthropic key" and posts only queued posts). Caps live in the code
 # (pipeline/snowlight/social): one post a run, two a UTC day, one Haiku post a day, one Haiku
 # try a day of at most four calls (the 20:41 run asks Haiku only when the 16:37 one never
 # did); nothing posted in the last 20 hours before a Haiku post. While posting is stopped
