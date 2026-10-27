@@ -124,11 +124,16 @@ the site still hides. One switch decides it: the status of the `chances` fact in
 When the owner unlocks the site, the lead marks `chances` LIVE (with any numbers it should
 give) and chance cards and posts come back with no code change.
 
-## Closings while the reader is in practice mode
+## Closings: the switch
 
 The same kind of switch holds closings back: the status of the `closings` fact
-(`rules.closings_shown`). Until the lead marks it **LIVE** (the reader's finds are checked
-before anything goes public, even once `LIVE_PUBLISH` is on for the locked site):
+(`rules.closings_shown`). It is **LIVE** since the owner switched the closings reader on
+(`LIVE_PUBLISH=on`, Oct 27, 2026): the render job reads `live/closings.json`, the picture is
+the closings view when schools are lit, and the card counts them. The `glow` fact is LIVE with
+it, and the reader's practice mode is gone from the facts, so a post that says "practice" is
+refused. The map itself stays **TESTING** (locked): no LIVE fact's text speaks of the map, so
+a post that puts closings "on the map" still says the map is in private testing. Were the
+lead ever to mark `closings` not LIVE again:
 
 - the render job drops the closings file it read: the picture is never the closings view,
   the page is served a 404 for the file (as in practice mode, so no school glows), and the

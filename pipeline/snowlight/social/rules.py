@@ -608,6 +608,9 @@ OTHERS: Final = re.compile(
 )
 """A comparison with, or a description of, someone else's product."""
 GUESS: Final = re.compile(r"\bguess", re.IGNORECASE)
+PRACTICE: Final = re.compile(r"\bpractic", re.IGNORECASE)
+"""Practice mode: said only while a fact's text speaks of it (the reader left it when the owner
+switched it on, so "the reader runs in practice mode" is stale once the facts drop it)."""
 NOT_A_GUESS: Final = re.compile(
     r"\b(?:not|never|isn't|aren't)\s+(?:a\s+|just\s+a\s+)?guess(?:es|work)?\b", re.IGNORECASE
 )
@@ -1921,6 +1924,8 @@ def check(  # noqa: PLR0912, PLR0913, PLR0915 - one rule a branch; the post and 
         problems.append(f"it compares or describes others ('{match.group().lower()}')")
     if GUESS.search(NOT_A_GUESS.sub(" ", text)):
         problems.append("it says 'guess' other than 'not a guess'")
+    if PRACTICE.search(text) and not PRACTICE.search(facts.said):
+        problems.append("it says 'practice', but no fact is in practice mode now")
     problems += _model_first(text, facts, model_fact)
     if CALL_SIGN.search(text):
         problems.append("it names a station's call letters")

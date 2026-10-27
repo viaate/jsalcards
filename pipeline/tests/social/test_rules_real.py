@@ -116,9 +116,9 @@ def test_an_older_picture_is_never_called_current(text: str) -> None:
 @pytest.mark.parametrize(
     "text",
     [
-        "Snowlight dev log: the live closings reader runs 24/7 in practice mode, checking school"
-        " closing lists every 5 minutes in the morning and evening. The chances come from a"
-        " prediction model, not a guess. Waitlist link in my bio.",
+        "Snowlight dev log: the live closings reader runs 24/7, checking school closing lists"
+        " every 5 minutes in the morning and evening. The chances come from a prediction model,"
+        " not a guess. Waitlist link in my bio.",
         "Dev log: I taught the closings reader to check closing lists every 5 minutes from 4 to"
         " 9 AM. The chances come from a statistical model. Waitlist link in my bio.",
         "Closings on the map are coming this winter. Until then, every district gets a chance"
@@ -131,8 +131,8 @@ def test_an_older_picture_is_never_called_current(text: str) -> None:
         " prediction model trained on real closing records. Link in my bio.",
         "Quiet over the Great Lakes in my private test map. The model is trained on 2,388 real"
         " past school days with a known outcome. Waitlist link in my bio.",
-        "No one sees the practice mode finds yet, but the prediction model runs every school"
-        " day. Waitlist link in my bio.",
+        "Closed schools glow on my map in private testing, and the prediction model runs every"
+        " school day. Waitlist link in my bio.",
     ],
 )
 @pytest.mark.parametrize("current", [True, False])
@@ -537,7 +537,7 @@ NOT_LIVE_BLEED = [
     # Practice and testing excuse only the reader's practice and the TESTING facts.
     "In practice mode the closings reader lights up closed schools on the map.",
     "The reader puts closed schools on the map in practice mode, every 5 minutes.",
-    "Closed schools glow on the map while I test it.",
+    "The night-before outlook runs on the map while I test it.",
     # On or done next to a TESTING or COMING thing.
     "Watches already raise chances while I test them.",
     "Phone alerts work in testing now.",
@@ -641,9 +641,9 @@ def test_each_round_two_draft_is_refused_for_what_it_is() -> None:
     def said(text: str) -> str:
         return " | ".join(problems(text + MODEL + LINK, style="waitlist"))
 
-    assert "glow" in said("Closings glow on the map; notifications are coming.")
+    assert "'the map'" in said("Closings glow on the map; notifications are coming.")
     assert "notifications" not in said("Closings glow on the map; notifications are coming.")
-    assert "'closed'" in said("In practice mode the closings reader lights up closed schools.")
+    assert "'practice'" in said("In practice mode the closings reader lights up closed schools.")
     assert "'already'" in said("Watches already raise chances while I test them.")
     assert "'ends'" in said("Practice mode ends.")
     assert "'works'" in said("Search by ZIP code works.")
@@ -655,15 +655,40 @@ def test_each_round_two_draft_is_refused_for_what_it_is() -> None:
     assert "person" in said("My friend Jake helped.")
 
 
+def test_practice_mode_is_stale_once_the_facts_drop_it() -> None:
+    """The owner switched the closings reader on: "practice mode" is no fact any more."""
+    assert "practice" not in FACTS.said.lower()
+    found = problems(
+        "Dev log: the closings reader runs 24/7 in practice mode." + MODEL + LINK, style="waitlist"
+    )
+    assert any("'practice'" in line for line in found), found
+
+
+def test_live_closings_never_open_the_locked_map() -> None:
+    """Closings and the glow are LIVE, but the map stays TESTING: a post that puts them on
+    the map says the map is private, and no LIVE fact's own words excuse it."""
+    assert all("map" not in fact.text.lower() for fact in FACTS.facts if fact.status == "LIVE")
+    refused = problems("Closed schools glow on the map." + MODEL + LINK, style="waitlist")
+    assert any("'the map'" in line for line in refused), refused
+    assert (
+        problems(
+            "Closed schools glow on my map in private testing." + MODEL + LINK, style="waitlist"
+        )
+        == []
+    )
+
+
 TRUE_2 = [
     # A not-live word right by each thing that is not live, in its own clause.
-    "Phone alerts and closings on the map are coming this winter.",
-    "Closings on the map are coming this winter, and phone alerts are coming too.",
+    "Phone alerts are coming this winter, and the night-before outlook is coming too.",
+    "Closed schools glow on the map, still in private testing, and phone alerts are coming too.",
     "I am testing the model's forecast reasons, which are built but switched off.",
     "The model's forecast reasons are built, and I am testing them with them switched off.",
     "A winter storm watch can raise a district's chance; I am testing that quietly first.",
     "Every school closing in the US on one map, coming this winter.",
-    "The closings reader runs 24/7 in practice mode, and the map is in private testing.",
+    "The closings reader runs 24/7, checking closing lists, and the map is in private testing.",
+    "Closed schools glow on the map while I test it.",
+    "Schools glow and phone alerts are coming.",
     # Numbers as the facts use them.
     "The prediction model is trained on records of 11 past winters.",
     "Snowlight's school directory holds 118,211 schools in 18,227 districts.",
@@ -711,16 +736,16 @@ MODEL_3 = (
 )
 BLEED_3 = [
     # A not-live word in one clause never excuses a term in the next.
-    "Phone alerts are coming; closed schools glow across the US tonight.",
-    "Phone alerts are coming; closings light up every state.",
-    "Phone alerts are next; closings show for every state.",
+    "Phone alerts are coming; closed schools glow on the map tonight.",
+    "Phone alerts are coming; the outlook runs for every state.",
+    "Phone alerts are next; the outlook shows for every state.",
     "Push alerts soon, closings on the map tonight.",
     # A coming word with "it" or "them" never speaks of what came before.
     "Closed schools glow on the map, and I will keep polishing it.",
     "Every closed school glows on the map and I will tune them.",
     # One not-live word across a verb never speaks of a list.
-    "Schools glow and phone alerts are coming.",
-    "Closed schools glow and phone alerts are coming.",
+    "The outlook runs and phone alerts are coming.",
+    "Search by ZIP code runs and phone alerts are coming.",
     "Closings show on the map and notifications are coming.",
     # Testing left behind is a live claim.
     "The map left testing.",
@@ -858,8 +883,8 @@ def test_words_outside_the_closed_vocabulary_are_named(text: str, unknown: str) 
 R3_TRUE = [
     (
         "model",
-        "Dev log: Snowlight's chances come from a statistical model fit to real past school"
-        " days whose outcome is known. Not a guess. Waitlist link in my bio.",
+        "Dev log: Snowlight's chances come from a real model built on real past school days,"
+        " where what happened that day is on record. Not a guess. Waitlist link in my bio.",
     ),
     (
         "model",
@@ -884,21 +909,21 @@ R3_TRUE = [
     (
         "model",
         "Snowlight's chances come from a prediction model, not a guess. Phone alerts are"
-        " coming this winter, and closings on the map start this winter too.",
+        " coming this winter, and the map stays in private testing.",
     ),
     (
         "model",
-        "At launch, closed schools will glow on the map like city lights. The chances"
-        " behind them come from a statistical model trained on real past school days.",
+        "Closed schools glow like city lights on my private test map. The chances behind"
+        " them come from a statistical model trained on real past school days.",
     ),
     (
         "model",
-        "Phone alerts and closings are coming this winter. Snowlight's chances come from a"
-        " prediction model, not a guess.",
+        "Phone alerts are coming this winter, and the night-before outlook is coming too."
+        " Snowlight's chances come from a prediction model, not a guess.",
     ),
     (
         "model",
-        "Closings on the map and phone alerts are coming this winter. Snowlight's chances"
+        "Every school closing in the US on one map, coming this winter. Snowlight's chances"
         " come from a prediction model, not a guess.",
     ),
     (

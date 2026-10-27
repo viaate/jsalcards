@@ -373,7 +373,7 @@ def test_the_render_command_reads_the_switch_from_the_facts_file(
     facts = got["facts"]
     assert isinstance(facts, Facts)
     assert not chances_shown(facts), "social/facts.md marks chances TESTING"
-    assert not closings_shown(facts), "social/facts.md marks closings COMING"
+    assert closings_shown(facts), "social/facts.md marks closings LIVE (the reader is on)"
     assert got["out"] == tmp_path
     # No facts file: no picture at all (never a guess at the switch).
     got.clear()

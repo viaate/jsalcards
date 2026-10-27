@@ -13,8 +13,7 @@ names of people, schools, districts or stations. Each line is one fact:
 `| except: phrases`: phrases that hold a term but name another fact.
 
 - LIVE: true and running now.
-- TESTING: built, but only in practice mode, behind the lock or switched off; a post must say
-  so.
+- TESTING: built, but behind the lock or switched off; a post must say so.
 - COMING: not built or not on yet; a post must say it is coming.
 
 The lead keeps this file current: when something ships, move its fact to LIVE in the same
@@ -33,7 +32,7 @@ trained on real closing records. Every number here is from docs/predict.md and t
 model file (`pipeline/data/predict/model.json.gz`). No accuracy number is ever posted: the
 past records lean toward big storm days, so a score on them would not be a fair one.
 
-- [LIVE] model: Snowlight's chances come from a prediction model trained on real closing records, not a guess: a statistical model fit to real past school days whose outcome is known. | terms: prediction model, statistical model, model, not a guess, aren't a guess, isn't a guess
+- [LIVE] model: Snowlight's chances come from a prediction model trained on real closing records, not a guess: a real model built on real past school days, where what happened that day is on record. | terms: prediction model, real prediction model, statistical model, model, not a guess, aren't a guess, isn't a guess, built on real closing records, real closing records
 - [LIVE] model-days: The district model is trained on 2,388 real past school days with a known outcome, each one district on one day, from the records of 11 past winters: 1,547 with no school, 109 with a delayed start and 732 open. | terms: trained on, known outcome, known outcomes, past school days
 - [LIVE] model-private: Private schools get their own chance from the same kind of model, trained on 661 real past private school days with a known outcome. | terms: private school days, their own chance
 - [LIVE] model-places: For each kind of weather day, the model uses a district's own recorded days where it has enough of them, and leans on the records of its nearby districts, county, state, region and the whole country where it has fewer. | terms: own record, own recorded days, recorded days, nearby districts, whole country
@@ -49,14 +48,13 @@ past records lean toward big storm days, so a score on them would not be a fair 
 
 - [LIVE] founder: I am the founder building Snowlight, and I post what I build here.
 - [LIVE] waitlist: The Snowlight waitlist is open, and the link is in my bio. Joining means one email when Snowlight goes live; the address is never sold. | terms: waitlist
-- [LIVE] reader: The live closings reader runs 24/7 in practice mode. It checks school closing lists every 5 minutes from 4 to 9 AM and 6 to 11 PM local time and during winter weather alerts, and every 30 minutes otherwise. | terms: closings reader, reader, closing lists
-- [TESTING] practice: In practice mode, what the reader finds is not shown on the map yet; I check its work before anything goes public. | terms: practice mode, practice
+- [LIVE] reader: The live closings reader runs 24/7, checking school closing lists every 5 minutes from 4 to 9 AM and 6 to 11 PM local time and during winter weather alerts, and every 30 minutes otherwise. | terms: closings reader, reader, closing lists
 - [LIVE] directory: Snowlight's school directory holds 118,211 US K-12 schools in 18,227 districts, public and private. | terms: directory, school directory
 - [TESTING] map: The map is in private testing behind a lock; only I can open it before launch. It is a near-black map of the US with every school on it. | terms: the map, map, the site, the app, website
 - [TESTING] search: On the map you can search by school, city or ZIP code. | terms: search, zip code, zip codes
 - [TESTING] chances: Every school day the model works out a chance of no school and a chance of a delayed start, today and tomorrow, for every public school district and every private school in the lower 48 states. While I test them they show only on the locked map, so no post or picture gives a chance number. | terms: chance, chances, snow day chances, odds, prediction, predictions, delayed start
-- [COMING] glow: At launch, every school that is closed, delayed, remote or dismissing early for weather will glow on the map like city lights seen from space. | terms: glow, glows, glowing, lights up, light up, lit up, city lights
-- [COMING] closings: Live school closings on the map, for every state, starting this winter. | terms: closings, closing, closed, closures, closure, closes, delays, delayed, school is closed, schools are closed, which schools | except: closings reader, closing lists, closing records, delayed start, delayed starts
+- [LIVE] closings: Real school closings and delays go into Snowlight within minutes of the reader finding them, and they stay private until launch. | terms: closings, closing, closed, closures, closure, closes, delays, delayed, school is closed, schools are closed, which schools | except: closings reader, closing lists, closing records, delayed start, delayed starts
+- [LIVE] glow: Every school that is closed, delayed, remote or dismissing early for weather glows like city lights seen from space. | terms: glow, glows, glowing, lights up, light up, lit up, city lights
 - [COMING] aim: Every school closing in the US on one map, coming this winter. | terms: every school closing, one map
 - [COMING] notifications: Notifications on your phone when your school closes or its chance jumps. | terms: notification, notifications, notify, push alert, push alerts, phone alert, phone alerts, text alert, text alerts, alert you, alerts you, alerted, text, texts, phone
 - [COMING] launch: Snowlight goes live this winter; the plan is to launch before the first real snow. | terms: launch, launches, launching, launched, goes live, go live, going live
