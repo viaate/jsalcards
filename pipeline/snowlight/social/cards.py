@@ -82,6 +82,11 @@ A_TAGLINE: Final = _a_tagline()
 FIT_SHARE: Final = 0.03
 """The most of the map's lit-school pixels a style's words may darken and still fit (halo
 edges: no lit school's centre may be darkened at all, :data:`SPOT`)."""
+RING_UNDER: Final = 200
+"""A closings card whose map has fewer lit-school pixels than this draws a light ring around
+each lit spot (template C), so the few lit schools are found at a glance."""
+RING_MERGE: Final = 24
+"""Lit spots this close (pixels, each way) share one ring."""
 SPOT: Final = 1
 """How far around a lit school's centre (in pixels, each way) nothing may be darkened."""
 MARGIN: Final = 64
@@ -99,8 +104,8 @@ HEADLINES: Final[Mapping[tuple[str, str], tuple[str, ...]]] = {
         "Like city lights seen from space",
     ),
     ("dev-log", "any"): (
-        "A real model, not a guess",
-        "Built on real past school days",
+        "A snow day model, not a guess",
+        "A real snow day model",
     ),
 }
 """The card library's headlines (2 to 6 words) by post and picture kind ("any": every other
@@ -316,12 +321,14 @@ def alt_text(taken: Taken, post: Post, *, fallback: bool, headline: str | None =
         f"pictured on {_long_date(taken.taken_at)}"
         if fallback
         else f"at {clock(taken.taken_at)} on {_month_day(taken.taken_at)}"
+        if taken.current or taken.kind == "closings"
+        else f"on {_month_day(taken.taken_at)}"
     )
     seen = taken.seen
     chance = seen.chance
     if taken.kind == "closings":
         where = (
-            f", mostly in {_and(seen.states)}"
+            f", {'in' if seen.states_hold_all else 'mostly in'} {_and(seen.states)}"
             if seen.states
             else f", in a view over {seen.place}"
             if seen.place
@@ -394,32 +401,55 @@ def _dated_chance(taken: Taken, *, fallback: bool) -> bool:
     return taken.kind == "district" or (taken.kind == "national" and not fallback)
 
 
-def c_slots(
-    taken: Taken, post: Post, anchor: str, *, fallback: bool, headline: str | None = None
+def rings(taken: Taken, map_rgb: npt.NDArray[np.uint8]) -> list[tuple[int, int]]:
+    """The spots a closings card rings (:data:`RING_UNDER`): its lit spots, one ring for spots
+    within :data:`RING_MERGE` of one already ringed; none when the glow is big enough to find."""
+    if taken.kind != "closings" or int(glow_mask(map_rgb).sum()) >= RING_UNDER:
+        return []
+    ringed: list[tuple[int, int]] = []
+    for x, y in taken.seen.spots:
+        if all(abs(x - rx) > RING_MERGE or abs(y - ry) > RING_MERGE for rx, ry in ringed):
+            ringed.append((x, y))
+    return ringed[:12]
+
+
+def c_slots(  # noqa: PLR0913 - the facts and the card's own choices
+    taken: Taken,
+    post: Post,
+    anchor: str,
+    *,
+    fallback: bool,
+    headline: str | None = None,
+    ringed: Sequence[tuple[int, int]] = (),
 ) -> dict[str, object]:
     """Template C's slots (``cards/c/card.html``), filled by code from the facts, with the
-    card library's ``headline`` (:func:`headline_for`) when there is one."""
+    card library's ``headline`` (:func:`headline_for`) when there is one and a ring round each
+    of ``ringed`` (:func:`rings`)."""
     seen = taken.seen
     slots: dict[str, object] = {
         "kind": post,
         "view": taken.kind,
-        # The template's "current" speaks of the closings a card shows: the other views show
-        # none, so their clock is the picture's own (and the card says nothing of closings).
-        "current": taken.current or taken.kind != "closings",
+        # Not current: a closings card says when its closings were updated; a calm card over
+        # a stale closings file (the reader stopped) gives its date only, so no clock reads as
+        # "nothing closed at 7:07" when the map may not know.
+        "current": taken.current,
         "anchor": anchor,
         "date": _long_date(taken.taken_at) if fallback else _month_day(taken.taken_at),
         "isFallback": fallback,
     }
     if headline is not None:
         slots["headline"] = headline
-    if not fallback:
+    if not fallback and (taken.current or taken.kind == "closings"):
         slots["time"] = clock(taken.taken_at)
     if taken.kind == "closings":
         # No state by share for the lit schools (private ones name none): the stamp says the
         # view's own place, "Over New Mexico", or none, never a false one.
         slots["states"] = list(seen.states)
+        slots["statesHoldAll"] = seen.states_hold_all
         if not seen.states and seen.place:
             slots["over"] = seen.place
+        if ringed:
+            slots["rings"] = [[x, y] for x, y in ringed]
         if seen.in_view is not None:
             slots["counts"] = seen.in_view.model_dump()
         slots["total"] = seen.lit
@@ -457,6 +487,7 @@ def a_facts(taken: Taken, post: Post, *, fallback: bool) -> dict[str, object]:
     if taken.kind == "closings":
         picture["in_view"] = seen.in_view.model_dump() if seen.in_view is not None else {}
         picture["states"] = list(seen.states)
+        picture["states_hold_all"] = seen.states_hold_all
         if not seen.states and seen.place:
             picture["over"] = seen.place
         picture["lit"] = seen.lit
@@ -607,6 +638,7 @@ def lay(  # noqa: PLR0913 - one layout's parts
     *,
     fallback: bool,
     headline: str | None = None,
+    ringed: Sequence[tuple[int, int]] = (),
 ) -> tuple[bytes, str]:
     """Lay out one candidate on ``page`` and screenshot it; its PNG and its words.
 
@@ -619,7 +651,9 @@ def lay(  # noqa: PLR0913 - one layout's parts
     try:
         if style == "c":
             anchor = candidate.removeprefix("c-")
-            slots = c_slots(taken, post, anchor, fallback=fallback, headline=headline)
+            slots = c_slots(
+                taken, post, anchor, fallback=fallback, headline=headline, ringed=ringed
+            )
             page.evaluate("([s, u]) => window.fill(s, u)", [slots, map_url])
         elif style == "a":
             page.evaluate(
@@ -702,11 +736,19 @@ def compose(  # noqa: PLR0913 - the card's parts
             raise CardError("the map picture is not 1600 x 900")
         laid: dict[Candidate, Laid] = {}
         headline = headline_for(taken, post, facts)
+        ringed = rings(taken, map_rgb)
 
         def measure(candidate: Candidate) -> Measure:
             try:
                 png, words = lay(
-                    page, candidate, taken, post, map_png, fallback=fallback, headline=headline
+                    page,
+                    candidate,
+                    taken,
+                    post,
+                    map_png,
+                    fallback=fallback,
+                    headline=headline,
+                    ringed=ringed,
                 )
             except CardError as error:
                 return Measure(glow=0, covered=0, refused=str(error))

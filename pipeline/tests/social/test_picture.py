@@ -834,3 +834,37 @@ def test_a_closer_view_steps_back_until_it_holds_enough_school_specks(
     for x, y in picture.seen.spots:
         assert abs(x - WIDTH / 2) <= FIT_BOX[0] / 2 + 1
         assert abs(y - HEIGHT / 2) <= FIT_BOX[1] / 2 + 1
+
+
+@pytest.mark.parametrize(
+    ("rows", "glows", "where"),
+    [
+        ([(2, 0)], "1 school glows in this view (1 closed)", ", in New York."),
+        ([(0, 0), (1, 1), (2, 0)], "3 schools glow in this view", ", in New York."),
+        (
+            [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0)],
+            "7 schools glow in this view",
+            ", mostly in New York.",
+        ),
+    ],
+)
+def test_states_holding_every_lit_school_are_said_with_in_and_counts_agree_in_number(
+    rows: list[tuple[int, int]], glows: str, where: str
+) -> None:
+    """One lit school, or lit schools all in New York (SYNTHETIC): "in New York", never
+    "mostly"; six of seven (one in Pennsylvania) is a real majority short of all: "mostly".
+    One school is "1 school", in view and across the country."""
+    picture = choose(
+        chances=False,
+        closings_shown=True,
+        closings=closings(rows, "2026-12-10", "2026-12-10T12:05:00Z"),
+        predictions=None,
+        directory=directory(),
+        now=at("2026-12-10T12:10"),
+    )
+    assert glows in picture.shows
+    assert where in picture.shows
+    assert picture.seen.states_hold_all is (where == ", in New York.")
+    assert "1 schools" not in picture.shows
+    if len(rows) == 1:
+        assert "the map shows 1 school closed, delayed" in picture.shows

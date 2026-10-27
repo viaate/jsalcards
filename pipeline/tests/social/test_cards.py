@@ -42,6 +42,8 @@ from snowlight.social.cards import (
     headline_for,
     lay,
     pick,
+    rgb_of,
+    rings,
     without_chances,
 )
 from snowlight.social.content import ContentError, load
@@ -995,3 +997,108 @@ def test_lit_private_schools_name_the_view_s_place_on_the_stamp_and_in_the_alt(
     # A stamp with states says "Mostly", never "Over" as well.
     storm = c_slots(taken("closings", STORM), "dev-log", "left", fallback=False)
     assert "over" not in storm
+
+
+ONE_IN_NEVADA = Seen(
+    in_view=Counts(closed=1, delayed=0, remote=0, early_dismissal=0),
+    states=("Nevada",),
+    states_hold_all=True,
+    lit=1,
+    closings_at=datetime(2026, 12, 10, 12, 40, tzinfo=UTC),
+    closings_read=True,
+)
+"""One lit school, in Nevada (SYNTHETIC): its state holds every lit school in view."""
+
+
+def test_states_holding_every_lit_school_read_in_not_mostly(
+    page: Page, maps: dict[str, Path]
+) -> None:
+    one = taken("closings", ONE_IN_NEVADA)
+    assert c_slots(one, "dev-log", "left", fallback=False)["statesHoldAll"] is True
+    assert a_facts(one, "dev-log", fallback=False)["picture"]["states_hold_all"] is True  # type: ignore[index]
+    alt = alt_text(one, "dev-log", fallback=False, headline="Real school closings")
+    assert ", in Nevada: 1 school closed in this view" in alt
+    assert "mostly" not in alt
+    _, words = lay(
+        page, "c-left", one, "dev-log", maps["storm"], fallback=False,
+        headline="Real school closings",
+    )  # fmt: skip
+    assert "In Nevada" in words
+    assert "Mostly" not in words
+    # A real majority short of all still says "Mostly".
+    assert (
+        c_slots(taken("closings", STORM), "dev-log", "left", fallback=False)["statesHoldAll"]
+        is False
+    )
+    assert "mostly in Michigan and Ohio" in alt_text(
+        taken("closings", STORM), "dev-log", fallback=False
+    )
+
+
+def test_a_calm_card_over_stale_closings_gives_its_date_and_no_clock(
+    page: Page, maps: dict[str, Path]
+) -> None:
+    """The reader stopped, so the closings file is stale and the run took a calm region view:
+    the card shows no clock that would read as "nothing closed at 7:07"."""
+    stale = taken("region", REGION, current=False)
+    slots = c_slots(stale, "dev-log", "left", fallback=False)
+    assert slots["current"] is False
+    assert "time" not in slots
+    alt = alt_text(stale, "dev-log", fallback=False)
+    assert " on Dec 10" in alt
+    assert "AM CT" not in alt
+    _, words = lay(
+        page, "c-left", stale, "dev-log", maps["storm"], fallback=False,
+        headline="A real model, not a guess",
+    )  # fmt: skip
+    assert "Dec 10" in words
+    assert "AM CT" not in words
+    fresh = c_slots(taken("region", REGION), "dev-log", "left", fallback=False)
+    assert fresh["time"] == "6:42 AM CT"
+
+
+def sparse_map(spots: tuple[tuple[int, int], ...]) -> npt.NDArray[np.uint8]:
+    """SYNTHETIC: specks everywhere and a 3 x 3 glow at each of ``spots``."""
+    picture = canvas()
+    picture[::37, ::41] = SPECK
+    for x, y in spots:
+        picture[y - 1 : y + 2, x - 1 : x + 2] = AMBER
+    return picture
+
+
+def test_a_closings_card_with_little_glow_rings_each_lit_spot_without_darkening_it(
+    browser: Browser, tmp_path: Path
+) -> None:
+    """Two lit schools on almost the same pixel and one apart (SYNTHETIC): two rings, light
+    only, so no lit pixel is darkened and the card stays style C."""
+    spots = ((800, 450), (801, 451), (1000, 520))
+    seen = Seen(
+        in_view=Counts(closed=3, delayed=0, remote=0, early_dismissal=0),
+        states=("Nevada",),
+        states_hold_all=True,
+        lit=3,
+        closings_at=datetime(2026, 12, 10, 12, 40, tzinfo=UTC),
+        closings_read=True,
+        spots=spots,
+    )
+    picture = sparse_map(spots)
+    one = taken("closings", seen)
+    assert rings(one, picture) == [(800, 450), (1000, 520)]
+    assert rings(taken("closings", STORM), storm_map()) == [], "a big glow needs no ring"
+    assert rings(taken("region", REGION), picture) == []
+    path = tmp_path / "sparse.png"
+    path.write_bytes(png(picture))
+    card = compose(browser, one, path, "dev-log", tmp_path, facts=SHOWN, say=print)
+    assert card.style == "c"
+    context = browser.new_context(viewport={"width": 1600, "height": 900})
+    try:
+        drawn = rgb_of(context.new_page(), (tmp_path / "dev-log.png").read_bytes())
+    finally:
+        context.close()
+    measure = cover(picture, drawn, spots)
+    assert (measure.covered, measure.schools) == (0, 0)
+    # The ring is drawn: light pixels on the dark land 40 px from each ringed spot.
+    for x, y in ((800, 450), (1000, 520)):
+        assert int(drawn[y, x + 40].max()) > 150, (x, y)
+        assert int(drawn[y + 40, x].max()) > 150, (x, y)
+    assert int(drawn[450, 900].max()) < 60, "between the rings the map stays dark"

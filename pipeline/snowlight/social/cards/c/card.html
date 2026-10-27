@@ -15,13 +15,15 @@
       Slots:
         kind        'dev-log' | 'waitlist' | 'storm' | 'chance'
         view        picture.Taken.kind: 'national' | 'closings' | 'district' | 'region'
-        current     picture.Taken.current (true or false, always given)
+        current     picture.Taken.current (true or false, always given); false on a view
+                    other than closings: the date only, no time
         label       optional short label over the place; dev-log and waitlist have a default
         headline    optional: one short line (2 to 6 words) from the card library
                     (cards.HEADLINES), words of a LIVE fact; shown in place of the label,
                     bold, with the place, time and badge made smaller under it
         states      closings view: picture._states, most lit first (at most two);
                     the place reads "Mostly <a> and <b>", as the description says "mostly in";
+        statesHoldAll  closings view: every lit school in view is in the states: "In <a>"
                     none (no state holds most of the lit schools): "Over <over>", or no place
         over        closings view with no states: the view's own place ("New Mexico"), as the
                     description says "in a view over"
@@ -44,9 +46,13 @@
                     the one the subject leaves free)
         focus       {x0, y0, x1, y1}: the district's box in the frame, drawn as corner ticks
         sample      staged data: draws the SAMPLE tag (never posted)
+        rings       closings view whose glow is a few pixels: [[x, y], ...] lit spots
+                    (picture.Seen.spots), each drawn with a light ring around it
     -->
     <main class="card" id="card">
       <img class="map" id="map" alt="" />
+
+      <div class="rings" id="rings" hidden></div>
 
       <div class="focus" id="focus" hidden><i></i><i></i><i></i><i></i></div>
 
@@ -285,6 +291,26 @@
         f.hidden = false;
       }
 
+      // A light ring around each lit spot of a closings view whose glow is a few pixels, so a
+      // scroller finds it: light on dark, it never darkens a lit pixel (cards.cover).
+      function ringSpots(spots, view) {
+        if (spots == null) return;
+        if (view !== 'closings') fail('rings: only a closings view lights schools');
+        if (!Array.isArray(spots) || spots.length > 12) fail('rings: at most 12 [x, y] spots');
+        const box = $('rings');
+        for (const spot of spots) {
+          const [x, y] = Array.isArray(spot) ? spot : [];
+          if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x >= 1600 || y < 0 || y >= 900) {
+            fail(`rings: ${JSON.stringify(spot)} is not a spot in the picture`);
+          }
+          const ring = document.createElement('i');
+          ring.style.left = `${x}px`;
+          ring.style.top = `${y}px`;
+          box.append(ring);
+        }
+        box.hidden = spots.length === 0;
+      }
+
       window.fill = async (slots, background) => {
         const kind = slots.kind;
         const view = slots.view;
@@ -304,8 +330,11 @@
           if (slots.over && states.length) fail('over: only a closings view with no states');
           // No state holds most of the lit schools (private ones name none): the view's own
           // place, or no place line, never a false one.
+          if (typeof (slots.statesHoldAll ?? false) !== 'boolean') fail('statesHoldAll: a boolean');
+          // "In" when the named states hold every lit school in view (one lit school, or all
+          // in one state), "Mostly" only of a real majority short of all.
           place = states.length
-            ? `Mostly ${states.map(display).join(' and ')}`
+            ? `${slots.statesHoldAll ? 'In' : 'Mostly'} ${states.map(display).join(' and ')}`
             : slots.over ? `Over ${display(slots.over)}` : null;
         } else {
           if (!slots.place) fail('place is required');
@@ -335,6 +364,10 @@
         if (slots.isFallback) {
           if (slots.time) fail('a fallback card carries no clock');
           text('time', `From ${slots.date}`);
+        } else if (slots.current === false && view !== 'closings') {
+          // A calm card over a stale closings file: its date only, no clock.
+          if (slots.time) fail('a card over stale closings that shows none carries no clock');
+          text('time', slots.date);
         } else if (slots.current === false) {
           const u = slots.updatedAt;
           if (!u || !TIME_RE.test(u.time ?? '') || !DATE_RE.test(u.date ?? '')) {
@@ -366,6 +399,7 @@
         // dev-log with nothing lit and no chance: the stamp alone, no badge.
 
         focusBox(slots.focus);
+        ringSpots(slots.rings, view);
         $('brand').classList.toggle('is-lead', view === 'national');
         $('sample').hidden = !slots.sample;
 

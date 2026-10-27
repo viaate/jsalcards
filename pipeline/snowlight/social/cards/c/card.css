@@ -111,6 +111,34 @@ body {
 .focus i:nth-child(3) { left: 0; bottom: 0; border-left-width: 4px; border-bottom-width: 4px; border-bottom-left-radius: 6px; }
 .focus i:nth-child(4) { right: 0; bottom: 0; border-right-width: 4px; border-bottom-width: 4px; border-bottom-right-radius: 6px; }
 
+/* ---- Rings round the lit spots of a closings view with little glow: light only, so no lit
+   pixel is ever darkened (cards.cover), and clear of the spot itself ---- */
+
+.rings {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.rings i {
+  position: absolute;
+  width: 84px;
+  height: 84px;
+  margin: -42px 0 0 -42px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 3px solid rgb(255 238 205 / 0.92);
+  box-shadow: 0 0 18px 3px rgb(255 214 150 / 0.5);
+}
+
+.rings i::after {
+  content: '';
+  position: absolute;
+  inset: -22px;
+  border-radius: 50%;
+  border: 2px solid rgb(255 238 205 / 0.35);
+}
+
 /* ---- The stamp: a top corner, inside the safe margin ---- */
 
 .stamp {

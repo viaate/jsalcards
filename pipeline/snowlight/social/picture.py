@@ -153,7 +153,8 @@ REGIONS: Final[tuple[Region, ...]] = (
     Region("Southern California", 33.9000, -117.8000, 7.4),
 )
 """The calm views a post may take when nothing is lit, each at a zoom between 5 and 10 (where
-the site draws school specks), rotated by the day (:func:`calm_regions`)."""
+the site draws school specks), rotated by the run's slot of the day: morning, noon and evening
+(:func:`calm_regions`, :func:`slot_of`)."""
 REGION_TRIES: Final = 2
 """How many regions one render attempt tries before it takes the national map."""
 
@@ -238,6 +239,9 @@ class Seen(BaseModel):
     states: tuple[str, ...] = Field(default=(), max_length=2)
     """Closings view: the states most of the lit schools in view are in, most first, only as
     :func:`_states` names them by share."""
+    states_hold_all: bool = False
+    """Closings view: every lit school in view is in :attr:`states` (one lit school, or all in
+    one state), so a card says "In Nevada", never "Mostly Nevada"."""
     lit: int = Field(default=0, ge=0)
     """How many schools the map lights across the country."""
     closings_at: datetime | None = None
@@ -487,6 +491,10 @@ def _counts(statuses: npt.NDArray[np.int64]) -> Counts:
     )
 
 
+def _schools(count: int) -> str:
+    return f"{count} {'school' if count == 1 else 'schools'}"
+
+
 def _status_counts(counts: Counts) -> str:
     values = counts.as_list()
     return ", ".join(f"{values[code]} {STATUS_WORDS[code]}" for code in range(4) if values[code])
@@ -508,7 +516,12 @@ def _closings_picture(lit: Lit, directory: Directory, now: datetime) -> Picture:
         for px, py in zip(x, y, strict=True)
     )
     query = f"?at={center_lat:.4f},{center_lon:.4f},{zoom:g}"
-    states = _states([directory.school_ids[int(index)] for index in in_view])
+    ids = [directory.school_ids[int(index)] for index in in_view]
+    states = _states(ids)
+    hold_all = bool(states) and all(
+        len(school) == 12 and STATES.get(school[:2]) in states  # noqa: PLR2004
+        for school in ids
+    )
     # No state by share for the lit schools (private ones name none): the view's own place.
     over = None if states else _and(view_states(directory, query)) or None
     counts = _counts(lit.statuses[held])
@@ -521,17 +534,24 @@ def _closings_picture(lit: Lit, directory: Directory, now: datetime) -> Picture:
         f"{int((now - lit.generated_at).total_seconds() // 60)} minutes before the picture, "
         "so the map does not call them live."
     )
-    place = f", mostly in {_and(states)}" if states else f", in a view over {over}" if over else ""
+    place = (
+        f", {'in' if hold_all else 'mostly in'} {_and(states)}"
+        if states
+        else f", in a view over {over}"
+        if over
+        else ""
+    )
     shows = (
         f"A picture of the Snowlight map taken at {_clock(now)} on {_day(now)}, zoomed to the "
-        f"area with the most schools lit up: {len(in_view)} schools glow in this "
-        f"view ({_status_counts(counts)}){place}. Across the country the map "
-        f"shows {total} schools closed, delayed, remote or dismissing early for {_day_of(lit.day)}."
-        f" {updated}"
+        f"area with the most schools lit up: {_schools(len(in_view))} "
+        f"{'glows' if len(in_view) == 1 else 'glow'} in this view ({_status_counts(counts)})"
+        f"{place}. Across the country the map shows {_schools(total)} closed, delayed, remote or"
+        f" dismissing early for {_day_of(lit.day)}. {updated}"
     )
     seen = Seen(
         in_view=counts,
         states=tuple(states),
+        states_hold_all=hold_all,
         place=over,
         lit=total,
         closings_at=lit.generated_at,
