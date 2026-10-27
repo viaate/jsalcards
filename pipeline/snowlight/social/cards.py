@@ -1,16 +1,17 @@
 """The branded card each post's picture goes out as (``cards/``): the map alone, as the Render
 step took it, under Snowlight's own words, laid out by one of three templates the owner saw:
 
-* **C, stamp** (``cards/c``): a small stamp in a top corner (label, place, time, one badge),
-  the other statuses in a row along the bottom, the logo bottom right. The owner's favorite:
-  the style of every closings and chance picture.
-* **A, broadcast** (``cards/a``): a lower third, bottom left. The style of the dev log and
-  waitlist cards over a calm map.
+* **C, stamp** (``cards/c``): a small stamp in a top corner (one short bold headline from
+  the card library, :data:`HEADLINES`, then the place, time and one badge, small), the other
+  statuses in a row along the bottom, the logo bottom right. The owner's pick: the first
+  style tried for every picture, so the map fills the card.
+* **A, broadcast** (``cards/a``): a lower third, bottom left, with a short model line. Only
+  where C does not fit.
 * **B, framed** (``cards/b``): the map whole in an inset frame, the words in a black column
   beside it, never over it. Only where neither of the others fits.
 
 The style is chosen by code, never at random (:func:`pick`): the preferred order is C, A, B
-for a closings or district picture and A, C, B for a calm one, and a style fits only when
+for every picture (both of C's corners for a closings one), and a style fits only when
 its words, stamp and logo darken no lit school's centre (each school in view is measured
 where the picture puts it, :attr:`snowlight.social.picture.Seen.spots`) and at most
 :data:`FIT_SHARE` of the lit-school pixels of the map, for the halos' edges (:func:`cover`;
@@ -88,6 +89,23 @@ TIMEOUT_MS: Final = 30_000
 ALT_MAX: Final = 1000
 """X's longest alt text (docs.x.com, POST /2/media/metadata)."""
 CAPTION: Final[Mapping[str, str]] = {"dev-log": "Dev log", "waitlist": "Join the waitlist"}
+HEADLINES: Final[Mapping[tuple[str, str], tuple[str, ...]]] = {
+    ("waitlist", "any"): ("The Snowlight waitlist is open",),
+    ("dev-log", "closings"): (
+        "Real school closings and delays",
+        "Like city lights seen from space",
+    ),
+    ("dev-log", "any"): (
+        "A real model, not a guess",
+        "Real closing records, not a guess",
+        "Closings reader runs 24/7",
+    ),
+}
+"""The card library's headlines (2 to 6 words) by post and picture kind ("any": every other
+kind), each words of a LIVE fact's text as the facts file has them (:func:`headline_for`
+checks each against the run's facts file and skips one that is no longer true). A card's
+headline says no number, time, place or count of the picture: those are its own slots."""
+HEADLINE_WORDS: Final = (2, 6)
 SPOKEN: Final = (("<1%", "under 1%"), (">99%", "over 99%"))
 
 type Post = Literal["dev-log", "waitlist"]
@@ -156,7 +174,26 @@ def groups(taken: Taken) -> tuple[tuple[Candidate, ...], ...]:
         return ((away,), ("a",), ("b",))
     if taken.kind == "closings":
         return (("c-left", "c-right"), ("a",), ("b",))
-    return (("a",), ("c-left",), ("b",))
+    return (("c-left",), ("a",), ("b",))
+
+
+def headline_for(taken: Taken, post: Post, facts: Facts) -> str | None:
+    """The C card's headline: one of :data:`HEADLINES` for the post and picture kind, in turn
+    by the picture's day (so a day's cards vary), among those still words of a LIVE fact of
+    ``facts`` (:func:`snowlight.social.rules.still_true`), with no word of closings unless
+    the facts file marks them LIVE and the picture is of them; ``None`` when none is."""
+    lines = HEADLINES.get((post, taken.kind)) or HEADLINES[(post, "any")]
+    fitting = [
+        line
+        for line in lines
+        if still_true(line, facts)
+        and HEADLINE_WORDS[0] <= len(line.split()) <= HEADLINE_WORDS[1]
+        and (not mentions_closings(line) or (closings_shown(facts) and taken.kind == "closings"))
+        and not mentions_chance(line)
+    ]
+    if not fitting:
+        return None
+    return fitting[day_of(taken).toordinal() % len(fitting)]
 
 
 def pick(
@@ -252,8 +289,9 @@ def _counts_words(taken: Taken) -> str:
     return _and(parts)
 
 
-def alt_text(taken: Taken, post: Post, *, fallback: bool) -> str:
-    """One plain description of the card for X's alt text, from the picture's facts only."""
+def alt_text(taken: Taken, post: Post, *, fallback: bool, headline: str | None = None) -> str:
+    """One plain description of the card for X's alt text, from the picture's facts only,
+    captioned with the card's headline when it has one (else the post's caption)."""
     when = (
         f"pictured on {_long_date(taken.taken_at)}"
         if fallback
@@ -294,7 +332,7 @@ def alt_text(taken: Taken, post: Post, *, fallback: bool) -> str:
                 else f", and the highest chance of no school {chance.day:%A} in any district: "
                 f"{_spoken(chance.text)}"
             )
-    text += f", captioned {CAPTION[post]}."
+    text += f", captioned {headline or CAPTION[post]}."
     check_words(text, current=taken.current, fallback=fallback)
     if len(text) > ALT_MAX:
         raise CardError("the alt text is too long")
@@ -330,8 +368,11 @@ def _dated_chance(taken: Taken, *, fallback: bool) -> bool:
     return taken.kind == "district" or (taken.kind == "national" and not fallback)
 
 
-def c_slots(taken: Taken, post: Post, anchor: str, *, fallback: bool) -> dict[str, object]:
-    """Template C's slots (``cards/c/card.html``), filled by code from the facts."""
+def c_slots(
+    taken: Taken, post: Post, anchor: str, *, fallback: bool, headline: str | None = None
+) -> dict[str, object]:
+    """Template C's slots (``cards/c/card.html``), filled by code from the facts, with the
+    card library's ``headline`` (:func:`headline_for`) when there is one."""
     seen = taken.seen
     slots: dict[str, object] = {
         "kind": post,
@@ -343,6 +384,8 @@ def c_slots(taken: Taken, post: Post, anchor: str, *, fallback: bool) -> dict[st
         "date": _long_date(taken.taken_at) if fallback else _month_day(taken.taken_at),
         "isFallback": fallback,
     }
+    if headline is not None:
+        slots["headline"] = headline
     if not fallback:
         slots["time"] = clock(taken.taken_at)
     if taken.kind == "closings":
@@ -535,6 +578,7 @@ def lay(  # noqa: PLR0913 - one layout's parts
     map_png: Path,
     *,
     fallback: bool,
+    headline: str | None = None,
 ) -> tuple[bytes, str]:
     """Lay out one candidate on ``page`` and screenshot it; its PNG and its words.
 
@@ -547,7 +591,7 @@ def lay(  # noqa: PLR0913 - one layout's parts
     try:
         if style == "c":
             anchor = candidate.removeprefix("c-")
-            slots = c_slots(taken, post, anchor, fallback=fallback)
+            slots = c_slots(taken, post, anchor, fallback=fallback, headline=headline)
             page.evaluate("([s, u]) => window.fill(s, u)", [slots, map_url])
         elif style == "a":
             page.evaluate(
@@ -629,10 +673,13 @@ def compose(  # noqa: PLR0913 - the card's parts
         if map_rgb.shape[:2] != (HEIGHT, WIDTH):
             raise CardError("the map picture is not 1600 x 900")
         laid: dict[Candidate, Laid] = {}
+        headline = headline_for(taken, post, facts)
 
         def measure(candidate: Candidate) -> Measure:
             try:
-                png, words = lay(page, candidate, taken, post, map_png, fallback=fallback)
+                png, words = lay(
+                    page, candidate, taken, post, map_png, fallback=fallback, headline=headline
+                )
             except CardError as error:
                 return Measure(glow=0, covered=0, refused=str(error))
             if candidate == "a" and A_TAGLINE in words and not still_true(A_TAGLINE, facts):
@@ -653,7 +700,9 @@ def compose(  # noqa: PLR0913 - the card's parts
         png = laid[chosen].png
         if len(png) > MAX_BYTES:
             raise CardError("the card is over 5 MB")
-        alt = alt_text(taken, post, fallback=fallback)
+        alt = alt_text(
+            taken, post, fallback=fallback, headline=headline if chosen.startswith("c") else None
+        )
         if not chances and (mentions_chance(laid[chosen].words) or mentions_chance(alt)):
             raise CardError("the card would give a chance while chances are TESTING")
         if not closings and (mentions_closings(laid[chosen].words) or mentions_closings(alt)):

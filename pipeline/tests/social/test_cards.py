@@ -17,14 +17,17 @@ import pytest
 from playwright.sync_api import Browser, Page, sync_playwright
 from playwright.sync_api import Error as PlaywrightError
 
+import snowlight.social.cards as cards_module
 from snowlight.social.cards import (
     FIT_SHARE,
+    HEADLINES,
     HERE,
     MAX_BYTES,
     Candidate,
     Card,
     CardError,
     Measure,
+    Post,
     a_facts,
     alt_text,
     b_card,
@@ -34,6 +37,7 @@ from snowlight.social.cards import (
     cover,
     glow_mask,
     groups,
+    headline_for,
     lay,
     pick,
     without_chances,
@@ -56,8 +60,8 @@ def switches(chances: str, closings: str, model: str = "LIVE") -> Facts:
     return parse_facts(
         f"- [{chances}] chances: SYNTHETIC chances. | terms: chance\n"
         f"- [{closings}] closings: SYNTHETIC closings on the map. | terms: closings\n"
-        f"- [{model}] model: A prediction model trained on real closing records, not a guess."
-        " | terms: model\n"
+        f"- [{model}] model: A prediction model trained on real closing records, not a guess:"
+        " a real model, not a guess. | terms: model\n"
     )
 
 
@@ -190,13 +194,15 @@ def test_glow_under_both_corners_and_the_lower_third_takes_the_frame() -> None:
     assert "a covers" in why, "A was measured before B"
 
 
-def test_a_calm_map_takes_the_lower_third_and_a_glow_there_moves_it() -> None:
-    assert choose_from(canvas(), "national")[0] == "a"
+def test_a_calm_map_takes_the_stamp_and_a_glow_there_moves_it() -> None:
+    """The owner's pick: C first on every picture, the map filling the card."""
+    assert choose_from(canvas(), "national")[0] == "c-left"
+    assert choose_from(canvas(), "region")[0] == "c-left"
     picture = canvas()
-    picture[450:700, 100:1000] = BLUE  # under A's lower third, clear of C's stamp and row
+    picture[100:300, 100:700] = BLUE  # under C's stamp, clear of A's lower third
     chosen, why = choose_from(picture, "national")
-    assert chosen == "c-left"
-    assert why.startswith("c-left is the first style that fits (a covers")
+    assert chosen == "a"
+    assert why.startswith("a is the first style that fits (c-left covers")
 
 
 def test_pick_measures_only_what_it_must() -> None:
@@ -274,7 +280,7 @@ def test_one_school_under_the_lower_third_refuses_a_whatever_the_share() -> None
     assert a.schools == 1
     assert not a.fits
     assert "over 1 lit schools" in str(a)
-    chosen, why = pick(groups(taken("national", Seen())), measure)
+    chosen, why = pick((("a",), ("c-left",), ("b",)), measure)
     assert chosen != "a"
     assert "a covers" in why
 
@@ -284,8 +290,8 @@ def test_the_preferred_order_follows_the_owner() -> None:
     assert groups(taken("district", DISTRICT)) == (("c-right",), ("a",), ("b",))
     right = DISTRICT.model_copy(update={"focus": Box(x0=900, y0=200, x1=1300, y1=700)})
     assert groups(taken("district", right))[0] == ("c-left",)
-    assert groups(taken("national", CALM)) == (("a",), ("c-left",), ("b",))
-    assert groups(taken("region", REGION)) == (("a",), ("c-left",), ("b",))
+    assert groups(taken("national", CALM)) == (("c-left",), ("a",), ("b",))
+    assert groups(taken("region", REGION)) == (("c-left",), ("a",), ("b",))
 
 
 # Truth guards, with adversarial facts.
@@ -416,8 +422,7 @@ def test_every_tagline_on_a_card_is_true_per_the_facts_file() -> None:
     assert found is not None
     # B's dev-log kicker is the label "Dev log"; its headline is a line of the facts file.
     lines = [found.group(1), *(x for x in re.findall(r"'dev-log': '([^']+)'", b) if x != "Dev log")]
-    assert lines == ["A prediction model trained on real closing records, not a guess",
-                     "Building Snowlight"]  # fmt: skip
+    assert lines == ["A real model, not a guess", "Building Snowlight"]
     assert not mentions_chance(lines[0]), "the model line stays while chances are TESTING"
     model = facts.get("model")
     assert model is not None
@@ -745,7 +750,7 @@ def test_while_chances_are_testing_no_template_shows_a_chance(
         _, words = lay(page, candidate, calm, post, maps["calm"], fallback=False)
         assert not mentions_chance(words), (candidate, post, words)
         if candidate == "a" and post == "dev-log":
-            assert "A prediction model trained on real closing records, not a guess" in words
+            assert "A real model, not a guess" in words
 
 
 def test_compose_while_closings_are_not_live(
@@ -768,10 +773,12 @@ def test_compose_while_closings_are_not_live(
 
 
 def test_the_a_cards_model_line_is_checked_against_the_runs_facts(
-    browser: Browser, maps: dict[str, Path], tmp_path: Path
+    browser: Browser, maps: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """SYNTHETIC: the facts file demotes the model fact; the A card's line is no longer true,
-    so A does not fit and the calm card takes another style."""
+    so A does not fit and the calm card takes another style (A tried first here: C, first
+    on every picture, would fit before A is measured)."""
+    monkeypatch.setattr(cards_module, "groups", lambda _taken: (("a",), ("c-left",), ("b",)))
     card = compose(
         browser,
         taken("national", Seen()),
@@ -810,3 +817,77 @@ def test_compose_while_chances_are_testing(
             browser, taken("district", DISTRICT), maps["calm"], "dev-log", tmp_path,
             facts=NO_CHANCES, say=print,
         )  # fmt: skip
+
+
+# -- the C card's headline (the owner's "less text, more map") ---------------------------------
+
+
+def real_facts() -> Facts:
+    return parse_facts((REPO / "social" / "facts.md").read_text(encoding="utf-8"))
+
+
+def test_every_headline_is_short_and_true_per_the_real_facts_file() -> None:
+    facts = real_facts()
+    for (post, kind), lines in HEADLINES.items():
+        assert post in {"dev-log", "waitlist"}
+        assert kind in {"any", "closings", "district", "national", "region"}
+        for line in lines:
+            assert 2 <= len(line.split()) <= 6, line
+            assert still_true(line, facts), f"{line!r} is not words of a LIVE fact"
+            assert not mentions_chance(line), line
+            assert not re.search(r"\b(now|live|today|tonight)\b", line, re.IGNORECASE), line
+            check_words(line, current=False, fallback=True)
+    posts: tuple[Post, ...] = ("dev-log", "waitlist")
+    for post in posts:
+        for kind, seen in (("national", Seen()), ("region", REGION), ("closings", STORM)):
+            assert headline_for(taken(kind, seen), post, facts) is not None, (post, kind)
+
+
+def test_a_headline_rotates_by_day_and_speaks_of_closings_only_over_them() -> None:
+    facts = real_facts()
+    days = {
+        headline_for(
+            taken("region", REGION).model_copy(
+                update={"taken_at": datetime(2026, 10, d, 14, tzinfo=UTC)}
+            ),
+            "dev-log",
+            facts,
+        )
+        for d in range(20, 27)
+    }
+    assert len(days) == len(HEADLINES[("dev-log", "any")])
+    calm = {headline_for(taken("region", REGION), post, facts) for post in ("dev-log", "waitlist")}
+    assert not any(mentions_closings(line or "") for line in calm)
+    # A closings headline only while the facts file marks closings LIVE.
+    assert headline_for(taken("closings", STORM), "dev-log", HELD_BACK) is None
+
+
+def test_a_headline_that_left_the_facts_file_is_never_laid() -> None:
+    """SYNTHETIC facts without the model's short line: no headline, and the card keeps its
+    plain label."""
+    plain = parse_facts("- [LIVE] model: SYNTHETIC model. | terms: model\n")
+    assert headline_for(taken("region", REGION), "dev-log", plain) is None
+
+
+def test_the_stamp_lays_a_headline_small_and_inside_the_margin(
+    page: Page, maps: dict[str, Path]
+) -> None:
+    calm = taken("region", REGION)
+    _, words = lay(
+        page, "c-left", calm, "dev-log", maps["calm"], fallback=False,
+        headline="A real model, not a guess",
+    )  # fmt: skip
+    assert "A real model, not a guess" in words
+    assert "Dev log" not in words
+    _, storm = lay(
+        page, "c-right", taken("closings", STORM), "dev-log", maps["storm"], fallback=False,
+        headline="Real school closings and delays",
+    )  # fmt: skip
+    assert "in this view" in storm
+    with pytest.raises(CardError, match="refused"):
+        lay(
+            page, "c-left", calm, "dev-log", maps["calm"], fallback=False,
+            headline="One two three four five six seven",
+        )  # fmt: skip
+    alt = alt_text(calm, "dev-log", fallback=False, headline="A real model, not a guess")
+    assert alt.endswith("captioned A real model, not a guess.")

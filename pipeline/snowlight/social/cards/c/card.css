@@ -172,6 +172,65 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---- A headline card (the owner's "less text, more map"): one short bold line from the
+   card library leads, and the place, time and badge sit small under it ---- */
+
+/* The bold line's glyph box rises above its line: the stamp starts lower to keep it in. */
+.stamp.has-headline {
+  top: calc(var(--safe) + 12px);
+}
+
+.label.is-headline {
+  margin: 0 0 10px;
+  font-family: var(--font-sans);
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 72px;
+  letter-spacing: -0.035em;
+  text-transform: none;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+.stamp.has-headline .place {
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 44px;
+  letter-spacing: -0.01em;
+  color: var(--status-closed);
+}
+
+.stamp.has-headline .time {
+  margin-top: 2px;
+  font-size: 30px;
+  line-height: 38px;
+}
+
+.stamp.has-headline .badge {
+  height: 92px;
+  margin-top: 20px;
+  gap: 16px;
+  padding: 0 30px 0 26px;
+  border-radius: 46px;
+}
+
+.stamp.has-headline .badge .num {
+  font-size: 60px;
+}
+
+.stamp.has-headline .badge .word {
+  font-size: 26px;
+  line-height: 30px;
+}
+
+.stamp.has-headline .badge.is-link {
+  height: 80px;
+}
+
+.stamp.has-headline .badge.is-link .num {
+  font-size: 40px;
+}
+
 /* ---- The badge: the news, one number with its mark ---- */
 
 .badge {

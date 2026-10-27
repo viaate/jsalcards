@@ -96,9 +96,14 @@ Two rules hold for every post, Haiku's and the queued ones alike, and for every 
   script or invisible character, so a name cannot hide behind a Cyrillic letter or a
   zero-width space. Haiku's second check is a second net, never the only one.
 
-The A card's line on a dev log or waitlist card is the model line, "A prediction model
-trained on real closing records, not a guess", words of the LIVE fact `model`. It names no
-chance, so it stays while chances are TESTING (below).
+The C card (the first style tried on every picture) leads with one short headline from the
+card library (`cards.HEADLINES`, 2 to 6 words: "A real model, not a guess", "Real closing
+records, not a guess", "Closings reader runs 24/7", "The Snowlight waitlist is open", and over
+lit schools "Real school closings and delays" or "Like city lights seen from space"), each
+words of a LIVE fact, checked against the run's facts file and rotated by the picture's day;
+the place, time and badge sit small under it and the map fills the rest. The A card's line
+is the short model line, "A real model, not a guess", words of the LIVE fact `model`. Neither
+names a chance, so they stay while chances are TESTING (below).
 
 ## Chances while the site is locked
 
@@ -266,9 +271,9 @@ phrases that hold one of those words but name another fact (`| except: ...`, suc
 when something ships, move its fact to LIVE in the same change. Nothing private goes in
 it. Every number in the model section comes from docs/predict.md and the committed model
 file, and a test checks them against both. A term is a word or phrase, never a bare number
-(a term "2,388" would split at its comma). A line printed on a card (the A card's "A
-prediction model trained on real closing records, not a guess", the B card's "Building
-Snowlight") must be words of a LIVE fact; a test holds the templates to it, and a library
+(a term "2,388" would split at its comma). A line printed on a card (the C card's headlines,
+the A card's "A real model, not a guess", the B card's "Building Snowlight") must be words
+of a LIVE fact; a test holds the templates and the headline library to it, and a library
 card's line is kept in its JSON (`tagline`): when that line leaves the facts file (it must
 stay words of a LIVE fact, or the whole text of a COMING one), the run stops red until the
 library is made again with `snowlight social render --fallback`.
@@ -317,12 +322,14 @@ network at all:
    1600 x 900 picture of the map alone.
 4. `cards.py` lays the Snowlight card over it for each kind of post (`dev-log`, `waitlist`)
    from three templates in `pipeline/snowlight/social/cards/` (the site's Geist fonts, OFL):
-   **C stamp** for closings and chance pictures, **A broadcast** for calm ones, **B framed**
-   (the map whole in a frame, the words beside it) only where neither fits. A style fits
+   **C stamp** first for every picture (the owner's pick: a short headline, the place, time
+   and one badge small in a top corner, the map filling the card), **A broadcast** where C
+   does not fit, **B framed** (the map whole in a frame, the words beside it) only where
+   neither fits. A style fits
    when its words, stamp and logo darken no lit school's centre (every lit school in view is
    measured where the picture puts it, one by one) and at most 3% of the map's lit-school
-   pixels (the halos' edges); the order is C, A, B for closings and districts and A, C, B
-   for calm maps. The A card's model line is checked against the run's facts file when the
+   pixels (the halos' edges); the order is C, A, B for every picture. The A card's model
+   line (and C's headline) is checked against the run's facts file when the
    card is laid: if the lead rewords or demotes the `model` fact, A no longer fits and the
    card takes another style. On a closings picture the A card's status counts say "in this
    view", like C's and B's. When no style fits, no fresh card is made and the post goes with

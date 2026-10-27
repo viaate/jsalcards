@@ -17,6 +17,9 @@
         view        picture.Taken.kind: 'national' | 'closings' | 'district' | 'region'
         current     picture.Taken.current (true or false, always given)
         label       optional short label over the place; dev-log and waitlist have a default
+        headline    optional: one short line (2 to 6 words) from the card library
+                    (cards.HEADLINES), words of a LIVE fact; shown in place of the label,
+                    bold, with the place, time and badge made smaller under it
         states      closings view: picture._states, most lit first (at most two);
                     the place reads "Mostly <a> and <b>", as the description says "mostly in"
         place       national, district and region views: "United States", "A district in
@@ -270,7 +273,18 @@
         $('stamp').classList.toggle('is-right', anchor === 'right');
         $('sample').classList.toggle('is-left', anchor === 'right');
 
-        text('label', slots.label ?? DEFAULT_LABEL[kind]);
+        const headline = slots.headline ?? null;
+        if (headline !== null) {
+          if (typeof headline !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9 ,'\/.-]{2,60}$/.test(headline)) {
+            fail(`headline: ${headline}`);
+          }
+          const words = headline.split(/\s+/).filter(Boolean).length;
+          if (words < 2 || words > 6) fail(`headline: 2 to 6 words, not ${words}`);
+          if (slots.label) fail('label: a card with a headline takes no label');
+        }
+        $('label').classList.toggle('is-headline', headline !== null);
+        $('stamp').classList.toggle('has-headline', headline !== null);
+        text('label', headline !== null ? display(headline) : (slots.label ?? DEFAULT_LABEL[kind]));
         text('place', place);
 
         // When: a fallback shows only its own date; stale closings show when they were updated.
@@ -325,7 +339,7 @@
           img.src = background;
         });
         await document.fonts.ready;
-        for (const f of ["600 92px 'Geist Variable'", "500 36px 'Geist Mono Variable'", "500 40px 'Geist Variable'"]) {
+        for (const f of ["600 92px 'Geist Variable'", "500 36px 'Geist Mono Variable'", "500 40px 'Geist Variable'", "700 64px 'Geist Variable'"]) {
           await document.fonts.load(f);
         }
         // The status row stays one line unless it would reach the brand; then it wraps.
