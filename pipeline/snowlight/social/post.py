@@ -4,7 +4,8 @@
 2. Without the X secrets, or the Cloudflare ones, say what is missing and stop (green).
 3. Stop before anything else while posting is stopped for the current secret: the token
    chain stopped (X refused the refresh token, the stored token did not open or could not
-   be stored, a scope is missing) and ``X_REFRESH_TOKEN`` is still the secret it stopped
+   be stored, a scope is missing) and the secret the chain starts from (``X_REFRESH_TOKEN``,
+   or the ``X_ACCESS_TOKEN`` pair when both are set) is still the one it stopped
    with (or the open token issue says the chain stopped at the stored version from this
    secret, when the database could not record the stop); or X refused a post for good
    (:data:`snowlight.social.xapi.FOR_GOOD`) and its issue is still open, or was never opened
@@ -24,7 +25,7 @@
    and a post X refused twice in a row with the same 4xx (``skipped``: never sent again, with
    the owner's issue; a 429 or a 5xx is never counted).
 6. A scheduled run with nothing to post still refreshes once when the chain stopped and the
-   ``X_REFRESH_TOKEN`` secret is not the one that stopped (the owner pasted a new one), so the
+   chain's secret is not the one that stopped (the owner pasted a new one), so the
    new token is checked and the owner's issue closes without waiting for a post.
 
 Caps (all in code): one post a run; :data:`snowlight.social.store.MAX_POSTS_PER_DAY` a UTC
@@ -65,6 +66,7 @@ from snowlight.social.store import (
     D1,
     MAX_POSTS_PER_DAY,
     REFUSALS_TO_SKIP,
+    Chain,
     ChainBusyError,
     CloudflareSecrets,
     MissingDatabaseError,
@@ -112,17 +114,44 @@ type Env = Mapping[str, str]
 
 @dataclass(frozen=True, slots=True)
 class XSecrets:
+    """The X app's OAuth 2.0 client and the secret the token chain starts from: the account's
+    OAuth 1.0a access token and its secret when both are set (``X_ACCESS_TOKEN``,
+    ``X_ACCESS_TOKEN_SECRET``; the run exchanges them for a token pair with every scope, as
+    X's console generator leaves ``media.write`` out), else ``X_REFRESH_TOKEN``."""
+
     client_id: str = field(repr=False)
     client_secret: str = field(repr=False)
     refresh_seed: str = field(repr=False)
+    access_token: str = field(default="", repr=False)
+    access_secret: str = field(default="", repr=False)
 
     @classmethod
     def from_env(cls, env: Env) -> "XSecrets | None":
-        names = ("X_CLIENT_ID", "X_CLIENT_SECRET", "X_REFRESH_TOKEN")
-        values = [env.get(name, "") for name in names]
-        if not all(values):
+        client_id, client_secret = env.get("X_CLIENT_ID", ""), env.get("X_CLIENT_SECRET", "")
+        refresh = env.get("X_REFRESH_TOKEN", "")
+        access, secret = env.get("X_ACCESS_TOKEN", ""), env.get("X_ACCESS_TOKEN_SECRET", "")
+        if not (client_id and client_secret):
             return None
-        return cls(*values)
+        if access and secret:
+            return cls(client_id, client_secret, refresh, access, secret)
+        return cls(client_id, client_secret, refresh) if refresh else None
+
+    @property
+    def exchanges(self) -> bool:
+        """Whether the chain starts from the OAuth 1.0a pair (exchanged) over the refresh token."""
+        return bool(self.access_token and self.access_secret)
+
+    @property
+    def name(self) -> str:
+        """The secret the owner pastes again to start a stopped chain."""
+        return "X_ACCESS_TOKEN pair" if self.exchanges else "X_REFRESH_TOKEN"
+
+    @property
+    def start(self) -> str:
+        """What the seed fingerprint is taken of: the pair (both parts) or the refresh token."""
+        if self.exchanges:
+            return f"oauth1\n{self.access_token}\n{self.access_secret}"
+        return self.refresh_seed
 
 
 @dataclass(frozen=True, slots=True)
@@ -457,8 +486,8 @@ class Run:
 
     @property
     def seed(self) -> str:
-        """The fingerprint of the ``X_REFRESH_TOKEN`` secret (never the secret)."""
-        return seal.fingerprint(self.secrets.refresh_seed, self.secrets.client_secret)
+        """The fingerprint of the secret the chain starts from (never the secret)."""
+        return seal.fingerprint(self.secrets.start, self.secrets.client_secret)
 
     def release_chain(self) -> None:
         """Give the token chain's lease back (a failure is said: the lease expires by itself)."""
@@ -473,8 +502,8 @@ class Run:
         refused = self.store.refused_seed()
         if (refused is not None and refused == self.seed) or self.stop_unrecorded():
             self.say(
-                "::warning::social: posting is stopped until a new X_REFRESH_TOKEN is pasted"
-                " (the open issue says how): this run sends nothing"
+                f"::warning::social: posting is stopped until a new {self.secrets.name} is"
+                " pasted (the open issue says how): this run sends nothing"
             )
             return True
         return self.still_held()
@@ -511,7 +540,7 @@ class Run:
         if held is None:
             return False
         if held.seed != self.seed:
-            self.say("social: X_REFRESH_TOKEN is new since X refused a post: trying again")
+            self.say(f"social: {self.secrets.name} is new since X refused a post: trying again")
             self.store.unhold()
             return False
         if held.issue is None:
@@ -570,7 +599,7 @@ class Run:
         except StoreError:
             self.release_chain()
 
-    def refresh(self) -> Tokens | None:  # noqa: PLR0911 - one reason a return
+    def refresh(self) -> Tokens | None:
         """The tokens, with the rotated refresh token stored; ``None`` when no token came
         (the reason said, and the owner's issue opened when they must act). When the rotated
         token could not be stored the tokens still come back (this run may post) and the
@@ -588,7 +617,49 @@ class Run:
             self.say(f"::warning::social: the token chain is not free ({error}): nothing posts")
             return None
         seed = self.seed
-        if chain.version == 0 or not chain.sealed or chain.seed != seed:
+        fresh = chain.version == 0 or not chain.sealed or chain.seed != seed
+        if fresh and self.secrets.exchanges:
+            tokens = self.exchange(chain.version)
+            if tokens is None:
+                return None
+            source = "the X_ACCESS_TOKEN pair, exchanged once"
+        else:
+            refreshed = self.refreshed(chain, fresh=fresh)
+            if refreshed is None:
+                return None
+            tokens, source = refreshed
+        return self.keep(chain, tokens, source)
+
+    def exchange(self, version: int) -> Tokens | None:
+        """The token pair for the OAuth 1.0a pair, once, when the chain starts from it; ``None``
+        when X refused it (the owner's issue opened) or gave no usable answer (the next run
+        exchanges again, which X allows: a new exchange ends the pair before)."""
+        try:
+            return self.deps.x.exchange(
+                self.secrets.client_id,
+                self.secrets.client_secret,
+                self.secrets.access_token,
+                self.secrets.access_secret,
+            )
+        except RefreshRefusedError as error:
+            self.say(f"::error::social: {error} (of the X_ACCESS_TOKEN pair)")
+            self.release_chain()
+            answer = str(error).removeprefix("X refused the token exchange: ")
+            self.stopped(
+                "X refused to exchange the X_ACCESS_TOKEN and X_ACCESS_TOKEN_SECRET pair for a"
+                f" posting token ({answer})",
+                version,
+            )
+            return None
+        except RefreshUnknownError as error:
+            self.say(f"::error::social: {error}; the next run tries again")
+            self.release_chain()
+            return None
+
+    def refreshed(self, chain: Chain, *, fresh: bool) -> tuple[Tokens, str] | None:
+        """The tokens from refreshing the stored token, or ``X_REFRESH_TOKEN`` when the chain
+        starts from it, and where the token came from; ``None`` when no token came."""
+        if fresh:
             token, source, stored = self.secrets.refresh_seed, "the X_REFRESH_TOKEN secret", False
         else:
             try:
@@ -625,9 +696,14 @@ class Run:
         except RefreshUnknownError as error:
             self.unknown(error)
             return None
+        return tokens, source
+
+    def keep(self, chain: Chain, tokens: Tokens, source: str) -> Tokens:
+        """Store the new refresh token sealed, as the chain's next version (the issue opened
+        when it cannot be stored: the tokens still come back, so this run may post)."""
         sealed = seal.seal(tokens.refresh, self.secrets.client_secret, version=chain.version + 1)
         try:
-            version = self.store.store_chain(chain, self.run_id, sealed, seed, self.deps.now())
+            version = self.store.store_chain(chain, self.run_id, sealed, self.seed, self.deps.now())
         except ChainBusyError as error:
             # The stored token is spent and its successor is not stored: the chain is lost.
             self.say(f"::error::social: the rotated token could not be stored ({error})")
@@ -687,11 +763,11 @@ class Run:
             return 0
         if refused == self.seed:
             self.say(
-                "::warning::social: posting is stopped until a new X_REFRESH_TOKEN is pasted"
-                " (the open issue says how)"
+                f"::warning::social: posting is stopped until a new {self.secrets.name} is"
+                " pasted (the open issue says how)"
             )
             return 0
-        self.say("social: X_REFRESH_TOKEN is new since the chain stopped: checking it")
+        self.say(f"social: {self.secrets.name} is new since the chain stopped: checking it")
         tokens = self.refresh()
         return 0 if tokens is not None and self.usable(tokens) else 1
 
@@ -803,7 +879,10 @@ def _start(env: Env, root: Path, deps: Deps, picture: Path | None, begun: dateti
         return 1
     secrets = XSecrets.from_env(env)
     if secrets is None:
-        say("::notice::social: no X_CLIENT_ID, X_CLIENT_SECRET and X_REFRESH_TOKEN: nothing posts")
+        say(
+            "::notice::social: no X_CLIENT_ID and X_CLIENT_SECRET with X_REFRESH_TOKEN or the"
+            " X_ACCESS_TOKEN pair: nothing posts"
+        )
         return 0
     cloudflare = CloudflareSecrets.from_env(env)
     if cloudflare is None:

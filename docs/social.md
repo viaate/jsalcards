@@ -338,9 +338,18 @@ token changes every time it is used. Each run that posts:
 
 1. takes a lease on the token row in the D1 database `snowlight-live-state` (one run at a
    time can spend the token; the job's concurrency group also keeps one run at a time);
-2. refreshes with the stored refresh token, or with the `X_REFRESH_TOKEN` secret when no
+2. refreshes with the stored refresh token, or starts the chain from its secret (below) when no
    token is stored yet or the secret is newer than the stored chain (the row keeps a keyed
-   fingerprint of the secret the chain started from, so a newly pasted secret is noticed);
+   fingerprint of the secret the chain started from, so a newly pasted secret is noticed).
+   The secret is the OAuth 1.0a pair `X_ACCESS_TOKEN` and `X_ACCESS_TOKEN_SECRET` when both
+   are set: the run exchanges it once for an OAuth 2.0 token pair (`POST /2/oauth2/token`,
+   grant `urn:ietf:params:oauth:grant-type:token-exchange`; for an app with Read and write
+   permission X grants every write scope, `media.write` among them, and a refresh token),
+   and never again for the same pair, since a new exchange ends the pair the one before
+   gave. Otherwise it is `X_REFRESH_TOKEN` (X's console generator gives that token no
+   `media.write`, so no image can go up with it). A refused exchange stops the chain like a
+   refused refresh token; an exchange with no answer posts nothing and the next run
+   exchanges again;
 3. stores the new refresh token right away, sealed with AES-256-GCM under a key derived
    (HKDF-SHA256) from `X_CLIENT_SECRET` and bound to the row and its new version (an older
    sealed value written back does not open), with `UPDATE ... WHERE version = <read> AND
@@ -402,11 +411,12 @@ skipped**: fix the file and give it a new id, or delete it, then close the issue
 
 ### When the issue opens (the owner)
 
-1. X developer console > the app of @SnowlightMap > **Keys and tokens** > OAuth 2.0:
-   generate a new access token and refresh token (scopes: tweet.read, tweet.write,
-   users.read, offline.access, media.write).
-2. GitHub > Settings > Environments > **x-posting** > `X_REFRESH_TOKEN` > edit, paste the
-   new refresh token, save.
+1. X developer console > the app of @SnowlightMap > **Keys and tokens** (permission **Read
+   and write**) > OAuth 1.0 Keys > Access Token (for @SnowlightMap) > **Generate**.
+2. GitHub > Settings > Environments > **x-posting**: set `X_ACCESS_TOKEN` to the Access Token
+   and `X_ACCESS_TOKEN_SECRET` to the Access Token Secret, save. (Pasting a new
+   `X_REFRESH_TOKEN` instead works only while the pair is not set, and X's console gives that
+   token no `media.write`.)
 3. Done: the next scheduled run (16:37 or 20:41 UTC), or a push to `social/queue/`, starts
    from it and closes the issue once it works with every scope.
 
@@ -444,11 +454,12 @@ queued file from `social/queue/` once it is posted.
 
 ## Secrets (the owner adds them; never paste them anywhere else)
 
-| Secret                                              | Where                      | What for                                                        |
-| --------------------------------------------------- | -------------------------- | --------------------------------------------------------------- |
-| `X_CLIENT_ID`, `X_CLIENT_SECRET`, `X_REFRESH_TOKEN` | environment `x-posting`    | the X app and the first refresh token                           |
-| `ANTHROPIC_API_KEY`                                 | environment `x-posting`    | Haiku's daily post (a dedicated key with a monthly spend limit) |
-| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`     | repository (already there) | the D1 store                                                    |
+| Secret                                              | Where                      | What for                                                         |
+| --------------------------------------------------- | -------------------------- | ---------------------------------------------------------------- |
+| `X_CLIENT_ID`, `X_CLIENT_SECRET`, `X_REFRESH_TOKEN` | environment `x-posting`    | the X app and the first refresh token                            |
+| `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`           | environment `x-posting`    | the account's OAuth 1.0a pair, exchanged once to start the chain |
+| `ANTHROPIC_API_KEY`                                 | environment `x-posting`    | Haiku's daily post (a dedicated key with a monthly spend limit)  |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`     | repository (already there) | the D1 store                                                     |
 
 The `x-posting` environment must be limited to the default branch, and only the owner can
 set that (it has not been checked from here): GitHub > Settings > Environments >

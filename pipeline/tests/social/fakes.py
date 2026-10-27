@@ -21,6 +21,8 @@ import anthropic
 import httpx
 import httpx2
 
+from snowlight.social.xapi import OAUTH1_TOKEN_TYPE
+
 CF_API = "https://api.cloudflare.com/client/v4"
 ACCOUNT = "acct-test"
 DATABASE_ID = "99999999-8888-7777-6666-555555555555"
@@ -146,6 +148,11 @@ class FakeX:
     alt_status: int = 200
     issued: list[str] = field(default_factory=list)
     next_id: int = 1850000000000000001
+    pair: tuple[str, str] | None = None
+    """The account's OAuth 1.0a access token and secret X exchanges (``None``: none)."""
+    exchange_scope: str = "tweet.read tweet.write users.read offline.access media.write"
+    exchange_status: int = 200
+    exchanges: int = 0
 
     def handle(self, request: httpx.Request) -> httpx.Response:  # noqa: PLR0911 - one per call
         path = request.url.path
@@ -209,11 +216,13 @@ class FakeX:
         raise AssertionError(f"unexpected X call {request.method} {path}")
 
     def _refresh(self, request: httpx.Request) -> httpx.Response:
-        self.refreshes += 1
         basic = base64.b64encode(f"{CLIENT_ID}:{CLIENT_SECRET}".encode()).decode()
         assert request.headers["Authorization"] == f"Basic {basic}"
         assert request.headers["Content-Type"] == "application/x-www-form-urlencoded"
         form = {key: values[0] for key, values in parse_qs(request.content.decode()).items()}
+        if form["grant_type"] == "urn:ietf:params:oauth:grant-type:token-exchange":
+            return self._exchange(form)
+        self.refreshes += 1
         assert form["grant_type"] == "refresh_token"
         if self.refresh_status != 200:
             return httpx.Response(self.refresh_status, json={"error": "server_error"})
@@ -239,6 +248,35 @@ class FakeX:
             self.valid.add(rotated)
             body["refresh_token"] = rotated
         return httpx.Response(200, json=body)
+
+    def _exchange(self, form: dict[str, str]) -> httpx.Response:
+        """X's OAuth 1.0a token exchange: a new token pair for the pair, which ends the one
+        an earlier exchange gave (docs.x.com)."""
+        self.exchanges += 1
+        assert set(form) == {
+            "grant_type",
+            "subject_token",
+            "subject_token_type",
+            "oauth_token_secret",
+        }
+        assert form["subject_token_type"] == OAUTH1_TOKEN_TYPE
+        if self.exchange_status != 200:
+            return httpx.Response(self.exchange_status, json={"error": "server_error"})
+        if self.pair is None or (form["subject_token"], form["oauth_token_secret"]) != self.pair:
+            return httpx.Response(400, json={"error": "invalid_request"})
+        access, refresh = token("At"), token("Rx")
+        self.issued.append(access)
+        self.valid = {value for value in self.valid if not value.startswith("Rx")} | {refresh}
+        return httpx.Response(
+            200,
+            json={
+                "token_type": "bearer",
+                "expires_in": 7200,
+                "access_token": access,
+                "refresh_token": refresh,
+                "scope": self.exchange_scope,
+            },
+        )
 
 
 BOT_USER = {"login": "github-actions[bot]", "type": "Bot"}

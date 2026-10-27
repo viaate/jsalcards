@@ -113,10 +113,12 @@ class Runner:
             "X_CLIENT_ID",
             "X_CLIENT_SECRET",
             "X_REFRESH_TOKEN",
+            "X_ACCESS_TOKEN",
+            "X_ACCESS_TOKEN_SECRET",
             "CLOUDFLARE_API_TOKEN",
             "GITHUB_TOKEN",
         ):
-            assert not environment[name] or environment[name] not in shown, name
+            assert not environment.get(name) or environment[name] not in shown, name
         for value in [*self.masked, *self.world.x.valid, *self.world.x.issued, fakes.ANTHROPIC_KEY]:
             assert value not in shown
         assert logscan.findings(shown) == []
@@ -1819,3 +1821,105 @@ def test_a_refresh_x_did_not_take_records_no_lost_answer(
     assert runner() == 1
     (issue,) = world.github.issues
     assert "most likely took that refresh" not in issue["body"]
+
+
+PAIR = (fakes.token("Oa"), fakes.token("Os"))
+
+
+def _pair(**extra: str) -> dict[str, str]:
+    return {"X_ACCESS_TOKEN": PAIR[0], "X_ACCESS_TOKEN_SECRET": PAIR[1], **extra}
+
+
+def test_the_access_token_pair_is_exchanged_once_and_the_chain_goes_on_from_it(
+    tmp_path: Path, world: World
+) -> None:
+    world.x.pair = PAIR
+    world.x.scope = "tweet.read tweet.write users.read offline.access"  # the console's token
+    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002")])
+    assert runner(**_pair()) == 0
+    assert world.x.exchanges == 1
+    assert world.x.refreshes == 0, "the exchanged pair is used, not X_REFRESH_TOKEN"
+    assert "refreshed from the X_ACCESS_TOKEN pair, exchanged once" in runner.log
+    assert len(world.x.posts) == 1
+    row = world.d1.row("SELECT version, seed FROM social_token")
+    start = f"oauth1\n{PAIR[0]}\n{PAIR[1]}"
+    assert row == {"version": 1, "seed": seal.fingerprint(start, fakes.CLIENT_SECRET)}
+    world.x.scope = world.x.exchange_scope  # a refresh keeps the exchanged token's scopes
+    runner.clock.at += timedelta(hours=1)
+    assert runner(**_pair()) == 0
+    assert world.x.exchanges == 1, "the same pair is never exchanged again"
+    assert world.x.refreshes == 1
+    assert "from the stored token (version 1)" in runner.log
+    assert len(world.x.posts) == 2
+
+
+def test_the_pair_starts_a_chain_the_refresh_token_stopped_and_closes_the_issue(
+    tmp_path: Path, world: World
+) -> None:
+    world.x.scope = "tweet.read tweet.write users.read offline.access"
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    assert runner() == 1
+    assert "lacks the scopes media.write" in runner.log
+    assert [issue["state"] for issue in world.github.issues] == ["open"]
+    runner.clock.at += timedelta(hours=1)
+    assert runner() == 0
+    assert "until a new X_REFRESH_TOKEN is pasted" in runner.log
+    world.x.pair = PAIR
+    runner.clock.at += timedelta(hours=1)
+    assert runner(**_pair()) == 0
+    assert world.x.exchanges == 1
+    assert len(world.x.posts) == 1
+    assert world.github.issues[0]["state"] == "closed"
+
+
+def test_a_refused_pair_opens_the_issue_and_is_never_sent_again(
+    tmp_path: Path, world: World
+) -> None:
+    world.x.pair = (fakes.token("Oa"), fakes.token("Os"))  # not the pair in the secrets
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    assert runner(**_pair()) == 1
+    assert "X refused the token exchange: HTTP 400 (invalid_request)" in runner.log
+    (issue,) = world.github.issues
+    assert issue["title"] == TITLE
+    assert "X_ACCESS_TOKEN" in issue["body"]
+    assert world.x.posts == []
+    runner.clock.at += timedelta(hours=1)
+    assert runner(**_pair()) == 0
+    assert "until a new X_ACCESS_TOKEN pair is pasted" in runner.log
+    assert world.x.exchanges == 1, "the refused pair is never sent to X again"
+    world.x.pair = PAIR
+    runner.clock.at += timedelta(hours=1)
+    assert runner(**_pair()) == 0, "the same secrets stay stopped even once X would take them"
+    assert world.x.exchanges == 1
+    fresh = (fakes.token("Ob"), fakes.token("Ot"))
+    world.x.pair = fresh
+    runner.clock.at += timedelta(hours=1)
+    assert runner(X_ACCESS_TOKEN=fresh[0], X_ACCESS_TOKEN_SECRET=fresh[1]) == 0
+    assert len(world.x.posts) == 1
+    assert world.github.issues[0]["state"] == "closed"
+
+
+def test_an_exchange_without_an_answer_posts_nothing_and_the_next_run_exchanges_again(
+    tmp_path: Path, world: World
+) -> None:
+    world.x.pair = PAIR
+    world.x.exchange_status = 503
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    assert runner(**_pair()) == 1
+    assert "the token exchange failed: HTTP 503" in runner.log
+    assert world.github.issues == [], "no answer is no refusal: nothing for the owner to do"
+    assert world.d1.row("SELECT COUNT(*) AS n FROM social_posts") == {"n": 0}, "claim dropped"
+    world.x.exchange_status = 200
+    runner.clock.at += timedelta(hours=1)
+    assert runner(**_pair()) == 0
+    assert world.x.exchanges == 2
+    assert len(world.x.posts) == 1
+
+
+def test_half_a_pair_leaves_the_chain_on_the_refresh_token(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, queue=[queued("0001")])
+    assert runner(X_ACCESS_TOKEN=PAIR[0]) == 0
+    assert world.x.exchanges == 0
+    assert "from the X_REFRESH_TOKEN secret" in runner.log
+    assert runner(X_REFRESH_TOKEN="", X_ACCESS_TOKEN=PAIR[0]) == 0
+    assert "nothing posts" in runner.log

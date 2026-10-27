@@ -34,6 +34,9 @@ NEEDED_SCOPES: Final = frozenset(
 )
 """POST /2/tweets needs tweet.read, tweet.write and users.read; the upload and alt text need
 media.write; a refresh token needs offline.access (docs.x.com)."""
+EXCHANGE_GRANT: Final = "urn:ietf:params:oauth:grant-type:token-exchange"
+OAUTH1_TOKEN_TYPE: Final = "urn:x:params:oauth:token-type:oauth1_token"  # noqa: S105 - a type name
+"""The grant and subject type of X's OAuth 1.0a to OAuth 2.0 token exchange (docs.x.com)."""
 FOR_GOOD: Final = frozenset({401, 402, 403})
 """X's answers to an upload or a post that no later run can change by itself: the token may
 not do it (401), the account has no credits (402), or the app may not post or the post is a
@@ -179,6 +182,54 @@ class XClient:
         scope = body.get("scope")
         scopes = frozenset(scope.split()) if isinstance(scope, str) else frozenset()
         return Tokens(access=access, refresh=rotated, scopes=scopes)
+
+    def exchange(
+        self, client_id: str, client_secret: str, oauth1_token: str, oauth1_secret: str
+    ) -> Tokens:
+        """An OAuth 2.0 token pair for the account's OAuth 1.0a access token and its secret,
+        both masked at once (docs.x.com, "Migrating OAuth 1.0a user tokens to OAuth 2.0"): an
+        app with Read and write permission gets every write scope, ``media.write`` among them,
+        and always a refresh token. Exchanging the same pair again gives a new token pair and
+        ends the one before, so a run exchanges only when the chain starts from this pair.
+
+        Raises:
+            RefreshRefusedError: X answered 400, 401 or 403 (the pair or the client is refused).
+            RefreshUnknownError: no answer, another status, or an answer without the tokens
+                (``maybe_spent`` stays false: a later exchange of the same pair still works).
+        """
+        basic = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        self._mask(basic)
+        try:
+            response = self._client.post(
+                f"{self._api}/2/oauth2/token",
+                data={
+                    "grant_type": EXCHANGE_GRANT,
+                    "subject_token": oauth1_token,
+                    "subject_token_type": OAUTH1_TOKEN_TYPE,
+                    "oauth_token_secret": oauth1_secret,
+                },
+                headers={"Authorization": f"Basic {basic}"},
+                timeout=TIMEOUT,
+            )
+        except httpx.HTTPError as error:
+            raise RefreshUnknownError(
+                f"the token exchange got no answer ({type(error).__name__})"
+            ) from None
+        body = _json(response)
+        if response.status_code in (400, 401, 403):
+            raise RefreshRefusedError(f"X refused the token exchange: {_say(response)}")
+        if response.status_code != httpx.codes.OK or not isinstance(body, dict):
+            raise RefreshUnknownError(f"the token exchange failed: {_say(response)}")
+        access, refresh = body.get("access_token"), body.get("refresh_token")
+        if not isinstance(access, str) or not access:
+            raise RefreshUnknownError("the exchange answer holds no access token")
+        self._mask(access)
+        if not isinstance(refresh, str) or not refresh:
+            raise RefreshUnknownError("the exchange answer holds no refresh token")
+        self._mask(refresh)
+        scope = body.get("scope")
+        scopes = frozenset(scope.split()) if isinstance(scope, str) else frozenset()
+        return Tokens(access=access, refresh=refresh, scopes=scopes)
 
     def upload_image(self, access: str, name: str, data: bytes, content_type: str) -> str:
         """The media id of one uploaded image (asked again once after no answer or a 5xx:

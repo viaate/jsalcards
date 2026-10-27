@@ -60,15 +60,19 @@ is in place. It is not retried.
 
 To start it again:
 
-1. Open the X developer console, the app of @SnowlightMap, **Keys and tokens**.
-2. Under **OAuth 2.0**, generate a new access token and refresh token for @SnowlightMap \
-(the scopes must include tweet.read, tweet.write, users.read, offline.access and \
-media.write). If the client secret was regenerated too, also update `X_CLIENT_SECRET`.
-3. On GitHub: Settings > Environments > **x-posting** > Environment secrets > \
-`X_REFRESH_TOKEN` > edit, paste the new refresh token, save. Never paste it anywhere else.
+1. Open the X developer console, the app of @SnowlightMap, **Keys and tokens** (the app's \
+permission must be **Read and write**).
+2. Under **OAuth 1.0 Keys**, next to **Access Token** (for @SnowlightMap), click \
+**Generate**: it shows an Access Token and an Access Token Secret.
+3. On GitHub: Settings > Environments > **x-posting** > Environment secrets: set \
+`X_ACCESS_TOKEN` to the Access Token and `X_ACCESS_TOKEN_SECRET` to the Access Token Secret \
+(edit each, or add it if missing), save. Never paste them anywhere else. The run exchanges \
+the pair once for a token with every scope it needs (tweet.read, tweet.write, users.read, \
+offline.access, media.write); X's own OAuth 2.0 token generator leaves media.write out. \
+While both are set, `X_REFRESH_TOKEN` is not used.
 4. Nothing else to do: the next scheduled run (daily, 16:37 and 20:41 UTC) sees that the \
-secret is new and starts from it, even when it has nothing to post, and this issue closes \
-itself once the new token works with every scope above.
+secrets are new and starts from them, even when it has nothing to post, and this issue \
+closes itself once the new token works with every scope above.
 
 docs/social.md has the details."""
 

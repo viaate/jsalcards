@@ -71,6 +71,8 @@ def test_secrets_reach_only_the_post_step(workflow: dict[Any, Any]) -> None:
         "X_CLIENT_ID",
         "X_CLIENT_SECRET",
         "X_REFRESH_TOKEN",
+        "X_ACCESS_TOKEN",
+        "X_ACCESS_TOKEN_SECRET",
         "ANTHROPIC_API_KEY",
         "CLOUDFLARE_API_TOKEN",
         "CLOUDFLARE_ACCOUNT_ID",
