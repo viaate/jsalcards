@@ -17,9 +17,11 @@ from snowlight.social.picture import (
     REGIONS,
     WIDTH,
     ZOOM,
+    ZOOM_STEP,
     Counts,
     Directory,
     PictureError,
+    _held,
     _states,
     busiest_view,
     calm_regions,
@@ -728,10 +730,14 @@ def test_while_closings_are_not_live_lit_schools_give_the_calm_national_map() ->
     assert not calm.seen.closings_read
 
 
-def test_few_lit_schools_fill_the_card_zoomed_in_with_every_one_in_the_box() -> None:
-    """Two lit schools a few miles apart (SYNTHETIC): the view zooms in as far as
-    :data:`MAX_ZOOM` allows, both in the middle box, so their glow and the specks around them
-    fill the card instead of a dot in a dark country."""
+def test_few_lit_schools_fill_the_card_zoomed_in_with_every_one_in_the_box(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Two lit schools a few miles apart (SYNTHETIC), in a place dense with schools (no
+    minimum of specks to meet): the view zooms in as far as :data:`MAX_ZOOM` allows, both in
+    the middle box, so their glow and the specks around them fill the card instead of a dot
+    in a dark country."""
+    monkeypatch.setattr("snowlight.social.picture.MIN_SPECKS", 0)
     picture = choose(
         chances=False,
         closings_shown=True,
@@ -772,9 +778,12 @@ def test_a_wide_spread_of_lit_schools_keeps_the_widest_closings_view() -> None:
     assert len(picture.seen.spots) == picture.seen.in_view.total
 
 
-def test_lit_private_schools_say_the_view_s_place_never_where_the_schools_are() -> None:
+def test_lit_private_schools_say_the_view_s_place_never_where_the_schools_are(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Two lit private schools (their ids name no state) near Buffalo (SYNTHETIC): no "mostly
     in", but the view's own place by its public schools' share, "in a view over New York"."""
+    monkeypatch.setattr("snowlight.social.picture.MIN_SPECKS", 0)
     ids = (*SCHOOLS, "A0000001", "A0000002")
     points = Points(
         lon_e6=np.asarray([round(v * 1e6) for v in (*LON, -78.86, -78.84)], dtype=np.int32),
@@ -799,3 +808,29 @@ def test_lit_private_schools_say_the_view_s_place_never_where_the_schools_are() 
     assert picture.seen.place == "New York"
     assert ", in a view over New York." in picture.shows
     assert "mostly" not in picture.shows
+
+
+@pytest.mark.parametrize("specks", [7, 8])
+def test_a_closer_view_steps_back_until_it_holds_enough_school_specks(
+    monkeypatch: pytest.MonkeyPatch, specks: int
+) -> None:
+    """Two lit schools in Buffalo (SYNTHETIC) where the picture must hold ``specks`` of the
+    directory's schools: the view steps back from :data:`MAX_ZOOM` by :data:`ZOOM_STEP` only
+    until it does (the six Buffalo schools and one or both in Pennsylvania), never past
+    :data:`ZOOM`, and both lit schools stay in the middle box."""
+    monkeypatch.setattr("snowlight.social.picture.MIN_SPECKS", specks)
+    picture = choose(
+        chances=False,
+        closings_shown=True,
+        closings=closings([(0, 0), (1, 0)], "2026-12-10", "2026-12-10T12:05:00Z"),
+        predictions=None,
+        directory=directory(),
+        now=at("2026-12-10T12:10"),
+    )
+    lat, lon, zoom = (float(part) for part in picture.query.removeprefix("?at=").split(","))
+    assert ZOOM < zoom < MAX_ZOOM
+    assert _held(directory().points, (lon, lat), zoom) >= specks
+    assert _held(directory().points, (lon, lat), zoom + ZOOM_STEP) < specks
+    for x, y in picture.seen.spots:
+        assert abs(x - WIDTH / 2) <= FIT_BOX[0] / 2 + 1
+        assert abs(y - HEIGHT / 2) <= FIT_BOX[1] / 2 + 1

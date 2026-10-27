@@ -282,7 +282,7 @@ def test_a_calm_region_must_draw_its_specks(served: tuple[Site, str], tmp_path: 
     [
         (True, 1, 0.0, "the map lit 1 schools; the description counts 0"),
         (False, 0, 0.0, "no lock check"),
-        (True, 0, 0.5, "the map opened at zoom 10, not the 9.5 asked"),
+        (True, 0, 0.5, "the map opened at zoom 7.25, not the 6.75 asked"),
     ],
 )
 def test_a_picture_that_does_not_match_is_dropped_after_one_retry(

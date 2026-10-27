@@ -1219,7 +1219,10 @@ def test_the_noon_run_writes_when_the_morning_run_never_ran(tmp_path: Path, worl
     assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
     assert len(world.x.posts) == 1
     row = world.d1.row("SELECT day, state FROM social_haiku_days")
-    assert row == {"day": "2026-10-27#1", "state": f"drafted {draft_mark(GOOD_DEV_LOG['text'])}"}
+    assert row == {
+        "day": "2026-10-27#1",
+        "state": f"drafted {draft_mark(str(GOOD_DEV_LOG['text']))}",
+    }
 
 
 def test_a_run_that_lost_the_race_for_its_try_asks_haiku_nothing(
@@ -1275,7 +1278,7 @@ def test_a_draft_the_same_as_a_recent_haiku_post_is_never_sent(
     whose draft says the same as an earlier Haiku post (case and punctuation aside) is
     dropped and counts as a failed try."""
     runner = make(tmp_path, world, when="2026-10-27T00:41:00")
-    same = {**GOOD_DEV_LOG, "text": GOOD_DEV_LOG["text"].upper().replace(":", " -")}
+    same = {**GOOD_DEV_LOG, "text": str(GOOD_DEV_LOG["text"]).upper().replace(":", " -")}
     runs = [
         ("2026-10-27T00:41:00", GOOD_DEV_LOG),  # dev log, posted
         ("2026-10-27T13:07:00", GOOD_DRAFT),  # the waitlist post between

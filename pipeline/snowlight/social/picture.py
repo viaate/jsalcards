@@ -67,6 +67,11 @@ site still draws every school around them as a speck."""
 FIT_BOX: Final = (800.0, 400.0)
 """The box in the middle of the picture (width, height in pixels) a closings view zoomed past
 :data:`ZOOM` keeps every lit school of its window in, clear of the card's corners."""
+MIN_SPECKS: Final = 400
+"""The schools a closings view zoomed past :data:`ZOOM` holds at least (when a closer view
+holds fewer, it steps back by :data:`ZOOM_STEP`), so a few lit schools in the country sit among
+the specks of the towns around them, not alone in the dark."""
+ZOOM_STEP: Final = 0.25
 MOSTLY: Final = 0.5
 """A description says "mostly" of states only when they hold more than this share."""
 SECOND_STATE: Final = 0.15
@@ -391,12 +396,23 @@ def unproject(x: float, y: float, zoom: float) -> tuple[float, float]:
     return lon, lat
 
 
+def _held(points: Points, center: tuple[float, float], zoom: float) -> int:
+    """How many of the directory's schools a picture at ``center`` (lon, lat) and ``zoom``
+    holds."""
+    x, y = project(
+        points.lon_e6.astype(np.float64) / 1e6, points.lat_e6.astype(np.float64) / 1e6, zoom
+    )
+    cx, cy = project(np.array([center[0]]), np.array([center[1]]), zoom)
+    return int(((np.abs(x - cx[0]) <= WIDTH / 2) & (np.abs(y - cy[0]) <= HEIGHT / 2)).sum())
+
+
 def _fit(
-    lon: npt.NDArray[np.float64], lat: npt.NDArray[np.float64]
+    lon: npt.NDArray[np.float64], lat: npt.NDArray[np.float64], points: Points
 ) -> tuple[tuple[float, float], float] | None:
     """The center (lon, lat) and zoom past :data:`ZOOM` (at most :data:`MAX_ZOOM`, two
     decimals, rounded down) at which every point fits :data:`FIT_BOX` in the middle of the
-    picture; ``None`` when they span too much to zoom past :data:`ZOOM`."""
+    picture, stepped back while the picture holds fewer than :data:`MIN_SPECKS` of the
+    directory's schools; ``None`` when they span too much to zoom past :data:`ZOOM`."""
     x, y = project(lon, lat, 0.0)
     span_x = max(float(x.max() - x.min()), 1e-12)
     span_y = max(float(y.max() - y.min()), 1e-12)
@@ -405,10 +421,11 @@ def _fit(
     zoom = math.floor(min(fit, MAX_ZOOM) * 100) / 100
     if zoom <= ZOOM:
         return None
-    scale = 2.0**zoom
-    mid_x = float(x.min() + x.max()) / 2 * scale
-    mid_y = float(y.min() + y.max()) / 2 * scale
-    return unproject(mid_x, mid_y, zoom), zoom
+    # The middle of the points, in world pixels at zoom 0 (the same place at every zoom).
+    center = unproject(float(x.min() + x.max()) / 2, float(y.min() + y.max()) / 2, 0.0)
+    while zoom - ZOOM_STEP > ZOOM and _held(points, center, zoom) < MIN_SPECKS:
+        zoom = round(zoom - ZOOM_STEP, 2)
+    return center, zoom
 
 
 def busiest_view(
@@ -481,7 +498,7 @@ def _closings_picture(lit: Lit, directory: Directory, now: datetime) -> Picture:
     lat = points.lat_e6[lit.schools].astype(np.float64) / 1e6
     (center_lon, center_lat), held = busiest_view(lon, lat)
     zoom: float = ZOOM
-    if (closer := _fit(lon[held], lat[held])) is not None:
+    if (closer := _fit(lon[held], lat[held], points)) is not None:
         (center_lon, center_lat), zoom = closer
     in_view = lit.schools[held]
     x, y = project(lon[held], lat[held], zoom)

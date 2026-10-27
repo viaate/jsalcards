@@ -323,8 +323,9 @@ network at all:
    marks chances LIVE.
 2. `picture.py` picks the view from those files: the busiest picture-sized area of lit
    schools when closings light any today, zoomed closer (up to zoom 9.5) while every lit
-   school of it still fits the middle of the picture, so a few lit schools fill the card with
-   their glow and the specks around them; else, only while chances are LIVE, the district
+   school of it still fits the middle of the picture and the picture still holds at least 400
+   of the directory's schools, so a few lit schools sit among the specks of the towns around
+   them instead of a dot in a dark country; else, only while chances are LIVE, the district
    with the highest chance of no school (at least 10%), framed by its schools on the left;
    else a region's city lights: one of a short list of populous windows (the Northeast
    corridor, the Great Lakes, the Mid-Atlantic, the Texas triangle, the Front Range, the
