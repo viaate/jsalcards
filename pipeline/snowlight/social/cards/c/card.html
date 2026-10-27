@@ -22,7 +22,9 @@
                     bold, with the place, time and badge made smaller under it
         states      closings view: picture._states, most lit first (at most two);
                     the place reads "Mostly <a> and <b>", as the description says "mostly in";
-                    none (the lit schools in view are private): no place line
+                    none (no state holds most of the lit schools): "Over <over>", or no place
+        over        closings view with no states: the view's own place ("New Mexico"), as the
+                    description says "in a view over"
         place       national, district and region views: "United States", "A district in
                     Michigan", the region's name
         time        the picture's clock with zone ("6:42 AM CT"); never on a fallback
@@ -299,9 +301,12 @@
             fail('states: picture._states, none, one or two names');
           }
           if (slots.place) fail('place: the closings view takes states, not place');
-          // No state known (the lit schools in view are private, their ids name none): the
-          // stamp names no place rather than a false one.
-          place = states.length ? `Mostly ${states.map(display).join(' and ')}` : null;
+          if (slots.over && states.length) fail('over: only a closings view with no states');
+          // No state holds most of the lit schools (private ones name none): the view's own
+          // place, or no place line, never a false one.
+          place = states.length
+            ? `Mostly ${states.map(display).join(' and ')}`
+            : slots.over ? `Over ${display(slots.over)}` : null;
         } else {
           if (!slots.place) fail('place is required');
           place = display(slots.place);

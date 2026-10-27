@@ -3,6 +3,7 @@ every truth guard with adversarial facts, the alt text, the fallback card, and (
 pre-installed headless Chromium, skipped where none is installed) the three templates laid
 over SYNTHETIC map pictures: 1600 x 900, under 5 MB, every word inside the 64 px margin."""
 
+import itertools
 import json
 import re
 import struct
@@ -22,6 +23,7 @@ from snowlight.social.cards import (
     FIT_SHARE,
     HEADLINES,
     HERE,
+    INSIDER,
     MAX_BYTES,
     Candidate,
     Card,
@@ -384,7 +386,7 @@ def test_alt_text_is_built_from_the_facts() -> None:
     storm = alt_text(taken("closings", STORM), "dev-log", fallback=False)
     assert storm == (
         "The Snowlight map at 6:42 AM CT on Dec 10, zoomed to the area with the most schools "
-        "lit up for weather, mostly in Michigan and Ohio: 1,843 schools closed, 1,338 delayed, "
+        "lit up, mostly in Michigan and Ohio: 1,843 schools closed, 1,338 delayed, "
         "206 remote and 59 dismissing early in this view, and 5,021 lit up across the US, "
         "captioned Dev log."
     )
@@ -861,25 +863,32 @@ def test_every_headline_is_short_and_true_per_the_real_facts_file() -> None:
             assert not mentions_chance(line), line
             assert not re.search(r"\b(now|live|today|tonight)\b", line, re.IGNORECASE), line
             check_words(line, current=False, fallback=True)
+            # Plain words a parent reads at a glance: no insider name for a part of Snowlight.
+            assert not INSIDER.search(line), line
     posts: tuple[Post, ...] = ("dev-log", "waitlist")
     for post in posts:
         for kind, seen in (("national", Seen()), ("region", REGION), ("closings", STORM)):
             assert headline_for(taken(kind, seen), post, facts) is not None, (post, kind)
 
 
-def test_a_headline_rotates_by_day_and_speaks_of_closings_only_over_them() -> None:
+def test_a_headline_rotates_by_run_slot_and_speaks_of_closings_only_over_them() -> None:
+    """The three runs of a day (13:07, 17:37 and 00:41 UTC) turn to the next headline each,
+    so two dev logs of one day never carry the same line in a row."""
     facts = real_facts()
-    days = {
+    runs = (
+        datetime(2026, 10, 27, 13, 7, tzinfo=UTC),
+        datetime(2026, 10, 27, 17, 37, tzinfo=UTC),
+        datetime(2026, 10, 28, 0, 41, tzinfo=UTC),
+        datetime(2026, 10, 28, 13, 7, tzinfo=UTC),
+    )
+    lines = [
         headline_for(
-            taken("region", REGION).model_copy(
-                update={"taken_at": datetime(2026, 10, d, 14, tzinfo=UTC)}
-            ),
-            "dev-log",
-            facts,
+            taken("region", REGION).model_copy(update={"taken_at": moment}), "dev-log", facts
         )
-        for d in range(20, 27)
-    }
-    assert len(days) == len(HEADLINES[("dev-log", "any")])
+        for moment in runs
+    ]
+    assert set(lines) == set(HEADLINES[("dev-log", "any")])
+    assert all(one != other for one, other in itertools.pairwise(lines)), lines
     calm = {headline_for(taken("region", REGION), post, facts) for post in ("dev-log", "waitlist")}
     assert not any(mentions_closings(line or "") for line in calm)
     # A closings headline only while the facts file marks closings LIVE.
@@ -956,3 +965,33 @@ def test_a_closings_headline_says_only_the_statuses_in_view() -> None:
     assert headline_for(taken("closings", only_delayed), "dev-log", facts) == (
         "Like city lights seen from space"
     )
+
+
+FEW_PRIVATE = Seen(
+    in_view=Counts(closed=2, delayed=0, remote=0, early_dismissal=0),
+    place="New Mexico",
+    lit=2,
+    closings_at=datetime(2026, 12, 10, 12, 40, tzinfo=UTC),
+    closings_read=True,
+)
+"""Two lit private schools (their ids name no state): the view's own place, by its public
+schools' share (SYNTHETIC)."""
+
+
+def test_lit_private_schools_name_the_view_s_place_on_the_stamp_and_in_the_alt(
+    page: Page, maps: dict[str, Path]
+) -> None:
+    few = taken("closings", FEW_PRIVATE)
+    assert c_slots(few, "dev-log", "left", fallback=False)["over"] == "New Mexico"
+    assert a_facts(few, "dev-log", fallback=False)["picture"]["over"] == "New Mexico"  # type: ignore[index]
+    _, words = lay(
+        page, "c-left", few, "dev-log", maps["storm"], fallback=False,
+        headline="Real school closings",
+    )  # fmt: skip
+    assert "Over New Mexico" in words
+    assert "Mostly" not in words
+    alt = alt_text(few, "dev-log", fallback=False, headline="Real school closings")
+    assert ", in a view over New Mexico: 2 schools closed in this view" in alt
+    # A stamp with states says "Mostly", never "Over" as well.
+    storm = c_slots(taken("closings", STORM), "dev-log", "left", fallback=False)
+    assert "over" not in storm

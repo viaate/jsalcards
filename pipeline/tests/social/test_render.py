@@ -85,6 +85,8 @@ const day = (offset) => new Date(NOW + offset * 3600000).toISOString().slice(0, 
 const today = day(-4) === day(-8) ? day(-4) : null;
 const stats = { dust: 0, frames: 0, glowCount: __GLOW_OFFSET__, dustInView: 0 };
 const at = new URLSearchParams(location.search).get('at');
+const STALL = __STALL__;  // views whose map never settles
+const NO_DUST = __NO_DUST__;  // views that draw no school specks in view
 const zoom = (at ? Number(at.split(',')[2]) : 4.08) + __ZOOM_OFFSET__;
 window.snowlightMap = {
   ready: false,
@@ -96,7 +98,11 @@ window.snowlightMap = {
   await fetch('/data/schools/meta.0a1b2c.json');
   await fetch('/data/schools/points.0a1b2c.bin');
   // As the site: school dust only between zoom 5 and 10.
-  if (zoom > 5 && zoom < 10) { stats.dust = 4; stats.dustInView = __DUST_IN_VIEW__; }
+  if (STALL.includes(at)) return;
+  if (zoom > 5 && zoom < 10) {
+    stats.dust = 4;
+    stats.dustInView = NO_DUST.includes(at) ? 0 : __DUST_IN_VIEW__;
+  }
   const closings = await fetch('/live-root/v1/live/closings.json');
   if (closings.ok) {
     const file = await closings.json();
@@ -117,6 +123,10 @@ class Site:
     glow_offset: int = 0
     zoom_offset: float = 0.0
     dust_in_view: int = 3
+    stall: list[str] = field(default_factory=list)
+    """``at`` values whose map never settles."""
+    no_dust: list[str] = field(default_factory=list)
+    """``at`` values whose map draws no school specks in view."""
     requests: list[str] = field(default_factory=list)
 
 
@@ -142,6 +152,8 @@ def _handler(site: Site) -> type[BaseHTTPRequestHandler]:
                     .replace("__GLOW_OFFSET__", str(site.glow_offset))
                     .replace("__ZOOM_OFFSET__", str(site.zoom_offset))
                     .replace("__DUST_IN_VIEW__", str(site.dust_in_view))
+                    .replace("__STALL__", json.dumps(site.stall))
+                    .replace("__NO_DUST__", json.dumps(site.no_dust))
                 )
                 if not site.lock:
                     page = page.replace("localStorage.getItem('sl-lock') === ''", "true")
@@ -270,7 +282,7 @@ def test_a_calm_region_must_draw_its_specks(served: tuple[Site, str], tmp_path: 
     [
         (True, 1, 0.0, "the map lit 1 schools; the description counts 0"),
         (False, 0, 0.0, "no lock check"),
-        (True, 0, 0.5, "the map opened at zoom 7, not the 6.5 asked"),
+        (True, 0, 0.5, "the map opened at zoom 10, not the 9.5 asked"),
     ],
 )
 def test_a_picture_that_does_not_match_is_dropped_after_one_retry(
@@ -346,7 +358,49 @@ def test_a_calm_map_is_the_day_s_city_lights_never_the_bare_national_map(
     assert bare.kind == "national"
     tried = [line for line in said if "drew no school specks" in line]
     assert len(tried) == REGION_TRIES, said
-    assert any("every region tried failed" in line for line in said), said
+    assert any("every region tried drew no specks" in line for line in said), said
+
+
+def _at(query: str) -> str:
+    return query.removeprefix("?at=")
+
+
+def test_a_region_with_no_specks_gives_way_to_the_next_region(
+    served: tuple[Site, str], tmp_path: Path
+) -> None:
+    """The slot's first region draws no specks in view: the second region is taken, with its
+    own place and description, never the national map."""
+    site, base = served
+    first, second = calm_regions(site.now)[:2]
+    site.no_dust = [_at(first.query)]
+    said: list[str] = []
+    taken = render(tmp_path, facts=NO_CHANCES, site=base, now=lambda: site.now, say=said.append)
+    assert taken is not None
+    assert (taken.kind, taken.query, taken.seen.place) == ("region", second.query, second.place)
+    assert f"over {second.place}" in taken.shows
+    assert first.place not in taken.shows
+    assert any(f"the {first.place} view failed" in line for line in said), said
+    assert not any("national" in line for line in said), said
+
+
+def test_a_region_that_does_not_settle_ends_the_attempt_never_the_national_map(
+    served: tuple[Site, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A slow or broken page would only fail again: the attempt ends (the next attempt, or
+    the library's card, follows), and no national map is taken on the same page."""
+    site, base = served
+    monkeypatch.setattr("snowlight.social.render.TIMEOUT_MS", 3000)
+    first = calm_regions(site.now)[0]
+    site.stall = [_at(first.query)]
+    said: list[str] = []
+    taken = render(
+        tmp_path, facts=NO_CHANCES, site=base, now=lambda: site.now, say=said.append, attempts=1
+    )
+    assert taken is None
+    assert any(f"the {first.place} view failed" in line and "attempt ends" in line for line in said)
+    assert any("did not settle" in line for line in said), said
+    assert not any("national view" in line for line in said), said
+    assert not (tmp_path / "picture.png").exists()
 
 
 def test_while_chances_are_testing_no_picture_or_card_gives_one(

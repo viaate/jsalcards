@@ -157,7 +157,10 @@
       // Where the picture is, in the card's words.
       function placeOf(k, f) {
         const p = k.p;
-        if (p.kind === 'closings') return p.states.length ? { tpl: 'Mostly in ', data: and(p.states) } : null;
+        if (p.kind === 'closings') {
+          if (p.states.length) return { tpl: 'Mostly in ', data: and(p.states) };
+          return p.over ? { tpl: 'Over ', data: p.over } : null;
+        }
         if (p.kind === 'district') return f.nameDistrict ? { tpl: '', data: `${p.district_name}, ${p.state}` } : { tpl: 'A public school district in ', data: p.state };
         if (p.kind === 'region' && p.place) return { tpl: 'Over ', data: p.place };
         return null;

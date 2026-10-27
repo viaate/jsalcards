@@ -24,7 +24,7 @@ model line is laid only while it is still words of a LIVE fact of the run's fact
 Every word, number, place and time on a card comes from the picture's facts
 (:class:`snowlight.social.picture.Taken`), filled by code; none comes from Haiku. In-view
 counts are labeled "in this view" and the country's total "across the US"; nothing is said
-about closings from a practice-mode 404, nor at all while the facts file marks closings not
+about closings from a 404, nor at all while the facts file marks closings not
 LIVE (:func:`without_closings`); no district is named; a fallback card shows its own date,
 never a clock, "now" or "live". The alt text is built here from the same facts
 (:func:`alt_text`). A card is 1600 x 900, under 5 MB, every word inside a 64 px margin.
@@ -54,6 +54,7 @@ from snowlight.social.picture import (
     Counts,
     Taken,
     clock,
+    slot_of,
 )
 from snowlight.social.rules import (
     Facts,
@@ -99,14 +100,18 @@ HEADLINES: Final[Mapping[tuple[str, str], tuple[str, ...]]] = {
     ),
     ("dev-log", "any"): (
         "A real model, not a guess",
-        "Real closing records, not a guess",
-        "Closings reader runs 24/7",
+        "Built on real past school days",
     ),
 }
 """The card library's headlines (2 to 6 words) by post and picture kind ("any": every other
 kind), each words of a LIVE fact's text as the facts file has them (:func:`headline_for`
-checks each against the run's facts file and skips one that is no longer true). A card's
-headline says no number, time, place or count of the picture: those are its own slots."""
+checks each against the run's facts file and skips one that is no longer true), in plain
+words a parent reads at a glance: no insider name for a part of Snowlight (:data:`INSIDER`).
+A card's headline says no number, time, place or count of the picture: those are its own
+slots."""
+INSIDER: Final = re.compile(r"\b(?:reader|24/7|records?|walk-forward|outcomes?|model fit)\b", re.I)
+"""Insider words a card's headline never uses: a parent does not know what a "closings reader"
+or "closing records" are."""
 HEADLINE_WORDS: Final = (2, 6)
 SPOKEN: Final = (("<1%", "under 1%"), (">99%", "over 99%"))
 
@@ -181,7 +186,8 @@ def groups(taken: Taken) -> tuple[tuple[Candidate, ...], ...]:
 
 def headline_for(taken: Taken, post: Post, facts: Facts) -> str | None:
     """The C card's headline: one of :data:`HEADLINES` for the post and picture kind, in turn
-    by the picture's day (so a day's cards vary), among those still words of a LIVE fact of
+    by the run's slot (:func:`snowlight.social.picture.slot_of`, so a day's cards vary), among
+    those still words of a LIVE fact of
     ``facts`` (:func:`snowlight.social.rules.still_true`), with no word of closings unless
     the facts file marks them LIVE and the picture is of them; ``None`` when none is."""
     lines = HEADLINES.get((post, taken.kind)) or HEADLINES[(post, "any")]
@@ -194,10 +200,11 @@ def headline_for(taken: Taken, post: Post, facts: Facts) -> str | None:
         and HEADLINE_WORDS[0] <= len(line.split()) <= HEADLINE_WORDS[1]
         and (not mentions_closings(line) or (closings_shown(facts) and taken.kind == "closings"))
         and not mentions_chance(line)
+        and not INSIDER.search(line)
     ]
     if not fitting:
         return None
-    return fitting[day_of(taken).toordinal() % len(fitting)]
+    return fitting[slot_of(taken.taken_at) % len(fitting)]
 
 
 def _fits_counts(line: str, counts: Counts | None) -> bool:
@@ -313,10 +320,16 @@ def alt_text(taken: Taken, post: Post, *, fallback: bool, headline: str | None =
     seen = taken.seen
     chance = seen.chance
     if taken.kind == "closings":
-        where = f", mostly in {_and(seen.states)}" if seen.states else ""
+        where = (
+            f", mostly in {_and(seen.states)}"
+            if seen.states
+            else f", in a view over {seen.place}"
+            if seen.place
+            else ""
+        )
         text = (
-            f"The Snowlight map {when}, zoomed to the area with the most schools lit up for "
-            f"weather{where}: {_counts_words(taken)} in this view"
+            f"The Snowlight map {when}, zoomed to the area with the most schools lit up"
+            f"{where}: {_counts_words(taken)} in this view"
         )
         in_view = seen.in_view.total if seen.in_view is not None else 0
         if seen.lit > in_view:
@@ -402,9 +415,11 @@ def c_slots(
     if not fallback:
         slots["time"] = clock(taken.taken_at)
     if taken.kind == "closings":
-        # No state known (the lit schools in view are all private, their ids name none): the
-        # stamp names no place rather than a false one.
+        # No state by share for the lit schools (private ones name none): the stamp says the
+        # view's own place, "Over New Mexico", or none, never a false one.
         slots["states"] = list(seen.states)
+        if not seen.states and seen.place:
+            slots["over"] = seen.place
         if seen.in_view is not None:
             slots["counts"] = seen.in_view.model_dump()
         slots["total"] = seen.lit
@@ -442,6 +457,8 @@ def a_facts(taken: Taken, post: Post, *, fallback: bool) -> dict[str, object]:
     if taken.kind == "closings":
         picture["in_view"] = seen.in_view.model_dump() if seen.in_view is not None else {}
         picture["states"] = list(seen.states)
+        if not seen.states and seen.place:
+            picture["over"] = seen.place
         picture["lit"] = seen.lit
         if seen.closings_at is not None:
             picture["closings_generated_at"] = seen.closings_at.isoformat()

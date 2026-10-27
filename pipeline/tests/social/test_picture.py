@@ -1,6 +1,7 @@
 """The fresh picture's view and description, from SYNTHETIC live files
 (snowlight.social.picture)."""
 
+import math
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -10,11 +11,16 @@ import pytest
 from snowlight.directory.points import Points
 from snowlight.social.picture import (
     DISTRICT_X,
+    FIT_BOX,
+    HEIGHT,
+    MAX_ZOOM,
     REGIONS,
     WIDTH,
+    ZOOM,
     Counts,
     Directory,
     PictureError,
+    _states,
     busiest_view,
     calm_regions,
     chance_day,
@@ -25,6 +31,7 @@ from snowlight.social.picture import (
     lit_schools,
     project,
     region,
+    slot_of,
     today_everywhere,
     unproject,
     view_states,
@@ -113,18 +120,21 @@ def test_closings_zoom_to_the_busiest_window_and_say_what_glows() -> None:
     lat, lon, zoom = (float(part) for part in picture.query.removeprefix("?at=").split(","))
     assert 42.0 < lat < 43.2
     assert -80.1 < lon < -78.5
-    assert zoom == 6.5
+    # Seven lit schools a few counties apart: closer than the widest view, all in the box.
+    assert ZOOM < zoom <= MAX_ZOOM
     shows = picture.shows
     assert "6:10 AM Central time on December 10, 2026" in shows
     # The window holds Buffalo's six and the nearby Pennsylvania one, not MN or TX.
     assert "7 schools glow in this view (5 closed, 1 delayed, 1 remote)" in shows
-    assert "mostly in New York and Pennsylvania" in shows
+    # Six of seven in New York; one in Pennsylvania is under the second state's share.
+    assert "mostly in New York." in shows
+    assert "for weather" not in shows, "a status with no reason named is not said to be weather"
     assert "Across the country the map shows 9 schools" in shows
     assert "updated at 6:05 AM Central time." in shows
     assert "Buffalo" not in shows, "no place below the state is named"
     seen = picture.seen
     assert seen.in_view == Counts(closed=5, delayed=1, remote=1, early_dismissal=0)
-    assert seen.states == ("New York", "Pennsylvania")
+    assert seen.states == ("New York",)
     assert seen.lit == 9
     assert seen.closings_read
     assert seen.closings_at == at("2026-12-10T12:05")
@@ -402,20 +412,81 @@ def test_a_region_picture_is_calm_only() -> None:
         )
 
 
-def test_the_calm_regions_are_city_lights_rotated_by_the_day() -> None:
+RUNS = ("13:07", "17:37", "00:41")
+"""The three scheduled runs, UTC (.github/workflows/social-post.yml); 00:41 is the evening of
+the Central day before."""
+
+
+def test_the_calm_regions_are_city_lights_rotated_by_the_run_slot() -> None:
     """Every region is at a zoom where the site draws school specks (5 to 10, never the bare
-    national map), named plainly, and each day opens on the next one in turn."""
+    national map), named plainly, and each of a day's three runs opens on a different one,
+    in daylight time and in standard time, and the next day carries on."""
     assert len(REGIONS) >= 5
     for place in REGIONS:
         assert 5 < place.zoom < 10, place
         assert place.query.startswith("?at=")
         assert len(place.place) <= 60
-    first = calm_regions(at("2026-10-27T14:00"))
-    second = calm_regions(at("2026-10-28T14:00"))
+    for day, evening in (("2026-10-27", "2026-10-28"), ("2026-11-10", "2026-11-11")):
+        times = [at(f"{day}T{RUNS[0]}"), at(f"{day}T{RUNS[1]}"), at(f"{evening}T{RUNS[2]}")]
+        slots = [slot_of(moment) for moment in times]
+        assert slots == [slots[0], slots[0] + 1, slots[0] + 2], (day, slots)
+        firsts = [calm_regions(moment)[0] for moment in times]
+        assert len(set(firsts)) == 3, (day, firsts)
+        # A run GitHub starts 40 minutes late keeps its slot.
+        late = times[0].replace(minute=47)
+        assert calm_regions(late)[0] == firsts[0]
+    first = calm_regions(at("2026-10-27T13:07"))
     assert sorted(first, key=REGIONS.index) == list(REGIONS)
-    assert second[0] == first[1]
-    # The day is the shown zone's: 03:00 UTC on Oct 28 is still Oct 27 in Central time.
-    assert calm_regions(at("2026-10-28T03:00"))[0] == first[0]
+    assert calm_regions(at("2026-10-28T13:07"))[0] == calm_regions(at("2026-10-28T00:41"))[1]
+
+
+def _ids(counts: dict[str, int], private: int = 0) -> list[str]:
+    """SYNTHETIC public ids for each state code's count, and private ids (no state)."""
+    ids = [f"{code}{index:010d}" for code, count in counts.items() for index in range(count)]
+    return ids + [f"A{index:07d}" for index in range(private)]
+
+
+# The public schools in each calm region's view in the deployed directory (Oct 27, 2026,
+# points.021e180ccc.bin), by state: the top three, then the rest as one state each. Sums from
+# the probe that found 'mostly' false for five of seven regions.
+REAL_REGION_SHARES = {
+    "the Northeast corridor": ({"36": 4080, "42": 2772, "34": 2481}, 15330, []),
+    "the Great Lakes": ({"17": 3508, "26": 3249, "39": 3072}, 15356, []),
+    "the Mid-Atlantic": ({"42": 2276, "34": 1804, "36": 1638}, 9833, []),
+    "the Texas triangle": ({"48": 6531, "22": 598}, 7129, ["Texas"]),
+    "the Front Range": ({"08": 1605, "20": 12, "56": 10}, 1634, ["Colorado"]),
+    "the Pacific Northwest": ({"53": 2076, "41": 556}, 2632, ["Washington", "Oregon"]),
+    "Southern California": ({"06": 5318, "04": 100, "32": 2}, 5420, ["California"]),
+}
+
+
+@pytest.mark.parametrize("place", sorted(REAL_REGION_SHARES))
+def test_mostly_is_said_only_of_states_that_hold_most_of_a_real_region(place: str) -> None:
+    """The deployed directory's shares for every calm region: "mostly" only when the states
+    named hold more than half of the view's public schools, and a second state only with a
+    real share (no "Colorado and Kansas" for 12 Kansas schools of 1,634)."""
+    assert place in {region.place for region in REGIONS}
+    top, total, named = REAL_REGION_SHARES[place]
+    rest = total - sum(top.values())
+    # The rest spread one school a state code no larger than the third (never a top state).
+    spread = {f"{60 + index % 30:02d}": 0 for index in range(30)}
+    for index in range(rest):
+        spread[f"{60 + index % 30:02d}"] += 1
+    ids = _ids(top) + [f"{code}{index:010d}" for code, n in spread.items() for index in range(n)]
+    assert _states(ids) == named
+
+
+def test_mostly_needs_more_than_half_and_a_second_state_a_real_share() -> None:
+    assert _states(_ids({"36": 45, "42": 27, "34": 28})) == ["New York", "New Jersey"]
+    assert _states(_ids({"36": 26, "42": 18, "34": 16, "09": 14, "25": 13, "44": 13})) == []
+    assert _states(_ids({"36": 51, "42": 14, "34": 35})) == ["New York", "New Jersey"]
+    assert _states(_ids({"36": 60, "42": 14, "34": 13, "09": 13})) == ["New York"]
+    assert _states(_ids({"36": 50, "42": 10, "34": 40})) == ["New York", "New Jersey"]
+    assert _states(_ids({"36": 50, "42": 50})) == ["New York", "Pennsylvania"]
+    assert _states(_ids({"36": 50}, private=50)) == [], "a private school counts against it"
+    assert _states(_ids({"36": 2}, private=1)) == ["New York"]
+    assert _states(_ids({}, private=3)) == []
+    assert _states([]) == []
 
 
 def test_a_region_s_description_names_the_states_of_the_schools_in_view() -> None:
@@ -655,3 +726,76 @@ def test_while_closings_are_not_live_lit_schools_give_the_calm_national_map() ->
     assert calm.kind == "region"
     assert not mentions_closings(calm.shows)
     assert not calm.seen.closings_read
+
+
+def test_few_lit_schools_fill_the_card_zoomed_in_with_every_one_in_the_box() -> None:
+    """Two lit schools a few miles apart (SYNTHETIC): the view zooms in as far as
+    :data:`MAX_ZOOM` allows, both in the middle box, so their glow and the specks around them
+    fill the card instead of a dot in a dark country."""
+    picture = choose(
+        chances=False,
+        closings_shown=True,
+        closings=closings([(0, 0), (1, 0)], "2026-12-10", "2026-12-10T12:05:00Z"),
+        predictions=None,
+        directory=directory(),
+        now=at("2026-12-10T12:10"),
+    )
+    zoom = float(picture.query.rsplit(",", 1)[1])
+    assert zoom == MAX_ZOOM
+    spots = picture.seen.spots
+    assert len(spots) == 2
+    for x, y in spots:
+        assert abs(x - WIDTH / 2) <= FIT_BOX[0] / 2 + 1
+        assert abs(y - HEIGHT / 2) <= FIT_BOX[1] / 2 + 1
+    # The two are about 0.1 degree apart: at the widest view they would sit a few pixels
+    # apart; zoomed in, far enough apart to read as a place.
+    (x0, y0), (x1, y1) = spots
+    assert math.hypot(x1 - x0, y1 - y0) > 60
+
+
+def test_a_wide_spread_of_lit_schools_keeps_the_widest_closings_view() -> None:
+    """Lit schools from Buffalo to Pennsylvania and Minnesota (SYNTHETIC): the busiest window
+    at :data:`ZOOM`, never zoomed past what holds them all in the box."""
+    rows = [(0, 0), (6, 0), (7, 0), (8, 0)]
+    picture = choose(
+        chances=False,
+        closings_shown=True,
+        closings=closings(rows, "2026-12-10", "2026-12-10T12:05:00Z"),
+        predictions=None,
+        directory=directory(),
+        now=at("2026-12-10T12:10"),
+    )
+    zoom = float(picture.query.rsplit(",", 1)[1])
+    assert ZOOM <= zoom <= MAX_ZOOM
+    assert all(0 <= x < WIDTH and 0 <= y < HEIGHT for x, y in picture.seen.spots)
+    assert picture.seen.in_view is not None
+    assert len(picture.seen.spots) == picture.seen.in_view.total
+
+
+def test_lit_private_schools_say_the_view_s_place_never_where_the_schools_are() -> None:
+    """Two lit private schools (their ids name no state) near Buffalo (SYNTHETIC): no "mostly
+    in", but the view's own place by its public schools' share, "in a view over New York"."""
+    ids = (*SCHOOLS, "A0000001", "A0000002")
+    points = Points(
+        lon_e6=np.asarray([round(v * 1e6) for v in (*LON, -78.86, -78.84)], dtype=np.int32),
+        lat_e6=np.asarray([round(v * 1e6) for v in (*LAT, 42.91, 42.92)], dtype=np.int32),
+        district=np.asarray([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2], dtype=np.uint32),
+        kind=np.asarray([0] * 10 + [1, 1], dtype=np.uint8),
+        district_count=2,
+    )
+    here = Directory("2026-10-14", ids, DISTRICTS, points)
+    file = closings([(10, 0), (11, 1)], "2026-12-10", "2026-12-10T12:05:00Z")
+    file["directory"] = here.stamp()
+    picture = choose(
+        chances=False,
+        closings_shown=True,
+        closings=file,
+        predictions=None,
+        directory=here,
+        now=at("2026-12-10T12:10"),
+    )
+    assert picture.kind == "closings"
+    assert picture.seen.states == ()
+    assert picture.seen.place == "New York"
+    assert ", in a view over New York." in picture.shows
+    assert "mostly" not in picture.shows

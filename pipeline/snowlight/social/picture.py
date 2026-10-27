@@ -5,13 +5,15 @@ render`): the map alone, every piece of the site's interface hidden, then laid i
 card (:mod:`snowlight.social.cards`). Before the browser opens, :func:`choose` reads the same
 files the page reads and picks the view:
 
-* **Closings on the map** (only while the facts file marks closings LIVE: until then the
-  reader runs in practice mode and its finds are checked before anything goes public, so the
-  file is not read at all and nothing is said about closings): when ``live/closings.json``
-  holds schools for the day the map
+* **Closings on the map** (only while the facts file marks closings LIVE: while they are not,
+  the file is not read at all and nothing is said about closings): when
+  ``live/closings.json`` holds schools for the day the map
   shows (the day that is today in every contiguous US time zone, 08:00 to 04:00 UTC, as
   ``web/src/data/closings.ts`` has it) under the deployed directory's stamp, the map is
-  zoomed (``?at=lat,lon,zoom``) to the window of the picture's size holding the most of them.
+  zoomed (``?at=lat,lon,zoom``) to the window of the picture's size holding the most of them
+  at :data:`ZOOM`, then closer (up to :data:`MAX_ZOOM`) while every lit school of the window
+  still fits :data:`FIT_BOX` in the middle of the picture, so a few lit schools fill the
+  card with their glow and the specks around them instead of a dot in a dark country.
 * **Else a high chance** (only while the facts file marks chances LIVE: while they are
   TESTING the site is locked, and no picture gives a chance): when a district's chance of
   no school today is at least :data:`PANEL_MIN_CHANCE`, the district with the highest one,
@@ -20,7 +22,8 @@ files the page reads and picks the view:
   The map draws no chance, so the chance is a number on the card, never on the map.
 * **Else a region's city lights** (:func:`calm_regions`, taken by
   :mod:`snowlight.social.render`): one of :data:`REGIONS`, populous windows at a zoom where the
-  site draws every school as a faint speck (zoom 5 to 10), rotated by the day so posts vary.
+  site draws every school as a faint speck (zoom 5 to 10), rotated by the run's slot of the
+  day (:func:`slot_of`) so each of a day's posts opens on a different place.
   The render checks the page drew specks in view and tries the next region when it did not.
 * **Else the national map** (only when every region tried failed): the site's dark map,
   near-black land, state lines and city names (dark at any hour: the words never say
@@ -30,16 +33,16 @@ files the page reads and picks the view:
 It also writes :attr:`Picture.shows`, the plain facts about the picture (the time, the place
 by state, the counts and the chance), the only things a post may say about it, and the same
 facts as fields (:class:`Seen`) for the card. No school, district or person is named. When
-``closings.json`` was not read (a 404 in practice mode, or another directory's file) nothing
-is said about closings at all, and neither when the file is older than :data:`FRESH` (a
-stopped reader's empty file is no sign that nothing is closed): the picture is then not
-current, so the post may not call it so. A chance is shown only from a predictions file no
-older than :data:`PREDICTIONS_FRESH`, for the next school day not yet under way: the first of
-the file's own days whose :data:`SCHOOL_STARTS` local hour, in each district's own time zone
-(the page's rule), is still ahead in most districts. A day already under way is never named
-(at 11:27 AM Central on a Monday the chance is Tuesday's). The browser is then served exactly the
-files described, and the render checks the page lit as many schools as the description
-counts.
+``closings.json`` was not read (a 404 while closings are not LIVE, or another directory's
+file) nothing is said about closings at all, and neither when the file is older than
+:data:`FRESH` (a stopped reader's empty file is no sign that nothing is closed): the picture
+is then not current, so the post may not call it so. A chance is shown only from a
+predictions file no older than :data:`PREDICTIONS_FRESH`, for the next school day not yet
+under way: the first of the file's own days whose :data:`SCHOOL_STARTS` local hour, in each
+district's own time zone (the page's rule), is still ahead in most districts. A day already
+under way is never named (at 11:27 AM Central on a Monday the chance is Tuesday's). The
+browser is then served exactly the files described, and the render checks the page lit as
+many schools as the description counts.
 """
 
 import math
@@ -57,7 +60,17 @@ from pydantic import BaseModel, ConfigDict, Field
 from snowlight.directory.points import Points
 
 ZOOM: Final = 6.5
-"""The zoom of a closings view: a few states across on a 1600 x 900 picture."""
+"""The widest zoom of a closings view: a few states across on a 1600 x 900 picture."""
+MAX_ZOOM: Final = 9.5
+"""The closest a closings view zooms in on a few lit schools: a metro area across, where the
+site still draws every school around them as a speck."""
+FIT_BOX: Final = (800.0, 400.0)
+"""The box in the middle of the picture (width, height in pixels) a closings view zoomed past
+:data:`ZOOM` keeps every lit school of its window in, clear of the card's corners."""
+MOSTLY: Final = 0.5
+"""A description says "mostly" of states only when they hold more than this share."""
+SECOND_STATE: Final = 0.15
+"""The least share a second state needs to be named beside the first."""
 WIDTH: Final = 1600
 HEIGHT: Final = 900
 TILE: Final = 512
@@ -218,7 +231,8 @@ class Seen(BaseModel):
     in_view: Counts | None = None
     """Closings view: the lit schools inside the picture, by status."""
     states: tuple[str, ...] = Field(default=(), max_length=2)
-    """Closings view: the states most of the lit public schools in view are in, most first."""
+    """Closings view: the states most of the lit schools in view are in, most first, only as
+    :func:`_states` names them by share."""
     lit: int = Field(default=0, ge=0)
     """How many schools the map lights across the country."""
     closings_at: datetime | None = None
@@ -231,7 +245,9 @@ class Seen(BaseModel):
     focus: Box | None = None
     """District view: the box its schools span in the picture."""
     place: str | None = Field(default=None, max_length=60)
-    """Region view: the place's plain name."""
+    """Region view: the place's plain name. Closings view whose lit schools name no state by
+    share: the states most of the view's public schools are in ("New Mexico"), said as the
+    view's place ("over New Mexico"), never as where the lit schools are."""
     spots: tuple[tuple[int, int], ...] = ()
     """Closings view: where each lit school in view sits in the picture (x, y pixels), so a
     card's words are measured against every one of them (:func:`snowlight.social.cards.cover`)."""
@@ -375,6 +391,26 @@ def unproject(x: float, y: float, zoom: float) -> tuple[float, float]:
     return lon, lat
 
 
+def _fit(
+    lon: npt.NDArray[np.float64], lat: npt.NDArray[np.float64]
+) -> tuple[tuple[float, float], float] | None:
+    """The center (lon, lat) and zoom past :data:`ZOOM` (at most :data:`MAX_ZOOM`, two
+    decimals, rounded down) at which every point fits :data:`FIT_BOX` in the middle of the
+    picture; ``None`` when they span too much to zoom past :data:`ZOOM`."""
+    x, y = project(lon, lat, 0.0)
+    span_x = max(float(x.max() - x.min()), 1e-12)
+    span_y = max(float(y.max() - y.min()), 1e-12)
+    fit = math.log2(min(FIT_BOX[0] / span_x, FIT_BOX[1] / span_y))
+    # Two decimals, as a link carries a zoom (web/src/state/url.ts), rounded down to fit.
+    zoom = math.floor(min(fit, MAX_ZOOM) * 100) / 100
+    if zoom <= ZOOM:
+        return None
+    scale = 2.0**zoom
+    mid_x = float(x.min() + x.max()) / 2 * scale
+    mid_y = float(y.min() + y.max()) / 2 * scale
+    return unproject(mid_x, mid_y, zoom), zoom
+
+
 def busiest_view(
     lon: npt.NDArray[np.float64], lat: npt.NDArray[np.float64]
 ) -> tuple[tuple[float, float], npt.NDArray[np.bool_]]:
@@ -404,10 +440,20 @@ def busiest_view(
 
 
 def _states(ids: Sequence[str]) -> list[str]:
-    """The states most of ``ids`` (public NCES ids) are in, most first, at most two."""
+    """The states most of ``ids`` are in, by share of all of them (a private school's id names
+    no state, so it counts against every state): the top two when together they hold more
+    than :data:`MOSTLY` and the second at least :data:`SECOND_STATE`; else the top one when
+    it alone holds more than :data:`MOSTLY`; else none, so "mostly" is never said of a mix."""
+    if not ids:
+        return []
     counts = Counter(STATES.get(school[:2]) for school in ids if len(school) == 12)  # noqa: PLR2004
     counts.pop(None, None)
-    return [name for name, _ in counts.most_common(2) if name is not None]
+    top = [(name, count / len(ids)) for name, count in counts.most_common(2) if name is not None]
+    if len(top) == 2 and top[1][1] >= SECOND_STATE and top[0][1] + top[1][1] > MOSTLY:  # noqa: PLR2004
+        return [top[0][0], top[1][0]]
+    if top and top[0][1] > MOSTLY:
+        return [top[0][0]]
+    return []
 
 
 def _and(names: Sequence[str]) -> str:
@@ -434,14 +480,20 @@ def _closings_picture(lit: Lit, directory: Directory, now: datetime) -> Picture:
     lon = points.lon_e6[lit.schools].astype(np.float64) / 1e6
     lat = points.lat_e6[lit.schools].astype(np.float64) / 1e6
     (center_lon, center_lat), held = busiest_view(lon, lat)
+    zoom: float = ZOOM
+    if (closer := _fit(lon[held], lat[held])) is not None:
+        (center_lon, center_lat), zoom = closer
     in_view = lit.schools[held]
-    x, y = project(lon[held], lat[held], ZOOM)
-    cx, cy = project(np.array([center_lon]), np.array([center_lat]), ZOOM)
+    x, y = project(lon[held], lat[held], zoom)
+    cx, cy = project(np.array([center_lon]), np.array([center_lat]), zoom)
     spots = tuple(
         (round(float(px - cx[0] + WIDTH / 2)), round(float(py - cy[0] + HEIGHT / 2)))
         for px, py in zip(x, y, strict=True)
     )
+    query = f"?at={center_lat:.4f},{center_lon:.4f},{zoom:g}"
     states = _states([directory.school_ids[int(index)] for index in in_view])
+    # No state by share for the lit schools (private ones name none): the view's own place.
+    over = None if states else _and(view_states(directory, query)) or None
     counts = _counts(lit.statuses[held])
     total = len(lit.schools)
     current = -LEAD <= now - lit.generated_at <= FRESH
@@ -452,18 +504,18 @@ def _closings_picture(lit: Lit, directory: Directory, now: datetime) -> Picture:
         f"{int((now - lit.generated_at).total_seconds() // 60)} minutes before the picture, "
         "so the map does not call them live."
     )
-    place = f", mostly in {_and(states)}" if states else ""
+    place = f", mostly in {_and(states)}" if states else f", in a view over {over}" if over else ""
     shows = (
         f"A picture of the Snowlight map taken at {_clock(now)} on {_day(now)}, zoomed to the "
-        f"area with the most schools lit up for weather: {len(in_view)} schools glow in this "
+        f"area with the most schools lit up: {len(in_view)} schools glow in this "
         f"view ({_status_counts(counts)}){place}. Across the country the map "
         f"shows {total} schools closed, delayed, remote or dismissing early for {_day_of(lit.day)}."
         f" {updated}"
     )
-    query = f"?at={center_lat:.4f},{center_lon:.4f},{ZOOM:g}"
     seen = Seen(
         in_view=counts,
         states=tuple(states),
+        place=over,
         lit=total,
         closings_at=lit.generated_at,
         closings_read=True,
@@ -731,7 +783,7 @@ def calm_closings(
 
     Only a closings file the page reads, written within :data:`FRESH`, says that no school is
     lit up; an older one (a stopped reader) says nothing and the picture is not current, so
-    a post never calls a stale calm map current. Without a file (practice mode's 404) nothing
+    a post never calls a stale calm map current. Without a file (a 404) nothing
     is said about closings at all.
     """
     if not read or closings is None:
@@ -741,17 +793,31 @@ def calm_closings(
     return "", False
 
 
+SLOT_HOURS: Final = (11, 17)
+"""The local hours (shown zone) that part a day's three scheduled runs (about 7 to 8 AM, 11:30
+AM to 12:30 PM and 6:40 to 7:40 PM Central): a run before the first is the day's first slot."""
+
+
+def slot_of(moment: datetime) -> int:
+    """The run's slot: the shown zone's day times three, plus 0, 1 or 2 for the morning, noon
+    and evening runs (:data:`SLOT_HOURS`), so each of a day's posts turns to a new view and
+    headline, and the next day carries on."""
+    local = moment.astimezone(SHOWN_ZONE)
+    part = sum(1 for hour in SLOT_HOURS if local.hour >= hour)
+    return local.date().toordinal() * (len(SLOT_HOURS) + 1) + part
+
+
 def calm_regions(now: datetime) -> tuple[Region, ...]:
-    """:data:`REGIONS` in the order a post on ``now``'s day (in the shown zone) tries them:
-    rotated by the day, so each day's posts open on a different place."""
-    day = now.astimezone(SHOWN_ZONE).date().toordinal()
-    start = day % len(REGIONS)
+    """:data:`REGIONS` in the order a post at ``now`` tries them: rotated by the run's slot
+    (:func:`slot_of`), so each of a day's posts opens on a different place."""
+    start = slot_of(now) % len(REGIONS)
     return REGIONS[start:] + REGIONS[:start]
 
 
 def view_states(directory: Directory, query: str) -> list[str]:
     """The states most of the directory's public schools in an ``?at=lat,lon,zoom`` view are
-    in, most first, at most two (none for a query that is not one)."""
+    in, by share (:func:`_states`), most first, at most two (none for a query that is not
+    one, or a view whose schools no one or two states hold most of)."""
     parts = query.removeprefix("?at=").split(",")
     if not query.startswith("?at=") or len(parts) != 3:  # noqa: PLR2004
         return []
@@ -765,7 +831,8 @@ def view_states(directory: Directory, query: str) -> list[str]:
     )
     cx, cy = project(np.array([lon]), np.array([lat]), zoom)
     held = (np.abs(x - cx[0]) <= WIDTH / 2) & (np.abs(y - cy[0]) <= HEIGHT / 2)
-    return _states([directory.school_ids[int(index)] for index in np.flatnonzero(held)])
+    public = [directory.school_ids[int(index)] for index in np.flatnonzero(held)]
+    return _states([school for school in public if len(school) == 12])  # noqa: PLR2004
 
 
 def region(  # noqa: PLR0913 - the view, the live files, the time and the switch
@@ -780,7 +847,8 @@ def region(  # noqa: PLR0913 - the view, the live files, the time and the switch
     """A calm view of ``place`` at a zoom where the map draws every school as a faint speck:
     a post's view when nothing is lit (:func:`calm_regions`), or the image library's. Only
     when the map lights no school. Without ``closings_shown`` the closings file is not read.
-    The description names the states most of the view's public schools are in.
+    The description names the states most of the view's public schools are in, only by
+    share (:func:`_states`): none when no one or two states hold most of them.
 
     Raises:
         PictureError: the map lights schools now (take :func:`choose`'s view then).

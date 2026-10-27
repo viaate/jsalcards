@@ -159,6 +159,10 @@ class RenderError(RuntimeError):
     """An attempt did not give a picture that matches its description (safe for the log)."""
 
 
+class NoSpecksError(RenderError):
+    """A region's map drew no school specks in view: the next region may still (:func:`_calm`)."""
+
+
 @dataclass(frozen=True, slots=True)
 class View:
     """A calm view asked for by hand (the image library): the query and the place's name."""
@@ -401,7 +405,7 @@ class Attempt:
         ):
             raise RenderError(f"the map opened at zoom {zoom}, not the {asked} asked")
         if picture.kind == "region" and not state.get("dustInView"):
-            raise RenderError("the map drew no school specks; the description says it does")
+            raise NoSpecksError("the map drew no school specks; the description says it does")
         page.screenshot(path=out / FILE, type="png", full_page=False)
 
 
@@ -529,10 +533,17 @@ def _calm(  # noqa: PLR0913 - the attempt and the live files
     shown: bool,
     now: Callable[[], datetime],
 ) -> Picture:
-    """The picture of a calm map, taken: the day's regions in turn (:func:`calm_regions`, at
+    """The picture of a calm map, taken: the slot's regions in turn (:func:`calm_regions`, at
     most :data:`REGION_TRIES`), each checked to draw school specks in view; the national map
-    only when every region tried failed. A region whose map did not settle ends the tries (a
-    slow page would only fail again), so the attempt stays within the step's time."""
+    only when every region tried drew none. Any other failure of a region (its map did not
+    settle, the browser timed out or failed, a check of the page failed) ends the attempt: a
+    slow or broken page would only fail again, so the attempt stays within the step's time,
+    and the next attempt (or the library's card) follows.
+
+    Raises:
+        RenderError: a region failed other than by drawing no specks (said first).
+        PlaywrightError: the browser failed on a region (said first).
+    """
     for place in calm_regions(now())[:REGION_TRIES]:
         picture = region(
             query=place.query,
@@ -545,14 +556,19 @@ def _calm(  # noqa: PLR0913 - the attempt and the live files
         attempt.say(f"social: the picture is the region view {picture.query} ({place.place})")
         try:
             attempt.take(page, picture, out)
-        except RenderError as error:
+        except NoSpecksError as error:
             attempt.say(f"::warning::social: the {place.place} view failed: {_short(error)}")
             (out / FILE).unlink(missing_ok=True)
-            if "did not settle" in str(error):
-                break
             continue
+        except (RenderError, PlaywrightError) as error:
+            attempt.say(
+                f"::warning::social: the {place.place} view failed: {_short(error)}: this"
+                " attempt ends"
+            )
+            (out / FILE).unlink(missing_ok=True)
+            raise
         return picture
-    attempt.say("social: every region tried failed: the picture is the national view")
+    attempt.say("social: every region tried drew no specks: the picture is the national view")
     attempt.take(page, national, out)
     return national
 
