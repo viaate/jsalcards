@@ -102,7 +102,7 @@ Two rules hold for every post, Haiku's and the queued ones alike, and for every 
   zero-width space. Haiku's second check is a second net, never the only one.
 
 The C card (the first style tried on every picture) leads with one short headline from the
-card library (`cards.HEADLINES`, 2 to 6 plain words: "A snow day model, not a guess", "A
+card library (`cards.HEADLINES`, 2 to 6 plain words: "Snow day model, not a guess", "A
 real snow day model", "The Snowlight waitlist is open", and over lit schools "Real school
 closings and delays" or "Like city lights seen from space"), each words of a LIVE fact, with
 no insider name a parent would not know ("reader", "records", "24/7": `cards.INSIDER`),

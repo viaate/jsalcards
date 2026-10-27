@@ -104,7 +104,7 @@ HEADLINES: Final[Mapping[tuple[str, str], tuple[str, ...]]] = {
         "Like city lights seen from space",
     ),
     ("dev-log", "any"): (
-        "A snow day model, not a guess",
+        "Snow day model, not a guess",
         "A real snow day model",
     ),
 }
