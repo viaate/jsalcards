@@ -401,7 +401,11 @@ def test_post_command_without_secrets_posts_nothing(
     assert "nothing posts" in capsys.readouterr().out
 
 
-def test_commit_subjects_come_from_git(tmp_path: Path) -> None:
+def test_commit_subjects_come_from_git(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Git exports these to its hooks (the local pre-push gate runs this suite from one), and
+    # git log then reads that repository from any directory: clear them so tmp_path is no repo.
+    for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX_FILE"):
+        monkeypatch.delenv(name, raising=False)
     assert commits(tmp_path, None) == []
     repo = Path(__file__).resolve().parents[3]
     assert isinstance(commits(repo, None), list)
