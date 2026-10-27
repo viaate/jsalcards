@@ -1,7 +1,6 @@
 """The deterministic post checks, against adversarial drafts (all SYNTHETIC), and the
 repository's own facts file and first queued post."""
 
-import json
 from pathlib import Path
 
 import pytest
@@ -133,8 +132,8 @@ def test_malformed_facts_are_refused() -> None:
 
 def test_the_repository_facts_and_queue_pass_their_own_checks() -> None:
     content = load(REPO)
-    assert len(content.images) >= 4
-    assert content.queue, "the first post is queued"
+    assert {image.style for image in content.images} == {"dev_log", "waitlist"}
+    assert content.queue, "the scheduled runs have queued posts to send"
     newest = content.newest()
     assert newest is not None
     for item in content.queue:
@@ -150,9 +149,8 @@ def test_the_repository_facts_and_queue_pass_their_own_checks() -> None:
             )
             == []
         ), item.id
-    first = json.loads((REPO / "social" / "queue" / "0001.json").read_text())
-    assert first["text"].startswith("Snowlight dev log:")
-    assert "link in my bio" in first["text"]
+    for item in content.queue:
+        assert "link in my bio" in item.text.lower(), item.id
     for fact in content.facts.facts:
         lowered = fact.text.lower()
         for word in ("formula", "sdc", "calculator", "snow-data", "snowlight-data", "private repo"):
