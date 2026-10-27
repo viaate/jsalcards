@@ -66,8 +66,10 @@ Two rules hold for every post, Haiku's and the queued ones alike, and for every 
 
 - **Model first.** Each post states one plain fact about the prediction model behind the
   chances, from the facts file's model section (the LIVE facts whose ids are `model` and
-  `model-*`): that Snowlight's chances come from a real statistical model trained on real
-  closing records, not a guess, and something concrete about it (the 2,388 real past school
+  `model-*`), in plain words a parent would use ("a real prediction model, not a guess",
+  "built on real closing records"; no "statistical model", "known outcomes" or
+  "walk-forward" in a post): that Snowlight's chances come from a real prediction model
+  trained on real closing records, not a guess, and something concrete about it (the 2,388 real past school
   days it is trained on, how it leans on a district's own records and its county's, state's
   and region's, the weather service's winter alerts it sorts days by, the walk-forward test
   on past winters it never saw, a new set about every 30 minutes). Haiku is given one of
@@ -181,13 +183,17 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
 
 `pipeline/snowlight/social/rules.py`, before anything is sent:
 
+- in the owner's voice (Oct 27, 2026): first person, casual and warm, one hook (something I
+  built, a question to the reader, what the map shows) and one ask toward the waitlist, about
+  100 to 220 characters (Haiku is told so; the hard cap is below);
 - at most 270 characters as X counts them; no URL, domain or @mention (the link is in the
   bio); at most one hashtag and one emoji; no `!!` and no em dash;
 - a closed vocabulary: every word is a word of the facts file (a fact's text, terms or
   excepted phrases), of the picture's description, of the commit subjects Haiku was shown,
   a small word ("the", "and", "it") or one of the plain words of my voice in
   `rules.VOICE_WORDS` ("dev log", "built", "fixed", "spent", "night", "join", "link",
-  "bio"), in any plural, past or -ing form; a hashtag only from `rules.HASHTAGS`. So no post
+  "bio", "stayed up late", "wiring", "question", "usually call", "alone"), in any plural,
+  past or -ing form; a hashtag only from `rules.HASHTAGS`. So no post
   can name or describe anything the facts do not ("SDCalc", "influencers", "online",
   "industry-leading", "gold standard"), claim accuracy in new words ("results",
   "confident"), invent a feature, a hire, a partner or a user ("iPhone", "hired",

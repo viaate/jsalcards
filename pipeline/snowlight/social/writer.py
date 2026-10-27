@@ -75,14 +75,21 @@ REVIEW_SCHEMA: Final[dict[str, Any]] = {
 }
 
 VOICE: Final = """You write one post for the X account @SnowlightMap. I am the young founder \
-building Snowlight, a national map of US school closings with a snow day chance for every \
-school district, and the post is in my own voice: first person ("I"), casual, specific, short, \
-plain words. Never corporate, never hype, never salesy. Everything in it must be true.
+building Snowlight alone, a national map of US school closings with a snow day chance for \
+every school district, and the post must sound like I wrote it myself: first person ("I"), \
+casual, warm, specific and short, like a text to a friend. Never corporate, never technical, \
+never hype, never salesy. Everything in it must be true.
+
+Shape: one hook first (something I did, a question to the reader, or what the picture's \
+description says the map shows), then the model fact, then one call to action toward the \
+waitlist ("Waitlist link in my bio." or "Link in my bio to get on the waitlist."). Between \
+100 and 220 characters.
 
 Model first: every post states the one fact about Snowlight's prediction model it is given, \
-plainly and specifically, so people learn that Snowlight's chances come from a real \
-statistical model trained on real closing records, not a guess. Say what the model does; \
-"not a guess" is fine.
+in plain words a parent would use, so people learn the chances come from a real prediction \
+model built on real closing records, not a guess. No jargon: never "statistical model", \
+"known outcome", "walk-forward", "fit to" or a count of days; say "a real prediction model, \
+not a guess", "built on real closing records" or "tested on past winters it never saw".
 
 Hard rules:
 - Use ONLY the facts below. Never add a claim, number, feature, date or plan they do not hold.
@@ -115,7 +122,7 @@ unless the picture's description names it.
 - Nobody can use the map yet: never say "check your school", "see your district", "you can \
 now" or "available now", and never say the chances are up, posted or there to see; only the \
 waitlist is open. If you mention the waitlist, say "link in my bio".
-- Keep it under 240 characters.
+- Keep it between 100 and 220 characters.
 - Write a number only as the facts use it, in digits as they write it; never spell a number \
 out unless the facts do. Never write a number, count, time or date from the picture's \
 description: the card shows those, labeled.
@@ -126,11 +133,14 @@ current: no "today", "now", "tonight", "currently", "just", "latest", "fresh" or
 about it."""
 
 STYLES: Final[dict[Style, str]] = {
-    "dev_log": "Style: a short dev log: one thing I built, fixed or learned about the "
-    "prediction model, from the facts or the recent work. You may end with 'Waitlist link in "
+    "dev_log": "Style: behind the scenes of building it, in my words: one thing I built, "
+    "fixed or am testing, only as the facts or the recent work say it, or a "
+    "question to the reader ('Does your school usually call a snow day in the evening, or in "
+    "the morning?'), or how a chance moves in one plain sentence. End with 'Waitlist link in "
     "my bio.'",
-    "waitlist": "Style: ask people to join the waitlist, with the model fact as the reason. It "
-    "MUST include the words 'link in my bio'.",
+    "waitlist": "Style: the waitlist ask, warm and short, with the model fact as the reason "
+    "or a countdown to winter ('Snowlight goes live this winter.'). It MUST include the words "
+    "'link in my bio'.",
 }
 
 CHECKER: Final = """You check one draft post for the X account @SnowlightMap against the facts \

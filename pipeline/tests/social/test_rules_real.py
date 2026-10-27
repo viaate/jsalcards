@@ -972,3 +972,45 @@ def test_a_hype_word_is_fine_only_as_a_fact_s_own_words() -> None:
         for line in checked("Each winter was scored by a model fit only to the winters before it.")
     )
     assert any("'only'" in line for line in checked("Snowlight is the only prediction model."))
+
+
+# -- the owner's voice (Oct 27): personal, plain, one hook and the waitlist ask ----------------
+
+PLAIN_VOICE = [
+    "Stayed up late wiring the closings reader into Snowlight. Real closings go in within"
+    " minutes, and the chances come from a real prediction model, not a guess. Waitlist link"
+    " in my bio.",
+    "Does your school usually call a snow day in the evening, or in the morning? I'm testing a"
+    " night-before outlook for the model, quietly in the background. Waitlist link in my bio.",
+    "When a school is closed or delayed for weather, it glows on my private test map like city"
+    " lights seen from space. The model behind the chances is built on real closing records,"
+    " not a guess. Waitlist link in my bio.",
+    "I'm building Snowlight alone: a private test map of every school in the US. Built on real"
+    " closing records, not a guess. Link in my bio to get on the waitlist.",
+]
+
+
+@pytest.mark.parametrize("text", PLAIN_VOICE)
+@pytest.mark.parametrize("current", [True, False])
+def test_the_plain_personal_voice_passes(text: str, *, current: bool) -> None:
+    style: Style = "waitlist" if "get on the waitlist" in text else "dev_log"
+    assert problems(text, current=current, style=style) == []
+
+
+def test_the_plain_model_words_name_the_model_fact() -> None:
+    model = FACTS.get("model")
+    assert model is not None
+    for words in ("real prediction model", "built on real closing records", "not a guess"):
+        assert words in model.terms
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "My school calls a snow day early. The prediction model is not a guess." + LINK,
+        "Stayed up late, and the model called it right." + LINK,
+        "The map is live, built on real closing records." + LINK,
+    ],
+)
+def test_the_voice_words_let_no_claim_through(text: str) -> None:
+    assert problems(text, style="waitlist"), text

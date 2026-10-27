@@ -1011,12 +1011,15 @@ VOICE_WORDS: Final = frozenset(
     carefully soon testing tested test tests coming next planned plan yet launch winter
     private privately trial tuning tune tuned lock locked behind until quiet teach taught few
     far everyone snowlight now right look
+    late wiring wire wired question questions usually call alone ever honestly
     """.split()  # noqa: SIM905 - a word list reads best as text
 )
 """Plain words of the founder's own voice a post may use besides the words of the facts, the
 picture's description and the recent work (:func:`vocabulary`): what I did ("spent the night
 on", "fixed", "built"), when ("this week"), the not-live words, and the waitlist's "link in my
-bio". Nothing here names a product, a person, a place, a level or a quality."""
+bio", and a question to the reader ("does your school usually call a snow day in the
+evening?"; "calls" stays an accuracy word). Nothing here names a product, a person, a place,
+a level or a quality."""
 FUNCTION_WORDS: Final = frozenset(
     """
     a an the and or but nor so yet of to in on at by for from with without into onto upon over
