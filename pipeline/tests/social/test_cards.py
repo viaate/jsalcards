@@ -232,15 +232,31 @@ def test_pick_skips_a_refused_layout_and_never_returns_one() -> None:
     assert pick((("c-left",), ("a",), ("b",)), fitting.__getitem__)[0] == "b"
 
 
+PRIVATE_ONLY = Seen(
+    in_view=Counts(closed=3, delayed=0, remote=0, early_dismissal=0),
+    states=(),
+    lit=3,
+    closings_read=True,
+)
+
+
 def test_a_closings_stamp_never_names_a_place_it_does_not_know() -> None:
-    private_only = Seen(
-        in_view=Counts(closed=3, delayed=0, remote=0, early_dismissal=0),
-        states=(),
-        lit=3,
-        closings_read=True,
-    )
-    with pytest.raises(CardError, match="states"):
-        c_slots(taken("closings", private_only), "dev-log", "left", fallback=False)
+    """The lit schools in view are private (their ids name no state): the stamp gives no
+    states and so names no place, never a guessed one."""
+    slots = c_slots(taken("closings", PRIVATE_ONLY), "dev-log", "left", fallback=False)
+    assert slots["states"] == []
+    assert "place" not in slots
+
+
+def test_the_stamp_lays_a_closings_view_with_no_known_state_without_a_place(
+    page: Page, maps: dict[str, Path]
+) -> None:
+    _, words = lay(
+        page, "c-left", taken("closings", PRIVATE_ONLY), "dev-log", maps["storm"],
+        fallback=False, headline="Real school closings and delays",
+    )  # fmt: skip
+    assert "Mostly" not in words
+    assert "in this view" in words
 
 
 @pytest.mark.parametrize("kind", ["national", "region"])

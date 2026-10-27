@@ -21,7 +21,8 @@
                     (cards.HEADLINES), words of a LIVE fact; shown in place of the label,
                     bold, with the place, time and badge made smaller under it
         states      closings view: picture._states, most lit first (at most two);
-                    the place reads "Mostly <a> and <b>", as the description says "mostly in"
+                    the place reads "Mostly <a> and <b>", as the description says "mostly in";
+                    none (the lit schools in view are private): no place line
         place       national, district and region views: "United States", "A district in
                     Michigan", the region's name
         time        the picture's clock with zone ("6:42 AM CT"); never on a fallback
@@ -258,11 +259,13 @@
         let place;
         if (view === 'closings') {
           const states = slots.states;
-          if (!Array.isArray(states) || states.length < 1 || states.length > 2) {
-            fail('states: picture._states, one or two names');
+          if (!Array.isArray(states) || states.length > 2) {
+            fail('states: picture._states, none, one or two names');
           }
           if (slots.place) fail('place: the closings view takes states, not place');
-          place = `Mostly ${states.map(display).join(' and ')}`;
+          // No state known (the lit schools in view are private, their ids name none): the
+          // stamp names no place rather than a false one.
+          place = states.length ? `Mostly ${states.map(display).join(' and ')}` : null;
         } else {
           if (!slots.place) fail('place is required');
           place = display(slots.place);

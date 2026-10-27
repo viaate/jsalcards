@@ -389,10 +389,8 @@ def c_slots(
     if not fallback:
         slots["time"] = clock(taken.taken_at)
     if taken.kind == "closings":
-        if not seen.states:
-            # The lit schools in view are all private (no state in their ids): the stamp
-            # names no place rather than a false one.
-            raise CardError("a closings stamp names its states; none are known")
+        # No state known (the lit schools in view are all private, their ids name none): the
+        # stamp names no place rather than a false one.
         slots["states"] = list(seen.states)
         if seen.in_view is not None:
             slots["counts"] = seen.in_view.model_dump()
