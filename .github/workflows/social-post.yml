@@ -102,10 +102,13 @@ jobs:
         continue-on-error: true
         timeout-minutes: 10
         run: |
-          # Two tries of at most 4 minutes each: the install took 16 s on one run and hung to
-          # the step's limit on the next, so a stuck try is cut short and tried once more.
+          # The browser alone, without --with-deps: the runner image already has every library
+          # it needs, and the cards bring their own fonts, so the apt step only added fonts. That
+          # step stalled on the Ubuntu mirror twice, and the second time its apt-get outlived the
+          # cut-short try and held the dpkg lock against the next. Two tries of at most 4
+          # minutes each.
           for try in 1 2; do
-            if timeout 240 uv run --no-sync playwright install --with-deps --only-shell chromium > "$RUNNER_TEMP/browser.log" 2>&1; then
+            if timeout 240 uv run --no-sync playwright install --only-shell chromium > "$RUNNER_TEMP/browser.log" 2>&1; then
               rm -f "$RUNNER_TEMP/browser.log"
               exit 0
             fi

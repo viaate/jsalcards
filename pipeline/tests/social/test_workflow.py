@@ -127,7 +127,10 @@ def test_the_browser_runs_in_its_own_job_with_no_secret_and_no_environment(
         assert step["continue-on-error"] is True, "a failed render falls back, it never stops"
         assert "env" not in step
     browser = steps[names.index("Install the picture's browser")]
-    assert "playwright install --with-deps --only-shell chromium" in browser["run"]
+    assert "playwright install --only-shell chromium" in browser["run"]
+    installs = [line for line in browser["run"].splitlines() if "playwright install" in line]
+    assert installs, browser["run"]
+    assert all("--with-deps" not in line for line in installs), "no apt step: it stalled"
     render_step = steps[names.index("Render")]
     assert render_step["run"] == (
         'uv run --no-sync snowlight social render --sandbox --out "$RUNNER_TEMP/picture"'
