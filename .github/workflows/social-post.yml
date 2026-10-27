@@ -12,7 +12,8 @@
 # nothing until the owner acts on the open issue.
 #
 # Pictures: every post goes with a branded card made fresh in the render job, which holds
-# no secret and has no environment: headless Chromium opens the real site,
+# no secret, has no environment and writes no cache: headless Chromium, in its own sandbox
+# and reaching only the site, its live files and its map tiles, opens the real site,
 # https://snowlightmap.com, unlocks it in that browser only, waits for the live files, hides
 # the site's interface and takes a 1600 x 900 picture of the map alone (the busiest area of
 # lit-up schools, else the district with the highest chance, else the dark national map;
@@ -106,12 +107,20 @@ jobs:
           fi
           rm -f "$RUNNER_TEMP/browser.log"
 
+      # Chromium's own sandbox needs unprivileged user namespaces, which Ubuntu 24.04 may
+      # restrict; this throwaway runner allows them so the browser can sandbox itself (if it
+      # still cannot, the render says so and runs it without, reaching only the site, its live
+      # files and its tiles).
+      - name: Let the picture's browser use its sandbox
+        continue-on-error: true
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 > /dev/null
+
       - name: Render
         id: render
         if: steps.browser.outcome == 'success'
         continue-on-error: true
         timeout-minutes: 15 # two tries of two map views, then the cards (about 2 minutes)
-        run: uv run --no-sync snowlight social render --out "$RUNNER_TEMP/picture"
+        run: uv run --no-sync snowlight social render --sandbox --out "$RUNNER_TEMP/picture"
 
       # The cards, as base64 lines of this job's log, and their digest as the job's output.
       - name: Hand the cards to the post job
@@ -203,7 +212,9 @@ jobs:
 
   log-check:
     needs: post
-    if: always() && needs.post.result != 'skipped'
+    # Only a post job that ran has a log: a cancelled one (a newer run queued behind it) or a
+    # skipped one has none to read.
+    if: always() && (needs.post.result == 'success' || needs.post.result == 'failure')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:

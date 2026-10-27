@@ -619,6 +619,9 @@ def compose(  # noqa: PLR0913 - the card's parts
     context = browser.new_context(
         viewport={"width": WIDTH, "height": HEIGHT}, device_scale_factor=1, color_scheme="dark"
     )
+    # The card page is local files only (the template, its fonts, the map picture): nothing
+    # it asks of the network is fetched.
+    context.route(re.compile(r"^(?:https?|wss?|ftp):", re.IGNORECASE), lambda route: route.abort())
     try:
         page = context.new_page()
         scratch = context.new_page()

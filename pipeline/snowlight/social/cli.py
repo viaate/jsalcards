@@ -120,6 +120,7 @@ def _render(args: argparse.Namespace) -> int:
         live=Path(args.live_dir) if args.live_dir else None,
         view=View(args.view, args.place) if args.view else None,
         fallback=args.fallback,
+        sandbox=args.sandbox,
     )
     if taken is None:
         output.say("::warning::social: no fresh picture; the post uses the library's newest one")
@@ -198,6 +199,11 @@ def register(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") ->
         "--fallback",
         action="store_true",
         help='Make dated library cards ("From <date>", no clock) instead of fresh ones.',
+    )
+    shot.add_argument(
+        "--sandbox",
+        action="store_true",
+        help="Run the browser in Chromium's sandbox (the workflow's render job; not as root).",
     )
     shot.set_defaults(handler=_render)
     out = sub.add_parser("relay-out", help="Print the render job's cards for the post job.")

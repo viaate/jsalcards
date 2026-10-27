@@ -127,7 +127,13 @@ def test_the_browser_runs_in_its_own_job_with_no_secret_and_no_environment(
     assert "playwright install --with-deps --only-shell chromium" in browser["run"]
     render_step = steps[names.index("Render")]
     assert render_step["run"] == (
-        'uv run --no-sync snowlight social render --out "$RUNNER_TEMP/picture"'
+        'uv run --no-sync snowlight social render --sandbox --out "$RUNNER_TEMP/picture"'
+    )
+    sandbox = steps[names.index("Let the picture's browser use its sandbox")]
+    assert names.index("Let the picture's browser use its sandbox") < names.index("Render")
+    assert sandbox["continue-on-error"] is True
+    assert sandbox["run"].startswith(
+        "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0"
     )
     # The post job installs no browser and never runs one: it takes the cards from the log.
     post = workflow["jobs"]["post"]
@@ -161,3 +167,28 @@ def test_the_log_check_also_fails_on_a_command_that_stops_masking(
 ) -> None:
     script = workflow["jobs"]["log-check"]["steps"][0]["run"]
     assert '"::stop-commands::" in line' in script
+
+
+def test_the_render_job_writes_no_cache(workflow: dict[Any, Any]) -> None:
+    # A browser exploit in the render job must find no cache to poison: the live workflows
+    # restore theirs on the default branch with the live secrets.
+    render = workflow["jobs"]["render"]
+    text = yaml.safe_dump(render)
+    for word in ("actions/cache", "save-cache", "cache-dependency-glob", "ACTIONS_CACHE"):
+        assert word not in text, word
+    uses = [step for step in render["steps"] if "uses" in step]
+    for step in uses:
+        if step["uses"].startswith("astral-sh/setup-uv@"):
+            assert step["with"]["enable-cache"] is False
+            assert "cache-local-path" not in step["with"]
+        else:
+            assert step["uses"].startswith("actions/checkout@"), step["uses"]
+    assert "cache" not in yaml.safe_dump([s for s in render["steps"] if "run" in s]).lower()
+
+
+def test_the_log_check_reads_only_a_post_job_that_ran(workflow: dict[Any, Any]) -> None:
+    check = workflow["jobs"]["log-check"]
+    assert check["needs"] == "post"
+    assert check["if"] == (
+        "always() && (needs.post.result == 'success' || needs.post.result == 'failure')"
+    )

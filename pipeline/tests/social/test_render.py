@@ -23,9 +23,13 @@ from snowlight.social import cli
 from snowlight.social.cards import Card
 from snowlight.social.picture import Taken
 from snowlight.social.render import (
+    HOSTS,
     RenderError,
     View,
+    allowed,
     directory_of,
+    guard,
+    launch,
     live_root,
     lock_value,
     render,
@@ -397,3 +401,95 @@ def test_while_closings_are_not_live_no_picture_or_card_shows_them(
     shown = render(tmp_path, facts=SHOWN, site=base, now=lambda: site.now, say=said.append)
     assert shown is not None
     assert shown.kind == "closings"
+
+
+# -- the browser reaches only the site, its live files and its tiles, in its sandbox ------------
+
+
+def test_only_the_site_its_live_files_and_its_tiles_may_be_fetched() -> None:
+    hosts = HOSTS | {"127.0.0.1"}
+    assert allowed("https://snowlightmap.com/data/schools/meta.0a1b.json", hosts)
+    assert allowed("https://viaate.github.io/snowlight-live/v1/live/closings.json", hosts)
+    assert allowed("https://tiles.openfreemap.org/planet/1/2/3.pbf", hosts)
+    assert allowed("http://127.0.0.1:4797/", hosts)
+    assert allowed("data:image/png;base64,AAAA", hosts)
+    assert allowed("blob:https://snowlightmap.com/1234", hosts)
+    for url in (
+        "https://evil.example/x.js",
+        "https://snowlightmap.com.evil.example/",
+        "https://tiles.openfreemap.org.example/",
+        "ftp://snowlightmap.com/",
+        "file:///etc/passwd",
+        "https://snowlight-api.example.workers.dev/session",
+    ):
+        assert not allowed(url, hosts), url
+
+
+def test_the_guard_aborts_every_other_host_and_says_it_once(
+    served: tuple[Site, str],
+) -> None:
+    _site, base = served
+    said: list[str] = []
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        try:
+            context = browser.new_context()
+            blocked = guard(context, HOSTS | {"127.0.0.1"}, said.append)
+            page = context.new_page()
+            page.goto(base + "nothing-here", wait_until="load")
+            fetched = page.evaluate(
+                """async () => {
+                  const results = [];
+                  for (const url of ['https://outside.invalid/a.js', 'https://outside.invalid/b',
+                                     'https://snowlightmap.com.outside.invalid/']) {
+                    try { await fetch(url); results.push('fetched'); }
+                    catch { results.push('blocked'); }
+                  }
+                  return results;
+                }"""
+            )
+        finally:
+            browser.close()
+    assert fetched == ["blocked", "blocked", "blocked"]
+    assert blocked == {"outside.invalid", "snowlightmap.com.outside.invalid"}
+    assert said == [
+        "social: the picture's browser blocked a request to outside.invalid",
+        "social: the picture's browser blocked a request to snowlightmap.com.outside.invalid",
+    ]
+
+
+class _Chromium:
+    """A stand-in browser type whose sandbox cannot start (as for root, or a runner that
+    forbids it)."""
+
+    def __init__(self, *, sandbox_starts: bool) -> None:
+        self.sandbox_starts = sandbox_starts
+        self.launches: list[bool] = []
+
+    def launch(self, **options: Any) -> str:
+        self.launches.append(options["chromium_sandbox"])
+        if options["chromium_sandbox"] and not self.sandbox_starts:
+            raise PlaywrightError("No usable sandbox!")
+        return "browser"
+
+
+@pytest.mark.parametrize("sandbox_starts", [True, False])
+def test_the_workflow_s_browser_runs_in_its_sandbox_when_the_runner_allows_it(
+    *, sandbox_starts: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("HTTPS_PROXY", raising=False)
+    said: list[str] = []
+    chromium = _Chromium(sandbox_starts=sandbox_starts)
+    assert launch(chromium, sandbox=True, say=said.append) == "browser"  # type: ignore[arg-type, comparison-overlap]
+    if sandbox_starts:
+        assert chromium.launches == [True]
+        assert said == ["social: the picture's browser runs in its sandbox"]
+    else:
+        assert chromium.launches == [True, False]
+        assert said[0].startswith(
+            "::warning::social: the picture's browser could not start in its sandbox"
+        )
+        assert "reaching only snowlightmap.com, tiles.openfreemap.org, viaate.github.io" in said[0]
+    local = _Chromium(sandbox_starts=False)
+    assert launch(local, sandbox=False, say=said.append) == "browser"  # type: ignore[arg-type, comparison-overlap]
+    assert local.launches == [False]

@@ -22,6 +22,11 @@ One attempt:
    1600 x 900 PNG of the map alone. The branded card is laid over it afterwards
    (:mod:`snowlight.social.cards`).
 
+The browser reaches only :data:`HOSTS` (the site, its live files and its map tiles; every
+other request is aborted, :func:`guard`), and in the workflow it runs in Chromium's sandbox
+(:func:`launch`; the render job also holds no secret and writes no cache). The card pages it
+lays out next reach no network at all.
+
 A failed attempt gets one more; a second failure exits 1 with no picture, and the post step
 then uses the library's newest card with its own day and description (:mod:`.post`). The
 result is ``picture.png`` (the map alone) and ``picture.json`` (:class:`Taken`) in the output
@@ -32,13 +37,21 @@ folder, and the branded card for each kind of post over it, ``dev-log.png`` and
 import json
 import os
 import re
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Collection, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final
+from urllib.parse import urlsplit
 
-from playwright.sync_api import Browser, BrowserContext, Page, Route, sync_playwright
+from playwright.sync_api import (
+    Browser,
+    BrowserContext,
+    BrowserType,
+    Page,
+    Route,
+    sync_playwright,
+)
 from playwright.sync_api import Error as PlaywrightError
 
 from snowlight.directory.points import PointsFormatError, decode
@@ -74,6 +87,10 @@ FILES_VIEW: Final = "?at=40.9000,-80.6000,6.1"
 """A view where the site reads the school directory and the closings file (it reads them
 only between zoom 5 and 10): the Great Lakes and the Northeast."""
 GL_ARGS: Final = ("--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader")
+HOSTS: Final = frozenset({"snowlightmap.com", "viaate.github.io", "tiles.openfreemap.org"})
+"""The only hosts the picture's browser may reach (and the ``--site`` host, for a dry run
+against a local build): the site, its live files and its map tiles. Every other request is
+aborted, so a page or a tile can pull nothing else into the browser."""
 
 MAP_ONLY: Final = """
 html, body { background: #000 !important; }
@@ -205,6 +222,35 @@ def _json(kept: Kept | None) -> Mapping[str, object] | None:
     return value
 
 
+def allowed(url: str, hosts: Collection[str]) -> bool:
+    """Whether the picture's browser may fetch ``url``: an https (or, for a local dry run,
+    http) address on one of ``hosts``, or a ``data:`` or ``blob:`` one."""
+    parts = urlsplit(url)
+    if parts.scheme in {"data", "blob"}:
+        return True
+    return parts.scheme in {"https", "http"} and (parts.hostname or "") in hosts
+
+
+def guard(context: BrowserContext, hosts: Collection[str], say: Callable[[str], None]) -> set[str]:
+    """Abort every request of ``context`` to a host outside ``hosts``; the blocked hosts, each
+    said once (the host only: never a path or a query)."""
+    blocked: set[str] = set()
+
+    def handler(route: Route) -> None:
+        url = route.request.url
+        if allowed(url, hosts):
+            route.fallback()
+            return
+        host = urlsplit(url).hostname or urlsplit(url).scheme
+        if host not in blocked:
+            blocked.add(host)
+            say(f"social: the picture's browser blocked a request to {host}")
+        route.abort("blockedbyclient")
+
+    context.route("**/*", handler)
+    return blocked
+
+
 @dataclass(slots=True)
 class Attempt:
     """One attempt's browser context and the files its page read."""
@@ -215,6 +261,7 @@ class Attempt:
     kept: dict[str, Kept] = field(default_factory=dict)
     serve: dict[str, Kept] = field(default_factory=dict)
     live: Path | None = None
+    hosts: frozenset[str] = HOSTS
 
     def _keep(self, name: str) -> Callable[[Route], None]:
         def handler(route: Route) -> None:
@@ -294,6 +341,8 @@ class Attempt:
             body, status = (path.read_bytes(), 200) if path.is_file() else (b"{}", 404)
             headers = {"content-type": "application/json", "access-control-allow-origin": "*"}
         else:
+            if not allowed(root + PREDICTIONS, self.hosts):
+                raise RenderError("the live root is not on a host the picture may reach")
             response = page.request.get(root + PREDICTIONS, timeout=TIMEOUT_MS)
             body, status, headers = response.body(), response.status, dict(response.headers)
         kept = Kept(root + PREDICTIONS, status, headers, body)
@@ -364,6 +413,8 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
         # Only behind this machine's TLS-inspecting proxy (dry runs); never in Actions.
         ignore_https_errors=_proxy() is not None,
     )
+    hosts = HOSTS | {urlsplit(site).hostname or ""}
+    guard(context, hosts, say)
     try:
         home = context.request.get(site, timeout=TIMEOUT_MS)
         if home.status != 200:  # noqa: PLR2004
@@ -376,7 +427,7 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
         )
         try:
             page = context.new_page()
-            attempt = Attempt(context, site, say, live=live)
+            attempt = Attempt(context, site, say, live=live, hosts=hosts)
             attempt.watch(page)
             directory, closings_file, root = attempt.files(page)
             if not closings:
@@ -425,6 +476,36 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
     )
 
 
+def launch(chromium: BrowserType, *, sandbox: bool, say: Callable[[str], None]) -> Browser:
+    """The picture's browser. With ``sandbox`` (the workflow's render job) Chromium runs in
+    its own sandbox; if the runner cannot start it, the browser runs without it, said as a
+    warning, still reaching only :data:`HOSTS`. Without (a local dry run, as root) it runs
+    unsandboxed."""
+    proxy = _proxy()
+
+    def start(sandboxed: bool) -> Browser:
+        if proxy is not None:
+            return chromium.launch(
+                args=list(GL_ARGS),
+                chromium_sandbox=sandboxed,
+                proxy=proxy,  # type: ignore[arg-type]
+            )
+        return chromium.launch(args=list(GL_ARGS), chromium_sandbox=sandboxed)
+
+    if not sandbox:
+        return start(False)
+    try:
+        browser = start(True)
+    except PlaywrightError as error:
+        say(
+            "::warning::social: the picture's browser could not start in its sandbox"
+            f" ({_short(error)}): it runs without it, reaching only {', '.join(sorted(HOSTS))}"
+        )
+        return start(False)
+    say("social: the picture's browser runs in its sandbox")
+    return browser
+
+
 def _proxy() -> dict[str, str] | None:
     """This machine's outbound proxy for the browser (dry runs); Actions sets none."""
     server = os.environ.get("HTTPS_PROXY")
@@ -442,6 +523,7 @@ def render(  # noqa: PLR0913 - the render's parts
     attempts: int = ATTEMPTS,
     view: View | None = None,
     fallback: bool = False,
+    sandbox: bool = False,
 ) -> Taken | None:
     """The fresh picture in ``out`` and a card over it for each kind of post
     (``dev-log.png``, ``waitlist.png`` and their notes, :mod:`snowlight.social.cards`), or
@@ -450,8 +532,9 @@ def render(  # noqa: PLR0913 - the render's parts
 
     ``live`` serves the live files from a local folder instead of the live root (a dry run
     against a local build); ``view`` and ``fallback`` make the image library's dated cards.
-    The workflow passes none of them. ``facts`` holds the facts file's switches
-    (:func:`snowlight.social.rules.chances_shown`, :func:`snowlight.social.rules.closings_shown`):
+    The workflow passes none of them; it passes ``sandbox`` (:func:`launch`). ``facts`` holds
+    the facts file's switches (:func:`snowlight.social.rules.chances_shown`,
+    :func:`snowlight.social.rules.closings_shown`):
     without them no picture or card gives a chance or shows closings, and a card's line must be
     words of a LIVE fact.
     """
@@ -462,12 +545,7 @@ def render(  # noqa: PLR0913 - the render's parts
     for stale in stale_files:
         (out / stale).unlink(missing_ok=True)
     with sync_playwright() as playwright:
-        proxy = _proxy()
-        browser = (
-            playwright.chromium.launch(args=list(GL_ARGS), proxy=proxy)  # type: ignore[arg-type]
-            if proxy is not None
-            else playwright.chromium.launch(args=list(GL_ARGS))
-        )
+        browser = launch(playwright.chromium, sandbox=sandbox, say=say)
         try:
             for attempt in range(1, attempts + 1):
                 try:
