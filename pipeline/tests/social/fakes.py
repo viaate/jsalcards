@@ -120,6 +120,11 @@ class FakeD1:
         self.db.commit()
         return rows, cursor.rowcount if cursor.rowcount > 0 else 0
 
+    def rows(self, sql: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
+        cursor = self.db.execute(sql, params)
+        names = [column[0] for column in cursor.description or []]
+        return [dict(zip(names, found, strict=True)) for found in cursor.fetchall()]
+
     def row(self, sql: str, params: tuple[Any, ...] = ()) -> dict[str, Any] | None:
         cursor = self.db.execute(sql, params)
         names = [column[0] for column in cursor.description or []]

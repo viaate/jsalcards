@@ -72,7 +72,7 @@ the pair once for a token with every scope it needs (tweet.read, tweet.write, us
 offline.access, media.write); X's own OAuth 2.0 token generator leaves media.write out. \
 While both are set, `X_REFRESH_TOKEN` is not used. If the OAuth 2.0 client secret was \
 regenerated too, also update `X_CLIENT_SECRET`.
-4. Nothing else to do: the next scheduled run (daily, 16:37 and 20:41 UTC) sees that the \
+4. Nothing else to do: the next scheduled run (daily, 13:07, 17:37 and 00:41 UTC) sees that the \
 secrets are new and starts from them, even when it has nothing to post, and this issue \
 closes itself once the new token works with every scope above.
 

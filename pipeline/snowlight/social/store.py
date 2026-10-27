@@ -30,12 +30,14 @@ opened stays, and each run tries to open it, so it is never lifted as "closed" b
 that never was. ``unknown`` holds when a refresh got no answer (X may have spent the token
 then), so a later refusal of that token says so; a stored rotation clears it.
 
-**The Haiku days** (``social_haiku_days``): one row a UTC day Haiku was asked to write, made
-before the first call with an ``INSERT ... WHERE NOT EXISTS``, so a day gets one try of at
-most four calls whatever happens to it (both drafts failed a check, X refused the post, the
-run stopped): the second daily slot asks Haiku only when the first never reached it.
+**The Haiku tries** (``social_haiku_days``): one row a try Haiku was asked to write, named
+``<UTC day>#<n>``, made before the first call with an ``INSERT ... WHERE NOT EXISTS``, so a
+try is at most four calls whatever happens to it (both drafts failed a check, X refused the
+post, the run stopped), and a day holds at most
+:data:`snowlight.social.post.MAX_HAIKU_PER_DAY` tries (:meth:`Store.haiku_tries`).
 
-**The posts** (``social_posts``): one row a slot (``queue:<id>`` or ``haiku:<UTC day>``),
+**The posts** (``social_posts``): one row a slot (``queue:<id>`` or
+``haiku:<UTC day>#<n>``),
 claimed before anything is sent with one ``INSERT ... SELECT ... WHERE`` that also enforces
 the day's cap, so a slot is posted at most once and a day never holds more than
 :data:`MAX_POSTS_PER_DAY` posts. ``state`` is ``claimed``, then ``posted`` (with the post id)
@@ -72,7 +74,7 @@ and the job's concurrency group runs one post job at a time."""
 STALE_CLAIM: Final = timedelta(minutes=30)
 """A claim older than this belongs to a run that stopped mid-send (the Post step's timeout is
 10 minutes)."""
-MAX_POSTS_PER_DAY: Final = 2
+MAX_POSTS_PER_DAY: Final = 3
 """Posts of every kind in one UTC day, claimed or posted."""
 STORE_TRIES: Final = 3
 
@@ -581,6 +583,16 @@ class Store:
                 return True
             raise
         return made.changes == 1
+
+    def haiku_tries(self, day: str) -> int:
+        """How many times Haiku was asked to write on ``day`` (a UTC date): its rows
+        ``<day>#<n>``, and a row named by the day alone (one try a day, before Oct 27, 2026)."""
+        rows = self.db.run(
+            "SELECT COUNT(*) AS n FROM social_haiku_days WHERE day = ? OR day LIKE ?",
+            (day, f"{day}#%"),
+        ).rows
+        value = rows[0].get("n") if rows else 0
+        return int(value) if isinstance(value, int | str) else 0
 
     def haiku_day(self, day: str) -> str | None:
         """How ``day``'s Haiku try went (``writing``, ``failed``, ``drafted``), or ``None``."""

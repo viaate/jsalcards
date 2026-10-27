@@ -16,8 +16,8 @@
    ``fresh_only`` waits, and holds the queue, until a fresh card fits it); else, on the
    daily scheduled run only, with the Haiku writer switched on in ``social/facts.md``
    (:data:`HAIKU_SWITCH`, read once a run; off, no run calls Anthropic),
-   ``ANTHROPIC_API_KEY`` set, nothing posted in the last :data:`QUIET` and Haiku not yet
-   asked today, one post Haiku writes (styles alternate).
+   ``ANTHROPIC_API_KEY`` set, nothing posted in the last :data:`QUIET` and Haiku asked fewer
+   than :data:`MAX_HAIKU_PER_DAY` times today, one post Haiku writes (styles alternate).
 5. Claim its slot in D1 (the claim also holds the day's cap), take the token chain, refresh,
    store the rotated token, upload the image and post. Every failure after the claim drops
    the claim, except a post X may have made (``uncertain``: never sent again, with the
@@ -29,8 +29,10 @@
    new token is checked and the owner's issue closes without waiting for a post.
 
 Caps (all in code): one post a run; :data:`snowlight.social.store.MAX_POSTS_PER_DAY` a UTC
-day; one Haiku post a UTC day (its slot is the day); one Haiku try a UTC day (its row in
-``social_haiku_days`` is made before the first call), of at most four calls, each at most
+day; at most :data:`MAX_HAIKU_PER_DAY` Haiku tries a UTC day, at least :data:`QUIET` after the
+last post (each try's row in ``social_haiku_days``, named by the day and the try's number, is
+made before its first call, and its post's slot carries the same name), each of at most four
+calls, each at most
 1,024 tokens (:mod:`snowlight.social.writer`). No refresh starts past :data:`REFRESH_BY`
 into the step, so the refresh and its store always finish before the step's timeout.
 """
@@ -100,8 +102,12 @@ Render step times out after 15 minutes, and the post job starts right after it).
 REFRESH_BY: Final = timedelta(minutes=6)
 """The latest a refresh may start, from the start of the run: the Post step times out after
 10 minutes, and the refresh and the store of the rotated token need room before that."""
-QUIET: Final = timedelta(hours=20)
-"""Haiku writes only when nothing was posted for this long."""
+QUIET: Final = timedelta(hours=4)
+"""Haiku writes only when nothing was posted for this long (the three daily runs are at least
+4.5 hours apart)."""
+MAX_HAIKU_PER_DAY: Final = 3
+"""Haiku tries in one UTC day (each of at most :data:`snowlight.social.writer.MAX_CALLS`
+calls, its row made before the first call), so at most this many Haiku posts a day."""
 HAIKU_SWITCH: Final = re.compile(r"^HAIKU_POSTS[ \t]*=[ \t]*(\S+)[ \t]*$", re.MULTILINE)
 """The switch for the daily post Haiku writes: a line of ``social/facts.md`` (docs/social.md,
 "The Haiku writer's switch"). Only one such line, saying ``on``, switches it on; no line, a
@@ -383,14 +389,23 @@ class Run:
         if not self.env.get("ANTHROPIC_API_KEY"):
             self.say("social: nothing queued, and no Anthropic key (ANTHROPIC_API_KEY): no post")
             return None
-        slot = f"haiku:{today.isoformat()}"
+        day = today.isoformat()
+        tries = self.store.haiku_tries(day)
+        if tries >= MAX_HAIKU_PER_DAY:
+            self.say(
+                f"social: Haiku was already asked to write {tries} times on {day}: no more"
+                " tries today"
+            )
+            return None
+        key = f"{day}#{tries + 1}"
+        slot = f"haiku:{key}"
         if slot in taken:
-            self.say("social: Haiku already posted today")
+            self.say(f"social: Haiku already posted for {key}")
             return None
         last = self.store.last_post()
         claimed = _when(last.get("claimed_at")) if last is not None else None
         if claimed is not None and self.now - claimed < QUIET:
-            self.say("social: something was posted in the last 20 hours: no Haiku post")
+            self.say("social: something was posted in the last 4 hours: no Haiku post")
             return None
         style: Style = (
             "waitlist" if last is not None and last.get("style") == "dev_log" else "dev_log"
@@ -399,10 +414,9 @@ class Run:
         if image is None:
             self.say("::warning::social: no fresh picture and an empty library: no Haiku post")
             return None
-        day = today.isoformat()
-        if not self.store.begin_haiku_day(day, self.run_id, self.now):
-            state = self.store.haiku_day(day) or "unknown"
-            self.say(f"social: Haiku was already asked to write for {day} ({state}): no second try")
+        if not self.store.begin_haiku_day(key, self.run_id, self.now):
+            state = self.store.haiku_day(key) or "unknown"
+            self.say(f"social: Haiku was already asked to write for {key} ({state}): no second try")
             return None
         since = (_when(last.get("posted_at")) or claimed) if last is not None else None
         writer = Writer(self.deps.haiku_client())
@@ -437,9 +451,9 @@ class Run:
             )
             self.red = True
         try:
-            self.store.end_haiku_day(day, self.run_id, "failed" if written is None else "drafted")
+            self.store.end_haiku_day(key, self.run_id, "failed" if written is None else "drafted")
         except StoreError:
-            self.say(f"::warning::social: how Haiku's try for {day} went was not recorded")
+            self.say(f"::warning::social: how Haiku's try for {key} went was not recorded")
         if written is None:
             self.say("::warning::social: no Haiku draft passed: no post today")
             return None

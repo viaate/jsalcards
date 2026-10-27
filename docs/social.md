@@ -22,18 +22,21 @@ own account as the managing one.
   `"fresh_only": true` (the first post, `0001`) goes only with a fresh card taken by the run
   that posts it, of a kind its `pictures` list allows; while no fresh card fits, it waits
   (the run ends red and says so) and holds the queue, and Haiku does not write in its place.
-- **The daily post**: the scheduled runs at 16:37 UTC (late morning in the US) and 20:41 UTC
-  (a second slot, in case GitHub drops or delays the first). With the Haiku writer switched
+- **The scheduled posts**: three runs a day, at good times for US parents and students:
+  13:07, 17:37 and 00:41 UTC (about 8 AM, 12:30 PM and 7:40 PM Central in daylight time, an
+  hour earlier after Nov 1). Each posts the next queued post if one is waiting; the owner
+  asked for at least one post a day and 2 to 3 is best, so the queue holds nine posts (three
+  days) until the Haiku writer is switched on. With the Haiku writer switched
   on (below; it is **off** now), nothing queued, `ANTHROPIC_API_KEY` set and nothing posted
-  in the last 20 hours, Haiku
+  in the last 4 hours, Haiku
   (`claude-haiku-5-5`) writes one post, in turn a dev log and a "join the waitlist" post,
   from `social/facts.md`, the subjects of the commits since the last post, and the run's
   fresh card with its description (the only facts about the picture it may use). Without
-  the key the run says "no Anthropic key" and posts only queued posts. Haiku gets one try a
-  UTC day: the run records the day in D1 (`social_haiku_days`) before its first call, so
-  when that try fails (both drafts refused, X refuses the post, the run stops) the second
-  slot asks Haiku nothing that day; it writes only when the first slot never reached Haiku
-  (GitHub dropped it). The commit subjects Haiku sees leave out any with a digit, station
+  the key the run says "no Anthropic key" and posts only queued posts. Haiku gets at most
+  three tries a UTC day, one a run: the run records the try in D1 (`social_haiku_days`,
+  named `<day>#<n>`) before its first call, so a try that fails (both drafts refused, X
+  refuses the post, the run stops) still counts, and a fourth run that day asks Haiku
+  nothing. The commit subjects Haiku sees leave out any with a digit, station
   call letters, a link or (while chances are TESTING) a word of a chance.
 
 ## The Haiku writer's switch
@@ -154,12 +157,14 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
 
 ## Caps (in code, tested)
 
-- At most **1 post a run**, **2 posts a UTC day** of every kind (the D1 claim that starts a
-  post holds the cap, so two runs cannot both pass it), and **1 Haiku post a UTC day** (its
-  record is named by the day).
+- At most **1 post a run**, **3 posts a UTC day** of every kind (the D1 claim that starts a
+  post holds the cap, so two runs cannot both pass it; `store.MAX_POSTS_PER_DAY`), and
+  **3 Haiku tries a UTC day**, at least **4 hours** after the last post
+  (`post.MAX_HAIKU_PER_DAY`, `post.QUIET`; each try's record and its post's slot are named
+  `<day>#<n>`, so a post goes at most once).
 - At most **4 Haiku calls a run** (write, check, and one more try of each), each capped at
-  **1,024 output tokens**, effort `low`, and no SDK retries, and **one Haiku try a UTC day**
-  (its D1 row is made before the first call), so at most 4 calls a day. An answer that says
+  **1,024 output tokens**, effort `low`, and no SDK retries, and **3 Haiku tries a UTC day**
+  (each try's D1 row is made before its first call), so at most 12 calls a day. An answer that says
   the key, the model id or the request is wrong (HTTP 400, 401, 403, 404) stops at once and
   the run ends red. A day's Haiku cost is a fraction of a cent.
 - While posting is stopped (the refused token, or a post X refused for good, below), a run
@@ -442,7 +447,7 @@ skipped**: fix the file and give it a new id, or delete it, then close the issue
    and `X_ACCESS_TOKEN_SECRET` to the Access Token Secret, save. (Pasting a new
    `X_REFRESH_TOKEN` instead works only while the pair is not set, and X's console gives that
    token no `media.write`.)
-3. Done: the next scheduled run (16:37 or 20:41 UTC), or a push to `social/queue/`, starts
+3. Done: the next scheduled run (13:07, 17:37 or 00:41 UTC), or a push to `social/queue/`, starts
    from it and closes the issue once it works with every scope.
 
 ### A claim a stopped run left

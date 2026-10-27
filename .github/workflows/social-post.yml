@@ -1,14 +1,16 @@
 # Posts on the X account @SnowlightMap (docs/social.md): at most one post a run.
 #
 # A push to the default branch that changes social/queue/ (or this file) posts the oldest
-# queued post not posted yet. The daily schedule (16:37 UTC, and 20:41 UTC in case GitHub
-# drops the first) posts a queued post if one is waiting, else one post Claude Haiku writes
+# queued post not posted yet. The schedule, three runs a day at good times for US parents
+# and students (13:07, 17:37 and 00:41 UTC: about 8 AM, 12:30 PM and 7:40 PM Central in
+# daylight time, an hour earlier in standard time), posts a queued post if one is waiting,
+# else one post Claude Haiku writes
 # from social/facts.md, once its HAIKU_POSTS line says on (off now: no run calls Anthropic)
 # and the ANTHROPIC_API_KEY secret is in the x-posting environment (until then it says
 # "no Anthropic key" and posts only queued posts). Caps live in the code
-# (pipeline/snowlight/social): one post a run, two a UTC day, one Haiku post a day, one Haiku
-# try a day of at most four calls (the 20:41 run asks Haiku only when the 16:37 one never
-# did); nothing posted in the last 20 hours before a Haiku post. While posting is stopped
+# (pipeline/snowlight/social): one post a run, three a UTC day, at most three Haiku tries a
+# UTC day of at most four calls each (one a run); nothing posted in the last 4 hours before a
+# Haiku post. While posting is stopped
 # (X refused the token, or refused a post for good) a run asks Haiku nothing and sends
 # nothing until the owner acts on the open issue.
 #
@@ -45,8 +47,9 @@ name: social-post
 
 on:
   schedule:
-    - cron: "37 16 * * *"
-    - cron: "41 20 * * *"
+    - cron: "7 13 * * *"
+    - cron: "37 17 * * *"
+    - cron: "41 0 * * *"
   push:
     branches:
       - claude/keen-faraday-oy7yqw

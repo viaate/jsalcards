@@ -17,8 +17,8 @@ from snowlight.social import logscan, seal
 from snowlight.social.cli import Output
 from snowlight.social.content import ContentError, load
 from snowlight.social.issue import REFUSED_TITLE, TITLE, UNCERTAIN_TITLE
-from snowlight.social.post import Deps, run
-from snowlight.social.store import TABLES
+from snowlight.social.post import MAX_HAIKU_PER_DAY, QUIET, Deps, run
+from snowlight.social.store import MAX_POSTS_PER_DAY, TABLES
 from snowlight.social.xapi import RefusedError, XClient
 from social import fakes
 from social.fakes import (
@@ -207,16 +207,25 @@ def test_one_post_a_run_and_the_next_from_the_stored_chain(tmp_path: Path, world
     assert row == {"version": 2}
 
 
-def test_the_day_never_holds_more_than_two_posts(tmp_path: Path, world: World) -> None:
-    runner = make(tmp_path, world, queue=[queued("0001"), queued("0002"), queued("0003")])
-    for _ in range(3):
+def test_the_day_never_holds_more_than_three_posts(tmp_path: Path, world: World) -> None:
+    assert MAX_POSTS_PER_DAY == 3, "the owner: at least one post a day, 2 to 3 is best"
+    runner = make(
+        tmp_path, world, queue=[queued("0001"), queued("0002"), queued("0003"), queued("0004")]
+    )
+    for _ in range(4):
         runner()
         runner.clock.at += timedelta(minutes=30)
-    assert len(world.x.posts) == 2
+    assert len(world.x.posts) == 3
     assert "taken or the day's cap is reached" in runner.log
+    assert len({post["text"] for post in world.x.posts}) <= 3
+    assert [row["slot"] for row in world.d1.rows("SELECT slot FROM social_posts")] == [
+        "queue:0001",
+        "queue:0002",
+        "queue:0003",
+    ], "never a duplicate post"
     runner.clock.at += timedelta(days=1)
     assert runner() == 0
-    assert len(world.x.posts) == 3
+    assert len(world.x.posts) == 4
 
 
 def test_haiku_writes_the_daily_post_and_styles_alternate(tmp_path: Path, world: World) -> None:
@@ -237,7 +246,7 @@ def test_haiku_writes_the_daily_post_and_styles_alternate(tmp_path: Path, world:
     assert "Show the waitlist count" in requests[0]["messages"][0]["content"]
     row = world.d1.row("SELECT * FROM social_posts WHERE kind = 'haiku'")
     assert row is not None
-    assert row["slot"] == "haiku:2026-10-27"
+    assert row["slot"] == "haiku:2026-10-27#1"
     assert row["style"] == "waitlist"
     runner.clock.at = at("2026-10-28T16:37:00")
     runner.haiku = FakeAnthropic([dict(GOOD_DEV_LOG), dict(OK)])
@@ -288,25 +297,39 @@ def test_the_haiku_writer_switch_decides_whether_any_run_calls_anthropic(
     assert world.d1.row("SELECT COUNT(*) AS n FROM social_haiku_days") == {"n": 0}
 
 
-def test_no_haiku_post_within_20_hours_of_the_last_post(tmp_path: Path, world: World) -> None:
-    runner = make(tmp_path, world, queue=[queued("0001")], when="2026-10-26T01:00:00")
+def test_no_haiku_post_within_4_hours_of_the_last_post(tmp_path: Path, world: World) -> None:
+    assert timedelta(hours=4) == QUIET
+    runner = make(tmp_path, world, queue=[queued("0001")], when="2026-10-26T13:07:00")
     assert runner() == 0
     runner.clock.at = at("2026-10-26T16:37:00")
     assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
-    assert "in the last 20 hours" in runner.log
+    assert "in the last 4 hours" in runner.log
     assert len(world.x.posts) == 1
-
-
-def test_one_haiku_post_a_day_even_when_asked_again(tmp_path: Path, world: World) -> None:
-    runner = make(tmp_path, world)
-    runner.haiku = FakeAnthropic([dict(GOOD_DEV_LOG), dict(OK)])
+    runner.clock.at = at("2026-10-26T17:37:00")
+    runner.haiku = FakeAnthropic([dict(GOOD_DRAFT), dict(OK)])
     assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
-    world.d1.db.execute("UPDATE social_posts SET claimed_at = '2026-10-25T00:00:00Z'")
-    world.d1.db.commit()
+    assert len(world.x.posts) == 2, "4.5 hours after the last post, Haiku writes"
+
+
+def test_at_most_three_haiku_posts_a_day_even_when_asked_again(
+    tmp_path: Path, world: World
+) -> None:
+    assert MAX_HAIKU_PER_DAY == 3
+    runner = make(tmp_path, world, when="2026-10-27T00:41:00")
+    drafts = [GOOD_DEV_LOG, GOOD_DRAFT, GOOD_DEV_LOG]
+    for when, draft in zip(("00:41", "13:07", "17:37"), drafts, strict=True):
+        runner.clock.at = at(f"2026-10-27T{when}:00")
+        runner.haiku = FakeAnthropic([dict(draft), dict(OK)])
+        assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert len(world.x.posts) == 3
+    slots = [row["slot"] for row in world.d1.rows("SELECT slot FROM social_posts")]
+    assert slots == ["haiku:2026-10-27#1", "haiku:2026-10-27#2", "haiku:2026-10-27#3"]
+    runner.clock.at = at("2026-10-27T23:30:00")
     runner.haiku = FakeAnthropic([])
     assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
-    assert "Haiku already posted today" in runner.log
-    assert len(world.x.posts) == 1
+    assert "the day's cap of 3 posts is reached" in runner.log
+    assert runner.haiku.requests == []
+    assert len(world.x.posts) == 3
 
 
 def test_two_failed_haiku_drafts_mean_no_post_today_within_four_calls(
@@ -1142,34 +1165,49 @@ def test_a_new_secret_after_a_refused_chain_posts_the_queue_again(
     assert world.github.issues[0]["state"] == "closed"
 
 
-# -- one Haiku try a day -------------------------------------------------------------------
+# -- at most three Haiku tries a day -------------------------------------------------------
 
 
 BAD_DRAFT = {**GOOD_DEV_LOG, "text": "Dev log: 99% sure the map is live now at snowlightmap.com"}
 
 
-def test_a_failed_haiku_day_is_not_tried_again_by_the_second_slot(
-    tmp_path: Path, world: World
-) -> None:
-    runner = make(tmp_path, world, when="2026-10-27T16:37:00")
-    runner.haiku = FakeAnthropic([dict(BAD_DRAFT), dict(BAD_DRAFT)])
-    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
-    assert "no Haiku draft passed: no post today" in runner.log
-    assert world.d1.row("SELECT day, state FROM social_haiku_days") == {
-        "day": "2026-10-27",
-        "state": "failed",
-    }
-    runner.clock.at = at("2026-10-27T20:41:00")
+def test_a_failed_haiku_try_counts_toward_the_day_s_three(tmp_path: Path, world: World) -> None:
+    runner = make(tmp_path, world, when="2026-10-27T00:41:00")
+    for when in ("00:41", "13:07", "17:37"):
+        runner.clock.at = at(f"2026-10-27T{when}:00")
+        runner.haiku = FakeAnthropic([dict(BAD_DRAFT), dict(BAD_DRAFT)])
+        assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+        assert "no Haiku draft passed: no post today" in runner.log
+    assert world.d1.rows("SELECT day, state FROM social_haiku_days ORDER BY day") == [
+        {"day": f"2026-10-27#{n}", "state": "failed"} for n in (1, 2, 3)
+    ]
+    runner.clock.at = at("2026-10-27T23:00:00")
     runner.haiku = FakeAnthropic([dict(GOOD_DEV_LOG), dict(OK)])
     assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
-    assert runner.haiku.requests == [], "no second try that day"
-    assert "already asked to write for 2026-10-27 (failed)" in runner.log
+    assert runner.haiku.requests == [], "no fourth try that day"
+    assert "already asked to write 3 times on 2026-10-27" in runner.log
     assert world.x.posts == []
     assert world.x.refreshes == 0
-    runner.clock.at = at("2026-10-28T16:37:00")
+    runner.clock.at = at("2026-10-28T13:07:00")
     assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
     assert len(runner.haiku.requests) == 2, "the next day writes again"
     assert len(world.x.posts) == 1
+
+
+def test_a_try_from_before_the_three_a_day_counts_too(tmp_path: Path, world: World) -> None:
+    """A row named by the day alone (one try a day, before Oct 27) counts as that day's
+    first try: the day gets two more, never a fresh three."""
+    runner = make(tmp_path, world, when="2026-10-27T13:07:00")
+    runner.haiku = FakeAnthropic([dict(GOOD_DEV_LOG), dict(OK)])
+    for sql in TABLES:
+        world.d1.db.execute(sql)
+    world.d1.db.execute(
+        "INSERT INTO social_haiku_days (day, state, run, at) VALUES"
+        " ('2026-10-27', 'failed', 'old', '2026-10-27T00:00:00Z')"
+    )
+    world.d1.db.commit()
+    assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
+    assert world.d1.row("SELECT slot FROM social_posts") == {"slot": "haiku:2026-10-27#2"}
 
 
 def test_the_second_slot_writes_when_the_first_never_ran(tmp_path: Path, world: World) -> None:
@@ -1180,19 +1218,21 @@ def test_the_second_slot_writes_when_the_first_never_ran(tmp_path: Path, world: 
     assert world.d1.row("SELECT state FROM social_haiku_days") == {"state": "drafted"}
 
 
-def test_a_haiku_post_x_did_not_take_is_not_written_again_that_day(
+def test_a_haiku_post_x_did_not_take_is_never_sent_again_and_counts_as_a_try(
     tmp_path: Path, world: World
 ) -> None:
-    runner = make(tmp_path, world, when="2026-10-27T16:37:00")
+    """X never got the post (the refresh failed): nothing went out, and the day's next run is
+    a new try of its own, with its own slot, posted once."""
+    runner = make(tmp_path, world, when="2026-10-27T13:07:00")
     world.x.refresh_status = 503
     runner.haiku = FakeAnthropic([dict(GOOD_DEV_LOG), dict(OK)])
     assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 1
     world.x.refresh_status = 200
-    runner.clock.at = at("2026-10-27T20:41:00")
-    runner.haiku = FakeAnthropic([])
+    runner.clock.at = at("2026-10-27T17:37:00")
+    runner.haiku = FakeAnthropic([dict(GOOD_DEV_LOG), dict(OK)])
     assert runner("schedule", ANTHROPIC_API_KEY=fakes.ANTHROPIC_KEY) == 0
-    assert runner.haiku.requests == []
-    assert world.x.posts == []
+    assert [post["text"] for post in world.x.posts] == [GOOD_DEV_LOG["text"]], runner.log
+    assert world.d1.row("SELECT slot FROM social_posts") == {"slot": "haiku:2026-10-27#2"}
 
 
 def test_a_bad_anthropic_key_stops_at_once_and_ends_red(tmp_path: Path, world: World) -> None:

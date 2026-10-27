@@ -31,7 +31,13 @@ def test_only_the_schedule_and_pushes_to_the_default_branch_start_it(
 ) -> None:
     triggers = workflow[True]  # YAML 1.1 reads the key "on" as true
     assert set(triggers) == {"schedule", "push"}
-    assert triggers["schedule"] == [{"cron": "37 16 * * *"}, {"cron": "41 20 * * *"}]
+    # Three runs a day at good times for US parents and students (the owner: at least one
+    # post a day, 2 to 3 is best): about 8 AM, 12:30 PM and 7:40 PM Central in daylight time.
+    assert triggers["schedule"] == [
+        {"cron": "7 13 * * *"},
+        {"cron": "37 17 * * *"},
+        {"cron": "41 0 * * *"},
+    ]
     assert triggers["push"] == {
         "branches": [BRANCH],
         "paths": ["social/queue/**", ".github/workflows/social-post.yml"],
