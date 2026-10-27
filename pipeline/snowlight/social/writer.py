@@ -33,6 +33,7 @@ from snowlight.social.content import Content, Image
 from snowlight.social.rules import (
     CALL_SIGN,
     URL,
+    VOICE_WORDS,
     Fact,
     Facts,
     Style,
@@ -308,6 +309,11 @@ def write_prompt(  # noqa: PLR0913 - the prompt's parts
         "The picture (set image_id to its id; the post must fit what it shows, and may say "
         "about it only what its description says):\n" + _library(content.images),
     ]
+    parts.append(
+        "Words: use only words that appear in the facts, the picture's description or the"
+        " commit subjects below, plus small words (the, a, and, of, I, it, ...) and these plain"
+        " words: " + ", ".join(sorted(VOICE_WORDS)) + ". Any other word gets the post refused."
+    )
     if commits:
         parts.append(
             "What I changed since the last post (commit subjects; describe only in plain words "
@@ -385,6 +391,7 @@ def draft(  # noqa: PLR0912, PLR0913 - one check a branch; the run's parts
                 image_description=image.describe(),
                 image_is_today=image.current,
                 model_fact=model_fact,
+                commits=commits,
             )
         if not problems and image is not None:
             written = Written(

@@ -685,3 +685,265 @@ def test_the_chances_fact_names_only_the_lower_48_states() -> None:
     assert "lower 48 states" in chances.text
     assert "every US" not in chances.text
     assert "every US public school district" not in FACTS.said
+
+
+def checked(text: str, *, commits: tuple[str, ...] = (), style: Style = "waitlist") -> list[str]:
+    """The problems of ``text`` with the model fact and the link; with ``commits`` holding the
+    draft itself, every word of it is in the closed vocabulary, so only the other rules speak."""
+    return check(
+        text,
+        style=style,
+        facts=FACTS,
+        image_description=NATIONAL,
+        image_is_today=True,
+        commits=commits,
+    )
+
+
+NATIONAL = (
+    "A picture of the dark Snowlight map of the contiguous US taken at 8:05 PM Central time on"
+    " October 26, 2026: near-black land, gray state lines and city names. At this zoom the map"
+    " draws no school specks. (taken for this post)"
+)
+MODEL_3 = (
+    " Snowlight's chances come from a prediction model trained on real closing records, not a"
+    " guess."
+)
+BLEED_3 = [
+    # A not-live word in one clause never excuses a term in the next.
+    "Phone alerts are coming; closed schools glow across the US tonight.",
+    "Phone alerts are coming; closings light up every state.",
+    "Phone alerts are next; closings show for every state.",
+    "Push alerts soon, closings on the map tonight.",
+    # A coming word with "it" or "them" never speaks of what came before.
+    "Closed schools glow on the map, and I will keep polishing it.",
+    "Every closed school glows on the map and I will tune them.",
+    # One not-live word across a verb never speaks of a list.
+    "Schools glow and phone alerts are coming.",
+    "Closed schools glow and phone alerts are coming.",
+    "Closings show on the map and notifications are coming.",
+    # Testing left behind is a live claim.
+    "The map left testing.",
+    "The map graduated from testing.",
+    "The map came out of testing.",
+    "The map moved past testing.",
+    "Practice mode is out of beta.",
+    # A testing word never excuses an access phrase.
+    "You can search by ZIP code while I keep testing.",
+    "You can search by ZIP code, still in testing.",
+]
+OTHERS_3 = [
+    "Not Snow Day Calc:",
+    "Not SDCalc:",
+    "Not SnowDay Predict:",
+    "Not snowdaycalc:",
+    "Most predictions online are made up;",
+    "Plenty of people eyeball the sky.",
+    "Influencers hype every storm.",
+    "Another site plugs in snowfall totals.",
+    "Old wives' tales say flush ice cubes;",
+    "Grandma flushes ice cubes down the toilet;",
+    "Hunches are fun.",
+    "Way beyond a snowfall widget:",
+    "Nothing else does this:",
+]
+CLAIMS_3 = [
+    "Snowlight runs an industry-leading prediction model trained on real closing records, not a"
+    " guess.",
+    "Snowlight's state-of-the-art prediction model is trained on real closing records, not a"
+    " guess.",
+    "Snowlight's prediction model is the gold standard, trained on real closing records, not a"
+    " guess.",
+    "Snowlight's prediction model is as good as it gets, trained on real closing records, not a"
+    " guess.",
+    "Snowlight's prediction model is top-notch and trained on real closing records, not a guess.",
+    "Snowlight's prediction model outclasses the field and is trained on real closing records,"
+    " not a guess.",
+    # Accuracy in other words.
+    "The model held its own on past winters it never saw.",
+    "The model lands most calls on past winters it never saw.",
+    "Strong results walk-forward on past winters it never saw.",
+    "Walk-forward tested on past winters it never saw, and the results impressed me.",
+    "I'm confident in the model after testing it walk-forward on past winters it never saw.",
+    # Invented claims.
+    "Android and iPhone are coming this winter.",
+    "iPhone version is coming.",
+    "You'll get an email every morning there's a snow day.",
+    "I hired a meteorology student to help.",
+    "Snowlight partnered with a school district.",
+    "Snowlight got featured on the local paper.",
+    "The waitlist blew up overnight.",
+    "A bunch of you joined the waitlist this week.",
+    "Some of you joined the waitlist this week.",
+    "Superintendents already asked for access.",
+    "No charge for families.",
+    "My GitHub is viaate.",
+    "Snowlight's prediction model is trained on a decade of real closing records, not a guess.",
+    "Snowlight's prediction model is trained on years of real closing records, not a guess.",
+    # A chance's level without a number while chances are TESTING.
+    "The model says a few districts could close.",
+    "Some schools might get a snow day this week, says the model.",
+    "Snow day looking good for the Northeast, per the model.",
+    "The model's numbers are high for the Rockies.",
+    "The prediction model has its eye on the Rockies.",
+    "The model put Denver's chance way up.",
+]
+
+
+@pytest.mark.parametrize("text", BLEED_3 + OTHERS_3 + CLAIMS_3)
+@pytest.mark.parametrize("style", ["dev_log", "waitlist"])
+def test_round_three_drafts_are_refused(text: str, style: Style) -> None:
+    whole = text + ("" if "prediction model" in text else MODEL_3) + LINK
+    assert checked(whole, style=style), whole
+
+
+@pytest.mark.parametrize("text", BLEED_3)
+def test_round_three_bleeds_are_refused_by_the_not_live_rules_alone(text: str) -> None:
+    whole = text + MODEL_3 + LINK
+    found = checked(whole, commits=(whole,))
+    assert any(
+        "without saying it is" in line or "live (" in line or "use Snowlight now" in line
+        for line in found
+    ), (whole, found)
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["Not Snow Day Calc:", "Not SDCalc:", "Not SnowDay Predict:", "Not S.D.Calc:", "Not calcs:"],
+)
+def test_short_competitor_names_are_refused_by_the_name_rules_alone(text: str) -> None:
+    whole = text + MODEL_3 + LINK
+    found = checked(whole, commits=(whole,))
+    assert any("another product" in line or "'SDC'" in line for line in found), (whole, found)
+
+
+@pytest.mark.parametrize(
+    ("text", "word"),
+    [
+        ("The model held its own on past winters it never saw.", "held its own"),
+        ("I'm confident in the model.", "confident"),
+        ("The results impressed me.", "results"),
+        ("You'll get an email every morning there's a snow day.", "email every"),
+        ("Join to get emails.", "emails"),
+        ("Some of you joined the waitlist.", "joined"),
+        ("The model put Denver's chance way up.", "Denver's chance"),
+        ("The model says some districts could close.", "could"),
+    ],
+)
+def test_round_three_claims_are_refused_by_their_own_rules_too(text: str, word: str) -> None:
+    whole = text + MODEL_3 + LINK
+    found = checked(whole, commits=(whole,))
+    assert any(f"'{word}" in line for line in found), (whole, found)
+
+
+@pytest.mark.parametrize(
+    ("text", "unknown"),
+    [
+        ("Most predictions online are made up;", "online"),
+        ("Influencers hype every storm.", "influencers"),
+        ("Snowlight runs an industry-leading prediction model.", "industry"),
+        ("Snowlight's prediction model outclasses the field.", "outclasses"),
+        ("I hired a meteorology student to help.", "hired"),
+        ("Android and iPhone are coming this winter.", "android"),
+        ("The prediction model has its eye on the Rockies.", "eye"),
+        ("Way beyond a snowfall widget:", "beyond"),
+    ],
+)
+def test_words_outside_the_closed_vocabulary_are_named(text: str, unknown: str) -> None:
+    found = " | ".join(checked(text + MODEL_3 + LINK))
+    assert "words the facts" in found
+    assert f"'{unknown}'" in found
+
+
+R3_TRUE = [
+    (
+        "model",
+        "Dev log: Snowlight's chances come from a statistical model fit to real past school"
+        " days whose outcome is known. Not a guess. Waitlist link in my bio.",
+    ),
+    (
+        "model",
+        "Spent the night on the prediction model. It's fit to real past school days where I"
+        " know what happened, so the chances aren't a guess.",
+    ),
+    (
+        "model-days",
+        "Snowlight's model learned from 2,388 real past school days with known"
+        " outcomes: 1,547 with no school, 109 delayed starts, 732 open. Waitlist link in my bio.",
+    ),
+    (
+        "model-tested",
+        "I tested the model walk-forward on past winters: each winter scored by a"
+        " model fit only to the winters before it, so it never saw those days.",
+    ),
+    (
+        "model-alerts",
+        "When the weather service issues a winter storm warning, the model's chance"
+        " moves with it. Waitlist link in my bio.",
+    ),
+    (
+        "model",
+        "Snowlight's chances come from a prediction model, not a guess. Phone alerts are"
+        " coming this winter, and closings on the map start this winter too.",
+    ),
+    (
+        "model",
+        "At launch, closed schools will glow on the map like city lights. The chances"
+        " behind them come from a statistical model trained on real past school days.",
+    ),
+    (
+        "model",
+        "Phone alerts and closings are coming this winter. Snowlight's chances come from a"
+        " prediction model, not a guess.",
+    ),
+    (
+        "model",
+        "Closings on the map and phone alerts are coming this winter. Snowlight's chances"
+        " come from a prediction model, not a guess.",
+    ),
+    (
+        "model",
+        "At launch you can search by ZIP code. Snowlight's chances come from a prediction"
+        " model, not a guess. Waitlist link in my bio.",
+    ),
+    (
+        "model",
+        "Once closings are on the map this winter, the model will learn from them."
+        " Snowlight's chances come from a prediction model, not a guess.",
+    ),
+]
+
+
+@pytest.mark.parametrize(("fact", "text"), R3_TRUE)
+def test_true_paraphrases_of_live_facts_pass(fact: str, text: str) -> None:
+    style: Style = "waitlist" if "link in my bio" in text else "dev_log"
+    assert (
+        check(
+            text,
+            style=style,
+            facts=FACTS,
+            image_description=NATIONAL,
+            image_is_today=True,
+            model_fact=FACTS.get(fact),
+        )
+        == []
+    )
+
+
+def test_a_commit_subject_s_words_join_the_vocabulary_only_when_shown() -> None:
+    text = "Dev log: I fixed the card legend." + MODEL_3
+    assert any("'card', 'legend'" in line for line in checked(text, style="dev_log"))
+    assert checked(text, style="dev_log", commits=("Fix the card legend on small screens",)) == []
+
+
+def test_a_known_hashtag_is_outside_the_vocabulary_and_any_other_is_a_word() -> None:
+    assert checked("Dev log." + MODEL_3 + " #buildinpublic", style="dev_log") == []
+    assert any("'snowdaycalc'" in line for line in checked("Dev log." + MODEL_3 + " #SnowDayCalc"))
+
+
+def test_a_hype_word_is_fine_only_as_a_fact_s_own_words() -> None:
+    assert not any(
+        "hype" in line
+        for line in checked("Each winter was scored by a model fit only to the winters before it.")
+    )
+    assert any("'only'" in line for line in checked("Snowlight is the only prediction model."))
