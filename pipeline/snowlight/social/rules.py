@@ -17,32 +17,49 @@ for what it claims:
   "famous", "popular", "elsewhere", "out there", "everyone else", "better than",
   "outperform", "superior", "more accurate", "AI", "ML", "neural", "ChatGPT", any "-er than"
   or "more ... than", and any "guess" but "not a guess" are refused (:data:`BANNED`,
-  :data:`HYPE`, :data:`OTHER_PEOPLE`, :data:`OTHERS`).
+  :data:`HYPE`, :data:`OTHER_PEOPLE`, :data:`OTHERS`); so are what others do or use ("instead
+  of", rivals, alternatives, the radar, rumors, vibes, tricks, weathermen, the news, TV), any
+  plural of a product word ("news sites", "TV stations": :data:`PLURAL_OTHERS`), uniqueness
+  ("the first", "the largest", "unique", "unmatched"), "SDC" however it is spaced or dotted, and
+  any letter outside the Latin script or invisible character (a Cyrillic a in
+  "calculator", a zero-width space inside a name).
 * **No accuracy, no made-up product.** No accuracy claim with or without a number ("always
   right", "called most snow days right", "hit rate", "reliable", "correct": :data:`ACCURACY`),
   and nothing the facts do not say about the product or who uses it ("download", "the app",
-  "free", "schools use", "trusted by": :data:`PRODUCT`). No school, district or station is
-  named (:data:`DISTRICT_NAME`, :data:`CALL_SIGN`), and no version or other run-together
+  "free", "schools use", "trusted by", a team, investors, "daily emails", "never shared", a
+  growing waitlist: :data:`PRODUCT`). No school, district, station or person is named
+  (:data:`DISTRICT_NAME`, :data:`CALL_SIGN`, :data:`PERSON`), no state unless the picture's
+  description names it (:data:`STATES`), and no version or other run-together
   letter-and-digit word the facts do not hold ("v3").
 * **Nothing to use yet.** "You can now", "check your school", "see your district", "find it
   on" and the like only of the waitlist, or worded as coming: the map is behind a lock until
   launch. A post that names the waitlist says "link in my bio".
 
-* **Not live called live.** A sentence that names a TESTING or COMING fact (by its terms)
-  must say it is in testing or coming, and may never hold a live claim ("is live", "shows
-  up", "ships", "works for everyone") or a negation of testing ("no longer", "done testing",
-  "practice is over"). A sentence with a live claim that names no LIVE fact is refused too
-  ("Snowlight is live").
+* **Not live called live.** Each TESTING or COMING term is judged where it stands: a word
+  that says it is not live must be said of it (:func:`_excused`: next to it in its clause, or
+  nearer to it than to anything else not live, or as "testing them" after it), and only a
+  word true of it (a COMING fact is "coming", never "in testing" or "in practice"; "practice"
+  excuses only the reader's practice mode). "Closings glow on the map; notifications are
+  coming" names the closings with nothing said of them. A term with "already", "works", "is
+  on", "turned on" or "ends" near it is refused whatever else is said (:data:`ALREADY`). A
+  sentence with a live claim ("is live", "shows up", "ships", "works for everyone") or a
+  negation of testing ("no longer", "done testing", "practice is over") may name no TESTING or
+  COMING fact, and must name a LIVE one ("Snowlight is live" is refused).
 * **Numbers.** Every number, in digits or in words (``fifty``, ``twenty-four``, ``first``),
-  must be in ``social/facts.md`` in the same form and used as the facts use it (a word next
-  to it is next to it in the facts too, so ``24/7`` never becomes "24 schools"). A number
+  must be in ``social/facts.md`` in the same form and used as the facts use it: a word near it
+  is near it in the facts too, the word right after it (its noun) is among the facts' first
+  three after it, and a number in digits shares a word before it in its sentence with the
+  facts' sentence (``24/7`` never becomes "24 schools", ``11 past winters`` never "11 states",
+  "the directory holds 118,211 schools" never "the reader checks 118,211 schools"). A number
   from the picture's description is never written: the card carries those, labeled.
 * **Dates.** "tomorrow", "next week", "next Monday", a weekday or a month name only as the
   facts or the picture's description use it.
 * **Chances while TESTING.** While the facts file marks ``chances`` TESTING (the site is
   locked until the chances are ready, :func:`chances_shown`), no post gives a chance: no
-  percent, no "percent", no odds and no level ("a high chance", "chances are low"), and the
-  facts file itself may hold no percent then. A sentence may still say where the chances come
+  percent, no "percent", no odds and no level ("a high chance", "chances are low"), no
+  likelihood of a closing in other words near a closing word ("a coin flip", "near certain",
+  "probably close", "expects closings": :data:`GUESSED_LEVEL`), and the facts file itself may
+  hold no percent then. A sentence may still say where the chances come
   from when it names a LIVE model fact whose own words speak of them ("each district's chance
   comes from a statistical model"), but only with no word that offers them to anyone
   (:data:`OFFERED`: "see your district's chance", "chances are up", "posted", "already
@@ -200,7 +217,10 @@ SPELLED: Final = re.compile(
     r"(?:-(?:" + "|".join(UNITS[:10] + ORDINALS[:9]) + r"))?s?(?![a-z])"
 )
 """A number in words (``fifty``, ``twenty-four``, ``first``, ``thousands``)."""
-NOT_SPELLED: Final = re.compile(r"\b(?:no|any|every|some) one\b|\bone another\b")
+NOT_SPELLED: Final = re.compile(
+    r"\b(?:no|any|every|some|each|this|that|which|the|a|new) one\b|\bone another\b"
+    r"|\bone (?:of|day)\b"
+)
 """``one`` as a pronoun, not a number."""
 DATE_WORDS: Final = re.compile(
     r"\b(?:tomorrow|yesterday|weekend|monday|tuesday|wednesday|thursday|friday|saturday"
@@ -350,8 +370,58 @@ HYPE: Final = (
     "out there",
     "the usual",
     "gut",
+    "rival",
+    "rivals",
+    "alternative",
+    "alternatives",
+    "instead",
+    "radar",
+    "rumor",
+    "rumors",
+    "rumour",
+    "rumours",
+    "vibe",
+    "vibes",
+    "weatherman",
+    "weathermen",
+    "weather man",
+    "meteorologist",
+    "meteorologists",
+    "forecaster",
+    "trick",
+    "tricks",
+    "biggest",
+    "largest",
+    "unique",
+    "uniquely",
+    "unmatched",
+    "unrivaled",
+    "unparalleled",
+    "one of a kind",
+    "one-of-a-kind",
+    "first ever",
+    "first-ever",
+    "first of its kind",
+    "huge",
+    "massive",
+    "news",
+    "tv",
+    "forget the",
+    "other product",
+    "other products",
+    "other service",
+    "other people's",
 )
-"""Banned as whole words: superlatives, comparisons and the other apps and sites."""
+"""Banned as whole words: superlatives, uniqueness ("the largest set", "unique",
+"unmatched"), hype ("huge", "massive") and others or what they do: rivals, alternatives, "instead
+of", the radar, rumors, vibes, weathermen, the news and TV, tricks."""
+PLURAL_OTHERS: Final = re.compile(
+    r"\b(?:sites|websites|stations|channels|apps|products|services|accounts|pages|forecasters"
+    r"|predictors|calculators|trackers|bots|tools)\b",
+    re.IGNORECASE,
+)
+"""Any "<noun> sites", "TV stations", "news apps": Snowlight is one map, so a plural of a
+product word is always about others."""
 OTHER_PEOPLE: Final = (
     "other people",
     "most people",
@@ -383,6 +453,33 @@ ACCURACY: Final = (
     "calibrated",
     "error rate",
     "success rate",
+    "wrong",
+    "rarely wrong",
+    "seldom wrong",
+    "proven",
+    "proves",
+    "proved",
+    "it works",
+    "works well",
+    "worked well",
+    "held up",
+    "holds up",
+    "hold up",
+    "scored well",
+    "scores well",
+    "did well",
+    "does well",
+    "performs",
+    "performed",
+    "count on",
+    "precision",
+    "precisely",
+    "science-backed",
+    "backed by science",
+    "scientific",
+    "validated",
+    "verified",
+    "dependable",
 )
 """Accuracy claims with or without a number: the past records lean toward storm days, so no
 accuracy is ever posted."""
@@ -410,14 +507,52 @@ PRODUCT: Final = (
     "trusted by",
     "trust",
     "trusts",
+    "team",
+    "teams",
+    "we",
+    "we're",
+    "we've",
+    "our",
+    "ours",
+    "co-founder",
+    "cofounder",
+    "investor",
+    "investors",
+    "backed by",
+    "funded",
+    "funding",
+    "daily emails",
+    "daily email",
+    "weekly",
+    "newsletter",
+    "newsletters",
+    "shared",
+    "growing",
+    "grows",
+    "signups",
+    "sign-ups",
+    "subscribers",
+    "followers",
+    "love",
+    "loves",
+    "loved",
 )
-"""What the facts never say of the product: an app to download, a price, who uses it."""
+"""What the facts never say of the product or its maker: an app to download, a price, who
+uses it, a team or investors (I build it alone), more email than the one at launch, an email
+"never shared" (the fact says never sold), a growing waitlist."""
+PERSON: Final = re.compile(
+    r"\b(?:my\s+)?(?:friend|friends|buddy|dad|father|mom|mother|brother|sister|teacher|coach"
+    r"|cousin|uncle|aunt|classmate|neighbor|partner)\s+[A-Z][a-z]+",
+)
+""""My friend Jake": the posts name no person."""
 DISTRICT_NAME: Final = re.compile(
-    r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Public\s+Schools|School\s+District|City\s+Schools"
-    r"|County\s+Schools|Area\s+Schools|Community\s+Schools|Unified|Schools|Academy"
-    r"|High\s+School|Middle\s+School|Elementary)\b|\b(?:ISD|CISD|USD|CUSD|UFSD|CSD)\b"
+    r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Public\s+Schools?|School\s+District|City\s+Schools?"
+    r"|County\s+Schools?|Area\s+Schools?|Community\s+Schools?|Unified|Schools?|Academy"
+    r"|High(?:\s+School)?|Middle(?:\s+School)?|Elementary(?:\s+School)?)(?:'s|\u2019s)?\b"
+    r"|\b(?:ISD|CISD|USD|CUSD|UFSD|CSD)\b"
 )
-"""A school or district by name ("Bozeman Public Schools", "Katy ISD"): never named."""
+"""A school or district by name, plural, singular or possessive ("Bozeman Public Schools",
+"Denver Public School's", "Lincoln High's", "Katy ISD"): never named."""
 SPACED_AI: Final = re.compile(r"\bA\.?\s+I\b\.?|\bM\.\s?L\.")
 """"A I" and "M.L." spelled apart."""
 LETTERS_AND_DIGITS: Final = re.compile(r"\b(?=[a-z0-9]*[a-z])(?=[a-z0-9]*\d)[a-z0-9]+\b", re.I)
@@ -508,7 +643,8 @@ OFFERED: Final = (
 """Words that offer a TESTING thing to someone ("see your district's chance", "the chances
 are up", "posted for every district"): a sentence naming the TESTING chances by a LIVE model
 fact's words is excused only without them."""
-SDC: Final = re.compile(r"\bsdc\b", re.IGNORECASE)
+SDC: Final = re.compile(r"\bs[\s.\-_*]*d[\s.\-_*]*c\b", re.IGNORECASE)
+"""'SDC' however it is spaced or dotted ("S.D.C.", "S D C")."""
 NOT_LIVE_WORDS: Final[dict[Status, tuple[str, ...]]] = {
     "LIVE": (),
     "TESTING": (
@@ -539,7 +675,7 @@ NOT_LIVE_WORDS: Final[dict[Status, tuple[str, ...]]] = {
         "plan to",
         "not live",
         "not yet",
-        "before launch",
+        "yet",
         "at launch",
         "launching",
         "this winter",
@@ -550,9 +686,46 @@ NOT_LIVE_WORDS: Final[dict[Status, tuple[str, ...]]] = {
         "once it launches",
     ),
 }
-"""Words that say a fact is not live. Either list does for a TESTING or a COMING fact ("the
-map is coming" and "closings in testing" are both true of something not live yet)."""
+"""Words that say a fact is not live, each excusing only the facts it is true of
+(:func:`_excuses`): a COMING fact only by the COMING words (closings, the glow, notifications
+and the model's learning are not "in testing" or "in practice": they are not on at all), a
+TESTING fact by either list, and "practice" only a fact whose own text speaks of practice
+mode (the reader's practice, never the map, the glow or the closings). "Before launch" is a
+TESTING word only ("only I can open it before launch"): "before launch I put every closed
+school on the map" calls the closings done."""
 NOT_LIVE: Final = tuple(dict.fromkeys(NOT_LIVE_WORDS["TESTING"] + NOT_LIVE_WORDS["COMING"]))
+EXCUSE_GAP: Final = 6
+"""The most words between a TESTING or COMING term and the word that says it is not live, in
+one clause ("phone alerts and closings are coming"; not "closings glow on the map tonight and
+phone alerts are coming")."""
+CLAUSE: Final = re.compile(
+    r"\s*[,;:\u2013\u2014()]\s*|\s+-\s+|\s+(?:but|so|yet|although|though)\s+"
+    r"|\s+and\s+(?=(?:i|i'm|i've|i'll|it|it's|they|they're|we|you|there|now|then)\b)",
+    re.IGNORECASE,
+)
+"""Where a sentence's clauses part: each TESTING or COMING term is judged in its own clause, so
+a "coming" said of one thing never excuses another ("Closings glow on the map, notifications
+next.")."""
+VAGUE: Final = (
+    "more coming",
+    "more to come",
+    "more soon",
+    "more on the way",
+    "more is coming",
+    "with more",
+    "adding more",
+    "and more",
+)
+"""Words of "more to come" that say nothing is not live: they never excuse a term."""
+ALREADY: Final = re.compile(
+    r"\balready\b|\bworks?\b(?!\s+out)|\bworking\b(?!\s+on)|\b(?:turned|switched)\s+on\b"
+    r"|\b(?:is|are|now)\s+on\b(?!\s+(?:the|a|an|my|your|every|each|its|their|this|that)\b)"
+    r"|\bend(?:s|ed|ing)?\b",
+    re.IGNORECASE,
+)
+"""Words that say a thing is on or done ("already", "works", "is on", "turned on", "ends"): a
+clause holding one never names a TESTING or COMING fact, whatever else it says ("Watches
+already raise chances while I test them", "Practice mode ends this week")."""
 LIVE_CLAIMS: Final = (
     "is live",
     "are live",
@@ -685,6 +858,65 @@ LEVEL: Final = (
     "certain",
 )
 """Words that give a chance's level, refused near "chance" while chances are TESTING."""
+GUESSED_LEVEL: Final = (
+    "coin flip",
+    "coin-flip",
+    "coin toss",
+    "fifty-fifty",
+    "50-50",
+    "50/50",
+    "toss-up",
+    "toss up",
+    "certain",
+    "certainly",
+    "near certain",
+    "probable",
+    "probably",
+    "likely",
+    "unlikely",
+    "expect",
+    "expects",
+    "expected",
+    "expecting",
+    "watching",
+    "sure thing",
+    "sure bet",
+    "safe bet",
+    "good bet",
+    "odds-on",
+)
+"""Words that give a closing's chance without the word "chance" ("a coin flip", "near
+certain", "probably close"): refused near :data:`CLOSING_WORDS` while chances are TESTING."""
+CLOSING_WORDS: Final = (
+    "snow day",
+    "snow days",
+    "no school",
+    "close",
+    "closes",
+    "closed",
+    "closing",
+    "closings",
+    "closure",
+    "closures",
+    "delay",
+    "delays",
+    "delayed",
+    "district",
+    "districts",
+    "school",
+    "schools",
+)
+STATES: Final = re.compile(
+    r"\b(?:Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|Florida"
+    r"|Georgia|Hawaii|Idaho|Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland"
+    r"|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|Montana|Nebraska|Nevada"
+    r"|New\s+Hampshire|New\s+Jersey|New\s+Mexico|New\s+York|North\s+Carolina|North\s+Dakota"
+    r"|Ohio|Oklahoma|Oregon|Pennsylvania|Rhode\s+Island|South\s+Carolina|South\s+Dakota"
+    r"|Tennessee|Texas|Utah|Vermont|Virginia|Washington|West\s+Virginia|Wisconsin|Wyoming"
+    r"|Puerto\s+Rico|Guam|Canada|Mexico)\b"
+)
+"""A state (or a place outside the lower 48) by name: a post names one only as the picture's
+description or the facts do ("watching Montana closely" is a chance in other words)."""
 CLOCK: Final = re.compile(r"\b\d{1,2}(?::\d{2})?\s?(?:a\.?m\.?|p\.?m\.?)(?![a-z])", re.IGNORECASE)
 
 
@@ -829,29 +1061,81 @@ def _stem(word: str) -> str:
 
 
 def _tokens(text: str) -> list[str]:
-    return [_number(token) for token in TOKEN.findall(text.lower())]
+    return [
+        _number(token).removesuffix("'s").removesuffix("\u2019s")
+        for token in TOKEN.findall(text.lower().replace("\u2019", "'"))
+    ]
+
+
+@dataclass(frozen=True, slots=True)
+class Use:
+    """One use of a number or a word: the words near it, the words before it in its
+    sentence, and the first words after it (stop words left out)."""
+
+    near: frozenset[str]
+    before: frozenset[str]
+    after: tuple[str, ...]
+
+
+def _uses_of(text: str, item: str) -> list[Use]:
+    found: list[Use] = []
+    for sentence in _sentences(text):
+        tokens = _tokens(sentence)
+        for index, token in enumerate(tokens):
+            if _stem(token) != _stem(item):
+                continue
+            ahead = tokens[index + 1 : index + 1 + WINDOW]
+            near = tokens[max(0, index - WINDOW) : index] + ahead
+            found.append(
+                Use(
+                    near=frozenset(
+                        _stem(word) for word in near if word[0].isalpha() and word not in STOP
+                    ),
+                    before=frozenset(
+                        _stem(word)
+                        for word in tokens[:index]
+                        if word[0].isalpha() and word not in STOP
+                    ),
+                    after=tuple(
+                        _stem(word.strip("-'"))
+                        for word in ahead
+                        if word[0].isalpha() and len(word.strip("-'")) > 1 and word not in STOP
+                    ),
+                )
+            )
+    return found
 
 
 def _uses(text: str, item: str) -> list[frozenset[str]]:
     """The words around each use of ``item`` (a number or a word) in ``text``."""
-    tokens = _tokens(text)
-    found: list[frozenset[str]] = []
-    for index, token in enumerate(tokens):
-        if _stem(token) != _stem(item):
-            continue
-        near = tokens[max(0, index - WINDOW) : index] + tokens[index + 1 : index + 1 + WINDOW]
-        found.append(
-            frozenset(_stem(word) for word in near if word[0].isalpha() and word not in STOP)
-        )
-    return found
+    return [use.near for use in _uses_of(text, item)]
 
 
-def used_as_in(post: str, item: str, sources: Iterable[str]) -> bool:
-    """Whether every use of ``item`` in the post shares a word nearby with a use of it in
-    one of ``sources`` (``24/7 in practice mode`` matches the facts; ``24 schools`` would
-    not, and neither does ``launching tomorrow`` from ``today and tomorrow``)."""
-    known = [use for source in sources for use in _uses(source, item)]
-    return all(any(mine & theirs for theirs in known) for mine in _uses(post, item))
+def _same_use(mine: Use, theirs: Use, *, strict: bool, digits: bool) -> bool:
+    """Whether a post's use of a number is a use of it in the facts: a word nearby in common
+    and, ``strict``, the word right after it (its noun) among the facts' first three after
+    it ("2,388 real past school days", never "2,388 followers"; "11 past winters", never "11
+    states") and, for a number in ``digits``, when both have words before it in their
+    sentences, one of them in common ("the directory holds 118,211 schools", never "the reader
+    checks 118,211 schools")."""
+    if not mine.near & theirs.near:
+        return False
+    if not strict:
+        return True
+    if mine.after and (not theirs.after or mine.after[0] not in theirs.after[:3]):
+        return False
+    return not (digits and mine.before and theirs.before and not mine.before & theirs.before)
+
+
+def used_as_in(post: str, item: str, sources: Iterable[str], *, strict: bool = False) -> bool:
+    """Whether every use of ``item`` in the post is a use of it in one of ``sources``
+    (:func:`_same_use`): ``24/7 in practice mode`` matches the facts; ``24 schools`` would
+    not, and neither does ``launching tomorrow`` from ``today and tomorrow``."""
+    known = [use for source in sources for use in _uses_of(source, item)]
+    return all(
+        any(_same_use(mine, theirs, strict=strict, digits=item[0].isdigit()) for theirs in known)
+        for mine in _uses_of(post, item)
+    )
 
 
 def weight(text: str) -> int:
@@ -884,6 +1168,20 @@ def emoji_count(text: str) -> int:
     return count
 
 
+def _odd_letters(text: str) -> str | None:
+    """The first letter outside the Latin script ("calculator" written with a Cyrillic a) or
+    invisible format character (a zero-width space, a soft hyphen) in ``text``, named;
+    ``None`` when there is none. An emoji's zero-width joiner is fine."""
+    for char in text:
+        category = unicodedata.category(char)
+        name = unicodedata.name(char, f"U+{ord(char):04X}")
+        if (category.startswith("L") and not name.startswith("LATIN")) or (
+            category == "Cf" and char != "\u200d"
+        ):
+            return name.lower()
+    return None
+
+
 def _sentences(text: str) -> list[str]:
     return [part for part in re.split(r"(?<=[.!?])\s+|\n+", text) if part.strip()]
 
@@ -897,10 +1195,44 @@ def _has(sentence: str, words: Iterable[str]) -> str | None:
 
 
 def _without(sentence: str, phrases: Iterable[str]) -> str:
+    """The sentence in lower case with each of ``phrases`` blanked out (same length, so a
+    position in it is a position in the sentence)."""
     lowered = sentence.lower()
     for phrase in phrases:
-        lowered = re.sub(rf"(?<![a-z]){re.escape(phrase)}(?![a-z])", " ", lowered)
+        lowered = re.sub(
+            rf"(?<![a-z]){re.escape(phrase)}(?![a-z])",
+            lambda match: " " * len(match.group()),
+            lowered,
+        )
     return lowered
+
+
+def _spans(text: str, words: Iterable[str]) -> list[tuple[int, int]]:
+    """Where each of ``words`` stands in ``text`` (lower case, whole words)."""
+    found: list[tuple[int, int]] = []
+    for word in words:
+        found += [
+            match.span()
+            for match in re.finditer(rf"(?<![a-z]){re.escape(word.strip())}(?![a-z])", text)
+        ]
+    return found
+
+
+def _gap(text: str, one: tuple[int, int], other: tuple[int, int]) -> int:
+    """How many words stand between two spans of ``text`` (0 when they touch or overlap)."""
+    start, end = (one[1], other[0]) if one[0] <= other[0] else (other[1], one[0])
+    return len(re.findall(r"[a-z0-9']+", text[start:end])) if start < end else 0
+
+
+def _clauses(sentence: str) -> list[str]:
+    return [part for part in CLAUSE.split(sentence) if part.strip()]
+
+
+def _excuses(fact: Fact) -> tuple[str, ...]:
+    """The words that may say ``fact`` is not live (see :data:`NOT_LIVE_WORDS`)."""
+    words = NOT_LIVE_WORDS["COMING"] if fact.status == "COMING" else NOT_LIVE
+    practice = "practice" in fact.text.lower()
+    return tuple(word for word in words if word != "practice" or practice)
 
 
 def _named(sentence: str, facts: Facts) -> list[tuple[Fact, str]]:
@@ -912,19 +1244,148 @@ def _named(sentence: str, facts: Facts) -> list[tuple[Fact, str]]:
     return named
 
 
+def _access(sentence: str, named: list[tuple[Fact, str]]) -> list[str]:
+    """A clause that says people can use Snowlight now, with no not-live word near it."""
+    if any(fact.id == "waitlist" for fact, _ in named):
+        return []
+    for clause in _clauses(sentence):
+        text = _without(clause, VAGUE)
+        if (access := _has(clause, ACCESS)) is None:
+            continue
+        near = _spans(text, NOT_LIVE)
+        if not any(
+            _gap(text, one, other) <= EXCUSE_GAP for one in _spans(text, [access]) for other in near
+        ):
+            return [
+                f"it says people can use Snowlight now ('{access}'); until launch only the"
+                " waitlist is open"
+            ]
+    return []
+
+
+BACK: Final = ("that", "it", "them", "these", "those", "both")
+"""Words by which a not-live word speaks of what came before it in the sentence, as its object
+("Watches can raise a chance; I am testing that")."""
+BACK_GAP: Final = 2
+NEAREST_SLACK: Final = 2
+"""How many words farther than the nearest TESTING or COMING term a term of another fact may
+stand from a not-live word and still be the one it speaks of."""
+
+
+@dataclass(frozen=True, slots=True)
+class Named:
+    """A TESTING or COMING term where it stands in a sentence, and its clause."""
+
+    fact: Fact
+    term: str
+    span: tuple[int, int]
+    clause: int
+
+
+def _clause_of(boundaries: list[int], at: int) -> int:
+    return sum(1 for boundary in boundaries if boundary <= at)
+
+
+def _not_live_named(text: str, facts: Facts, boundaries: list[int]) -> list[Named]:
+    """Every TESTING or COMING term in ``text``, except inside a longer term ("prediction" in
+    "prediction model" is the LIVE model, not the TESTING predictions; "phone" in "phone
+    alerts" is judged as "phone alerts")."""
+    every = [
+        span for fact in facts.facts for span in _spans(_without(text, fact.other), fact.terms)
+    ]
+    return [
+        Named(fact, term, span, _clause_of(boundaries, span[0]))
+        for fact in facts.facts
+        if fact.status != "LIVE"
+        for term in fact.terms
+        for span in _spans(_without(text, fact.other), [term])
+        if not any(
+            start <= span[0] and span[1] <= end and end - start > span[1] - span[0]
+            for start, end in every
+        )
+    ]
+
+
+def _excused(text: str, one: Named, named: list[Named], boundaries: list[int]) -> bool:
+    """Whether a not-live word for ``one``'s fact (:func:`_excuses`) says it is not live:
+    within :data:`EXCUSE_GAP` words of it in its clause; or about as near to a term of that
+    fact as to any other TESTING or COMING term in the sentence (:data:`NEAREST_SLACK`: "...,
+    no chance uses the forecast yet" is the forecast's); or opening a clause of its own that
+    names nothing, right after ``one``'s ("Every school closing on one map, coming this
+    winter"); or after it with a word of :data:`BACK` as its object ("..., and I am testing
+    them"). A not-live word said of another thing never counts ("Closings glow on the map;
+    notifications are coming")."""
+    for word in _spans(text, _excuses(one.fact)):
+        clause = _clause_of(boundaries, word[0])
+        if clause == one.clause and _gap(text, one.span, word) <= EXCUSE_GAP:
+            return True
+        nearest = min(_gap(text, other.span, word) for other in named)
+        if any(
+            other.fact.id == one.fact.id and _gap(text, other.span, word) <= nearest + NEAREST_SLACK
+            for other in named
+        ):
+            return True
+        if (
+            0 < clause - one.clause <= 2  # noqa: PLR2004 - the clause right after, or one more
+            and not any(other.clause == clause for other in named)
+            and len(re.findall(r"[a-z0-9']+", text[boundaries[clause - 1] : word[0]])) <= 1
+        ):
+            return True
+        if word[0] >= one.span[1] and any(
+            back[0] >= word[1] and _gap(text, word, back) <= BACK_GAP for back in _spans(text, BACK)
+        ):
+            return True
+    return False
+
+
+def _judged(sentence: str, facts: Facts) -> list[str]:
+    """Each TESTING or COMING term of a sentence, judged where it stands: refused with a word
+    of :data:`ALREADY` near it in its clause, or with no not-live word for it
+    (:func:`_excused`), unless it is the TESTING chances as a LIVE model fact named in the
+    sentence speaks of them, with no word in the sentence that offers them to anyone
+    (:data:`OFFERED`)."""
+    text = _without(sentence, VAGUE)
+    boundaries = [match.start() for match in CLAUSE.finditer(text)]
+    named = _not_live_named(text, facts, boundaries)
+    live = [fact for fact, _ in _named(sentence, facts) if fact.status == "LIVE"]
+    problems: list[str] = []
+    seen: set[tuple[str, str]] = set()
+    for one in named:
+        if (one.fact.id, one.term) in seen:
+            continue
+        on = next(
+            (
+                match
+                for match in ALREADY.finditer(text)
+                if _clause_of(boundaries, match.start()) == one.clause
+                and _gap(text, one.span, match.span()) <= EXCUSE_GAP
+            ),
+            None,
+        )
+        if on is not None:
+            problems.append(
+                f"it says '{on.group()}' of '{one.term}', which is {one.fact.status}"
+                f" ({one.fact.id})"
+            )
+        elif not _excused(text, one, named, boundaries) and not (
+            one.fact.status == "TESTING"
+            and any(_speaks_of(other, one.term) for other in live)
+            and not _has(sentence, OFFERED)
+        ):
+            problems.append(
+                f"it names '{one.term}' without saying it is {one.fact.status.lower()} next to"
+                f" it ({one.fact.id})"
+            )
+        else:
+            continue
+        seen.add((one.fact.id, one.term))
+    return problems
+
+
 def _claims(sentence: str, facts: Facts) -> list[str]:
     """What a sentence wrongly says is live (see the module's docstring)."""
     named = _named(sentence, facts)
-    problems: list[str] = []
-    if (
-        (access := _has(sentence, ACCESS))
-        and not any(fact.id == "waitlist" for fact, _ in named)
-        and not _has(sentence, NOT_LIVE)
-    ):
-        problems.append(
-            f"it says people can use Snowlight now ('{access}'); until launch only the waitlist"
-            " is open"
-        )
+    problems = _access(sentence, named)
     claim = _has(sentence, LIVE_CLAIMS)
     if claim is None and (negation := NEGATIONS.search(sentence)) is not None:
         claim = negation.group().lower()
@@ -937,18 +1398,7 @@ def _claims(sentence: str, facts: Facts) -> list[str]:
         if not named:
             problems.append(f"it says something is live ('{claim}') but names no LIVE fact")
         return problems
-    live = [fact for fact, _ in named if fact.status == "LIVE"]
-    return problems + [
-        f"it names '{term}' without saying it is {fact.status.lower()} ({fact.id})"
-        for fact, term in named
-        if fact.status != "LIVE"
-        and not _has(sentence, NOT_LIVE)
-        and not (
-            fact.status == "TESTING"
-            and any(_speaks_of(other, term) for other in live)
-            and not _has(sentence, OFFERED)
-        )
-    ]
+    return problems + _judged(sentence, facts)
 
 
 def _speaks_of(fact: Fact, term: str) -> bool:
@@ -979,6 +1429,15 @@ def _chance_given(text: str) -> list[str]:
                 " the chances are in testing"
             )
             break
+    lowered = text.lower()
+    closings = _spans(lowered, CLOSING_WORDS)
+    for level, span in ((word, span) for word in GUESSED_LEVEL for span in _spans(lowered, [word])):
+        if any(_gap(lowered, span, other) <= WINDOW * 2 for other in closings):
+            problems.append(
+                f"it says how likely a closing is ('{level}'); no chance is posted while the"
+                " chances are in testing"
+            )
+            break
     return problems
 
 
@@ -990,11 +1449,11 @@ def _numbers(text: str, facts: Facts, image_description: str) -> list[str]:
         if number not in facts.numbers:
             where = " (the card shows the picture's)" if number in image_description else ""
             problems.append(f"the number {number} is not in the facts{where}")
-        elif not used_as_in(text, number, [said]):
+        elif not used_as_in(text, number, [said], strict=True):
             problems.append(f"the number {number} is not used as the facts use it")
     lowered = NOT_SPELLED.sub(" ", text.lower())
     for word in sorted({match.group() for match in SPELLED.finditer(lowered)}):
-        if not used_as_in(lowered, word, [said]) or not _uses(said, word):
+        if not used_as_in(lowered, word, [said], strict=True) or not _uses(said, word):
             problems.append(f"the number word '{word}' is not used as the facts use it")
     if match := NEXT.search(text):
         problems.append(f"it gives a date ('{match.group().lower()}') the facts do not")
@@ -1050,6 +1509,10 @@ def _others_and_claims(text: str, facts: Facts) -> list[str]:
         problems.append(f"it says '{word}', which the facts do not say of Snowlight")
     if match := DISTRICT_NAME.search(text):
         problems.append(f"it names a school or district ('{match.group()}')")
+    if match := PERSON.search(text):
+        problems.append(f"it names a person ('{match.group()}')")
+    if match := PLURAL_OTHERS.search(text):
+        problems.append(f"it speaks of other products ('{match.group().lower()}')")
     if match := SPACED_AI.search(text):
         problems.append(f"it says '{match.group()}' (AI or ML words)")
     said_lower = facts.said.lower()
@@ -1090,6 +1553,8 @@ def check(  # noqa: PLR0912, PLR0913 - one rule a branch; the post and what it i
         problems.append("it has '!!'")
     if "\u2014" in text:
         problems.append("it has an em dash")
+    if odd := _odd_letters(text):
+        problems.append(f"it has a letter or mark that is not plain Latin text ({odd})")
     problems += _others_and_claims(text, facts)
     if SDC.search(text):
         problems.append("it says 'SDC'")
@@ -1104,6 +1569,9 @@ def check(  # noqa: PLR0912, PLR0913 - one rule a branch; the post and what it i
         problems.append("a waitlist post must say 'link in my bio'")
     elif "waitlist" in lowered and "link in my bio" not in lowered:
         problems.append("a post that names the waitlist must say 'link in my bio'")
+    for state in sorted({" ".join(match.group().split()) for match in STATES.finditer(text)}):
+        if state not in " ".join(f"{image_description} {facts.said}".split()):
+            problems.append(f"it names {state}, which the picture's description does not")
     if not chances_shown(facts):
         problems += _chance_given(text)
         if mentions_chance(image_description):

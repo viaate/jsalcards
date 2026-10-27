@@ -510,3 +510,178 @@ def test_plain_true_model_posts_still_pass(text: str) -> None:
 def test_the_first_post_still_passes() -> None:
     first = json.loads((REPO / "social" / "queue" / "0001.json").read_text(encoding="utf-8"))
     assert problems(first["text"]) == []
+
+
+# -- the critics' adversarial drafts (round 2): each must be refused, with the model fact and
+# the waitlist line around it, so only the part under test can be what refuses it -------------
+
+CYRILLIC_A = chr(0x430)
+CYRILLIC_DZE = chr(0x405)
+ZERO_WIDTH = chr(0x200B)
+LINK = " Waitlist link in my bio."
+MODEL = " Snowlight's chances come from a prediction model, not a guess."
+NOT_LIVE_BLEED = [
+    # A not-live word said of one thing never excuses another in the same sentence.
+    "Closed schools glow on the map tonight, and phone alerts are coming this winter.",
+    "Closings glow on the map; notifications are coming.",
+    "Closings glow on the map, notifications next.",
+    "Coming next: notifications. Closings glow on the map.",
+    "Every closed school glows on the map, and I'm adding more this winter.",
+    "Before launch I put every closed school on the map.",
+    "The reader finds closings and they show on the map, with more coming.",
+    "The night-before outlook is on for every district and notifications are coming.",
+    "The model learns from every closing each night, with more coming.",
+    "The model uses the forecast for every chance, and the waitlist is open before launch.",
+    "Winter storm watches raise the chance now, and I am still building the rest.",
+    "I finished the map; every school on it, with launch this winter.",
+    # Practice and testing excuse only the reader's practice and the TESTING facts.
+    "In practice mode the closings reader lights up closed schools on the map.",
+    "The reader puts closed schools on the map in practice mode, every 5 minutes.",
+    "Closed schools glow on the map while I test it.",
+    # On or done next to a TESTING or COMING thing.
+    "Watches already raise chances while I test them.",
+    "Phone alerts work in testing now.",
+    "Practice mode ends this week.",
+    "I turned on the night-before outlook.",
+    "Search by ZIP code works.",
+]
+COMPARISONS_2 = [
+    "Other products use vibes; Snowlight's chances come from a prediction model.",
+    "My rivals use vibes; Snowlight's chances come from a prediction model.",
+    "TV stations post lists; Snowlight's chances come from a prediction model, not a guess.",
+    "News sites wait for the call; Snowlight's chances come from a prediction model.",
+    "Instead of eyeballing radar, Snowlight's chances come from a prediction model.",
+    "No rumors, no vibes: Snowlight's chances come from a prediction model, not a guess.",
+    "Forget the pajamas inside out trick; Snowlight's chances come from a prediction model.",
+    "Your local weatherman goes by feel; Snowlight's chances come from a prediction model.",
+    "Alternatives go by feel; Snowlight's chances come from a prediction model.",
+    "Weather apps go by feel; Snowlight's chances come from a prediction model.",
+    "Snowlight's prediction model is trained on the biggest set of real closing records.",
+    "Proud of this: the prediction model is trained on 2,388 real past school days, the"
+    " largest set of closing records.",
+    "Snowlight's prediction model is the first trained on real closing records.",
+    "Snowlight's prediction model is unmatched, trained on real closing records.",
+    "Snowlight's prediction model is unique: trained on real closing records.",
+    "Snowlight's prediction model is one of a kind, trained on real closing records.",
+    "Not S.D.C.: Snowlight's chances come from a prediction model.",
+    "Not S D C: Snowlight's chances come from a prediction model.",
+    "Not s-d-c: Snowlight's chances come from a prediction model.",
+    "Not Snow Day C" + CYRILLIC_A + "lculator: Snowlight's chances come from a prediction model.",
+    "Not Snow Day Calcu" + ZERO_WIDTH + "lator: Snowlight's chances come from a prediction model.",
+    "Not " + CYRILLIC_DZE + "now Day Predictor: Snowlight's chances come from a prediction model.",
+]
+NUMBERS_REUSED = [
+    "The prediction model learned from 11 past winters of storms in 11 states.",
+    "The prediction model is trained on 2,388 real past school days and 661 snow days.",
+    "Private schools get their own chance from the same kind of model, and 661 of them closed"
+    " last winter.",
+    "The reader checks 118,211 schools every 5 minutes, and the prediction model is trained on"
+    " 2,388 real past school days.",
+    "The prediction model was trained on 1,547 snow days with known outcomes.",
+    "The prediction model has 2,388 followers.",
+]
+ACCURACY_IN_WORDS = [
+    "The model, tested walk-forward on past winters, is rarely wrong.",
+    "Snowlight's statistical model is proven on past winters it never saw.",
+    "I tested the model walk-forward on past winters and it works.",
+    "I tested the model walk-forward on past winters and it held up.",
+    "I tested the model walk-forward on past winters; it scored well.",
+    "I tested the model walk-forward on past winters for precision.",
+    "You can count on the model: tested walk-forward on past winters.",
+    "Snowlight's chances are science-backed: a statistical model, not a guess.",
+]
+INVENTED = [
+    "HUGE news: Snowlight's statistical model is trained on real past school days.",
+    "Massive update: Snowlight's statistical model is trained on real past school days.",
+    "Our team trained Snowlight's prediction model on real closing records.",
+    "We trained Snowlight's prediction model on real closing records.",
+    "Backed by investors, Snowlight's chances come from a prediction model.",
+    "My friend Jake helped train Snowlight's prediction model.",
+    "Join the waitlist for daily emails. Snowlight's chances come from a prediction model.",
+    "Your email is never shared. Snowlight's chances come from a prediction model.",
+    "The waitlist keeps growing. Snowlight's chances come from a prediction model.",
+    "Parents love it: Snowlight's chances come from a prediction model.",
+]
+CHANCE_WITHOUT_THE_WORD = [
+    "Snowlight's chances come from a prediction model; one district is a coin flip.",
+    "Snowlight's model says a snow day is near certain somewhere.",
+    "Snowlight's model says some districts probably close.",
+    "Snowlight's statistical model is watching Montana closely.",
+    "Snowlight's prediction model expects closings in Maine.",
+    "It's fifty-fifty for one school district, says Snowlight's prediction model.",
+    "Snowlight's prediction model covers every district, Alaska and Hawaii too.",
+]
+NAMES_2 = [
+    "Lincoln High's chance comes from Snowlight's prediction model.",
+    "Denver Public School's chance comes from Snowlight's prediction model.",
+    "Lincoln Middle School's chance comes from Snowlight's prediction model.",
+    "Jefferson Elementary is on Snowlight's prediction model.",
+]
+
+
+@pytest.mark.parametrize(
+    "text",
+    NOT_LIVE_BLEED
+    + COMPARISONS_2
+    + NUMBERS_REUSED
+    + ACCURACY_IN_WORDS
+    + INVENTED
+    + CHANCE_WITHOUT_THE_WORD
+    + NAMES_2,
+)
+@pytest.mark.parametrize("style", ["dev_log", "waitlist"])
+def test_round_two_drafts_are_refused_with_the_model_fact_and_the_link(
+    text: str, style: Style
+) -> None:
+    whole = text + ("" if "prediction model" in text or "statistical model" in text else MODEL)
+    assert problems(whole + LINK, style=style), whole
+
+
+def test_each_round_two_draft_is_refused_for_what_it_is() -> None:
+    def said(text: str) -> str:
+        return " | ".join(problems(text + MODEL + LINK, style="waitlist"))
+
+    assert "glow" in said("Closings glow on the map; notifications are coming.")
+    assert "notifications" not in said("Closings glow on the map; notifications are coming.")
+    assert "'closed'" in said("In practice mode the closings reader lights up closed schools.")
+    assert "'already'" in said("Watches already raise chances while I test them.")
+    assert "'ends'" in said("Practice mode ends.")
+    assert "'works'" in said("Search by ZIP code works.")
+    assert "number 11 is not used" in said("The model learned from 11 past winters in 11 states.")
+    assert "number 118211 is not used" in said("The reader checks 118,211 schools.")
+    assert "not plain Latin" in said("Not Snow Day C" + CYRILLIC_A + "lculator.")
+    assert "'sdc'" in said("Not S.D.C.").lower() or "sdc" in said("Not S.D.C.").lower()
+    assert "Montana" in said("The model is watching Montana closely.")
+    assert "person" in said("My friend Jake helped.")
+
+
+TRUE_2 = [
+    # A not-live word right by each thing that is not live, in its own clause.
+    "Phone alerts and closings on the map are coming this winter.",
+    "Closings on the map are coming this winter, and phone alerts are coming too.",
+    "I am testing the model's forecast reasons, which are built but switched off.",
+    "The model's forecast reasons are built, and I am testing them with them switched off.",
+    "A winter storm watch can raise a district's chance; I am testing that quietly first.",
+    "Every school closing in the US on one map, coming this winter.",
+    "The closings reader runs 24/7 in practice mode, and the map is in private testing.",
+    # Numbers as the facts use them.
+    "The prediction model is trained on records of 11 past winters.",
+    "Snowlight's school directory holds 118,211 schools in 18,227 districts.",
+    "Private schools get their own chance from the same kind of model, trained on 661 real"
+    " past private school days.",
+    "The closings reader checks school closing lists every 5 minutes from 4 to 9 AM.",
+]
+
+
+@pytest.mark.parametrize("text", TRUE_2)
+def test_round_two_true_drafts_still_pass(text: str) -> None:
+    whole = text + ("" if "model" in text else MODEL)
+    assert problems(whole + LINK, style="waitlist") == []
+
+
+def test_the_chances_fact_names_only_the_lower_48_states() -> None:
+    chances = FACTS.get("chances")
+    assert chances is not None
+    assert "lower 48 states" in chances.text
+    assert "every US" not in chances.text
+    assert "every US public school district" not in FACTS.said

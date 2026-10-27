@@ -86,21 +86,30 @@ statistical model trained on real closing records, not a guess. Say what the mod
 Hard rules:
 - Use ONLY the facts below. Never add a claim, number, feature, date or plan they do not hold.
 - A fact marked TESTING or COMING is not live: say it is in testing or coming, never that it \
-is live or available.
+is live or available, and say it right next to that thing, in the same clause ("phone alerts \
+are coming this winter"), once for each such thing. Never "already", "works", "is on" or \
+"ends" about one. "In practice mode" is said only of the closings reader.
 - No URL, no domain name, no @mention. The link is in my bio.
 - At most one hashtag and at most one emoji (none is fine). Never "!!". No em dashes.
 - Say only what Snowlight does. Never describe, name or compare any other product, site, app, \
 calculator, tracker or predictor, and never talk about what other people do: no "unlike", \
 "other apps", "other sites", "other people", "folks", "popular", "famous", "the usual", "out \
 there", "elsewhere", "everyone else", "better than", "more accurate", "they guess", no "-er \
-than", and never "snow day" followed by "site", "app", "tracker" or "predictor".
+than", and never "snow day" followed by "site", "app", "tracker" or "predictor". No "instead \
+of", rivals, alternatives, the radar, rumors, vibes, tricks, weathermen, TV, the news, or \
+any plural like "sites", "apps" or "stations". Never call Snowlight or its records the first, \
+the biggest, the largest, unique, unmatched or one of a kind.
 - Never claim accuracy in any words: no "always right", "called it", "gets it right", "hit \
-rate", "reliable", "correct". Never mention an app, a download, a price ("free") or who uses \
-or trusts Snowlight.
+rate", "reliable", "correct", "wrong", "proven", "it works", "held up", "scored well", \
+"precision", "count on", "science-backed". Never mention an app, a download, a price ("free") \
+or who uses, loves or trusts Snowlight. I build it alone: never "we", "our" or a team, \
+investors or funding. The waitlist means one email at launch and the address is never sold: \
+nothing more about it (never "shared", "daily", "weekly", "growing").
 - Never use these words: AI, accurate, accuracy, revolutionary, AI-powered, machine learning, \
 guaranteed, never wrong, better than, calculator, formula, reconstruction, competitor. Never \
 give an accuracy number or a score.
-- Never name a TV or radio station, a school, a district or a person.
+- Never name a TV or radio station, a school, a district or a person, and never a state \
+unless the picture's description names it.
 - Never use a superlative or a comparison: no "best", "only", "most", "unlike", "vs".
 - Nobody can use the map yet: never say "check your school", "see your district", "you can \
 now" or "available now", and never say the chances are up, posted or there to see; only the \
@@ -139,7 +148,9 @@ tracker or predictor, or what other people do. Otherwise ok=true with no problem
 
 HIDDEN: Final = """The chances are TESTING: the site is locked while I test them. Never give \
 any chance, for any place or for the country: no number, no percent, no odds, and never say \
-how high or low a chance is. You may say where the chances come from (the model)."""
+how high or low a chance is or how likely a closing is ("a coin flip", "near certain", \
+"probably", "likely", "expects", "watching"). You may say where the chances come from (the \
+model)."""
 HIDDEN_CHECK: Final = """The chances are TESTING (the site is locked): answer ok=false when the \
 draft gives any chance as a number, percent or odds, or says how high or low any chance is."""
 
