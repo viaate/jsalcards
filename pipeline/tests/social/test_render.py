@@ -358,9 +358,17 @@ def test_the_render_command_reads_the_switch_from_the_facts_file(
     monkeypatch.setattr(module, "render", fake)
     repo = Path(__file__).resolve().parents[3]
     args = argparse.Namespace(
-        out=str(tmp_path), root=str(repo), site="", live_dir="", view="", place="", fallback=False
+        out=str(tmp_path),
+        root=str(repo),
+        site="",
+        live_dir="",
+        view="",
+        place="",
+        fallback=False,
+        sandbox=True,
     )
     assert cli._render(args) == 1  # the fake made no picture
+    assert got["sandbox"] is True, "the workflow's --sandbox reaches the browser's launch"
     facts = got["facts"]
     assert isinstance(facts, Facts)
     assert not chances_shown(facts), "social/facts.md marks chances TESTING"
