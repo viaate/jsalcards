@@ -49,8 +49,12 @@ const HOUR_MS = 3_600_000;
 const MINUTE_MS = 60_000;
 /** At most this many districts next door on the timeline, the first to post first. */
 export const MAX_NEIGHBOR_MOMENTS = 4;
-/** Without its bus time, a day is under way from this hour, the school's own clock. */
-export const UNDER_WAY_HOUR = 9;
+/**
+ * A school day is under way from this hour on the school's own clock, whatever its bus time:
+ * its chance is spent, and the next school day's shows (pipeline/snowlight/social/picture.py
+ * SCHOOL_STARTS, the same rule for the X cards).
+ */
+export const UNDER_WAY_HOUR = 5;
 /** The usual announcement stays on the timeline this long after its time. */
 const ANNOUNCE_GRACE_MS = 3 * HOUR_MS;
 
@@ -355,12 +359,15 @@ export function atLocalHour(day: LocalDate, hour: number, timeZone: string): Dat
   return new Date(at);
 }
 
-/** Under way once its buses have run, the children at school; without a bus time, from 9 AM. */
-function underWay(day: Forecast & { readonly day: LocalDate }, now: Date, timeZone: string) {
-  const buses = day.detail?.busesAt ?? null;
-  if (buses !== null) return now >= buses;
+/**
+ * Whether a school day is under way at `now`: from 5 AM on the school's clock (UNDER_WAY_HOUR),
+ * or once its buses have run where they run before that. The one rule for every chance the
+ * site names for a day (the school panel, the area's chance).
+ */
+function underWay(day: LocalDate, now: Date, timeZone: string, buses: Date | null): boolean {
+  if (buses !== null && now >= buses) return true;
   try {
-    return now >= atLocalHour(day.day, UNDER_WAY_HOUR, timeZone);
+    return now >= atLocalHour(day, UNDER_WAY_HOUR, timeZone);
   } catch {
     // A clock this browser cannot read: the day is not said.
     return true;
@@ -392,7 +399,7 @@ export function headlineDay(
   for (const day of days) {
     if (day?.state !== 'forecast' || day.day === undefined) continue;
     const dated = day as Forecast & { readonly day: LocalDate };
-    if (underWay(dated, now, outlook.timeZone)) continue;
+    if (underWay(dated.day, now, outlook.timeZone, dated.detail?.busesAt ?? null)) continue;
     return dated;
   }
   return null;

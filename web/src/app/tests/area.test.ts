@@ -244,6 +244,18 @@ describe('the area panel’s view', () => {
     expect(chance.announces(NOW)).toBeNull();
   });
 
+  it('gives no chance for a day under way, from 5 AM on the schools’ clock', () => {
+    const at = (iso: string) => {
+      const now = new Date(iso);
+      const predictions = { ...PREDICTIONS, generated_at: '2026-01-13T10:50:00Z' };
+      return areaView(input({ now, live: { closings: CLOSINGS, covered: null, predictions } }));
+    };
+    // 4:59 AM Tuesday in Kansas City: Tuesday's chance.
+    expect(at('2026-01-13T10:59:00Z')?.chance?.day).toBe('2026-01-13');
+    // 5 AM: Tuesday is under way and the file holds no Wednesday, so no chance at all.
+    expect(at('2026-01-13T11:00:00Z')?.chance).toBeNull();
+  });
+
   it('counts a private school by its own chance, from the file’s schools and shared outlooks', () => {
     // Epsilon (private, no district) has its own outlook (contract C3): 20% Tuesday.
     const own = (tuesday: unknown) =>

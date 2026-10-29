@@ -1053,7 +1053,8 @@ describe('the chance section in the panel', () => {
       clockMinute: null,
       manual: false,
     };
-    const morning = new Date('2026-01-12T12:00:00Z');
+    /** 4 AM in Kansas City, before the day is under way at 5. */
+    const morning = new Date('2026-01-12T10:00:00Z');
     const view = (status: SchoolStatus) =>
       schoolView(input({ id: record.id, record, status, outlook, now: morning }));
     // Closed today: tomorrow's chance.
@@ -1092,7 +1093,8 @@ describe('the chance section in the panel', () => {
       clockMinute: null,
       manual: true,
     };
-    const morning = new Date('2026-01-12T12:00:00Z');
+    /** 4 AM in Kansas City, before the day is under way at 5. */
+    const morning = new Date('2026-01-12T10:00:00Z');
     const view = (status: SchoolStatus) => schoolView(input({ status, outlook, now: morning }));
     // With no status: its own chance today.
     expect(view({ today: null, tomorrow: null })?.chance).toMatchObject({
