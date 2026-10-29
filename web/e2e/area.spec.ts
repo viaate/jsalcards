@@ -49,8 +49,11 @@ test.describe.configure({ timeout: 180_000, mode: 'default' });
 const DESKTOP: BrowserContextOptions = { viewport: { width: 1440, height: 900 } };
 const PHONE: BrowserContextOptions = devices['Pixel 7'];
 
-/** SYNTHETIC: Monday Jan 12, 2026, 6:45 AM in Kansas City, the morning of a made-up storm. */
-const NOW = new Date('2026-01-12T12:45:00Z');
+/**
+ * SYNTHETIC: Monday Jan 12, 2026, 4:45 AM in Kansas City, the morning of a made-up storm, before
+ * the day is under way at 5 AM (its chance is then spent).
+ */
+const NOW = new Date('2026-01-12T10:45:00Z');
 const TODAY = '2026-01-12';
 
 /** The directory's districts, in its order (by id). */
@@ -425,7 +428,7 @@ function areas(): { index: string; shard: string } {
   };
 }
 
-/** SYNTHETIC: the live file at 6:30 AM. */
+/** SYNTHETIC: the live file at 4:30 AM. */
 function closings(): string {
   const posted = [...POSTED].sort((a, b) => at(a[0]) - at(b[0]));
   let before = -1;
@@ -436,7 +439,7 @@ function closings(): string {
   });
   return JSON.stringify({
     schema_version: 1,
-    generated_at: '2026-01-12T12:30:00Z',
+    generated_at: '2026-01-12T10:30:00Z',
     directory: STAMP,
     days: [
       {
@@ -452,7 +455,7 @@ function closings(): string {
   });
 }
 
-/** SYNTHETIC: the chances made at 6:30 AM, in the shape the prediction engine is to write. */
+/** SYNTHETIC: the chances made at 4:30 AM, in the shape the prediction engine is to write. */
 function predictions(): string {
   const forecast = (chance: number): unknown => ({
     state: 'forecast',
@@ -460,7 +463,7 @@ function predictions(): string {
     p_delay: 0.1,
     reasons: [0],
     previous: null,
-    announces_at: '2026-01-12T11:30:00Z',
+    announces_at: '2026-01-12T09:30:00Z',
     buses_at: '2026-01-12T13:00:00Z',
     hours: {
       kind: 'snow_total',
@@ -484,7 +487,7 @@ function predictions(): string {
   });
   return JSON.stringify({
     schema_version: 1,
-    generated_at: '2026-01-12T12:30:00Z',
+    generated_at: '2026-01-12T10:30:00Z',
     directory: STAMP,
     days: [TODAY, '2026-01-13'],
     districts: DISTRICTS.map(([id], district) => {

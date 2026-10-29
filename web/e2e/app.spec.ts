@@ -1153,6 +1153,65 @@ function outlookClosings(): string {
   return syntheticClosings().replace('"2026-01-12T12:42:00Z"', '"2026-01-13T02:00:00Z"');
 }
 
+/**
+ * SYNTHETIC: Tuesday Jan 13, 2026, 8:05 AM in Kansas City, 9:05 AM for a viewer in New York: the
+ * school day is under way on the school's clock, and its chance is spent.
+ */
+const MORNING = new Date('2026-01-13T14:05:00Z');
+const MORNING_VIEWER = 'America/New_York';
+
+/**
+ * SYNTHETIC: the chances made that morning at 8:00 AM, as the pipeline writes them (no bus time):
+ * Tuesday's, 93%, for a day already under way, and Wednesday's, 12% at Olathe and Shawnee Mission.
+ */
+function morningPredictions(): string {
+  const day = (chance: number) => ({
+    state: 'forecast',
+    p_no_school: chance,
+    p_delay: 0.04,
+    reasons: [],
+    why: {
+      base: {
+        kind: 'similar_days',
+        points: Math.round(chance * 100),
+        borrowed: false,
+        live: false,
+      },
+    },
+  });
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: '2026-01-13T14:00:00Z',
+    directory: STAMP,
+    days: ['2026-01-13', '2026-01-14'],
+    districts: [0, 1].map((district) => ({
+      district,
+      time_zone: ZONE,
+      days: [day(0.93), day(0.12)],
+    })),
+  });
+}
+
+/** SYNTHETIC: the live file that morning at 8:00 AM: Olathe North on a two-hour delay today. */
+function morningClosings(): string {
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: '2026-01-13T14:00:00Z',
+    directory: STAMP,
+    days: [
+      {
+        day: '2026-01-13',
+        gaps: [0],
+        statuses: [1],
+        announced: [75],
+        reasons: [0],
+        shifts: [120],
+        clocks: [null],
+      },
+    ],
+  });
+}
+
 /** SYNTHETIC: that Monday at 1:05 AM in Kansas City, a day and a half before Tuesday's buses. */
 const SHAPE_NOW = new Date('2026-01-12T07:05:00Z');
 const SHAPE_BUSES = '2026-01-13T13:00:00Z';
@@ -2726,6 +2785,72 @@ test.describe('with data staged', () => {
     ).toBe(true);
     expect(problems).toEqual([]);
     await context.close();
+  });
+
+  test('a school day under way on the school’s clock: the next day’s chance, and today’s status where it is posted, at 1440 and 390 px', async ({
+    browser,
+  }) => {
+    // First flights into streets (FIRST_FLIGHT_MS); with SNOWLIGHT_PANEL_TODAY_SHOTS set, each
+    // panel as shown, for the owner to see.
+    test.setTimeout(480_000);
+    const shots = process.env.SNOWLIGHT_PANEL_TODAY_SHOTS ?? '';
+    for (const phone of [false, true]) {
+      const context = await browser.newContext({
+        viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 900 },
+        ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
+        timezoneId: MORNING_VIEWER,
+        serviceWorkers: 'block',
+      });
+      const page = await context.newPage();
+      await fixDate(page, MORNING);
+      const { problems } = watch(page);
+      await page.route('**/data/predictions/latest.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body: morningPredictions() }),
+      );
+      await page.route('**/data/live/closings.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body: morningClosings() }),
+      );
+      const panel = page.locator('aside.detail');
+      const section = panel.locator('.chance');
+      const width = phone ? 'phone' : 'desktop';
+      for (const [i, [id, name]] of (
+        [
+          [SHAWNEE_MISSION_EAST, 'Shawnee Mission East High'],
+          ['201014000137', 'Olathe North Senior High'],
+        ] as const
+      ).entries()) {
+        if (i === 0) await page.goto(`${site}?school=${id}`);
+        else await showSchool(page, id);
+        await expect(panel.locator('h2')).toHaveText(name, { timeout: 60_000 });
+        // Wednesday's chance: Tuesday's 93% is spent from 5 AM in Kansas City, and how the chance
+        // adds up is Wednesday's.
+        await expect(section.locator('.number')).toHaveText('12%', { timeout: 60_000 });
+        await expect(section.locator('.meaning')).toContainText(
+          chanceFormat.chanceOn('2026-01-14'),
+        );
+        await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.12));
+        await expect(panel).not.toContainText('93%');
+        await expect(panel).not.toContainText(chanceFormat.chanceOn('2026-01-13'));
+        if (id === SHAWNEE_MISSION_EAST) {
+          // Nothing posted, and no check of its closings published: nothing said about today.
+          await expect(panel.locator('.status')).toHaveCount(0);
+        } else {
+          // Today's status as posted, above the chance.
+          await expect(section.locator('.status .headline')).toHaveText([
+            copy.statusLine.delayed.today,
+          ]);
+          await expect(section.locator('.status .glyph.is-delayed')).toHaveCount(1);
+        }
+        if (shots !== '') {
+          mkdirSync(shots, { recursive: true });
+          const file = path.join(shots, `${width}-${id}.png`);
+          if (phone) await page.screenshot({ path: file });
+          else await panel.screenshot({ path: file });
+        }
+      }
+      expect(problems).toEqual([]);
+      await context.close();
+    }
   });
 
   test('the chance section the evening of a closed day: the status first, then tomorrow’s chance and its cold night', async ({

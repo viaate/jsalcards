@@ -154,7 +154,7 @@ describe('a day under way on the school’s own clock', () => {
       // How we got N% explains the day headlined, and no other.
       why: { title: 'How we got 12%' },
     });
-    expect(JSON.stringify(view)).not.toContain('93');
+    expect(JSON.stringify(view)).not.toMatch(/"93"|93%|Wednesday/);
   });
 
   it('keeps today’s chance until 04:59 on the school’s clock, and spends it at 05:00', () => {
