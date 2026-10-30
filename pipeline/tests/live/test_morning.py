@@ -2,20 +2,37 @@
 reads, every pass gives what its rows name and the states it withheld, a withheld row still
 names its district, and a damaged file is never trusted."""
 
+import hashlib
 import json
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
+
+import pytest
 
 from live.test_ingest import CLOSED, RESCINDED, A, B, _ingest, _warm, _world
 from live.world import at
 from snowlight.live.guards import Withheld
 from snowlight.live.ingest import SourceRead, shown
+from snowlight.live.kept import (
+    DATABASES,
+    KINDS,
+    Verdict,
+    day_files,
+    read_kept,
+    record_answer,
+    verdict,
+)
+from snowlight.live.kept import MORNING as MORNING_KIND
 from snowlight.live.ledger import Outcome as ReadOutcome
 from snowlight.live.morning import (
     ANY_KIND,
     EVERY_DAY,
+    FLOOR_DAYS,
+    HARD_BYTES,
+    KEEP_DAYS,
+    MAX_BYTES,
     MorningDay,
     MorningLog,
     naming,
@@ -26,6 +43,7 @@ from snowlight.live.publish import Exit, PassReport
 from snowlight.live.resolve import DayClaim, Derived
 
 DAY = date(2026, 11, 17)
+BACKUP = DATABASES[1]
 
 
 def claim(day: date, kind: str = "closed") -> DayClaim:
@@ -112,10 +130,124 @@ def test_only_a_shown_pass_inside_the_band_gives_reads(tmp_path: Path) -> None:
     assert again is not None
     assert again.damaged
     assert json.loads(log.path(DAY).read_text())["damaged"] is True
-    # Old days are pruned.
-    later = morning + timedelta(days=11)
+    # Old days are pruned once the evidence store holds them: 45 days are kept, the 46th
+    # is dropped.
+    kept = morning + timedelta(days=45)
+    log.record(kept, shown=None, reads={}, unknown=(), named={})
+    assert log.days() == [DAY, kept.date()]
+    later = morning + timedelta(days=46)
     log.record(later, shown=None, reads={}, unknown=(), named={})
-    assert log.days() == [later.date()]
+    assert log.days() == [DAY, kept.date(), later.date()]  # no copy anywhere: it stays
+    held_everywhere(log.root.parent, later)
+    log.record(later + timedelta(minutes=5), shown=None, reads={}, unknown=(), named={})
+    assert log.days() == [kept.date(), later.date()]
+
+
+def held_everywhere(state: Path, now: datetime, databases: tuple[str, ...] = DATABASES) -> None:
+    """``kept.json`` as a check finds it when every database answers and ``databases`` hold
+    every day file the state folder holds now, byte for byte (the others hold none)."""
+    held = {
+        name: {
+            (kind, day.isoformat()): frozenset({hashlib.sha256(path.read_bytes()).hexdigest()})
+            for kind in KINDS
+            for day, path in day_files(state, kind).items()
+        }
+        if name in databases
+        else {}
+        for name in DATABASES
+    }
+    record_answer(state, held, now)
+
+
+def _fill(log: MorningLog, today: date, days: int) -> None:
+    for back in range(days - 1, -1, -1):
+        moment = datetime.combine(today - timedelta(days=back), time(13), tzinfo=UTC)
+        log.record(moment, shown="v1", reads={A: (1, 1, 0)}, unknown=(), named={})
+
+
+def test_the_record_keeps_45_days_and_drops_day_46_once_it_is_kept(tmp_path: Path) -> None:
+    log = MorningLog(tmp_path / "morning")
+    today = date(2026, 12, 11)
+    _fill(log, today, 50)
+    # No database is known to hold any day: nothing is pruned for its age, however old.
+    assert len(log.days()) == 50
+    assert log.prune(today) == []
+    held_everywhere(log.root.parent, datetime.combine(today, time(14), tzinfo=UTC))
+    gone = log.prune(today)
+    days = log.days()
+    # Oct 27 (45 days before Dec 11) is still there; Oct 26 and before are not.
+    assert gone == [today - timedelta(days=back) for back in range(49, 45, -1)]
+    assert days[0] == date(2026, 10, 27) == today - timedelta(days=KEEP_DAYS)
+    assert len(days) == KEEP_DAYS + 1
+    assert log.prune(today) == []
+
+
+def test_an_unkept_old_day_stays_and_one_held_in_one_database_may_go(tmp_path: Path) -> None:
+    log = MorningLog(tmp_path / "morning")
+    state = log.root.parent
+    today = date(2026, 12, 11)
+    _fill(log, today, 47)
+    day_46 = today - timedelta(days=46)
+    held_everywhere(state, datetime.combine(today, time(14), tzinfo=UTC), databases=())
+    assert log.prune(today) == []  # the answer holds no copy: day 46 stays
+    # A copy whose bytes differ from the file now does not count either.
+    held_everywhere(state, datetime.combine(today, time(14), tzinfo=UTC))
+    log.path(day_46).write_bytes(log.path(day_46).read_bytes() + b" ")
+    assert log.prune(today) == []
+    assert day_46 in log.days()
+    # The backup alone holding it is enough for the folder to let it go.
+    held_everywhere(state, datetime.combine(today, time(15), tzinfo=UTC), databases=(BACKUP,))
+    assert log.prune(today) == [today - timedelta(days=46)]
+    kept = read_kept(state)
+    assert kept.copies[MORNING_KIND][today.isoformat()].databases == (BACKUP,)
+
+
+def test_over_its_size_the_record_drops_its_oldest_kept_days_but_never_the_last_10(
+    tmp_path: Path,
+) -> None:
+    log = MorningLog(tmp_path / "morning")
+    today = date(2026, 12, 11)
+    _fill(log, today, 30)
+    size = log.path(today).stat().st_size
+    # Nothing is kept yet: the size valve drops nothing below its hard ceiling.
+    assert log.prune(today, max_bytes=size * 25) == []
+    held_everywhere(log.root.parent, datetime.combine(today, time(14), tzinfo=UTC))
+    gone = log.prune(today, max_bytes=size * 25)
+    assert gone == [today - timedelta(days=back) for back in range(29, 24, -1)]
+    assert len(log.days()) == 25
+    # However small the budget, the last 10 days before today stay.
+    log.prune(today, max_bytes=1)
+    assert log.days() == [today - timedelta(days=back) for back in range(FLOOR_DAYS, -1, -1)]
+    assert MAX_BYTES == 16 * 1024 * 1024
+    assert HARD_BYTES == 32 * 1024 * 1024
+
+
+def test_the_valve_never_drops_an_unkept_day_silently(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    log = MorningLog(tmp_path / "morning")
+    state = log.root.parent
+    today = date(2026, 12, 11)
+    _fill(log, today, 20)
+    size = log.path(today).stat().st_size
+    now = datetime.combine(today, time(14), tzinfo=UTC)
+    # Over the soft budget with no day kept: nothing goes, and nothing is said.
+    assert log.prune(today, max_bytes=size, hard_bytes=size * 1000, at=now) == []
+    assert "::error::" not in capsys.readouterr().out
+    assert read_kept(state).dropped == {}
+    # Over the hard ceiling: the oldest go (never the last 10), each one loudly, and the
+    # evidence alert opens for them.
+    gone = log.prune(today, max_bytes=size, hard_bytes=size * 15, at=now)
+    assert gone == [today - timedelta(days=back) for back in range(19, 14, -1)]
+    out = capsys.readouterr().out
+    assert out.count("::error::The morning record of ") == 5
+    found = read_kept(state)
+    assert sorted(found.dropped) == [day.isoformat() for day in gone]
+    assert verdict(state, found, now) == Verdict(True, "dropped", 5)
+    # The alert closes a week on (the days are gone for good; the issue says so).
+    later = now + timedelta(days=8)
+    held_everywhere(state, later)
+    assert not verdict(state, read_kept(state), later).active
 
 
 def test_a_pass_is_shown_only_when_the_map_shows_its_merge() -> None:

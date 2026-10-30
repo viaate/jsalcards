@@ -1167,7 +1167,7 @@ def test_with_no_live_day_read_yet_the_run_leaves_the_model_unchanged(capsys: An
     out = capsys.readouterr().out
     # S4: the log says what is true here: no live state reached the run (not that no live
     # day was read anywhere).
-    assert out.startswith("predict learn: 6 school days not labeled: no live ingest state "
+    assert out.startswith("predict learn: 31 school days not labeled: no live ingest state "
                           "reached this run\n")  # fmt: skip
     assert out.endswith(
         "predict learn: nothing to learn: no live-read district-days labeled yet; the model is "

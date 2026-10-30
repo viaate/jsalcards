@@ -76,6 +76,7 @@ import numpy.typing as npt
 import polars as pl
 
 from snowlight.live.history import BY, BY_HOLD, ChangeLog, Event, is_final
+from snowlight.live.kept import PREDICT_KEEP_DAYS, PredictKept, contents_of
 from snowlight.live.morning import (
     EVERY_DAY,
     SLOT_MINUTES,
@@ -113,7 +114,12 @@ UNKNOWN_CLASS: Final = "-"
 """A district whose class was not taken for the day, in a snapshot's class string."""
 NCES_SCHOOL_DIGITS: Final = 12
 LEAID_DIGITS: Final = 7
-SNAPSHOT_KEEP_DAYS: Final = 10
+SNAPSHOT_KEEP_DAYS: Final = PREDICT_KEEP_DAYS
+"""Days the weather-class snapshots are kept whatever the evidence store holds: past
+``morning_reads_days`` (44), so a day the learning step can still label always has its
+snapshot. An older one leaves the state only once an evidence database holds it, byte for
+byte, and the district table it indexes (:class:`snowlight.live.kept.PredictKept`); the
+evidence store keeps them for good."""
 
 
 class LiveWhy:
@@ -145,21 +151,31 @@ def record_snapshots(  # noqa: PLR0913 - the record, the pass's classes and when
     days: Sequence[date],
     now: datetime,
     window: Window,
+    kept: PredictKept | None = None,
 ) -> dict[str, object]:
     """The snapshot record with this pass's classes taken in: for each school day of ``days``
     and each zone whose snapshot time (21:00 the evening before) has not passed, every
     district of that zone gets its class now, and the zone its time taken. ``classes`` is
     (districts, days); ``zones`` each deployed district's zone; ``content`` names the
     directory content the district positions belong to (a record of another restarts).
-    Days more than :data:`SNAPSHOT_KEEP_DAYS` before ``now`` are dropped."""
+    A day more than :data:`SNAPSHOT_KEEP_DAYS` before ``now`` is dropped only once ``kept``
+    (the state's record of the evidence store) shows a database holding exactly its snapshot
+    and one holding the district table it indexes; without that it stays, however old."""
     found: dict[str, object] = {}
+    known = kept if kept is not None else PredictKept()
     oldest = now.astimezone(UTC).date() - timedelta(days=SNAPSHOT_KEEP_DAYS)
     for key, value in snapshots.items():
         try:
-            if date.fromisoformat(key) >= oldest and isinstance(value, dict):
-                found[key] = value
+            day = date.fromisoformat(key)
         except ValueError:
             continue
+        if not isinstance(value, dict):
+            continue
+        if day < oldest and (
+            known.snapshot_held(key, value) and known.table_held(str(value.get("content", "")))
+        ):
+            continue
+        found[key] = value
     size = len(zones)
     by_zone: dict[str, list[int]] = defaultdict(list)
     for index, zone in enumerate(zones):
@@ -168,12 +184,12 @@ def record_snapshots(  # noqa: PLR0913 - the record, the pass's classes and when
         if not is_school_day(day):
             continue
         key = day.isoformat()
-        kept = found.get(key)
+        earlier = found.get(key)
         entry: dict[str, object] = (
-            kept
-            if isinstance(kept, dict)
-            and kept.get("content") == content
-            and len(str(kept.get("classes", ""))) == size
+            earlier
+            if isinstance(earlier, dict)
+            and earlier.get("content") == content
+            and len(str(earlier.get("classes", ""))) == size
             else {"content": content, "classes": UNKNOWN_CLASS * size, "taken": {}}
         )
         chars = list(str(entry["classes"]))
@@ -187,6 +203,30 @@ def record_snapshots(  # noqa: PLR0913 - the record, the pass's classes and when
             taken[zone] = _iso(now)
         found[key] = {"content": content, "classes": "".join(chars), "taken": taken}
     return dict(sorted(found.items()))
+
+
+def pending_tables(
+    tables: Mapping[str, Sequence[str]],
+    snapshots: Mapping[str, object],
+    *,
+    content: str,
+    district_ids: Sequence[str],
+    kept: PredictKept | None = None,
+) -> dict[str, list[str]]:
+    """The district tables the predict state keeps until an evidence database holds them:
+    this pass's (``content``, ``district_ids``) and that of every other content the
+    snapshots index (as ``tables`` held it), each until ``kept`` shows a database holding
+    it. A content no snapshot indexes any more, and not this pass's, is let go."""
+    known = kept if kept is not None else PredictKept()
+    found: dict[str, list[str]] = {}
+    for key in sorted(contents_of(snapshots) | {content}):
+        if known.table_held(key):
+            continue
+        if key == content:
+            found[key] = list(district_ids)
+        elif key in tables:
+            found[key] = list(tables[key])
+    return found
 
 
 def snapshot_classes(  # noqa: PLR0913 - the record, the day, the districts and the rule

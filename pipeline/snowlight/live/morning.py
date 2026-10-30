@@ -28,8 +28,14 @@ whole and atomically by every pass (:meth:`MorningLog.record`). Per 30-minute UT
 
 ``through`` is the last pass recorded. A file that does not read is never trusted again: the
 next pass marks it ``damaged`` (what it lost cannot be told), and no district-day of that UTC
-day is labeled. Files older than :data:`KEEP_DAYS` are pruned. The record holds codes, ids,
-counts and times only (no names, no list text).
+day is labeled. Every finished day is kept for good in the evidence store
+(:mod:`snowlight.live.evidence`). A day leaves the state folder only once a database there is
+known to hold its file byte for byte (``kept.json``, :mod:`snowlight.live.kept`): when it is
+more than :data:`KEEP_DAYS` (45) days old, or, oldest first and never one of the last
+:data:`FLOOR_DAYS`, while the folder holds more than :data:`MAX_BYTES`. A day no database
+holds stays, however old, unless the folder passes :data:`HARD_BYTES`: then the oldest go
+(never the last 10), each with an ``::error::`` line and the ``evidence`` alert. The record
+holds codes, ids, counts and times only (no names, no list text).
 """
 
 import json
@@ -42,6 +48,8 @@ from pathlib import Path
 from typing import Final
 
 from snowlight.live.guards import Withheld
+from snowlight.live.kept import MORNING as MORNING_KIND
+from snowlight.live.kept import note_dropped, read_kept
 from snowlight.live.resolve import Derived, Resolved
 from snowlight.output import JSONValue, dumps_json, write_bytes_atomic
 from snowlight.schemas.vocab import STATUS_BY_KIND
@@ -50,7 +58,19 @@ LOG: Final = logging.getLogger(__name__)
 SLOT_MINUTES: Final = 30
 READ_BAND: Final = (time(9, 0), time(21, 0))
 """The UTC hours whose reads are kept: 06:30-09:30 local in every US zone falls inside."""
-KEEP_DAYS: Final = 10
+KEEP_DAYS: Final = 45
+"""Days the state folder keeps (``predict learn`` reads up to ``morning_reads_days``, 44, back);
+the evidence store keeps every finished day for good, and an older day stays until it does."""
+FLOOR_DAYS: Final = 10
+"""Days the record always keeps, whatever its size (the rule before the 45 days)."""
+MAX_BYTES: Final = 16 * 1024 * 1024
+"""Raw bytes of the folder past which kept days beyond :data:`FLOOR_DAYS` are dropped, oldest
+first: at the worst compression seen (4.7 to 1) about 3.4 MB of the state's 16 MB packed
+budget."""
+HARD_BYTES: Final = 32 * 1024 * 1024
+"""Raw bytes past which days beyond :data:`FLOOR_DAYS` go even when no database holds them
+(loudly): about 7 MB packed at the worst compression, so the state stays inside its budget
+whatever the evidence store does."""
 SCHEMA_VERSION: Final = 2
 EVERY_DAY: Final = "*"
 ANY_KIND: Final = "?"
@@ -308,14 +328,61 @@ class MorningLog:
         found.through = moment if found.through is None else max(found.through, moment)
         self.root.mkdir(parents=True, exist_ok=True)
         write_bytes_atomic(self.path(moment.date()), found.to_bytes())
-        self.prune(moment.date())
+        self.prune(moment.date(), at=moment)
 
-    def prune(self, today: date, keep: int = KEEP_DAYS) -> list[date]:
-        """Delete the files of days more than ``keep`` days before ``today``."""
-        gone = [day for day in self.days() if day < today - timedelta(days=keep)]
+    def prune(
+        self,
+        today: date,
+        keep: int = KEEP_DAYS,
+        max_bytes: int = MAX_BYTES,
+        hard_bytes: int = HARD_BYTES,
+        at: datetime | None = None,
+    ) -> list[date]:
+        """Delete the files of kept days (:mod:`snowlight.live.kept`) more than ``keep`` days
+        before ``today``; then, while the folder holds more than ``max_bytes``, the oldest kept
+        day more than :data:`FLOOR_DAYS` before ``today``; then, while it holds more than
+        ``hard_bytes``, the oldest such day kept or not (recorded, with an ``::error::``
+        line: :func:`snowlight.live.kept.note_dropped`). A day no database holds is never
+        pruned for its age."""
+        state = self.root.parent
+        kept = read_kept(state)
+        floor = today - timedelta(days=FLOOR_DAYS)
+        days = self.days()
+
+        def held(day: date) -> bool:
+            return kept.holds(MORNING_KIND, day, self.path(day))
+
+        gone = [day for day in days if day < today - timedelta(days=keep) and held(day)]
         for day in gone:
             self.path(day).unlink(missing_ok=True)
-        return gone
+        left = [day for day in days if day not in gone]
+        sizes = {day: self._size(day) for day in left}
+        total = sum(sizes.values())
+        for day in [day for day in left if day < floor] if total > max_bytes else []:
+            if total <= max_bytes:
+                break
+            if not held(day):
+                continue
+            self.path(day).unlink(missing_ok=True)
+            total -= sizes[day]
+            gone.append(day)
+            LOG.warning("morning record over %d B: %s (kept) dropped", max_bytes, day)
+        lost: list[date] = []
+        for day in [day for day in left if day < floor and day not in gone]:
+            if total <= hard_bytes:
+                break
+            self.path(day).unlink(missing_ok=True)
+            total -= sizes[day]
+            gone.append(day)
+            lost.append(day)
+        note_dropped(state, lost, at or datetime.combine(today, time(), tzinfo=UTC))
+        return sorted(gone)
+
+    def _size(self, day: date) -> int:
+        try:
+            return self.path(day).stat().st_size
+        except OSError:
+            return 0
 
 
 def pass_reads(taken: Iterable[str], resolved: Sequence[Resolved]) -> dict[str, Read]:

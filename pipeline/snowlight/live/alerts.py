@@ -10,8 +10,10 @@ code ahead of the deploy for 15 minutes; clears when the handshake is good), ``c
 least 20 candidate rows and over 25% ``unknown_start`` in a morning window; clears when the
 window ends), ``state`` (pull or push failed, the swap lost, overrides-only, the write cap,
 packed state over 12 MB), ``chain`` (2 runs in a row exited 1, or a successor dispatch failed
-3 times; raised by a workflow step), ``timer`` (no live-ingest run created in 15 minutes), and
-``stale`` (the watch job in live-ingest.yml).
+3 times; raised by a workflow step), ``timer`` (no live-ingest run created in 15 minutes),
+``stale`` (the watch job in live-ingest.yml), and ``evidence`` (a finished morning-record or
+change-log day not kept in both evidence databases 2 days after it ended, or a day the
+record's size valve dropped before any database held it; :mod:`snowlight.live.kept`).
 
 **Where they go.**
 
@@ -80,6 +82,8 @@ _ENUMS: Final = {
             "plan",
             "unreadable",
             "cold",
+            "unkept",
+            "dropped",
         }
     ),
 }
@@ -101,6 +105,9 @@ class Kind(StrEnum):
     CHAIN = "chain"
     TIMER = "timer"
     STALE = "stale"
+    EVIDENCE = "evidence"
+    """A finished morning day not yet kept in both evidence databases after 2 days, or one
+    the size valve dropped before any held it (:mod:`snowlight.live.kept`)."""
 
 
 type Detail = Mapping[str, int | str | Sequence[str]]

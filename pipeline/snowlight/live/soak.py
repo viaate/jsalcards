@@ -866,6 +866,10 @@ def fetch_history(
     return history
 
 
+EVIDENCE_JOB: Final = "evidence"
+"""live-read.yml's job after the reader job (left out of a run's start and end)."""
+
+
 def _run(public: Public, workflow: str, run: Mapping[str, Any], since: datetime) -> Run:
     """One run with its jobs, and the annotations of live-read's and live-drill's jobs and
     of live-ingest's ``reader`` job (its token notice) and ``watch`` job (a stale file)."""
@@ -877,8 +881,11 @@ def _run(public: Public, workflow: str, run: Mapping[str, Any], since: datetime)
                 f"https://api.github.com/repos/{SITE}/check-runs/{job['id']}/annotations"
             )
             annotations.extend(str(item.get("message", "")) for item in found)
-    started = [moment for job in jobs if (moment := _when(job.get("started_at")))]
-    ended = [moment for job in jobs if (moment := _when(job.get("completed_at")))]
+    # a live-read run's times are its reader job's: the evidence job after it ends once the
+    # successor has started, and never holds it (docs/live.md, The evidence)
+    timed = [job for job in jobs if job.get("name") != EVIDENCE_JOB] or jobs
+    started = [moment for job in timed if (moment := _when(job.get("started_at")))]
+    ended = [moment for job in timed if (moment := _when(job.get("completed_at")))]
     return Run(
         id=int(run["id"]),
         workflow=workflow,

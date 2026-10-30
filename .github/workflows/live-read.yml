@@ -16,7 +16,7 @@
 # The private state (the row ledger and the rest, docs/live.md "The state") lives in the D1
 # database snowlight-live-state of the owner's Cloudflare account, pulled at the start under
 # a new epoch and pushed every 30 minutes and at the end; the Cloudflare secrets reach only
-# the pull, loop and end-push steps. If the pull fails, the loop runs overrides-only (it reads
+# the pull, loop and end-push steps, and the `evidence` job's push. If the pull fails, the loop runs overrides-only (it reads
 # no source, pushes nothing, saves no cache, and publishes the admin's statuses alone) and
 # ends as soon as the database answers again. Only the export predict learn reads (morning
 # records, change logs and a schema-only ledger) goes to the Actions cache, which any pull
@@ -28,6 +28,11 @@
 # still run. A cancel reaches the reader through the loop step's trap, and nothing packs the
 # state before a step has made sure no reader is left. In shadow and off a run never turns red; a closing step prints the exit and its
 # cause as one annotation.
+#
+# After the reader job, the `evidence` job keeps every finished morning-record and change-log
+# day of the export it saved for good, in two other D1 databases (docs/live.md, "The
+# evidence"). It is a job of its own, outside the `live-read` group, so the successor never
+# waits for it; the loop asks those databases what they hold before a day leaves the state.
 name: live-read
 run-name: live-read ${{ inputs.mode || vars.LIVE_PUBLISH || 'shadow' }}
 
@@ -325,3 +330,59 @@ jobs:
           path: pipeline/out/internal/live/store
           key: live-state-${{ github.run_id }}
 
+
+  # Every finished morning-record and change-log day of the export the reader job just saved,
+  # kept for good in the two evidence databases (docs/live.md, "The evidence": append-only,
+  # codes and counts only). A job of its own, with no concurrency group: the successor reader,
+  # dispatched by the job above, starts the moment that job ends and never waits for this one
+  # (two pushes that overlap write the same content-addressed rows, DO NOTHING on conflict).
+  # It reads the export straight from its archive (nothing is unpacked) and can never stop the
+  # reader: its failure prints one ::error:: line, and the loop's `evidence` alert opens when a
+  # finished day stays unkept for 2 days.
+  # Only after a reader job that ran (it succeeded or failed): a scheduled run whose reader
+  # the concurrency group cancelled has no export, and starts nothing here.
+  evidence:
+    needs: read
+    if: always() && (needs.read.result == 'success' || needs.read.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: live
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: pipeline
+    env:
+      PYTHONWARNINGS: ignore
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # This run's export only (no restore-keys): a reader job that saved none keeps nothing.
+      - id: export
+        uses: actions/cache/restore@v4
+        with:
+          path: pipeline/out/internal/live/store
+          key: live-state-${{ github.run_id }}
+
+      - if: steps.export.outputs.cache-hit == 'true'
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - if: steps.export.outputs.cache-hit == 'true'
+        run: uv sync --locked --no-dev
+
+      - if: steps.export.outputs.cache-hit == 'true'
+        id: push
+        name: Keep the evidence
+        continue-on-error: true
+        timeout-minutes: 8
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: uv run snowlight live evidence push --export out/internal/live/store/live-state.tar.gz

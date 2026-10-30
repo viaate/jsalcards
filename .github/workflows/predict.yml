@@ -138,6 +138,32 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: uv run snowlight predict run --until +320m
 
+      # The finished weather-class snapshots the live days are labeled under, the district
+      # tables they index and the labels learn published, kept for good in the two evidence
+      # databases (docs/predict.md, "The evidence"; append-only). After the passes, never
+      # before the first pass: snapshots settle 12 hours after their day begins, so nothing
+      # is lost by the wait. It gives itself 30 seconds of writes (the rest waits for the next
+      # run), then notes in the pass state which snapshots and tables the databases hold:
+      # only those may leave the state after 45 days. It may fail or time out alone.
+      - if: always() && steps.token.outputs.ready == 'true'
+        id: evidence
+        name: Keep the evidence
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: uv run snowlight predict evidence
+
+      # No network: fails when a finished snapshot (or its district table) has waited 2 days
+      # for a copy in both databases, whatever the step above did (failed, timed out, refused).
+      - if: always() && steps.token.outputs.ready == 'true'
+        id: evidence_check
+        name: Check the evidence
+        continue-on-error: true
+        timeout-minutes: 1
+        run: uv run snowlight predict evidence --check
+
       - if: always() && steps.token.outputs.ready == 'true'
         uses: actions/cache/save@v4
         with:
@@ -174,6 +200,19 @@ jobs:
           if [ "$open" = "0" ]; then
             gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" \
               --body "predict check found the public predictions file stale, missing or blank after run $GITHUB_RUN_ID. The page hides it after 90 minutes. See docs/predict.md."
+          fi
+
+      # The evidence store is not keeping the snapshots (the check above): one issue at a time.
+      - if: always() && steps.token.outputs.ready == 'true' && steps.evidence_check.outcome == 'failure'
+        name: Open an issue when the evidence is not kept
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: The live evidence is not kept
+        run: |
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$TITLE\"" --json title --jq "[.[] | select(.title == env.TITLE)] | length")
+          if [ "$open" = "0" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" \
+              --body "predict evidence --check found a finished weather-class snapshot, or the district table it indexes, not in both evidence databases after 2 days, in run $GITHUB_RUN_ID. The pass state keeps every such snapshot until a database holds it, so nothing is lost yet. The Keep the evidence step's log says why. See docs/predict.md, The evidence."
           fi
 
       # A refit the held-out live days judged worse is kept out (exit 4), and a learning step

@@ -121,5 +121,117 @@ learn:
   holdout_min_situation_rows: 30  # a situation is re-anchored only with this many held-out rows to check it on
   holdout_bin_min_rows: 20      # held-out reliability bins with this many rows are checked against their bound
   snapshot_slack_minutes: 60    # a weather class taken this long before 21:00 the evening before is too old
-  morning_reads_days: 9         # the live morning record keeps 10 days: older unlabeled days stay unknown
+  morning_reads_days: 44        # the live morning record and the class snapshots keep 45 days (the evidence store keeps them for good): older unlabeled days stay unknown
   excluded_days: []             # live days found misread (YYYY-MM-DD): never learned from (docs/predict.md)
+
+# The live scoring rules, pre-registered on 2026-10-29 before any live morning from Nov 1 on is
+# scored (advisory-sane L0; numbers and codes only). The class levels, the district standing and
+# the live update are fitted and scored by these and by nothing else; a change to any of them is
+# a reviewed commit that applies only to rows that arrive after it. The sha256
+# (config.LIVE_SCORE_SHA256, logged by predict learn on every run) covers this block, the
+# labels: and weather: blocks above (the outcome and class rules the labels are made by) and
+# learn.snapshot_slack_minutes, so none of those changes without it.
+live_score:
+  read:                           # a district is read on a school morning when one of its sources...
+    window: ["06:30", "09:30"]    # ...had a whole read in a 30-minute slot of this local window
+    healthy_share: 0.9            # ...in a slot whose reader healthy share is at least this
+    recent_days: 14               # ...and had a populated read in this many days before (or a second proven source read)
+    min_captures: 5               # a proven county source has at least this many populated captures
+    open_if_unnamed: true         # a covered district a whole fresh read did not name counts as open (owner O5)
+  sensitivity:                    # list sensitivity from co-listing trials (closed districts only)
+    tier_a_prior: [9, 1]          # Beta(9 + hits, 1 + misses)
+    tier_b_prior: [4, 2]          # Beta(4 + hits, 2 + misses)
+    tier_b_min: 0.7               # tier B enters the primary set at this sensitivity...
+    tier_b_min_trials: 20         # ...over at least this many closed co-listing trials
+  classes:                        # the class each weather class is scored and served in
+    advisory: advisory
+    advisory_after: advisory
+    cold: cold
+    snow_warning: warning
+    lake_snow: warning
+    ice: warning                  # no archive ice row: inside warning, under the warning prior
+    blizzard: warning             # 263 archive rows on 4 dates, busiest 52%: inside warning too
+    tropical: warning
+    none: chain                   # none and none_after stay on the served chain, never scored here
+    none_after: chain
+  split:                          # a weather class leaves warning for a level of its own...
+    min_live_dates: 5             # ...once it has this many distinct live dates...
+    prior: warning                # ...starting from the warning prior
+  prior:                          # capture-corrected class levels (k about 26), never an archive closure share
+    advisory: {target: 0.10, alpha_mean: -2.953, alpha_sd: 0.85}
+    cold: {target: 0.10, alpha_mean: -2.953, alpha_sd: 1.00}
+    warning: {target: 0.45, alpha_mean: -0.284, alpha_sd: 1.20}
+    capture_k: 26.4
+    delay_beta: [1.1, 8.9]        # the delay share q's prior (mean 11%)
+    alpha_grid: [-8, 4, 801]
+    delay_grid: 401
+    tau: 1.5                      # the market-day random effect's sd
+    tau_choices: [1.0, 1.5, 2.0, 2.5]
+    tau_free_market_days: 30      # tau is chosen by marginal likelihood from this many live market-days
+    quadrature_points: 20
+  standing:                       # the district's own standing within its class
+    exposure_beta: 0.5            # x = -ln((f + 0.5) / (f_ref + 0.5)), f the district's class days a season
+    exposure_offset: 0.5
+    f_ref: national_median_nonzero  # f_ref: the national median of f over districts with at least 1 day of the class
+    seasons: ["2015-16", "2024-25"]  # f: the district's school-days of the class a winter, averaged over these winters (weather.parquet 2015-25)
+    region_delta_strength: 0.5    # half-strength region deltas...
+    region_delta_clip: 1.0
+    region_min_days: 30           # ...only where level_supported holds
+    region_min_dates: 3
+    region_max_busiest: 0.5
+    live_region_sd: 0.5
+    live_state_sd: 0.4
+    live_level_min_dates: 5
+    live_level_min_market_days: 2
+  scoring:                        # nightly, frozen before the morning
+    horizons: [1, 0]
+    freeze_local: ["20:07", "05:07"]  # horizon 1 frozen at 20:07 local the evening before, horizon 0 at 05:07 local
+    freeze_day_offsets: [-1, 0]
+    primary_min_sensitivity: 0.7
+    bootstrap_resamples: 1000
+    bootstrap_seed: 20261101
+    bound: 0.90
+    bins: [0.0, 0.1, 0.3, 0.5, 0.7, 1.0]
+  shrink:                         # a class whose live calibration is badly off is pulled toward its prior, never hidden
+    ece_above: 0.10
+    nights: 3
+    min_rows: 100
+    keep_share: 0.5               # while it holds: served = prior + 0.5 x (posterior - prior), on the log-odds scale
+    release_nights: 3             # it lifts after this many nights in a row at or under ece_above
+    pooled: true                  # ECE and min_rows are over the rows of the last `nights` scored nights together, not each night alone
+  live_update:                    # the class level served is the grid posterior under the prior above
+    refresh_hours: 24             # refitted from the live labels once a day
+    fit_from: "2026-10-27"        # the level is fitted on labels from this school day on (every day the morning record holds)...
+    score_from: "2026-11-01"      # ...but only rows from this school day on, after this registration, are scored
+    prior_weight: alpha_sd        # the prior's weight is its alpha_sd (no extra pseudo-count; capture_k is the capture-odds constant)
+  forecast_adjustment:            # Addendum A item 3 (L5): not scored or served before its own addendum
+    registered: false
+    addendum: "i"                 # S7 addendum i fixes its bounds before any of its rows is scored
+  calibration:
+    ece_max: 0.05
+    bin_min_rows: 30
+    hard_fail_mean: 0.50          # a bin predicting at least this...
+    hard_fail_observed: 0.25      # ...observed below this fails
+    predictive_interval: 0.90
+    bin_interval: 0.95            # each reliability bin's date-clustered interval (date-block bootstrap)
+  plausibility:                   # implied closures per district-season, checked before anything serves
+    advisory_mean: 1.0
+    advisory_p99: 3.0
+    advisory_warning_mean: 2.0
+    district_max: 6.0
+    exp_within_brier: 0.002
+    pull_scale: log_odds          # a district that would fail is pulled toward its class level: served = level + s x (district - level) on the log-odds scale...
+    pull_step: 0.05               # ...s falling from 1 in steps of 0.05 (s = 0 is the class level itself, never below it)...
+    pull_until: district_max      # ...to the largest s at which that district's implied closures are at or under district_max;
+    pull_aggregate: largest_first # if the mean or p99 clause still fails, the districts with the most implied closures take one more step each, in that order, until it passes
+  supply:
+    advisory: {rows: 300, dates: 8, states: 3, regions: 2, max_date_share: 0.25, k_eff: 15}
+    warning: {rows: 100, dates: 4, states: 2, max_date_share: 0.40}
+    cold: {rows: 100, dates: 4, states: 2, max_date_share: 0.40}
+  read_independence:
+    share_ratio: [0.8, 1.25]      # the class's read share against the none class's
+    closure_points: 0.05          # market-days with and without a posted closure
+    closure_ratio: 1.25
+  accuracy:
+    brier_vs_live_rate: 0.005
+  hand_audit: {rows: 50, false_open_max: 0.05}

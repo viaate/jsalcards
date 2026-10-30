@@ -10,7 +10,7 @@ import logging
 import shutil
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field, replace
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 
 import httpx
@@ -472,6 +472,33 @@ def test_history_is_pruned_only_once_a_durable_copy_holds_it(tmp_path: Path) -> 
     (root / "durable.json").write_text('{"through": "2026-10-10"}', encoding="utf-8")
     assert log.prune(date(2026, 11, 17)) == [old]
     assert log.days() == [recent]
+
+
+def test_a_change_log_day_leaves_the_state_only_once_an_evidence_database_holds_it(
+    tmp_path: Path,
+) -> None:
+    import hashlib  # noqa: PLC0415
+
+    from snowlight.live import kept  # noqa: PLC0415
+
+    root = tmp_path / "changes"
+    root.mkdir()
+    today = date(2026, 12, 11)
+    days = [today - timedelta(days=back) for back in (47, 46, 45, 1)]
+    for day in days:
+        (root / f"{day.isoformat()}.jsonl").write_text('{"SYNTHETIC": 1}\n', encoding="utf-8")
+    log = ChangeLog(root)
+    assert log.prune(today) == []  # nothing known held: nothing goes, however old
+    digest = hashlib.sha256(b'{"SYNTHETIC": 1}\n').hexdigest()
+    held = {
+        name: {(kept.CHANGES, day.isoformat()): frozenset({digest}) for day in days}
+        for name in kept.DATABASES
+    }
+    kept.record_answer(tmp_path, held, datetime.combine(today, time(12), tzinfo=UTC))
+    # day 47 changed after it was kept: its new bytes are not held, and it stays
+    (root / f"{days[0].isoformat()}.jsonl").write_text('{"SYNTHETIC": 2}\n', encoding="utf-8")
+    assert log.prune(today) == [days[1]]  # day 46 goes; day 45 is still within 45 days
+    assert log.days() == [days[0], days[2], days[3]]
 
 
 # --- B3 (operations): isolation and redaction ----------------------------------------------

@@ -507,3 +507,30 @@ def test_a_pass_that_reads_to_its_cap_keeps_the_pulse_fresh_at_every_tick(
 def test_the_reader_installs_no_term_handler_so_the_watchers_term_ends_it_at_once() -> None:
     live_cli.configure_logging()
     assert signal.getsignal(signal.SIGTERM) is signal.SIG_DFL
+
+
+READER_END_STEPS = ("successor", "record", "push", "finish", "export", "check", "cache/save")
+"""What :data:`END_STEPS` counts, in the reader job's order after the loop and its reap."""
+
+
+def test_the_end_steps_the_gaps_count_are_the_reader_jobs_and_the_evidence_never_holds_it() -> None:
+    # The gaps above count END_STEPS (END_STEPS_SLOW) between a run's last pass and its
+    # successor's start. The successor waits for the reader job only (the `live-read` group),
+    # so its steps after the loop must be exactly those; the evidence push (up to its 8-minute
+    # step limit) runs in a job of its own, outside the group, and adds nothing to any gap.
+    import yaml  # type: ignore[import-untyped, unused-ignore]  # noqa: PLC0415
+
+    root = Path(__file__).resolve().parents[3]
+    workflow = yaml.safe_load((root / ".github" / "workflows" / "live-read.yml").read_text())
+    read = workflow["jobs"]["read"]
+    names = [str(item.get("id") or item.get("uses")) for item in read["steps"]]
+    after = names[names.index("reap") + 1 :]
+    assert [next(key for key in READER_END_STEPS if key in name) for name in after] == list(
+        READER_END_STEPS
+    )
+    assert read["concurrency"] == {"group": "live-read", "cancel-in-progress": False}
+    assert not any("evidence" in str(item.get("run", "")) for item in read["steps"])
+    evidence = workflow["jobs"]["evidence"]
+    assert "concurrency" not in evidence
+    assert "concurrency" not in workflow  # no workflow-level group holds the successor either
+    assert evidence["needs"] == "read"

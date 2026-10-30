@@ -432,3 +432,32 @@ def test_a_late_stale_a_slow_restart_and_a_red_run_miss_their_drill_bars() -> No
     history.until = T0 + timedelta(hours=2, minutes=20)
     _, gate = _drills(history)
     assert gate["bars"]["gate_cleared_within_10"] is None  # the window ends too soon to tell
+
+
+def test_a_live_read_run_is_timed_by_its_reader_job_not_its_evidence_job() -> None:
+    from snowlight.live import soak  # noqa: PLC0415
+
+    read = {
+        "id": 1,
+        "name": "read",
+        "started_at": "2026-10-31T12:00:00Z",
+        "completed_at": "2026-10-31T17:22:00Z",
+        "conclusion": "success",
+    }
+    kept = {
+        "id": 2,
+        "name": "evidence",
+        "started_at": "2026-10-31T17:22:10Z",
+        "completed_at": "2026-10-31T17:26:00Z",
+        "conclusion": "success",
+    }
+
+    class Stub:
+        def get(self, url: str) -> dict[str, Any]:
+            return {"jobs": [read, kept]} if url == "jobs" else {}
+
+    run = {"id": 9, "created_at": "2026-10-31T11:59:00Z", "jobs_url": "jobs"}
+    found = soak._run(Stub(), "live-read", run, T0)  # type: ignore[arg-type]
+    assert found.started == datetime(2026, 10, 31, 12, tzinfo=UTC)
+    assert found.ended == datetime(2026, 10, 31, 17, 22, tzinfo=UTC)  # the successor's start
+    assert found.jobs == {"read": "success", "evidence": "success"}

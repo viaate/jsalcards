@@ -208,6 +208,15 @@ class State:
     outlook_health: dict[str, object] = field(default_factory=dict)
     """The last outlook pass: when, the forecast run it read, and how many rows it gave the
     issued-alerts-only chance for a stale forecast."""
+    evidence: dict[str, object] = field(default_factory=dict)
+    """What the evidence databases are known to hold of the snapshots and their district
+    tables (:class:`snowlight.live.kept.PredictKept`), written by ``predict evidence`` only:
+    a snapshot older than 45 days leaves the state only once a database holds it."""
+    tables: dict[str, list[str]] = field(default_factory=dict)
+    """The district table (LEAIDs in table order) of each directory content the snapshots
+    index, kept here until an evidence database holds it
+    (:func:`snowlight.predict.live_labels.pending_tables`), so a
+    content no longer deployed still has its table kept."""
 
     def as_json(self) -> dict[str, object]:
         """For the state store."""
@@ -229,7 +238,8 @@ class State:
 
     def _outlook_json(self, when: Callable[[datetime | None], str | None]) -> dict[str, object]:
         """The outlook's keys, only when it keeps any (so a pass with the outlook off keeps
-        the state it kept before S7-F F3, byte for byte)."""
+        the state it kept before S7-F F3, byte for byte), and the evidence record's, only
+        when it has any."""
         found: dict[str, object] = {}
         if self.products or self.products_since is not None:
             found["products"] = self.products
@@ -239,6 +249,10 @@ class State:
             found["outlook"] = self.outlook
         if self.outlook_health:
             found["outlook_health"] = self.outlook_health
+        if self.evidence:
+            found["evidence"] = self.evidence
+        if self.tables:
+            found["tables"] = self.tables
         return found
 
     @classmethod
@@ -258,6 +272,8 @@ class State:
         products_observed = value.get("products_observed")
         outlook = value.get("outlook")
         health = value.get("outlook_health")
+        evidence = value.get("evidence")
+        tables = value.get("tables")
         return cls(
             digest=digest if isinstance(digest, str) else None,
             uploaded_at=datetime.fromisoformat(uploaded) if isinstance(uploaded, str) else None,
@@ -277,6 +293,14 @@ class State:
             else None,
             outlook=dict(outlook) if isinstance(outlook, dict) else {},
             outlook_health=dict(health) if isinstance(health, dict) else {},
+            evidence=dict(evidence) if isinstance(evidence, dict) else {},
+            tables={
+                str(content): [str(leaid) for leaid in table]
+                for content, table in tables.items()
+                if isinstance(table, list)
+            }
+            if isinstance(tables, dict)
+            else {},
         )
 
 

@@ -36,7 +36,8 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   schedule starts the next run 5-20 minutes on, not a tight chain of cold runs), 3 tries; a
   successor that cannot be dispatched is a warning and the `chain` alert.
 - **Restarters.** The successor step; live-ingest.yml's `reader` job on every tick (it starts
-  one when no live-read run has a job that is not completed, and switches a run whose mode is
+  one when no live-read run has a reader job that is not completed (the evidence job after it
+  is not counted), and switches a run whose mode is
   not `LIVE_PUBLISH`'s); and the `*/20` schedule, for when the timer itself stops. While a
   reader job runs (all day), each scheduled run waits as the group's pending job and is
   cancelled by the next one queued: about 72 grey cancelled live-read runs a day in the
@@ -63,7 +64,11 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   kill under 4 minutes after that pulse, the job's end steps (about a minute; 100 s with the
   end push at its 60-s bound), the successor's queue and cold start (about 1.5 minutes) and
   its first pass's reads (1.5 minutes, or 2.5 for a full sweep in a busy window) make a
-  publish gap of about 12.3 minutes, 13.0 at worst, under the 15-minute bar.
+  publish gap of about 12.3 minutes, 13.0 at worst, under the 15-minute bar. The job's end
+  steps are the successor's dispatch, the record, the end push, the closing report, the
+  export, its check and the cache save, and nothing else: the evidence push is a job of its
+  own outside the `live-read` group ([The evidence](#the-evidence)), so the successor never
+  waits for it (a test holds both).
 - **Cancels.** The runner signals only the loop step's own shell on a cancel (a mode change,
   the stall drill, the job's timeout): SIGINT, then SIGTERM 7.5 s later. The step runs the
   watcher in a process group of its own and traps both: it passes a TERM to the watcher,
@@ -132,7 +137,7 @@ matcher, gazetteer, registry and status reader.
 The reader's private state lives in the D1 database `snowlight-live-state` of the owner's
 Cloudflare account (`state.kind: d1`, `snowlight/live/d1.py`), reached with the repository
 secrets `CLOUDFLARE_API_TOKEN` (Account / D1 / Edit) and `CLOUDFLARE_ACCOUNT_ID`, which reach
-only the pull, loop and end-push steps. No Worker is bound to it: nothing on the internet
+only the pull, loop and end-push steps (and the evidence job's push, [The evidence](#the-evidence)). No Worker is bound to it: nothing on the internet
 reaches it. It is created by the first run (only when the account's list answers and names no
 database exactly `snowlight-live-state`), on the free plan with no card.
 
@@ -222,6 +227,95 @@ database exactly `snowlight-live-state`), on the free plan with no card.
   pending: amend E1 to name it, or move it at go-live.)
 - **The box** (`state.kind: local`) keeps the archive in `out/internal/live/box`.
 
+## The evidence
+
+What the reader saw on a morning cannot be read again, so every finished day of the morning
+record and the change log is kept for good, beside the state and apart from it
+(`snowlight/live/evidence.py`, advisory-sane L0; the owner's decision of Oct 29: keep them
+forever). The state folder keeps 45 days, which is what predict learn reads, and lets a day go
+only once the evidence store holds it; the evidence store keeps every day.
+
+- **Where.** Two D1 databases of the same Cloudflare account, `snowlight-evidence` and its
+  backup `snowlight-evidence-backup`, made by the first push the same way as the state's (only
+  when the account's list answers and names none), with the same two secrets. No Worker is
+  bound to either, so the site cannot serve them and nothing on the internet reaches them.
+  Deleting `snowlight-live-state` to start the state over leaves them as they are. Each push
+  writes both, and copies across whatever one holds and the other lacks, so a database
+  deleted by hand is filled again from the other on the next run. D1 Time Travel restores
+  either to any minute of its window (7 days on the free plan). Both are in the one account,
+  under one token: they guard against a database lost or a bad write, not against the account
+  lost or the token misused. An off-account copy (spec 19's private data repository) is the
+  next step when the owner allows it.
+- **What.** `morning/<UTC day>.json` once 2 hours have passed after its day,
+  `changes/<day>.jsonl` 4 days after its day, and from the predict workflow (`predict
+  evidence`) each school day's weather-class snapshot once 12 hours of its day have passed, the
+  district table of every directory content predict ran under (kept while it is deployed,
+  before a snapshot indexed under it settles; a finished snapshot whose content has no kept
+  table is named in a warning) and every version of the labels (`learn.json`). The live
+  labels' trials and read audit (advisory-sane L1) go here too (kinds `trials` and `audit`).
+  The bytes are the files' own, xz compressed: codes, LEAIDs, NCES ids, registry ids, keyed
+  row HMACs, counts and times. No name, listing text, URL or secret; nothing personal.
+- **Append-only.** Tables `items(kind, key, sha256, bytes, packed, parts, codec, kept_at,
+  run_id)` and `parts(sha256, n, data)` (64 KiB a part as base64). Every statement is an
+  `INSERT ... ON CONFLICT DO NOTHING` or a `SELECT`; the store has no `UPDATE`, `DELETE` or
+  `DROP`, so nothing kept is ever changed or removed. A file that changed after it was kept is
+  kept again as a second version beside the first. A version's parts go first and are read
+  back whole and checked against its sha256 and size; only then is its item row written, so an
+  item row always means a whole copy. A damaged version is never copied to the other database.
+  Versions are told apart by sha256 before anything is compressed: only a version a database
+  lacks is compressed and written.
+- **When.** The `evidence` job of every live-read run (`live evidence push --export`), after
+  the reader job: it restores the export that job just saved (this run's cache key only) and
+  reads the finished days straight from the archive. It has no concurrency group, so the
+  successor reader never waits for it (two pushes that overlap write the same rows, `DO
+  NOTHING` on conflict). It gives itself 4 minutes of new writes and at most 1,000 rows a
+  database (a finished day is a few rows), with an 8-minute step limit; what is left waits for
+  the next run, which offers the same days again. The job runs only after a reader job that ran
+  (succeeded or failed), with read-only contents permission, and sets nothing up before it finds
+  this run's export. `predict evidence` runs after the passes, 30 seconds of writes, a 2-minute
+  limit, then notes in the predict pass state what the databases hold (docs/predict.md). Both
+  continue on error (one `::error::` line when not every database was written), and neither
+  touches the live state. Only live-read keeps morning records
+  and change logs, and only predict snapshots, tables and labels.
+- **Before a day leaves the state.** Once an hour, in the loop's idle time (20 seconds at most,
+  ending before the next grid mark), the reader asks both databases which versions they hold
+  (read only: nothing is created) and writes the answer to `kept.json` in the state folder
+  (packed with the state, never exported): per day, the sha256 of its file and the databases
+  that hold exactly those bytes. Each database gets its own share of the 20 seconds, so a slow
+  one never starves the other, and a database that does not answer changes nothing known of it
+  (no false alarm from one missed check). A morning day or change-log day older than 45 days is
+  pruned only when a database holds it, and so is a morning day the size valve drops (oldest first, never the last 10,
+  while the folder holds more than 16 MB). A day no database holds stays however old, unless
+  the folder passes 32 MB: then the oldest go anyway, each with an `::error::` line and the
+  `evidence` alert, so the packed state stays inside its 16 MB budget whatever the evidence
+  store does. The `evidence` alert also opens when a finished day has waited 2 days for a copy
+  in both databases (counted from the first check after this landed), and closes when they
+  hold it. With no evidence store to ask (a state outside D1, or its secrets missing), a day
+  the valve dropped still opens the alert, for 7 days.
+- **Reading it back.** `snowlight live evidence pull --kind morning --since 2026-10-27 --out
+  <private folder>` writes the newest version of each kept day, checked, from whichever
+  database holds it whole, an older version when no copy of the newest reads (a warning names
+  it), and a warning for a day kept in more than one version; `--all` writes every version as
+  `<day>.<sha256 prefix>.<ext>`. It needs the two secrets, as a workflow step has them.
+  `snowlight live evidence size` prints each database's versions and bytes per kind. Every
+  push logs what each database holds in all, and warns (an annotation) past 300 MB.
+- **Size, 10 winters.** Measured on the real formats (`live/morning.py`, `live/history.py`)
+  filled with synthetic days, xz compressed, base64 stored: a morning day is 27 to 66 KB with
+  400 to 1,011 sources read every slot and counts that change every slot, 73 to 121 KB on a
+  storm morning naming 800 to 9,000 districts; a change-log day 2 KB calm, 54 KB with 2,000
+  schools lit, 397 KB with 15,000; a snapshot 3 KB; a district table 58 KB. At the worst of
+  those (every day of the year at 66 KB, 30 storm days, 15,000-school days included) a year
+  is about 46 MB a database, 460 MB in 10 winters. October's real record is far smaller (the
+  live export of 4 days of morning record and change log, with the schema-only ledger, was
+  60,685 B gzipped on Oct 29, about 8 KB a morning day once xz compressed), and a year of
+  300 such days and 65 storm-season days at the sizes above is about 21 MB, 210 MB in 10
+  winters. D1's free plan allows 500 MB a database, 5 GB and 10
+  databases an account (accounts, state and the two evidence databases make 4). The push's
+  size line gives the real growth; past the 300 MB warning, the next winters go to a new pair
+  of databases (or the paid plan's 10 GB) before the limit, by a reviewed change.
+- **Not here.** The public day timelines are on the live host, whose git history keeps every
+  version.
+
 ## Alerts
 
 Where an alert goes depends on the mode:
@@ -247,6 +341,7 @@ Where an alert goes depends on the mode:
 | `chain` | 2 runs in a row exited 1, a successor could not be dispatched, or a run's directory step failed (it starts no successor) | a run records any other exit (0, or the routine 3) |
 | `timer` | no live-ingest run created in 15 minutes | one is created |
 | `stale` | the served file is over 15 minutes old, missing or over 60 s ahead (`watch` job) | a fresh file is served |
+| `evidence` | a finished morning-record or change-log day not in both evidence databases 2 days after it ended, or a day the size valve dropped before any database held it ([The evidence](#the-evidence)) | both hold every finished day (a dropped day: a week on) |
 
 Titles, bodies, comments, annotations and `alerts.json` carry kinds, times, counts, codes,
 registry ids and the run link only: never a listing's words, a name, an email, a token or a
@@ -361,6 +456,7 @@ All from `pipeline/` (`uv run snowlight live ...`).
 | `live release --prefix every\|v1\|v1-shadow` | Clears the hold under the prefix named (required). The next pass there publishes again. |
 | `live check --url URL --max-age 15m` | The watchdog. Checks that the public file is fresh, is not stamped ahead of the clock, and carries the deployed directory's stamp. |
 | `live state pull [--retry]` / `live state push` / `live state export` | Restore or keep the private state; write the export predict learn reads. |
+| `live evidence push [--export ARCHIVE]` / `live evidence pull --kind K [--since DAY] [--all] --out DIR` / `live evidence size` | Keep the finished morning-record and change-log days (of the state folder, or of a live-state export) for good in both evidence databases; read kept files back into a private folder; print what each holds ([The evidence](#the-evidence)). |
 | `live rehearse` | The switch rehearsal on `v1-rehearse` ([Drills](#drills)); live-drill.yml's `switch`. |
 | `live alert --kind K --open\|--close` | A workflow step's alert (in shadow an annotation and `alerts.json`, else an issue). |
 | `live finish --exit N` | live-read.yml's closing step: the exit, the summary notice, the `chain` alert. |
@@ -454,15 +550,16 @@ Private state (`out/internal/live/state/`, kept by the state store, [The state](
 - `changes/<day>.jsonl`: every change the map showed, with its source and row key.
   - Each file is rewritten whole and atomically.
   - A torn line from an older copy is skipped and counted.
-  - Nothing is pruned until `changes/durable.json` (`{"through": "YYYY-MM-DD"}`) says a durable copy holds those days. That copy is the push to the private data repository (spec 19), and it is not built yet.
-  - Until it lands, the D1 state is the only copy of the replay history.
+  - A day leaves the state only once it is more than 45 days old and a durable copy holds it: an evidence database holding its exact bytes (`kept.json`, [The evidence](#the-evidence)), or `changes/durable.json` (`{"through": "YYYY-MM-DD"}`, the push to the private data repository of spec 19, not built yet).
+  - A day no copy is known to hold is never pruned, however old.
   - A successor that lost its state takes each day it has no log for from the public day file under the current stamp (lines with `"by": "seed"`), but only when the file's `content_sha256` is its own directory content: two contents can share one stamp (risk R6), and a file built on the other one indexes other schools. Such a file is skipped with a warning in the log. The public timeline then goes on from where it was, rather than starting again at the successor's first publish. The private details of those changes (source and row key) are lost.
 - `robots.json`: robots.txt verdicts per origin (the parsed rules, the read time and the file's digest), kept 24 hours.
 - `pacer.json`: each pace key's last request start, so a host's Crawl-delay holds across a handoff.
 - `exits.json`: the last runs' exits (the `chain` alert).
 - `d1.json` (never packed): this run's epoch and its last push's counts. `pulse` (never packed): the watcher's heartbeat.
 - `cadence.json`: per source, the start of the pass that last read it, its outcome, and the earliest next read of a deferred or blocked source.
-- `morning/<UTC day>.json`: the morning record the prediction model learns from (docs/predict.md, "The model learns on its own"). Per 30-minute UTC slot: the prefixes a pass was shown under, each whole read of a shown pass between 09:00 and 21:00 UTC (rows, rows placed, rows read as no status), the states a pass withheld whole, and the districts its rows named with the days and the status kinds (`?` when a dissenting, unsure or unread row named it). Counts, ids and codes only. Rewritten whole and atomically by every pass; kept 10 days. A file that does not read is marked damaged and no day of it is learned from.
+- `morning/<UTC day>.json`: the morning record the prediction model learns from (docs/predict.md, "The model learns on its own"). Per 30-minute UTC slot: the prefixes a pass was shown under, each whole read of a shown pass between 09:00 and 21:00 UTC (rows, rows placed, rows read as no status), the states a pass withheld whole, and the districts its rows named with the days and the status kinds (`?` when a dissenting, unsure or unread row named it). Counts, ids and codes only. Rewritten whole and atomically by every pass; kept 45 days in the state, and every finished day kept for good in the evidence databases ([The evidence](#the-evidence)). A day leaves the state only once a database holds its exact bytes (`kept.json`): when it is over 45 days old, or (never the last 10) while the folder holds more than 16 MB; past 32 MB the oldest go even unkept, loudly. `live state export` and `predict learn` log `morning record: <days> days, <bytes> B (<first day> to <last day>)`. A file that does not read is marked damaged and no day of it is learned from.
+- `kept.json`: what the evidence databases were last found to hold, per morning-record and change-log day: the sha256 of the file and the databases holding exactly it; when the first check was, and days the size valve dropped unkept ([The evidence](#the-evidence)).
 - `unmatched.json`: names the matcher did not place. Only ever in a private store, never in the Actions cache.
 - `good_reads` in the ledger keeps each source's first good read of every UTC hour for 14 days: all the resolver asks of it.
 

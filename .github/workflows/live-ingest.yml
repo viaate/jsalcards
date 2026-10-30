@@ -107,8 +107,9 @@ jobs:
               running=1 # unknown: never start a second reader on a guess
               continue
             fi
-            open=$(jq '[.jobs[] | select(.status != "completed")] | length' jobs.json)
-            total=$(jq '.jobs | length' jobs.json)
+            # its reader job only: the evidence job after it never holds a reader back
+            open=$(jq '[.jobs[] | select(.name != "evidence" and .status != "completed")] | length' jobs.json)
+            total=$(jq '[.jobs[] | select(.name != "evidence")] | length' jobs.json)
             age=$((now - $(date -d "$created" +%s)))
             if [ "$open" -eq 0 ] && { [ "$total" -gt 0 ] || [ "$age" -ge 120 ]; }; then
               continue # GitHub still lists it, but its job is over

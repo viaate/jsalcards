@@ -112,6 +112,49 @@ def test_live_read_loop_limits_and_secrets() -> None:
     assert holders == {"pull", "loop", "push"}
 
 
+def test_live_read_keeps_the_evidence_in_a_job_of_its_own_that_never_holds_the_reader() -> None:
+    workflow = load("live-read.yml")
+    # the reader job ends with its cache save: nothing after it holds the `live-read` group
+    assert "cache/save" in str(steps(workflow, "read")[-1].get("uses"))
+    assert not any("evidence" in str(item.get("run", "")) for item in steps(workflow, "read"))
+    job = workflow["jobs"]["evidence"]
+    assert job["needs"] == "read"
+    # only after a reader job that ran: never for a run whose reader was cancelled
+    assert job["if"] == (
+        "always() && (needs.read.result == 'success' || needs.read.result == 'failure')"
+    )
+    assert job["permissions"] == {"contents": "read"}
+    assert "concurrency" not in job
+    # nothing is set up before this run's export is found
+    names = [str(item.get("id") or item.get("uses")) for item in steps(workflow, "evidence")]
+    assert names.index("export") < next(i for i, n in enumerate(names) if "setup-uv" in n)
+    for item in steps(workflow, "evidence")[names.index("export") + 1 :]:
+        assert "steps.export.outputs.cache-hit == 'true'" in str(item.get("if"))
+    assert "concurrency" not in workflow
+    assert job["timeout-minutes"] <= 15
+    # this run's export only, by its exact key (no restore-keys: never another run's)
+    restore = step(workflow, "evidence", "export")
+    assert "cache/restore" in str(restore["uses"])
+    assert restore["with"] == {
+        "path": "pipeline/out/internal/live/store",
+        "key": "live-state-${{ github.run_id }}",
+    }
+    push = step(workflow, "evidence", "push")
+    assert push["if"] == "steps.export.outputs.cache-hit == 'true'"
+    assert push["continue-on-error"] is True
+    assert push["timeout-minutes"] <= 8
+    assert timedelta(minutes=push["timeout-minutes"]) > timedelta(seconds=live_cli.EVIDENCE_FOR)
+    assert push["run"] == (
+        "uv run snowlight live evidence push --export out/internal/live/store/live-state.tar.gz"
+    )
+    assert set(push["env"]) == set(CLOUDFLARE)
+    # the Cloudflare secrets reach the push alone, and no other secret or token reaches the job
+    job_text = json.dumps(job)
+    assert job_text.count("secrets.") == 2
+    assert "github.token" not in job_text
+    assert "SNOWLIGHT_LIVE_TOKEN" not in job_text
+
+
 def test_live_read_end_steps_and_the_successor() -> None:
     workflow = load("live-read.yml")
     names = [
@@ -172,6 +215,10 @@ def test_live_workflows_upload_no_artifact_and_cache_only_the_export() -> None:
                     continue
                 if "cache/save" in uses:
                     assert (name, path) == ("live-read.yml", "pipeline/out/internal/live/store")
+                elif job_name == "evidence":
+                    # the evidence job restores this run's export, by its exact key only
+                    assert (name, path) == ("live-read.yml", "pipeline/out/internal/live/store")
+                    assert "restore-keys" not in item["with"]
                 else:
                     assert "out/internal/live" not in path
 
@@ -377,6 +424,32 @@ def test_the_reader_job_counts_runs_by_their_jobs(tmp_path: Path, stub: Stub) ->
     stub.answer("POST", DISPATCH, 204)
     assert _reader(tmp_path, stub).code == 0
     assert [path for path, _ in stub.calls("POST")] == [DISPATCH]  # a listed run whose job ended
+    # a run whose reader job ended while its evidence job still pushes: no reader runs, so
+    # one is started (the evidence job never holds a reader back)
+    stub.seen.clear()
+    stub.answer(
+        "GET",
+        "/api/repos/viaate/synthetic/actions/runs/1/jobs",
+        200,
+        {
+            "jobs": [
+                {"name": "read", "status": "completed"},
+                {"name": "evidence", "status": "in_progress"},
+            ]
+        },
+    )
+    assert _reader(tmp_path, stub).code == 0
+    assert [path for path, _ in stub.calls("POST")] == [DISPATCH]
+    # its reader job still running: it counts as running, whatever the evidence job does
+    stub.seen.clear()
+    stub.answer(
+        "GET",
+        "/api/repos/viaate/synthetic/actions/runs/1/jobs",
+        200,
+        {"jobs": [{"name": "read", "status": "in_progress"}]},
+    )
+    assert _reader(tmp_path, stub).code == 0
+    assert stub.calls("POST") == []
 
 
 @needs_tools

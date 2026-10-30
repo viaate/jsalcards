@@ -69,11 +69,14 @@ from snowlight.schemas.scalars import MINUTES_PER_DAY
 from snowlight.schemas.vocab import SHIFTED, Reason, Status
 
 LOG: Final = logging.getLogger(__name__)
-KEEP_DAYS: Final = 30
-"""How many days of change log the state store keeps once a durable copy holds them."""
+KEEP_DAYS: Final = 45
+"""How many days of change log the state store keeps; an older day leaves it only once a
+durable copy holds it: an evidence database holding its exact bytes (``kept.json``,
+:mod:`snowlight.live.kept`), or :data:`DURABLE`. As the morning record
+(:data:`snowlight.live.morning.KEEP_DAYS`): past what ``predict learn`` reads back (44)."""
 DURABLE: Final = "durable.json"
 """``changes/durable.json``: ``{"through": "YYYY-MM-DD"}``, written by the durable push
-(spec 19) once the days up to then are kept elsewhere. Without it nothing is pruned."""
+(spec 19) once the days up to then are kept elsewhere."""
 FOLD_DAYS: Final = 3
 """How many days before the newest logged day still matter for what the map shows."""
 INDEX_DAYS: Final = 30
@@ -285,12 +288,22 @@ class ChangeLog:
 
     def prune(self, today: date, keep: int = KEEP_DAYS) -> list[date]:
         """Remove the files of days more than ``keep`` days before ``today`` that a durable
-        copy already holds (:meth:`durable_through`); without one, nothing."""
+        copy already holds: an evidence database holding the file's exact bytes
+        (``kept.json`` in the state folder above the log), or :meth:`durable_through`. A day
+        no copy is known to hold is never removed, however old (the log stays in the state,
+        and its size is the state's budget alert's)."""
+        from snowlight.live.kept import CHANGES, read_kept  # noqa: PLC0415
+
         through = self.durable_through()
-        if through is None:
-            return []
+        kept = read_kept(self.root.parent)
         removed = [
-            day for day in self.days() if day < today - timedelta(days=keep) and day <= through
+            day
+            for day in self.days()
+            if day < today - timedelta(days=keep)
+            and (
+                (through is not None and day <= through)
+                or kept.holds(CHANGES, day, self._path(day))
+            )
         ]
         for day in removed:
             self._path(day).unlink()

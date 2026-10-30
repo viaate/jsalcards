@@ -56,7 +56,7 @@ import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Final
 
@@ -425,6 +425,21 @@ def make_store(config: LiveConfig, env: Env, client: httpx.Client) -> StateStore
     raise ConfigError(f"state kind {kind!r} is d1, local or bucket")
 
 
+def make_evidence_reader(config: LiveConfig, env: Env, client: httpx.Client) -> Any:
+    """Both evidence databases, read only, for the loop's check (:meth:`Runner.check_evidence`):
+    ``None`` unless the state is in D1 (the evidence store's account) and its secrets are
+    here."""
+    if config.state.get("kind") != "d1":
+        return None
+    from snowlight.live import evidence  # noqa: PLC0415
+
+    try:
+        return evidence.make_store(env, beating(client))
+    except Exception as error:
+        _say(f"evidence check: no store to ask: {describe(error)}")
+        return None
+
+
 def _verify() -> ssl.SSLContext | bool:
     # httpx no longer reads SSL_CERT_FILE itself: a proxy's CA bundle is given here.
     bundle = os.environ.get("SSL_CERT_FILE")
@@ -767,6 +782,10 @@ class Loaders:
     """live finish's line of the live host's size and the token count (GitHub's API)."""
     served: Callable[[str], bytes | None] | None = None
     """The rehearsal's served file by path (``None``: through the CDN)."""
+    evidence: "Callable[[LiveConfig, Env, httpx.Client], Any]" = field(
+        default_factory=lambda: make_evidence_reader
+    )
+    """What the loop asks which finished days the evidence store holds (``None``: nothing)."""
 
 
 LOADERS = Loaders()
@@ -913,6 +932,42 @@ def on_grid(moment: datetime, step: timedelta) -> bool:
     return moment.timestamp() % step.total_seconds() == 0
 
 
+EVIDENCE_EVERY: Final = timedelta(hours=1)
+"""How often the loop asks the evidence store what it holds."""
+EVIDENCE_CHECK_FOR: Final = timedelta(seconds=20)
+"""The longest such a check may take (its requests' deadline)."""
+
+
+def check_evidence(store: Any, state: Path, now: datetime, *, seconds: float) -> Any:
+    """One check (:meth:`Runner.check_evidence`): the databases' answer folded into
+    ``kept.json``, one line, and the alert's verdict (:func:`snowlight.live.kept.verdict`);
+    ``None`` when even ``kept.json`` could not be written. It never raises."""
+    from snowlight.live import kept  # noqa: PLC0415
+
+    try:
+        days = [day for kind in kept.KINDS for day in kept.day_files(state, kind)]
+        since = min(days).isoformat() if days else ""
+        held: Any = None
+        try:
+            # each database gets its own share of the time: a slow one never starves the other
+            held = store.held(kept.KINDS, since, seconds=seconds)
+        except Exception as error:
+            _say(f"evidence check: {describe(error)}; what it knew stays")
+        found = kept.record_answer(state, held, now)
+        result = kept.verdict(state, found, now)
+        copies = found.copies.get(kept.MORNING, {})
+        whole = sum(1 for copy in copies.values() if len(copy.databases) == len(kept.DATABASES))
+        late = f"; {result.count} {result.why}" if result.active else ""
+        _say(
+            f"evidence check: {whole} of {len(copies)} morning days in both databases"
+            f" ({len(held or {})} answered){late}"
+        )
+        return result
+    except Exception as error:
+        _say(f"evidence check: {describe(error)}")
+        return None
+
+
 FAILED_TO_STOP: Final = 3
 """Failed passes in a row after which the run stops (exit 1): its successor starts clean."""
 PUSH_MARGIN: Final = timedelta(seconds=30)
@@ -969,6 +1024,8 @@ class _Loop:
     in the loop's closing notice the soak report types each boundary by."""
     first_pass: datetime | None = None
     """When the run's first pass started (the notice the soak's cold start ends at)."""
+    next_evidence: datetime | None = None
+    """When the idle time next asks the evidence store what it holds (``None``: never)."""
 
     def fail(self, cause: str) -> Exit:
         self.causes.append(cause)
@@ -993,6 +1050,8 @@ class Runner:
     last_pulse: datetime | None = field(default=None, init=False)
     holds: "HoldsSink | None" = field(default=None, init=False)
     """The reads' holds sink (its pending holds are tried again in idle time)."""
+    evidence: Any = field(default=None, init=False)
+    """The evidence store, asked in idle time which finished days it holds (``None``: never)."""
 
     @property
     def ingest(self) -> Ingest:
@@ -1037,6 +1096,8 @@ class Runner:
         if self.store is not None and every > timedelta(0):
             self.state.push_every = every
             self.state.next_push = next_grid(start, every)
+        if self.evidence is not None or self.alerts is not None:
+            self.state.next_evidence = start
         self.state.next_timer = start
         self.pulse()
         while self.state.stop is None:
@@ -1214,11 +1275,58 @@ class Runner:
             self.holds.retry()
         if state.next_push is not None and now >= state.next_push and now < state.due:
             self.push(now, reason="slot")
+        if state.next_evidence is not None and now >= state.next_evidence:
+            self.check_evidence(self.loaders.clock())
         if self.alerts is not None and state.next_timer is not None and now >= state.next_timer:
             state.next_timer = now + TIMER_EVERY
             latest = self.loaders.timer(self.env)
             if latest is not None:  # None: it could not be read; nothing changes
                 self.alerts.book.set(Kind.TIMER, timer_late(latest, now), now)
+
+    def check_evidence(self, now: datetime) -> None:
+        """Ask the evidence store, in the idle time, which finished days it holds whole, and
+        fold the answer into ``kept.json`` (:mod:`snowlight.live.kept`): what lets a morning
+        day leave the state folder. Every :data:`EVIDENCE_EVERY`, given at most
+        :data:`EVIDENCE_CHECK_FOR` and ending before the next grid mark; a check that fails
+        changes nothing it knew. Then the ``evidence`` alert: a finished day waiting more
+        than 2 days for a copy in both databases, or a day the size valve dropped uncopied.
+        With no evidence store to ask (the state is not in D1, or its secrets are missing),
+        only that last: the drop still opens the alert, not just its ``::error::`` line."""
+        state = self.state
+        if self.evidence is None:
+            state.next_evidence = now + EVIDENCE_EVERY
+            self._dropped_alert(now)
+            return
+        deadline = state.due - PUSH_MARGIN
+        if now >= state.due or deadline - now < MIN_PUSH_TIME:
+            return  # the next idle time asks
+        state.next_evidence = now + EVIDENCE_EVERY
+        self.pulse()
+        found = check_evidence(
+            self.evidence,
+            self.args.state,
+            now,
+            seconds=min(EVIDENCE_CHECK_FOR, deadline - now).total_seconds(),
+        )
+        if found is None or self.alerts is None:
+            return
+        detail: dict[str, int | str] = {"why": found.why, "count": found.count}
+        self.alerts.book.set(Kind.EVIDENCE, found.active, now, detail if found.active else None)
+
+    def _dropped_alert(self, now: datetime) -> None:
+        """The ``evidence`` alert from ``kept.json`` alone: open while the size valve dropped
+        a day no database held (:func:`snowlight.live.kept.note_dropped`). It never raises."""
+        from snowlight.live import kept  # noqa: PLC0415
+
+        if self.alerts is None:
+            return
+        try:
+            record = kept.read_kept(self.args.state)
+            dropped = {day: at for day, at in record.dropped.items() if now - at < kept.DROPPED_FOR}
+            detail: dict[str, int | str] = {"why": "dropped", "count": len(dropped)}
+            self.alerts.book.set(Kind.EVIDENCE, bool(dropped), now, detail if dropped else None)
+        except Exception as error:
+            _say(f"evidence check: {describe(error)}")
 
     def push(self, now: datetime, *, reason: str) -> None:
         """One push in the idle time; a failed one is tried again at the next slot only."""
@@ -1323,6 +1431,11 @@ def run_loop(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
     keeper = store if hasattr(store, "keep") else None if store is None else _LocalKeep(store)
     runner = runner_type(args, config, env, parts, loaders, keeper, alerts)
     runner.holds = sink
+    if store is not None and not args.overrides_only:
+        try:
+            runner.evidence = loaders.evidence(config, env, loaders.client())
+        except Exception as error:
+            _say(f"evidence check: no store to ask: {describe(error)}")
     if args.overrides_only and alerts is not None:
         alerts.book.set(Kind.STATE, True, loaders.clock(), {"why": "overrides_only"})
     return leave(runner.run(), parts, loaders)
@@ -1729,6 +1842,7 @@ def run_state(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
         except Exception as error:
             return _fail(f"export: {describe(error)}")
         _say(f"state exported: {len(names)} files, {len(data)} bytes")
+        _say(morning_line(args.state / "morning"))  # it never raises
         return int(Exit.OK)
     try:
         config = LiveConfig.load(args.config)
@@ -1763,6 +1877,115 @@ def run_state(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
             run_alert(alert, loaders)
         return code
     return int(Exit.OK)
+
+
+def morning_line(folder: Path) -> str:
+    """``morning record: <days> days, <bytes> B (<first> to <last>)``: the record's day files
+    in ``folder``. It never raises (a file that cannot be read is left out of the size)."""
+    try:
+        found = sorted(
+            path
+            for path in folder.glob("*.json")
+            if path.is_file() and re.fullmatch(r"\d{4}-\d{2}-\d{2}", path.stem)
+        )
+    except OSError as error:
+        return f"morning record: unreadable ({type(error).__name__})"
+    size = 0
+    for path in found:
+        try:
+            size += path.stat().st_size
+        except OSError:
+            continue
+    span = f" ({found[0].stem} to {found[-1].stem})" if found else ""
+    return f"morning record: {len(found)} days, {size} B{span}"
+
+
+EVIDENCE_SECONDS: Final = 240.0
+"""Seconds ``live evidence push`` starts new writes for (what is left waits for the next run).
+Its job runs after the reader job and outside the reader's concurrency group, so it never
+holds the successor."""
+EVIDENCE_FOR: Final = 300.0
+"""Seconds ``live evidence`` gives the Cloudflare API in all (the step's own limit is 8 min)."""
+
+
+def run_evidence(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
+    """``live evidence push|pull|size`` (:mod:`snowlight.live.evidence`): keep the state
+    folder's finished morning-record and change-log days for good in both evidence databases,
+    read kept files back into ``--out`` (a private folder), or print what is kept. 0 when
+    every database did what was asked, 1 otherwise (the workflow step never fails the run)."""
+    from snowlight.live import evidence  # noqa: PLC0415
+    from snowlight.live.d1 import CloudflareD1  # noqa: PLC0415
+
+    loaders = loaders or LOADERS
+    configure_logging()
+    env = loaders.env()
+    try:
+        with loaders.client() as client:
+            store = evidence.make_store(env, client)
+            store.seconds = EVIDENCE_SECONDS
+            api = store.api
+            if isinstance(api, CloudflareD1):
+                api.deadline = time.monotonic() + EVIDENCE_FOR
+            if args.evidence_action == "size":
+                for name, kinds in store.size().items():
+                    for row in kinds:
+                        _say(
+                            f"evidence {name}: {row['kind']} {row['items']} versions,"
+                            f" {row['bytes']} B raw, {row['packed']} B kept"
+                        )
+                return int(Exit.OK)
+            if args.evidence_action == "pull":
+                since = None if args.since is None else date.fromisoformat(args.since)
+                found: Any = (
+                    store.pull_all(args.kind, since)
+                    if getattr(args, "all", False)
+                    else store.pull(args.kind, since)
+                )
+                written = evidence.write_pulled(found, args.kind, args.out)
+                _say(f"evidence pulled: {len(written)} {args.kind} files")
+                return int(Exit.OK)
+            export = getattr(args, "export", None)
+            if export is not None:
+                offers = evidence.export_offers(export, loaders.clock())
+                days = sorted(o.key for o in offers if o.kind == evidence.MORNING)
+                span = f" ({days[0]} to {days[-1]})" if days else ""
+                _say(f"morning record: {len(days)} finished days in the export{span}")
+            else:
+                _say(morning_line(args.state / "morning"))
+                offers = evidence.state_offers(args.state, loaders.clock())
+            try:
+                reports = store.push(offers, (evidence.MORNING, evidence.CHANGES))
+            except evidence.PartialPushError as error:
+                reports = list(error.reports)
+                _evidence_lines(reports, len(offers))
+                return _evidence_failed(f"evidence: {describe(error)}")
+            _evidence_lines(reports, len(offers))
+    except Exception as error:
+        return _evidence_failed(f"evidence: {describe(error)}")
+    return int(Exit.OK)
+
+
+def _evidence_failed(text: str) -> int:
+    """A failed evidence command: the line on stderr and one ``::error::`` annotation (the
+    step never fails its run; the loop's ``evidence`` alert opens if days stay unkept)."""
+    _say(f"::error::The evidence store was not fully written: {text} (docs/live.md, The evidence).")
+    return _fail(text)
+
+
+def _evidence_lines(reports: Sequence[Any], offered: int) -> None:
+    for report in reports:
+        wait = f", {report.left} wait for the next push" if report.left else ""
+        held = "" if report.stored is None else f"; it holds {report.stored} B in all"
+        _say(
+            f"evidence {report.database}: {offered} finished files offered, {report.held} held"
+            f" before, {report.kept} kept and read back ({report.copied} copied from the"
+            f" other database), {report.bytes} B, {report.rows_written} rows written{wait}{held}"
+        )
+        if report.full:
+            _say(
+                f"::warning::The evidence database {report.database} holds {report.stored} B:"
+                " plan its successor before D1's 500 MB limit (docs/live.md, The evidence)."
+            )
 
 
 def run_alert(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
@@ -2062,6 +2285,30 @@ def _register_state(actions: "argparse._SubParsersAction[argparse.ArgumentParser
     )
     state.add_argument("--out", type=Path, default=EXPORT_DIR, help="export: the folder to write")
     state.set_defaults(handler=run_state)
+    keep = actions.add_parser(
+        "evidence", help="keep the finished morning records for good (docs/live.md, Evidence)"
+    )
+    keep.add_argument("evidence_action", choices=("push", "pull", "size"))
+    _common(keep)
+    keep.add_argument(
+        "--kind",
+        default="morning",
+        choices=("morning", "changes", "snapshot", "districts", "labels", "trials", "audit"),
+    )
+    keep.add_argument("--since", default=None, help="pull: the first day (YYYY-MM-DD)")
+    keep.add_argument(
+        "--out", type=Path, default=INTERNAL / "evidence", help="pull: a private folder"
+    )
+    keep.add_argument(
+        "--all", action="store_true", help="pull: every kept version, not the newest alone"
+    )
+    keep.add_argument(
+        "--export",
+        type=Path,
+        default=None,
+        help="push: the finished days of this live-state export (live-state.tar.gz)",
+    )
+    keep.set_defaults(handler=run_evidence)
     alert = actions.add_parser("alert", help="open or close a workflow step's alert")
     alert.add_argument("--kind", required=True, choices=[kind.value for kind in Kind])
     which = alert.add_mutually_exclusive_group(required=True)

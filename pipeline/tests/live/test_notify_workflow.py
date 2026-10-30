@@ -62,12 +62,15 @@ def test_runs_after_publish_without_the_live_host_token() -> None:
 def test_the_predictions_loop_gets_the_cloudflare_secrets() -> None:
     job = yaml.safe_load(PREDICT.read_text(encoding="utf-8"))["jobs"]["predict"]
     token = "${{ secrets.CLOUDFLARE_API_TOKEN }}"  # noqa: S105 - the secret's name
-    # Only the step that runs the loop: never the job, whose other steps run third-party
-    # actions and fetches.
+    # Only the step that runs the loop, and the evidence step (advisory-sane L0): never the
+    # job, whose other steps run third-party actions and fetches.
     assert "CLOUDFLARE_API_TOKEN" not in json.dumps(job.get("env", {}))
     holders = [step for step in job["steps"] if "CLOUDFLARE_API_TOKEN" in json.dumps(step)]
-    assert [step.get("id") for step in holders] == ["run"]
-    [step] = holders
+    assert [step.get("id") for step in holders] == ["run", "evidence"]
+    step, kept = holders
+    assert kept["run"] == "uv run snowlight predict evidence"
+    assert kept["continue-on-error"] is True
+    assert set(kept["env"]) == {"CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"}
     assert step["run"].startswith("uv run snowlight predict run")
     assert step["env"]["CLOUDFLARE_API_TOKEN"] == token
     assert step["env"]["CLOUDFLARE_ACCOUNT_ID"] == "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}"

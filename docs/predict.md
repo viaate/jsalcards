@@ -924,6 +924,7 @@ Run from `pipeline/`. Exit codes: 0 done, 3 dark (nothing uploaded: the gate ref
 | `uv run snowlight predict release` | Clears the hold. |
 | `uv run snowlight predict check --max-age 45m` | The watchdog: exit 3 when the public file is missing, invalid, blank, ahead of the clock or older than the limit. The workflow runs it after every run, a failed pass included, and opens one issue, "Snow-day chances are stale", unless one is already open. |
 | `uv run snowlight predict learn` | Labels the live-read days not yet labeled and swaps in a refit only when the held-out live days find it no worse (see "The model learns on its own"). Exit 0 swapped, reset (a served file counted an excluded day) or nothing to change, 4 kept the model served because the refit was worse, 1 an error (nothing changed). The workflow runs it before the passes. |
+| `uv run snowlight predict evidence` | Keeps every finished weather-class snapshot of the pass state, the district table of the directory predict learn read and the labels it published (`learn.json`, every version) for good in the evidence databases (docs/live.md, "The evidence"); it reads the table and labels learn left in `out/internal/predict/evidence/`, and the deployed directory only when learn left none (and the pass state keeps no table). Exit 0 when both kept them, 1 otherwise. Then it asks both databases which snapshots and tables they hold and notes it in the pass state (`evidence`). The workflow runs it after the passes and before the state's save, never before the first pass (it continues on error: 30 seconds of writes, 45 seconds for the push's requests, 15 for the question, a 2-minute limit). With `--check` it reads only the pass state: one line, and exit 1 with an `::error::` line when a finished snapshot or its district table has waited 2 days for a copy in both databases (the workflow's issue). |
 
 Environment: `PREDICT_PUBLISH` (`on` writes `v1/`, `shadow` writes `v1-shadow/`, `off`
 writes nothing and is the default; the workflow sets `on`), `LIVE_HOST_TOKEN` (the
@@ -975,6 +976,27 @@ commit `data/predict/model.json.gz` with the report's numbers in the message.
 Every predict workflow run starts with `predict learn` (`pipeline/snowlight/predict/learn.py`,
 `live_labels.py`). It needs no API key and no server beyond the live host and the Actions
 cache. The owner's Cloudflare Worker needs no change: it dispatches the same workflow.
+
+What it reads is kept long enough: the live state's morning record and the passes' weather-class
+snapshots keep 45 days, and `learn.morning_reads_days` is 44, so a day it can still label always
+has its record, the record of the day before and its snapshot. Every finished day of both is also
+kept for good in the evidence databases (docs/live.md, "The evidence"; `predict evidence` keeps
+the snapshots, the district tables and the labels). Neither leaves its state before a database
+holds it: after each push, `predict evidence` notes in the pass state (`evidence`) which
+snapshots and district tables the databases hold, byte for byte, and a pass lets a snapshot
+older than 45 days go only once a database holds it and the table it indexes. The pass state
+also keeps the district table of every directory content its snapshots index (`tables`) until a
+database holds it, so a content that is no longer deployed still has its table kept. A database
+that does not answer changes nothing known of it. `predict evidence --check` (no network) fails
+when a finished snapshot or its table has waited 2 days for a copy in both databases, and the
+workflow then opens one issue, "The live evidence is not kept"; nothing is lost while it is open,
+because the state keeps every such snapshot.
+
+Every run's learning step also prints `predict learn: live_score sha256 <hex>`: the sha256 of
+the pre-registered live scoring rules (the `live_score:` block of `config/predict.yaml`, the
+`labels:` and `weather:` blocks and `learn.snapshot_slack_minutes`; `config.LIVE_SCORE_SHA256`,
+held by a test), so the public run logs date the registration. A change to any of them is a
+reviewed commit that changes the sha256 and applies only to rows that arrive after it.
 
 1. **Labels.** A school day is labeled once it is over everywhere, its timeline on the live
    host (`live/days/<day>.json`) is final (or the host's day index, written after the day,

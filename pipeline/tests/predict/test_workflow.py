@@ -1,8 +1,11 @@
 """Contract tests for .github/workflows/predict.yml and the live root the preview names."""
 
+from datetime import timedelta
 from pathlib import Path
 
 import yaml  # type: ignore[import-untyped, unused-ignore]
+
+from snowlight.predict import cli
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "predict.yml"
@@ -156,3 +159,36 @@ def test_the_learning_step_restores_the_live_loops_cache_key_and_folder() -> Non
                 saves = "actions/cache" in uses and "restore" not in uses
                 if saves and given.get("path") == folder:
                     assert str(given["key"]).startswith(CACHE_KEY_PREFIX), path.name
+
+
+def test_the_evidence_is_kept_after_the_passes_and_never_holds_the_first_one() -> None:
+    found = steps()
+    ids = [step.get("id") for step in found]
+    kept = found[ids.index("evidence")]
+    check = found[ids.index("evidence_check")]
+    # after the passes, so the chain's first pass never waits for it; before the state's
+    # save, so what it notes the databases hold (the pass state's `evidence`) is kept
+    assert ids.index("learn") < ids.index("run") < ids.index("evidence")
+    save = next(
+        i
+        for i, step in enumerate(found)
+        if "cache/save" in str(step.get("uses")) and "predict-state" in str(step.get("with"))
+    )
+    assert ids.index("evidence") < ids.index("evidence_check") < save
+    assert str(kept["if"]).startswith("always()")
+    assert kept["run"] == "uv run snowlight predict evidence"
+    assert kept["continue-on-error"] is True
+    assert int(str(kept["timeout-minutes"])) <= 2
+    assert timedelta(minutes=int(str(kept["timeout-minutes"]))) > timedelta(
+        seconds=cli.EVIDENCE_FOR + cli.EVIDENCE_ASK_FOR + 30
+    )
+    # the check needs no network or secret, and its failure opens one issue
+    assert str(check["if"]).startswith("always()")
+    assert check["run"] == "uv run snowlight predict evidence --check"
+    assert check["continue-on-error"] is True
+    assert "env" not in check
+    issue = next(step for step in found if "evidence_check.outcome" in str(step.get("if")))
+    assert str(issue["if"]).endswith("steps.evidence_check.outcome == 'failure'")
+    assert "gh issue create" in str(issue["run"])
+    # the save still runs whatever the evidence steps did
+    assert str(found[save]["if"]).startswith("always()")

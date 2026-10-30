@@ -31,7 +31,7 @@ import sqlite3
 import sys
 import tempfile
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -43,6 +43,13 @@ import numpy.typing as npt
 import polars as pl
 
 from snowlight.elevation.pins import DEFAULT_PINS_PATH, load_pins
+from snowlight.live.kept import (
+    PredictKept,
+    contents_of,
+    fold_predict,
+    predict_verdict,
+    snapshot_finished,
+)
 from snowlight.live.publish import LiveHold
 from snowlight.live.publishers import DirPublisher, GitHubPublisher, PublishError
 from snowlight.output import write_bytes_atomic, write_json
@@ -78,6 +85,7 @@ from snowlight.predict.config import (
     ModelSettings,
     PredictConfig,
     ServeSettings,
+    live_score_sha256,
 )
 from snowlight.predict.forecast_values import NO_FORECASTS, Forecasts
 from snowlight.predict.heights import (
@@ -88,7 +96,7 @@ from snowlight.predict.heights import (
     school_heights,
 )
 from snowlight.predict.labels import Outcome
-from snowlight.predict.live_labels import record_snapshots
+from snowlight.predict.live_labels import pending_tables, record_snapshots
 from snowlight.predict.nowcast import UNREAD, Neighbors, neighbors_posted
 from snowlight.predict.opens import NOTHING_SAID, OpensError, SaidOpen, said_open
 from snowlight.predict.outlook import Outlook, OutlookMode
@@ -288,8 +296,40 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
         "--out", type=Path, default=PIPELINE_ROOT / "out" / "internal" / "predict" / "headsup.json"
     )
     heads.set_defaults(handler=run_headsup)
-    for module in (forecast_history, terms_cli, tuning_cli, outlook_cli, candidates_cli):
-        module.register(actions)
+    for register_more in (
+        _register_evidence,
+        *(
+            m.register
+            for m in (forecast_history, terms_cli, tuning_cli, outlook_cli, candidates_cli)
+        ),
+    ):
+        register_more(actions)
+
+
+def _register_evidence(actions: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
+    kept = actions.add_parser(
+        "evidence", help="keep the finished weather-class snapshots for good (docs/predict.md)"
+    )
+    kept.add_argument("--state", type=Path, default=DEFAULT_STATE)
+    kept.add_argument("--site", default=DEFAULT_SITE, help="the site whose directory to read")
+    kept.add_argument(
+        "--repository", default=os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPOSITORY)
+    )
+    kept.add_argument(
+        "--site-data", type=Path, default=None, help="read meta.json and points.bin here instead"
+    )
+    kept.add_argument(
+        "--evidence-dir",
+        type=Path,
+        default=EVIDENCE_DIR,
+        help="the district tables and labels predict learn left",
+    )
+    kept.add_argument(
+        "--check",
+        action="store_true",
+        help="only say whether every finished snapshot is in both databases (no network)",
+    )
+    kept.set_defaults(handler=run_evidence)
 
 
 def _train_inputs(parser: argparse.ArgumentParser) -> None:
@@ -1227,14 +1267,24 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
         classes, private_classes, whole_zones, said_heights = _classes(
             run, model, directory, counted, days, now, window
         )
+        known = PredictKept.of(run.state.evidence)
+        content = learn.content_key(directory)
         run.state.snapshots = record_snapshots(
             run.state.snapshots,
-            content=learn.content_key(directory),
+            content=content,
             zones=model.time_zone,
             classes=whole_zones,
             days=days,
             now=now,
             window=window,
+            kept=known,
+        )
+        run.state.tables = pending_tables(
+            run.state.tables,
+            run.state.snapshots,
+            content=content,
+            district_ids=directory.district_ids,
+            kept=known,
         )
         if run.outlook_mode is OutlookMode.ON:
             if run.outlook_budget is not None:
@@ -2682,6 +2732,290 @@ def live_state_folder(state: Path, store: Path, scratch: Path) -> Path | None:
     return scratch if (scratch / LEDGER).is_file() else None
 
 
+EVIDENCE_SECONDS: Final = 30.0
+"""Seconds ``predict evidence`` starts new writes for (the rest waits for the next run)."""
+EVIDENCE_FOR: Final = 45.0
+"""Seconds its push gives the Cloudflare API in all."""
+EVIDENCE_ASK_FOR: Final = 15.0
+"""Seconds it then gives the question of what both databases hold (the step's own limit is
+2 minutes)."""
+
+
+def _state_json(state: Path) -> dict[str, Any] | None:
+    """The pass state at ``state`` as JSON; ``None`` when there is none or it does not read."""
+    try:
+        found = json.loads(state.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return found if isinstance(found, dict) else None
+
+
+def snapshots_of(state: Path) -> dict[str, object]:
+    """The weather-class snapshots of the pass state at ``state`` (none when it does not read)."""
+    found = (_state_json(state) or {}).get("snapshots")
+    return dict(found) if isinstance(found, dict) else {}
+
+
+def tables_of(state: Path) -> dict[str, tuple[str, ...]]:
+    """The district tables the pass state keeps until a database holds them."""
+    found = (_state_json(state) or {}).get("tables")
+    if not isinstance(found, dict):
+        return {}
+    return {
+        str(key): tuple(str(leaid) for leaid in table)
+        for key, table in found.items()
+        if isinstance(table, list)
+    }
+
+
+def kept_of(state: Path) -> PredictKept:
+    """What the pass state knows the evidence databases hold."""
+    return PredictKept.of((_state_json(state) or {}).get("evidence"))
+
+
+def note_kept(state: Path, known: PredictKept) -> bool:
+    """Write ``known`` as the pass state's ``evidence`` entry, nothing else changed (the next
+    pass reads it: :func:`snowlight.predict.live_labels.record_snapshots`). False, and nothing
+    written, when the state does not read."""
+    found = _state_json(state)
+    if found is None:
+        return False
+    found["evidence"] = known.as_json()
+    write_bytes_atomic(state, json.dumps(found, sort_keys=True).encode())
+    return True
+
+
+def ask_kept(  # noqa: PLR0913, PLR0917 - the store, what to ask of, what was known and when
+    store: Any,
+    snapshots: Mapping[str, object],
+    contents: Iterable[str],
+    known: PredictKept,
+    now: datetime,
+    seconds: float | None = None,
+) -> PredictKept:
+    """``known`` with the databases' answer of which snapshots and district tables they hold
+    (a database that does not answer keeps what was known of it; none answering changes
+    nothing). The grace of the ``evidence`` check counts from the first such question. It
+    never raises."""
+    from snowlight.live import evidence  # noqa: PLC0415
+
+    if known.watch_from is None:
+        known = PredictKept(now, known.snapshots, known.tables)
+    try:
+        held = store.held((evidence.SNAPSHOT, evidence.DISTRICTS), seconds=seconds)
+    except Exception as error:
+        _err(f"predict evidence: what the databases hold: {type(error).__name__}; it stays")
+        return known
+    return fold_predict(known, held, snapshots, set(contents) | contents_of(snapshots))
+
+
+EVIDENCE_DIR: Final = PIPELINE_ROOT / "out" / "internal" / "predict" / "evidence"
+"""What ``predict learn`` leaves for ``predict evidence`` in the same run (a private folder):
+the district table of the directory it read (``districts.json``: its content key to its
+LEAIDs in table order) and the labels it published (``learn.json``), so the evidence step
+reads neither the deployed site nor the live host again."""
+LABELS_FILE: Final = "learn.json"
+TABLES_FILE: Final = "districts.json"
+
+
+def leave_for_evidence(
+    folder: Path, *, directory: DeployedDirectory | None = None, labels: bytes | None = None
+) -> None:
+    """Write the directory's district table and the labels into ``folder``. It never raises
+    (the evidence step then reads the deployed directory itself, and keeps no labels)."""
+    try:
+        if directory is not None:
+            key = learn.content_key(directory)
+            if evidence_key(key):
+                table = {key: list(directory.district_ids)}
+                write_bytes_atomic(folder / TABLES_FILE, json.dumps(table).encode())
+        if labels is not None:
+            write_bytes_atomic(folder / LABELS_FILE, labels)
+    except OSError as error:
+        _err(f"predict learn: the evidence files: {type(error).__name__}")
+
+
+def evidence_key(key: str) -> bool:
+    from snowlight.live import evidence  # noqa: PLC0415
+
+    return evidence.KEY.fullmatch(key) is not None
+
+
+def left_for_evidence(folder: Path) -> tuple[dict[str, tuple[str, ...]], bytes | None]:
+    """The district tables and labels :func:`leave_for_evidence` wrote (none when absent)."""
+    tables: dict[str, tuple[str, ...]] = {}
+    try:
+        found = json.loads((folder / TABLES_FILE).read_bytes())
+        if isinstance(found, dict):
+            tables = {
+                str(key): tuple(str(leaid) for leaid in table)
+                for key, table in found.items()
+                if isinstance(table, list)
+            }
+    except (OSError, ValueError):
+        tables = {}
+    try:
+        labels = (folder / LABELS_FILE).read_bytes()
+    except OSError:
+        labels = None
+    return tables, labels
+
+
+def keep_evidence(
+    store: Any,
+    snapshots: Mapping[str, object],
+    tables: Mapping[str, Sequence[str]],
+    now: datetime,
+    labels: bytes | None = None,
+) -> int:
+    """Keep the finished snapshots, every district table given (the directory content this
+    run read: kept as soon as it is deployed, before any snapshot indexes it) and the labels
+    (``learn.json``, every version) in the evidence store (:mod:`snowlight.live.evidence`);
+    print one line a database, and a warning for a finished snapshot whose content has no
+    table kept anywhere (its indexes could not be read back). 0 when every database kept
+    them, 1 otherwise."""
+    from snowlight.live import evidence  # noqa: PLC0415
+    from snowlight.live.d1 import D1Error  # noqa: PLC0415
+
+    offers = evidence.snapshot_offers(snapshots, tables, now)
+    if labels is not None:
+        offers.append(evidence.Offer(evidence.LABELS, "learn", labels))
+    kinds = (evidence.SNAPSHOT, evidence.DISTRICTS, evidence.LABELS)
+    try:
+        reports = store.push(offers, kinds)
+        failed = ""
+    except evidence.PartialPushError as error:
+        reports, failed = list(error.reports), str(error)
+    except D1Error as error:
+        _err(f"::error::predict evidence: {error}")
+        return 1
+    for report in reports:
+        wait = f", {report.left} wait for the next run" if report.left else ""
+        held = "" if report.stored is None else f"; it holds {report.stored} B in all"
+        _out(
+            f"predict evidence {report.database}: {len(offers)} finished files offered,"
+            f" {report.held} held before, {report.kept} kept and read back ({report.copied}"
+            f" copied from the other database), {report.bytes} B,"
+            f" {report.rows_written} rows written{wait}{held}"
+        )
+    _warn_untabled(store, snapshots, tables, now)
+    if failed:
+        _err(f"::error::predict evidence: {failed}")
+        return 1
+    return 0
+
+
+def _warn_untabled(
+    store: Any, snapshots: Mapping[str, object], tables: Mapping[str, Sequence[str]], now: datetime
+) -> None:
+    from snowlight.live import evidence  # noqa: PLC0415
+
+    contents = {
+        str(entry["content"])
+        for offer in evidence.snapshot_offers(snapshots, {}, now)
+        if isinstance(entry := snapshots.get(offer.key), dict) and "content" in entry
+    } - set(tables)
+    if not contents:
+        return
+    try:
+        held = store.held((evidence.DISTRICTS,))
+    except Exception as error:
+        _err(f"predict evidence: the district tables kept: {type(error).__name__}")
+        return
+    kept = {key for versions in held.values() for _kind, key in versions}
+    for content in sorted(contents - kept):
+        _out(
+            f"::warning::predict evidence: no district table is kept for the directory content"
+            f" {content[:12]} a finished snapshot indexes (docs/predict.md, The evidence)."
+        )
+
+
+def check_kept(state: Path, now: datetime) -> int:
+    """``predict evidence --check`` (no network): one line saying how many finished snapshots
+    both databases hold, with their district tables; 1 and an ``::error::`` line when one has
+    waited more than 2 days for that (:func:`snowlight.live.kept.predict_verdict`), which
+    opens the workflow's issue. The first check starts the grace."""
+    if _state_json(state) is None:
+        _out("predict evidence check: no pass state")
+        return 0
+    known, snapshots = kept_of(state), snapshots_of(state)
+    if known.watch_from is None:
+        known = PredictKept(now, known.snapshots, known.tables)
+        note_kept(state, known)
+    verdict = predict_verdict(known, snapshots, now)
+    finished = [
+        (key, entry)
+        for key, entry in snapshots.items()
+        if _finished_snapshot(key, now) and isinstance(entry, dict)
+    ]
+    whole = sum(
+        1
+        for key, entry in finished
+        if known.snapshot_held(key, entry, every=True)
+        and known.table_held(str(entry.get("content", "")), every=True)
+    )
+    late = f"; {verdict.count} waited over 2 days" if verdict.active else ""
+    _out(
+        f"predict evidence check: {whole} of {len(finished)} finished snapshots in both"
+        f" databases with their district tables{late}"
+    )
+    if not verdict.active:
+        return 0
+    _out(
+        f"::error::predict evidence: {verdict.count} finished weather-class snapshots (or their"
+        " district tables) are not in both evidence databases after 2 days (docs/predict.md,"
+        " The evidence)."
+    )
+    return 1
+
+
+def _finished_snapshot(key: str, now: datetime) -> bool:
+    try:
+        return snapshot_finished(date.fromisoformat(key), now) is not None
+    except ValueError:
+        return False
+
+
+def run_evidence(args: argparse.Namespace) -> int:  # pragma: no cover - the real world
+    """Run ``predict evidence``: the predict workflow's step after the passes (with
+    ``--check``, the check after it)."""
+    from snowlight.live import evidence  # noqa: PLC0415
+    from snowlight.live.cli import make_client  # noqa: PLC0415
+    from snowlight.live.d1 import CloudflareD1  # noqa: PLC0415
+    from snowlight.predict.inputs import read_deployed, read_local  # noqa: PLC0415
+
+    if args.check:
+        return check_kept(args.state, datetime.now(UTC))
+    env = dict(os.environ)
+    try:
+        snapshots = snapshots_of(args.state)
+        left, labels = left_for_evidence(args.evidence_dir)
+        tables = {**tables_of(args.state), **left}
+        if not tables:
+            directory = (
+                read_local(args.site_data)
+                if args.site_data is not None
+                else read_deployed(args.site, args.repository, env.get("GITHUB_TOKEN"))
+            )
+            tables = {learn.content_key(directory): tuple(directory.district_ids)}
+        with make_client() as client:
+            store = evidence.make_store(env, client)
+            store.seconds = EVIDENCE_SECONDS
+            if isinstance(store.api, CloudflareD1):
+                store.api.deadline = time.monotonic() + EVIDENCE_FOR
+            now = datetime.now(UTC)
+            code = keep_evidence(store, snapshots, tables, now, labels)
+            if isinstance(store.api, CloudflareD1):
+                store.api.deadline = None
+            known = ask_kept(store, snapshots, tables, kept_of(args.state), now, EVIDENCE_ASK_FOR)
+            if not note_kept(args.state, known):
+                _out("predict evidence: no pass state to note what is kept in")
+            return code
+    except Exception as error:
+        _err(f"::error::predict evidence: {type(error).__name__}")
+        return 1
+
+
 def run_learn(args: argparse.Namespace) -> int:  # pragma: no cover - the real world
     """Run ``predict learn``."""
     with tempfile.TemporaryDirectory() as scratch:
@@ -2701,7 +3035,10 @@ def _run_learn(args: argparse.Namespace, scratch: Path) -> int:  # pragma: no co
     env = dict(os.environ)
     try:
         run = make_pass(args, env)
+        # the pre-registered live scoring rules, timestamped by every run's public log
+        _out(f"predict learn: live_score sha256 {live_score_sha256(run.config)}")
         directory = run.directory()
+        leave_for_evidence(EVIDENCE_DIR, directory=directory)
         committed = run.model()
         model = build_model(directory, committed, run.config, run.zone_fallback)
         mode = run.mode
@@ -2717,6 +3054,9 @@ def _run_learn(args: argparse.Namespace, scratch: Path) -> int:  # pragma: no co
         source: Any = NoLiveSource()
         folder = live_state_folder(args.live_state, args.live_store, scratch)
         if folder is not None:
+            from snowlight.live.cli import morning_line  # noqa: PLC0415
+
+            _out(f"predict learn: {morning_line(folder / 'morning')}")
             stations = load_registry(args.registry).stations.values()
             source = StateSource(
                 folder=folder,
@@ -2765,7 +3105,7 @@ def _run_learn(args: argparse.Namespace, scratch: Path) -> int:  # pragma: no co
     except (ConfigError, ValueError, OSError, ServeError, PublishError, StateError) as error:
         _err(f"predict learn: error: {type(error).__name__}: the served model is as it was")
         return 1
-    return learn_once(
+    code = learn_once(
         LearnRun(
             config=run.config,
             host=host,
@@ -2784,3 +3124,15 @@ def _run_learn(args: argparse.Namespace, scratch: Path) -> int:  # pragma: no co
             outlook_build=outlook_build,
         )
     )
+    _leave_labels(host, prefix)
+    return code
+
+
+def _leave_labels(host: Host, prefix: str) -> None:  # pragma: no cover - the live host
+    """The labels as published (``learn.json``), for the evidence step. It never raises."""
+    try:
+        labels = host.read(f"{prefix}/{learn.LEARN_PATH}")
+    except Exception as error:
+        _err(f"predict learn: the labels for the evidence: {type(error).__name__}")
+        return
+    leave_for_evidence(EVIDENCE_DIR, labels=labels)

@@ -1,11 +1,16 @@
 """The model's settings, read from ``pipeline/config/predict.yaml``."""
 
+import hashlib
+import json
 from datetime import date, time
 from pathlib import Path
 from typing import Final, Literal
 
 import yaml  # type: ignore[import-untyped, unused-ignore]
 from pydantic import BaseModel, ConfigDict, Field
+
+type ScoreValue = bool | int | float | str | list[int | float | str] | dict[str, int | float]
+"""One setting of the ``live_score`` block."""
 
 PIPELINE_ROOT: Final = Path(__file__).resolve().parents[2]
 CONFIG_PATH: Final = PIPELINE_ROOT / "config" / "predict.yaml"
@@ -134,6 +139,12 @@ class LearnSettings(_Settings):
     out, and a learned file that counted one is no longer served."""
 
 
+LIVE_SCORE_SHA256: Final = "71916787853afb2369d96308445050a24e94cd5d3469c0315e7fa13782723d9b"
+"""The sha256 of the pre-registered scoring rules (:func:`live_score_sha256`: the
+``live_score`` block, the ``labels`` and ``weather`` blocks and ``learn.snapshot_slack_minutes``),
+as S7 addendum h records it. A test holds the two equal, so none of them changes without this."""
+
+
 class PredictConfig(_Settings):
     """Every setting of ``config/predict.yaml``."""
 
@@ -143,6 +154,9 @@ class PredictConfig(_Settings):
     backtest: BacktestSettings
     serve: ServeSettings
     learn: LearnSettings
+    live_score: dict[str, dict[str, ScoreValue]]
+    """The live scoring rules, pre-registered (advisory-sane L0): read only by the live
+    scorer, never by serving."""
 
     @classmethod
     def load(cls, path: Path = CONFIG_PATH) -> "PredictConfig":
@@ -154,3 +168,21 @@ class PredictConfig(_Settings):
             pydantic.ValidationError: a setting is missing or out of range.
         """
         return cls.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
+
+
+def pre_registered(config: PredictConfig) -> dict[str, object]:
+    """What the live scoring is pre-registered on: the ``live_score`` block, and the label
+    and weather-class rules the live labels are made by (the ``labels`` and ``weather``
+    blocks, and ``learn.snapshot_slack_minutes``)."""
+    return {
+        "live_score": config.live_score,
+        "labels": config.labels.model_dump(mode="json"),
+        "weather": config.weather.model_dump(mode="json"),
+        "learn.snapshot_slack_minutes": config.learn.snapshot_slack_minutes,
+    }
+
+
+def live_score_sha256(config: PredictConfig) -> str:
+    """The sha256 of :func:`pre_registered` as key-sorted compact JSON."""
+    body = json.dumps(pre_registered(config), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(body.encode()).hexdigest()
