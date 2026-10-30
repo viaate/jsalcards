@@ -514,6 +514,11 @@ export interface PredictionsFile {
    * outlook reason, and before generated_at.
    */
   readonly forecast_at?: UtcInstant | null;
+  /**
+   * The NBM cycle (its hour) every night chart of the file is from; given with any night, and at
+   * most 150 minutes before generated_at.
+   */
+  readonly night_at?: UtcInstant | null;
   /** Each distinct outlook the schools' days name, once; every one is named. */
   readonly outlooks?: readonly DayForecast[];
   /** The private schools (no district), sorted by school, each once. */
@@ -643,6 +648,11 @@ export interface Forecast {
   readonly buses_at?: UtcInstant | null;
   readonly events?: readonly WeatherEvent[];
   readonly hours?: Hours | null;
+  /**
+   * The night chart: new snow hour by hour to 07:00 local on the day, in NOAA's blend model (NBM),
+   * from the cycle the file's night_at names. Only on a district's day, at most one day a district.
+   */
+  readonly night?: NightSnow | null;
   readonly previous?: PreviousChance | null;
   readonly record?: PastRecord | null;
 }
@@ -713,6 +723,31 @@ export interface NeighborsReason {
   readonly points: Points;
   readonly districts: readonly DistrictIndex[];
   readonly status: Status;
+}
+
+/**
+ * New snow (not depth) in NOAA's National Blend of Models (NBM), deterministic 1-hour
+ * snowfall, at the district's deciding schools: an hour at a time from Start (the first whole
+ * hour after ``generated_at``, never before 18:00 local the evening before) to End (07:00
+ * local on the day), from the one cycle the file's ``night_at`` names (docs/predict.md, "The
+ * night chart"). Every number is a sum of the cycle's own 1-hour amounts.
+ *
+ * ``least[i]``: at every deciding school, at least this much new snow falls from Start to the
+ * end of hour i (Start + i + 1 hours), in tenths rounded down. ``low`` and ``high``: every
+ * deciding school's total from Start to End lies between them (tenths when ``high`` is under
+ * 2, else whole inches). ``heavy``: the heaviest span, from Start + first to Start + last
+ * hours (3 or 4 hours), where every deciding school's heaviest 3 hours fall.
+ */
+export interface NightSnow {
+  /**
+   * One value an hour from Start: the least new snow at any deciding school from Start to that
+   * hour's end, in tenths rounded down.
+   */
+  readonly least: readonly Inches[];
+  readonly low: Inches;
+  readonly high: Inches;
+  /** The heaviest span's first and last hour from Start: 3 or 4 hours apart. */
+  readonly heavy?: readonly number[] | null;
 }
 
 /**

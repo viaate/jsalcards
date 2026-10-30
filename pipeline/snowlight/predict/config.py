@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Final, Literal
 
 import yaml  # type: ignore[import-untyped, unused-ignore]
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 type ScoreValue = bool | int | float | str | list[int | float | str] | dict[str, int | float]
 """One setting of the ``live_score`` block."""
@@ -119,6 +119,30 @@ class ServeSettings(_Settings):
     """S7-F with the outlook on: a district whose zone has no forecast run under 3 hours old
     gets the issued-alerts-only chance (``identity``, the lead's decision of 2026-10-20: every
     school gets a chance every day), or the pass goes dark (``dark``, ``Dark.FORECAST``)."""
+    chart: Literal["off", "shadow", "on"] = "off"
+    """The night chart (docs/predict.md, "The night chart"): off, the file is byte for byte the
+    file before it and the chart reads nothing; shadow, the pass builds the file with nights in
+    memory, reports it, and publishes the off file; on, it publishes the file with nights."""
+    chart_nbm_max_age_minutes: int = Field(default=150, ge=1, le=150)
+    """The oldest NBM cycle (cycle hour to pass) a night chart is drawn from; at most the
+    contract's ``NIGHT_MAX_AGE``."""
+    chart_min_inches: float = Field(default=1.0, ge=1.0, le=99.0)
+    """A district charts only when its 50% value of the night's new snow is at least this."""
+    night_max_raw_bytes: int = Field(default=16_446_182, ge=1)
+    """A file with nights publishes only at or under this many bytes raw (today's measured worst
+    case, so a phone never parses more than it did before the chart); otherwise the pass takes
+    the next fit, without nights."""
+    chart_fault: Literal["none", "raise", "stale_night_at", "frozen_listing"] = "none"
+    """GC4's fault injections, refused unless ``chart`` is shadow: ``raise`` makes the night
+    builder raise, ``stale_night_at`` sets ``night_at`` one minute past the cycle cap, and
+    ``frozen_listing`` hides every NBM file posted within the cap and a minute (so no cycle
+    counts: ``nbm_stale``)."""
+
+    @model_validator(mode="after")
+    def _check_chart(self) -> "ServeSettings":
+        if self.chart_fault != "none" and self.chart != "shadow":
+            raise ValueError("serve.chart_fault is only for serve.chart: shadow")
+        return self
 
 
 class LearnSettings(_Settings):

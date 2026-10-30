@@ -265,6 +265,17 @@
             }
           ]
         },
+        "night": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NightSnow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The night chart: new snow hour by hour to 07:00 local on the day, in NOAA's blend model (NBM), from the cycle the file's night_at names. Only on a district's day, at most one day a district."
+        },
         "p_delay": {
           "$ref": "#/$defs/Probability"
         },
@@ -511,6 +522,52 @@
         "status"
       ],
       "title": "NeighborsReason",
+      "type": "object"
+    },
+    "NightSnow": {
+      "additionalProperties": false,
+      "description": "New snow (not depth) in NOAA's National Blend of Models (NBM), deterministic 1-hour\nsnowfall, at the district's deciding schools: an hour at a time from Start (the first whole\nhour after ``generated_at``, never before 18:00 local the evening before) to End (07:00\nlocal on the day), from the one cycle the file's ``night_at`` names (docs/predict.md, \"The\nnight chart\"). Every number is a sum of the cycle's own 1-hour amounts.\n\n``least[i]``: at every deciding school, at least this much new snow falls from Start to the\nend of hour i (Start + i + 1 hours), in tenths rounded down. ``low`` and ``high``: every\ndeciding school's total from Start to End lies between them (tenths when ``high`` is under\n2, else whole inches). ``heavy``: the heaviest span, from Start + first to Start + last\nhours (3 or 4 hours), where every deciding school's heaviest 3 hours fall.",
+      "properties": {
+        "heavy": {
+          "anyOf": [
+            {
+              "items": {
+                "maximum": 13,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The heaviest span's first and last hour from Start: 3 or 4 hours apart."
+        },
+        "high": {
+          "$ref": "#/$defs/Inches"
+        },
+        "least": {
+          "description": "One value an hour from Start: the least new snow at any deciding school from Start to that hour's end, in tenths rounded down.",
+          "items": {
+            "$ref": "#/$defs/Inches"
+          },
+          "maxItems": 13,
+          "minItems": 1,
+          "type": "array"
+        },
+        "low": {
+          "$ref": "#/$defs/Inches"
+        }
+      },
+      "required": [
+        "least",
+        "low",
+        "high"
+      ],
+      "title": "NightSnow",
       "type": "object"
     },
     "NoThreat": {
@@ -1344,6 +1401,17 @@
     },
     "generated_at": {
       "$ref": "#/$defs/UtcInstant"
+    },
+    "night_at": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The NBM cycle (its hour) every night chart of the file is from; given with any night, and at most 150 minutes before generated_at."
     },
     "outlooks": {
       "description": "Each distinct outlook the schools' days name, once; every one is named.",

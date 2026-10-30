@@ -429,7 +429,9 @@ export function areaChance(
   let chart: ChartView | null = null;
   if (leadShown?.detail !== undefined) {
     try {
-      chart = chartView(leadShown.detail, now, zones);
+      // No night chart here (spec chart-data 8: the ZIP panel's chart is not covered): the
+      // night chart is a district's own, drawn on its own panel only.
+      chart = chartView({ ...leadShown.detail, night: null }, now, zones);
     } catch {
       chart = null;
     }

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
 
   import type { AreaSchoolView, AreaView } from '../app/area';
+  import { chartFailed, chartShown } from '../app/chart-shown';
   import { copy } from '../copy';
   import ChanceChart from './ChanceChart.svelte';
   import PanelShell from './PanelShell.svelte';
@@ -101,13 +102,17 @@
         <p class="left">{chance.left}</p>
       {/if}
     </section>
-    {#if chance.chart !== null}
-      <div class="block">
-        <ChanceChart chart={chance.chart} announces={chance.announces(new Date(now))} />
-        {#if chance.chartOf !== null}
-          <p class="whose">{chance.chartOf}</p>
-        {/if}
-      </div>
+    {#if chartShown(chance.chart, now)}
+      <!-- A chart bug is no chart: the number, its meaning and the schools still show. -->
+      <svelte:boundary onerror={chartFailed}>
+        <div class="block">
+          <ChanceChart chart={chance.chart} announces={chance.announces(new Date(now))} />
+          {#if chance.chartOf !== null}
+            <p class="whose">{chance.chartOf}</p>
+          {/if}
+        </div>
+        {#snippet failed()}{/snippet}
+      </svelte:boundary>
     {/if}
   {/if}
 

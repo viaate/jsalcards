@@ -104,6 +104,13 @@ serve:
   # has no forecast run under 3 hours old gets the issued-alerts-only chance (identity, the lead's
   # decision of 2026-10-20), or the pass goes dark (dark). Off and shadow publish as before either way.
   forecast_stale: identity
+  # The night chart (docs/predict.md, "The night chart"; option (iv), NBM 1-hour snowfall): off until
+  # the lead turns it on. Off, the file is byte for byte as before and nothing is read for it.
+  chart: "off"                    # off | shadow | on
+  chart_nbm_max_age_minutes: 150  # NBM cycle age at the 2025 and 2026 January heartbeats, on the files a pass needs: median 97, p98 127 and 157 min; over 150 min 0.27% and 2.76% (docs/predict.md)
+  chart_min_inches: 1.0           # the district's 50% value of the night's new snow
+  night_max_raw_bytes: 16446182   # a file with nights is never larger than today's worst case
+  chart_fault: none               # GC4 only, with chart: shadow (none | raise | stale_night_at | frozen_listing)
 
 # Automatic learning (S7-L, spec addenda c and d): 'snowlight predict learn', nightly inside the
 # predict workflow. Live-read district-days become labels by the archive's rules; a storm situation

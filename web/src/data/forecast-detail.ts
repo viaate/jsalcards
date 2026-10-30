@@ -20,6 +20,8 @@
 
 import { format } from '../copy-format';
 import { parseInstant } from '../state/instant';
+import { nightOf } from './night';
+import type { NightDetail } from './night';
 import type { AlertKind, CountedWeather, LocalDate, Status } from '../types/generated';
 
 const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -290,6 +292,8 @@ export interface ForecastDetail {
   readonly thin: boolean;
   readonly record: RecordDetail | null;
   readonly events: readonly EventDetail[];
+  /** The night chart (data/night.ts), checked as the contract checks it, or null. */
+  readonly night: NightDetail | null;
 }
 
 export const NO_DETAIL: ForecastDetail = Object.freeze({
@@ -301,6 +305,7 @@ export const NO_DETAIL: ForecastDetail = Object.freeze({
   thin: false,
   record: null,
   events: [],
+  night: null,
 });
 
 type Fields = Readonly<Record<string, unknown>>;
@@ -660,6 +665,11 @@ export interface DetailContext {
   readonly neighbors: readonly number[];
   /** The district's time zone, where its days and wall-clock times are. */
   readonly timeZone: string;
+  /**
+   * The hourly forecast every night chart of the file is from (its `night_at`), or null where
+   * the file gives none or gives one that does not read: then no night reads.
+   */
+  readonly nightAt?: Date | null;
 }
 
 /** The calendar day of an instant in a time zone, or null. */
@@ -712,7 +722,22 @@ export function forecastDetail(value: unknown, context: DetailContext): Forecast
     thin: thinOf(forecast.why),
     record: recordOf(forecast.record, day),
     events: eventsOf(forecast.events, generatedAt),
+    night: nightIn(forecast.night, context),
   };
+}
+
+/** The forecast's night, or null: whatever fails in reading it, the rest of the forecast stands. */
+function nightIn(value: unknown, context: DetailContext): NightDetail | null {
+  try {
+    return nightOf(value, {
+      day: context.day,
+      timeZone: context.timeZone,
+      generatedAt: context.generatedAt,
+      nightAt: context.nightAt ?? null,
+    });
+  } catch {
+    return null;
+  }
 }
 
 /** A district's neighbors, as the file lists them: other districts in the directory, or none. */

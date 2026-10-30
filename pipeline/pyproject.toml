@@ -79,9 +79,19 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "PLR2004"]
+# The night chart's truth gate (GC1) never checks the rule with itself: only it is held to the
+# banned-api list below.
+"!snowlight/predict/night_check.py" = ["TID251"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"snowlight.predict.night_chart".msg = "night_check is a second implementation of the rule"
+"snowlight.predict.nbm".msg = "night_check reads the blend with its own reader"
+"snowlight.predict.night_serve".msg = "night_check never runs the serving code"
+"snowlight.schemas.predictions.night_day".msg = "night_check re-derives the night day itself"
+"snowlight.schemas.predictions.night_window".msg = "night_check re-derives the window itself"
 
 [tool.mypy]
 python_version = "3.12"

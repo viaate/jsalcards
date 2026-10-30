@@ -10,6 +10,7 @@ import type { ChanceView } from '../../app/chance';
 import type { SchoolView } from '../../app/school';
 import {
   A_CLOSINGS,
+  A_DETAIL,
   A_NOW,
   A_OUTLOOK,
   B_NOW,
@@ -17,9 +18,11 @@ import {
   CLOSED_TODAY,
   NAMES,
   ZONE,
+  nightOutlook,
 } from '../../app/tests/chance-fixtures';
 import { copy } from '../../copy';
 import { chanceCopy } from '../../copy-chance';
+import { nightOf } from '../../data/night';
 import DetailPanel from '../DetailPanel.svelte';
 
 const NBSP = '\u00a0';
@@ -130,7 +133,7 @@ describe('the chance section', () => {
     expect(section.querySelectorAll('.col.is-lit')).toHaveLength(3);
     // The plot carries marks only: the lit bars, the two dashed lines, the range.
     expect(section.querySelectorAll('.line.is-announces')).toHaveLength(1);
-    expect(section.querySelectorAll('.line.is-buses')).toHaveLength(1);
+    expect(section.querySelectorAll('.line.is-end')).toHaveLength(1);
     expect(section.querySelectorAll('.range')).toHaveLength(1);
     expect(text(section, '.plot')).toEqual(['']);
     expect(text(section, '.time')).toEqual([chanceCopy.now, `11${NBSP}PM`, `7${NBSP}AM`]);
@@ -156,7 +159,7 @@ describe('the chance section', () => {
     // Its dashed line at 5:30 AM: halfway through the 5 AM bar's hour, the 9th of 11.
     const line = section.querySelector<HTMLElement>('.line.is-announces');
     expect(Number.parseFloat(line?.style.left ?? '')).toBeCloseTo((8.5 / 11) * 100, 6);
-    expect(text(section, '.words.is-buses .value')).toEqual([`6 to 9${NBSP}in`]);
+    expect(text(section, '.words.is-end .value')).toEqual([`6 to 9${NBSP}in`]);
     expect(section.querySelector('.head')?.getAttribute('aria-hidden')).toBeNull();
     // Under it the key, one row on the panel's two columns: the lit bar, drawn small.
     expect(text(section, '.key li')).toEqual([`${chanceCopy.heaviest} 2 to 5${NBSP}AM`]);
@@ -181,6 +184,138 @@ describe('the chance section', () => {
     expect(section.querySelectorAll('strong, b')).toHaveLength(0);
   });
 
+  it('draws the night chart: hourly bars from an empty first one, its range and its forecast’s time', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    const night = nightOf(
+      { least: [0.1, 0.4, 1.0, 2.0, 3.1, 4.2, 4.9, 5.4, 6.1], low: 6, high: 9, heavy: [3, 6] },
+      {
+        day: '2026-01-13',
+        timeZone: ZONE,
+        generatedAt: new Date('2026-01-13T03:00:00Z'),
+        nightAt: new Date('2026-01-13T01:00:00Z'),
+      },
+    );
+    const view = chanceView({
+      outlook: nightOutlook({
+        ...A_DETAIL,
+        announcesAt: null,
+        busesAt: null,
+        hours: null,
+        why: null,
+        night,
+      }),
+      decided: { today: false, tomorrow: false },
+      status: [],
+      district: 'Shawnee Mission',
+      state: 'KS',
+      closings: A_CLOSINGS,
+      names: NAMES,
+      now: A_NOW,
+      timeZone: ZONE,
+    });
+    if (view === null) throw new Error('no chance');
+    const section = show(view);
+    expect(text(section, 'figcaption')).toEqual(['New snow, hour by hour']);
+    expect(section.querySelectorAll('.col')).toHaveLength(10);
+    expect(section.querySelectorAll('.col.is-lit')).toHaveLength(3);
+    expect(section.querySelectorAll('.range')).toHaveLength(1);
+    expect(section.querySelectorAll('.line.is-announces')).toHaveLength(0);
+    expect(text(section, '.words')).toEqual([`6 to 9${NBSP}in by 7${NBSP}AM`]);
+    // The span's end alone of its hours gets a time: none under the gray bar at 1 AM where the
+    // key's hours start, none under the lit bars at 2 and 3 AM (critic r2 B1, as 4300322 rules).
+    expect(text(section, '.time')).toEqual([
+      `10${NBSP}PM`,
+      `12${NBSP}AM`,
+      `4${NBSP}AM`,
+      `7${NBSP}AM`,
+    ]);
+    expect(text(section, '.time')).not.toContain(`1${NBSP}AM`);
+    expect(text(section, '.key li')).toEqual([`${chanceCopy.heaviest} 1 to 4${NBSP}AM`]);
+    expect(text(section, '.chart .note')).toEqual([`From the 7${NBSP}PM hourly forecast`]);
+    expect(text(section, '.chart .sr-only')[0]).toContain('6 to 9 inches of new snow');
+    expect(section.textContent).not.toContain('Buses');
+    expect(section.textContent).not.toContain('buses');
+  });
+
+  it('keeps the chance, its meaning and its sum when the chart throws while it draws (critic r1 S2)', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    const view = chance(true);
+    if (view.chart === null) throw new Error('no chart');
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    // Past the panel's own check (its `until` reads), then a bug in every part the chart draws.
+    const broken = new Proxy(view.chart, {
+      get(target, key): unknown {
+        if (key === 'until') return target.until;
+        throw new Error('a chart bug');
+      },
+    });
+    const section = show({ ...view, chart: broken });
+    expect(section.querySelector('figure')).toBeNull();
+    expect(text(section, '.number')[0]).toContain(view.number);
+    expect(section.textContent).toContain(view.meaning);
+    expect(section.querySelectorAll('.why .row').length).toBeGreaterThan(0);
+    // Never a silent loss (critic r2 S5): the console, where the e2e's watch looks, has the bug.
+    expect(errors.mock.calls.flat().some((arg) => String(arg).includes('a chart bug'))).toBe(true);
+    // A bug in the panel's own check is no chart either, and leaves its trace too.
+    errors.mockClear();
+    const unreadable = new Proxy(view.chart, {
+      get(): never {
+        throw new Error('a check bug');
+      },
+    });
+    const again = show({ ...view, chart: unreadable });
+    expect(again.querySelector('figure')).toBeNull();
+    expect(text(again, '.number')[0]).toContain(view.number);
+    expect(errors.mock.calls.flat().some((arg) => String(arg).includes('a check bug'))).toBe(true);
+    errors.mockRestore();
+  });
+
+  it('hides the night chart on its own clock once its forecast is too old (critic r2 S4)', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    const night = nightOf(
+      { least: [0.1, 0.4, 1.0, 2.0, 3.1, 4.2, 4.9, 5.4, 6.1], low: 6, high: 9, heavy: [3, 6] },
+      {
+        day: '2026-01-13',
+        timeZone: ZONE,
+        generatedAt: new Date('2026-01-13T03:00:00Z'),
+        nightAt: new Date('2026-01-13T01:00:00Z'),
+      },
+    );
+    const view = chanceView({
+      outlook: nightOutlook({
+        ...A_DETAIL,
+        announcesAt: null,
+        busesAt: null,
+        hours: null,
+        why: null,
+        night,
+      }),
+      decided: { today: false, tomorrow: false },
+      status: [],
+      district: 'Shawnee Mission',
+      state: 'KS',
+      closings: A_CLOSINGS,
+      names: NAMES,
+      now: A_NOW,
+      timeZone: ZONE,
+    });
+    if (view === null) throw new Error('no chance');
+    // The 7 PM cycle (01:00Z) is 195 minutes old at 10:15 PM, before Start's hour is past
+    // (11 PM): hidden then by the panel's ticking clock alone, with no new reading.
+    expect(view.chart?.until?.toISOString()).toBe('2026-01-13T04:15:00.001Z');
+    const section = show(view);
+    expect(section.querySelectorAll('figure')).toHaveLength(1);
+    vi.setSystemTime(new Date('2026-01-13T04:14:30Z'));
+    vi.advanceTimersByTime(20_000);
+    flushSync();
+    expect(section.querySelectorAll('figure')).toHaveLength(1);
+    vi.setSystemTime(new Date('2026-01-13T04:15:10Z'));
+    vi.advanceTimersByTime(20_000);
+    flushSync();
+    expect(section.querySelector('figure')).toBeNull();
+    expect(text(section, '.number')[0]).toContain(view.number);
+  });
+
   it('the next morning, says the decided status first, then the next day’s chance', () => {
     vi.useFakeTimers({ now: B_NOW });
     const section = show(chance(false));
@@ -203,7 +338,7 @@ describe('the chance section', () => {
     ]);
     expect(text(section, 'figcaption')).toEqual([chanceCopy.coldTonight]);
     expect(section.querySelectorAll('.col.is-below')).toHaveLength(11);
-    expect(text(section, '.words.is-buses .value')).toEqual([`${MINUS}8${NBSP}F`]);
+    expect(text(section, '.words.is-end .value')).toEqual([`${MINUS}8${NBSP}F`]);
     // No lit hours to name on a cold night: no key.
     expect(section.querySelector('.key')).toBeNull();
     expect(text(section, '.is-start')).toEqual([

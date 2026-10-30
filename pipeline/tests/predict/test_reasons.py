@@ -1176,7 +1176,7 @@ def test_term_levels_from_the_labels_codes_and_snapshots() -> None:
 def test_the_size_ladder_drops_the_reasons_only_after_previous_chances() -> None:
     order = list(Fit)
     assert order.index(Fit.NO_REASONS) == order.index(Fit.NO_PREVIOUS) + 1
-    assert [fit.reasons for fit in order] == [True, True, True, True, False, False, False]
+    assert [fit.reasons for fit in order] == [True, True, True, True, True, False, False, False]
     step = Fit.NO_REASONS
     assert (step.records, step.previous, step.private_previous, step.schools) == (
         False, False, False, True

@@ -176,6 +176,40 @@ describe('AreaPanel', () => {
     ).toBeTruthy();
   });
 
+  it('keeps the chance and its schools when the chart throws while it draws (critic r1 S2)', () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    // Past the panel's own check (its `until` reads null), then a bug in every part it draws.
+    const broken = new Proxy(
+      {},
+      {
+        get(_target, key): unknown {
+          if (key === 'until') return null;
+          throw new Error('a chart bug');
+        },
+      },
+    ) as never;
+    const { panel } = show({
+      ...VIEW,
+      chance: {
+        day: '2026-01-13',
+        number: '64',
+        meaning: 'Chance of no school Tuesday',
+        fewRecords: null,
+        why: [{ key: 'a', number: '64%', text: 'Test Village decides for 1 school here.' }],
+        left: null,
+        chart: broken,
+        chartOf: null,
+        announces: () => null,
+      },
+    });
+    expect(panel.querySelector('figure')).toBeNull();
+    expect(panel.querySelector('.number')?.textContent).toBe('64%');
+    expect(panel.querySelector('.why .row')).not.toBeNull();
+    expect(panel.querySelectorAll('button.school')).toHaveLength(3);
+    expect(errors.mock.calls.flat().some((arg) => String(arg).includes('a chart bug'))).toBe(true);
+    errors.mockRestore();
+  });
+
   it('opens a school from its row, and closes', () => {
     const { panel, props } = show(VIEW);
     panel.querySelectorAll<HTMLButtonElement>('button.school')[2]?.click();

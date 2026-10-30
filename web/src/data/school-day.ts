@@ -397,6 +397,7 @@ function dayOutlook(
           districts: file.directory.districts,
           generatedAt: parseInstant(file.generated_at) ?? new Date(0),
           forecastAt: parseInstant(file.forecast_at),
+          nightAt: parseInstant(file.night_at),
           ...context,
         }),
       };

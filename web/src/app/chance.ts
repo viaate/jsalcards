@@ -33,6 +33,8 @@ import { chanceCopy, chanceFormat, localHour } from '../copy-chance';
 import type { BaseInput, ReasonInput, RecordCount, Zones } from '../copy-chance';
 import { decodeDay } from '../data/closings';
 import { NO_DETAIL } from '../data/forecast-detail';
+import { nightShows, nightUntil } from '../data/night';
+import type { NightDetail } from '../data/night';
 import type {
   EventDetail,
   ForecastDetail,
@@ -126,7 +128,15 @@ export interface TimeView {
   readonly label: string;
   /** The last, the bus hour's: set to end where the plot ends, so it never runs past it. */
   readonly end: boolean;
+  /**
+   * Centred under its bar, which is wider than its words (the night chart's few wide bars):
+   * the words then mark the bar they name, never the empty space beside it.
+   */
+  readonly centred?: boolean;
 }
+
+/** A bar's share of its hour's width across the plot (ChanceChart.svelte draws it so). */
+export const BAR_SHARE = 0.6;
 
 /** One row of the chart's key: its mark, drawn small, and what the mark is. */
 export type KeyRowView =
@@ -140,12 +150,12 @@ export type KeyRowView =
       readonly widest: string;
     }
   | {
-      readonly mark: 'buses';
-      /** The value at the bus hour, said first: "6 to 9 in". */
+      readonly mark: 'end';
+      /** The value at the chart's end, said first: "6 to 9 in". */
       readonly value: string;
-      /** " when buses run at 7 AM". */
+      /** " by 7 AM" (the night chart), or " when buses run at 7 AM" (a real bus time). */
       readonly rest: string;
-      /** How the bus hour is drawn: its range, else its lit bar, else its line. */
+      /** How the end is drawn: its range, else its lit bar, else its line. */
       readonly glyph: 'range' | 'bar' | 'line';
     };
 
@@ -167,12 +177,22 @@ export interface ChartView {
   readonly wider: readonly { readonly plot: number; readonly times: readonly TimeView[] }[];
   /** The usual announcement's dashed line, at its time, in bars from the first bar's left edge. */
   readonly announces: number | null;
-  /** Where the bus hour's dashed line stops, in pixels above the plot's foot. */
-  readonly busTop: number;
-  /** The bus hour's low-to-high range, on the last bar; null without one. */
+  /** Where the end's dashed line stops, in pixels above the plot's foot. */
+  readonly endTop: number;
+  /** The end's low-to-high range, on the last bar; null without one. */
   readonly range: { readonly bottom: number; readonly height: number } | null;
-  /** The key under the chart, a row a mark, in time order, the bus hour's last. */
+  /** The key under the chart, a row a mark, in time order, the end's last. */
   readonly key: readonly KeyRowView[];
+  /** The night chart (data/night.ts), not the legacy hourly series. */
+  readonly night: boolean;
+  /** Under the chart, the forecast's time ("From the 7 PM hourly forecast"); null without one. */
+  readonly note: string | null;
+  /**
+   * The night chart is shown before this moment only (data/night.ts nightUntil, the moment
+   * nightShows turns false), so a panel left open hides it on its own clock; null for the
+   * legacy chart, which the view's next reading drops.
+   */
+  readonly until: Date | null;
 }
 
 export interface WhyLineView {
@@ -824,8 +844,11 @@ export function chartTimes(input: {
   readonly zones: Zones;
   /** The plot's width, in pixels: the narrowest's when not given. */
   readonly plot?: number;
+  /** Centre each time under its bar where the bar is wider than its words (the night chart). */
+  readonly centre?: boolean;
 }): TimeView[] {
   const { instants, step, marks, isNow, zones } = input;
+  const centre = input.centre ?? false;
   const quiet = input.quiet ?? [];
   const plot = input.plot ?? NARROWEST_PLOT_PX;
   const count = instants.length;
@@ -838,8 +861,14 @@ export function chartTimes(input: {
     label(at) === chanceCopy.now
       ? TIME_LABEL_PX
       : TIME_LABEL_PX + ZONE_LABEL_PX;
-  const box = (at: number): [number, number] =>
-    at === last ? [plot - wide(at), plot] : [at * slot, at * slot + wide(at)];
+  const centred = (at: number): boolean => centre && BAR_SHARE * slot >= wide(at);
+  const box = (at: number): [number, number] => {
+    if (centred(at)) {
+      const middle = (at + BAR_SHARE / 2) * slot;
+      return [middle - wide(at) / 2, middle + wide(at) / 2];
+    }
+    return at === last ? [plot - wide(at), plot] : [at * slot, at * slot + wide(at)];
+  };
   const wanted: number[] = [0, last, ...marks];
   instants.forEach((instant, at) => {
     if (at > 0 && at < last && localHour(instant, zones.school) % (3 * step) === 0) {
@@ -857,7 +886,14 @@ export function chartTimes(input: {
     });
     if (clear) placed.push(at);
   }
-  return placed.sort((a, b) => a - b).map((at) => ({ at, label: label(at), end: at === last }));
+  return placed
+    .sort((a, b) => a - b)
+    .map((at) => ({
+      at,
+      label: label(at),
+      end: at === last,
+      ...(centred(at) ? { centred: true } : {}),
+    }));
 }
 
 /**
@@ -869,6 +905,9 @@ export function chartTimes(input: {
  */
 export function chartView(detail: ForecastDetail, now: Date, zones: Zones): ChartView | null {
   const { hours, busesAt, announcesAt } = detail;
+  if (detail.night !== null && nightShows(detail.night, now)) {
+    return nightView(detail.night, announcesAt, now, zones);
+  }
   if (hours === null || busesAt === null) return null;
   const zone = zones.school;
   // From this hour on: the hours gone by are not the night ahead.
@@ -1000,7 +1039,7 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
     times,
     wider,
     announces,
-    busTop: hours.range !== null ? y(hours.range.high) : Math.max(y(last), zero),
+    endTop: hours.range !== null ? y(hours.range.high) : Math.max(y(last), zero),
     range:
       hours.range === null
         ? null
@@ -1008,11 +1047,142 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
     key: [
       ...key.map((item) => item.row),
       {
-        mark: 'buses',
+        mark: 'end',
         ...answer,
         glyph: hours.range !== null ? 'range' : bars.at(-1)?.lit === true ? 'bar' : 'line',
       },
     ],
+    night: false,
+    note: null,
+    until: null,
+  };
+}
+
+/**
+ * The night chart's foot rule for its heaviest span (bars first + 1 to last lit, the key's hours
+ * from instant first to instant last): the span's end is the one time it asks for; every lit bar
+ * but the last, and the gray bar where the span starts (when it is not Start), stay unlabelled.
+ */
+export function nightMarks(heavy: { readonly first: number; readonly last: number } | null): {
+  marks: number[];
+  quiet: number[];
+} {
+  if (heavy === null) return { marks: [], quiet: [] };
+  const quiet: number[] = [];
+  if (heavy.first > 0) quiet.push(heavy.first);
+  for (let at = heavy.first + 1; at < heavy.last; at++) quiet.push(at);
+  return { marks: [heavy.last], quiet };
+}
+
+/**
+ * The night chart (option (iv), data/night.ts): a bar an hour from Start, the first empty and
+ * labelled by its clock time (never "Now"), each after it the least new snow at any public
+ * school by that hour's end; the heaviest span's bars lit; the range at the last bar; the usual
+ * announcement's dashed line only where it falls within [max(Start, now - 3 h), End] (the
+ * timeline's own grace, so the same fact is never shown or hidden by where it would land); the
+ * times at the foot: Start and End always, the span's end and every third hour where they keep
+ * clear, none under the span's other bars (nightMarks); and under the chart, the hourly
+ * forecast's time.
+ */
+function nightView(
+  night: NightDetail,
+  announcesAt: Date | null,
+  now: Date,
+  zones: Zones,
+): ChartView {
+  const { instants, least, range, heavy, start, end } = night;
+  const values = [0, ...least];
+  const scale = chartScale('snow_total', values, range.high);
+  const plot = TICK_PX * (scale.ticks.length - 1);
+  const y = (value: number): number =>
+    ((Math.min(scale.max, Math.max(scale.min, value)) - scale.min) / (scale.max - scale.min)) *
+    plot;
+  const zero = y(0);
+  const lit = (at: number): boolean => heavy !== null && at > heavy.first && at <= heavy.last;
+  const bars = values.map((value, at): BarView => ({
+    bottom: zero,
+    height: y(value) - zero,
+    lit: lit(at),
+    below: false,
+  }));
+  // Only the heaviest span's end gets a time, as on the forecast's chart (4300322): a time under
+  // the gray bar where the span starts, or under a lit bar but the last, would contradict the
+  // key's hours. Start and End keep theirs (chartTimes labels the first and last bar always).
+  const { marks, quiet } = nightMarks(heavy);
+  const timesAt = (plotPx: number): TimeView[] =>
+    chartTimes({
+      instants,
+      step: 1,
+      marks,
+      quiet,
+      isNow: false,
+      zones,
+      plot: plotPx,
+      centre: true,
+    });
+  const times = timesAt(NARROWEST_PLOT_PX);
+  const wider: { plot: number; times: TimeView[] }[] = [];
+  for (const plotPx of WIDER_PLOTS_PX) {
+    const more = timesAt(plotPx);
+    if (more.length > (wider[0]?.times ?? times).length)
+      wider.unshift({ plot: plotPx, times: more });
+  }
+  // In bars (an hour each) from Start, where it falls within the night drawn and its grace.
+  let announces: number | null = null;
+  if (announcesAt !== null) {
+    const from = Math.max(start.getTime(), now.getTime() - ANNOUNCE_GRACE_MS);
+    if (announcesAt.getTime() >= from && announcesAt <= end) {
+      announces = (announcesAt.getTime() - start.getTime()) / HOUR_MS;
+    }
+  }
+  const key: { at: number; row: KeyRowView }[] = [];
+  if (heavy !== null) {
+    key.push({
+      at: heavy.from.getTime(),
+      row: { mark: 'heavy', text: chanceFormat.heaviestKey(heavy.from, heavy.to, zones) },
+    });
+  }
+  if (announcesAt !== null && announces !== null) {
+    key.push({
+      at: announcesAt.getTime(),
+      row: {
+        mark: 'announces',
+        text: chanceFormat.announcesKey(announcesAt, zones),
+        at: announcesAt,
+        widest: chanceFormat.announcesWidest(announcesAt, zones),
+      },
+    });
+  }
+  key.sort((a, b) => a.at - b.at);
+  return {
+    kind: 'snow_total',
+    title: chanceCopy.newSnowTitle,
+    summary: chanceFormat.nightSummary(
+      { at: night.nightAt, start, end },
+      range.low,
+      range.high,
+      zones,
+    ),
+    plot,
+    zero,
+    step: 1,
+    bars,
+    times,
+    wider,
+    announces,
+    endTop: y(range.high),
+    range: { bottom: y(range.low), height: y(range.high) - y(range.low) },
+    key: [
+      ...key.map((item) => item.row),
+      {
+        mark: 'end',
+        ...chanceFormat.endKey(chanceFormat.inches(range.low, range.high), end, zones),
+        glyph: 'range',
+      },
+    ],
+    night: true,
+    note: chanceFormat.nightFrom(night.nightAt, zones),
+    until: nightUntil(night),
   };
 }
 
@@ -1042,6 +1212,11 @@ export interface Said {
   readonly stopped: readonly Date[];
   /** The chart's answer says the bus hour. */
   readonly buses: boolean;
+  /**
+   * A night chart shows (data/night.ts): the snow reason states no amount, so the panel never
+   * gives the night's snow twice, from two forecasts (owner decision O6).
+   */
+  readonly night?: boolean;
 }
 
 export const NOTHING_SAID: Said = Object.freeze({
@@ -1096,6 +1271,19 @@ function reasonInput(
         busTime: atLocalHour(day, OUTLOOK_BUS_HOUR, place.timeZone),
       };
     case 'snow_total':
+      if (said.night === true) {
+        // The night chart states the amount: the reason says its comparison alone, with its
+        // forecast's time ("The 7:19 PM forecast has more snow by 1 PM than most storms.").
+        return {
+          ...reason,
+          low: null,
+          high: null,
+          overnight: false,
+          until: reason.at === null ? null : windowEnd(day),
+          record: detail.record?.proves === 'snow_total' ? recordCount(detail.record) : null,
+          said: false,
+        };
+      }
       return {
         ...reason,
         until: reason.at === null ? null : windowEnd(day),
@@ -1280,17 +1468,22 @@ export function chanceView(input: ChanceInput): ChanceView | null {
     moments = [];
   }
   const answer = detail.hours?.values.at(-1) ?? null;
+  const night = chart?.night === true ? detail.night : null;
   const said: Said = {
     snow:
-      chart?.kind === 'snow_total' && answer !== null
-        ? (detail.hours?.range ?? { low: answer, high: answer })
-        : null,
+      night !== null
+        ? { low: night.range.low, high: night.range.high }
+        : chart?.kind === 'snow_total' && answer !== null
+          ? (detail.hours?.range ?? { low: answer, high: answer })
+          : null,
     cold: chart?.kind === 'wind_chill' ? answer : null,
     heavy: chart?.key.some((row) => row.mark === 'heavy') ?? false,
     neighbors: listed,
     stood,
     stopped,
-    buses: chart !== null,
+    // A night chart ends at 7 AM, never at the buses: the "snow stops" words never claim them.
+    buses: chart !== null && night === null,
+    night: night !== null,
   };
   const moved = movedView(noSchool, detail.previous, now, zones);
   let delay: string | null = null;

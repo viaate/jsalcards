@@ -13,7 +13,7 @@
 
   const count = $derived(chart.bars.length);
   const times = $derived(chart.wider.find((tier) => width >= tier.plot)?.times ?? chart.times);
-  const answer = $derived(chart.key.find((row) => row.mark === 'buses'));
+  const answer = $derived(chart.key.find((row) => row.mark === 'end'));
   const announcement = $derived(chart.key.find((row) => row.mark === 'announces'));
   const heavy = $derived(chart.key.filter((row) => row.mark === 'heavy'));
 
@@ -46,7 +46,7 @@
     return `${String((at / count) * 100)}%`;
   }
 
-  /** The middle of a bar (60% of its hour's width), for the bus hour's line: it marks a bar, not an instant. */
+  /** The middle of a bar (60% of its hour's width), for the bus hour's line and a centred time: it marks a bar, not an instant. */
   function middle(at: number): string {
     return `${String(((at + 0.3) / count) * 100)}%`;
   }
@@ -91,9 +91,9 @@
     })}
   >
     <div class="head" style:height="{placed.height}px">
-      {#if answer?.mark === 'buses'}
+      {#if answer?.mark === 'end'}
         <p
-          class="words is-buses"
+          class="words is-end"
           {@attach sized((node) => {
             busesWidth = node.offsetWidth;
             busesHeight = node.offsetHeight;
@@ -131,11 +131,11 @@
       ></span>
     {/if}
     <span
-      class="line is-buses"
+      class="line is-end"
       aria-hidden="true"
       style:left={middle(count - 1)}
       style:top="{placed.busesLine}px"
-      style:bottom="{chart.busTop}px"
+      style:bottom="{chart.endTop}px"
     ></span>
 
     <div class="plot" style:height="{chart.plot}px" style:--bars={count} aria-hidden="true">
@@ -163,7 +163,11 @@
 
   <div class="times" aria-hidden="true">
     {#each times as time (time.at)}
-      <span class="time" class:is-end={time.end} style:left={time.end ? null : across(time.at)}
+      <span
+        class="time"
+        class:is-end={time.end && time.centred !== true}
+        class:is-centred={time.centred === true}
+        style:left={time.centred === true ? middle(time.at) : time.end ? null : across(time.at)}
         >{time.label}</span
       >
     {/each}
@@ -178,6 +182,9 @@
         </li>
       {/each}
     </ul>
+  {/if}
+  {#if chart.note !== null}
+    <p class="note">{chart.note}</p>
   {/if}
 </figure>
 
@@ -274,12 +281,16 @@
     border-left: 1px dashed var(--text-2);
   }
 
-  /* The bus hour's range: a thin upright through the last bar, with a cap at each end. */
+  /*
+   * The end's range: a thin upright through the last bar, with a cap at each end, haloed in the
+   * panel's color so it stays whole over a lit bar of the same ink.
+   */
   .range {
     position: absolute;
     width: 0;
     margin-left: -0.75px;
     border-left: 1.5px solid var(--text-1);
+    box-shadow: 0 0 0 1px var(--surface-1);
   }
 
   .range::before,
@@ -290,6 +301,7 @@
     height: 0;
     content: '';
     border-top: 1.5px solid var(--text-1);
+    box-shadow: 0 0 0 1px var(--surface-1);
   }
 
   .range::before {
@@ -319,6 +331,11 @@
     right: 0;
   }
 
+  /* Under a bar wider than its words: the words' middle at the bar's middle. */
+  .time.is-centred {
+    transform: translateX(-50%);
+  }
+
   /* The key: the panel's two columns, the lit bar drawn small where a list's times go. */
   .key {
     display: flex;
@@ -345,6 +362,13 @@
     height: 12px;
     /* On the first line's middle. */
     margin-top: 5px;
+  }
+
+  /* The hourly forecast's time, under the chart: small, so the chart stays the approved one. */
+  .note {
+    margin: var(--row) 0 0;
+    font: var(--type-small);
+    color: var(--text-2);
   }
 
   .sample.is-bar {

@@ -217,6 +217,9 @@ class State:
     index, kept here until an evidence database holds it
     (:func:`snowlight.predict.live_labels.pending_tables`), so a
     content no longer deployed still has its table kept."""
+    chart_health: dict[str, object] = field(default_factory=dict)
+    """The last pass with the night chart not off: when, its mode, the nights it built, their
+    NBM cycle, and what it withheld (``chart: withheld, <code>``)."""
 
     def as_json(self) -> dict[str, object]:
         """For the state store."""
@@ -253,6 +256,8 @@ class State:
             found["evidence"] = self.evidence
         if self.tables:
             found["tables"] = self.tables
+        if self.chart_health:
+            found["chart_health"] = self.chart_health
         return found
 
     @classmethod
@@ -274,6 +279,7 @@ class State:
         health = value.get("outlook_health")
         evidence = value.get("evidence")
         tables = value.get("tables")
+        chart = value.get("chart_health")
         return cls(
             digest=digest if isinstance(digest, str) else None,
             uploaded_at=datetime.fromisoformat(uploaded) if isinstance(uploaded, str) else None,
@@ -301,6 +307,7 @@ class State:
             }
             if isinstance(tables, dict)
             else {},
+            chart_health=dict(chart) if isinstance(chart, dict) else {},
         )
 
 

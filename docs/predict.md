@@ -1799,3 +1799,184 @@ weekdays, the quiet forecast per kind, "in every case").
 identity instead; the lead decides before `on`), and the triggers in shadow (shadow keeps off's
 pass schedule: grid passes take every sample). The outlook's reader keeps a run's values only
 while a read can still use them (4 hours, `outlook_live.RUNS_KEPT`).
+
+## The night chart (option (iv), NOAA's hourly blend: built, switched off)
+
+The owner chose option (iv) of the night snow chart spec (design `chart-data/spec.md`, revision 3,
+Oct 26): true hourly bars to 7 AM. `serve.chart` (`config/predict.yaml`) switches it, `off` until
+the lead turns it on after the shadow gates below.
+
+**What it shows.** "New snow, hour by hour" on the panel's headline day, when that day carries a
+`night`: an empty first bar at Start (the first whole hour after the file's time, never before
+6 PM the evening before; labelled by its clock time, never "Now"), then one bar an hour to 7 AM on
+the day. Each bar is the least new snow at any of the district's deciding (public) schools from
+Start to that hour's end, in tenths rounded down: true at every school as "at least this much".
+Over the last bar, "6 to 9 in by 7 AM" covers every deciding school's total (tenths under 2 in,
+whole inches from 2 in, rounded outward). "Heaviest snow 1 to 4 AM" lights a span of 3 or 4 hours
+only when every school gets 0.5 in or more, each school's heaviest 3 hours (the earliest on a tie)
+fall inside it, and the bars rise over it at 1.5 times the night's mean rate or more. The times at
+the foot are Start, 7 AM, the span's end and every third hour where they keep clear, and never one
+under the gray bar where the span starts or under a lit bar but the last, so the key's hours are
+never contradicted (the forecast chart's rule since 4300322; critic r2 B1). Under the
+chart, "From the 7 PM hourly forecast" says the cycle's time, so a chart up to 3 h 15 min old is
+never shown as current (critic 3 S2). The screen reader's sentence names it the same way ("the
+weather service's 7 PM hourly forecast": the copy rules forbid "model" and naming a source, so the
+spec's "NOAA's blend model" wording is not used). No bus time is known anywhere, so no chart word
+names the buses.
+
+**The source.** NOAA's National Blend of Models (an NWS product) on AWS
+(`noaa-nbm-grib2-pds`, public, no key, no cost): the deterministic 1-hour snowfall
+`ASNOW:surface:N-(N+1) hour acc fcst:` of the CONUS core files, read by range (one `.idx` and one
+message of 0.5 to 0.65 MB per hour), on NDFD's own Lambert projection. Each school reads the NBM
+cell nearest it, counted from NBM's own first point (`nbm.cells`): NDFD's cell shifted 200 columns
+is a neighbour for about 0.4% of schools, since the two first points are 200.003 columns apart
+(critic r1 S1). Every number on the chart is a sum of the cycle's own 1-hour amounts
+(`predict/nbm.py`, `predict/night_chart.py`). NBM packs them in whole millimetres; the amounts are
+converted to inches unrounded and summed, and every rounding step runs after a 1e-5 in snap, so a
+school whose night is exactly 127 mm reads 5.0 in ("5 in", a 5.0 bar), never 4.9 or "4 to 5 in":
+whole-millimetre totals sit on a tenth step or at least 7.9e-4 in from one (critic r1 B1). The reasons quote the forecaster's grid
+(NDFD), which disagrees often on the same hours; so while a night chart shows, the snow reason
+states no amount (owner decision O6): "The 7:19 PM forecast has more snow by 1 PM than most
+storms." One amount for the night's snow is ever on screen.
+
+**When a district-day carries a night.** Its night is open at the pass (from 7 AM the day before
+to before 6 AM on the day, `schemas/predictions.py` `night_day` / `night_open`, one definition
+with a TypeScript twin held to `tests/predict/golden/night_day.json`), the day is a school day of
+the file, every deciding school is on the grid and read, its 50% value of the night's total is at
+least `serve.chart_min_inches` (1 in), and the numbers are inside the contract's bounds. One NBM
+cycle serves every night of a file (`night_at`): the newest whose every needed core file and
+`.idx` is listed with an S3 `LastModified` at or before the pass, and at most
+`serve.chart_nbm_max_age_minutes` old.
+
+**The cap, from the posting lag measured on the right files** (critic 3 B3; measured for this
+piece from 1,536 S3 listings of every hourly cycle of January 2025 and January 2026, f001 to
+f036, the file and its `.idx`). A cycle's files post over
+a median 1.6 min (p90 10.6, at most 32), and f036 is the last in only half the cycles. The age of
+the cycle a pass can use, when it waits for every file of every open zone's window: median 97 min
+at the :07 and :37 heartbeats, p98 127 (2025) and 157 (2026), over 150 min at 0.27% and 2.76% of
+heartbeats (the old f036-only figures were 0.60% and 3.36%; January 2026 holds an outage of 12
+cycles posted over 6 h late). Ages fall on steps of 37, 67, 97, 127 and 157 min, so a cap of 150
+admits a late or extended cycle (127) and refuses the next step. The pipeline caps at 150 min
+(also the contract's `NIGHT_MAX_AGE`); the phone shows the chart while the cycle is at most
+195 min old (one missed heartbeat and the file's way), and drops it once its first hour is wholly
+past (Start + 60 min). The panel hides the chart on its own ticking clock at that moment
+(`data/night.ts` `nightUntil`, the first moment `nightShows` is false), and a phone that wakes
+shows the panel by its clock at once, before the read it starts comes back (critic r2 S4). The chart
+is gone by 6 AM, before its day is under way (7:30 AM on the school's clock, a770f4c), and a night
+only ever sits beside its own day's chance: the next school day's never carries the night just
+ending (`app/tests/chance-night.test.ts`).
+
+**The fetch gate.** The pass reads nothing for the chart unless `serve.chart` is not off, some
+district that can chart (every deciding school on the blend's grid, so never Alaska, Hawaii or the
+territories) has its night day a school day of the file with its window open, and some such
+district has a snow-bearing class that day (an advisory, lake effect snow, a winter storm warning,
+ice or a blizzard). So an Alaska advisory alone opens nothing (critic r1 S1). A calm night, a
+Friday night and July cost no request.
+
+**Cost when open.** Each pass lists afresh the newest cycles until one counts (a page or two each,
+about 130 KB), the one it takes included, so a core file NOAA posts anew under the same cycle (a
+new LastModified or size) is seen. Each new cycle then costs one `.idx` and one range read per
+needed hour, kept by (cycle, hour) with the file's LastModified and size from the listing, so the
+:37 pass on the same cycle reads no message again, and a file posted anew is read again, never
+served from the old one's values (critic r2 S2): up to 13 to 16 messages, about 9.2 MB (the GC1
+replays read 438 requests and 111.7 MB over 20 passes, at most 34 requests a pass; a warm pass now
+makes one or two listing requests, about 0.1 to 0.3 MB). The gate is open from 7 AM Eastern the day before to 6 AM Pacific, about 26
+cycles, so a gated day is about 240 MB of messages and about 13 MB of listings (48 grid passes);
+other days cost nothing. All of it is free public data.
+
+**A chart failure never touches a chance** (`predict/night_serve.py`, `cli.fitted`):
+0. every blend read of a pass runs inside one budget, `nbm.READ_SECONDS` (60 s), through
+   `nbm.NbmHttp`: two tries, 10 s read and 5 s connect timeouts, the budget checked before every
+   request, wait and chunk of a body, a body never past its size, and a range read answered with
+   the whole file (a 200) refused before its body is read (a core file is 166 to 202 MB). So a
+   slow, hanging or failing bucket holds a pass back by at most about 77 s (the 60 s budget, then
+   one chunk's 10 s timeout, a 5 s connect and a 2 s pause between range tries; a hanging listing
+   stops after two tries, about 21 s), plus the decode of the messages read (about 1 to 8 s of CPU,
+   outside the budget, as are a blocking DNS lookup and the nights' build), and what was read
+   before the time ran out is kept for the next pass (critic r1 B1, G1 and S2; critic r2 S5). With
+   `on` this is the only wait the chart can add before the chance is published;
+1. the whole stage, reading included, runs under one guard before the file is made, and hands
+   the file its nights as data;
+2. each district's night is built and checked alone with the contract's own check functions: one
+   that raises is dropped and counted;
+3. a file with nights that fails to make, write or parse back strictly (the parse the pass gives
+   its file; any exception but the private schools' `TableError`) is made again at the same fit
+   with none, and raises only if that fails too;
+4. the chart's own lines and health note, and all of shadow, run under their own guard: a failure
+   there says `invalid (<type>)` and the pass goes on.
+
+The pass says `chart: withheld, <code>` and keeps it in `state.chart_health`: `nbm_stale`,
+`nbm_unreadable`, `nbm_slow` (the budget ran out), `grid`, `size` (published at `NO_NIGHTS` or below) and `invalid (<check>)` with
+counts (`invalid (least_falls) x3`, `invalid (RuntimeError)`, `invalid (night_at_age)`). Every
+chance, why line and base is byte for byte the file with the chart off
+(`tests/predict/test_night_guard.py`). On the phone, `data/night.ts` `nightOf` and the
+`forecast-detail` call around it are total, and `parsePredictions` never looks at `night` or
+`night_at` (a malformed `night_at` reads as no night): a bad night or a bug there is no chart,
+never a hidden chance, status or district (`web/src/data/tests/night-isolation.test.ts`).
+
+**Pass time.** Measured by critic r2 under the heavy lock on the s4 directory (the 2024-01-08
+23:07Z replay): the pass's file with the chart off builds in 12.2 to 12.8 s of CPU; with 2,318
+real nights 15.7 to 17.6 s; with a night on all 18,227 districts 19.2 to 20.0 s; each strict
+parse of a file with nights 2.6 to 3.4 s. So `shadow` adds about 16 to 20 s of CPU per gated pass,
+after the pass has published, plus its reads (cold 6.4 to 7.0 s for 34 requests and about 9 MB on
+live S3; warm 0.7 s); `on` adds 3 to 7 s before publishing, plus its reads. The loop counts its
+next alert check from the pass's start, so this tail never moves an alert check, or the pass an
+alert change brings, later (`tests/predict/test_loop.py`; critic r2 S3). GC4 logs `read N ms,
+built N ms` on every gated pass, on the 2-vCPU runners.
+
+**Size.** The longest night is 124 bytes (13 bars, a 2-digit span; the spec's 99.9 example fails
+its own range check, so the longest valid one is 13 bars of 99.0). `Fit.NO_NIGHTS` follows
+`NO_RECORDS`, and a file with nights publishes only at or under `serve.night_max_raw_bytes`
+(16,446,182, today's measured worst case): the synthetic worst case with a night on every district
+steps to `NO_NIGHTS` (today's `NO_RECORDS` file), and up to 10,787 districts fit with the longest
+night at that base (`tests/predict/test_loop.py`). With the chart off, the ladder is the one before
+it, step for step. With nights and `serve.reasons` on, the whole file without nights comes before
+any fit without record days (`cli._fit_steps`, the lead's recorded order; critic r1 and r2 S6): the
+`snow_total` and record reason sentences read the record days, so a storm night's charts never
+change a reason's text; the nights come back at `NO_RECORDS` only when the whole file is over the
+budget even without them. With reasons off (today), record days show nowhere, and the ladder
+drops them (`NO_RECORDS`) before the nights.
+
+GC3 (spec 6.3) on the spec's dry-run shape: the s4 directory and committed model with a learned
+file anchoring winter storm warnings with 8 live days for every district (own record days on
+every district), a nationwide warning pass after an advisory pass, the nights of the 2024-01-08
+23:07Z replay (a probe outside the repository, critic r2 S3/S4). Its whole file is 19,101,483 bytes,
+over the budget, so it publishes without record days: 9,258,903 bytes with the chart off, 2,397,704
+bytes under the spec's dry-run file (the learned file's own bases differ), so the probe pads it with
+trailing blanks to exactly the spec's 11,656,607. Then, through the pass's own ladder: a night on
+every district (18,227), each the longest real night of its bar count, publishes at 13,596,990 bytes
+(659,966 gzip); the longest night the contract allows on every district (124 bytes at 13 bars, on
+11,036 of them) at 13,873,643 bytes (630,600 gzip). Every night is carried and nothing withheld: 2.57
+MB or more under the night cap (16,446,182) and 0.84 MB or more under the gzip budget (1,500,000).
+
+**The switch.** `off`: the file is byte for byte as before, nothing is read, no state is kept.
+`shadow`: the pass publishes the off file first; only then does it read the blend and build the
+file with nights in memory through the same guard and ladder, and report its nights, cycle, age,
+bytes, withheld codes and the stage's time ("would publish it with no ..." when it steps down), so
+shadow never delays a chance. `on`: it publishes the file with nights. GC4's fault hooks (`serve.chart_fault: raise |
+stale_night_at | frozen_listing`, refused unless shadow) make the builder raise, set `night_at` a
+minute past the cap, or hide every NBM file posted within the cap and a minute (`nbm_stale`).
+
+**GC1, the truth gate.** `snowlight predict night-replay --site-data <directory> --out <dir>
+<UTC moments>` makes the file a pass would have made at past moments (the NBM cycles as S3 listed
+them then; every chance the calm base), and `snowlight predict night-check <file> --site-data
+<directory>` checks it against the blend, freshly listed, read and decoded by a second
+implementation (`predict/night_check.py`, grown from the design probe) that imports only NDFD's
+`cells` (a first guess it corrects): a test runs it in a fresh interpreter and fails if the rule's
+modules are loaded, and a ruff `banned-api` rule forbids the imports there. It finds each
+district's deciding schools from the directory's own school kinds, each school's nearest grid
+point from the message's own coordinates, and works in whole millimetres with integer rounding. It
+holds that `night_at` is the newest cycle its own listing shows counting at the file's time, that
+each message is that cycle's 1-hour snowfall of that hour (reference time and steps), that every
+bar, range end, mode and heaviest span is the rule's exactly, and, both ways, that every open
+district on a night day carries a night exactly when its 50% value reaches 1 in. 100%, or nothing
+ships.
+
+**Before `on`** (the lead): the 48 h shadow review and the four GC4 injections, the owner's look
+at real shadow screenshots (GC5), and O7 (two NOAA forecasts on one panel: the chart is the blend,
+the reasons the forecaster's grid). O7 includes the words: the chart says "From the 7 PM hourly
+forecast" while the snow reason says "The 7:19 PM forecast ...", two forecasts from two products a
+few minutes apart that print the same range in 0.7 to 33% of districts; the copy rules forbid
+"model" and naming a source, so the lead and owner either accept that wording or pick a
+lint-clean name that tells them apart (critic r1 S4). The area (ZIP) panel carries no night chart
+(the spec leaves it out); only a district's own panel does.

@@ -153,7 +153,7 @@ describe('the chance section, the night before', () => {
   it('says each fact once in the whole section', () => {
     const said = [
       ...(view?.moments.map((moment) => `${moment.time} ${moment.text}`) ?? []),
-      ...(view?.chart?.key.map((row) => (row.mark === 'buses' ? row.value + row.rest : row.text)) ??
+      ...(view?.chart?.key.map((row) => (row.mark === 'end' ? row.value + row.rest : row.text)) ??
         []),
       ...lines(view?.why ?? null),
     ].join(' | ');
@@ -212,7 +212,7 @@ describe('the chance section, the night before', () => {
     // The announcement at 5:30 AM, halfway between the 5 and 6 AM bars.
     expect(chart?.announces).toBe(8.5);
     expect(chart?.range).toEqual({ bottom: 80, height: 40 });
-    expect(chart?.busTop).toBe(120);
+    expect(chart?.endTop).toBe(120);
     expect(chart?.key).toEqual([
       { mark: 'heavy', text: `${chanceCopy.heaviest} 2 to 5${NBSP}AM` },
       {
@@ -223,7 +223,7 @@ describe('the chance section, the night before', () => {
         widest: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}99h${NBSP}59m`,
       },
       {
-        mark: 'buses',
+        mark: 'end',
         value: `6 to 9${NBSP}in`,
         rest: ` when buses run at 7${NBSP}AM`,
         glyph: 'range',
@@ -278,7 +278,7 @@ describe('the chance section, the next morning', () => {
     // The last bar hangs from the zero rule down to -8 F.
     expect(chart?.bars[10]).toMatchObject({ bottom: 16, height: 64 });
     expect(chart?.range).toBeNull();
-    expect(chart?.busTop).toBe(80);
+    expect(chart?.endTop).toBe(80);
     // The night is still to come: no "Now" for its first hour.
     expect(chart?.times.map((time) => time.label)).toEqual([
       `9${NBSP}PM`,
@@ -294,7 +294,7 @@ describe('the chance section, the next morning', () => {
         widest: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM, in${NBSP}99h${NBSP}59m`,
       },
       {
-        mark: 'buses',
+        mark: 'end',
         value: `${MINUS}8${NBSP}F`,
         rest: ` when buses run at 7${NBSP}AM`,
         glyph: 'bar',
@@ -324,7 +324,7 @@ describe('the school’s own clock', () => {
         widest: `${chanceCopy.usuallyAnnounces} 5:30${NBSP}AM${NBSP}CT, in${NBSP}99h${NBSP}59m`,
       },
       {
-        mark: 'buses',
+        mark: 'end',
         value: `6 to 9${NBSP}in`,
         rest: ` when buses run at 7${NBSP}AM${NBSP}CT`,
         glyph: 'range',
@@ -1260,7 +1260,7 @@ describe('the chart', () => {
     // After them: no lit bars, and no key row.
     const after = chartView(A_DETAIL, at('2026-01-13T12:10:00Z'), HERE);
     expect(after?.bars.some((bar) => bar.lit)).toBe(false);
-    expect(after?.key.map((row) => row.mark)).toEqual(['buses']);
+    expect(after?.key.map((row) => row.mark)).toEqual(['end']);
     // Two hours left draw two bars; the bus hour alone is no chart.
     expect(chartView(A_DETAIL, at('2026-01-13T12:30:00Z'), HERE)?.bars).toHaveLength(2);
     expect(chartView(A_DETAIL, at('2026-01-13T13:30:00Z'), HERE)).toBeNull();
@@ -1268,7 +1268,7 @@ describe('the chart', () => {
     // An announcement outside the night drawn has no line, and no row in the key.
     const before = chartView({ ...A_DETAIL, announcesAt: at('2026-01-13T01:30:00Z') }, A_NOW, HERE);
     expect(before?.announces).toBeNull();
-    expect(before?.key.map((row) => row.mark)).toEqual(['heavy', 'buses']);
+    expect(before?.key.map((row) => row.mark)).toEqual(['heavy', 'end']);
     const west = { school: 'America/Los_Angeles', viewer: 'America/Los_Angeles' };
     expect(chartView(B_DETAIL, B_NOW, west)?.title).toBe(chanceCopy.coldTonight);
     const berlin = { school: 'Europe/Berlin', viewer: 'Europe/Berlin' };

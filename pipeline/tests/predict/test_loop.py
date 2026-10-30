@@ -1,6 +1,7 @@
 """The serving loop: the grid and heartbeat, retries after a dark pass, the day file, the alert
 memory across a lost state, the hold, cancelled warnings, and the worst-case file size."""
 
+import functools
 import json
 import math
 import random
@@ -30,6 +31,7 @@ from snowlight.schemas.predictions import (
     AlertBase,
     DistrictForecast,
     Forecast,
+    NightSnow,
     OutlookReason,
     PastDay,
     PastRecord,
@@ -97,6 +99,49 @@ def test_grid_passes_keep_the_heartbeat_on_every_grid_slot(monkeypatch: Any) -> 
         worst = max(worst, *((b - a).total_seconds() / 60 for a, b in pairwise(uploads)))
     # A grid pass skips only when an upload went out under heartbeat_skip_minutes before.
     assert worst <= SETTINGS.heartbeat_minutes + SETTINGS.heartbeat_skip_minutes
+
+
+def _event_passes(tail: float, monkeypatch: Any) -> list[tuple[datetime, bool]]:
+    """Every pass of a 6 h loop (start, grid) whose alerts change at fixed moments, each pass
+    taking 40 s and then ``tail`` seconds more after it publishes (the shadow chart)."""
+    start = datetime(2026, 1, 13, 0, 0, 30, tzinfo=UTC)
+    clock = [start]
+    changes = [start + timedelta(minutes=m) for m in (3, 19, 44, 71, 128, 133, 205, 290, 333)]
+    passes: list[tuple[datetime, bool]] = []
+
+    def digest(at: datetime) -> str:
+        return str(sum(1 for change in changes if change <= at))
+
+    def fake_pass(run: cli.Pass, *, grid: bool) -> int:
+        passes.append((clock[0], grid))
+        run.state.alerts_digest = digest(clock[0])
+        clock[0] += timedelta(seconds=40 + tail)
+        return 0
+
+    def alerts() -> tuple[Any, bool]:
+        return feed(updated=clock[0].isoformat(), alerts=0), False
+
+    run = make_pass(MemoryHost(), directory=world.directory())
+    run.alerts = alerts
+    monkeypatch.setattr(cli, "one_pass", fake_pass)
+    monkeypatch.setattr(cli, "alerts_digest", lambda _events: digest(clock[0]))
+
+    def sleep(seconds: float) -> None:
+        clock[0] += timedelta(seconds=seconds)
+
+    cli.loop(run, start + timedelta(hours=6), cli.Loop(lambda: clock[0], sleep), lambda _s: None)
+    return passes
+
+
+def test_a_shadow_chart_s_tail_never_moves_an_alert_pass_later(monkeypatch: Any) -> None:
+    """Critic r2 S3: the shadow chart reads and builds after its pass publishes (up to about
+    80 s with its read budget). The loop counts its next check from the pass's start, so every
+    pass an alert change brings starts when it would with no chart at all."""
+    bare = _event_passes(0, monkeypatch)
+    for tail in (25.0, 90.0):
+        assert _event_passes(tail, monkeypatch) == bare
+    events = [at for at, grid in bare if not grid]
+    assert len(events) >= 6
 
 
 def test_due_counts_the_heartbeat_on_the_grid() -> None:
@@ -508,6 +553,7 @@ def _bare_outlook(at: datetime, k: int) -> Forecast:
     )
 
 
+@functools.cache  # one build per shape: the size tests share them (CI's pipeline job is tight)
 def worst_case_file(  # noqa: PLR0913 - the file's counts and what it leaves out
     districts: int,
     with_record: int,
@@ -700,3 +746,176 @@ def test_the_outlook_worst_case_falls_to_the_issued_alerts_only_chances_and_neve
     packed = check_budget(some, SETTINGS)
     assert len(some) <= SETTINGS.budget_raw_bytes
     assert packed <= SETTINGS.budget_gzip_bytes
+
+
+# The night chart (option (iv), docs/predict.md "The night chart") --------------------------
+
+LONGEST_NIGHT: Final = NightSnow(least=(99.0,) * 13, low=99.0, high=99.0, heavy=(10, 13))
+"""The longest night the contract allows: 13 bars of four characters (the last at or under
+``high``, 99, and none falling, so 99.0 throughout), a 2-digit span."""
+NIGHTS_FIT: Final = 10_787
+"""Districts with the longest night that fit the night cap at the worst case's base."""
+
+
+def test_the_longest_nights_on_every_district_step_down_to_no_nights() -> None:
+    """With the longest night on every district, the file with no record days is over the
+    night cap (today's worst case), so such a pass publishes at NO_NIGHTS, which is today's
+    NO_RECORDS file and fits; up to :data:`NIGHTS_FIT` districts fit with nights."""
+    field = b',"night":' + LONGEST_NIGHT.to_json_bytes()
+    assert len(field) == 124
+    night_at = b',"night_at":"2026-01-07T00:00:00Z"'
+    assert len(night_at) == 34
+    model = artifact.load()
+    districts = math.ceil(len(model.districts) * GROWTH)
+    schools = math.ceil(len(model.private) * GROWTH)
+    bare = worst_case_file(
+        districts, districts, schools=schools, outlooks=KEEPS_PREVIOUS, records=False
+    )
+    every = len(bare) + districts * len(field) + len(night_at)
+    assert every > SETTINGS.night_max_raw_bytes
+    assert len(bare) <= SETTINGS.night_max_raw_bytes
+    assert (SETTINGS.night_max_raw_bytes - len(bare) - len(night_at)) // len(field) == NIGHTS_FIT
+    assert SETTINGS.night_max_raw_bytes <= SETTINGS.budget_raw_bytes
+
+
+class _Sized:
+    """A file of a given length (``fitted`` reads only its bytes)."""
+
+    def __init__(self, size: int, fit: serve.Fit, nights: bool) -> None:
+        self.size, self.fit, self.nights = size, fit, nights
+
+    def to_json_bytes(self) -> bytes:
+        return b"{" + b" " * (self.size - 2) + b"}"
+
+
+def _ladder(
+    sizes: Mapping[tuple[serve.Fit, bool], int], nights: Any, settings: Any = SETTINGS
+) -> tuple[Any, list[Any]]:
+    tried: list[Any] = []
+
+    def make(fit: serve.Fit, carried: Any) -> Any:
+        tried.append((fit, bool(carried)))
+        return _Sized(sizes.get((fit, bool(carried)), 15_000_000), fit, bool(carried))
+
+    # The sized stand-ins are no file: the strict parse a file with nights gets passes here.
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(PredictionsFile, "from_json_bytes", lambda _data: None)
+        made, _data, _packed, withheld = cli.fitted(make, settings, nights)
+    return (made, withheld), tried
+
+
+def _some_nights() -> Any:
+    from snowlight.predict.night_serve import Nights  # noqa: PLC0415
+
+    return Nights({(date(2026, 1, 7), 0): LONGEST_NIGHT}, datetime(2026, 1, 7, tzinfo=UTC))
+
+
+def test_a_file_with_nights_over_the_cap_publishes_at_no_nights() -> None:
+    sizes = {
+        (serve.Fit.WHOLE, True): 17_651_973,
+        (serve.Fit.NO_RECORDS, True): SETTINGS.night_max_raw_bytes + 1,
+    }
+    (made, withheld), tried = _ladder(sizes, _some_nights())
+    assert tried == [
+        (serve.Fit.WHOLE, True),
+        (serve.Fit.NO_RECORDS, True),
+        (serve.Fit.NO_NIGHTS, False),
+    ]
+    assert made.fit is serve.Fit.NO_NIGHTS
+    assert withheld.line() == "chart: withheld, size"
+
+
+def test_with_reasons_on_nights_never_cost_a_record_day(capsys: Any) -> None:
+    """Critic r1/r2 S6, the lead's recorded order: with ``serve.reasons`` on, the reasons' text
+    reads the record days, so the whole file without nights comes before any fit without
+    them; a storm night's charts never change a reason's sentence."""
+    reasons = SETTINGS.model_copy(update={"reasons": True})
+    over = SETTINGS.night_max_raw_bytes + 1
+    sizes = {(serve.Fit.WHOLE, True): over, (serve.Fit.WHOLE, False): 15_500_000}
+    (made, withheld), tried = _ladder(sizes, _some_nights(), reasons)
+    assert tried == [(serve.Fit.WHOLE, True), (serve.Fit.WHOLE, False)]
+    assert made.fit is serve.Fit.WHOLE
+    assert not made.nights
+    assert withheld.line() == "chart: withheld, size"
+    assert "published it with no night charts" in capsys.readouterr().err
+    # Only when the whole file is over the budget even without nights do the record days go,
+    # and then the nights come back on the next fit (nights did not cost them).
+    sizes = {(serve.Fit.WHOLE, True): over, (serve.Fit.WHOLE, False): 17_000_000}
+    (made, withheld), tried = _ladder(sizes, _some_nights(), reasons)
+    assert tried == [
+        (serve.Fit.WHOLE, True),
+        (serve.Fit.WHOLE, False),
+        (serve.Fit.NO_RECORDS, True),
+    ]
+    assert made.fit is serve.Fit.NO_RECORDS
+    assert made.nights
+    assert withheld.line() is None
+    # Reasons off: record days show nowhere, and the chart keeps its place before them.
+    (made, _withheld), tried = _ladder(sizes, _some_nights())
+    assert tried == [(serve.Fit.WHOLE, True), (serve.Fit.NO_RECORDS, True)]
+    assert made.nights
+
+
+def test_with_reasons_on_a_table_error_skips_the_whole_file_without_nights() -> None:
+    reasons = SETTINGS.model_copy(update={"reasons": True})
+    tried: list[Any] = []
+
+    def make(fit: serve.Fit, carried: Any) -> Any:
+        tried.append((fit, bool(carried)))
+        if fit in {serve.Fit.WHOLE, serve.Fit.NO_RECORDS}:
+            raise serve.TableError("too many outlooks")
+        return _Sized(15_000_000, fit, bool(carried))
+
+    made: Any
+    made, _data, _packed, _withheld = cli.fitted(make, reasons, _some_nights())
+    assert tried == [
+        (serve.Fit.WHOLE, True),
+        (serve.Fit.NO_RECORDS, True),
+        (serve.Fit.NO_PRIVATE_PREVIOUS, False),
+    ]
+    assert made.fit is serve.Fit.NO_PRIVATE_PREVIOUS
+
+
+def test_with_no_nights_the_ladder_is_today_s() -> None:
+    from snowlight.predict.night_serve import NO_NIGHTS  # noqa: PLC0415
+
+    sizes = {(fit, False): 17_000_000 for fit in serve.Fit}
+    sizes[(serve.Fit.NO_REASONS, False)] = 15_000_000
+    (made, withheld), tried = _ladder(sizes, NO_NIGHTS)
+    assert [fit for fit, _carried in tried] == [
+        serve.Fit.WHOLE,
+        serve.Fit.NO_RECORDS,
+        serve.Fit.NO_PRIVATE_PREVIOUS,
+        serve.Fit.NO_PREVIOUS,
+        serve.Fit.NO_REASONS,
+    ]
+    assert made.fit is serve.Fit.NO_REASONS
+    assert withheld.line() is None
+
+
+def test_a_table_error_skips_no_nights() -> None:
+    tried: list[serve.Fit] = []
+
+    def make(fit: serve.Fit, carried: Any) -> Any:
+        tried.append(fit)
+        if fit in {serve.Fit.WHOLE, serve.Fit.NO_RECORDS}:
+            raise serve.TableError("too many outlooks")
+        return _Sized(15_000_000, fit, bool(carried))
+
+    made: Any
+    made, _data, _packed, withheld = cli.fitted(make, SETTINGS, _some_nights())
+    assert tried == [serve.Fit.WHOLE, serve.Fit.NO_RECORDS, serve.Fit.NO_PRIVATE_PREVIOUS]
+    assert made.fit is serve.Fit.NO_PRIVATE_PREVIOUS
+    assert withheld.line() == "chart: withheld, size"
+
+
+def test_no_nights_holds_what_no_records_holds() -> None:
+    fit = serve.Fit.NO_NIGHTS
+    same = serve.Fit.NO_RECORDS
+    assert not fit.nights
+    assert same.nights
+    assert serve.Fit.WHOLE.nights
+    assert (fit.records, fit.previous, fit.reasons, fit.private_previous, fit.schools) == (
+        same.records, same.previous, same.reasons, same.private_previous, same.schools
+    )  # fmt: skip
+    assert not any(step.nights for step in list(serve.Fit)[3:])

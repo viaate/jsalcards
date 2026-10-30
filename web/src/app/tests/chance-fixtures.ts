@@ -92,6 +92,7 @@ export const A_DETAIL: ForecastDetail = {
   thin: false,
   record: A_RECORD,
   events: [],
+  night: null,
 };
 
 export const B_DETAIL: ForecastDetail = {
@@ -126,6 +127,7 @@ export const B_DETAIL: ForecastDetail = {
     ],
   },
   events: [{ kind: 'snow_stopped', at: at('2026-01-13T12:00:00Z'), inches: 8 }],
+  night: null,
 };
 
 /** The night before, with Tuesday's forecast as `detail` gives it. */

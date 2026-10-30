@@ -47,6 +47,8 @@ export const chanceCopy = /* @__PURE__ */ deepFreeze({
   howWeGot: 'How we got',
   /** The chart's titles. */
   snowTitle: 'Snow on the ground, hour by hour',
+  /** The night chart's title (data/night.ts): new snow, never depth. */
+  newSnowTitle: 'New snow, hour by hour',
   coldTonight: 'How cold it will feel tonight',
   coldTitle: 'How cold it will feel, hour by hour',
   /** The chart's first hour, when that hour is this one. */
@@ -589,6 +591,38 @@ function heaviestKey(start: Date, end: Date, zones: Zones): string {
  */
 function busesKey(value: string, buses: Date, zones: Zones): { value: string; rest: string } {
   return { value, rest: ` when buses run at ${clock(buses, zones)}` };
+}
+
+/**
+ * The night chart's answer, in two parts, the value first: "6 to 9 in" and " by 7 AM" (its
+ * end, never the buses: no bus times are known).
+ */
+function endKey(value: string, end: Date, zones: Zones): { value: string; rest: string } {
+  return { value, rest: ` by ${clock(end, zones)}` };
+}
+
+/**
+ * The night chart in a sentence, for a screen reader: "From 10 PM to 7 AM, the weather
+ * service’s 7 PM hourly forecast has 6 to 9 inches of new snow at the district’s public
+ * schools."
+ */
+function nightSummary(
+  input: { readonly at: Date; readonly start: Date; readonly end: Date },
+  low: number,
+  high: number,
+  zones: Zones,
+): string {
+  const { at, start, end } = input;
+  return (
+    `From ${clock(start, zones)} to ${clock(end, zones)}, the weather service’s ` +
+    `${clock(at, zones)} hourly forecast has ${inchWords(low, high)} of new snow at the ` +
+    'district’s public schools.'
+  );
+}
+
+/** Under the night chart, so its time is never hidden: "From the 7 PM hourly forecast". */
+function nightFrom(at: Date, zones: Zones): string {
+  return `From the ${clock(at, zones)} hourly forecast`;
 }
 
 /** The chart in a sentence, for a screen reader. */
@@ -1190,6 +1224,9 @@ export const chanceFormat = /* @__PURE__ */ deepFreeze({
   announcesWidest,
   heaviestKey,
   busesKey,
+  endKey,
+  nightSummary,
+  nightFrom,
   chartSummary,
   delayInstead,
   shareOf,

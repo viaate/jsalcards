@@ -687,6 +687,9 @@ export function watchSchool(options: WatchOptions): () => void {
       ? () => undefined
       : pollWhileVisible(
           () => {
+            // The view at once by the clock as it reads now (a phone just woken: a chart past its
+            // window, a day under way), then again with what the read brings.
+            if (settled) show();
             void readLive().then(show);
           },
           pollMs,

@@ -1394,6 +1394,386 @@ function shapedPredictions(shape: NightShape): string {
   });
 }
 
+/**
+ * SYNTHETIC: Shawnee Mission's Tuesday as the pipeline writes it with the night chart on
+ * (option (iv), pipeline/snowlight/schemas/predictions.py NightSnow): 64% (a base of 48 and the
+ * forecaster's snow line), and new snow hour by hour from the 7 PM hourly forecast at 9 PM
+ * (`late`: at 3 AM, from the 2 AM one, three hours left). `calm`: no night at all. Every amount is
+ * made up, and none is the approved picture's (critic r1 B2) or any real night's of REAL_NIGHTS
+ * (critic r2 S1): 7 to 8 inches, heaviest 12 to 4 AM; 3 to 4 inches at 3 AM. Its screenshots are
+ * named "made-up-...".
+ */
+function nightPredictions(kind: 'evening' | 'late' | 'calm'): string {
+  const generated = kind === 'late' ? '2026-01-13T09:00:00Z' : '2026-01-13T03:00:00Z';
+  const night =
+    kind === 'evening'
+      ? { least: [0.3, 0.8, 1.6, 2.7, 3.9, 5.0, 6.0, 6.8, 7.3], low: 7.0, high: 8.0, heavy: [2, 6] }
+      : { least: [1.0, 2.0, 3.1], low: 3.0, high: 4.0 };
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: generated,
+    directory: STAMP,
+    days: ['2026-01-12', '2026-01-13'],
+    ...(kind === 'calm'
+      ? {}
+      : { night_at: kind === 'late' ? '2026-01-13T08:00:00Z' : '2026-01-13T01:00:00Z' }),
+    districts: [
+      {
+        district: 1,
+        time_zone: ZONE,
+        neighbors: [2, 0],
+        days: [
+          { state: 'no_threat' },
+          {
+            state: 'forecast',
+            p_no_school: 0.64,
+            p_delay: 0.18,
+            reasons: [0],
+            ...(kind === 'calm' ? {} : { night }),
+            why: {
+              base: {
+                kind: 'alert',
+                points: 48,
+                alert: 'winter_storm_warning',
+                borrowed: false,
+                live: false,
+              },
+              reasons: [
+                {
+                  kind: 'snow_total',
+                  points: 16,
+                  low: 6.0,
+                  high: 8.0,
+                  overnight: false,
+                  at: '2026-01-13T01:19:00Z',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  });
+}
+
+/**
+ * The live closings file a few minutes before `now`, with no status in it: the header's
+ * "Updated" time then belongs to the scene's own clock (critic r1 S5), never a morning's.
+ */
+function quietClosings(now: Date): string {
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: new Date(now.getTime() - 5 * 60_000).toISOString().replace('.000Z', 'Z'),
+    directory: STAMP,
+    days: [],
+  });
+}
+
+/**
+ * REAL NIGHTS, each on a school of its own district (critic r2 S1): the test site's directory row
+ * of Shawnee Mission East is served, for that scene only, as a public school of the night's own
+ * district as the NCES directory lists it (its name, district, address, county and grades), in
+ * the district's own time zone and with its own date. The bars, range and span are NOAA's
+ * National Blend of Models as the GC1 replays of the night chart give them (`snowlight predict
+ * night-replay`, gc1 r2, the moment and cycle named). The chance and its sum beside them are
+ * made up: the screenshots are named "real-<district>-..." and captioned so.
+ */
+interface RealNight {
+  /** For the screenshot's name: whose night, and when. */
+  readonly name: string;
+  /** A public school of the night's own district, as its directory row lists it. */
+  readonly school: RealSchool;
+  readonly zone: string;
+  /** The viewer's clock, where it is not the district's (the chart then names the zone). */
+  readonly viewer?: string;
+  /** The district's usual announcement (`announces_at`), where the scene has one. */
+  readonly announces?: string;
+  readonly now: string;
+  readonly nightAt: string;
+  readonly night: {
+    readonly least: readonly number[];
+    readonly low: number;
+    readonly high: number;
+    readonly heavy?: readonly [number, number];
+  };
+  /** Its night day, and the local day before it (the file's two days, today first). */
+  readonly days: readonly [string, string];
+  /** Which of the two the night is on. */
+  readonly on: 0 | 1;
+  /** The answer and the first time at the foot, as the panel must say them. */
+  readonly words: string;
+  readonly first: string;
+}
+
+/** A directory row's place: name, district (LEAID and name), street, city, state, zip, county, grades. */
+interface RealSchool {
+  readonly name: string;
+  readonly leaid: string;
+  readonly district: string;
+  readonly street: string;
+  readonly city: string;
+  readonly state: string;
+  readonly zip: string;
+  readonly county: string;
+  readonly grades: readonly [string, string];
+  readonly enrollment: number;
+  readonly phone: string;
+}
+
+/** Public schools of the replays' districts (NCES 2024-25, as the pipeline's directory has them). */
+const REAL_SCHOOLS = {
+  boston: {
+    name: 'Blackstone Elementary School',
+    leaid: '2502790',
+    district: 'Boston',
+    street: '380 Shawmut Avenue',
+    city: 'Boston',
+    state: 'MA',
+    zip: '02118',
+    county: 'Suffolk County',
+    grades: ['PK', '06'],
+    enrollment: 582,
+    phone: '6176358471',
+  },
+  desMoines: {
+    name: 'Downtown School',
+    leaid: '1908970',
+    district: 'Des Moines Independent Comm School District',
+    street: '1800 Grand Avenue',
+    city: 'Des Moines',
+    state: 'IA',
+    zip: '50309',
+    county: 'Polk County',
+    grades: ['KG', '05'],
+    enrollment: 197,
+    phone: '5152845848',
+  },
+  shawneeMission: {
+    name: 'Shawnee Mission East High',
+    leaid: '2011640',
+    district: 'Shawnee Mission Pub Sch',
+    street: '7500 Mission Rd',
+    city: 'Prairie Village',
+    state: 'KS',
+    zip: '66208',
+    county: 'Johnson County',
+    grades: ['09', '12'],
+    enrollment: 1737,
+    phone: '9139936600',
+  },
+  eastMarshall: {
+    name: 'East Marshall Senior High School',
+    leaid: '1900040',
+    district: 'East Marshall Comm School District',
+    street: '201 N Franklin',
+    city: 'Le Grand',
+    state: 'IA',
+    zip: '50142',
+    county: 'Marshall County',
+    grades: ['09', '12'],
+    enrollment: 217,
+    phone: '6414792785',
+  },
+  beachPark: {
+    name: 'Kenneth Murphy School',
+    leaid: '1700010',
+    district: 'Beach Park CCSD 3',
+    street: '11315 W Wadsworth Rd',
+    city: 'Beach Park',
+    state: 'IL',
+    zip: '60099',
+    county: 'Lake County',
+    grades: ['KG', '05'],
+    enrollment: 394,
+    phone: '8475995060',
+  },
+  albia: {
+    name: 'Albia High School',
+    leaid: '1903270',
+    district: 'Albia Comm School District',
+    street: '503 B Ave East',
+    city: 'Albia',
+    state: 'IA',
+    zip: '52531',
+    county: 'Monroe County',
+    grades: ['09', '12'],
+    enrollment: 348,
+    phone: '6419322161',
+  },
+} as const satisfies Record<string, RealSchool>;
+
+const BOSTON_9PM = {
+  // 2026-01-26T0207: district 6812, cycle 2026-01-26T00:00:00Z
+  school: REAL_SCHOOLS.boston,
+  zone: 'America/New_York',
+  now: '2026-01-26T02:07:00Z',
+  nightAt: '2026-01-26T00:00:00Z',
+  night: {
+    least: [0.9, 1.9, 2.9, 3.3, 3.5, 3.7, 3.9, 4.2, 4.5],
+    low: 4.0,
+    high: 6.0,
+    heavy: [0, 3],
+  },
+  days: ['2026-01-25', '2026-01-26'],
+  on: 1,
+  words: '4 to 6\u00a0in by 7\u00a0AM',
+  first: '10\u00a0PM',
+} as const;
+
+const DES_MOINES_9PM = {
+  // 2024-01-09T0307: district 5584, cycle 2024-01-09T02:00:00Z
+  school: REAL_SCHOOLS.desMoines,
+  zone: 'America/Chicago',
+  now: '2024-01-09T03:07:00Z',
+  nightAt: '2024-01-09T02:00:00Z',
+  night: { least: [0.3, 0.7, 1.0, 1.4, 1.8, 2.3, 2.8, 3.3, 3.7], low: 3.0, high: 5.0 },
+  days: ['2024-01-08', '2024-01-09'],
+  on: 1,
+  words: '3 to 5\u00a0in by 7\u00a0AM',
+  first: '10\u00a0PM',
+} as const;
+
+const REAL_NIGHTS: readonly RealNight[] = [
+  { ...BOSTON_9PM, name: 'boston-9pm' },
+  { ...DES_MOINES_9PM, name: 'des-moines-9pm' },
+  {
+    // 2024-01-09T0307: district 6068, cycle 2024-01-09T02:00:00Z
+    name: 'shawnee-mission-9pm',
+    school: REAL_SCHOOLS.shawneeMission,
+    zone: 'America/Chicago',
+    now: '2024-01-09T03:07:00Z',
+    nightAt: '2024-01-09T02:00:00Z',
+    night: { least: [0.1, 0.5, 1.1, 1.8, 2.5, 3.1, 3.5, 3.9, 4.3], low: 4.0, high: 5.0 },
+    days: ['2024-01-08', '2024-01-09'],
+    on: 1,
+    words: '4 to 5\u00a0in by 7\u00a0AM',
+    first: '10\u00a0PM',
+  },
+  {
+    // 2024-01-08T2307: district 5498, cycle 2024-01-08T22:00:00Z
+    name: 'east-marshall-13-bars-5pm',
+    school: REAL_SCHOOLS.eastMarshall,
+    zone: 'America/Chicago',
+    now: '2024-01-08T23:07:00Z',
+    nightAt: '2024-01-08T22:00:00Z',
+    night: {
+      least: [0.1, 0.5, 0.9, 1.3, 1.7, 2.1, 2.4, 2.7, 3.1, 3.5, 4.0, 4.8, 5.4],
+      low: 5.0,
+      high: 7.0,
+      heavy: [10, 13],
+    },
+    days: ['2024-01-08', '2024-01-09'],
+    on: 1,
+    words: '5 to 7\u00a0in by 7\u00a0AM',
+    first: '6\u00a0PM',
+  },
+  {
+    // 2024-01-09T0307: district 4139, cycle 2024-01-09T02:00:00Z
+    name: 'beach-park-tenths-9pm',
+    school: REAL_SCHOOLS.beachPark,
+    zone: 'America/Chicago',
+    now: '2024-01-09T03:07:00Z',
+    nightAt: '2024-01-09T02:00:00Z',
+    night: { least: [0.0, 0.1, 0.3, 0.4, 0.6, 0.8, 0.9, 1.0, 1.0], low: 1.0, high: 1.5 },
+    days: ['2024-01-08', '2024-01-09'],
+    on: 1,
+    words: '1 to 1.5\u00a0in by 7\u00a0AM',
+    first: '10\u00a0PM',
+  },
+  {
+    // 2024-01-09T0907: district 5505, cycle 2024-01-09T08:00:00Z
+    name: 'albia-3am',
+    school: REAL_SCHOOLS.albia,
+    zone: 'America/Chicago',
+    now: '2024-01-09T09:07:00Z',
+    nightAt: '2024-01-09T08:00:00Z',
+    night: { least: [0.7, 1.4, 2.0], low: 2.0, high: 3.0 },
+    days: ['2024-01-09', '2024-01-10'],
+    on: 0,
+    words: '2 to 3\u00a0in by 7\u00a0AM',
+    first: '4\u00a0AM',
+  },
+  // Critic r2 S2: the usual announcement's dashed line and words on a real night (a 5:30 AM
+  // announcement made up for the scene), and a viewer an hour ahead of the district's clock.
+  { ...BOSTON_9PM, name: 'boston-9pm-announces-530', announces: '2026-01-26T10:30:00Z' },
+  {
+    ...DES_MOINES_9PM,
+    name: 'des-moines-9pm-seen-from-new-york',
+    viewer: 'America/New_York',
+    words: '3 to 5\u00a0in by 7\u00a0AM CT',
+    first: '10\u00a0PM CT',
+  },
+];
+
+/** The test site's directory rows with Shawnee Mission East's served as `school` instead. */
+function realDetails(school: RealSchool): string {
+  const { shard } = directoryDetails();
+  const value = JSON.parse(shard) as { rows: unknown[][] };
+  const rows = value.rows.map((row) =>
+    row[0] === SHAWNEE_MISSION_EAST
+      ? [
+          SHAWNEE_MISSION_EAST,
+          school.name,
+          0,
+          1,
+          school.leaid,
+          school.district,
+          school.street,
+          school.city,
+          school.state,
+          school.zip,
+          school.county,
+          school.grades[0],
+          school.grades[1],
+          school.enrollment,
+          school.phone,
+          [],
+        ]
+      : row,
+  );
+  return JSON.stringify({ ...value, rows });
+}
+
+function realPredictions(scene: RealNight): string {
+  const day = (on: boolean) =>
+    on
+      ? {
+          state: 'forecast',
+          p_no_school: 0.64,
+          p_delay: 0.18,
+          reasons: [0],
+          night: scene.night,
+          ...(scene.announces === undefined ? {} : { announces_at: scene.announces }),
+          why: {
+            base: {
+              kind: 'alert',
+              points: 64,
+              alert: 'winter_storm_warning',
+              borrowed: false,
+              live: false,
+            },
+            reasons: [],
+          },
+        }
+      : { state: 'no_threat' };
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: scene.now,
+    directory: STAMP,
+    days: scene.days,
+    night_at: scene.nightAt,
+    districts: [
+      {
+        district: 1,
+        time_zone: scene.zone,
+        // No district next door: the test site's are Kansas's, never the real district's.
+        neighbors: [],
+        days: [day(scene.on === 0), day(scene.on === 1)],
+      },
+    ],
+  });
+}
+
 /** Opens a school, or closes it, as the back button would: the address, then popstate. */
 async function showSchool(page: Page, id: string | null): Promise<void> {
   await page.evaluate((school) => {
@@ -4254,5 +4634,205 @@ test.describe('with data staged', () => {
     await expect(box).toHaveCount(0);
     expect(problems).toEqual([]);
     await context.close();
+  });
+  test('the night chart: new snow hour by hour, its range by 7 AM and its forecast’s time, on a phone and a desktop, and none on a calm night', async ({
+    browser,
+  }) => {
+    // First flights into streets, at two widths and three nights; with SNOWLIGHT_NIGHT_SHOTS
+    // set, a screenshot of each for the owner.
+    test.setTimeout(600_000);
+    const shots = process.env.SNOWLIGHT_NIGHT_SHOTS ?? '';
+    const S = '\u00a0';
+    for (const phone of [true, false]) {
+      const context = await browser.newContext({
+        viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 900 },
+        ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
+        timezoneId: ZONE,
+        serviceWorkers: 'block',
+      });
+      const page = await context.newPage();
+      let kind: 'evening' | 'late' | 'calm' = 'evening';
+      let clock = new Date('2026-01-13T03:05:00Z');
+      await fixDate(page, clock);
+      const { problems } = watch(page);
+      await page.route('**/data/predictions/latest.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body: nightPredictions(kind) }),
+      );
+      await page.route('**/data/live/closings.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body: quietClosings(clock) }),
+      );
+      const panel = page.locator('aside.detail');
+      const section = panel.locator('.chance');
+      const chart = section.locator('.chart');
+      await page.goto(`${site}?school=${SHAWNEE_MISSION_EAST}`);
+      await expect(section.locator('.number')).toHaveText('64%', { timeout: 60_000 });
+      await expect(chart.locator('figcaption')).toHaveText('New snow, hour by hour');
+      await expect(chart.locator('.col')).toHaveCount(10);
+      await expect(chart.locator('.col.is-lit')).toHaveCount(4);
+      await expect(chart.locator('.words.is-end')).toHaveText(`7 to 8${S}in by 7${S}AM`);
+      await expect(chart.locator('.key li')).toHaveText([`Heaviest snow 12 to 4${S}AM`]);
+      // No time under the gray bar where the span starts (12 AM) or under a lit bar but the
+      // last (1 to 3 AM): only 4 AM, the span's end, may be named of its hours (critic r2 B1).
+      const feet = await chart.locator('.time').allTextContents();
+      for (const hour of ['12', '1', '2', '3']) expect(feet).not.toContain(`${hour}${S}AM`);
+      // The header's time is the evening's own, never a morning's beside a night chart.
+      await expect(page.locator('p.updated:not(.replay) time')).toHaveAttribute(
+        'datetime',
+        '2026-01-13T03:00:00Z',
+      );
+      await expect(chart.locator('.note')).toHaveText(`From the 7${S}PM hourly forecast`);
+      await expect(chart.locator('.time').first()).toHaveText(`10${S}PM`);
+      await expect(chart).not.toContainText('Now');
+      await expect(chart).not.toContainText('uses');
+      // The snow line states no amount while the chart does (O6), with its forecast's time.
+      await expect(section.locator('.sum > li').nth(1).locator('p').first()).toHaveText(
+        `The 7:19${S}PM forecast has more snow by 12${S}PM than most storms.`,
+      );
+      await expectChartFits(page, `night ${phone ? 'phone' : 'desktop'}`);
+      const sideways = await panel.evaluate((node) => node.scrollWidth - node.clientWidth);
+      expect(sideways).toBeLessThanOrEqual(0);
+      const shoot = async (name: string): Promise<void> => {
+        if (shots === '') return;
+        const file = path.join(shots, `${name}-${phone ? 'phone' : 'desktop'}.png`);
+        if (phone) {
+          if ((await panel.getAttribute('data-detent')) !== 'full') {
+            await panel.locator('.grip').tap();
+            await expect(panel).toHaveAttribute('data-detent', 'full');
+          }
+          // A calm night has no chart: the chance and its sum, then.
+          const chartShown = (await section.locator('.chart').count()) > 0;
+          await section.locator(chartShown ? '.chart' : '.why').scrollIntoViewIfNeeded();
+          await page.screenshot({ path: file });
+        } else await panel.screenshot({ path: file });
+      };
+      await shoot('made-up-9pm');
+
+      // 3 AM: three hours left, from the 2 AM forecast; no span to name.
+      kind = 'late';
+      await showSchool(page, null);
+      await expect(panel).toHaveCount(0);
+      clock = new Date('2026-01-13T09:05:00Z');
+      await fixDate(page, clock);
+      await page.reload();
+      await showSchool(page, SHAWNEE_MISSION_EAST);
+      await expect(section.locator('.number')).toHaveText('64%', { timeout: 60_000 });
+      await expect(chart.locator('.col')).toHaveCount(4);
+      await expect(chart.locator('.col.is-lit')).toHaveCount(0);
+      await expect(chart.locator('.words.is-end')).toHaveText(`3 to 4${S}in by 7${S}AM`);
+      await expect(chart.locator('.time').first()).toHaveText(`4${S}AM`);
+      await expectChartFits(page, `late ${phone ? 'phone' : 'desktop'}`);
+      await shoot('made-up-3am');
+
+      // A calm night: no chart, the chance and its sum as before, the snow line its amount.
+      kind = 'calm';
+      await showSchool(page, null);
+      await expect(panel).toHaveCount(0);
+      clock = new Date('2026-01-13T03:05:00Z');
+      await fixDate(page, clock);
+      await page.reload();
+      await showSchool(page, SHAWNEE_MISSION_EAST);
+      await expect(section.locator('.number')).toHaveText('64%', { timeout: 60_000 });
+      await expect(section.locator('.chart')).toHaveCount(0);
+      await expect(section.locator('.sum > li').nth(1).locator('p').first()).toContainText(
+        '6 to 8 inches',
+      );
+      await shoot('made-up-calm');
+      expect(problems).toEqual([]);
+      await context.close();
+    }
+  });
+  test('the night chart on real nights: 13 bars at 5 PM with the last lit, tenths, Boston and Des Moines at 9 PM, and 3 AM, on a phone and a desktop', async ({
+    browser,
+  }) => {
+    // The GC1 replays' own numbers (REAL_NIGHTS), each at its own moment and zone; with
+    // SNOWLIGHT_NIGHT_SHOTS set, a screenshot of each for the owner, named "real-...".
+    test.setTimeout(900_000);
+    const shots = process.env.SNOWLIGHT_NIGHT_SHOTS ?? '';
+    expect(REAL_NIGHTS.length).toBeGreaterThanOrEqual(5);
+    for (const phone of [true, false]) {
+      for (const scene of REAL_NIGHTS) {
+        const now = new Date(new Date(scene.now).getTime() + 5 * 60_000);
+        const context = await browser.newContext({
+          viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 900 },
+          ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
+          timezoneId: scene.viewer ?? scene.zone,
+          serviceWorkers: 'block',
+        });
+        const page = await context.newPage();
+        await fixDate(page, now);
+        const { problems } = watch(page);
+        await page.route('**/data/predictions/latest.json*', (route) =>
+          route.fulfill({ contentType: 'application/json', body: realPredictions(scene) }),
+        );
+        await page.route('**/data/schools/details/0*.json*', (route) =>
+          route.fulfill({ contentType: 'application/json', body: realDetails(scene.school) }),
+        );
+        await page.route('**/data/live/closings.json*', (route) =>
+          route.fulfill({ contentType: 'application/json', body: quietClosings(now) }),
+        );
+        const panel = page.locator('aside.detail');
+        const section = panel.locator('.chance');
+        const chart = section.locator('.chart');
+        await page.goto(`${site}?school=${SHAWNEE_MISSION_EAST}`);
+        await expect(section.locator('.number')).toHaveText('64%', { timeout: 60_000 });
+        const label = `${scene.name} ${phone ? 'phone' : 'desktop'}`;
+        // The night's own district's school heads the panel, never another's.
+        await expect(panel.locator('h2'), label).toHaveText(scene.school.name);
+        await expect(panel, label).toContainText(scene.school.city);
+        await expect(chart.locator('figcaption'), label).toHaveText('New snow, hour by hour');
+        await expect(chart.locator('.col'), label).toHaveCount(scene.night.least.length + 1);
+        const lit =
+          scene.night.heavy === undefined ? 0 : scene.night.heavy[1] - scene.night.heavy[0];
+        await expect(chart.locator('.col.is-lit'), label).toHaveCount(lit);
+        if (scene.night.heavy?.[1] === scene.night.least.length) {
+          // The last bar lit, under the range glyph.
+          await expect(chart.locator('.col').last(), label).toHaveClass(/is-lit/u);
+        }
+        await expect(chart.locator('.words.is-end'), label).toHaveText(scene.words);
+        await expect(chart.locator('.time').first(), label).toHaveText(scene.first);
+        // Seen from another zone, every time at the foot names the district's.
+        if (scene.viewer !== undefined) {
+          for (const time of await chart.locator('.time').allTextContents())
+            expect(time, label).toMatch(/\sCT$/u);
+        }
+        // The usual announcement: its dashed line and words in the night drawn, both rows read.
+        await expect(chart.locator('.line.is-announces'), label).toHaveCount(
+          scene.announces === undefined ? 0 : 1,
+        );
+        if (scene.announces !== undefined) {
+          await expect(chart.locator('.words.is-announces'), label).toContainText(
+            'Usually announces 5:30\u00a0AM',
+          );
+          // Both rows of words over the plot: the answer and the announcement (each kept clear
+          // of the other, the bars and the times by expectChartFits below).
+          await expect(chart.locator('.words'), label).toHaveCount(2);
+        }
+        await expect(chart, label).not.toContainText('Now');
+        await expect(chart, label).not.toContainText('uses');
+        await expect(page.locator('p.updated:not(.replay) time'), label).toHaveAttribute(
+          'datetime',
+          new Date(now.getTime() - 5 * 60_000).toISOString().replace('.000Z', 'Z'),
+        );
+        await expectChartFits(page, label);
+        const sideways = await panel.evaluate((node) => node.scrollWidth - node.clientWidth);
+        expect(sideways, label).toBeLessThanOrEqual(0);
+        if (shots !== '') {
+          const file = path.join(shots, `real-${scene.name}-${phone ? 'phone' : 'desktop'}.png`);
+          // The chance, its delay line and its sum are made up for the scene: blanked in the
+          // owner's picture, so no made-up number or record sits under a real district's name.
+          const mask = [section.locator('.hero'), section.locator('.why')];
+          if (phone) {
+            if ((await panel.getAttribute('data-detent')) !== 'full') {
+              await panel.locator('.grip').tap();
+              await expect(panel).toHaveAttribute('data-detent', 'full');
+            }
+            await chart.scrollIntoViewIfNeeded();
+            await page.screenshot({ path: file, mask });
+          } else await panel.screenshot({ path: file, mask });
+        }
+        expect(problems, label).toEqual([]);
+        await context.close();
+      }
+    }
   });
 });

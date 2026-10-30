@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
 
   import type { ChanceView } from '../app/chance';
+  import { chartFailed, chartShown } from '../app/chart-shown';
   import { copy } from '../copy';
   import ChanceChart from './ChanceChart.svelte';
 
@@ -131,10 +132,14 @@
     {/if}
   </div>
 
-  {#if chance.chart !== null}
-    <div class="block">
-      <ChanceChart chart={chance.chart} announces={chance.announces(new Date(now))} />
-    </div>
+  {#if chartShown(chance.chart, now)}
+    <!-- A chart bug is no chart: the number, its meaning and the sum around it still show. -->
+    <svelte:boundary onerror={chartFailed}>
+      <div class="block">
+        <ChanceChart chart={chance.chart} announces={chance.announces(new Date(now))} />
+      </div>
+      {#snippet failed()}{/snippet}
+    </svelte:boundary>
   {/if}
 
   {#if chance.why !== null}

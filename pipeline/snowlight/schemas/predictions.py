@@ -47,7 +47,7 @@ district with a school within :data:`NEIGHBOR_MILES` miles of one of this distri
 schools, nearest first, at most :data:`MAX_NEIGHBORS`.
 """
 
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from itertools import pairwise
 from typing import Annotated, Final, Literal, Self
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -227,6 +227,157 @@ class Hours(CompactModel):
     def hour(self, position: int) -> datetime:
         """The moment value ``position`` is for."""
         return self.start + position * _HOUR
+
+
+# The night chart (docs/predict.md, "The night chart"): one definition of its day and window,
+# shared by the pipeline, the validators and (as web/src/data/night.ts) the site.
+
+NIGHT_AHEAD: Final = timedelta(hours=17)
+"""The night day of a moment is the local date of the moment plus this: from 07:00 local on
+D-1 to before 07:00 local on D, the day is D."""
+NIGHT_FROM: Final = time(18)
+"""A night chart never starts before 18:00 local on the evening before its day."""
+NIGHT_END: Final = time(7)
+"""A night chart ends at 07:00 local on its day."""
+NIGHT_CLOSE: Final = time(6)
+"""A night chart is written and shown only before 06:00 local on its day, so its last hour (to
+07:00) is still ahead."""
+NIGHT_MIN_INCHES: Final = 1.0
+"""The district's 50% value of the new snow over the chart must reach this."""
+NIGHT_MAX_AGE: Final = timedelta(minutes=150)
+"""``generated_at - night_at`` at most this: the oldest NBM cycle a pass may chart from."""
+NIGHT_MAX_BARS: Final = 13
+"""The most hours a night chart holds (18:00 to 07:00)."""
+NIGHT_MAX_LEAST: Final = 99.9
+NIGHT_MAX_HIGH: Final = 99.0
+NIGHT_TENTHS_BELOW: Final = 2.0
+"""A range whose high end is under this is given in tenths; otherwise in whole inches."""
+NIGHT_SPANS: Final = (3, 4)
+"""The heaviest span is this many hours long."""
+
+
+def night_day(moment: datetime, zone: str) -> date:
+    """The school day whose night chart a moment belongs to: the local date of the moment plus
+    17 hours (wall-clock hours, as aware arithmetic in one zone adds them)."""
+    return (moment.astimezone(ZoneInfo(zone)) + NIGHT_AHEAD).date()
+
+
+def night_close(day: date, zone: str) -> datetime:
+    """When the night chart for ``day`` closes: 06:00 local on the day, in UTC."""
+    return datetime.combine(day, NIGHT_CLOSE, tzinfo=ZoneInfo(zone)).astimezone(UTC)
+
+
+def night_open(moment: datetime, zone: str) -> bool:
+    """Whether a moment is inside its night day's chart window: from 07:00 local on D-1 (true
+    by construction of :func:`night_day`) to before :func:`night_close`."""
+    return moment < night_close(night_day(moment, zone), zone)
+
+
+def night_window(moment: datetime, zone: str) -> tuple[datetime, datetime]:
+    """The chart's Start and End for a pass at ``moment``, in UTC: Start is the first whole hour
+    after the moment, never before 18:00 local on the evening before; End is 07:00 local on the
+    night day."""
+    day = night_day(moment, zone)
+    local = ZoneInfo(zone)
+    after = moment.astimezone(UTC).replace(minute=0, second=0, microsecond=0) + _HOUR
+    evening = datetime.combine(day - timedelta(days=1), NIGHT_FROM, tzinfo=local).astimezone(UTC)
+    end = datetime.combine(day, NIGHT_END, tzinfo=local).astimezone(UTC)
+    return max(after, evening), end
+
+
+def night_hours(moment: datetime, zone: str) -> int:
+    """The chart's hours (its bars after the empty first instant) for a pass at ``moment``."""
+    start, end = night_window(moment, zone)
+    return max(0, round((end - start) / _HOUR))
+
+
+def _night_fail(check: str) -> None:
+    raise ValueError(f"night: {check}")
+
+
+class NightSnow(CompactModel):
+    """New snow (not depth) in NOAA's National Blend of Models (NBM), deterministic 1-hour
+    snowfall, at the district's deciding schools: an hour at a time from Start (the first whole
+    hour after ``generated_at``, never before 18:00 local the evening before) to End (07:00
+    local on the day), from the one cycle the file's ``night_at`` names (docs/predict.md, "The
+    night chart"). Every number is a sum of the cycle's own 1-hour amounts.
+
+    ``least[i]``: at every deciding school, at least this much new snow falls from Start to the
+    end of hour i (Start + i + 1 hours), in tenths rounded down. ``low`` and ``high``: every
+    deciding school's total from Start to End lies between them (tenths when ``high`` is under
+    2, else whole inches). ``heavy``: the heaviest span, from Start + first to Start + last
+    hours (3 or 4 hours), where every deciding school's heaviest 3 hours fall."""
+
+    least: Annotated[
+        tuple[Inches, ...],
+        Field(
+            min_length=1,
+            max_length=NIGHT_MAX_BARS,
+            description=(
+                "One value an hour from Start: the least new snow at any deciding school from "
+                "Start to that hour's end, in tenths rounded down."
+            ),
+        ),
+    ]
+    low: Inches
+    high: Inches
+    heavy: (
+        Annotated[
+            tuple[Annotated[int, Field(ge=0, le=NIGHT_MAX_BARS)], ...],
+            Field(min_length=2, max_length=2),
+        ]
+        | None
+    ) = Field(
+        default=None,
+        description="The heaviest span's first and last hour from Start: 3 or 4 hours apart.",
+    )
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        check_night_fields(self)
+        return self
+
+
+def check_night_fields(night: NightSnow) -> None:
+    """The checks of a night on its own (``least_bound``, ``least_falls``, ``range``,
+    ``heavy``), each a ``ValueError("night: <check>")``."""
+    least = night.least
+    if not least or any(not 0 <= value <= NIGHT_MAX_LEAST for value in least):
+        _night_fail("least_bound")
+    if any(later < earlier for earlier, later in pairwise(least)):
+        _night_fail("least_falls")
+    low, high = night.low, night.high
+    if not low <= least[-1] <= high <= NIGHT_MAX_HIGH or high < NIGHT_MIN_INCHES:
+        _night_fail("range")
+    if high >= NIGHT_TENTHS_BELOW and (low != int(low) or high != int(high)):
+        _night_fail("range")
+    heavy = night.heavy
+    if heavy is not None:
+        if len(heavy) != 2:  # noqa: PLR2004 - its first and last hour
+            _night_fail("heavy")
+        first, last = heavy
+        if not 0 <= first < last <= len(least) or last - first not in NIGHT_SPANS:
+            _night_fail("heavy")
+
+
+def check_night(night: NightSnow, day: date, zone: str, generated: datetime) -> None:
+    """The checks of a night against its day, its district's zone and its file's time
+    (``window``, ``bars``), after :func:`check_night_fields`; each a
+    ``ValueError("night: <check>")``."""
+    check_night_fields(night)
+    if not night_open(generated, zone) or night_day(generated, zone) != day:
+        _night_fail("window")
+    if len(night.least) != night_hours(generated, zone):
+        _night_fail("bars")
+
+
+def check_night_at(night_at: datetime | None, generated: datetime, nights: int) -> None:
+    """The file's ``night_at`` against its nights (``night_at_pair``) and its time
+    (``night_at_age``), each a ``ValueError("night: <check>")``."""
+    if (night_at is None) != (nights == 0):
+        _night_fail("night_at_pair")
+    if night_at is not None and not timedelta(0) <= generated - night_at <= NIGHT_MAX_AGE:
+        _night_fail("night_at_age")
 
 
 # The base: where the chance starts for this district, before any reason.
@@ -781,6 +932,14 @@ class Forecast(CompactModel):
         ),
     )
     hours: Hours | None = None
+    night: NightSnow | None = Field(
+        default=None,
+        description=(
+            "The night chart: new snow hour by hour to 07:00 local on the day, in NOAA's "
+            "blend model (NBM), from the cycle the file's night_at names. Only on a "
+            "district's day, at most one day a district."
+        ),
+    )
     why: Why = Field(description="How the chance adds up: always given with a forecast.")
     record: PastRecord | None = None
     events: Annotated[tuple[WeatherEvent, ...], Field(max_length=4)] = ()
@@ -974,6 +1133,13 @@ class PredictionsFile(CompactModel):
             "given with any outlook reason, and before generated_at."
         ),
     )
+    night_at: UtcInstant | None = Field(
+        default=None,
+        description=(
+            "The NBM cycle (its hour) every night chart of the file is from; given with any "
+            "night, and at most 150 minutes before generated_at."
+        ),
+    )
 
     @model_validator(mode="after")
     def _check(self) -> Self:
@@ -1000,7 +1166,27 @@ class PredictionsFile(CompactModel):
                 raise ValueError(f"{where}: district {entry.district} is not in the directory")
             self._check_entry(where, entry.neighbors, entry.time_zone, entry.days)
         self._check_schools()
+        self._check_nights()
         return self
+
+    def _check_nights(self) -> None:
+        """The file-level night checks (``outlook``, ``one_day``, ``night_at_pair``,
+        ``night_at_age``), and each night against its day and zone (:func:`check_night`)."""
+        if any(isinstance(day, Forecast) and day.night is not None for day in self.outlooks):
+            _night_fail("outlook")
+        count = 0
+        for entry in self.districts:
+            nights = [
+                (day, forecast.night)
+                for day, forecast in zip(self.days, entry.days, strict=True)
+                if isinstance(forecast, Forecast) and forecast.night is not None
+            ]
+            if len(nights) > 1:
+                _night_fail("one_day")
+            for day, night in nights:
+                check_night(night, day, entry.time_zone, self.generated_at)
+            count += len(nights)
+        check_night_at(self.night_at, self.generated_at, count)
 
     def _check_schools(self) -> None:
         if len(set(self.outlooks)) != len(self.outlooks):

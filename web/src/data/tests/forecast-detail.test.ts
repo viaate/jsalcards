@@ -97,6 +97,7 @@ describe('a forecast’s chance section parts', () => {
         ],
       },
       events: [{ kind: 'snow_started', at: at('2027-01-12T05:00:00Z') }],
+      night: null,
     });
     const next = read(morning(), '2027-01-13');
     expect(next.hours).toMatchObject({ kind: 'wind_chill', range: null, heavy: null });
@@ -282,7 +283,10 @@ describe('a forecast’s chance section parts', () => {
       expect(detail[part], what).toBeNull();
       // Everything else still reads.
       for (const key of Object.keys(NO_DETAIL) as (keyof typeof NO_DETAIL)[]) {
-        if (key !== part) expect(detail[key], `${what}: ${key}`).not.toBeNull();
+        // The example has no night (data/tests/night.test.ts reads them).
+        if (key !== part && key !== 'night') {
+          expect(detail[key], `${what}: ${key}`).not.toBeNull();
+        }
       }
       expect(detail.events, what).toHaveLength(1);
     }

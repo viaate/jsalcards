@@ -46,6 +46,7 @@ from snowlight.predict.config import PredictConfig
 from snowlight.predict.forecast_values import NO_FORECASTS, Forecasts
 from snowlight.predict.geography import REGION_OF, districts_near, neighbors, state_of_leaid
 from snowlight.predict.labels import NO_SCHOOL, WEATHER_REASONS
+from snowlight.predict.night_serve import NO_NIGHTS, Nights
 from snowlight.predict.nowcast import UNREAD, Neighbors
 from snowlight.predict.opens import NOTHING_SAID, SaidOpen
 from snowlight.predict.pool import (
@@ -151,6 +152,9 @@ class Fit(Enum):
     WHOLE = "whole"
     NO_RECORDS = "no_records"
     """No record days under any own base (a learned file may give every district one)."""
+    NO_NIGHTS = "no_nights"
+    """As :attr:`NO_RECORDS`, with no night charts (docs/predict.md, "The night chart"): tried
+    only when the pass has nights, so every later step is the file it was before the chart."""
     NO_PRIVATE_PREVIOUS = "no_private_previous"
     """No record days, and no previous chances for private schools: a previous chance makes
     each (chance, previous) pair an outlook of its own, which can overflow the shared table
@@ -173,6 +177,11 @@ class Fit(Enum):
         return self in {Fit.WHOLE, Fit.NO_SCHOOLS}
 
     @property
+    def nights(self) -> bool:
+        """Whether its districts' forecasts carry the night chart (when the pass has nights)."""
+        return self in {Fit.WHOLE, Fit.NO_RECORDS}
+
+    @property
     def previous(self) -> bool:
         """Whether its districts' forecasts carry the previous chance."""
         return self not in {Fit.NO_PREVIOUS, Fit.NO_REASONS}
@@ -180,12 +189,18 @@ class Fit(Enum):
     @property
     def reasons(self) -> bool:
         """Whether its districts' chances carry the reasons (when the pass gives them)."""
-        return self in {Fit.WHOLE, Fit.NO_RECORDS, Fit.NO_PRIVATE_PREVIOUS, Fit.NO_PREVIOUS}
+        return self in {
+            Fit.WHOLE,
+            Fit.NO_RECORDS,
+            Fit.NO_NIGHTS,
+            Fit.NO_PRIVATE_PREVIOUS,
+            Fit.NO_PREVIOUS,
+        }
 
     @property
     def private_previous(self) -> bool:
         """Whether its private schools' forecasts carry the previous chance."""
-        return self in {Fit.WHOLE, Fit.NO_RECORDS}
+        return self in {Fit.WHOLE, Fit.NO_RECORDS, Fit.NO_NIGHTS}
 
     @property
     def schools(self) -> bool:
@@ -198,6 +213,7 @@ class Fit(Enum):
         return {
             Fit.WHOLE: "nothing",
             Fit.NO_RECORDS: "record days",
+            Fit.NO_NIGHTS: "record days or night charts",
             Fit.NO_PRIVATE_PREVIOUS: "record days or private schools' previous chances",
             Fit.NO_PREVIOUS: "record days or previous chances",
             Fit.NO_REASONS: "record days, previous chances or reasons",
@@ -1040,6 +1056,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     announces: bool = False,
     outlook: "OutlookLines | None" = None,
     forecast_at: datetime | None = None,
+    nights: Nights = NO_NIGHTS,
 ) -> PredictionsFile:
     """The predictions file of one pass (see the module docstring): every district, and with
     ``private_classes`` (from :func:`unit_classes`) every served private school; ``fit``: what
@@ -1054,7 +1071,10 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     lines (S7-F, :mod:`snowlight.predict.outlook_serve`): a district-day with a line publishes
     the outlook's chance, its base the class issued's own (never on a day said open), and the
     file names the forecast's time, ``forecast_at``; a ``fit`` with no reasons carries no line
-    (every chance the issued-alerts-only one, as with no outlook).
+    (every chance the issued-alerts-only one, as with no outlook). ``nights``: the night charts
+    the pass built (:mod:`snowlight.predict.night_serve`), each on its district's day where
+    ``fit`` carries them, and the file names their cycle, ``night_at``; nothing here computes a
+    night, so no chart code runs inside the file's making.
 
     Raises:
         TableError: the private schools' outlooks are more than the file may hold.
@@ -1069,6 +1089,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
         for day in days
     }
     entries: list[DistrictForecast] = []
+    carried = 0
     for index in range(len(model.directory.district_ids)):
         outlooks: list[Forecast | NoThreat] = []
         for d, day in enumerate(days):
@@ -1115,6 +1136,11 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
                     else (float(outlook.p[index, d]), float(outlook.delay[index, d]), line),
                 )
             )
+            night = nights.get(day, index) if fit.nights else None
+            made = outlooks[-1]
+            if night is not None and isinstance(made, Forecast):
+                outlooks[-1] = made.model_copy(update={"night": night})
+                carried += 1
         entries.append(
             DistrictForecast(
                 district=index,
@@ -1149,6 +1175,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
         forecast_at=forecast_at
         if forecast_at is not None and outlook is not None and outlook.lines and fit.reasons
         else None,
+        night_at=nights.at if carried else None,
     )
 
 

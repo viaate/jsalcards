@@ -312,6 +312,33 @@ describe('the area panel’s view', () => {
     expect(later?.chance).toBeNull();
   });
 
+  it('draws no night chart on the area panel, even when the lead district has one', () => {
+    // Kansas City 33 carries a night chart (made up) on Tuesday: its own panel draws it, the
+    // area panel keeps the chart it drew before (spec chart-data 8 leaves the ZIP panel out).
+    const night = {
+      least: [0.1, 0.3, 0.8, 1.4, 2.1, 2.6, 3.0, 3.3, 3.5],
+      low: 3,
+      high: 5,
+    };
+    const raw = PREDICTIONS as unknown as {
+      districts: { days: Record<string, unknown>[] }[];
+    };
+    const withNight = {
+      ...raw,
+      night_at: '2026-01-13T01:00:00Z',
+      districts: raw.districts.map((entry, index) =>
+        index === 0 ? { ...entry, days: [entry.days[0], { ...entry.days[1], night }] } : entry,
+      ),
+    } as unknown as PredictionsFile;
+    const plain = areaView(input())?.chance?.chart;
+    const chance = areaView(
+      input({ live: { closings: CLOSINGS, covered: null, predictions: withNight } }),
+    )?.chance;
+    expect(chance?.chart?.night).toBe(false);
+    expect(chance?.chart).toEqual(plain);
+    expect(chance?.chart?.title).not.toBe('New snow, hour by hour');
+  });
+
   it('counts a private school by its own chance, from the file’s schools and shared outlooks', () => {
     // Epsilon (private, no district) has its own outlook (contract C3): 20% Tuesday.
     const own = (tuesday: unknown) =>

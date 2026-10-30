@@ -617,6 +617,46 @@ describe('the live files at a live root', () => {
     stop();
   });
 
+  it('on waking, shows by the clock at once, before the read it starts comes back (critic r2 S4)', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOON);
+    let reads = 0;
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      reads += 1;
+      // The first read comes back; every one after it hangs, as on a phone just woken.
+      return reads === 1
+        ? Promise.resolve(jsonResponse(newer))
+        : new Promise<Response>(() => undefined);
+    });
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    let clock = NOON;
+    const shownAt: number[] = [];
+    const stop = watchSchool({
+      files: createDataFiles(['live/closings.json', 'schools/details/index.0123456789.json'], ROOT),
+      details: { get: vi.fn(() => Promise.resolve(PRIVATE)) },
+      id: PRIVATE.id,
+      hint: null,
+      onView: () => shownAt.push(clock.getTime()),
+      pollMs: 1000,
+      now: () => clock,
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    visibility.mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(5000);
+    const before = shownAt.length;
+    clock = new Date(NOON.getTime() + 3 * 3_600_000);
+    visibility.mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+    await vi.advanceTimersByTimeAsync(10);
+    // The read is still on its way, yet the view is already the woken clock's.
+    expect(reads).toBe(2);
+    expect(shownAt.length).toBe(before + 1);
+    expect(shownAt.at(-1)).toBe(clock.getTime());
+    stop();
+    visibility.mockRestore();
+  });
+
   it('reads nothing while the page is hidden', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(NOON);
