@@ -3,26 +3,31 @@
 
 import math
 import os
-from datetime import UTC, date, datetime
+import re
+from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pytest
 
 from snowlight.directory.points import Points
+from snowlight.social.cards import alt_text
 from snowlight.social.picture import (
     DISTRICT_X,
     FIT_BOX,
     HEIGHT,
     MAX_ZOOM,
     REGIONS,
+    SCHOOL_STARTS,
     WIDTH,
     ZOOM,
     ZOOM_STEP,
     Counts,
     Directory,
     PictureError,
+    Taken,
     _held,
     _states,
     busiest_view,
@@ -623,25 +628,432 @@ def test_the_chance_named_is_the_next_school_day_not_yet_under_way() -> None:
     week = predictions([0.01, 0.37], ("2026-10-26", "2026-10-27"))
     # 11:27 AM Central on Monday: Monday is under way everywhere, so the card names Tuesday.
     assert chance_day(week, at("2026-10-26T16:27")) == date(2026, 10, 27)
-    # 9 PM Central on Sunday: Monday's 5 AM is still ahead everywhere.
+    # 9 PM Central on Sunday: Monday's 7:30 AM is still ahead everywhere.
     assert chance_day(week, at("2026-10-26T02:00")) == date(2026, 10, 26)
-    # 5:30 AM Eastern on Monday: under way in the east (one district), not in Central (one):
-    # not more than half, so Monday is no longer named.
-    assert chance_day(week, at("2026-10-26T09:30")) == date(2026, 10, 27)
-    # 4:30 AM Eastern: still ahead in both.
-    assert chance_day(week, at("2026-10-26T08:30")) == date(2026, 10, 26)
-    # Every day the file holds is under way: no chance is named at all.
-    assert chance_day(week, at("2026-10-27T11:00")) is None
+    # 5:30 AM Eastern on Monday, before most districts call it: still ahead in both.
+    assert chance_day(week, at("2026-10-26T09:30")) == date(2026, 10, 26)
+    # 7:29 AM Eastern: still ahead in both.
+    assert chance_day(week, at("2026-10-26T11:29")) == date(2026, 10, 26)
+    # 7:30 AM Eastern on Monday: under way in the east, not yet in Central. Monday is named
+    # only while it is ahead in every district, so no district is left out by its clock.
+    assert chance_day(week, at("2026-10-26T11:30")) == date(2026, 10, 27)
+    # From 7:30 AM Eastern on Tuesday every day the file holds is under way: no chance at all.
+    assert chance_day(week, at("2026-10-27T11:29")) == date(2026, 10, 27)
+    assert chance_day(week, at("2026-10-27T11:30")) is None
     # A file whose days skip the weekend: on Saturday the next school day is its Monday.
     weekend = predictions([0.01, 0.2], ("2026-10-26", "2026-10-27"))
     assert chance_day(weekend, at("2026-10-24T18:00")) == date(2026, 10, 26)
-    # A district with no zone, or one this machine does not know, counts in Eastern time.
+    # A district with no zone, or one this machine does not know, has no clock: the page says
+    # no day of it, so it holds no day back. With no clock at all no day is named.
     odd = {**week, "districts": [{"district": 0, "days": []}, {"time_zone": "Mars/Base"}]}
-    assert chance_day(odd, at("2026-10-26T09:30")) == date(2026, 10, 27)
+    assert chance_day(odd, at("2026-10-26T11:30")) is None
+    central = {**odd, "districts": [*odd["districts"], {"time_zone": "America/Chicago"}]}
+    assert chance_day(central, at("2026-10-26T12:29")) == date(2026, 10, 26)
+    assert chance_day(central, at("2026-10-26T12:30")) == date(2026, 10, 27)
+    with pytest.raises(PictureError, match="a district is malformed"):
+        chance_day({**week, "districts": [7]}, at("2026-10-26T09:30"))
     with pytest.raises(PictureError, match="a day is malformed"):
         chance_day({**week, "days": ["Monday"]}, at("2026-10-26T09:30"))
     with pytest.raises(PictureError, match="districts is missing"):
         chance_day({"days": ["2026-10-26"]}, at("2026-10-26T09:30"))
+
+
+@pytest.mark.parametrize(
+    ("zone", "fall", "spring"),
+    [
+        # 07:30 on Sunday Nov 1 2026 (the clocks go back) and on Sunday Mar 14 2027 (forward).
+        ("America/New_York", "2026-11-01T12:30", "2027-03-14T11:30"),
+        ("America/Chicago", "2026-11-01T13:30", "2027-03-14T12:30"),
+        ("America/Denver", "2026-11-01T14:30", "2027-03-14T13:30"),
+        ("America/Phoenix", "2026-11-01T14:30", "2027-03-14T14:30"),
+        ("America/Los_Angeles", "2026-11-01T15:30", "2027-03-14T14:30"),
+        ("America/Anchorage", "2026-11-01T16:30", "2027-03-14T15:30"),
+        ("Pacific/Honolulu", "2026-11-01T17:30", "2027-03-14T17:30"),
+    ],
+)
+def test_a_day_is_under_way_from_07_30_in_every_zone_on_the_days_clocks_change(
+    zone: str, fall: str, spring: str
+) -> None:
+    assert time(7, 30) == SCHOOL_STARTS
+    for first, cutoff in (("2026-11-01", fall), ("2027-03-14", spring)):
+        after = (date.fromisoformat(first) + timedelta(days=1)).isoformat()
+        file = {"days": [first, after], "districts": [{"time_zone": zone}]}
+        assert chance_day(file, at(cutoff) - timedelta(minutes=1)) == date.fromisoformat(first)
+        assert chance_day(file, at(cutoff)) == date.fromisoformat(after)
+
+
+# Three districts for the per-district rule: New York's six schools (0), Pennsylvania's two
+# and Minnesota's one (1), Texas's one (2).
+THREE = {"generated_on": "2026-10-14", "schools": 10, "districts": 3}
+
+
+def three() -> Directory:
+    points = Points(
+        lon_e6=np.asarray([round(v * 1e6) for v in LON], dtype=np.int32),
+        lat_e6=np.asarray([round(v * 1e6) for v in LAT], dtype=np.int32),
+        district=np.asarray([0, 0, 0, 0, 0, 0, 1, 1, 1, 2], dtype=np.uint32),
+        kind=np.zeros(10, dtype=np.uint8),
+        district_count=3,
+    )
+    return Directory("2026-10-14", SCHOOLS, ("3600001", "2700001", "4800001"), points)
+
+
+def outlooks(
+    rows: list[tuple[str, list[float | None], str | None]],
+    days: tuple[str, str],
+    generated_at: str,
+) -> dict[str, Any]:
+    """A predictions file of :func:`three`'s districts, in order: each its zone, its chance on
+    each day (``None``: no threat) and its first buses on the first day (UTC, or ``None``)."""
+    districts = []
+    for index, (zone, chances, buses) in enumerate(rows):
+        entries: list[dict[str, Any]] = [
+            {"state": "no_threat"}
+            if chance is None
+            else {"state": "forecast", "p_no_school": chance}
+            for chance in chances
+        ]
+        if buses is not None:
+            entries[0]["buses_at"] = buses
+        districts.append({"district": index, "time_zone": zone, "days": entries})
+    return {
+        "generated_at": generated_at,
+        "directory": dict(THREE),
+        "days": list(days),
+        "districts": districts,
+    }
+
+
+THURSDAY = ("2026-12-10", "2026-12-11")
+NY, CT, PT = "America/New_York", "America/Chicago", "America/Los_Angeles"
+
+
+def picture_at(file: dict[str, Any], now: str, closings_file: dict[str, Any] | None = None) -> Any:
+    return choose(
+        chances=True,
+        closings_shown=closings_file is not None,
+        closings=closings_file,
+        predictions=file,
+        directory=three(),
+        now=at(now),
+    )
+
+
+def taken_of(picture: Any) -> Taken:
+    return Taken(
+        kind=picture.kind,
+        query=picture.query,
+        shows=picture.shows,
+        taken_at=picture.taken_at,
+        current=picture.current,
+        lit=picture.lit,
+        seen=picture.seen,
+        file="picture.png",
+    )
+
+
+OVER_ALL = re.compile(r"\b(?:any|every) district\b|districts with a chance")
+"""Words that compare a chance over every district holding one for its day."""
+
+
+def words_of(picture: Any) -> list[str]:
+    """What a post may say of the picture: its description and the dev-log card's alt text."""
+    return [picture.shows, alt_text(taken_of(picture), "dev-log", fallback=False)]
+
+
+def assert_compared_truly(picture: Any, file: dict[str, Any]) -> None:
+    """No words call a chance the highest of any district, or say it of every district, while
+    a district holding a forecast for that day in the file was left out or had a higher one."""
+    chance = picture.seen.chance
+    if chance is None:
+        assert not any("chance" in text for text in words_of(picture)), picture.shows
+        return
+    column = file["days"].index(chance.day.isoformat())
+    held = [
+        row["days"][column]["p_no_school"]
+        for row in file["districts"]
+        if row["days"][column].get("state") == "forecast"
+    ]
+    named = 1 if chance.at_most else int(chance.text.strip("%<>"))
+    for text in words_of(picture):
+        if chance.left_out > 0:
+            assert not OVER_ALL.search(text), text
+            assert "still giv" in text, text
+        elif OVER_ALL.search(text):
+            assert len(held) == chance.districts, (text, held)
+            assert all(round(value * 100) <= named for value in held), (text, held)
+
+
+def test_the_morning_card_names_tomorrow_once_today_is_under_way_in_any_district() -> None:
+    # 13:07 UTC, the morning run: 7:07 AM Central, 8:07 AM Eastern on Thursday Dec 10. New
+    # York's Thursday is under way on its own clock, so Thursday is no longer named at all:
+    # the card names Friday, as every Eastern panel does, with every district counted, and
+    # never calls a Central Thursday chance the highest while New York's 93% was in the file.
+    file = outlooks(
+        [(NY, [0.93, 0.12], None), (CT, [0.2, 0.1], None), (CT, [0.15, 0.1], None)],
+        THURSDAY,
+        "2026-12-10T13:00:00Z",
+    )
+    for now in ("2026-12-10T12:45", "2026-12-10T13:07", "2026-12-10T13:29"):
+        picture = picture_at(file, now)
+        assert picture.kind == "district", now
+        assert "in New York" in picture.shows
+        assert "Friday, December 11 is 12%, the highest of any district that day" in (picture.shows)
+        assert "Thursday" not in picture.shows
+        assert picture.seen.chance is not None
+        assert (picture.seen.chance.day, picture.seen.chance.districts) == (
+            date(2026, 12, 11),
+            3,
+        )
+        assert picture.seen.chance.left_out == 0
+        assert_compared_truly(picture, file)
+    # 7:29 AM Eastern: Thursday is still ahead everywhere, and New York's 93% the highest.
+    early = picture_at({**file, "generated_at": "2026-12-10T12:20:00Z"}, "2026-12-10T12:29")
+    assert "in New York" in early.shows
+    assert "Thursday, December 10 is 93%, the highest of any district that day" in early.shows
+    assert_compared_truly(early, file)
+    # 7:30 AM Eastern: Friday, and Minnesota's Thursday, still ahead on its panel, is not
+    # compared over: no Central Thursday chance is called the highest.
+    turned = picture_at({**file, "generated_at": "2026-12-10T12:20:00Z"}, "2026-12-10T12:30")
+    assert "Friday, December 11 is 12%" in turned.shows
+    # The calm line: New York's 5% Thursday is not under the "at most 1%" said of Thursday,
+    # since Thursday is not named once New York is under way.
+    calm = outlooks(
+        [(NY, [0.05, 0.01], None), (CT, [0.005, 0.01], None), (CT, [0.003, 0.01], None)],
+        THURSDAY,
+        "2026-12-10T13:00:00Z",
+    )
+    line = picture_at(calm, "2026-12-10T13:07")
+    assert line.kind == "national"
+    assert "chance of no school on Friday, December 11 is at most 1% in every one of the 3" in (
+        line.shows
+    )
+    assert line.seen.chance is not None
+    assert (line.seen.chance.text, line.seen.chance.districts) == ("1%", 3)
+    assert_compared_truly(line, calm)
+    assert "at most 1% in every district" in alt_text(taken_of(line), "dev-log", fallback=False)
+
+
+def test_no_minute_of_a_winter_day_compares_a_chance_over_a_district_left_out() -> None:
+    # Every 7 minutes for a day, with a higher Eastern chance each day, a Central and a
+    # Pacific district, and a file stamped 5 minutes before: no description or alt text calls
+    # a chance the highest of any district, or says it of every district, unless every
+    # district holding one for that day counted and none held more.
+    files: list[list[tuple[str, list[float | None], str | None]]] = [
+        [(NY, [0.93, 0.12], None), (CT, [0.2, 0.1], None), (PT, [0.15, 0.4], None)],
+        [(NY, [0.05, 0.009], None), (CT, [0.005, 0.003], None), (PT, [0.003, 0.002], None)],
+        [(NY, [0.9, 0.95], "2026-12-10T11:45:00Z"), (CT, [0.3, 0.2], None), (PT, [0.2, 0.1], None)],
+    ]
+    named: set[date] = set()
+    for rows in files:
+        moment = at("2026-12-10T06:00")
+        while moment < at("2026-12-11T06:00"):
+            stamp = (moment - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            file = outlooks(rows, THURSDAY, stamp)
+            picture = picture_at(file, moment.strftime("%Y-%m-%dT%H:%M"))
+            assert_compared_truly(picture, file)
+            if picture.seen.chance is not None:
+                named.add(picture.seen.chance.day)
+                # The day named is not under way in any district.
+                for zone, _, _ in rows:
+                    starts = datetime.combine(picture.seen.chance.day, SCHOOL_STARTS)
+                    assert moment < starts.replace(tzinfo=ZoneInfo(zone)), (moment, zone)
+            moment += timedelta(minutes=7)
+    assert named == {date(2026, 12, 10), date(2026, 12, 11)}
+
+
+def test_a_day_is_not_named_from_the_minute_buses_run_before_07_30_anywhere() -> None:
+    # New York's buses run at 6:45 AM Eastern (11:45 UTC): from that minute its Thursday is
+    # under way, so Thursday is no longer named anywhere.
+    file = outlooks(
+        [
+            (NY, [0.93, 0.12], "2026-12-10T11:45:00Z"),
+            (CT, [0.5, 0.1], None),
+            (CT, [0.2, 0.1], None),
+        ],
+        THURSDAY,
+        "2026-12-10T11:40:00Z",
+    )
+    before = picture_at(file, "2026-12-10T11:44")
+    assert "in New York" in before.shows
+    assert "Thursday, December 10 is 93%" in before.shows
+    at_buses = picture_at(file, "2026-12-10T11:45")
+    assert at_buses.seen.chance is not None
+    assert at_buses.seen.chance.day == date(2026, 12, 11)
+    assert "93%" not in at_buses.shows
+    assert_compared_truly(at_buses, file)
+
+
+def test_a_district_is_framed_beside_the_next_day_from_the_minute_its_buses_run() -> None:
+    # 13:00 UTC, Friday named (Thursday under way in the east). Minnesota's Friday 50% is the
+    # highest; its buses run Thursday at 7 AM Central (13:00 UTC): before that its panel
+    # still headlines Thursday, so no picture frames it beside Friday; from that minute on,
+    # its panel headlines Friday and the picture frames it.
+    file = outlooks(
+        [
+            (NY, [0.93, 0.12], None),
+            (CT, [0.3, 0.5], "2026-12-10T13:00:00Z"),
+            (CT, [0.2, 0.1], None),
+        ],
+        THURSDAY,
+        "2026-12-10T12:50:00Z",
+    )
+    before = picture_at(file, "2026-12-10T12:59")
+    assert before.kind == "national"
+    assert "highest chance of no school on Friday, December 11 in any district is 50%." in (
+        before.shows
+    )
+    at_buses = picture_at(file, "2026-12-10T13:00")
+    assert at_buses.kind == "district"
+    assert "in Minnesota" in at_buses.shows
+    assert "Friday, December 11 is 50%, the highest of any district that day" in at_buses.shows
+    for picture in (before, at_buses):
+        assert_compared_truly(picture, file)
+
+
+def test_a_district_with_no_clock_is_left_out_and_never_compared_over() -> None:
+    # New York gives no zone and Minnesota one this machine does not know: the page says no
+    # day of either, so neither counts, and the 20% of Texas, the only one counted, is never
+    # called the highest of any district while they hold 90% and 60%.
+    file = outlooks(
+        [(NY, [0.9, 0.1], None), (CT, [0.6, 0.1], None), (CT, [0.2, 0.1], None)],
+        THURSDAY,
+        "2026-12-10T12:00:00Z",
+    )
+    file["districts"][0]["time_zone"] = None
+    file["districts"][1]["time_zone"] = "Mars/Base"
+    picture = picture_at(file, "2026-12-10T12:05")
+    assert picture.seen.chance is not None
+    assert (picture.seen.chance.districts, picture.seen.chance.left_out) == (1, 2)
+    assert picture.kind == "district"
+    assert "in Texas" in picture.shows
+    assert (
+        "Thursday, December 10 is 20%, and it is the only district that still gives a chance "
+        "for that day." in picture.shows
+    )
+    assert_compared_truly(picture, file)
+    # Two counted: the highest of the two, by count.
+    file["districts"][1]["time_zone"] = CT
+    two = picture_at(file, "2026-12-10T12:05")
+    assert (
+        "Thursday, December 10 is 60%, the highest of the 2 districts that still give a chance "
+        "for that day." in two.shows
+    )
+    assert "the highest of the 2 districts that still give one" in (
+        alt_text(taken_of(two), "dev-log", fallback=False)
+    )
+    assert_compared_truly(two, file)
+
+
+def test_a_day_a_district_decided_is_never_named_by_its_chance() -> None:
+    # 6:40 PM Central on Thursday: Friday's chances. New York's six schools all closed for
+    # Friday already: its 90% is spent, so the card names Minnesota's 30%, the highest of the
+    # two districts that still give one, never of any district.
+    file = outlooks(
+        [(NY, [None, 0.9], None), (CT, [None, 0.3], None), (CT, [None, 0.2], None)],
+        THURSDAY,
+        "2026-12-11T00:30:00Z",
+    )
+    closed = closings([(i, 0) for i in range(6)], "2026-12-11", "2026-12-11T00:35:00Z")
+    closed["directory"] = dict(THREE)
+    picture = picture_at(file, "2026-12-11T00:40", closed)
+    assert picture.kind == "district"
+    assert "in Minnesota" in picture.shows
+    assert (
+        "Friday, December 11 is 30%, the highest of the 2 districts that still give a chance "
+        "for that day." in picture.shows
+    )
+    assert "any district" not in picture.shows
+    assert "90%" not in picture.shows
+    assert picture.seen.chance is not None
+    assert (picture.seen.chance.districts, picture.seen.chance.left_out) == (2, 1)
+    alt = alt_text(taken_of(picture), "dev-log", fallback=False)
+    assert "whose chance of no school Friday is 30%, the highest of the 2 districts" in alt
+    assert "any district" not in alt
+    assert_compared_truly(picture, file)
+    # The calm national line says it of the districts still giving one, by count.
+    low = outlooks(
+        [(NY, [None, 0.9], None), (CT, [None, 0.004], None), (CT, [None, 0.002], None)],
+        THURSDAY,
+        "2026-12-11T00:30:00Z",
+    )
+    calm = picture_at(low, "2026-12-11T00:40", closed)
+    assert calm.kind == "national"
+    assert (
+        "Friday, December 11 is at most 1% in every one of the 2 districts that still give one."
+        in calm.shows
+    )
+    assert "at most 1% in the 2 districts that still give one" in (
+        alt_text(taken_of(calm), "dev-log", fallback=False)
+    )
+    assert_compared_truly(calm, low)
+    mild = outlooks(
+        [(NY, [None, 0.9], None), (CT, [None, 0.05], None), (CT, [None, 0.02], None)],
+        THURSDAY,
+        "2026-12-11T00:30:00Z",
+    )
+    some_high = picture_at(mild, "2026-12-11T00:40", closed)
+    assert (
+        "highest chance of no school on Friday, December 11 among the 2 districts that still "
+        "give one is 5%." in some_high.shows
+    )
+    assert_compared_truly(some_high, mild)
+    # One New York school closed: the others' panels still give 90%, so it is the highest,
+    # but no picture frames the district beside a school that decided the day.
+    one = closings([(0, 0)], "2026-12-11", "2026-12-11T00:35:00Z")
+    one["directory"] = dict(THREE)
+    some = picture_at(file, "2026-12-11T00:40", one)
+    assert some.kind == "national"
+    assert "highest chance of no school on Friday, December 11 in any district is 90%." in (
+        some.shows
+    )
+    assert_compared_truly(some, file)
+    # With closings not LIVE the file is not read: nothing spends the chance (the page it is
+    # taken of is served no closings either).
+    off = choose(
+        chances=True,
+        closings_shown=False,
+        closings=closed,
+        predictions=file,
+        directory=three(),
+        now=at("2026-12-11T00:40"),
+    )
+    assert "in New York" in off.shows
+    # A decided today, in the hours the map lights no day (2 AM Eastern), spends it as well.
+    today = outlooks(
+        [(NY, [0.9, 0.1], None), (CT, [0.4, 0.1], None), (CT, [0.2, 0.1], None)],
+        THURSDAY,
+        "2026-12-10T06:50:00Z",
+    )
+    night = closings([(i, 0) for i in range(6)], "2026-12-10", "2026-12-10T06:55:00Z")
+    night["directory"] = dict(THREE)
+    late = picture_at(today, "2026-12-10T07:00", night)
+    assert "in Minnesota" in late.shows
+    assert "Thursday, December 10 is 40%, the highest of the 2 districts" in late.shows
+    assert_compared_truly(late, today)
+
+
+def test_a_district_still_on_an_earlier_day_is_not_pictured_beside_a_later_one() -> None:
+    # 15:00 UTC: 7 AM Pacific, Thursday under way in the east and Central, so Friday is named.
+    # Texas, here on Pacific time, still shows its Thursday chance on its own panel: its Friday
+    # 60% is the highest Friday chance, so it is given, but no picture frames it beside Friday.
+    file = outlooks(
+        [(NY, [0.9, 0.1], None), (CT, [0.8, 0.15], None), (PT, [0.4, 0.6], None)],
+        THURSDAY,
+        "2026-12-10T14:50:00Z",
+    )
+    picture = picture_at(file, "2026-12-10T15:00")
+    assert picture.kind == "national"
+    assert "highest chance of no school on Friday, December 11 in any district is 60%." in (
+        picture.shows
+    )
+    assert picture.seen.chance is not None
+    assert picture.seen.chance.districts == 3
+    # 7:30 AM Pacific: its Thursday is under way too, and its panel headlines Friday.
+    framed = picture_at(file, "2026-12-10T15:30")
+    assert framed.kind == "district"
+    assert "in Texas" in framed.shows
+    assert "Friday, December 11 is 60%" in framed.shows
 
 
 def test_at_11_27_on_monday_the_card_and_description_name_tuesday() -> None:

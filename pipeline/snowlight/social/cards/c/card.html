@@ -41,6 +41,9 @@
         chance      exactly as picture.chance_text writes it ("78%", "<1%", ">99%")
         chanceDay   "Mon"
         chanceScope 'district' | 'highest'
+        chanceDistricts  the districts that still give a chance that day (picture.Chance.districts)
+        chanceLeftOut    the districts holding a forecast for it left out (picture.Chance.left_out):
+                    while any is, the chance is said of the districts still giving one
         link        waitlist address (default snowlightmap.com)
         anchor      'left' | 'right': the top corner the stamp takes (the post job picks
                     the one the subject leaves free)
@@ -252,20 +255,29 @@
       }
 
       // picture.py: the district view's chance is the highest of any district that day; the
-      // national view's is "at most 1% in every district" when it rounds to 1% or less.
-      function chanceBadge(chance, day, scope) {
+      // national view's is "at most 1% in every district" when it rounds to 1% or less. While
+      // a district holding a forecast for the day was left out (decided, or no clock), both
+      // are said of the districts still giving one, by count, never of any or every district.
+      function chanceBadge(chance, day, scope, districts, leftOut) {
         if (typeof chance !== 'string' || !CHANCE_RE.test(chance)) {
           fail(`chance: not as chance_text writes it: ${chance}`);
         }
         if (!['district', 'highest'].includes(scope)) fail(`chanceScope: ${scope}`);
         if (!/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)$/.test(day ?? '')) fail(`chanceDay: ${day}`);
+        if (!Number.isInteger(districts) || districts < 1) fail(`chanceDistricts: ${districts}`);
+        if (!Number.isInteger(leftOut) || leftOut < 0) fail(`chanceLeftOut: ${leftOut}`);
         $('badge-mark').hidden = true; // no status mark: a chance is not a closing
         const atMostOne = scope === 'highest' && (chance === '<1%' || chance === '1%');
         $('badge-num').textContent = atMostOne ? '1%' : chance;
-        badgeWord([
-          `chance of no school ${day}`,
-          atMostOne ? 'or less in every district' : 'highest of any district',
-        ]);
+        const n = new Intl.NumberFormat('en-US').format(districts);
+        const one = districts === 1;
+        badgeWord(
+          leftOut === 0
+            ? [`chance of no school ${day}`, atMostOne ? 'or less in every district' : 'highest of any district']
+            : atMostOne
+              ? [`chance of no school ${day}`, one ? 'or less in the only' : `or less in each of ${n}`, one ? 'district still giving one' : 'districts still giving one']
+              : [`chance of no school ${day}`, one ? 'the only district' : `highest of ${n} districts`, 'still giving one'],
+        );
         $('badge').hidden = false;
       }
 
@@ -387,14 +399,14 @@
           if (view !== 'closings' || lit === 0) fail('a storm card needs lit schools from the closings view');
           statusBadge(values, slots.total);
         } else if (kind === 'chance') {
-          chanceBadge(slots.chance, slots.chanceDay, slots.chanceScope);
+          chanceBadge(slots.chance, slots.chanceDay, slots.chanceScope, slots.chanceDistricts, slots.chanceLeftOut);
         } else if (kind === 'waitlist') {
           linkBadge(slots.link ?? 'snowlightmap.com');
           if (lit > 0) countRow(values, slots.total);
         } else if (lit > 0) {
           statusBadge(values, slots.total);
         } else if (slots.chance != null) {
-          chanceBadge(slots.chance, slots.chanceDay, slots.chanceScope);
+          chanceBadge(slots.chance, slots.chanceDay, slots.chanceScope, slots.chanceDistricts, slots.chanceLeftOut);
         }
         // dev-log with nothing lit and no chance: the stamp alone, no badge.
 

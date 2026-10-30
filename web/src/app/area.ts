@@ -60,13 +60,14 @@ import {
   newerClosings,
   newerPredictions,
   pollWhileVisible,
+  turnTimer,
 } from '../data/live';
 import { nextDay, schoolOutlook, schoolStatus, schoolToday } from '../data/school-day';
 import type { Outlook, StatusRow } from '../data/school-day';
 import type { ReplayOn } from '../data/replay';
 import { PUBLISHED_PATHS, Status } from '../types/generated';
 import type { DirectoryStamp, LocalDate, SchoolId } from '../types/generated';
-import { chartView, fewLocalRecords, headlineDay } from './chance';
+import { chartView, fewLocalRecords, headlineDay, nextTurn } from './chance';
 import type { ChartView } from './chance';
 import { districtShown, kindOf, readLiveFiles, shownName, townOf, viewerTimeZone } from './school';
 import type { LiveFiles } from './school';
@@ -591,9 +592,15 @@ export function watchArea(options: WatchAreaOptions): () => void {
   // the map holds, and never one older than it. A past day takes none.
   const reader = replay === null ? closingsReader(files) : null;
   const live: LiveFiles = { closings: null, covered: null, predictions: null };
+  // The first minute one of its schools' days turns under way: shown again then.
+  const turn = turnTimer(() => {
+    show();
+  });
 
   const show = (): void => {
     if (stopped) return;
+    const at = now();
+    const shipped = files.has(PUBLISHED_PATHS.predictions);
     onView(
       areaView({
         zip,
@@ -602,12 +609,30 @@ export function watchArea(options: WatchAreaOptions): () => void {
         records,
         settled,
         live,
-        shipped: files.has(PUBLISHED_PATHS.predictions),
-        now: now(),
+        shipped,
+        now: at,
         timeZone: timeZone(),
         replay,
       }),
     );
+    if (replay !== null || records === null) return;
+    let next: Date | null = null;
+    for (const record of records.values()) {
+      if (record === null) continue;
+      const outlook = schoolOutlook({
+        district: record.district?.index ?? null,
+        school: record.district === null ? record.index : null,
+        directory: record.directory,
+        shipped,
+        predictions: live.predictions,
+        now: at,
+      });
+      // A school with no outlook gives the area no chance, so no turn of its day changes it.
+      if (outlook === null) continue;
+      const found = nextTurn(outlook, outlook.timeZone, at);
+      if (found !== null && (next === null || found < next)) next = found;
+    }
+    turn.set(next, at);
   };
   const pollMs = options.pollMs ?? LIVE_POLL_MS;
   // Predictions, which S8 does not publish live, are read as often as before it; the area shows
@@ -677,6 +702,7 @@ export function watchArea(options: WatchAreaOptions): () => void {
 
   return () => {
     stopped = true;
+    turn.stop();
     stopPolling();
     stopHearing();
   };

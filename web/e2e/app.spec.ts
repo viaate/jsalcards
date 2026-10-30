@@ -1155,16 +1155,24 @@ function outlookClosings(): string {
 
 /**
  * SYNTHETIC: Tuesday Jan 13, 2026, 8:05 AM in Kansas City, 9:05 AM for a viewer in New York: the
- * school day is under way on the school's clock, and its chance is spent.
+ * school day is under way on the school's clock (from 7:30 AM), and its chance is spent.
  */
 const MORNING = new Date('2026-01-13T14:05:00Z');
+/** SYNTHETIC: the live files of that morning at 8:00 AM. */
+const MORNING_FILES = '2026-01-13T14:00:00Z';
+/**
+ * SYNTHETIC: that Tuesday at 7:29 AM in Kansas City, a minute before the day is under way, with
+ * the live files of 7:25 AM: most districts have not called it yet.
+ */
+const BEFORE_UNDER_WAY = new Date('2026-01-13T13:29:00Z');
+const BEFORE_UNDER_WAY_FILES = '2026-01-13T13:25:00Z';
 const MORNING_VIEWER = 'America/New_York';
 
 /**
- * SYNTHETIC: the chances made that morning at 8:00 AM, as the pipeline writes them (no bus time):
- * Tuesday's, 93%, for a day already under way, and Wednesday's, 12% at Olathe and Shawnee Mission.
+ * SYNTHETIC: the chances made that morning at `generatedAt`, as the pipeline writes them (no bus
+ * time): Tuesday's, 93%, and Wednesday's, 12% at Olathe and Shawnee Mission.
  */
-function morningPredictions(): string {
+function morningPredictions(generatedAt: string): string {
   const day = (chance: number) => ({
     state: 'forecast',
     p_no_school: chance,
@@ -1181,7 +1189,7 @@ function morningPredictions(): string {
   });
   return JSON.stringify({
     schema_version: 1,
-    generated_at: '2026-01-13T14:00:00Z',
+    generated_at: generatedAt,
     directory: STAMP,
     days: ['2026-01-13', '2026-01-14'],
     districts: [0, 1].map((district) => ({
@@ -1192,11 +1200,11 @@ function morningPredictions(): string {
   });
 }
 
-/** SYNTHETIC: the live file that morning at 8:00 AM: Olathe North on a two-hour delay today. */
-function morningClosings(): string {
+/** SYNTHETIC: the live file that morning at `generatedAt`: Olathe North on a two-hour delay today. */
+function morningClosings(generatedAt: string): string {
   return JSON.stringify({
     schema_version: 1,
-    generated_at: '2026-01-13T14:00:00Z',
+    generated_at: generatedAt,
     directory: STAMP,
     days: [
       {
@@ -1209,6 +1217,26 @@ function morningClosings(): string {
         clocks: [null],
       },
     ],
+  });
+}
+
+/** SYNTHETIC: the live check of that same file reached every school, so with no row each is open. */
+function morningCovered(generatedAt: string): string {
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: generatedAt,
+    directory: STAMP,
+    ranges: [[0, STAMP.schools - 1]],
+  });
+}
+
+/** SYNTHETIC: a live check of no school, made with no closings file this spec ships. */
+function inertCovered(): string {
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: '2026-01-01T00:00:00Z',
+    directory: STAMP,
+    ranges: [],
   });
 }
 
@@ -1704,6 +1732,9 @@ test.describe('with data staged', () => {
     writeFileSync(path.join(data, 'schools/meta.json'), directoryMeta());
     writeFileSync(path.join(data, 'schools/points.bin'), directoryPoints());
     writeFileSync(path.join(data, 'live/closings.json'), syntheticClosings());
+    // Shipped, so the page reads it; its check is of no live file here, so it says no school
+    // open until a test serves one made with that test's closings.
+    writeFileSync(path.join(data, 'live/covered.json'), inertCovered());
     mkdirSync(path.join(data, 'stats'), { recursive: true });
     writeFileSync(path.join(data, 'stats/season.json'), syntheticSeason());
     writeFileSync(path.join(data, 'track-record.json'), syntheticTrackRecord());
@@ -1745,6 +1776,7 @@ test.describe('with data staged', () => {
     const shipped = filesIn(path.join(root, 'site', 'data')).sort();
     expect(shipped).toEqual([
       'live/closings.json',
+      'live/covered.json',
       'predictions/latest.json',
       'schools/details/0.json',
       'schools/details/index.json',
@@ -2787,71 +2819,97 @@ test.describe('with data staged', () => {
     await context.close();
   });
 
-  test('a school day under way on the school’s clock: the next day’s chance, and today’s status where it is posted, at 1440 and 390 px', async ({
-    browser,
-  }) => {
-    // First flights into streets (FIRST_FLIGHT_MS); with SNOWLIGHT_PANEL_TODAY_SHOTS set, each
-    // panel as shown, for the owner to see.
-    test.setTimeout(480_000);
-    const shots = process.env.SNOWLIGHT_PANEL_TODAY_SHOTS ?? '';
-    for (const phone of [false, true]) {
-      const context = await browser.newContext({
-        viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 900 },
-        ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
-        timezoneId: MORNING_VIEWER,
-        serviceWorkers: 'block',
-      });
-      const page = await context.newPage();
-      await fixDate(page, MORNING);
-      const { problems } = watch(page);
-      await page.route('**/data/predictions/latest.json*', (route) =>
-        route.fulfill({ contentType: 'application/json', body: morningPredictions() }),
-      );
-      await page.route('**/data/live/closings.json*', (route) =>
-        route.fulfill({ contentType: 'application/json', body: morningClosings() }),
-      );
-      const panel = page.locator('aside.detail');
-      const section = panel.locator('.chance');
-      const width = phone ? 'phone' : 'desktop';
-      for (const [i, [id, name]] of (
-        [
-          [SHAWNEE_MISSION_EAST, 'Shawnee Mission East High'],
-          ['201014000137', 'Olathe North Senior High'],
-        ] as const
-      ).entries()) {
-        if (i === 0) await page.goto(`${site}?school=${id}`);
-        else await showSchool(page, id);
-        await expect(panel.locator('h2')).toHaveText(name, { timeout: 60_000 });
-        // Wednesday's chance: Tuesday's 93% is spent from 5 AM in Kansas City, and how the chance
-        // adds up is Wednesday's.
-        await expect(section.locator('.number')).toHaveText('12%', { timeout: 60_000 });
-        await expect(section.locator('.meaning')).toContainText(
-          chanceFormat.chanceOn('2026-01-14'),
+  for (const under of [true, false]) {
+    const now = under ? MORNING : BEFORE_UNDER_WAY;
+    const files = under ? MORNING_FILES : BEFORE_UNDER_WAY_FILES;
+    const title = under
+      ? 'a school day under way on the school’s clock (8:05 AM): the next day’s chance, today’s status where it is posted, and Open today, at 1440 and 390 px'
+      : 'a school day not yet under way on the school’s clock (7:29 AM): today’s chance alone where nothing is posted, the next day’s beside a posted status, at 1440 and 390 px';
+    test(title, async ({ browser }) => {
+      // First flights into streets (FIRST_FLIGHT_MS); with SNOWLIGHT_PANEL_TODAY_SHOTS set, each
+      // panel as shown, for the owner to see.
+      test.setTimeout(480_000);
+      const shots = process.env.SNOWLIGHT_PANEL_TODAY_SHOTS ?? '';
+      for (const phone of [false, true]) {
+        const context = await browser.newContext({
+          viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 900 },
+          ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
+          timezoneId: MORNING_VIEWER,
+          serviceWorkers: 'block',
+        });
+        const page = await context.newPage();
+        await fixDate(page, now);
+        const { problems } = watch(page);
+        await page.route('**/data/predictions/latest.json*', (route) =>
+          route.fulfill({ contentType: 'application/json', body: morningPredictions(files) }),
         );
-        await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.12));
-        await expect(panel).not.toContainText('93%');
-        await expect(panel).not.toContainText(chanceFormat.chanceOn('2026-01-13'));
-        if (id === SHAWNEE_MISSION_EAST) {
-          // Nothing posted, and no check of its closings published: nothing said about today.
-          await expect(panel.locator('.status')).toHaveCount(0);
-        } else {
-          // Today's status as posted, above the chance.
-          await expect(section.locator('.status .headline')).toHaveText([
-            copy.statusLine.delayed.today,
-          ]);
-          await expect(section.locator('.status .glyph.is-delayed')).toHaveCount(1);
+        await page.route('**/data/live/closings.json*', (route) =>
+          route.fulfill({ contentType: 'application/json', body: morningClosings(files) }),
+        );
+        await page.route('**/data/live/covered.json*', (route) =>
+          route.fulfill({ contentType: 'application/json', body: morningCovered(files) }),
+        );
+        const panel = page.locator('aside.detail');
+        const section = panel.locator('.chance');
+        const width = phone ? 'phone' : 'desktop';
+        for (const [i, [id, name]] of (
+          [
+            [SHAWNEE_MISSION_EAST, 'Shawnee Mission East High'],
+            ['201014000137', 'Olathe North Senior High'],
+          ] as const
+        ).entries()) {
+          if (i === 0) await page.goto(`${site}?school=${id}`);
+          else await showSchool(page, id);
+          await expect(panel.locator('h2')).toHaveText(name, { timeout: 60_000 });
+          // Olathe North posted a delay, so its Tuesday is decided at any hour; from 7:30 AM in
+          // Kansas City every school's Tuesday is under way and its 93% spent.
+          const spent = under || id !== SHAWNEE_MISSION_EAST;
+          if (spent) {
+            // Wednesday's chance, and how the chance adds up is Wednesday's.
+            await expect(section.locator('.number')).toHaveText('12%', { timeout: 60_000 });
+            await expect(section.locator('.meaning')).toContainText(
+              chanceFormat.chanceOn('2026-01-14'),
+            );
+            await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.12));
+            await expect(panel).not.toContainText('93%');
+            await expect(panel).not.toContainText(chanceFormat.chanceOn('2026-01-13'));
+          } else {
+            // Tuesday's chance, still to be called: no Open today beside it.
+            await expect(section.locator('.number')).toHaveText('93%', { timeout: 60_000 });
+            await expect(section.locator('.meaning')).toContainText(
+              chanceFormat.chanceOn('2026-01-13'),
+            );
+            await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.93));
+            await expect(panel).not.toContainText(chanceFormat.chanceOn('2026-01-14'));
+          }
+          if (id === SHAWNEE_MISSION_EAST) {
+            if (under) {
+              // Checked live with nothing posted, the day under way: Open today, above the chance.
+              await expect(section.locator('.status .headline')).toHaveText([copy.open.today]);
+            } else {
+              // Checked live with nothing posted, before the call: nothing said about today.
+              await expect(panel.locator('.status')).toHaveCount(0);
+              await expect(panel).not.toContainText(copy.open.today);
+            }
+          } else {
+            // Today's status as posted, above the chance.
+            await expect(section.locator('.status .headline')).toHaveText([
+              copy.statusLine.delayed.today,
+            ]);
+            await expect(section.locator('.status .glyph.is-delayed')).toHaveCount(1);
+          }
+          if (shots !== '') {
+            mkdirSync(shots, { recursive: true });
+            const file = path.join(shots, `${width}-${under ? 'under' : 'before'}-${id}.png`);
+            if (phone) await page.screenshot({ path: file });
+            else await panel.screenshot({ path: file });
+          }
         }
-        if (shots !== '') {
-          mkdirSync(shots, { recursive: true });
-          const file = path.join(shots, `${width}-${id}.png`);
-          if (phone) await page.screenshot({ path: file });
-          else await panel.screenshot({ path: file });
-        }
+        expect(problems).toEqual([]);
+        await context.close();
       }
-      expect(problems).toEqual([]);
-      await context.close();
-    }
-  });
+    });
+  }
 
   test('the chance section the evening of a closed day: the status first, then tomorrow’s chance and its cold night', async ({
     browser,

@@ -197,12 +197,18 @@ def served(chromium: bool) -> Iterator[tuple[Site, str]]:
 
 
 def _predictions(chances: list[float]) -> dict[str, Any]:
+    """Thursday's chances, still the day named at the site's 7:10 AM Eastern (a day is under
+    way from 07:30 on each district's own clock), and no threat Friday."""
     return {
         "generated_at": "2026-12-10T12:00:00Z",
         "directory": STAMP,
         "days": ["2026-12-10", "2026-12-11"],
         "districts": [
-            {"district": i, "days": [{"state": "no_threat"}, {"p_no_school": c}]}
+            {
+                "district": i,
+                "time_zone": "America/New_York",
+                "days": [{"state": "forecast", "p_no_school": c}, {"state": "no_threat"}],
+            }
             for i, c in enumerate(chances)
         ],
     }
@@ -222,7 +228,7 @@ def test_practice_mode_takes_the_national_map(served: tuple[Site, str], tmp_path
     assert taken is not None
     assert taken.kind == "national"
     assert (
-        "Not in the picture: Snowlight's chance of no school on Friday, December 11 is at most 1%"
+        "Not in the picture: Snowlight's chance of no school on Thursday, December 10 is at most 1%"
     ) in taken.shows
     assert _png_size(tmp_path / "picture.png") == (1600, 900)
     note = Taken.model_validate_json((tmp_path / "picture.json").read_text())

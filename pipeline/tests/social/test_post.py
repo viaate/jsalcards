@@ -1002,6 +1002,7 @@ DISTRICT_CHANCE: dict[str, Any] = {
     "day": "2026-10-27",
     "scope": "district",
     "districts": 18227,
+    "left_out": 0,
     "at_most": False,
 }
 DISTRICT_SEEN: dict[str, Any] = {"chance": DISTRICT_CHANCE, "state": "Montana"}

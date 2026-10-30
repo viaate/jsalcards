@@ -5,8 +5,8 @@ Every contiguous zone a school can be in, Arizona (no daylight saving time), and
 Hawaii where the reader names them (the ledger's earlier-day rule). The cadence windows, the
 morning alert window, the school's day (a 25-hour Nov 1 in every zone that changes), the
 day boundaries every school's today lies inside, the interval samples across the repeated
-hour, the morning record's band, the learning's read window, the picture's 05:00 school-day
-rule, and the health and soak clocks, which keep UTC only.
+hour, the morning record's band, the learning's read window, the picture's 07:30 school-day
+rule (the panel's under-way rule), and the health and soak clocks, which keep UTC only.
 """
 
 from collections import deque
@@ -318,17 +318,19 @@ def test_the_learning_read_window_is_local_on_the_25_hour_day(zone: str) -> None
     assert sunday.time() == monday.time()  # Nov 1's morning is already standard time
 
 
-# --- the picture's school-day rule (05:00 local) ------------------------------------------------
+# --- the picture's school-day rule (07:30 local) ------------------------------------------------
 
 
-def test_the_school_day_turns_at_0500_local_after_the_change() -> None:
+def test_the_school_day_turns_at_0730_local_after_the_change() -> None:
     file = {"days": ["2026-11-02", "2026-11-03"], "districts": [{"time_zone": "America/Chicago"}]}
-    # 05:00 CST on Monday is 11:00Z (CDT would have been 10:00Z)
-    assert chance_day(file, utc("2026-11-02T10:59:00")) == date(2026, 11, 2)
-    assert chance_day(file, utc("2026-11-02T11:00:00")) == date(2026, 11, 3)
+    # 07:30 CST on Monday is 13:30Z (CDT would have been 12:30Z)
+    assert chance_day(file, utc("2026-11-02T12:30:00")) == date(2026, 11, 2)
+    assert chance_day(file, utc("2026-11-02T13:29:00")) == date(2026, 11, 2)
+    assert chance_day(file, utc("2026-11-02T13:30:00")) == date(2026, 11, 3)
     saturday = {"days": ["2026-10-31"], "districts": [{"time_zone": "America/Chicago"}]}
-    assert chance_day(saturday, utc("2026-10-31T09:59:00")) == date(2026, 10, 31)
-    assert chance_day(saturday, utc("2026-10-31T10:00:00")) is None
+    # 07:30 CDT on the Saturday before the change is 12:30Z
+    assert chance_day(saturday, utc("2026-10-31T12:29:00")) == date(2026, 10, 31)
+    assert chance_day(saturday, utc("2026-10-31T12:30:00")) is None
 
 
 # --- the health and soak clocks: UTC only ------------------------------------------------------

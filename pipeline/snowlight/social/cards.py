@@ -55,6 +55,7 @@ from snowlight.social.picture import (
     Taken,
     clock,
     slot_of,
+    still_giving,
 )
 from snowlight.social.rules import (
     Facts,
@@ -347,10 +348,19 @@ def alt_text(taken: Taken, post: Post, *, fallback: bool, headline: str | None =
         if chance is None:
             raise CardError("a district picture without its chance")
         where = f" in {seen.state}" if seen.state else ""
+        # The highest of any district only where none holding a forecast for the day was left
+        # out (picture.py Chance.left_out); else of the districts still giving one, by count.
+        highest = (
+            "the highest of any district"
+            if chance.left_out == 0
+            else f"the highest of {still_giving(chance.districts, gives='give one')}"
+            if chance.districts > 1
+            else f"and it is {still_giving(1, gives='give one')}"
+        )
         text = (
             f"The Snowlight map {when}, zoomed to the schools of a public school district"
             f"{where}, whose chance of no school {chance.day:%A} is {_spoken(chance.text)}, "
-            "the highest of any district"
+            f"{highest}"
         )
     elif taken.kind == "region":
         text = (
@@ -359,10 +369,16 @@ def alt_text(taken: Taken, post: Post, *, fallback: bool, headline: str | None =
     else:
         text = f"The dark national Snowlight map, {when}, with state lines and city names"
         if chance is not None and post == "dev-log" and not fallback:
+            over = still_giving(chance.districts, gives="give one")
             text += (
                 f", and the chance of no school {chance.day:%A}: at most 1% in every district"
+                if chance.at_most and chance.left_out == 0
+                else f", and the chance of no school {chance.day:%A}: at most 1% in {over}"
                 if chance.at_most
                 else f", and the highest chance of no school {chance.day:%A} in any district: "
+                f"{_spoken(chance.text)}"
+                if chance.left_out == 0
+                else f", and the highest chance of no school {chance.day:%A} among {over}: "
                 f"{_spoken(chance.text)}"
             )
     text += f", captioned {headline or CAPTION[post]}."
@@ -471,6 +487,8 @@ def c_slots(  # noqa: PLR0913 - the facts and the card's own choices
         slots["chance"] = chance.text
         slots["chanceDay"] = f"{chance.day:%a}"
         slots["chanceScope"] = chance.scope
+        slots["chanceDistricts"] = chance.districts
+        slots["chanceLeftOut"] = chance.left_out
     return slots
 
 
@@ -497,7 +515,13 @@ def a_facts(taken: Taken, post: Post, *, fallback: bool) -> dict[str, object]:
         chance = seen.chance
         if chance is None:
             raise CardError("a district picture without its chance")
-        picture.update(state=seen.state, chance_text=chance.text, day=chance.day.isoformat())
+        picture.update(
+            state=seen.state,
+            chance_text=chance.text,
+            day=chance.day.isoformat(),
+            districts=chance.districts,
+            left_out=chance.left_out,
+        )
         if seen.focus is not None:
             focus = seen.focus
             free_x = max(focus.x1 + 80, WIDTH / 2 + 60)
@@ -516,6 +540,7 @@ def a_facts(taken: Taken, post: Post, *, fallback: bool) -> dict[str, object]:
                 "text": chance.text,
                 "day": chance.day.isoformat(),
                 "districts": chance.districts,
+                "left_out": chance.left_out,
             }
         )
     facts: dict[str, object] = {"post": post, "picture": picture, "isFallback": fallback}
@@ -544,6 +569,7 @@ def b_card(taken: Taken, post: Post, map_url: str, *, fallback: bool) -> dict[st
             "districts": chance.districts,
             "top": chance.text,
             "atMost": chance.at_most,
+            "leftOut": chance.left_out,
             "day": chance.day.isoformat(),
         }
     return card

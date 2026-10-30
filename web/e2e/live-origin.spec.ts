@@ -77,7 +77,10 @@ const PHONE: BrowserContextOptions = devices['Pixel 7'];
  */
 const NOW = new Date('2026-01-12T12:53:00Z');
 const TODAY = '2026-01-12';
-/** From 5 AM on the school's clock today is under way: the chance the panels give is Tuesday's. */
+/**
+ * Tuesday, the file's second day. Today is under way only from 7:30 AM on the school's clock, so
+ * at 6:53 AM the chance the panels give is today's.
+ */
 const TOMORROW = '2026-01-13';
 
 /** SYNTHETIC: four made-up schools near Kansas City, in one made-up district. */
@@ -866,7 +869,8 @@ for (const [device, options] of DEVICES) {
       browser,
     }) => {
       const { live } = theSite();
-      // No school has a status today, and today is under way: each panel shows tomorrow's chance.
+      // No school has a status today, and today is not under way yet: each panel shows today's
+      // chance.
       live.body = closings('2026-01-12T12:42:00Z', []);
       live.predictions = predictions([
         {
@@ -879,7 +883,7 @@ for (const [device, options] of DEVICES) {
       const school = await visit(browser, options, { query: `?school=${ALPHA}` });
       const section = school.page.locator('aside.detail .chance');
       await expect(section.locator('.number')).toHaveText('37%', SETTLE);
-      await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn(TOMORROW));
+      await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
       await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.37));
       await expect(section.locator('.sum > li').first()).toContainText(
         'recorded days with a winter storm warning',
@@ -917,7 +921,7 @@ for (const [device, options] of DEVICES) {
       const section = school.page.locator('aside.detail .chance');
       const number = section.locator('.number');
       await expect(number).toHaveText('74%', SETTLE);
-      await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn(TOMORROW));
+      await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
       await expect(section.locator('.few')).toHaveText(chanceCopy.fewRecords);
       await expect(section.locator('.meaning + .few')).toHaveCount(1);
       await expect(number).toHaveClass(/\bis-thin\b/u);
@@ -931,7 +935,7 @@ for (const [device, options] of DEVICES) {
       await expect(panel).toHaveAttribute('aria-busy', 'false', SETTLE);
       const areaNumber = panel.locator('.number');
       await expect(areaNumber).toHaveText('74%', SETTLE);
-      await expect(panel.locator('.meaning')).toContainText(chanceFormat.chanceOn(TOMORROW));
+      await expect(panel.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
       await expect(panel.locator('.meaning + .few')).toHaveText(chanceCopy.fewRecords);
       await expect(panel.locator('.few')).toHaveCount(1);
       await expect(areaNumber).toHaveClass(/\bis-thin\b/u);
@@ -944,7 +948,7 @@ for (const [device, options] of DEVICES) {
       const calm = await visit(browser, options, { query: `?school=${ALPHA}` });
       const calmSection = calm.page.locator('aside.detail .chance');
       await expect(calmSection.locator('.number')).toHaveText('1%', SETTLE);
-      await expect(calmSection.locator('.meaning')).toContainText(chanceFormat.chanceOn(TOMORROW));
+      await expect(calmSection.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
       await expect(calmSection.locator('.few')).toHaveCount(0);
       await expect(calmSection.locator('.number')).not.toHaveClass(/\bis-thin\b/u);
       await expect(calmSection).not.toContainText(chanceCopy.fewRecords);
@@ -956,7 +960,7 @@ for (const [device, options] of DEVICES) {
       const calmPanel = calmArea.page.locator('aside.detail');
       await expect(calmPanel).toHaveAttribute('aria-busy', 'false', SETTLE);
       await expect(calmPanel.locator('.number')).toHaveText('1%', SETTLE);
-      await expect(calmPanel.locator('.meaning')).toContainText(chanceFormat.chanceOn(TOMORROW));
+      await expect(calmPanel.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
       await expect(calmPanel.locator('.few')).toHaveCount(0);
       await expect(calmPanel.locator('.number')).not.toHaveClass(/\bis-thin\b/u);
       await expect(calmPanel).not.toContainText(chanceCopy.fewRecords);
@@ -970,7 +974,7 @@ for (const [device, options] of DEVICES) {
         const plain = await visit(browser, options, { query: `?school=${ALPHA}` });
         const shown = plain.page.locator('aside.detail .chance');
         await expect(shown.locator('.number')).toHaveText('74%', SETTLE);
-        await expect(shown.locator('.meaning')).toContainText(chanceFormat.chanceOn(TOMORROW));
+        await expect(shown.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
         await expect(shown.locator('.few')).toHaveCount(0);
         await expect(shown.locator('.number')).not.toHaveClass(/\bis-thin\b/u);
         await expect(shown).not.toContainText(chanceCopy.fewRecords);
@@ -1002,7 +1006,7 @@ for (const [device, options] of DEVICES) {
       await expect(panel.locator('.kind')).toContainText(copy.detail.privateSchool);
       const section = panel.locator('.chance');
       await expect(section.locator('.number')).toHaveText('42%', SETTLE);
-      await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn(TOMORROW));
+      await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
       await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.42));
       // Its base counts private schools only, around its own name.
       await expect(section.locator('.sum > li').first()).toContainText(

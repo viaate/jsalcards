@@ -51,7 +51,7 @@ const PHONE: BrowserContextOptions = devices['Pixel 7'];
 
 /**
  * SYNTHETIC: Monday Jan 12, 2026, 4:45 AM in Kansas City, the morning of a made-up storm, before
- * the day is under way at 5 AM (its chance is then spent).
+ * the day is under way at 7:30 AM (its chance is then spent).
  */
 const NOW = new Date('2026-01-12T10:45:00Z');
 const TODAY = '2026-01-12';

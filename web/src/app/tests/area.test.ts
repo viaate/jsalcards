@@ -244,16 +244,72 @@ describe('the area panel’s view', () => {
     expect(chance.announces(NOW)).toBeNull();
   });
 
-  it('gives no chance for a day under way, from 5 AM on the schools’ clock', () => {
-    const at = (iso: string) => {
+  it('gives no chance for a day under way, from 7:30 AM on the schools’ clock', () => {
+    const at = (iso: string, file: PredictionsFile = PREDICTIONS) => {
       const now = new Date(iso);
-      const predictions = { ...PREDICTIONS, generated_at: '2026-01-13T10:50:00Z' };
+      // A file made ten minutes before, fresh at each time.
+      const made = new Date(now.getTime() - 10 * 60_000).toISOString().replace('.000', '');
+      const predictions = { ...file, generated_at: made };
       return areaView(input({ now, live: { closings: CLOSINGS, covered: null, predictions } }));
     };
-    // 4:59 AM Tuesday in Kansas City: Tuesday's chance.
-    expect(at('2026-01-13T10:59:00Z')?.chance?.day).toBe('2026-01-13');
-    // 5 AM: Tuesday is under way and the file holds no Wednesday, so no chance at all.
-    expect(at('2026-01-13T11:00:00Z')?.chance).toBeNull();
+    // No bus time: 6 AM Tuesday in Kansas City, before most districts call it, and 7:29 AM
+    // give Tuesday's chance.
+    const busless = JSON.parse(
+      JSON.stringify(PREDICTIONS).replaceAll(
+        '"buses_at":"2026-01-13T13:00:00Z"',
+        '"buses_at":null',
+      ),
+    ) as PredictionsFile;
+    expect(JSON.stringify(busless)).not.toContain('2026-01-13T13:00:00Z');
+    expect(at('2026-01-13T12:00:00Z', busless)?.chance?.day).toBe('2026-01-13');
+    expect(at('2026-01-13T13:29:00Z', busless)?.chance?.day).toBe('2026-01-13');
+    // 7:30 AM: Tuesday is under way and the file holds no Wednesday, so no chance at all.
+    expect(at('2026-01-13T13:30:00Z', busless)?.chance).toBeNull();
+    // Buses at 7 AM, before 7:30: under way once they have run.
+    expect(at('2026-01-13T12:59:00Z')?.chance?.day).toBe('2026-01-13');
+    expect(at('2026-01-13T13:00:00Z')?.chance).toBeNull();
+  });
+
+  it('at 7:10 AM, with one district’s buses run at 7, counts only the chance still ahead and says the rest are left out', () => {
+    // Kansas City 33's buses ran at 7 AM (13:00 UTC): its Tuesday is under way and its 64% spent.
+    // Center 58 runs no buses before 7:30, so its 31% still stands. The area's day stays Tuesday,
+    // Kansas City 33's two schools with no posted status are left out and said to be, and the
+    // spent 64% counts nowhere.
+    const now = new Date('2026-01-13T13:10:00Z');
+    const file = JSON.parse(JSON.stringify(PREDICTIONS)) as {
+      districts: { district: number; days: { buses_at?: string | null }[] }[];
+    };
+    const center = file.districts.find((row) => row.district === 1)?.days[1];
+    if (center === undefined) throw new Error('no Center 58 Tuesday');
+    center.buses_at = null;
+    const predictions = {
+      ...(file as unknown as PredictionsFile),
+      generated_at: '2026-01-13T13:00:00Z',
+    };
+    const chance = areaView(
+      input({ now, live: { closings: CLOSINGS, covered: null, predictions } }),
+    )?.chance;
+    expect(chance?.day).toBe('2026-01-13');
+    // 500 × 31% + 300 × 100% + 200 × 100% + 250 × 0, over 1,250 students.
+    expect(chance?.number).toBe(String(Math.round(((500 * 0.31 + 300 + 200) / 1250) * 100)));
+    expect(chance?.why.map(({ number, text }) => `${number} ${text}`)).toEqual([
+      '31% Center 58 decides for 1 school here.',
+      '100% Kansas City 33 canceled Tuesday at 1 school here.',
+      '0% Shawnee Mission Public Schools has no weather threat Tuesday at 1 school here.',
+      '100% Delta Academy canceled Tuesday.',
+    ]);
+    expect(JSON.stringify(chance)).not.toContain('64%');
+    expect(chance?.left).toBe(
+      '3 of the 7 schools here have no chance given for Tuesday and are left out.',
+    );
+    // 7:30 AM: Center 58's Tuesday is under way too, and the file holds no Wednesday.
+    const later = areaView(
+      input({
+        now: new Date('2026-01-13T13:30:00Z'),
+        live: { closings: CLOSINGS, covered: null, predictions },
+      }),
+    );
+    expect(later?.chance).toBeNull();
   });
 
   it('counts a private school by its own chance, from the file’s schools and shared outlooks', () => {
@@ -499,6 +555,66 @@ describe('watching an area', () => {
     expect(views[0]).toMatchObject({ loading: true, place: 'Missouri' });
     expect(views.at(-1)?.chance?.number).toBe('58');
     expect(get).toHaveBeenCalledTimes(7);
+  });
+
+  it('shows the next day at 7:30 AM on the schools’ clock without waiting for its next read', async () => {
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'],
+    });
+    try {
+      // 7:29 AM Tuesday in Kansas City (13:29 UTC), a file made at 7 AM with no bus times:
+      // Tuesday's chance is still ahead. At 7:30 Tuesday is under way and the file holds no
+      // Wednesday, so the area gives no chance, at that minute, with no read in between.
+      vi.setSystemTime(new Date('2026-01-13T13:29:00Z'));
+      const busless = {
+        ...(JSON.parse(
+          JSON.stringify(PREDICTIONS).replaceAll(
+            '"buses_at":"2026-01-13T13:00:00Z"',
+            '"buses_at":null',
+          ),
+        ) as PredictionsFile),
+        generated_at: '2026-01-13T13:00:00Z',
+      };
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementation((url) =>
+          Promise.resolve(
+            new Response(
+              JSON.stringify(
+                (url instanceof Request ? url.url : url.toString()).includes('predictions')
+                  ? busless
+                  : CLOSINGS,
+              ),
+            ),
+          ),
+        );
+      const views: ReturnType<typeof areaView>[] = [];
+      const stop = watchArea({
+        files,
+        areas: { shipped: true, get: () => Promise.resolve(AREA) },
+        details: { get: (id: string) => Promise.resolve(RECORDS.get(id) ?? null) },
+        zip: '64111',
+        hint: null,
+        onView: (view) => views.push(view),
+        timeZone: () => ZONE,
+        // No read again before the turn: the turn alone shows it.
+        pollMs: 3_600_000,
+      });
+      await vi.waitFor(() => {
+        expect(views.at(-1)?.loading).toBe(false);
+        expect(views.at(-1)?.chance?.day).toBe('2026-01-13');
+      });
+      const reads = fetchSpy.mock.calls.length;
+      const before = views.length;
+      await vi.advanceTimersByTimeAsync(61_000);
+      expect(views.length).toBeGreaterThan(before);
+      expect(views.at(-1)?.chance).toBeNull();
+      expect(fetchSpy.mock.calls.length).toBe(reads);
+      stop();
+      fetchSpy.mockRestore();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('reads again, with the live files, an area or a school that could not be read', async () => {

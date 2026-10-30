@@ -101,13 +101,13 @@ STORM = Seen(
 )
 DISTRICT = Seen(
     chance=Chance(text="77%", day=date(2026, 12, 10), scope="district", districts=18227,
-                  at_most=False),
+                  left_out=0, at_most=False),
     state="Michigan",
     focus=Box(x0=339, y0=191, x1=749, y1=709),
 )  # fmt: skip
 CALM = Seen(
     chance=Chance(text="1%", day=date(2026, 12, 10), scope="highest", districts=18227,
-                  at_most=True),
+                  left_out=0, at_most=True),
 )  # fmt: skip
 REGION = Seen(place="the Great Lakes and the Northeast")
 
@@ -412,6 +412,90 @@ def test_alt_text_is_built_from_the_facts() -> None:
         "The dark Snowlight map over the Great Lakes and the Northeast, pictured on Dec "
         "10, 2026, schools drawn as faint white specks, captioned Join the waitlist."
     )
+
+
+LEFT_OUT = re.compile(r"\b(?:any|every) district\b|districts with a")
+"""Words that compare a chance over every district: never while a district holding a forecast
+for its day was left out (picture.py Chance.left_out)."""
+
+
+def test_a_chance_with_a_district_left_out_is_said_of_the_districts_still_giving_one() -> None:
+    # Template facts carry the count left out; the alt text says the chance of the districts
+    # that still give one, by count, never of any or every district.
+    district = with_chance(DISTRICT, districts=10812, left_out=7415)
+    calm = with_chance(CALM, districts=10812, left_out=7415)
+    high = with_chance(CALM, text="6%", at_most=False, districts=10812, left_out=7415)
+    slots = c_slots(taken("district", district), "dev-log", "right", fallback=False)
+    assert (slots["chanceDistricts"], slots["chanceLeftOut"]) == (10812, 7415)
+    picture = a_facts(taken("district", district), "dev-log", fallback=False)["picture"]
+    assert isinstance(picture, dict)
+    assert (picture["districts"], picture["left_out"]) == (10812, 7415)
+    top = a_facts(taken("national", calm), "dev-log", fallback=False)["picture"]
+    assert isinstance(top, dict)
+    assert top["top_chance"]["left_out"] == 7415
+    card = b_card(taken("national", calm), "dev-log", "file:///map.png", fallback=False)
+    assert card["forecast"]["leftOut"] == 7415  # type: ignore[index]
+    said = {
+        "district": alt_text(taken("district", district), "dev-log", fallback=False),
+        "calm": alt_text(taken("national", calm), "dev-log", fallback=False),
+        "high": alt_text(taken("national", high), "dev-log", fallback=False),
+    }
+    assert (
+        "whose chance of no school Thursday is 77%, the highest of the 10,812 districts "
+        "that still give one" in said["district"]
+    )
+    assert "Thursday: at most 1% in the 10,812 districts that still give one" in said["calm"]
+    assert (
+        "the highest chance of no school Thursday among the 10,812 districts that still "
+        in (said["high"])
+    )
+    for text in said.values():
+        assert not LEFT_OUT.search(text), text
+    one = with_chance(DISTRICT, districts=1, left_out=2)
+    assert "is 77%, and it is the only district that still gives one" in alt_text(
+        taken("district", one), "dev-log", fallback=False
+    )
+    # With none left out, the words stay as they were.
+    assert "the highest of any district" in alt_text(
+        taken("district", DISTRICT), "dev-log", fallback=False
+    )
+
+
+def test_no_card_says_any_or_every_district_while_one_was_left_out(
+    page: Page, maps: dict[str, Path]
+) -> None:
+    district = with_chance(DISTRICT, districts=10812, left_out=7415)
+    calm = with_chance(CALM, districts=10812, left_out=7415)
+    high = with_chance(CALM, text="6%", at_most=False, districts=10812, left_out=7415)
+    cases: tuple[tuple[Candidate, str, Seen], ...] = (
+        ("c-right", "district", district),
+        ("c-left", "national", calm),
+        ("c-left", "national", high),
+        ("a", "district", district),
+        ("a", "national", calm),
+        ("b", "national", calm),
+        ("b", "national", high),
+    )
+    laid = 0
+    refused: list[str] = []
+    for candidate, kind, facts in cases:
+        try:
+            _, words = lay(page, candidate, taken(kind, facts), "dev-log", maps["calm"],
+                           fallback=False)  # fmt: skip
+        except CardError as error:
+            # A layout the words do not fit is refused, never shown cut.
+            refused.append(str(error))
+            continue
+        laid += 1
+        assert not LEFT_OUT.search(words), (candidate, kind, words)
+        if re.search(r"highest|or less|across", words, re.IGNORECASE):
+            assert "still giving" in words, (candidate, kind, words)
+    assert all("margin" in error or "fit" in error for error in refused), refused
+    assert laid == len(cases), refused
+    # With none left out, a card still says "any" or "every" district where it did.
+    _, words = lay(page, "c-right", taken("district", DISTRICT), "dev-log", maps["calm"],
+                   fallback=False)  # fmt: skip
+    assert "any district" in words
 
 
 def test_a_fallback_alt_never_says_now_or_a_clock() -> None:

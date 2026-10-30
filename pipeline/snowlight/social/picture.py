@@ -38,9 +38,18 @@ file) nothing is said about closings at all, and neither when the file is older 
 :data:`FRESH` (a stopped reader's empty file is no sign that nothing is closed): the picture
 is then not current, so the post may not call it so. A chance is shown only from a
 predictions file no older than :data:`PREDICTIONS_FRESH`, for the next school day not yet
-under way: the first of the file's own days whose :data:`SCHOOL_STARTS` local hour, in each
-district's own time zone (the page's rule), is still ahead in most districts. A day already
-under way is never named (at 11:27 AM Central on a Monday the chance is Tuesday's). The
+under way anywhere: the first of the file's own days not under way in any of its districts,
+each on its own clock, from :data:`SCHOOL_STARTS` local time (07:30) or from its buses where
+they run before that (:func:`chance_day`). So no district is left out of that day by its clock
+(at 7:07 AM Central, past 07:30 in the east, the day named is tomorrow, as on every Eastern
+panel; at 11:27 AM Central on a Monday it is Tuesday). Then the page's own rule decides,
+district by district (:func:`highest_chance`): a district counts for that day only where its
+day is not under way and some school of it holds no decision for it in the closings file read,
+so a chance already spent is never named as current. A district left out (every school of it
+decided the day, or it has no clock the page knows) is never compared over: while one holding
+a forecast for the day is left out, the words give the chance as the highest of the districts
+that still give one, by count, never of "any" or "every" district (:attr:`Chance.left_out`).
+A district is pictured only beside the day its own panel headlines. The
 browser is then served exactly the files described, and the render checks the page lit as
 many schools as the description counts.
 """
@@ -95,11 +104,10 @@ PREDICTIONS_FRESH: Final = timedelta(minutes=90)
 """How old a predictions file may be and still be shown (web/src/data/school-day.ts)."""
 PREDICTIONS_AHEAD: Final = timedelta(minutes=15)
 """How far ahead of the clock a predictions file may be stamped (the same)."""
-EASTERN: Final = ZoneInfo("America/New_York")
-"""The zone of a district the predictions file gives none (the earliest contiguous zone, so a
-day is never taken for one not yet under way where it already is)."""
-SCHOOL_STARTS: Final = 5
-"""From 05:00 local a school day is under way: its chance is spent, and the next one's shows."""
+SCHOOL_STARTS: Final = time(7, 30)
+"""From 07:30 on a district's own clock (or from its buses, where they run before that) a
+school day is under way there: its chance is spent, and the next one's shows (web/src/app/
+chance.ts ``UNDER_WAY_AT`` and ``underWay``, the same rule for the page's panel and area)."""
 EAST_OFFSET: Final = timedelta(hours=-4)
 WEST_OFFSET: Final = timedelta(hours=-8)
 SHOWN_ZONE: Final = ZoneInfo("America/Chicago")
@@ -221,12 +229,17 @@ class Chance(BaseModel):
     """As the page writes it (:func:`chance_text`)."""
     day: date
     scope: Literal["district", "highest"]
-    """``district``: the pictured district's, the highest of any; ``highest``: the highest of
-    any district, not pictured (the national view)."""
+    """``district``: the pictured district's, the highest of the districts counted;
+    ``highest``: the highest of the districts counted, not pictured (the national view)."""
     districts: int = Field(ge=1)
-    """How many districts have a chance that day."""
+    """How many districts still give a chance that day (:attr:`Highest.districts`)."""
+    left_out: int = Field(ge=0)
+    """How many more districts hold a forecast for that day that the page no longer gives
+    (:attr:`Highest.left_out`). While any does, no words call the chance the highest of "any"
+    district or say it of "every" district: they say it of the :attr:`districts` districts
+    that still give one."""
     at_most: bool
-    """Whether the highest chance rounds to 1% or less ("at most 1% in every district")."""
+    """Whether the highest chance rounds to 1% or less ("at most 1%" in every district counted)."""
 
 
 class Seen(BaseModel):
@@ -573,44 +586,67 @@ def _chance_day(predictions: Mapping[str, object], today: date) -> int | None:
 
 
 def chance_day(predictions: Mapping[str, object], now: datetime) -> date | None:
-    """The next school day not yet under way: the first of the file's days whose
-    :data:`SCHOOL_STARTS` local hour is still ahead of ``now`` in more than half of the file's
-    districts, each in its own time zone (``time_zone``; :data:`EASTERN` when it gives none or
-    one this machine does not know). ``None`` when every day the file holds is under way.
+    """The day a post's chance is for: the first of the file's days not under way at ``now``
+    in any of its districts, each on its own clock (``time_zone``; :func:`_under_way`: from
+    :data:`SCHOOL_STARTS` local time, or from its buses where they run before that). So every
+    district's panel still gives that day's chance where the file has one, and no district is
+    left out of it by its clock: at 7:07 AM Central, with 07:30 past in the east, the day named
+    is tomorrow, as on every Eastern panel. A district with no zone this machine knows has no
+    clock: the page says no day of it, so it holds no day back (:func:`highest_chance` leaves
+    it out and counts it in :attr:`Highest.left_out`). ``None`` when every day the file holds
+    is under way somewhere, or no district has a clock.
 
     Raises:
-        PictureError: the file's days or districts are malformed.
+        PictureError: the file's days, districts or bus times are malformed.
     """
-    days = predictions.get("days")
+    days = _file_days(predictions)
     districts = predictions.get("districts")
-    if not isinstance(days, list) or not all(isinstance(day, str) for day in days):
-        raise PictureError("predictions: days is missing")
     if not isinstance(districts, list):
         raise PictureError("predictions: districts is missing")
-    zones: Counter[str] = Counter()
+    clocks: list[tuple[ZoneInfo, object]] = []
     for row in districts:
-        zone = row.get("time_zone") if isinstance(row, dict) else None
-        zones[zone if isinstance(zone, str) else ""] += 1
-    known: dict[str, ZoneInfo] = {}
-    for name in zones:
-        try:
-            known[name] = ZoneInfo(name) if name else EASTERN
-        except (ValueError, KeyError):  # ZoneInfoNotFoundError is a KeyError
-            known[name] = EASTERN
-    total = sum(zones.values())
-    for text in sorted(days):
-        try:
-            day = date.fromisoformat(text)
-        except ValueError:
-            raise PictureError("predictions: a day is malformed") from None
-        ahead = sum(
-            count
-            for name, count in zones.items()
-            if datetime.combine(day, time(SCHOOL_STARTS), tzinfo=known[name]) > now
-        )
-        if total and ahead * 2 > total:
+        if not isinstance(row, dict):
+            raise PictureError("predictions: a district is malformed")
+        zone = _zone_of(row)
+        if zone is not None:
+            clocks.append((zone, row.get("days")))
+    if not clocks:
+        return None
+    for column in sorted(range(len(days)), key=lambda at: days[at]):
+        day = days[column]
+        if not any(_under_way(_entry(entries, column), day, zone, now) for zone, entries in clocks):
             return day
     return None
+
+
+def _entry(entries: object, column: int) -> object:
+    """A district's entry for the file's day ``column``; ``None`` where it has none."""
+    if isinstance(entries, list) and 0 <= column < len(entries):
+        return entries[column]
+    return None
+
+
+def _under_way(entry: object, day: date, zone: ZoneInfo, now: datetime) -> bool:
+    """Whether ``day`` is under way at ``now`` on a district's own clock (chance.ts
+    ``underWay``, the one rule): from :data:`SCHOOL_STARTS` there (07:30), or from its buses
+    (the entry's ``buses_at``) where they run before that.
+
+    Raises:
+        PictureError: the entry's bus time is malformed.
+    """
+    if isinstance(entry, dict):
+        buses = entry.get("buses_at")
+        if buses is not None and now >= _instant(buses, "predictions: buses_at"):
+            return True
+    return now >= datetime.combine(day, SCHOOL_STARTS, tzinfo=zone)
+
+
+def _forecast(entry: object) -> bool:
+    """Whether a district's entry for a day is a forecast with a chance (a panel's number)."""
+    if not isinstance(entry, dict) or entry.get("state") != "forecast":
+        return False
+    chance = entry.get("p_no_school")
+    return not isinstance(chance, bool) and isinstance(chance, int | float)
 
 
 def predictions_fresh(predictions: Mapping[str, object], now: datetime) -> bool:
@@ -623,18 +659,123 @@ def predictions_fresh(predictions: Mapping[str, object], now: datetime) -> bool:
     return -PREDICTIONS_AHEAD <= age <= PREDICTIONS_FRESH
 
 
+@dataclass(frozen=True, slots=True)
+class Highest:
+    """The highest chance of no school any district's panel still gives for a day."""
+
+    chance: float
+    district: int
+    """The district's index, the first of the highest."""
+    districts: int
+    """How many districts still give a chance for :attr:`day` (:func:`highest_chance`)."""
+    left_out: int
+    """How many districts hold a forecast for :attr:`day` that the page no longer gives: every
+    school of it decided the day, or it has no clock the page knows. While any does, the chance
+    is the highest of :attr:`districts` districts, not of "any" district."""
+    day: date
+    headlined: bool
+    """Whether :attr:`day` is the day every one of the district's panels headlines (no school
+    of it decided the day, and no earlier day of the file still gives it a chance), so a
+    picture may frame it beside that day's chance."""
+
+
+def _zone_of(row: Mapping[str, object]) -> ZoneInfo | None:
+    """A district's own time zone; ``None`` when the file gives none this machine knows (the
+    page then says no day of it, chance.ts ``underWay``)."""
+    name = row.get("time_zone")
+    if not isinstance(name, str) or not name:
+        return None
+    try:
+        return ZoneInfo(name)
+    except (ValueError, KeyError):  # ZoneInfoNotFoundError is a KeyError
+        return None
+
+
+def _live_chance(
+    entry: object, day: date, zone: ZoneInfo, now: datetime, decided: bool
+) -> float | None:
+    """A district's chance of no school on ``day`` where its panel still gives one at
+    ``now`` (chance.ts ``headlineDay`` and ``underWay``): a forecast with a number, the day
+    not ``decided`` by every one of its schools, and not under way on its own clock, from
+    :data:`SCHOOL_STARTS` or from its buses where they run before that; else ``None``.
+
+    Raises:
+        PictureError: the entry's bus time is malformed.
+    """
+    if decided or not _forecast(entry) or _under_way(entry, day, zone, now):
+        return None
+    chance = entry.get("p_no_school") if isinstance(entry, dict) else None
+    return float(chance) if isinstance(chance, int | float) else None
+
+
+def decided_days(
+    closings: Mapping[str, object] | None, directory: Directory
+) -> dict[date, Counter[int]]:
+    """How many schools of each district hold a decision (closed, delayed, remote, early
+    dismissal) on each day of the closings file the page reads: a decided day's chance is
+    spent at once on that school's panel (the fact beats the forecast). Empty without a file
+    the page reads.
+
+    Raises:
+        PictureError: the file is malformed.
+    """
+    if closings is None or not closings_read(closings, directory):
+        return {}
+    days = closings.get("days")
+    if not isinstance(days, list):
+        raise PictureError("closings.json: days is missing")
+    owners = directory.points.district
+    known = len(directory.district_ids)
+    decided: dict[date, Counter[int]] = {}
+    for group in days:
+        if not isinstance(group, dict) or not isinstance(group.get("day"), str):
+            raise PictureError("closings.json: a day is malformed")
+        try:
+            day = date.fromisoformat(str(group["day"]))
+        except ValueError:
+            raise PictureError("closings.json: a day is malformed") from None
+        schools, _ = _rows(group, len(directory.school_ids))
+        held = decided.setdefault(day, Counter())
+        held.update(int(owners[school]) for school in schools if int(owners[school]) < known)
+    return decided
+
+
+def _file_days(predictions: Mapping[str, object]) -> list[date]:
+    """The file's days, in its order.
+
+    Raises:
+        PictureError: one is missing or malformed.
+    """
+    days = predictions.get("days")
+    if not isinstance(days, list) or not all(isinstance(text, str) for text in days):
+        raise PictureError("predictions: days is missing")
+    try:
+        return [date.fromisoformat(str(text)) for text in days]
+    except ValueError:
+        raise PictureError("predictions: a day is malformed") from None
+
+
 def highest_chance(
     predictions: Mapping[str, object] | None,
     directory: Directory,
     now: datetime,
-) -> tuple[float, int, int, date] | None:
-    """The highest chance of no school of any district on the next school day not yet under
-    way (:func:`chance_day`), the district's index, how many districts have a chance that day,
-    and the day; ``None`` without one, when every day of the file is under way, or when the
-    file is stale (:data:`PREDICTIONS_FRESH`).
+    closings: Mapping[str, object] | None = None,
+) -> Highest | None:
+    """The highest chance of no school any district's panel still gives on the next school
+    day not yet under way anywhere (:func:`chance_day`), by the page's rule for each district
+    on its own: a district counts only where that day is not under way on its own clock
+    (:data:`SCHOOL_STARTS`, or its buses where they run before that) and some school of it
+    holds no decision for it in ``closings`` (:func:`decided_days`); a day under way or decided
+    there is spent, so its chance is never named as current. A district holding a forecast for
+    the day that does not count (decided, or with no clock the page knows) is counted in
+    :attr:`Highest.left_out`, so no words compare the chance over it. It is
+    :attr:`Highest.headlined` only where no school of it holds a decision for the day and no
+    earlier day still gives it a chance: then every one of its schools' panels headlines it.
+    ``None`` without one, when every day of the file is under way, or when the file is stale
+    (:data:`PREDICTIONS_FRESH`).
 
     Raises:
-        PictureError: the file is malformed.
+        PictureError: a file is malformed.
     """
     if predictions is None or predictions.get("directory") != directory.stamp():
         return None
@@ -649,8 +790,14 @@ def highest_chance(
         return None
     if not isinstance(districts, list):
         raise PictureError("predictions: districts is missing")
-    best: tuple[float, int] | None = None
+    dates = _file_days(predictions)
+    decided = decided_days(closings, directory)
+    owners = directory.points.district
+    known = len(directory.district_ids)
+    sizes = np.bincount(owners[owners < known].astype(np.int64), minlength=known)
+    best: tuple[float, int, bool] | None = None
     counted = 0
+    left_out = 0
     for row in districts:
         if not isinstance(row, dict):
             raise PictureError("predictions: a district is malformed")
@@ -658,17 +805,30 @@ def highest_chance(
         index = row.get("district")
         if not isinstance(days, list) or not isinstance(index, int) or column >= len(days):
             raise PictureError("predictions: a district is malformed")
-        day = days[column]
-        chance = day.get("p_no_school") if isinstance(day, dict) else None
-        if not isinstance(chance, int | float) or not 0 <= index < len(directory.district_ids):
+        zone = _zone_of(row)
+        if zone is None or not 0 <= index < len(directory.district_ids):
+            left_out += _forecast(days[column])
+            continue
+        # Spent where every school of it decided the day; touched where any one did.
+        held = [decided.get(day, Counter())[index] for day in dates]
+        spent = [count > 0 and count >= int(sizes[index]) for count in held]
+        chance = _live_chance(days[column], today, zone, now, spent[column])
+        if chance is None:
+            left_out += _forecast(days[column])
             continue
         counted += 1
         # Ties go to the lower index, so the choice is repeatable.
         if best is None or chance > best[0]:
-            best = (float(chance), index)
+            # Its panel headlines the day only where no earlier day still gives it a chance.
+            earlier = any(
+                _live_chance(days[at], dates[at], zone, now, spent[at]) is not None
+                for at in range(min(len(days), len(dates)))
+                if dates[at] < today
+            )
+            best = (chance, index, held[column] == 0 and not earlier)
     if best is None:
         return None
-    return best[0], best[1], counted, today
+    return Highest(best[0], best[1], counted, left_out, today, best[2])
 
 
 def _percent(chance: float) -> int:
@@ -721,6 +881,15 @@ def _weekday(day: date) -> str:
     return f"{day:%A}"
 
 
+def still_giving(districts: int, *, gives: str = "give a chance") -> str:
+    """The districts a chance is compared over while a district holding a forecast for its day
+    was left out (:attr:`Highest.left_out`): by count, the ones that still give one, never
+    "any" or "every" district."""
+    if districts == 1:
+        return f"the only district that still {gives.replace('give', 'gives', 1)}"
+    return f"the {districts:,} districts that still {gives}"
+
+
 def choose(  # noqa: PLR0913 - the live files, the time and the facts file's switches
     *,
     closings: Mapping[str, object] | None,
@@ -737,7 +906,8 @@ def choose(  # noqa: PLR0913 - the live files, the time and the facts file's swi
     chance and its description and facts hold no chance. ``closings_shown``
     (:func:`snowlight.social.rules.closings_shown`) is the closings switch: without it the
     closings file is not read at all, so the picture is never a closings view and its
-    description and facts say nothing about closings.
+    description and facts say nothing about closings, and no decision in it spends a chance
+    (the page the picture is taken of is served no closings file either).
 
     Raises:
         PictureError: a live file is malformed (the run then falls back to the library).
@@ -749,10 +919,20 @@ def choose(  # noqa: PLR0913 - the live files, the time and the facts file's swi
     if lit is not None:
         return _closings_picture(lit, directory, now)
     read = closings_read(closings, directory)
-    high = highest_chance(predictions, directory, now) if chances else None
+    high = highest_chance(predictions, directory, now, closings) if chances else None
     closings_line, current = calm_closings(closings, read, now)
-    if high is not None and high[0] >= PANEL_MIN_CHANCE:
-        chance, index, counted, today = high
+    # A district is framed only beside the day its own panel headlines.
+    if high is not None and high.chance >= PANEL_MIN_CHANCE and high.headlined:
+        chance, index, counted, today = high.chance, high.district, high.districts, high.day
+        # The highest of any district only where none holding a forecast for the day is left
+        # out; else of the districts that still give one, by count.
+        highest = (
+            "the highest of any district that day"
+            if high.left_out == 0
+            else f"the highest of {still_giving(counted)} for that day"
+            if counted > 1
+            else f"and it is {still_giving(1)} for that day"
+        )
         frame = district_frame(directory, index)
         if frame is not None:
             query, box = frame
@@ -762,8 +942,8 @@ def choose(  # noqa: PLR0913 - the live files, the time and the facts file's swi
             shows = (
                 f"A picture of the Snowlight map taken at {_clock(now)} on {_day(now)}, zoomed "
                 f"to the schools of a public school district{where}: its chance of no school on "
-                f"{_weekday(today)}, {_day_of(today)} is {chance_text(chance)}, the highest of "
-                f"any district that day. The map does not draw the chance; the card shows it."
+                f"{_weekday(today)}, {_day_of(today)} is {chance_text(chance)}, {highest}. "
+                f"The map does not draw the chance; the card shows it."
                 f"{closings_line}"
             )
             seen = Seen(
@@ -773,6 +953,7 @@ def choose(  # noqa: PLR0913 - the live files, the time and the facts file's swi
                     day=today,
                     scope="district",
                     districts=counted,
+                    left_out=high.left_out,
                     at_most=False,
                 ),
                 state=state,
@@ -780,28 +961,48 @@ def choose(  # noqa: PLR0913 - the live files, the time and the facts file's swi
             )
             return Picture("district", query, shows, now, current, 0, seen)
     chance_seen: Chance | None = None
-    on = high[3] if high is not None else None
-    if high is None or on is None:
+    if high is None:
         chance_line = ""
-    elif high[0] == 0 or _percent(high[0]) <= 1:
+    elif high.chance == 0 or _percent(high.chance) <= 1:
+        on = high.day
+        over = (
+            f"every one of the {high.districts:,} districts with a chance"
+            if high.left_out == 0 and high.districts > 1
+            else "the only district with a chance"
+            if high.left_out == 0
+            else f"every one of the {high.districts:,} districts that still give one"
+            if high.districts > 1
+            else still_giving(1, gives="give one")
+        )
         chance_line = (
             f" Not in the picture: Snowlight's chance of no school on {_weekday(on)}, "
-            f"{_day_of(on)} is at most {max(1, _percent(high[0]))}% in every one of the "
-            f"{high[2]} districts with a chance."
+            f"{_day_of(on)} is at most {max(1, _percent(high.chance))}% in {over}."
         )
         chance_seen = Chance(
-            text=chance_text(high[0]), day=on, scope="highest", districts=high[2], at_most=True
-        )
-    else:
-        chance_line = (
-            f" Not in the picture: Snowlight's highest chance of no school on {_weekday(on)},"
-            f" {_day_of(on)} in any district is {chance_text(high[0])}."
-        )
-        chance_seen = Chance(
-            text=chance_text(high[0]),
+            text=chance_text(high.chance),
             day=on,
             scope="highest",
-            districts=high[2],
+            districts=high.districts,
+            left_out=high.left_out,
+            at_most=True,
+        )
+    else:
+        on = high.day
+        among = (
+            "in any district"
+            if high.left_out == 0
+            else f"among {still_giving(high.districts, gives='give one')}"
+        )
+        chance_line = (
+            f" Not in the picture: Snowlight's highest chance of no school on {_weekday(on)},"
+            f" {_day_of(on)} {among} is {chance_text(high.chance)}."
+        )
+        chance_seen = Chance(
+            text=chance_text(high.chance),
+            day=on,
+            scope="highest",
+            districts=high.districts,
+            left_out=high.left_out,
             at_most=False,
         )
     shows = (

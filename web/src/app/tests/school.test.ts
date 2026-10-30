@@ -1053,7 +1053,7 @@ describe('the chance section in the panel', () => {
       clockMinute: null,
       manual: false,
     };
-    /** 4 AM in Kansas City, before the day is under way at 5. */
+    /** 4 AM in Kansas City, before the day is under way at 7:30. */
     const morning = new Date('2026-01-12T10:00:00Z');
     const view = (status: SchoolStatus) =>
       schoolView(input({ id: record.id, record, status, outlook, now: morning }));
@@ -1093,7 +1093,7 @@ describe('the chance section in the panel', () => {
       clockMinute: null,
       manual: true,
     };
-    /** 4 AM in Kansas City, before the day is under way at 5. */
+    /** 4 AM in Kansas City, before the day is under way at 7:30. */
     const morning = new Date('2026-01-12T10:00:00Z');
     const view = (status: SchoolStatus) => schoolView(input({ status, outlook, now: morning }));
     // With no status: its own chance today.

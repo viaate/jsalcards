@@ -640,3 +640,47 @@ export function startLive(options: LiveOptions): Live {
     },
   };
 }
+
+/** The longest one wait for a turn lasts: a later turn is waited for again on the way. */
+const MAX_TURN_WAIT_MS = 6 * 3_600_000;
+/** A moment past the turn, so the clock read then is past it too. */
+const TURN_SLACK_MS = 250;
+
+/** A timer for the next turn of a panel's day (app/chance.ts nextTurn). */
+export interface TurnTimer {
+  /** Waits for `at` (null: for nothing), measured from `now`; the same turn is not waited for twice. */
+  readonly set: (at: Date | null, now: Date) => void;
+  readonly stop: () => void;
+}
+
+/**
+ * Calls `run` once at the turn `set` last named (a school day turning under way on a school's
+ * clock), so an open panel shows the next day's chance at that minute and not at its next
+ * read. A turn it already ran for, or already waits for, is not waited for again.
+ */
+export function turnTimer(run: () => void): TurnTimer {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let waiting: number | null = null;
+  let ran: number | null = null;
+  const stop = (): void => {
+    if (timer !== null) clearTimeout(timer);
+    timer = null;
+    waiting = null;
+  };
+  const set = (at: Date | null, now: Date): void => {
+    const turn = at === null ? null : at.getTime();
+    if (turn === waiting) return;
+    stop();
+    if (turn === null || turn === ran || !Number.isFinite(turn)) return;
+    const left = Math.max(turn - now.getTime(), 0);
+    const wait = Math.min(left, MAX_TURN_WAIT_MS);
+    waiting = turn;
+    timer = setTimeout(() => {
+      timer = null;
+      waiting = null;
+      if (wait === left) ran = turn;
+      run();
+    }, wait + TURN_SLACK_MS);
+  };
+  return { set, stop };
+}

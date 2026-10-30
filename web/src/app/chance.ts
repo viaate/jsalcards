@@ -50,11 +50,11 @@ const MINUTE_MS = 60_000;
 /** At most this many districts next door on the timeline, the first to post first. */
 export const MAX_NEIGHBOR_MOMENTS = 4;
 /**
- * A school day is under way from this hour on the school's own clock, whatever its bus time:
- * its chance is spent, and the next school day's shows (pipeline/snowlight/social/picture.py
- * SCHOOL_STARTS, the same rule for the X cards).
+ * A school day is under way from 7:30 AM on the school's own clock, or from its buses where
+ * they run before that: its chance is spent, and the next school day's shows
+ * (pipeline/snowlight/social/picture.py SCHOOL_STARTS, the same rule for the X cards).
  */
-export const UNDER_WAY_HOUR = 5;
+export const UNDER_WAY_AT = { hour: 7, minute: 30 } as const;
 /** The usual announcement stays on the timeline this long after its time. */
 const ANNOUNCE_GRACE_MS = 3 * HOUR_MS;
 
@@ -352,7 +352,12 @@ function wallClock(instant: Date, timeZone: string): number {
 
 /** The instant a calendar day's hour strikes in a time zone: 9 AM on Tuesday in Kansas City. */
 export function atLocalHour(day: LocalDate, hour: number, timeZone: string): Date {
-  const target = Date.parse(`${day}T00:00:00Z`) + hour * HOUR_MS;
+  return atLocalTime(day, hour, 0, timeZone);
+}
+
+/** The instant a calendar day's time strikes in a time zone: 7:30 AM on Tuesday in Kansas City. */
+export function atLocalTime(day: LocalDate, hour: number, minute: number, timeZone: string): Date {
+  const target = Date.parse(`${day}T00:00:00Z`) + hour * HOUR_MS + minute * MINUTE_MS;
   let at = target;
   // Two steps settle any offset; a third, the rare hour a clock change moves.
   for (let i = 0; i < 3; i++) at += target - wallClock(new Date(at), timeZone);
@@ -360,18 +365,160 @@ export function atLocalHour(day: LocalDate, hour: number, timeZone: string): Dat
 }
 
 /**
- * Whether a school day is under way at `now`: from 5 AM on the school's clock (UNDER_WAY_HOUR),
- * or once its buses have run where they run before that. The one rule for every chance the
- * site names for a day (the school panel, the area's chance).
+ * Whether a school day is under way at `now`: from 7:30 AM on the school's clock
+ * (UNDER_WAY_AT), or once its buses have run where they run before that. The one rule for every
+ * chance the site names for a day (the school panel, the area's chance).
  */
-function underWay(day: LocalDate, now: Date, timeZone: string, buses: Date | null): boolean {
+export function underWay(day: LocalDate, now: Date, timeZone: string, buses: Date | null): boolean {
   if (buses !== null && now >= buses) return true;
   try {
-    return now >= atLocalHour(day, UNDER_WAY_HOUR, timeZone);
+    return now >= atLocalTime(day, UNDER_WAY_AT.hour, UNDER_WAY_AT.minute, timeZone);
   } catch {
     // A clock this browser cannot read: the day is not said.
     return true;
   }
+}
+
+/**
+ * The latest clock each state keeps where it keeps one other than Eastern's, or more than one:
+ * Central where part of the state is (Florida's panhandle, western Kentucky and Tennessee,
+ * Indiana's and Michigan's Central counties), Mountain where part is (western Kansas,
+ * Nebraska, the Dakotas, El Paso), the Pacific where part is (northern Idaho, Oregon),
+ * Arizona's own (behind the Navajo Nation's in summer), the Aleutians', and each territory's.
+ */
+const LATEST_ZONE: Readonly<Record<string, string>> = {
+  AL: 'America/Chicago',
+  AR: 'America/Chicago',
+  FL: 'America/Chicago',
+  IA: 'America/Chicago',
+  IL: 'America/Chicago',
+  IN: 'America/Chicago',
+  KY: 'America/Chicago',
+  LA: 'America/Chicago',
+  MI: 'America/Chicago',
+  MN: 'America/Chicago',
+  MO: 'America/Chicago',
+  MS: 'America/Chicago',
+  OK: 'America/Chicago',
+  TN: 'America/Chicago',
+  WI: 'America/Chicago',
+  CO: 'America/Denver',
+  KS: 'America/Denver',
+  MT: 'America/Denver',
+  ND: 'America/Denver',
+  NE: 'America/Denver',
+  NM: 'America/Denver',
+  SD: 'America/Denver',
+  TX: 'America/Denver',
+  UT: 'America/Denver',
+  WY: 'America/Denver',
+  AZ: 'America/Phoenix',
+  CA: 'America/Los_Angeles',
+  ID: 'America/Los_Angeles',
+  NV: 'America/Los_Angeles',
+  OR: 'America/Los_Angeles',
+  WA: 'America/Los_Angeles',
+  AK: 'America/Adak',
+  HI: 'Pacific/Honolulu',
+  AS: 'Pacific/Pago_Pago',
+  GU: 'Pacific/Guam',
+  MP: 'Pacific/Saipan',
+  PR: 'America/Puerto_Rico',
+  VI: 'America/St_Thomas',
+};
+
+/** The states that keep Eastern time alone. */
+const EASTERN_STATES = new Set([
+  'CT',
+  'DC',
+  'DE',
+  'GA',
+  'MA',
+  'MD',
+  'ME',
+  'NC',
+  'NH',
+  'NJ',
+  'NY',
+  'OH',
+  'PA',
+  'RI',
+  'SC',
+  'VA',
+  'VT',
+  'WV',
+]);
+
+/**
+ * The clock a school keeps where the predictions file gives it none: the latest any part of
+ * its state keeps (LATEST_ZONE; Eastern's for a state that keeps it alone), so a day is never
+ * taken for under way before it is there, and "Open today" is not held back hours past 7:30
+ * AM in the east. A state not known: American Samoa's, the latest of any US clock.
+ */
+export function latestZone(state: string): string {
+  if (EASTERN_STATES.has(state)) return 'America/New_York';
+  return LATEST_ZONE[state] ?? 'Pacific/Pago_Pago';
+}
+
+/** A day's buses, where its outlook gives them. */
+function busesOn(outlook: Outlook, day: LocalDate): Date | null {
+  for (const on of [outlook?.today, outlook?.tomorrow]) {
+    if (on?.state === 'forecast' && on.day === day) return on.detail?.busesAt ?? null;
+  }
+  return null;
+}
+
+/**
+ * Whether the school's today (`today`, as its status has it) is under way at `now` on its
+ * clock (the outlook's zone, else `zone`), by the one rule (underWay), and still its today
+ * there. Before then most districts have not called the day, so the panel says no "Open
+ * today"; after it (a clock already on the next day, as Guam's is in the US evening) the
+ * day is behind it, and "Open today" would name a day gone.
+ */
+export function todayUnderWay(
+  today: LocalDate,
+  outlook: Outlook,
+  zone: string,
+  now: Date,
+): boolean {
+  const timeZone = outlook?.timeZone ?? zone;
+  try {
+    if (format.localDay(now, timeZone) !== today) return false;
+  } catch {
+    // A clock this browser cannot read: the day is not said.
+    return false;
+  }
+  return underWay(today, now, timeZone, busesOn(outlook, today));
+}
+
+/**
+ * The next instant after `now` a day turns under way on a school's clock (underWay): 7:30 AM
+ * there today or tomorrow, or a day's buses before that; null where no clock can be read. A
+ * panel shows again then, so the next day's chance (and "Open today") shows at that minute,
+ * not at its next read of the live files.
+ */
+export function nextTurn(outlook: Outlook, zone: string, now: Date): Date | null {
+  const timeZone = outlook?.timeZone ?? zone;
+  const turns: Date[] = [];
+  try {
+    const today = format.localDay(now, timeZone);
+    const tomorrow = new Date(Date.parse(`${today}T12:00:00Z`) + 24 * HOUR_MS)
+      .toISOString()
+      .slice(0, 10);
+    for (const day of [today, tomorrow]) {
+      // The day's turn: 7:30 AM, or its buses where they run before that.
+      const starts = atLocalTime(day, UNDER_WAY_AT.hour, UNDER_WAY_AT.minute, timeZone);
+      const buses = busesOn(outlook, day);
+      turns.push(buses !== null && buses < starts ? buses : starts);
+    }
+  } catch {
+    return null;
+  }
+  const ahead = turns.filter((turn) => turn.getTime() > now.getTime());
+  return ahead.reduce<Date | null>(
+    (first, turn) => (first === null || turn < first ? turn : first),
+    null,
+  );
 }
 
 /**

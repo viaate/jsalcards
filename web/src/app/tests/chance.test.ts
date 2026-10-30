@@ -9,9 +9,11 @@ import {
   MAX_NEIGHBOR_MOMENTS,
   NARROWEST_PLOT_PX,
   TIME_LABEL_PX,
+  UNDER_WAY_AT,
   WIDER_PLOTS_PX,
   ZONE_LABEL_PX,
   atLocalHour,
+  atLocalTime,
   chanceView,
   chartScale,
   chartTimes,
@@ -357,6 +359,9 @@ describe('the school’s own clock', () => {
     expect(atLocalHour('2026-01-13', 9, 'America/Los_Angeles').toISOString()).toBe(
       '2026-01-13T17:00:00.000Z',
     );
+    // A half hour too: 7:30 AM, on a winter day and on the morning the clocks spring forward.
+    expect(atLocalTime('2026-01-13', 7, 30, ZONE).toISOString()).toBe('2026-01-13T13:30:00.000Z');
+    expect(atLocalTime('2026-03-08', 7, 30, ZONE).toISOString()).toBe('2026-03-08T12:30:00.000Z');
   });
 });
 
@@ -374,14 +379,19 @@ describe('what the section leaves out', () => {
     expect(chanceView(nextMorning({ decided: { today: true, tomorrow: true } }))).toBeNull();
   });
 
-  it('takes today’s chance before tomorrow’s, until 5 AM on the school’s clock', () => {
+  it('takes today’s chance before tomorrow’s, until 7:30 AM on the school’s clock', () => {
+    expect(UNDER_WAY_AT).toEqual({ hour: 7, minute: 30 });
     const open = { today: false, tomorrow: false };
-    // 4:59 AM in Kansas City: still the morning's chance.
-    expect(headlineDay(B_OUTLOOK, open, at('2026-01-13T10:59:00Z'))?.day).toBe('2026-01-13');
-    // 5 AM: the day is under way, closed or at school, and its chance is spent: tomorrow's.
-    expect(headlineDay(B_OUTLOOK, open, at('2026-01-13T11:00:00Z'))?.day).toBe('2026-01-14');
-    // So it is the morning after too (6:20 AM), whatever its buses' time, and whatever is posted.
-    expect(headlineDay(B_OUTLOOK, open, B_NOW)?.day).toBe('2026-01-14');
+    // 7:29 AM in Kansas City: still the morning's chance.
+    expect(headlineDay(B_OUTLOOK, open, at('2026-01-13T13:29:00Z'))?.day).toBe('2026-01-13');
+    // 7:30 AM: the day is under way, closed or at school, and its chance is spent: tomorrow's.
+    expect(headlineDay(B_OUTLOOK, open, at('2026-01-13T13:30:00Z'))?.day).toBe('2026-01-14');
+    // The morning after at 6:20 AM, before most districts call it: still today's chance.
+    expect(headlineDay(B_OUTLOOK, open, B_NOW)?.day).toBe('2026-01-13');
+    // A day already decided is spent at once, whatever the hour: 6 AM, tomorrow's.
+    expect(
+      headlineDay(B_OUTLOOK, { today: true, tomorrow: false }, at('2026-01-13T12:00:00Z'))?.day,
+    ).toBe('2026-01-14');
     const today = {
       state: 'forecast',
       noSchool: 0.5,
@@ -391,11 +401,14 @@ describe('what the section leaves out', () => {
       detail: { ...A_DETAIL, busesAt: at('2026-01-13T13:00:00Z') },
     } as const;
     const alone: Outlook = { today, tomorrow: null, timeZone: ZONE };
-    // Buses at 7 AM change nothing: under way from 5 AM, and no chance for today.
-    expect(headlineDay(alone, open, at('2026-01-13T10:59:00Z'))?.day).toBe('2026-01-13');
-    expect(headlineDay(alone, open, at('2026-01-13T11:00:00Z'))).toBeNull();
-    expect(chanceView(nightBefore({ outlook: alone, now: at('2026-01-13T11:30:00Z') }))).toBeNull();
-    // Buses that run before 5 AM: under way once they have run.
+    // Buses at 7 AM, before 7:30: under way once they have run, and no chance for today.
+    expect(headlineDay(alone, open, at('2026-01-13T12:59:00Z'))?.day).toBe('2026-01-13');
+    expect(headlineDay(alone, open, at('2026-01-13T13:00:00Z'))).toBeNull();
+    expect(chanceView(nightBefore({ outlook: alone, now: at('2026-01-13T11:30:00Z') }))?.day).toBe(
+      '2026-01-13',
+    );
+    expect(chanceView(nightBefore({ outlook: alone, now: at('2026-01-13T13:05:00Z') }))).toBeNull();
+    // Buses that run at 4:30 AM: under way once they have run.
     const early: Outlook = {
       today: { ...today, detail: { ...A_DETAIL, busesAt: at('2026-01-13T10:30:00Z') } },
       tomorrow: null,
@@ -403,37 +416,73 @@ describe('what the section leaves out', () => {
     };
     expect(headlineDay(early, open, at('2026-01-13T10:29:00Z'))?.day).toBe('2026-01-13');
     expect(headlineDay(early, open, at('2026-01-13T10:30:00Z'))).toBeNull();
+    // Buses at 8 AM, after 7:30: under way at 7:30 all the same.
+    const late: Outlook = {
+      today: { ...today, detail: { ...A_DETAIL, busesAt: at('2026-01-13T14:00:00Z') } },
+      tomorrow: null,
+      timeZone: ZONE,
+    };
+    expect(headlineDay(late, open, at('2026-01-13T13:29:00Z'))?.day).toBe('2026-01-13');
+    expect(headlineDay(late, open, at('2026-01-13T13:30:00Z'))).toBeNull();
     // The next school day's, where the file gives one.
     if (B_OUTLOOK === null) throw new Error('no outlook');
     const next: Outlook = { ...B_OUTLOOK, today };
-    expect(headlineDay(next, open, at('2026-01-13T11:00:00Z'))?.day).toBe('2026-01-14');
+    expect(headlineDay(next, open, at('2026-01-13T13:00:00Z'))?.day).toBe('2026-01-14');
     expect(
       chanceView(nightBefore({ outlook: next, now: at('2026-01-13T14:30:00Z') }))?.meaning,
     ).toBe('Chance of no school Wednesday');
   });
 
-  it('takes a day as under way from 5 AM on the school’s clock, not the viewer’s', () => {
+  it('takes a day as under way from 7:30 AM on the school’s clock, not the viewer’s', () => {
     const bare: Outlook = {
       today: { state: 'forecast', noSchool: 0.5, delay: 0, reasons: [0], day: '2026-01-12' },
       tomorrow: null,
       timeZone: ZONE,
     };
     const decided = { today: false, tomorrow: false };
-    // 4:59 and 5:00 AM in Kansas City.
-    expect(headlineDay(bare, decided, at('2026-01-12T10:59:00Z'))).not.toBeNull();
-    expect(headlineDay(bare, decided, at('2026-01-12T11:00:00Z'))).toBeNull();
-    // The same moment is 3 AM in Los Angeles: a school there is not under way yet.
+    // 7:29 and 7:30 AM in Kansas City.
+    expect(headlineDay(bare, decided, at('2026-01-12T13:29:00Z'))).not.toBeNull();
+    expect(headlineDay(bare, decided, at('2026-01-12T13:30:00Z'))).toBeNull();
+    // The same moment is 5:30 AM in Los Angeles: a school there is not under way yet.
     const west = { ...bare, timeZone: 'America/Los_Angeles' };
-    expect(headlineDay(west, decided, at('2026-01-12T11:00:00Z'))).not.toBeNull();
-    expect(headlineDay(west, decided, at('2026-01-12T12:59:00Z'))).not.toBeNull();
-    expect(headlineDay(west, decided, at('2026-01-12T13:00:00Z'))).toBeNull();
-    // And on the morning a clock changes: 5 AM PDT, then 5 AM PST.
-    const spring = { ...west, today: { ...bare.today, day: '2026-03-08' } } as Outlook;
-    expect(headlineDay(spring, decided, at('2026-03-08T11:59:00Z'))).not.toBeNull();
-    expect(headlineDay(spring, decided, at('2026-03-08T12:00:00Z'))).toBeNull();
-    const fall = { ...west, today: { ...bare.today, day: '2026-11-01' } } as Outlook;
-    expect(headlineDay(fall, decided, at('2026-11-01T12:59:00Z'))).not.toBeNull();
-    expect(headlineDay(fall, decided, at('2026-11-01T13:00:00Z'))).toBeNull();
+    expect(headlineDay(west, decided, at('2026-01-12T13:30:00Z'))).not.toBeNull();
+    expect(headlineDay(west, decided, at('2026-01-12T15:29:00Z'))).not.toBeNull();
+    expect(headlineDay(west, decided, at('2026-01-12T15:30:00Z'))).toBeNull();
+  });
+
+  it('spends a day at 7:30 AM in every zone on the mornings the clocks change', () => {
+    // [zone, 7:30 AM on Sunday Nov 1 2026 (clocks back), on Sunday Mar 14 2027 (forward)].
+    const zones = [
+      ['America/New_York', '2026-11-01T12:30:00Z', '2027-03-14T11:30:00Z'],
+      ['America/Chicago', '2026-11-01T13:30:00Z', '2027-03-14T12:30:00Z'],
+      ['America/Denver', '2026-11-01T14:30:00Z', '2027-03-14T13:30:00Z'],
+      ['America/Phoenix', '2026-11-01T14:30:00Z', '2027-03-14T14:30:00Z'],
+      ['America/Los_Angeles', '2026-11-01T15:30:00Z', '2027-03-14T14:30:00Z'],
+      ['America/Anchorage', '2026-11-01T16:30:00Z', '2027-03-14T15:30:00Z'],
+      ['Pacific/Honolulu', '2026-11-01T17:30:00Z', '2027-03-14T17:30:00Z'],
+    ] as const;
+    const decided = { today: false, tomorrow: false };
+    for (const [timeZone, fall, spring] of zones) {
+      for (const [day, cutoff] of [
+        ['2026-11-01', fall],
+        ['2027-03-14', spring],
+      ] as const) {
+        expect(atLocalTime(day, 7, 30, timeZone).toISOString(), `${timeZone} ${day}`).toBe(
+          cutoff.replace('Z', '.000Z'),
+        );
+        const outlook: Outlook = {
+          today: { state: 'forecast', noSchool: 0.5, delay: 0, reasons: [0], day },
+          tomorrow: null,
+          timeZone,
+        };
+        const before = new Date(Date.parse(cutoff) - 60_000);
+        expect(headlineDay(outlook, decided, before)?.day, `${timeZone} ${day} 7:29`).toBe(day);
+        expect(
+          headlineDay(outlook, decided, new Date(cutoff)),
+          `${timeZone} ${day} 7:30`,
+        ).toBeNull();
+      }
+    }
   });
 
   it('shows the headline alone when the forecast gives nothing else', () => {
@@ -884,8 +933,10 @@ describe('the timeline', () => {
       '+9 Districts next door canceled.',
       `+7 The forecast has the heaviest snow 2 to 5${NBSP}AM, just before the buses.`,
     ]);
-    // From 5 AM the day is under way: no section, so no announcement at 5:30 AM to say.
-    expect(chanceView(nightBefore({ now: at('2026-01-13T11:00:00Z') }))).toBeNull();
+    // From its buses at 7 AM (before 7:30) the day is under way: no section, so no
+    // announcement to say.
+    expect(chanceView(nightBefore({ now: at('2026-01-13T12:59:00Z') }))).not.toBeNull();
+    expect(chanceView(nightBefore({ now: at('2026-01-13T13:00:00Z') }))).toBeNull();
     // A district that usually announces at 3:30 AM. Passed within the chart's first hour: still
     // on the chart, its time alone.
     const small = nightOutlook({ ...A_DETAIL, announcesAt: at('2026-01-13T09:30:00Z') });
@@ -1091,7 +1142,7 @@ describe('the chart', () => {
   });
 
   it('keeps the room of the announcement’s longest countdown, so its words never rewrap', () => {
-    // Every view until 5 AM, when the day is under way and its chance is spent.
+    // Every view from the evening until 5 AM, with the 5:30 AM announcement still ahead.
     for (let minutes = 0; minutes < 7 * 60 + 55; minutes += 7) {
       const now = new Date(A_NOW.getTime() + minutes * 60_000);
       const view = chanceView(nightBefore({ now }));

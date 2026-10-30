@@ -105,11 +105,24 @@
         inView: (n, states, cover) =>
           `${fmt(n)} in this view` + (states.length ? `, ${cover ? 'in' : 'mostly in'} ${and(states)}` : ''),
         district: (state) => `A district in ${state}`,
-        rank: (n) => ({ value: 'Highest', label: `of ${fmt(n)} districts`, inline: true }),
-        forecastDistricts: (n) => ({ value: fmt(n), label: 'school districts with a forecast' }),
-        topChance: (top, atMost, dayIso) =>
+        // picture.py Chance.left_out: while a district holding a forecast for the day was left
+        // out (decided, or no clock), the chance is said of the districts still giving one,
+        // never of every district.
+        rank: (n, leftOut) => ({
+          value: 'Highest',
+          label: leftOut > 0 ? `of ${fmt(n)} districts still giving one` : `of ${fmt(n)} districts`,
+          inline: true,
+        }),
+        forecastDistricts: (n, leftOut) => ({
+          value: fmt(n),
+          label: leftOut > 0 ? 'school districts still giving a chance' : 'school districts with a forecast',
+        }),
+        topChance: (top, atMost, dayIso, leftOut) =>
           atMost
-            ? { value: `${top} or less`, label: `chance of no school on ${dayWords(dayIso, 'md')}, in every district` }
+            ? {
+                value: `${top} or less`,
+                label: `chance of no school on ${dayWords(dayIso, 'md')}, in ${leftOut > 0 ? 'each district still giving one' : 'every district'}`,
+              }
             : { value: top, label: `highest chance of no school on ${dayWords(dayIso, 'md')}` },
         updated: (time) => `Updated ${time}`,
         status: [
@@ -270,7 +283,7 @@
           $('unit').dataset.short = dayWords(card.day, 'short');
           set($('unit'), nb($('unit').dataset.long));
           set($('place'), COPY.district(card.state));
-          facts.push(COPY.rank(card.districts));
+          facts.push(COPY.rank(card.districts, card.leftOut ?? 0));
         } else {
           const key = card.kind === 'waitlist' ? 'waitlist' : 'dev-log';
           const headline = COPY.headline[key];
@@ -278,8 +291,9 @@
           set($('headline'), headline);
           if (card.kind === 'waitlist') set($('place'), COPY.address);
           const f = card.forecast;
-          if (f && card.kind === 'dev-log') facts.push(COPY.topChance(f.top, f.atMost, f.day));
-          if (f) facts.push(COPY.forecastDistricts(f.districts));
+          if (f && !(Number.isInteger(f.leftOut) && f.leftOut >= 0)) throw new Error('forecast.leftOut must be a count');
+          if (f && card.kind === 'dev-log') facts.push(COPY.topChance(f.top, f.atMost, f.day, f.leftOut));
+          if (f) facts.push(COPY.forecastDistricts(f.districts, f.leftOut));
         }
 
         for (const fact of facts.slice(0, 2)) {

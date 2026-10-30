@@ -363,9 +363,24 @@ network at all:
    is older than 20 minutes: a stopped reader's empty file is no sign that nothing is
    closed, so that picture is not current and the post may not call it so. A chance is shown
    only from a predictions file at most 90 minutes old, and only for the next school day not
-   yet under way: the first of the file's days whose 5 AM, in each district's own time zone,
-   is still ahead in most districts (at 11:27 AM Central on a Monday the card names Tuesday).
-   No district is named.
+   yet under way anywhere: the first of the file's days not under way in any of its
+   districts, each on its own clock (7:30 AM there, or its buses where they run before that).
+   So no district is left out of the day by its clock: at the 7:07 AM Central morning run,
+   with 7:30 AM past in the east, the card names tomorrow, as every Eastern panel does, and
+   at 11:27 AM Central on a Monday it names Tuesday. Then each district counts by its own
+   panel's rule: only where that day is not under way on its own clock and not decided by
+   every one of its schools in the closings file read, so a spent chance is never named as
+   current. A district left out (decided, or with no clock the page knows) is never compared
+   over: while one holding a forecast for the day is left out, the description, the alt text
+   and every card say the chance of the districts still giving one, by count ("the highest
+   of the 2 districts that still give a chance for that day", "at most 1% in each of 10,812
+   districts still giving one"), never of "any" or "every" district. A district is pictured
+   only when none of its schools decided the day and no earlier day still gives it a chance,
+   so its own panel headlines the day the card names; else the national line gives the number
+   alone. With closings not LIVE the file is not read, and the page pictured is served none:
+   a district that decided the day is then counted as its panel shows it, with its chance. The
+   scheduled runs never meet this for today (7:07 AM Central names tomorrow); a run started by
+   hand before 7:30 AM Eastern can. No district is named.
 3. It opens that view served exactly those files, hides every piece of the site's interface
    with a style in that page only, waits until the map is at rest (twice), checks that the
    map lit as many schools as the description counts at the zoom asked, and takes a

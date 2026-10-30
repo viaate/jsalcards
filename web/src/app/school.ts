@@ -18,7 +18,15 @@
  * nothing where the files cannot say for now. A day's chance never shows
  * beside a status the school decided for that day (closed, delayed, remote,
  * early dismissal): the fact beats the forecast. "Open today" is no decision,
- * only that no closing is posted yet, and the chance stays beside it.
+ * only that no closing is posted yet: before today is under way on the school's
+ * clock (7:30 AM, or its buses before that: chance.ts underWay, the rule that
+ * spends today's chance) most districts have not called it, so the panel says
+ * no "Open today" before then, whatever the forecast (a stale or missing file,
+ * or no threat, included), and today's chance shows alone where there is one;
+ * from then "Open today" shows beside the next day's. Without the file's zone
+ * the school's clock is the latest any part of its state keeps (chance.ts
+ * latestZone), and "Open today" shows only while today is still its today there.
+ * An open panel shows again at the minute its day turns (chance.ts nextTurn).
  */
 
 import { ALIKE_DISTRICTS } from 'virtual:snowlight/district-names';
@@ -40,6 +48,7 @@ import {
   newerClosings,
   newerPredictions,
   pollWhileVisible,
+  turnTimer,
 } from '../data/live';
 import {
   NO_STATUS,
@@ -47,6 +56,7 @@ import {
   parsePredictions,
   schoolOutlook,
   schoolStatus,
+  schoolToday,
 } from '../data/school-day';
 import type { Outlook, SchoolStatus, StatusRow } from '../data/school-day';
 import type { Directory } from '../data/directory';
@@ -62,7 +72,7 @@ import type {
   Reason,
   SchoolId,
 } from '../types/generated';
-import { chanceView, shortDistrictName } from './chance';
+import { chanceView, latestZone, nextTurn, shortDistrictName, todayUnderWay } from './chance';
 import type { ChanceView, DistrictNaming, Names } from './chance';
 
 /** What a search pick already knows about a school: its shown name and its town. */
@@ -429,6 +439,13 @@ export function schoolView(input: ViewInput): SchoolView | null {
     today: input.status.today !== null && input.status.today !== 'open' && status.length > 0,
     tomorrow: input.status.tomorrow !== null && status.length > 0,
   };
+  // Before today is under way on the school's clock it is not called yet: no "Open today".
+  if (replay === null && input.status.today === 'open') {
+    const today = schoolToday(now, input.outlook?.timeZone ?? null);
+    if (today === null || !todayUnderWay(today, input.outlook, latestZone(record.state), now)) {
+      status = status.filter((line) => line.tone !== 'open');
+    }
+  }
   return {
     id,
     name,
@@ -561,6 +578,10 @@ export function watchSchool(options: WatchOptions): () => void {
   /** The directory's names, once asked for and read. */
   let names: Names | null = null;
   let askedNames = false;
+  // The minute the school's day turns under way: shown again then, not at the next read.
+  const turn = turnTimer(() => {
+    show();
+  });
 
   const show = (): void => {
     if (stopped) return;
@@ -603,6 +624,9 @@ export function watchSchool(options: WatchOptions): () => void {
       replay,
     });
     onView(view);
+    if (replay === null && record !== null) {
+      turn.set(nextTurn(outlook, latestZone(record.state), at), at);
+    }
     // A chance for a district with neighbors: their names, and their schools' districts, come
     // from the directory, read once (the glow has most often read it already).
     const neighbors = outlook?.neighbors ?? [];
@@ -681,6 +705,7 @@ export function watchSchool(options: WatchOptions): () => void {
 
   return () => {
     stopped = true;
+    turn.stop();
     stopPolling();
     stopHearing();
   };

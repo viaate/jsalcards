@@ -66,10 +66,13 @@
             lit: int,                                         // Picture.lit, across the country
             closings_generated_at: ISO,                       // Lit.generated_at
             // district (from choose()):
-            state: 'Michigan', chance_text: '78%', day: 'YYYY-MM-DD',
+            state: 'Michigan', chance_text: '78%', day: 'YYYY-MM-DD', districts: 18227, left_out: 0,
             district_name: string (optional, shown only with nameDistrict),
             // national (from choose() / highest_chance()):
-            top_chance: { text: '1%', day: 'YYYY-MM-DD', districts: 18227 } | null,
+            top_chance: { text: '1%', day: 'YYYY-MM-DD', districts: 18227, left_out: 0 } | null,
+            // left_out (picture.Chance.left_out): districts holding a forecast for the day left
+            // out (decided, or no clock); while any is, the chance is said of the districts
+            // still giving one, by count, never of any or every district.
           },
           isFallback: bool,     // an older library picture: dated from its own taken_at
           nameDistrict: bool,   // the owner's opt-in to name a district (default: never)
@@ -143,12 +146,15 @@
         if (p.kind === 'district') {
           if (!CHANCE.test(p.chance_text || '')) fail(`bad chance ${p.chance_text}`);
           if (!p.state) fail('a district picture needs its state');
+          if (!Number.isInteger(p.districts) || p.districts < 1) fail('picture.districts must be a count');
+          if (!Number.isInteger(p.left_out) || p.left_out < 0) fail('picture.left_out must be a count');
           out.day = weekday(p.day, 'picture.day');
           if (f.nameDistrict && !p.district_name) fail('nameDistrict needs picture.district_name from the job');
         }
         if (p.kind === 'national' && p.top_chance) {
           if (!CHANCE.test(p.top_chance.text || '')) fail(`bad chance ${p.top_chance.text}`);
           if (!Number.isInteger(p.top_chance.districts) || p.top_chance.districts < 1) fail('top_chance.districts must be a count');
+          if (!Number.isInteger(p.top_chance.left_out) || p.top_chance.left_out < 0) fail('top_chance.left_out must be a count');
           out.day = weekday(p.top_chance.day, 'top_chance.day');
         }
         return out;
@@ -205,12 +211,14 @@
           if (p.kind === 'district') {
             out.lead = p.chance_text;
             out.label = ['chance of no school', k.day];
-            out.sub = [{ text: placeText, main: true }, { text: 'Highest of any district', optional: true }];
+            const highest = p.left_out === 0 ? 'Highest of any district' : p.districts === 1 ? 'The only district still giving one' : `Highest of ${n(p.districts)} still giving one`;
+            out.sub = [{ text: placeText, main: true }, { text: highest, optional: true }];
           } else if (p.kind === 'national' && p.top_chance) {
             out.lead = p.top_chance.text;
             out.label = ['top chance of no school', k.day];
-            out.sub = [{ text: `Across all ${n(p.top_chance.districts)} districts`, main: true }];
-            tpl.push('Across all', 'districts');
+            const across = p.top_chance.left_out > 0 ? ['Across the', 'districts still giving one'] : ['Across all', 'districts'];
+            out.sub = [{ text: `${across[0]} ${n(p.top_chance.districts)} ${across[1]}`, main: true }];
+            tpl.push(...across);
           } else {
             fail('a chance card needs a district picture or a national picture with a top chance');
           }
@@ -466,10 +474,11 @@
             (p.current || f.isFallback ? '' : `, with closings last updated at ${k.updated.clock}`);
         } else if (p.kind === 'district') {
           const who = f.nameDistrict ? `${p.district_name}, ${p.state}` : `a public school district in ${p.state}`;
-          s = `The Snowlight map ${when}, zoomed to ${who}, whose chance of no school ${k.day} is ${spoken(p.chance_text)}, the highest of any district`;
+          const highest = p.left_out > 0 ? `the highest of the ${n(p.districts)} districts still giving one` : 'the highest of any district';
+          s = `The Snowlight map ${when}, zoomed to ${who}, whose chance of no school ${k.day} is ${spoken(p.chance_text)}, ${highest}`;
         } else {
           s = `The national Snowlight map ${when}, with no school lit up for weather`;
-          if (p.top_chance) s += ` and a top chance of no school ${k.day} of ${spoken(p.top_chance.text)} across all ${n(p.top_chance.districts)} districts`;
+          if (p.top_chance) s += ` and a top chance of no school ${k.day} of ${spoken(p.top_chance.text)} across ${p.top_chance.left_out > 0 ? 'the' : 'all'} ${n(p.top_chance.districts)} districts${p.top_chance.left_out > 0 ? ' still giving one' : ''}`;
         }
         s += `${caption}.`;
         if (BANNED.test(s)) fail(`banned character in alt: ${s}`);
