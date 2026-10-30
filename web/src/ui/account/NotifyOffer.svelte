@@ -62,7 +62,7 @@
     background: var(--surface-1);
     border: 1px solid var(--border-2);
     border-radius: 12px;
-    box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
+    box-shadow: 0 12px 32px rgb(var(--shadow) / 0.5);
   }
 
   p {

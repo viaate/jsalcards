@@ -69,7 +69,75 @@ export interface BasemapColors {
   building: string;
   /** Their hairline edge. */
   buildingEdge: string;
+  /**
+   * The rest of the map's colors and widths, a theme's (theme/css.ts); what
+   * is left out is Midnight's own, the constants below.
+   */
+  palette?: Partial<BasemapPalette>;
 }
+
+/** The map's colors past the page's tokens, and its line widths: Midnight's by default. */
+export interface BasemapPalette {
+  /** The street tiles' ground, from the handover in (the national view's sea is `background`). */
+  ground: string;
+  /** The halo behind names on the land. */
+  halo: string;
+  water: string;
+  waterway: string;
+  park: string;
+  /** School grounds up close, and their edge. */
+  grounds: string;
+  groundsEdge: string;
+  /** Lake and river shores, and the same shores across a city. */
+  inlandShore: string;
+  cityShore: string;
+  /** Buildings up close, and their edge. */
+  buildingClose: string;
+  buildingEdgeClose: string;
+  /** Each road tier's tone and its close-up tone, least to greatest (ROAD_TIERS). */
+  roads: readonly (readonly [tone: string, close: string])[];
+  /** The roads' widths, scaled. */
+  roadScale: number;
+  /** The coasts' and borders' width, and the state lines', in CSS pixels, or null for the hairline. */
+  outlineWidth: number | null;
+  stateWidth: number | null;
+  /** A school's quiet dot, and its ring. */
+  dot: string;
+  dotRing: string;
+  /** The halo behind the street tiles' labels. */
+  labelHalo: string;
+  /** The ink edges' width up close (shores, school grounds, parks), or null for the hairline. */
+  edgeWidth: number | null;
+  /** A theme's own touches (BASEMAP_IDS.usCoastBand and the rest), null where it has none. */
+  touches: MapTouches | null;
+}
+
+/** A theme's own touches on the map, the cartoon theme's: none of them is Midnight's. */
+export interface MapTouches {
+  /** Shallow water along the national view's coasts, a flat band of it. */
+  coastBand: string;
+  /** The ink edge around each park. */
+  parkEdge: string;
+  /** The shade under each park, set off from it. */
+  parkShade: string;
+  /** The ink under each major road, and its width each side, CSS px. */
+  roadCasing: string;
+  casingWidth: number;
+}
+
+/** The theme layers that draw a theme's touches, shown only where it has them. */
+export const TOUCH_LAYERS: readonly string[] = [
+  BASEMAP_IDS.usCoastBand,
+  BASEMAP_IDS.ofmParkShade,
+  BASEMAP_IDS.ofmParkEdge,
+  BASEMAP_IDS.ofmRoadCasing,
+];
+
+/** The coast band's width, and how far a park's shade is set off it, CSS px. */
+const COAST_BAND_WIDTH = 14;
+const PARK_SHADE_OFFSET = 2.5;
+/** The road classes a casing goes under: the highways and arterials, not the streets. */
+const CASED_CLASSES = ['motorway', 'trunk', 'primary', 'secondary'];
 
 /**
  * The bundled continental US geometry as parsed from public/geo: a GeoJSON
@@ -448,6 +516,92 @@ const WATERWAY = '#161616';
  */
 const INLAND_SHORE = '#3a3a3a';
 const CITY_SHORE = '#333333';
+
+/**
+ * The rest of the map's colors and widths, where a theme sets them on the page
+ * (theme/css.ts): left out, the map draws Midnight's own (style.ts paletteOf).
+ */
+export function paletteTokens(
+  token: (name: string, fallback: string) => string,
+): Partial<BasemapPalette> {
+  const palette: Partial<BasemapPalette> = {};
+  const colors: readonly (readonly [string, keyof BasemapPalette])[] = [
+    ['--map-ground', 'ground'],
+    ['--halo', 'halo'],
+    ['--map-label-halo', 'labelHalo'],
+    ['--map-water', 'water'],
+    ['--map-water', 'waterway'],
+    ['--map-park', 'park'],
+    ['--map-grounds', 'grounds'],
+    ['--map-grounds-edge', 'groundsEdge'],
+    ['--map-shore', 'inlandShore'],
+    ['--map-shore', 'cityShore'],
+    ['--map-building-close', 'buildingClose'],
+    ['--map-building-edge-close', 'buildingEdgeClose'],
+    ['--map-dot', 'dot'],
+    ['--map-dot-ring', 'dotRing'],
+  ];
+  for (const [name, key] of colors) {
+    const value = token(name, '');
+    if (value !== '') Object.assign(palette, { [key]: value });
+  }
+  const roads = token('--map-roads', '')
+    .split(',')
+    .map((pair) => pair.trim().split(/\s+/))
+    .filter((pair): pair is [string, string] => pair.length === 2);
+  if (roads.length > 0) palette.roads = roads;
+  const number = (name: string): number | null => {
+    const value = Number.parseFloat(token(name, ''));
+    return Number.isFinite(value) && value > 0 ? value : null;
+  };
+  const roadScale = number('--map-road-scale');
+  if (roadScale !== null) palette.roadScale = roadScale;
+  const outline = number('--map-outline-width');
+  if (outline !== null) palette.outlineWidth = outline;
+  const state = number('--map-state-width');
+  if (state !== null) palette.stateWidth = state;
+  const edge = number('--map-edge-width');
+  if (edge !== null) palette.edgeWidth = edge;
+  const touches = {
+    coastBand: token('--map-coast-band', ''),
+    parkEdge: token('--map-park-edge', ''),
+    parkShade: token('--map-park-shade', ''),
+    roadCasing: token('--map-road-casing', ''),
+    casingWidth: number('--map-casing-width') ?? 0,
+  };
+  const { casingWidth, ...touchColors } = touches;
+  if (casingWidth > 0 && Object.values(touchColors).every((color) => color !== '')) {
+    palette.touches = touches;
+  }
+  return palette;
+}
+
+/** A look's whole palette: the theme's colors and widths, and Midnight's for what it leaves out. */
+export function paletteOf(colors: BasemapColors): BasemapPalette {
+  return {
+    ground: colors.background,
+    halo: colors.background,
+    water: WATER_FILL,
+    waterway: WATERWAY,
+    park: PARK_FILL,
+    grounds: SCHOOL_GROUNDS_FILL,
+    groundsEdge: SCHOOL_GROUNDS_EDGE,
+    inlandShore: INLAND_SHORE,
+    cityShore: CITY_SHORE,
+    buildingClose: BUILDING_CLOSE,
+    buildingEdgeClose: BUILDING_EDGE_CLOSE,
+    roads: ROAD_TIERS.map((tier) => [tier.color, tier.close] as const),
+    roadScale: 1,
+    outlineWidth: null,
+    stateWidth: null,
+    dot: colors.labelBright,
+    dotRing: colors.background,
+    labelHalo: colors.palette?.ground ?? colors.background,
+    edgeWidth: null,
+    touches: null,
+    ...colors.palette,
+  };
+}
 const SHORE_DIM_START = 8;
 const SHORE_DIM_END = 11;
 
@@ -650,12 +804,12 @@ function byTier(value: (tier: RoadTier) => unknown, fallback: unknown): Expressi
 }
 
 /** Road width by class and zoom; ramps narrower; `extra` pixels added (a bridge's gap). */
-function roadWidth(extra: readonly Stop[] = []): ExpressionSpecification {
+function roadWidth(extra: readonly Stop[] = [], scale = 1): ExpressionSpecification {
   const narrowRamps: ExpressionSpecification = ['case', ['==', ['get', 'ramp'], 1], RAMP_WIDTH, 1];
   const stops = ROAD_ZOOMS.flatMap((zoom) => {
     const width: ExpressionSpecification = [
       '*',
-      byTier((tier) => hundredths(interpolate(tier.width, zoom, WIDTH_BASE)), 0),
+      byTier((tier) => hundredths(interpolate(tier.width, zoom, WIDTH_BASE) * scale), 0),
       narrowRamps,
     ];
     const add = hundredths(interpolate(extra, zoom, 1));
@@ -670,8 +824,13 @@ function roadWidth(extra: readonly Stop[] = []): ExpressionSpecification {
 }
 
 /** A tier's color at `zoom` once it is fully drawn: its own, stepping up to its close-up tone. */
-function tierTone(tier: RoadTier, zoom: number): string {
-  return mixColors(tier.color, tier.close, (zoom - CLOSE_FROM) / (CLOSE_ZOOM - CLOSE_FROM));
+function tierTone(
+  tier: RoadTier,
+  zoom: number,
+  tones: readonly (readonly [string, string])[] = [],
+): string {
+  const [color, close] = tones[ROAD_TIERS.indexOf(tier)] ?? [tier.color, tier.close];
+  return mixColors(color, close, (zoom - CLOSE_FROM) / (CLOSE_ZOOM - CLOSE_FROM));
 }
 
 /**
@@ -738,7 +897,12 @@ export function metroRoadTone(zoom: number): number {
  * scaled by `strength`, and stepped back across a metro when the schools are
  * drawn there (`metro`).
  */
-function roadColor(ground: string, strength = 1, metro = false): ExpressionSpecification {
+function roadColor(
+  ground: string,
+  strength = 1,
+  metro = false,
+  tones: readonly (readonly [string, string])[] = [],
+): ExpressionSpecification {
   const zooms = metro
     ? [...new Set([...ROAD_ZOOMS, ...METRO_ROADS.map(([zoom]) => zoom)])].sort((a, b) => a - b)
     : ROAD_ZOOMS;
@@ -747,7 +911,7 @@ function roadColor(ground: string, strength = 1, metro = false): ExpressionSpeci
     byTier((tier) => {
       const shown = Math.min(1, Math.max(0, (zoom - tier.minzoom) / (tier.full - tier.minzoom)));
       const tone = strength * (metro ? metroRoadTone(zoom) : 1);
-      return mixColors(ground, tierTone(tier, zoom), shown * tone);
+      return mixColors(ground, tierTone(tier, zoom, tones), shown * tone);
     }, ground),
   ]);
   return ['interpolate', ['linear'], ['zoom'], ...stops] as unknown as ExpressionSpecification;
@@ -863,7 +1027,7 @@ function stateNameLayout(
 function stateNamePaint(colors: BasemapColors): NonNullable<SymbolLayerSpecification['paint']> {
   return {
     'text-color': colors.labelDim,
-    'text-halo-color': colors.background,
+    'text-halo-color': paletteOf(colors).halo,
     'text-halo-width': CITY_NAME_HALO,
     'text-halo-blur': 0.4,
   };
@@ -946,7 +1110,7 @@ function cityNameLayers(
         ],
         'text-opacity': ramp(zoom, zoom + CITY_NAME_FADE),
         // Parts a line running under a name.
-        'text-halo-color': colors.background,
+        'text-halo-color': paletteOf(colors).halo,
         'text-halo-width': CITY_NAME_HALO,
         'text-halo-blur': 0.4,
       },
@@ -1009,12 +1173,20 @@ export function buildBasemapStyle({
   phoneNames = false,
 }: BasemapStyleOptions): StyleSpecification {
   const [geometry, cities] = splitUsLines(usLines);
+  const palette = paletteOf(colors);
+  const { ground, roads } = palette;
+  const outlineWidth = palette.outlineWidth ?? hairline;
+  const stateWidth = palette.stateWidth ?? hairline;
+  const edgeWidth = palette.edgeWidth ?? hairline;
+  const touches = palette.touches;
+  /** A touch layer's visibility: shown only in a theme that has its touches. */
+  const touch = { visibility: touches === null ? 'none' : 'visible' } as const;
   // Where every school is drawn across a metro, the roads step back there.
   const metro = schools !== null;
   const round = { 'line-join': 'round', 'line-cap': 'round' } as const;
   const ofm = { source: BASEMAP_IDS.openFreeMapSource, minzoom: OPENFREEMAP_MIN_ZOOM } as const;
   const halo = {
-    'text-halo-color': colors.background,
+    'text-halo-color': palette.labelHalo,
     'text-halo-width': LABEL_HALO,
     'text-halo-blur': LABEL_HALO_BLUR,
   } as const;
@@ -1024,7 +1196,35 @@ export function buildBasemapStyle({
     {
       id: BASEMAP_IDS.background,
       type: 'background',
-      paint: { 'background-color': colors.background },
+      // The national view's sea, and from the handover the street tiles' ground.
+      paint: {
+        'background-color': sameColor(ground, colors.background)
+          ? colors.background
+          : ([
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              HANDOVER_START,
+              colors.background,
+              HANDOVER_END,
+              ground,
+            ] as unknown as ExpressionSpecification),
+      },
+    },
+    {
+      // A theme's band of shallow water along the coasts: under the land, which covers its
+      // inner half, so it shows only on the water's side.
+      id: BASEMAP_IDS.usCoastBand,
+      type: 'line',
+      source: BASEMAP_IDS.usSource,
+      maxzoom: HANDOVER_END,
+      filter: ['==', KIND, 'land-simple'],
+      layout: { ...round, ...touch },
+      paint: {
+        'line-color': touches?.coastBand ?? colors.background,
+        'line-width': COAST_BAND_WIDTH,
+        'line-opacity': fadeOut,
+      },
     },
     {
       // The country a step off the ground at the national view; the street tiles' own
@@ -1041,13 +1241,45 @@ export function buildBasemapStyle({
       paint: { 'fill-color': colors.land, 'fill-opacity': fadeOut, 'fill-antialias': false },
     },
     {
+      // A theme's shade under each park: the park again, a step darker, set off down and to
+      // the right, so each park stands up off the ground as the cards do off the page.
+      id: BASEMAP_IDS.ofmParkShade,
+      type: 'fill',
+      ...ofm,
+      'source-layer': 'landcover',
+      minzoom: 10,
+      filter: ['match', ['get', 'subclass'], PARK_SUBCLASSES, true, false],
+      layout: touch,
+      paint: {
+        'fill-color': touches?.parkShade ?? palette.park,
+        'fill-opacity': ramp(10, 11),
+        'fill-translate': [PARK_SHADE_OFFSET, PARK_SHADE_OFFSET],
+        'fill-antialias': false,
+      },
+    },
+    {
       id: BASEMAP_IDS.ofmPark,
       type: 'fill',
       ...ofm,
       'source-layer': 'landcover',
       minzoom: 10,
       filter: ['match', ['get', 'subclass'], PARK_SUBCLASSES, true, false],
-      paint: { 'fill-color': PARK_FILL, 'fill-opacity': ramp(10, 11), 'fill-antialias': false },
+      paint: { 'fill-color': palette.park, 'fill-opacity': ramp(10, 11), 'fill-antialias': false },
+    },
+    {
+      // A theme's ink edge around each park.
+      id: BASEMAP_IDS.ofmParkEdge,
+      type: 'line',
+      ...ofm,
+      'source-layer': 'landcover',
+      minzoom: 10,
+      filter: ['match', ['get', 'subclass'], PARK_SUBCLASSES, true, false],
+      layout: { ...round, ...touch },
+      paint: {
+        'line-color': touches?.parkEdge ?? palette.park,
+        'line-width': edgeWidth,
+        'line-opacity': ramp(10, 11),
+      },
     },
     {
       id: BASEMAP_IDS.ofmSchoolGrounds,
@@ -1057,7 +1289,7 @@ export function buildBasemapStyle({
       minzoom: SCHOOL_GROUNDS_FROM,
       filter: ['match', CLASS, SCHOOL_GROUNDS, true, false],
       paint: {
-        'fill-color': SCHOOL_GROUNDS_FILL,
+        'fill-color': palette.grounds,
         'fill-opacity': ramp(SCHOOL_GROUNDS_FROM, SCHOOL_GROUNDS_FROM + 1),
         'fill-antialias': false,
       },
@@ -1071,8 +1303,8 @@ export function buildBasemapStyle({
       filter: ['match', CLASS, SCHOOL_GROUNDS, true, false],
       layout: round,
       paint: {
-        'line-color': SCHOOL_GROUNDS_EDGE,
-        'line-width': hairline,
+        'line-color': palette.groundsEdge,
+        'line-width': edgeWidth,
         'line-opacity': ramp(SCHOOL_GROUNDS_EDGE_FROM - 0.5, SCHOOL_GROUNDS_EDGE_FROM),
       },
     },
@@ -1082,7 +1314,7 @@ export function buildBasemapStyle({
       ...ofm,
       'source-layer': 'water',
       filter: ['match', CLASS, UNFILLED_WATER, false, true],
-      paint: { 'fill-color': WATER_FILL, 'fill-opacity': fadeIn, 'fill-antialias': false },
+      paint: { 'fill-color': palette.water, 'fill-opacity': fadeIn, 'fill-antialias': false },
     },
     {
       // Rivers and streams too narrow for a shore of their own, in the water's tone.
@@ -1099,7 +1331,7 @@ export function buildBasemapStyle({
       ],
       layout: round,
       paint: {
-        'line-color': WATERWAY,
+        'line-color': palette.waterway,
         'line-width': [
           'interpolate',
           ['exponential', WIDTH_BASE],
@@ -1120,7 +1352,7 @@ export function buildBasemapStyle({
       'source-layer': 'boundary',
       filter: ['all', ['==', ['get', 'admin_level'], 4], ['!=', ['get', 'maritime'], 1]],
       layout: round,
-      paint: { 'line-color': colors.state, 'line-width': hairline, 'line-opacity': fadeIn },
+      paint: { 'line-color': colors.state, 'line-width': stateWidth, 'line-opacity': fadeIn },
     },
     {
       id: BASEMAP_IDS.ofmWater,
@@ -1135,11 +1367,11 @@ export function buildBasemapStyle({
           ['linear'],
           ['zoom'],
           SHORE_DIM_START,
-          ['match', CLASS, 'ocean', colors.outline, INLAND_SHORE],
+          ['match', CLASS, 'ocean', colors.outline, palette.inlandShore],
           SHORE_DIM_END,
-          CITY_SHORE,
+          palette.cityShore,
         ],
-        'line-width': hairline,
+        'line-width': edgeWidth,
         'line-opacity': fadeIn,
       },
     },
@@ -1151,8 +1383,8 @@ export function buildBasemapStyle({
       filter: roadFilter('tunnel'),
       layout: { ...round, 'line-sort-key': ROAD_SORT_KEY },
       paint: {
-        'line-color': roadColor(colors.background, TUNNEL_STRENGTH, metro),
-        'line-width': roadWidth(),
+        'line-color': roadColor(ground, TUNNEL_STRENGTH, metro, roads),
+        'line-width': roadWidth([], palette.roadScale),
       },
     },
     {
@@ -1169,7 +1401,7 @@ export function buildBasemapStyle({
           CLOSE_FROM,
           colors.building,
           CLOSE_ZOOM,
-          BUILDING_CLOSE,
+          palette.buildingClose,
         ],
         'fill-outline-color': [
           'interpolate',
@@ -1178,9 +1410,29 @@ export function buildBasemapStyle({
           CLOSE_FROM,
           colors.buildingEdge,
           CLOSE_ZOOM,
-          BUILDING_EDGE_CLOSE,
+          palette.buildingEdgeClose,
         ],
         'fill-opacity': buildingOpacity,
+      },
+    },
+    {
+      // A theme's ink under each through road, a casing either side of it.
+      id: BASEMAP_IDS.ofmRoadCasing,
+      type: 'line',
+      ...ofm,
+      'source-layer': 'transportation',
+      filter: [
+        ...(roadFilter('ground') as unknown[]),
+        ['match', CLASS, CASED_CLASSES, true, false],
+      ] as FilterSpecification,
+      layout: { ...round, ...touch },
+      paint: {
+        'line-color': touches?.roadCasing ?? ground,
+        'line-width': roadWidth(
+          ROAD_ZOOMS.map((zoom) => [zoom, 2 * (touches?.casingWidth ?? 0)] as const),
+          palette.roadScale,
+        ),
+        'line-opacity': ramp(9, 10),
       },
     },
     {
@@ -1190,7 +1442,10 @@ export function buildBasemapStyle({
       'source-layer': 'transportation',
       filter: roadFilter('ground'),
       layout: { ...round, 'line-sort-key': ROAD_SORT_KEY },
-      paint: { 'line-color': roadColor(colors.background, 1, metro), 'line-width': roadWidth() },
+      paint: {
+        'line-color': roadColor(ground, 1, metro, roads),
+        'line-width': roadWidth([], palette.roadScale),
+      },
     },
     {
       // A dark gap either side of a bridge, so the road it crosses passes under it.
@@ -1201,7 +1456,7 @@ export function buildBasemapStyle({
       minzoom: 12,
       filter: roadFilter('bridge'),
       layout: { 'line-join': 'round', 'line-cap': 'butt', 'line-sort-key': ROAD_SORT_KEY },
-      paint: { 'line-color': colors.background, 'line-width': roadWidth(BRIDGE_GAP) },
+      paint: { 'line-color': ground, 'line-width': roadWidth(BRIDGE_GAP, palette.roadScale) },
     },
     {
       id: BASEMAP_IDS.ofmBridge,
@@ -1210,7 +1465,10 @@ export function buildBasemapStyle({
       'source-layer': 'transportation',
       filter: roadFilter('bridge'),
       layout: { ...round, 'line-sort-key': ROAD_SORT_KEY },
-      paint: { 'line-color': roadColor(colors.background, 1, metro), 'line-width': roadWidth() },
+      paint: {
+        'line-color': roadColor(ground, 1, metro, roads),
+        'line-width': roadWidth([], palette.roadScale),
+      },
     },
     {
       // The ground over everything outside the US: street tiles carry it (street-tiles.ts).
@@ -1226,7 +1484,14 @@ export function buildBasemapStyle({
       ...ofm,
       'source-layer': BORDER_LAYER,
       layout: round,
-      paint: { 'line-color': colors.outline, 'line-width': hairline, 'line-opacity': fadeIn },
+      paint: { 'line-color': colors.outline, 'line-width': outlineWidth, 'line-opacity': fadeIn },
+    },
+    {
+      // Empty: in a flat theme the glow layer goes right over it (BASEMAP_IDS.glowSlotFlat),
+      // under the national view's lines and names, which read over its opaque marks.
+      id: BASEMAP_IDS.glowSlotFlat,
+      type: 'background',
+      layout: { visibility: 'none' },
     },
     // The bundled lines are the US's own, so they draw over the mask while they hand over.
     // Simplified at the national view, detailed from SIMPLE_LINES_UNTIL (build-geo.mjs).
@@ -1237,7 +1502,11 @@ export function buildBasemapStyle({
       maxzoom: BUNDLED_LINES_UNTIL,
       filter: ['==', KIND, 'state-simple'],
       layout: round,
-      paint: { 'line-color': colors.state, 'line-width': hairline, 'line-opacity': simpleFadeOut },
+      paint: {
+        'line-color': colors.state,
+        'line-width': stateWidth,
+        'line-opacity': simpleFadeOut,
+      },
     },
     {
       id: BASEMAP_IDS.usStates,
@@ -1246,7 +1515,11 @@ export function buildBasemapStyle({
       maxzoom: BUNDLED_LINES_UNTIL,
       filter: ['==', KIND, 'state'],
       layout: round,
-      paint: { 'line-color': colors.state, 'line-width': hairline, 'line-opacity': detailedLines },
+      paint: {
+        'line-color': colors.state,
+        'line-width': stateWidth,
+        'line-opacity': detailedLines,
+      },
     },
     {
       // The land's rings: MapLibre draws a line layer on polygons along their edges.
@@ -1258,7 +1531,7 @@ export function buildBasemapStyle({
       layout: round,
       paint: {
         'line-color': colors.outline,
-        'line-width': hairline,
+        'line-width': outlineWidth,
         'line-opacity': simpleFadeOut,
       },
     },
@@ -1271,7 +1544,7 @@ export function buildBasemapStyle({
       layout: round,
       paint: {
         'line-color': colors.outline,
-        'line-width': hairline,
+        'line-width': outlineWidth,
         'line-opacity': detailedLines,
       },
     },
@@ -1489,12 +1762,15 @@ export function buildBasemapStyle({
     const schoolColors = {
       bright: colors.label,
       name: colors.labelBright,
-      ground: colors.background,
+      ground,
+      dot: palette.dot,
+      ring: palette.dotRing,
     };
-    // Dots under every label (and under the glow, which goes right before the labels); names
-    // over them all, and over the names the space each dot keeps, placed first.
+    // Dots under every label and under the glow, in either of its places (the national names
+    // they go under are never drawn at a zoom that draws them); names over them all, and over
+    // the names the space each dot keeps, placed first.
     layers.splice(
-      layers.findIndex((layer) => layer.id === BASEMAP_IDS.glowSlot),
+      layers.findIndex((layer) => layer.id === BASEMAP_IDS.glowSlotFlat),
       0,
       schoolLightLayer(schoolColors),
       schoolSelectedLayer(schoolColors),
@@ -1510,6 +1786,9 @@ export function buildBasemapStyle({
   return {
     version: 8,
     name: 'Snowlight',
+    // Paint changes land at once: a theme put on (theme/engine.ts) recolors the map in the frame
+    // the page's own colors change, with no fade through a mix of the two themes.
+    transition: { duration: 0, delay: 0 },
     sources: {
       ...(schools === null ? {} : { [BASEMAP_IDS.schoolsSource]: schoolSource(schools) }),
       [BASEMAP_IDS.usSource]: {

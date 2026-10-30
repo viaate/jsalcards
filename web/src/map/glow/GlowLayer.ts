@@ -50,9 +50,11 @@ import type {
   Map as MapLibreMap,
 } from 'maplibre-gl';
 
-import { statusLinearUniform, statusSrgbUniform } from './color';
+import { STATUS_COUNT, STATUS_HEX, hexToLinear, hexToSrgb } from './color';
 import {
   type BlendBlur,
+  BURST_HALF_WIDTH,
+  BURST_RADIUS,
   DENSE_CAP,
   DENSE_FIELD,
   DENSE_GATE,
@@ -69,6 +71,8 @@ import {
   fallbackPeak,
   fieldPeak,
   fieldReachPx,
+  FLAT_FIELD_STEPS,
+  FLAT_FIELD_TONES,
   glowStyleAtZoom,
   interpolateStops,
   kernelUniforms,
@@ -111,6 +115,7 @@ import {
 import { type TexelBox, blurBoxes, glowBounds, isEmpty, levelBox, targetBox } from './region';
 import {
   ATTRIB,
+  BEYOND_MAX,
   BLUR_FRAG,
   DIAMOND_SCALE,
   DOWNSAMPLE_FRAG,
@@ -144,6 +149,46 @@ export interface GlowLayerOptions {
   /** The state lines' gray (sRGB, 0..1) under the glow, or null until the map has them; asked until known. */
   readonly lineGray?: () => number | null;
 }
+
+/**
+ * How the layer draws, a theme's (theme/themes.ts GlowLook): the status
+ * colors, and 'glow', the soft light screened onto a dark ground, or 'flat',
+ * the same light cel shaded in flat tones laid over a light ground, edged in
+ * `outline` (`outlineWidth` CSS px, 0 for none), and the same glyphs up
+ * close, ringed in it, with a ring around each closed school's dot where
+ * `burst`. GLOW_LOOK is the page's own, Midnight's.
+ */
+export interface GlowLook {
+  /** #rrggbb for closed, delayed, remote, early dismissal and open. */
+  readonly status: readonly [string, string, string, string, string];
+  readonly mode: 'glow' | 'flat';
+  readonly outline: string;
+  readonly outlineWidth: number;
+  readonly burst: boolean;
+  /**
+   * The dust's color, and how it meets the map: 'max', the brighter of speck
+   * and map (a dark ground), or 'min', the darker (a light one).
+   */
+  readonly dust?: {
+    readonly color: readonly [number, number, number];
+    readonly blend: 'max' | 'min';
+  };
+  /**
+   * A flat theme's grounds beyond the US (#rrggbb, at most BEYOND_MAX): the
+   * sea, and its band of shallow water along the coasts. Its light is not
+   * laid on them, so the light and its ink edge keep to the land the schools
+   * are on, inside the coasts and borders.
+   */
+  readonly beyond?: readonly string[];
+}
+
+export const GLOW_LOOK: GlowLook = Object.freeze({
+  status: STATUS_HEX,
+  mode: 'glow',
+  outline: '#000000',
+  outlineWidth: 0,
+  burst: false,
+});
 
 /**
  * 'none' until the layer first has points to draw (an empty layer compiles
@@ -187,6 +232,9 @@ export interface GlowLayerStats {
 /** Accumulated light multiplier ahead of the tone map. */
 const EXPOSURE = 1;
 
+/** The texture unit a flat theme's composite reads the map under it from (after its own). */
+const UNDER_UNIT = 3;
+
 /** Most pixels in the light target, about a 1440x900 laptop's at 2x: a larger screen draws its glow coarser, in bounded memory. */
 const MAX_LIGHT_TARGET_PX = 3200 * 2000;
 
@@ -203,6 +251,10 @@ interface GpuResources {
   readonly blur: Program | null;
   readonly composite: Program;
   readonly compositeDense: Program;
+  /** A flat theme's cel-shaded composite, made the first time one draws. */
+  compositeFlat: Program | null;
+  /** The map drawn so far, under a flat theme's light, which keeps off its ground beyond. */
+  under: { readonly texture: WebGLTexture; width: number; height: number } | null;
   readonly glyph: Program;
   readonly buffer: WebGLBuffer;
   /** Attributes starting at record 0: glowing points, then open ones. */
@@ -365,8 +417,13 @@ export class GlowLayer implements CustomLayerInterface {
   private clockOrigin = performance.now();
   private readonly scratch = new PackScratch();
   /** Linear-light tokens for the four glowing statuses. */
-  private readonly linearTokens = statusLinearUniform().subarray(0, 12);
-  private readonly srgbColors = statusSrgbUniform();
+  private readonly linearTokens = new Float32Array(12);
+  private readonly srgbColors = new Float32Array(STATUS_COUNT * 3);
+  private look: GlowLook = GLOW_LOOK;
+  private readonly outline = new Float32Array(3);
+  /** A flat theme's grounds beyond the US, in display space (GlowLook beyond). */
+  private readonly beyond = new Float32Array(3 * BEYOND_MAX);
+  private beyondCount = 0;
   private readonly matrix = new Float32Array(16);
 
   private map: MapLibreMap | null = null;
@@ -423,6 +480,30 @@ export class GlowLayer implements CustomLayerInterface {
   constructor(options: GlowLayerOptions = {}) {
     this.options = options;
     this.id = options.id ?? 'snowlight-glow';
+    this.setLook(GLOW_LOOK);
+  }
+
+  /** Draws in a theme's look from the next frame (GlowLook). */
+  setLook(look: GlowLook): void {
+    this.look = look;
+    look.status.forEach((hex, i) => {
+      this.srgbColors.set(hexToSrgb(hex), i * 3);
+      if (i < 4) this.linearTokens.set(hexToLinear(hex), i * 3);
+    });
+    this.outline.set(hexToSrgb(look.outline));
+    const beyond = (look.beyond ?? []).slice(0, BEYOND_MAX);
+    beyond.forEach((hex, i) => {
+      this.beyond.set(hexToSrgb(hex), i * 3);
+    });
+    this.beyondCount = beyond.length;
+    // The theme's state lines, which the glow lifts a lone school over, read again.
+    this.lineGray = null;
+    this.map?.triggerRepaint();
+  }
+
+  /** Whether lit schools are drawn as flat glyphs at every zoom (no light). */
+  private get flat(): boolean {
+    return this.look.mode === 'flat';
   }
 
   /**
@@ -619,7 +700,9 @@ export class GlowLayer implements CustomLayerInterface {
     if (res === null || this.failed || args.shaderData.variantName !== 'mercator') return;
     const frame = this.beginFrame(gl, res);
     const packed = this.packed;
-    if (packed !== null && packed.glowCount > 0) {
+    // A flat theme's light shows only until its glyphs are whole (render).
+    const lightShown = !this.flat || frame.style.glyphOpacity < 1;
+    if (packed !== null && packed.glowCount > 0 && lightShown) {
       res.timer?.begin();
       if (this.ensureLevels(gl, res, frame)) {
         const radius = this.drawLight(gl, res, packed, frame, args);
@@ -652,7 +735,11 @@ export class GlowLayer implements CustomLayerInterface {
     gl.enable(gl.BLEND);
     gl.blendEquation(gl.FUNC_ADD);
 
-    if (packed.glowCount > 0) this.drawComposite(gl, res, frame);
+    if (this.flat) {
+      // The cel-shaded light gives way to the glyphs as they come in.
+      const fade = 1 - frame.style.glyphOpacity;
+      if (packed.glowCount > 0 && fade > 0) this.drawCompositeFlat(gl, res, frame, fade);
+    } else if (packed.glowCount > 0) this.drawComposite(gl, res, frame);
     if (frame.style.glyphOpacity > 0) this.drawGlyphs(gl, res, packed, frame, args);
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null);
@@ -700,7 +787,10 @@ export class GlowLayer implements CustomLayerInterface {
       // Never under one per CSS pixel for the cap alone, as the glow was drawn before it.
       Math.max(Math.min(1, deviceRatio), Math.sqrt(MAX_LIGHT_TARGET_PX / guarded)),
     );
-    const style = glowStyleAtZoom(zoom, this.lineGray ?? undefined, targetPxPerCss);
+    // A flat theme's light is laid over its lines, not lifted over them: every flat theme's
+    // steps fall where Midnight's light would, whatever its lines' color.
+    const lineGray = this.flat ? undefined : (this.lineGray ?? undefined);
+    const style = glowStyleAtZoom(zoom, lineGray, targetPxPerCss);
     const w0 = Math.max(1, Math.min(maxW, Math.ceil((cssW + 2 * GUARD_CSS_PX) * targetPxPerCss)));
     const h0 = Math.max(1, Math.min(maxH, Math.ceil((cssH + 2 * GUARD_CSS_PX) * targetPxPerCss)));
 
@@ -1035,13 +1125,89 @@ export class GlowLayer implements CustomLayerInterface {
     gl.disable(gl.SCISSOR_TEST);
   }
 
-  private drawComposite(gl: WebGL2RenderingContext, res: GpuResources, frame: FrameState): void {
+  /**
+   * A flat theme's light: the composite cel shaded, laid over the map at
+   * `fade` (premultiplied), its program made the first time.
+   */
+  private drawCompositeFlat(
+    gl: WebGL2RenderingContext,
+    res: GpuResources,
+    frame: FrameState,
+    fade: number,
+  ): void {
+    // No grain: cel shading draws each pile's edge in ink, which would speckle the field.
+    let program = res.compositeFlat;
+    if (program === null) {
+      program = createProgram(
+        gl,
+        FULLSCREEN_VERT,
+        compositeFrag(!res.float, false, true),
+        'glow flat',
+      );
+      res.compositeFlat = program;
+    }
+    gl.useProgram(program.program);
+    gl.uniform3fv(uniform(program, 'u_flatColors'), this.srgbColors.subarray(0, 12));
+    gl.uniform3f(uniform(program, 'u_steps'), ...FLAT_FIELD_STEPS);
+    gl.uniform3f(uniform(program, 'u_tones'), ...FLAT_FIELD_TONES);
+    gl.uniform3fv(uniform(program, 'u_outline'), this.outline);
+    gl.uniform1f(uniform(program, 'u_outlineWidth'), this.look.outlineWidth * frame.deviceRatio);
+    gl.uniform1f(uniform(program, 'u_fade'), fade);
+    // The map drawn so far, so the light keeps off the ground beyond the US.
+    const under = this.beyondCount === 0 ? null : this.copyUnder(gl, res);
+    gl.uniform1i(uniform(program, 'u_beyondCount'), under === null ? 0 : this.beyondCount);
+    gl.uniform3fv(uniform(program, 'u_beyond'), this.beyond);
+    gl.activeTexture(gl.TEXTURE0 + UNDER_UNIT);
+    gl.bindTexture(gl.TEXTURE_2D, under);
+    gl.uniform1i(uniform(program, 'u_under'), UNDER_UNIT);
+    this.drawComposite(gl, res, frame, program);
+    gl.activeTexture(gl.TEXTURE0 + UNDER_UNIT);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.activeTexture(gl.TEXTURE0);
+  }
+
+  /**
+   * Copies what the map has drawn so far (its ground, land and water, under
+   * the glow's slot) into a texture the canvas's size; null where it cannot.
+   */
+  private copyUnder(gl: WebGL2RenderingContext, res: GpuResources): WebGLTexture | null {
+    const width = gl.drawingBufferWidth;
+    const height = gl.drawingBufferHeight;
+    if (width <= 0 || height <= 0) return null;
+    let under = res.under;
+    if (under === null) {
+      const texture = gl.createTexture();
+      under = { texture, width: 0, height: 0 };
+      res.under = under;
+    }
+    gl.activeTexture(gl.TEXTURE0 + UNDER_UNIT);
+    gl.bindTexture(gl.TEXTURE_2D, under.texture);
+    if (under.width !== width || under.height !== height) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, width, height, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      under.width = width;
+      under.height = height;
+    }
+    gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
+    return under.texture;
+  }
+
+  private drawComposite(
+    gl: WebGL2RenderingContext,
+    res: GpuResources,
+    frame: FrameState,
+    flat: Program | null = null,
+  ): void {
     const light = res.levels[0];
     if (light === undefined) return;
     const levels = frame.bloomWeights.length;
     const bloom = levels > 0 ? res.levels[1] : undefined;
-    const dense = frame.denseShare > 0;
-    const program = dense ? res.compositeDense : res.composite;
+    // A flat theme's has no grain.
+    const dense = flat === null && frame.denseShare > 0;
+    const program = flat ?? (dense ? res.compositeDense : res.composite);
     gl.useProgram(program.program);
     // Each path samples only its own textures.
     const textures = res.float
@@ -1077,8 +1243,10 @@ export class GlowLayer implements CustomLayerInterface {
     gl.uniform1f(uniform(program, 'u_floorGain'), floor.gain);
     gl.uniform1f(uniform(program, 'u_floorKnee'), floor.knee);
     gl.uniform3fv(uniform(program, 'u_tokens'), this.linearTokens);
-    // Screen: light adds to the map but never pushes a channel past full.
-    gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_COLOR, gl.ZERO, gl.ONE);
+    // Screen: light adds to the map but never pushes a channel past full. A flat theme's tones
+    // are laid over it.
+    if (flat === null) gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_COLOR, gl.ZERO, gl.ONE);
+    else gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
     gl.bindVertexArray(res.vaoEmpty);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     for (let unit = textures.length - 1; unit >= 0; unit--) {
@@ -1117,9 +1285,17 @@ export class GlowLayer implements CustomLayerInterface {
   ): void {
     const program = res.glyph;
     const ratio = frame.deviceRatio;
+    const look = this.look;
+    const flat = this.flat;
     const glyphRadius = frame.style.glyphRadiusPx * ratio;
+    // A theme's ring around each glyph (none in Midnight), and a flat theme's closed school's.
+    const outlineWidth = look.outlineWidth * ratio;
+    const burst = flat && look.burst ? 1 : 0;
     gl.useProgram(program.program);
-    const reach = glyphRadius * DIAMOND_SCALE * 1.4 + GLYPH_AA_PX;
+    const reach =
+      glyphRadius * Math.max(DIAMOND_SCALE * 1.4, burst > 0 ? BURST_RADIUS + BURST_HALF_WIDTH : 0) +
+      outlineWidth +
+      GLYPH_AA_PX;
     const ndcScale = this.setMarginViewport(gl, res, frame, reach);
     this.setPointUniforms(gl, program, args, frame, ndcScale, res.maxPointSize);
     gl.uniform1f(uniform(program, 'u_glyphRadius'), glyphRadius);
@@ -1127,6 +1303,9 @@ export class GlowLayer implements CustomLayerInterface {
     gl.uniform1f(uniform(program, 'u_opacity'), frame.style.glyphOpacity);
     gl.uniform1f(uniform(program, 'u_ringWidth'), Math.max(1.5 * ratio, glyphRadius * 0.36));
     gl.uniform3fv(uniform(program, 'u_colors'), this.srgbColors);
+    gl.uniform3fv(uniform(program, 'u_outline'), this.outline);
+    gl.uniform1f(uniform(program, 'u_outlineWidth'), outlineWidth);
+    gl.uniform1f(uniform(program, 'u_burst'), burst);
     gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     // Open schools first so every affected school sits on top of them.
     if (packed.openCount > 0) {
@@ -1180,15 +1359,19 @@ export class GlowLayer implements CustomLayerInterface {
     gl.colorMask(true, true, true, true);
     gl.enable(gl.BLEND);
     // The brighter of speck and map: specks never add up, and a dot drawn twice is the same dot.
-    gl.blendEquation(gl.MAX);
+    // On a light theme's ground, the darker.
+    const dustLook = this.look.dust;
+    const darker = dustLook?.blend === 'min';
+    gl.blendEquation(darker ? gl.MIN : gl.MAX);
     gl.useProgram(program.program);
     this.loadMatrix(gl, program, args);
     gl.uniform1f(uniform(program, 'u_size'), size);
     gl.uniform1f(uniform(program, 'u_radius'), radius);
     gl.uniform1f(uniform(program, 'u_softness'), dust.softness);
-    const [r, g, b] = style.color;
+    const [r, g, b] = dustLook?.color ?? style.color;
     const a = dust.opacity;
     gl.uniform4f(uniform(program, 'u_color'), r * a, g * a, b * a, a);
+    gl.uniform1f(uniform(program, 'u_darker'), darker ? 1 : 0);
     gl.bindVertexArray(res.vao);
     for (const [first, count] of runs) {
       gl.drawArrays(gl.POINTS, first, count);
@@ -1306,6 +1489,8 @@ export class GlowLayer implements CustomLayerInterface {
       blur,
       composite,
       compositeDense,
+      compositeFlat: null,
+      under: null,
       glyph,
       buffer: gl.createBuffer(),
       vaoAll: gl.createVertexArray(),
@@ -1331,6 +1516,7 @@ export class GlowLayer implements CustomLayerInterface {
       res.blur,
       res.composite,
       res.compositeDense,
+      res.compositeFlat,
       res.glyph,
     ]) {
       if (program !== null) gl.deleteProgram(program.program);
@@ -1343,6 +1529,8 @@ export class GlowLayer implements CustomLayerInterface {
     res.levels = [];
     if (res.blurTarget !== null) deleteLightTarget(gl, res.blurTarget);
     res.blurTarget = null;
+    if (res.under !== null) gl.deleteTexture(res.under.texture);
+    res.under = null;
     res.timer?.dispose();
   }
 

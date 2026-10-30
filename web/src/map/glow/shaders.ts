@@ -24,6 +24,8 @@
 import { STATUS_COUNT } from './color';
 import {
   BLEND_FLOOR_GLSL,
+  BURST_HALF_WIDTH,
+  BURST_RADIUS,
   BLOOM_SOURCE_GLSL,
   CORE_EDGE_D2,
   FALLBACK_FINE_GAIN,
@@ -40,6 +42,9 @@ export const ATTRIB = { hi: 0, lo: 1, born: 2, status: 3 } as const;
 export const DIAMOND_SCALE = 1.2;
 /** Open dots are faint. */
 export const OPEN_ALPHA = 0.85;
+
+/** How many grounds beyond the US a flat theme's light keeps off: the sea and its coasts' band. */
+export const BEYOND_MAX = 2;
 /** Anti-aliasing margin around a glyph, device px. */
 export const GLYPH_AA_PX = 1.5;
 
@@ -265,10 +270,11 @@ void main() {
  * grain (`dense`) or without, so a frame without it costs no more than the
  * glow did before it.
  */
-export function compositeFrag(fallback: boolean, dense: boolean): string {
+export function compositeFrag(fallback: boolean, dense: boolean, flat = false): string {
   return /* glsl */ `#version 300 es
 #define GLOW_FALLBACK ${fallback ? '1' : '0'}
 #define GLOW_DENSE ${dense ? '1' : '0'}
+#define GLOW_FLAT ${flat ? '1' : '0'}
 precision highp float;
 
 // Core light, and the first bloom level holding every weighted scale of bloom.
@@ -300,6 +306,22 @@ uniform float u_floorGain;
 uniform float u_floorKnee;
 // Linear-light tokens for closed, delayed, remote, early dismissal.
 uniform vec3 u_tokens[4];
+#if GLOW_FLAT
+// A flat theme's cel shading (FLAT_FIELD_* in curves.ts): the display-space
+// status colors, the brightness steps, each tone's opacity, the ink on the
+// outer edge and its width in device px, and how much of the field shows.
+uniform vec3 u_flatColors[4];
+uniform vec3 u_steps;
+uniform vec3 u_tones;
+uniform vec3 u_outline;
+uniform float u_outlineWidth;
+uniform float u_fade;
+// The map drawn under the light, and its grounds beyond the US (display space, the first
+// u_beyondCount of them): no light is laid on them.
+uniform sampler2D u_under;
+uniform vec3 u_beyond[${String(BEYOND_MAX)}];
+uniform int u_beyondCount;
+#endif
 
 in vec2 v_uv;
 out vec4 fragColor;
@@ -362,10 +384,41 @@ void main() {
 #endif
   vec3 rgb = glow_status_light(light, u_tokens) * u_exposure;
   vec3 c = glow_linear_to_srgb(glow_tonemap(rgb));
+#if GLOW_FLAT
+  // Not over the ground beyond the US: the light keeps to the land, inside its coasts.
+  if (u_beyondCount > 0) {
+    vec3 under = texelFetch(u_under, ivec2(gl_FragCoord.xy), 0).rgb;
+    for (int i = 0; i < ${String(BEYOND_MAX)}; i++) {
+      if (i < u_beyondCount && all(lessThan(abs(under - u_beyond[i]), vec3(0.75 / 255.0)))) discard;
+    }
+  }
+  // The light's brightness in flat steps, each a pixel's soft edge wide.
+  float v = max(c.r, max(c.g, c.b));
+  float fw = max(fwidth(v), 1e-4);
+  float inside = (v - u_steps.x) / fw;
+  float shown = clamp(inside + 0.5, 0.0, 1.0);
+  if (shown <= 0.0) discard;
+  float mid = clamp((v - u_steps.y) / fw + 0.5, 0.0, 1.0);
+  float top = clamp((v - u_steps.z) / fw + 0.5, 0.0, 1.0);
+  float tone = mix(mix(u_tones.x, u_tones.y, mid), u_tones.z, top);
+  // The color of the status whose light is strongest there, flat up to a pixel's soft edge.
+  vec4 lead = log(max(light, vec4(1e-6)));
+  lead -= max(max(lead.r, lead.g), max(lead.b, lead.a));
+  vec4 share = clamp(vec4(1.0) + lead / max(fwidth(lead), vec4(1e-4)), 0.0, 1.0);
+  vec3 hue = (u_flatColors[0] * share.r + u_flatColors[1] * share.g
+            + u_flatColors[2] * share.b + u_flatColors[3] * share.a)
+           / max(share.r + share.g + share.b + share.a, 1e-6);
+  // The ink: the outer edge, inward by its width.
+  float ink = u_outlineWidth > 0.0 ? 1.0 - clamp(inside - u_outlineWidth + 0.5, 0.0, 1.0) : 0.0;
+  vec4 color = mix(vec4(hue, 1.0) * tone, vec4(u_outline, 1.0), ink);
+  // Over the map, premultiplied: a flat theme's ground is light, and light added would wash out.
+  fragColor = color * shown * u_fade;
+#else
   if (max(c.r, max(c.g, c.b)) <= 0.0) discard;
   c = clamp(c + (glow_dither(gl_FragCoord.xy) - 0.5) / 255.0, 0.0, 1.0);
   // Blended as screen: src + dst * (1 - src). Light never darkens the map.
   fragColor = vec4(c, 0.0);
+#endif
 }
 `;
 }
@@ -374,6 +427,10 @@ export const GLYPH_VERT = /* glsl */ `${POINT_PRELUDE}
 uniform float u_glyphRadius;
 uniform float u_openRadius;
 uniform float u_opacity;
+// A flat theme's ink ring around each glyph, device px (0: none), and how far
+// in a closed school's ring is (0 to 1; 0: none).
+uniform float u_outlineWidth;
+uniform float u_burst;
 
 out float v_alpha;
 out float v_half;
@@ -385,7 +442,8 @@ void main() {
   float radius = a_status == 4u ? u_openRadius : u_glyphRadius;
   if (a_status == 2u) radius *= ${DIAMOND_SCALE.toFixed(2)};
   radius *= pulse.y;
-  v_half = radius + ${GLYPH_AA_PX.toFixed(1)};
+  float reach = a_status == 0u && u_burst > 0.0 ? radius * ${(BURST_RADIUS + BURST_HALF_WIDTH).toFixed(2)} : radius;
+  v_half = reach + u_outlineWidth + ${GLYPH_AA_PX.toFixed(1)};
   v_alpha = u_opacity * min(pulse.x, 1.0);
   v_status = a_status;
   v_radius = radius;
@@ -400,6 +458,10 @@ precision highp int;
 // Display-space (sRGB) status colors: glyph fills are the tokens exactly.
 uniform vec3 u_colors[${String(STATUS_COUNT)}];
 uniform float u_ringWidth;
+// A flat theme's ink ring (display space), its width in device px, and a closed school's ring.
+uniform vec3 u_outline;
+uniform float u_outlineWidth;
+uniform float u_burst;
 
 in float v_alpha;
 in float v_half;
@@ -422,9 +484,18 @@ void main() {
   } else {
     d = len - r;                                      // closed and open: filled dot
   }
-  float coverage = clamp(0.5 - d, 0.0, 1.0) * v_alpha;
-  if (v_status == 4u) coverage *= ${OPEN_ALPHA.toFixed(2)};
-  if (coverage <= 0.0) discard;
-  fragColor = vec4(u_colors[v_status] * coverage, coverage);
+  if (v_status == 0u && u_burst > 0.0) {
+    // Closed, in a flat theme: a bold ring around the dot, growing in with u_burst.
+    float burst = abs(len - r * ${BURST_RADIUS.toFixed(2)}) - r * ${BURST_HALF_WIDTH.toFixed(2)} * u_burst;
+    d = min(d, burst + (1.0 - u_burst) * (u_outlineWidth + 1.0));
+  }
+  float fill = clamp(0.5 - d, 0.0, 1.0);
+  // The ink ring: what the shape covers once grown by its width, less the shape.
+  float cover = u_outlineWidth > 0.0 ? clamp(0.5 - (d - u_outlineWidth), 0.0, 1.0) : fill;
+  float alpha = v_alpha;
+  if (v_status == 4u) alpha *= ${OPEN_ALPHA.toFixed(2)};
+  if (cover * alpha <= 0.0) discard;
+  vec3 color = u_colors[v_status] * fill + u_outline * (cover - fill);
+  fragColor = vec4(color, cover) * alpha;
 }
 `;

@@ -131,8 +131,8 @@
     white-space: nowrap;
     pointer-events: none;
     text-shadow:
-      0 0 2px #000,
-      0 0 8px #000;
+      0 0 2px var(--halo),
+      0 0 8px var(--halo);
     animation: appear 320ms ease-out both;
   }
 

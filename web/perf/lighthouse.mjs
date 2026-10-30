@@ -40,6 +40,13 @@
  * dist-waitlist-chrome/ and perf/lighthouse-waitlist-chrome.json, against the
  * same gates. `npm run perf:waitlist` runs both; CI's perf job runs it.
  *
+ * --theme=<id> measures the site with that theme kept on the device, as a
+ * returning visitor who has put it on: built with VITE_THEMES_PREVIEW naming
+ * it (so a theme waiting for approval, such as Snowball, can be measured
+ * before it is released) into dist-theme/, each run's browser keeping the id
+ * before the page loads, report in perf/raw/lighthouse-theme-<id>.json. The
+ * gates are the site's.
+ *
  * WebGL runs wherever Chrome can run it. On a machine without a GPU that is
  * SwiftShader, a software renderer, which makes every map frame much slower
  * than on real hardware; the report records which renderer was used.
@@ -63,17 +70,29 @@ import prettier from 'prettier';
 
 const WEB = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WAITLIST = process.argv.includes('--waitlist');
+/** The theme kept on the device for every run (--theme=<id>), or null. */
+const THEME =
+  process.argv.find((arg) => arg.startsWith('--theme='))?.slice('--theme='.length) ?? null;
+if (THEME !== null && !/^[a-z]+$/.test(THEME)) throw new Error(`Not a theme id: ${THEME}`);
+/**
+ * The face the kept theme's words are set in, as the built page carries it (index.html
+ * #sl-themes), which its first script asks for where the theme is on: null for none.
+ * @type {string | null}
+ */
+let themeFace = null;
 /** The waitlist's other look: its headline in chrome lettering. */
 const CHROME = WAITLIST && process.argv.includes('--chrome');
 const WAITLIST_NAME = CHROME ? 'waitlist-chrome' : 'waitlist';
 /** The Kit form id the waitlist build is made with; the page never sends a signup here. */
 const WAITLIST_FORM = '1234567';
-const OUT_DIR = WAITLIST ? `dist-${WAITLIST_NAME}` : 'dist';
+const OUT_DIR = WAITLIST ? `dist-${WAITLIST_NAME}` : THEME !== null ? 'dist-theme' : 'dist';
 const DIST = join(WEB, OUT_DIR);
 const RAW_DIR = join(WEB, WAITLIST ? `perf/raw/${WAITLIST_NAME}` : 'perf/raw');
 const REPORT = process.argv.includes('--live-origin')
   ? join(RAW_DIR, 'lighthouse-live.json')
-  : join(WEB, WAITLIST ? `perf/lighthouse-${WAITLIST_NAME}.json` : 'perf/lighthouse.json');
+  : THEME !== null
+    ? join(RAW_DIR, `lighthouse-theme-${THEME}.json`)
+    : join(WEB, WAITLIST ? `perf/lighthouse-${WAITLIST_NAME}.json` : 'perf/lighthouse.json');
 /** Mobile Performance the waitlist must reach: the page phones come to from a video. */
 const MIN_WAITLIST_PERFORMANCE = 0.95;
 const PORT = Number(process.env.PERF_PORT ?? '5104');
@@ -278,15 +297,45 @@ async function launchChrome() {
 async function audit(config, settings) {
   const chrome = await launchChrome();
   try {
+    if (THEME !== null) await keepTheme(chrome.port, THEME);
     const result = await lighthouse(
       URL_UNDER_TEST,
-      { port: chrome.port, output: 'json', logLevel: 'error', ...settings },
+      {
+        port: chrome.port,
+        output: 'json',
+        logLevel: 'error',
+        // The kept theme stays: the browser is new each run, so nothing else is kept.
+        ...(THEME === null ? {} : { disableStorageReset: true }),
+        ...settings,
+      },
       config,
     );
     if (result === undefined) throw new Error('Lighthouse returned no result');
     return result.lhr;
   } finally {
     await chrome.kill();
+  }
+}
+
+/**
+ * Keeps theme `id` on the site in the browser at `port`, as the page does
+ * (src/theme/engine.ts), from a page of the site that loads none of the app.
+ *
+ * @param {number} port
+ * @param {string} id
+ */
+async function keepTheme(port, id) {
+  const browser = await chromium.connectOverCDP(`http://127.0.0.1:${String(port)}`);
+  try {
+    const context = browser.contexts()[0] ?? (await browser.newContext());
+    const page = await context.newPage();
+    await page.goto(`${ORIGIN}/robots.txt`);
+    await page.evaluate((kept) => {
+      globalThis.localStorage.setItem('snowlight:theme', JSON.stringify({ id: kept }));
+    }, id);
+    await page.close();
+  } finally {
+    await browser.close();
   }
 }
 
@@ -328,8 +377,12 @@ function summarize(lhr) {
         .map((url) => url.slice(ORIGIN.length + 1)),
     ),
   ].sort();
+  // Where the kept theme has a face of its own, the page asked for it: the theme was on.
+  const themeOn =
+    themeFace === null || requests.some((item) => item.url === `${ORIGIN}${themeFace}`);
 
   return {
+    themeOn,
     scores,
     fcpMs: Math.round(numeric('first-contentful-paint')),
     lcpMs: Math.round(numeric('largest-contentful-paint')),
@@ -450,11 +503,26 @@ async function main() {
           VITE_WAITLIST_HEADLINE: CHROME ? 'chrome' : 'text',
         },
       );
+    } else if (THEME !== null) {
+      run(
+        process.execPath,
+        [join(WEB, 'node_modules/vite/bin/vite.js'), 'build', '--outDir', OUT_DIR, '--emptyOutDir'],
+        { ...process.env, VITE_THEMES_PREVIEW: THEME },
+      );
     } else {
       run('npm', ['run', 'build']);
     }
   }
   await mkdir(RAW_DIR, { recursive: true });
+  if (THEME !== null) {
+    const html = await readFile(join(DIST, 'index.html'), 'utf8');
+    const block = /<script type="application\/json" id="sl-themes">([\s\S]*?)<\/script>/.exec(html);
+    /** @type {Record<string, { font?: string }>} */
+    const carried = JSON.parse(block?.[1] ?? '{}');
+    const kept = carried[THEME];
+    if (kept === undefined) throw new Error(`The build does not carry the theme ${THEME}`);
+    themeFace = kept.font ?? null;
+  }
 
   const liveOrigin = LIVE_ORIGIN_MODE ? await startLiveOrigin() : null;
   const server = await startPreview();
@@ -578,6 +646,16 @@ async function main() {
       value: lazy.sharedModuleCopies,
       limit: '1',
       pass: lazy.sharedModuleCopies === 1,
+    });
+  }
+
+  if (THEME !== null && themeFace !== null) {
+    const on = allRuns.filter((r) => r.themeOn).length;
+    gates.push({
+      gate: `runs in ${THEME}, its face asked for`,
+      value: `${String(on)} of ${String(allRuns.length)}`,
+      limit: 'every run',
+      pass: on === allRuns.length,
     });
   }
 

@@ -268,11 +268,12 @@ describe('layer order', () => {
     const above = LAYERS.slice(mask + 1);
     for (const drawn of above) {
       // Over the mask: only the border line, the bundled US lines, names, and the empty slots
-      // of the glow layer and the schools.
+      // of the glow layer (in a flat theme and the rest) and the schools.
       expect(
         drawn.type === 'symbol' ||
           drawn.id === BASEMAP_IDS.usBorder ||
           drawn.id === BASEMAP_IDS.glowSlot ||
+          drawn.id === BASEMAP_IDS.glowSlotFlat ||
           drawn.id === BASEMAP_IDS.schools ||
           ('source' in drawn && drawn.source === BASEMAP_IDS.usSource),
         drawn.id,
@@ -313,7 +314,8 @@ describe('layer order', () => {
     const bands = CITY_NAME_BANDS.map((_band, index) => cityNameLayerId(index)).reverse();
     // The national city names and the state names (a phone's) come first, right over the
     // bundled lines: the glow, which goes on right over its slot before BASEMAP_IDS.labels,
-    // shines over them. The street tiles' names follow.
+    // shines over them. A flat theme's glow goes right over its own slot, under them. The
+    // street tiles' names follow.
     const firstSymbol = LAYERS.findIndex((l) => l.type === 'symbol');
     expect(LAYERS[firstSymbol - 1]?.id).toBe(BASEMAP_IDS.usOutline);
     expect(LAYERS[firstSymbol + bands.length + 1]?.id).toBe(BASEMAP_IDS.glowSlot);
@@ -1195,9 +1197,29 @@ describe('schools', () => {
   });
 
   it('put a dot at each school under every label, and each name over every other label', () => {
-    // Right under the glow's slot, so the glow shines over the dots, and the labels over both.
-    expect(at(BASEMAP_IDS.schoolDots)).toBe(at(BASEMAP_IDS.glowSlot) - 1);
+    // Right under the glow's slots, so the glow shines over the dots, and the labels over both.
+    expect(at(BASEMAP_IDS.schoolDots)).toBe(at(BASEMAP_IDS.glowSlotFlat) - 1);
     expect(at(BASEMAP_IDS.glowSlot)).toBe(at(BASEMAP_IDS.labels) - 1);
+    // Between the slots only the national view's own lines and names, which no zoom draws
+    // with a school's layer: the dots are under the glow in either place, and Midnight draws
+    // as it did.
+    const between = layers.slice(at(BASEMAP_IDS.glowSlotFlat) + 1, at(BASEMAP_IDS.glowSlot));
+    expect(between.map((l) => l.id)).toEqual(
+      expect.arrayContaining([
+        BASEMAP_IDS.usStates,
+        BASEMAP_IDS.usOutline,
+        BASEMAP_IDS.usCityLabel,
+        BASEMAP_IDS.usStateLabel,
+      ]),
+    );
+    const nationalUntil = Math.max(...between.map((l) => l.maxzoom ?? 24));
+    const schoolLayers = layers.filter(
+      (l) => 'source' in l && l.source === BASEMAP_IDS.schoolsSource,
+    );
+    expect(schoolLayers.length).toBeGreaterThan(2);
+    for (const school of schoolLayers) {
+      expect(school.minzoom ?? 0, school.id).toBeGreaterThanOrEqual(nationalUntil);
+    }
     expect(at(BASEMAP_IDS.schoolDots)).toBeGreaterThan(at(BASEMAP_IDS.usMask));
     // MapLibre places the top layer's labels first: each dot's space, then school names, then
     // street and place names.
@@ -1644,6 +1666,7 @@ describe('staging the style', () => {
       // No layer that reads a source: the ground, and the glow's and the schools' slots.
       expect(ids(staged.style.layers)).toEqual([
         BASEMAP_IDS.background,
+        BASEMAP_IDS.glowSlotFlat,
         BASEMAP_IDS.glowSlot,
         BASEMAP_IDS.schools,
       ]);

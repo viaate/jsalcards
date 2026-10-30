@@ -13,6 +13,16 @@ export const BASEMAP_IDS = {
   background: 'background',
   /** The continental US and DC, a step off the ground, below the handover to street tiles. */
   usLand: 'us-land',
+  /**
+   * A theme's own touches, drawn only where it sets them (style.ts
+   * BasemapPalette): a band of shallow water along the national view's coasts,
+   * a shade under each park and an ink edge around it, and an ink casing
+   * under the major roads. Midnight draws none of them.
+   */
+  usCoastBand: 'us-coast-band',
+  ofmParkShade: 'ofm-park-shade',
+  ofmParkEdge: 'ofm-park-edge',
+  ofmRoadCasing: 'ofm-road-casing',
   usStates: 'us-states',
   /** The land's edge: coasts, lake shores and the borders with Canada and Mexico. */
   usOutline: 'us-outline',
@@ -77,6 +87,14 @@ export const BASEMAP_IDS = {
    * 7, whatever order the other layers go on the map in (index.ts).
    */
   glowSlot: 'glow-slot',
+  /**
+   * Where the glow layer goes in a flat theme (GlowLook mode 'flat'), whose
+   * marks are opaque: right over this empty layer, which is right before the
+   * national view's own lines, so every state line, coast, city name and
+   * state name reads over the marks as it does over Midnight's light. The
+   * school dots go under it: no zoom draws them and those lines and names.
+   */
+  glowSlotFlat: 'glow-slot-flat',
   /** The glow layer. */
   glow: 'snowlight-glow',
   /**

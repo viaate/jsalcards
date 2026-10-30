@@ -92,6 +92,7 @@ export const COPY_MODULES = [
   'src/copy-notify.ts',
   'src/copy-waitlist.ts',
   'src/copy-diag.ts',
+  'src/copy-themes.ts',
 ];
 
 /** The waitlist page's words (src/copy-waitlist.ts), filled into pages under copy.waitlist. */
@@ -381,6 +382,9 @@ const SHOWN_VALUE_INPUTS = new Set([
   'submit',
   'reset',
 ]);
+
+/** A CSS hex color, as a meta theme-color's content: never words. */
+const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 /** Meta tags whose content shows up in a search result, a share preview or on a home screen. */
 const VISIBLE_META = new Set([
@@ -5159,7 +5163,19 @@ class Flow {
               text === 'content' ||
               this.project.cssAttributes.has(text),
           );
-        if (shown !== undefined) show(value, `the ${shown} attribute`);
+        if (shown === 'content') {
+          // A meta tag's content that is a color (the browser's bar, theme-color) shows no words.
+          if (value !== undefined) {
+            this.examine(
+              this.sink(module, node, 'the content attribute', 'written to'),
+              'text',
+              () =>
+                this.evaluate(value, undefined).filter(
+                  (text) => !(text.t === 'text' && HEX_COLOR.test(text.text)),
+                ),
+            );
+          }
+        } else if (shown !== undefined) show(value, `the ${shown} attribute`);
         break;
       }
       case 'append':

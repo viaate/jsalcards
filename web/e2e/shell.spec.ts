@@ -81,6 +81,11 @@ const MAP_DOWNLOADS = [
   'us-lines',
   'us-names',
 ] as const;
+/** index.html, gzipped at zlib's default level, as a static host serves it. */
+const PAGE_GZIP_BUDGET = 16_000;
+/** The themes index.html carries (#sl-themes), gzipped the same way. */
+const PAGE_THEMES_GZIP_BUDGET = 3_500;
+
 /** MapLibre's scripts, gzipped at zlib's default level, as a static host serves them. */
 const MAPLIBRE_GZIP_BUDGET = 310_000;
 /** A name only MapLibre's shared module defines: each script containing it is a copy. */
@@ -1086,6 +1091,24 @@ test.describe('handover to the WebGL map', () => {
       await context.close();
     });
   }
+
+  test('keeps the page itself, and the themes it carries, within budget', async ({ request }) => {
+    const html = await (await request.get('/')).text();
+    const themes = /<script type="application\/json" id="sl-themes">([\s\S]*?)<\/script>/.exec(
+      html,
+    )?.[1];
+    expect(themes).toBeDefined();
+    const gzipped = (text: string): number => gzipSync(text).length;
+    test.info().annotations.push({
+      type: 'page bytes (gzipped)',
+      description: JSON.stringify({ page: gzipped(html), themes: gzipped(themes ?? '') }),
+    });
+    // Every visit downloads the page, and in it every released theme's CSS (tools/themes.ts),
+    // eight at about 3 kB gzipped. A theme the game adds grows both by about 0.4 kB: past these,
+    // carry the themes' tokens alone and write their rules on the device.
+    expect(gzipped(html)).toBeLessThanOrEqual(PAGE_GZIP_BUDGET);
+    expect(gzipped(themes ?? '')).toBeLessThanOrEqual(PAGE_THEMES_GZIP_BUDGET);
+  });
 
   test('loads MapLibre after first paint, through a dynamic import', async ({
     browser,

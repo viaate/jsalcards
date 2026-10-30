@@ -2,7 +2,9 @@
  * Puts the glow layer on the map, right over the style's slot for it
  * (BASEMAP_IDS.glowSlot): over the ground, the lines and the national view's
  * city names, so a city's lights shine over its name; under every label from
- * zoom 7, so street and place names stay crisp above the light up close.
+ * zoom 7, so street and place names stay crisp above the light up close. A
+ * flat theme's marks are opaque, and it goes lower, right over its own slot
+ * (BASEMAP_IDS.glowSlotFlat), under the national names, which read over them.
  *
  * This module loads with the map's own code, after the first paint, and the
  * layer goes on the map with its style, before the map's first frame: adding
@@ -36,8 +38,12 @@ import {
 } from './basemap/dots';
 import { BASEMAP_IDS, SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE } from './basemap/ids';
 import { GlowLayer } from './glow';
-import { glowStyleAtZoom } from './glow/curves';
+import { GLOW_LOOK } from './glow/GlowLayer';
+import type { GlowLook } from './glow/GlowLayer';
+import { STATUS_HEX } from './glow/color';
+import { BURST_HALF_WIDTH, BURST_RADIUS, glowStyleAtZoom } from './glow/curves';
 import type { DustStyle } from './glow/dust';
+import { THEME_EVENT } from '../theme/event';
 
 export const GLOW_LAYER_ID = BASEMAP_IDS.glow;
 
@@ -48,11 +54,67 @@ export const GLOW_LAYER_ID = BASEMAP_IDS.glow;
  * carries its light. The blend's reach falls with the square of its share, as
  * its faint wash stops reading as the school's own once its core shows.
  */
-export function litRadius(zoom: number): number {
+export function litRadius(zoom: number, look: GlowLook = shownLook): number {
   const style = glowStyleAtZoom(zoom);
-  if (style.glyphOpacity >= 0.5) return style.glyphRadiusPx;
+  if (style.glyphOpacity >= 0.5) {
+    // The glyph, its theme's ring and a flat theme's closed school's ring with it.
+    const reach = look.mode === 'flat' && look.burst ? BURST_RADIUS + BURST_HALF_WIDTH : 1;
+    return style.glyphRadiusPx * reach + look.outlineWidth;
+  }
   const blend = 1 - style.coreShare;
   return Math.max(2 * style.coreSigmaPx, 2 * style.blendSigmaPx * blend * blend);
+}
+
+/** The look the glow draws in now: the page's theme's (glowLook), for a tap's reach. */
+let shownLook: GlowLook = GLOW_LOOK;
+
+/** A design token's value on the page, or '' where it has none. */
+function pageToken(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/**
+ * The glow's look from the page's theme (theme/css.ts): its status colors, its
+ * mode and the dust's color; Midnight's own (GLOW_LOOK) for what it leaves out.
+ */
+export function glowLook(token: (name: string) => string = pageToken): GlowLook {
+  const hex = (name: string, fallback: string): string => {
+    const value = token(name);
+    return HEX.test(value) ? value : fallback;
+  };
+  const status = [
+    hex('--status-closed', STATUS_HEX[0]),
+    hex('--status-delayed', STATUS_HEX[1]),
+    hex('--status-remote', STATUS_HEX[2]),
+    hex('--status-early-dismissal', STATUS_HEX[3]),
+    hex('--status-open', STATUS_HEX[4]),
+  ] as const;
+  const width = Number.parseFloat(token('--glow-outline-width'));
+  const dust = token('--map-dust');
+  const dustColor = HEX.test(dust) ? srgbChannels(dust) : null;
+  const mode = token('--glow-mode') === 'flat' ? 'flat' : 'glow';
+  // A flat light keeps off the map's grounds beyond the US (the sea, and a toon map's band of
+  // shallow water along the coasts), where the land is another color.
+  const land = token('--land').toLowerCase();
+  const beyond =
+    mode === 'flat' && HEX.test(land)
+      ? [token('--bg'), token('--map-coast-band')]
+          .map((color) => color.toLowerCase())
+          .filter((color) => HEX.test(color) && color !== land)
+      : [];
+  return {
+    status,
+    mode,
+    outline: hex('--glow-outline', GLOW_LOOK.outline),
+    outlineWidth: Number.isFinite(width) && width > 0 ? width : 0,
+    burst: token('--glow-burst') === 'on',
+    ...(dustColor === null
+      ? {}
+      : { dust: { color: dustColor, blend: token('--map-dust-blend') === 'min' ? 'min' : 'max' } }),
+    ...(beyond.length > 0 ? { beyond } : {}),
+  };
 }
 
 /**
@@ -183,6 +245,26 @@ export function mountGlow(map: MapLibreMap): Glow {
     lineGray: () => stateLineGray(map),
   });
   const dots = markLitDots(map);
+  /** The page's theme, now and each time the theme engine puts another on (theme/engine.ts). */
+  const takeLook = (): void => {
+    shownLook = glowLook();
+    layer.setLook(shownLook);
+    if (map.getLayer(GLOW_LAYER_ID) !== undefined) place();
+  };
+  /** Puts the layer right over its slot for the look, or moves it there. */
+  const place = (): void => {
+    const order = map.getLayersOrder();
+    const slot = order.indexOf(
+      shownLook.mode === 'flat' ? BASEMAP_IDS.glowSlotFlat : BASEMAP_IDS.glowSlot,
+    );
+    const before = slot < 0 ? undefined : order[slot + 1];
+    if (map.getLayer(GLOW_LAYER_ID) === undefined) map.addLayer(layer, before);
+    else if (before !== GLOW_LAYER_ID) map.moveLayer(GLOW_LAYER_ID, before);
+  };
+  // Midnight is the layer's own look: a page with no theme on reads no style for it.
+  const page = typeof document === 'undefined' ? null : document;
+  if (page?.documentElement.hasAttribute('data-theme') === true) takeLook();
+  page?.addEventListener(THEME_EVENT, takeLook);
   let removed = false;
   // A function, so each check reads it afresh after an await.
   const gone = (): boolean => removed;
@@ -227,9 +309,7 @@ export function mountGlow(map: MapLibreMap): Glow {
     dots.update();
     if (map.getLayer(GLOW_LAYER_ID) !== undefined) return;
     // Right over its slot, whichever layers the map has on so far (index.ts adds them in turn).
-    const order = map.getLayersOrder();
-    const slot = order.indexOf(BASEMAP_IDS.glowSlot);
-    map.addLayer(layer, slot < 0 ? undefined : order[slot + 1]);
+    place();
   };
   if (map.isStyleLoaded() === true) add();
   else map.once('style.load', add);
@@ -272,6 +352,7 @@ export function mountGlow(map: MapLibreMap): Glow {
     remove() {
       removed = true;
       pending = null;
+      page?.removeEventListener(THEME_EVENT, takeLook);
       map.off('style.load', add);
       map.off('zoom', watchZoom);
       try {

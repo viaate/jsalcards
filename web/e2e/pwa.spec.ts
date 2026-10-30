@@ -435,7 +435,9 @@ function isShellFile(file: string): boolean {
   // worker, which a new version of it then updates.
   if (file === PUSH_FILE) return true;
   if (/^assets\/[^/]+\.(?:js|css)$/.test(file)) return true;
-  if (/^assets\/[^/]+\.woff2$/.test(file)) return /-latin(?:-ext)?-/.test(file);
+  // Geist's Latin faces; a theme's own face (Snowball's Fredoka) loads with its theme, cached then.
+  if (/^assets\/[^/]+\.woff2$/.test(file))
+    return /^assets\/geist-(?:[^/]*-)?latin(?:-ext)?-/.test(file);
   return /^geo\/[^/]+\.json$/.test(file);
 }
 

@@ -126,6 +126,9 @@ export interface SchoolColors {
   readonly name: string;
   /** The ground: the ring around each dot and the halo behind each name. */
   readonly ground: string;
+  /** A theme's own dot and its ring, where they are not `name` and `ground` (theme/css.ts). */
+  readonly dot?: string;
+  readonly ring?: string;
 }
 
 /** The URL template of an archive's tiles, for a style source. */
@@ -226,9 +229,9 @@ export function schoolDotLayer(colors: SchoolColors): CircleLayerSpecification {
     minzoom: SCHOOL_TILES_MIN_ZOOM,
     paint: {
       'circle-radius': byZoom(...DOT_RADIUS.flat()),
-      'circle-color': colors.name,
+      'circle-color': colors.dot ?? colors.name,
       'circle-opacity': opacity,
-      'circle-stroke-color': colors.ground,
+      'circle-stroke-color': colors.ring ?? colors.ground,
       'circle-stroke-width': byZoom(...DOT_RING.flat()),
       'circle-stroke-opacity': opacity,
       'circle-pitch-alignment': 'map',

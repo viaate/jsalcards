@@ -14,6 +14,8 @@ import { accounts } from './tools/accounts.ts';
 import { pushWorker } from './tools/push-worker.ts';
 import { usMask } from './tools/us-mask.ts';
 import { schoolNames } from './tools/school-names.ts';
+import { THEMES_UNRELEASED } from './src/theme/themes.ts';
+import { shownThemes, themes } from './tools/themes.ts';
 import { waitlist, waitlistPost, waitlistSettings } from './tools/waitlist.ts';
 
 const isVitest = process.env.VITEST !== undefined;
@@ -39,7 +41,18 @@ export default defineConfig(({ mode }) => {
    * environment or a .env file. Unset, the build is the site as it was.
    */
   const waitlistOn = waitlistSettings(loadEnv(mode, import.meta.dirname, 'VITE_WAITLIST_'));
+  /** The unreleased themes this build may show, by name (tools/themes.ts). */
+  const themesPreview = loadEnv(mode, import.meta.dirname, 'VITE_THEMES_').VITE_THEMES_PREVIEW;
   return {
+    // A build that may show no unreleased theme carries none in its scripts (src/theme/themes.ts);
+    // the tests carry every theme.
+    define: isVitest
+      ? {}
+      : {
+          __UNRELEASED_THEMES__: JSON.stringify(
+            shownThemes(themesPreview).some((id) => THEMES_UNRELEASED.has(id)),
+          ),
+        },
     // One static page and no client-side routes: unknown paths 404, as on GitHub Pages.
     appType: 'mpa',
     plugins: [
@@ -49,6 +62,9 @@ export default defineConfig(({ mode }) => {
       // Before htmlCopy: keeps index.html's blocks for the waitlist or for the code screen.
       waitlist(waitlistOn, import.meta.dirname),
       htmlCopy(pageCopy(copy, waitlistCopy)),
+      // The themes this build may show, written into index.html (tools/themes.ts): never one
+      // waiting for the owner's approval, unless VITE_THEMES_PREVIEW names it.
+      themes(themesPreview),
       waitlistPost(waitlistOn, import.meta.dirname),
       // Lists the data files staged in public/data/, so the page asks only for files that exist.
       dataFiles(DATA_DIR, { ship: shipData }),

@@ -16,6 +16,11 @@
   --status-remote: #b79cff;
   --status-early-dismissal: #6bffb0;
 
+  --veil: 0 0 0;
+  --shadow: 0 0 0;
+  --sheen: 255 255 255;
+  --halo: #000;
+
   --font-sans: 'Geist Variable', system-ui, sans-serif;
   --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
 }

@@ -59,6 +59,7 @@ import type { Active, Controller, ReplayBar } from './replay';
 import { startDiagnostics } from './diagnostics';
 import { startServiceWorker } from './service-worker';
 import { ZOOM, selectionForHit, startupSelection, viewForHit, zipHit } from './startup';
+import { THEME_STORAGE_KEY } from '../theme/event';
 
 export type { Screen } from './frame';
 export type { StatusCounts } from '../data/closings';
@@ -453,6 +454,21 @@ export function boot(options: BootOptions): Services {
   void startServiceWorker(options.map);
   // The screen check, where the address asks for it (?diag=1).
   startDiagnostics();
+  // The theme engine (theme/engine.ts), where index.html put on a theme the device keeps, or
+  // once another tab keeps one: from then on it follows every change. With Midnight, the page's
+  // own CSS, nothing loads.
+  const startThemes = (): void => {
+    void import('../theme/engine').then(({ themeEngine }) => themeEngine()).catch(() => undefined);
+  };
+  if (document.documentElement.hasAttribute('data-theme')) startThemes();
+  else {
+    const heard = (event: StorageEvent): void => {
+      if (event.key !== THEME_STORAGE_KEY && event.key !== null) return;
+      window.removeEventListener('storage', heard);
+      startThemes();
+    };
+    window.addEventListener('storage', heard);
+  }
 
   /** The menu, started the first time its button is pressed (ui/menu-host.ts). */
   let menuHost: Promise<Menu | null> | null = null;

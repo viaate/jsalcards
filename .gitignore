@@ -9,6 +9,7 @@ dist/
 web/dist-waitlist/
 web/dist-waitlist-chrome/
 web/dist-accounts/
+web/dist-theme/
 *.egg-info/
 *.tsbuildinfo
 

@@ -648,6 +648,26 @@ export const OPEN_RADIUS_STOPS: ZoomStops = [
   [17, 3],
 ];
 
+/**
+ * A flat theme's light (GlowLook mode 'flat'): the glow's own field, cel
+ * shaded. Where its brightness (0 to 1, tone mapped) passes each step, the
+ * field takes the next flat tone of its status's color, at these opacities
+ * over the map, with the theme's ink on its outer edge: a lone closing is a
+ * small flat disc, a crowd one wide shape, and where it is thickest the
+ * full color, so the country's closings read by density as the glow's do.
+ * Up close the glyphs take over as the glow's do (GLYPH_FADE_*).
+ */
+export const FLAT_FIELD_STEPS: readonly [number, number, number] = [0.18, 0.45, 0.75];
+export const FLAT_FIELD_TONES: readonly [number, number, number] = [0.32, 0.6, 0.92];
+
+/**
+ * How far out a closed school's ring reaches in a flat theme that draws one,
+ * as a share of its dot's radius, and the ring's half width: about half as
+ * far again as the other glyphs, so none is lost beside it.
+ */
+export const BURST_RADIUS = 1.3;
+export const BURST_HALF_WIDTH = 0.2;
+
 /** Glyphs fade in over this zoom range and are fully crisp from its end. */
 export const GLYPH_FADE_START = 10.5;
 export const GLYPH_FADE_END = 11;

@@ -220,6 +220,9 @@ uniform float u_radius;
 uniform float u_softness;
 // Premultiplied color, its opacity included.
 uniform vec4 u_color;
+// 1 on a light ground, where the darker of speck and map is kept (MIN): the
+// speck as white laid over by its color, so white leaves the map as it is.
+uniform float u_darker;
 
 out vec4 fragColor;
 
@@ -227,6 +230,8 @@ void main() {
   float d = length(gl_PointCoord - 0.5) * u_size;
   float cover = 1.0 - smoothstep(u_radius - 1.0, u_radius + u_softness, d);
   if (cover <= 0.0) discard;
-  fragColor = u_color * cover;
+  fragColor = u_darker > 0.5
+    ? vec4(vec3(1.0) - (vec3(u_color.a) - u_color.rgb) * cover, 1.0)
+    : u_color * cover;
 }
 `;

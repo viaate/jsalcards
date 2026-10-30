@@ -15,6 +15,7 @@ import { format } from './copy-format';
 
 const NBSP_CHAR = '\u00a0';
 import { diagCopy } from './copy-diag';
+import { themesCopy } from './copy-themes';
 import { waitlistCopy } from './copy-waitlist';
 
 // The house-style rules and the lint live in scripts/check-copy.mjs, a plain
@@ -740,6 +741,8 @@ describe('format', () => {
       ).toEqual([]);
       expect(Object.isFrozen(diagCopy)).toBe(true);
       expect(allProblems(copyLeaves(diagCopy).map(([, text]) => text))).toEqual([]);
+      expect(Object.isFrozen(themesCopy)).toBe(true);
+      expect(allProblems(copyLeaves(themesCopy).map(([, text]) => text))).toEqual([]);
       expect(chanceFormat.weekday('2026-01-13')).toBe('Tuesday');
       expect(chanceFormat.chanceOn('2026-01-14')).toBe('Chance of no school Wednesday');
       // Under it where the chance is the nation's record for want of local days (owner, Oct 24).
@@ -3292,6 +3295,22 @@ export const failure = new Deeper('Search could not start');
     );
   }, 30_000);
 
+  it('lets a meta tag’s content be a color, and nothing else that is not copy', async () => {
+    await expectFindings(
+      {
+        'src/copy.ts': cleanCopy,
+        'src/bar.ts': `export function paint(color: string | null): void {
+  const bar = document.querySelector('meta[name="theme-color"]');
+  bar?.setAttribute('content', color ?? '#000000');
+  bar?.setAttribute('content', '#fff');
+  bar?.setAttribute('content', 'Snow day words');
+}
+`,
+      },
+      [['src/bar.ts', "'Snow day words'", '"Snow day words" written to the content attribute']],
+    );
+  });
+
   it('follows text across files, component props, snippets, stores and classes', async () => {
     const files = {
       'src/copy.ts': cleanCopy,
@@ -3761,7 +3780,8 @@ ${aliases}
     expect(findings).toEqual([]);
     // copy.ts's strings, the chance section's fixed words (src/copy-chance.ts), the waitlist's
     // (src/copy-waitlist.ts), the account controls' and admin view's (src/copy-account.ts) and
-    // the notifications' (src/copy-notify.ts) and the screen check's (src/copy-diag.ts).
+    // the notifications' (src/copy-notify.ts), the screen check's (src/copy-diag.ts) and the
+    // themes' (src/copy-themes.ts).
     expect(scanned.strings).toBe(
       strings.length +
         copyLeaves(chanceCopy).length +
@@ -3769,7 +3789,8 @@ ${aliases}
         copyLeaves(accountCopy).length +
         copyLeaves(adminCopy).length +
         copyLeaves(notifyCopy).length +
-        copyLeaves(diagCopy).length,
+        copyLeaves(diagCopy).length +
+        copyLeaves(themesCopy).length,
     );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s

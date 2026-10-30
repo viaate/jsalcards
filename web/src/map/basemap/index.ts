@@ -86,7 +86,9 @@ import {
   CITY_NAME_PADDING,
   CITY_NAME_PHONE_PADDING,
   STATE_NAME_PADDING,
+  TOUCH_LAYERS,
   buildBasemapStyle,
+  paletteTokens,
   cityNameSize,
   cityNameFilter,
   cityNameLayerId,
@@ -95,6 +97,7 @@ import {
   stateNameSizeExpression,
 } from './style';
 import type { BasemapLook, UsLinesData } from './style';
+import { THEME_EVENT } from '../../theme/event';
 import { STATE_NAME_SIZE, US_BOUNDS } from './us-geo';
 import { US_MASK_FILE } from './us-mask';
 import { US_MASK_ALIAS } from './us-mask-alias';
@@ -456,7 +459,8 @@ function phoneNamesWanted(token = tokenReader()): boolean {
 /**
  * Line colors and width come from the same CSS custom properties that draw the
  * inline still, so the two cannot drift apart; label and building tones come
- * from the design tokens the rest of the page uses.
+ * from the design tokens the rest of the page uses, and the rest from a
+ * theme's (paletteTokens).
  */
 function look(): BasemapLook {
   const token = tokenReader();
@@ -469,11 +473,13 @@ function look(): BasemapLook {
       land: token('--land', '#000'),
       outline: token('--line-outline', '#6b6b6b'),
       state: token('--line-state', '#2a2a2a'),
-      label: token('--text-2', '#a3a3a3'),
-      labelDim: token('--text-3', '#6b6b6b'),
+      // A theme's names on the map, where its text tones would not read there (theme/css.ts).
+      label: token('--map-label', token('--text-2', '#a3a3a3')),
+      labelDim: token('--map-label-dim', token('--text-3', '#6b6b6b')),
       labelBright: token('--text-1', '#f5f5f5'),
       building: token('--surface-2', '#111'),
       buildingEdge: token('--border-1', '#1f1f1f'),
+      palette: paletteTokens(token),
     },
   };
 }
@@ -542,6 +548,12 @@ export async function createBasemap({
   const cities = cityNamesOf(usNames);
   const states = namedStates(stateNamesOf(usNames));
   const measure = textMeasure();
+  // A theme put on while the map is still being made (theme/engine.ts) restyles it once it is.
+  const early = { themeChanged: false };
+  const onEarlyTheme = (): void => {
+    early.themeChanged = true;
+  };
+  document.addEventListener(THEME_EVENT, onEarlyTheme);
   const initialLook = look();
   /** Whether the names are set for a phone, as the page says; it can change as the window does. */
   let phoneNames = initialLook.phoneNames === true;
@@ -1807,6 +1819,67 @@ export async function createBasemap({
     }
     if (national) showHome();
   };
+  /**
+   * A theme put on the page (theme/engine.ts): every layer takes its colors and
+   * widths from the page again, on the map or still to go on. Only paint
+   * changes, and whether the land and a theme's own touches show: no layer's
+   * filter or place.
+   */
+  /** Whether the style is on the map yet (below): until then a theme changes the style itself. */
+  let styleSet = false;
+  const restyle = (): void => {
+    const next = buildBasemapStyle({
+      usLines: usNames,
+      usLinesUrls,
+      schools,
+      hiddenCityNames: hiddenNames.cities,
+      stateNames: drawnStates,
+      smallStateNames: smallStates,
+      ...look(),
+      phoneNames,
+    });
+    // Before the style is on the map, its first layers take the new paint there.
+    if (!styleSet) {
+      const first = staged.style.layers;
+      for (const layer of next.layers) {
+        const at = first.findIndex((old) => old.id === layer.id);
+        const old = first[at];
+        if (old === undefined) continue;
+        const paint = (layer as { paint?: Record<string, unknown> }).paint ?? {};
+        first[at] = { ...old, paint };
+      }
+    }
+    whenStyled(() => {
+      for (const layer of next.layers) {
+        const paint = (layer as { paint?: Record<string, unknown> }).paint ?? {};
+        const pending = changePending(layer.id, (old) => ({ ...old, paint }));
+        if (pending || map.getLayer(layer.id) === undefined) continue;
+        for (const [name, value] of Object.entries(paint)) {
+          const property = name as Parameters<MapLibreMap['setPaintProperty']>[1];
+          const now: unknown = map.getPaintProperty(layer.id, property);
+          if (JSON.stringify(now) !== JSON.stringify(value)) {
+            map.setPaintProperty(
+              layer.id,
+              property,
+              value as Parameters<MapLibreMap['setPaintProperty']>[2],
+              NOT_CHECKED,
+            );
+          }
+        }
+      }
+      // The land, and a theme's own touches (style.ts TOUCH_LAYERS), shown as the theme has them.
+      for (const id of [BASEMAP_IDS.usLand, ...TOUCH_LAYERS]) {
+        const layer = next.layers.find((each) => each.id === id);
+        const shown = (layer as { layout?: { visibility?: 'visible' | 'none' } } | undefined)
+          ?.layout?.visibility;
+        if (shown !== undefined) setLayoutProperty(id, 'visibility', shown);
+      }
+      map.triggerRepaint();
+    });
+  };
+  document.removeEventListener(THEME_EVENT, onEarlyTheme);
+  document.addEventListener(THEME_EVENT, restyle);
+  if (early.themeChanged) restyle();
   map.on('movestart', onMoveStart);
   map.on('moveend', refreshStateAreas);
   map.once('idle', refreshStateAreas);
@@ -1847,6 +1920,7 @@ export async function createBasemap({
 
   // The style goes on in a task of its own: MapLibre sets part of it up as it takes it.
   await yieldToMain();
+  styleSet = true;
   map.setStyle(staged.style);
 
   return {
@@ -1906,6 +1980,7 @@ export async function createBasemap({
       maskFeed.destroy();
       clearance.destroy();
       stopWarming();
+      document.removeEventListener(THEME_EVENT, restyle);
       if (window.snowlightMap === map) delete window.snowlightMap;
       map.remove();
       container.classList.remove(LIVE_CLASS);

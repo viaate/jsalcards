@@ -417,9 +417,9 @@
     border-radius: 16px;
     outline: none;
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.04),
+      inset 0 1px 0 rgb(var(--sheen) / 0.04),
       0 0 0 1px var(--bg),
-      0 16px 40px rgb(0 0 0 / 0.6);
+      0 16px 40px rgb(var(--shadow) / 0.6);
     animation: arrive 180ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   }
 
@@ -520,7 +520,7 @@
   /* The one in use: a filled pill, its name a step heavier. */
   .item.is-on {
     background: var(--border-2);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+    box-shadow: inset 0 1px 0 rgb(var(--sheen) / 0.05);
   }
 
   .item.is-on .name {

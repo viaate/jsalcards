@@ -124,7 +124,7 @@
     background: var(--surface-1);
     border: 1px solid var(--border-2);
     border-radius: 16px;
-    box-shadow: 0 16px 40px rgb(0 0 0 / 0.6);
+    box-shadow: 0 16px 40px rgb(var(--shadow) / 0.6);
   }
 
   .section {
