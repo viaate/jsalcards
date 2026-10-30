@@ -26,6 +26,15 @@
   and at least its cadence less a minute's grace has passed (grid jitter only). So a
   5-minute source is read at every pass of a window, while a second run inside the same
   slot (``live once``) or an off-grid start a minute or two later reads nothing again.
+* **A new process** holds a source's statuses only once it has read the source itself
+  (:mod:`snowlight.live.ingest`), so a source whose last good read held rows is read by a
+  successor as soon as :meth:`Cadence.may_read` allows (another slot, 4 minutes on),
+  whatever its cadence (:class:`~snowlight.live.reads.LiveReads`): one read more per such
+  source a run, and no status of it dark until its next calm read. A source whose last
+  read failed (``error``, ``partial``) is not read early: it keeps its cadence, as above, so
+  the owner's cadence still bounds how often a throttled host is asked, and its statuses
+  (which the run before held under G13) are dark in the new process, never stale, until
+  its next good read: at most its calm 30 minutes.
 
 :class:`Cadence` keeps each source's last pass, outcome and earliest next read in
 ``cadence.json`` in the private state (ids, codes and times only).
@@ -64,12 +73,19 @@ DUE_WINDOW: Final = timedelta(minutes=15)
 CADENCE_VERSION: Final = 1
 _UNREAD: Final = frozenset({Outcome.LATE})
 """Outcomes of a pass that did not get to read the source: it is due at the next pass."""
+_FAILED: Final = frozenset({Outcome.ERROR, Outcome.PARTIAL})
+"""Outcomes of a server that answered badly: the source keeps its cadence."""
 _EPOCH: Final = datetime(2000, 1, 1, tzinfo=UTC)
 
 
 def grid_slot(moment: datetime) -> int:
     """The number of the 5-minute grid slot ``moment`` falls in."""
     return (moment - _EPOCH) // GRID
+
+
+def next_mark(moment: datetime) -> datetime:
+    """The grid mark that starts the slot after ``moment``'s."""
+    return _EPOCH + GRID * (grid_slot(moment) + 1)
 
 
 def in_window(zone: str, now: datetime) -> bool:
@@ -244,7 +260,7 @@ class Cadence:
         self.path = path
         self.alerts = alerts
         self.alerted: frozenset[str] = frozenset()
-        """The counties under an alert at the last :meth:`due`."""
+        """The counties under an alert at the last :meth:`refresh_alerts`."""
         self.clocks: dict[str, SourceClock] = self._load(path) if path is not None else {}
         self._picked: deque[tuple[datetime, frozenset[str]]] = deque()
 
@@ -273,10 +289,17 @@ class Cadence:
 
     # Each pass --------------------------------------------------------------------------
 
-    def due(self, now: datetime, candidates: Iterable[str]) -> list[Station]:
-        """The sources among ``candidates`` due at ``now`` (refreshing the alert set)."""
+    def refresh_alerts(self, now: datetime) -> None:
+        """Bring :attr:`alerted` to ``now`` (the feed is read at most every 5 minutes). Every
+        question asked of a source's interval before a pass (:meth:`due` here, a successor's
+        first-pass check in :meth:`~snowlight.live.reads.LiveReads.waits`) asks it first, so
+        an alert county's source is never judged on the calm interval of an empty set."""
         if self.alerts is not None:
             self.alerted = self.alerts.counties(now)
+
+    def due(self, now: datetime, candidates: Iterable[str]) -> list[Station]:
+        """The sources among ``candidates`` due at ``now`` (refreshing the alert set)."""
+        self.refresh_alerts(now)
         picked = []
         for source_id in sorted(set(candidates)):
             station = self.stations.get(source_id)
@@ -306,6 +329,24 @@ class Cadence:
         slots = grid_slot(now) - grid_slot(clock.last_pass)
         return slots >= interval // GRID and now >= clock.last_pass + interval - GRACE
 
+    def may_read(self, station: Station, now: datetime) -> bool:
+        """Whether ``station`` may be asked at ``now`` whatever its cadence: no server's wait
+        or block holds it, and it was not read in this grid slot nor in the last 4 minutes
+        (the politeness floor every read keeps, a successor's first read of a source
+        included). A source whose last read failed (``error``, ``partial``) keeps its
+        cadence: it may be asked only once it is due (:meth:`is_due`), so a throttled host
+        is never read more often than its cadence allows."""
+        clock = self.clocks.get(station.id)
+        if clock is None:
+            return True
+        if clock.not_before is not None and now < clock.not_before:
+            return False
+        if clock.outcome in _FAILED:
+            return self.is_due(station, now)
+        return grid_slot(now) > grid_slot(clock.last_pass) and (
+            now >= clock.last_pass + BOOSTED - GRACE
+        )
+
     def record(
         self, started: datetime, results: Iterable[tuple[str, Outcome, float | None]]
     ) -> None:
@@ -319,6 +360,12 @@ class Cadence:
             elif outcome is Outcome.DEFERRED:
                 not_before = started + timedelta(seconds=wait or GRID.total_seconds())
             self.clocks[source_id] = SourceClock(started, outcome, not_before)
+
+    def passed_in_slot(self, now: datetime) -> bool:
+        """Whether a pass (this process's or the run's before, from the saved clocks) read
+        a source in ``now``'s grid slot."""
+        slot = grid_slot(now)
+        return any(grid_slot(clock.last_pass) == slot for clock in self.clocks.values())
 
     def note(self, now: datetime, ids: Iterable[str]) -> None:
         """Count ``ids`` as due at ``now`` (a pass that read sources it was given)."""

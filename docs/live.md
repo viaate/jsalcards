@@ -26,11 +26,38 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   reads (every 5 minutes inside its zone's 18:00-23:00 and 04:00-09:00 and during alerts, else
   every 30), so the heartbeat, the admin's statuses and alert-area reads never wait for a
   window. Every grid pass uploads, changed or not. The run's first pass (off the grid) skips
-  an unchanged upload only when it starts under 4 minutes after the last uploading pass, so a
-  handoff costs about one slot: the last upload at about G+1.5 min, the successor's first
-  read at about G+3.9, its first upload on the G+5 pass. The next due mark is the first grid
-  mark after a pass's start, so a pass that overran runs the missed mark at once.
-- **The end.** A run ends right after its last grid pass that starts before +320 minutes.
+  an unchanged upload only when it starts under 4 minutes after the last uploading pass. The
+  next due mark is the first grid mark after a pass's start, so a pass that overran runs the
+  missed mark at once.
+- **A successor's first reads.** A process holds a source's statuses only once it has read
+  the source itself, so a run first reads every source whose last good read held rows, as
+  soon as the politeness floor allows (another grid slot, 4 minutes on), whatever its
+  cadence. The run's first pass is the next grid mark when its predecessor read one of them
+  in the current slot, and also when there is none to read now and the predecessor passed in
+  the current slot (most of the off-season: a pass then would find almost nothing due, count
+  a share near 0 and be refused). A handoff is so one slot, as before: the last upload at
+  about G+1 min, the successor ready at about G+2.5, its first pass at G+5 and its upload
+  about a minute later. The gap between uploads is unchanged by design (about 5-6 minutes);
+  what changed is that the successor's first pass is no longer refused and no status goes
+  dark at the handoff. A source a server's wait or block holds past the next mark is not
+  waited for, nor read early when it is free. A source whose last read failed (`error`,
+  `partial`) is not read early either: it keeps its cadence, so a throttled host is never
+  asked more often than the owner's cadence allows, and its statuses, which the run before
+  still held under G13, are dark in the successor (never shown stale) until its next good
+  read, at most 30 minutes (5 in a window or an alert). So is a source whose first read in
+  the successor fails. A first read cut off (`late`) is due at the next pass. (Until Oct 30 a successor read a holding
+  source only on its own cadence, so a half-hourly source's statuses were dark for up to 25
+  minutes after a handoff, and its first pass at G+2 read nothing and was refused for
+  health.)
+- **The end.** A run ends right after its last grid pass that starts before +320 minutes,
+  and before its job's start + 330 minutes (the 345-minute job timeout less 15 for that last
+  pass at its 4.5-minute cut and its publish, the successor's dispatch, the end push at its
+  bound and the other end steps), so a slow set-up (checkout, uv and its sync are bounded at
+  15 minutes each against the 2-9 s they take, the directory at 10, the pull at 8) shortens
+  the loop and never takes the job past its timeout, which would cancel it before its
+  successor and end push. A set-up step past its bound fails the job before the loop: no
+  successor and no `chain` record, so the timer's `reader` job or the schedule starts the
+  next run 5-20 minutes on.
   Its successor step runs whether the loop succeeded or failed (never on a cancel, and never
   when the loop did not run because the directory step failed: the `reader` job or the
   schedule starts the next run 5-20 minutes on, not a tight chain of cold runs), 3 tries; a
@@ -40,9 +67,15 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   is not counted), and switches a run whose mode is
   not `LIVE_PUBLISH`'s); and the `*/20` schedule, for when the timer itself stops. While a
   reader job runs (all day), each scheduled run waits as the group's pending job and is
-  cancelled by the next one queued: about 72 grey cancelled live-read runs a day in the
+  cancelled by the next one queued (the next successor): grey cancelled live-read runs in the
   Actions tab, never red. GitHub's default notifications email on failed runs only.
-  (POSTLAND: confirm no email reaches the owner for them.)
+  (POSTLAND: confirm no email reaches the owner for them.) GitHub creates far fewer
+  scheduled runs than the cron asks: 22 from Oct 25 12:45Z to Oct 29 18:38Z (about 5 a day),
+  each pending with no step run until a successor replaced it, so one stood pending 47% of
+  the time and none for up to 5.9 hours at a stretch. A pending one starts as soon as a run
+  ends with no successor, by the same group rule that starts every successor (11-30 s after
+  its predecessor's job ends); with none pending, the schedule restarts the chain only at
+  GitHub's next scheduled run. The timer's `reader` job is the restarter to count on.
 - **One at a time.** The job-level concurrency group `live-read` keeps one reader job, so
   there is one writer of the state and of the prefix.
 - **Stuck passes.** A pass is cut 30 s after its 240 s deadline whatever its workers do: the
@@ -92,10 +125,12 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   replaces the recorded exit with its own (a failed end push makes it 1) and never counts a
   run twice. A cancelled run (a mode change) records no exit. A run that records any exit
   but 1 or 124 (0, or the routine 3) closes `chain`.
-- **Notices for the soak report.** The loop prints `live-read first pass <time>` (the cold
-  start ends there; a successor's first pass may skip an unchanged upload, so its first commit
-  can be the next grid pass) and `live-read end <cause>` (`until`, `edition`, `overrides`, or
-  an exit-1 cause such as `passes`, `threads`, `state`). A step prints `live-read caches
+- **Notices for the soak report.** The loop prints `live-read ready <time>` when it could pass
+  (the cold start ends there), `live-read first pass <time>` (a successor's first pass may
+  wait for the next grid mark or skip an unchanged upload, so its first commit can be the next
+  grid pass) and `live-read end <cause>` (`until`, `edition`, `overrides`, or an exit-1 cause
+  such as `passes`, `threads`, `state`). A job still running has no annotations on the API
+  yet, so the report gives it no cold start. A step prints `live-read caches
   restored <bytes> bytes`, and live-ingest's `reader` job `github token used <n> of <limit>
   reset <time>` on every tick.
 - **Code ahead of the deploy.** `publish.<prefix>.json` keeps the directory content each
@@ -128,9 +163,14 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   successor, the end push and the closing report; the Cloudflare secrets the pull, the loop
   and the end push.
 
-Cold start (dispatch to first read): about 75-90 s: job set-up, `uv sync`, the cache restores,
-the D1 pull, the deployed edition, `directory build --zones --no-tiles` (34-41 s), then the
-matcher, gazetteer, registry and status reader.
+Cold start (the job's start to the loop's `ready`): 50-90 s in the 21 runs of Oct 25-29 with
+logs (p95 85 s; the soak report's 254 s was its last run, still running, measured to its first
+commit). The soak report gives it beside the cold start to the first pass and the wait between
+them (at most one grid slot when the run waits for the next mark, bar 310 s):
+job set-up 0-2 s, checkout 2-6, setup-uv 3-9, `uv sync` 0-1, the cache restores 3-4, the
+deployed edition and `directory build --zones --no-tiles` 24-42, the D1 pull 2-6, then about
+10 s for the matcher, gazetteer, registry and status reader. The job's own queue behind its
+predecessor adds 11-30 s.
 
 ## The state
 
@@ -149,7 +189,9 @@ database exactly `snowlight-live-state`), on the free plan with no card.
 - **Pull** (at start, `live state pull --retry`: 3 tries 10 s apart, then every 60 s, for 6
   minutes in all, the request in progress included, so a hanging API cannot stretch it):
   `head` names a slot; its chunks are read and checked against its sha256, falling
-  back to the previous slot. The run then takes the epoch (the newest puller wins). A pass that
+  back to the previous slot. The run then takes the epoch (the newest puller wins), only
+  while `head` still names the sha256 just read: a push that swapped `head` meanwhile (the run
+  before's end push) is read again, up to 3 times, so its state is never dropped. A pass that
   newly blocks or defers a source writes its `holds` row at once; holds are merged into the
   cadence at pull, so a block or a `Retry-After` is never asked again from a new runner after
   a crash. Before its first publish a run catches its change log up from the public day
@@ -278,7 +320,9 @@ only once the evidence store holds it; the evidence store keeps every day.
   touches the live state. Only live-read keeps morning records
   and change logs, and only predict snapshots, tables and labels.
 - **Before a day leaves the state.** Once an hour, in the loop's idle time (20 seconds at most,
-  ending before the next grid mark), the reader asks both databases which versions they hold
+  ending 30 seconds before the next grid mark, and never after the run's last pass, so it never
+  holds a pass, the run's end or its successor's start; a run's first check comes after a cold
+  start's first pass, or in a successor's wait for its first mark), the reader asks both databases which versions they hold
   (read only: nothing is created) and writes the answer to `kept.json` in the state folder
   (packed with the state, never exported): per day, the sha256 of its file and the databases
   that hold exactly those bytes. Each database gets its own share of the 20 seconds, so a slow
@@ -322,8 +366,10 @@ Where an alert goes depends on the mode:
 
 - **shadow** (the default): no issue is ever opened, so nothing emails the owner. Each open
   and close is recorded in `v1-shadow/live/alerts.json` (kinds, UTC times, codes, counts,
-  registry ids) and printed as one annotation; the `watch` job adds one annotation on every
-  tick that finds the shadow file stale.
+  registry ids) and printed as one annotation (8 a run at most, later ones as plain log lines,
+  so with the loop step's own warning a step never passes Actions' 10 of a level and the
+  soak's 3 notices are always kept); the `watch` job adds one annotation on every tick that
+  finds the shadow file stale.
 - **on** and **off**: one issue per kind and prefix, labelled `live-alert` and found by its
   marker, at most one comment an hour, closed with "recovered at HH:MMZ". While `state` or
   `stale` is open, `gate`, `health`, `source`, `cold` and `chain` comment on it instead of
@@ -332,7 +378,7 @@ Where an alert goes depends on the mode:
 | Kind | Opens when | Clears when |
 |---|---|---|
 | `gate` | 2 refused passes in a row | a pass publishes |
-| `health` | healthy share under 60% for 3 passes in a row (a single low pass is the half-hour's sources coming due together) | 2 passes at 60% or more |
+| `health` | healthy share under 60% for 3 passes in a row (a real reading problem lasts) | 2 passes at 60% or more |
 | `source` | the daily digest (after 15:00 UTC): sources erring 3 h or more inside their windows that did not err in the 24 h before | the next digest has none |
 | `breaker` | the breaker or the spike hold fired | 2 clean passes |
 | `edition` | a mismatch, a blank, an unreadable deployment, or code ahead of the deploy for 15 min | the handshake is good |
@@ -421,8 +467,12 @@ shadow file, every commit under `v1/live` (any naming a live-read run, or a `liv
 commits to `v1/predictions/latest.json`, the live host's whole commit order with its Pages
 deployments (a commit whose own deployment was superseded is served by the next one), the
 runs, jobs and annotations above, and githubstatus.com incidents. Every boundary is typed
-(successor, mode change, restart after a kill, restart after exit 1, edition stop, restart);
-the cold start is the job's start to the loop's first-pass notice. Its `drills` section
+(successor, mode change, restart after a kill, restart after exit 1, edition stop,
+restart); the cold start is the job's start to the loop's `ready` notice (bar 120 s),
+beside the job's start to its first-pass notice (no bar) and the wait between them
+(bar 310 s). The first-pass number is the spec's original cold start: since a successor now holds
+its first pass for the next grid mark, it reads about 180-300 s by design for most
+successors, the wait being at most one slot. Its `drills` section
 measures each drill in the window from the drill's notices, the `watch` job's stale
 annotations and the commits of `v1-shadow/live/alerts.json` (`live v1-shadow alerts
 open|close <kind> <time>`): for `stall`, `stale` after the last shadow commit (30 min), the
@@ -460,7 +510,7 @@ All from `pipeline/` (`uv run snowlight live ...`).
 | `live rehearse` | The switch rehearsal on `v1-rehearse` ([Drills](#drills)); live-drill.yml's `switch`. |
 | `live alert --kind K --open\|--close` | A workflow step's alert (in shadow an annotation and `alerts.json`, else an issue). |
 | `live finish --exit N` | live-read.yml's closing step: the exit, the summary notice, the `chain` alert. |
-| `live soak --since T --until T` | The soak report from public records. |
+| `live soak --since T --until T [--prefix v1]` | The soak report from public records; `--prefix v1` reads the reader's commits under `v1/` (LIVE_PUBLISH on), where the shadow soak's bar of no reader commit under `v1/` does not apply. |
 | `live overrides --api ROOT` | One pass of the admin's manual statuses: read the active overrides from the API, check them against the deployed directory, gate and publish. Stops, writing nothing, when the overrides light nothing and the public files show no status. |
 | `live sweep --cache-dir DIR --state DIR --log FILE --report FILE` | One measured pass of the pool over every source the ingest polls (or `--only` ids), resolving and publishing nothing. Appends each request to the log (its pace key, its floor and when it held the key) and writes a report: the sweep's time, when each source finished, the outcomes, the requests sent against those paced, the pacing violations and the robots.txt requests per origin (every attempt, counted from the log). `--state` keeps what servers asked of the sweep across sweeps: robots.txt verdicts and holds in `robots.json`, and in `cadence.json` only each source whose server asked for a `Retry-After` or answered 403. Such a source is not asked again until that wait or the 24 h block ends, and the report lists it under `held_back`. A source the sweep read is not recorded as read, so a live reader sharing the folder still reads it on its own cadence. Exits `1` on any violation or unpaced request. Ids, hosts, codes and times only. |
 | `live overrides --none` | The same pass with no override: takes every manual status down (`live-ingest.yml` runs it when no API is left to read). |
@@ -528,8 +578,8 @@ A pass reads the sources due through a concurrent pool (`snowlight/live/pool.py`
 
 - **Politeness.** One request in flight per host and starts at least `max(5 s, Crawl-delay)` apart, across all 24 workers. Each of Gray's list files, path-style on `s3.amazonaws.com`, is paced under its own bucket (owner decision Q3), the same as its documented per-station address. robots.txt is read at most once per origin a day (kept in `robots.json`), and is still a record, never a gate. A robots.txt that fails, or that asks for a `Retry-After` the pass will not wait for, is kept as unreachable for the day; that wait holds every source on the origin as `deferred` until it ends, and a stopped source starts no further request. A request must answer by its source's deadline (plus a second): its connection, opened fresh for it, is shut then, so a server that trickles its headers or body holds the host no longer. A file several sources read (Cowles' five stations share one) is asked once a pass, and a `Retry-After` or a slow answer it gave is what every source reading it gets for that pass.
 - **Deadlines.** A source gets 60 s, attempts and follows included (two attempts); nothing starts after 240 s into the pass. A source cut off is `late` and due next pass. A server's `Retry-After` is honoured: the source is `deferred` until that wait has passed, and no other source waits for it. A 403 or 401 blocks the source for 24 hours. A refusal is never worked around.
-- **Cadence.** Every 5 minutes from 18:00 to 23:00 and from 04:00 to 09:00 in the station's own zone (the zone most of its counties are in; real zone rules, so the windows follow daylight saving time), and while an NWS alert of an allowlisted type covers one of its counties (the alerts are read every 5 minutes; a failed read keeps the last set for 2 hours). Otherwise every 30 minutes, or the registry's `poll_minutes` when longer. A source the pass did not get to (`late`) is due at the next pass; a failed read (`error`, such as a 429 or 5xx without `Retry-After`) keeps its cadence, so outside the windows and alerts it waits its calm interval. A source is never read again in the same 5-minute grid slot, nor less than 4 minutes after its last pass.
-- **Health share.** G12b counts the sources due in the passes of the last 15 minutes, and every source blocked now.
+- **Cadence.** Every 5 minutes from 18:00 to 23:00 and from 04:00 to 09:00 in the station's own zone (the zone most of its counties are in; real zone rules, so the windows follow daylight saving time), and while an NWS alert of an allowlisted type covers one of its counties (the alerts are read every 5 minutes; a failed read keeps the last set for 2 hours). Otherwise every 30 minutes, or the registry's `poll_minutes` when longer. A source the pass did not get to (`late`) is due at the next pass; a failed read (`error`, such as a 429 or 5xx without `Retry-After`) keeps its cadence, so outside the windows and alerts it waits its calm interval, a successor's first read of it included. A source is never read again in the same 5-minute grid slot, nor less than 4 minutes after its last pass.
+- **Health share.** G12b counts the sources due in the passes of the last 15 minutes, and every source blocked now, each by its latest read in that time. Both windows are counted from the passes' starts: a read is kept under the start of the pass that picked its source, the moment the cadence counted that source due, and both are dropped by the same test on the same start, so a source due in the window always has its picking pass's read in it, and that read is its latest (only a pass that picks a source reads it). A pass that read 10 sources or more also counts its own reads alone, and the gate takes the lower share: an outage that starts at a pass is refused at that pass, not only once the window holds nothing but failing reads (up to two passes later after a half-hourly sweep). From Oct 25 to 29 each of the 1261 uploaded passes with 10 reads or more had 84% or more of them good. This makes the gate stricter in one case: a broad degradation that keeps a pass's own reads under 60% (late reads of our pool and deferred reads count as not good, as in the window, since neither gives a fresh say) now refuses every pass until reads recover. Before, good reads still in the window from a half-hourly sweep before the degradation began could carry passes through it. A refusal is exit 3 and the loop goes on; v1 keeps its last good pass, and the `stale` alert opens once the served file is over 15 minutes old. Watch the own share (the commit's good over due) on the first storm-day soak. (Until Oct 30 the reads were kept under their own fetch times and measured from the clock after the reads: each :10 and :40 pass, 15 minutes after a half-hourly sweep, counted the sweep's sources due without their reads, dipped to 37-53% and was refused, 48 times from Oct 25 to 29.)
 
 ## Where files go
 

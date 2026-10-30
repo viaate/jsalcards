@@ -24,7 +24,8 @@ read only, from public records:
 
 The report gives the publish gap on commits and on served time (p95, max; incident gaps and
 stale minutes per day), the sweeps, every boundary between runs with its type and gap and the
-cold starts (job start to first pass), live-read's exits, live-ingest's regularity and its
+cold starts (job start to the loop's ready notice, and to its first pass, with the wait between
+them), live-read's exits, live-ingest's regularity and its
 jobs, the packed state and D1 writes, the runner-hours, the cache restores and the live host's
 growth a day, and the ``GITHUB_TOKEN`` hourly peak. It holds counts, times and run ids only.
 """
@@ -53,7 +54,11 @@ SUMMARY: Final = re.compile(
 )
 EXIT: Final = re.compile(r"live-read exit (?P<exit>-?\d+)")
 FIRST: Final = re.compile(r"live-read first pass (?P<at>\S+)")
-"""The loop's notice of its first pass's start (the cold start ends there)."""
+"""The loop's notice of its first pass's start."""
+READY: Final = re.compile(r"live-read ready (?P<at>\S+)")
+"""The loop's notice that it could pass (the cold start ends there): its first pass may
+then wait for the next grid mark, while a source the run before read in that slot cannot
+be asked again yet."""
 END: Final = re.compile(r"live-read end (?P<cause>[a-z_]+)")
 """The loop's notice of why it ended (``until``, ``edition``, ``overrides``, ``passes``, ...)."""
 TOKEN: Final = re.compile(r"github token used (?P<used>\d+) of (?P<limit>\d+) reset (?P<reset>\d+)")
@@ -100,6 +105,7 @@ BARS: Final = {
     "successor_gap_p50_minutes": 6.0,
     "other_gap_max_minutes": 15.0,
     "cold_start_p95_seconds": 120.0,
+    "first_pass_wait_max_seconds": 310.0,
     "served_p95_seconds": 60.0,
     "served_max_seconds": 90.0,
     "state_max_bytes": 12 * 1024 * 1024,
@@ -169,6 +175,10 @@ class History:
     incidents: list[Incident] = field(default_factory=list)
     alert_commits: list[Commit] = field(default_factory=list)
     """The commits of the shadow ``alerts.json`` (one per alert change)."""
+    prefix: str = "v1-shadow"
+    """The prefix the reader wrote in the window: ``v1-shadow`` for the shadow soak, ``v1``
+    once ``LIVE_PUBLISH`` is on (its commits are then the reader's own, and the shadow
+    soak's bar of no reader commit under ``v1/`` does not apply)."""
 
 
 def percentile(values: Sequence[float], share: float) -> float | None:
@@ -320,6 +330,8 @@ def handoffs(
         (successors if kind == "successor" else others).append(gap)
         found.append({"at": after.at.isoformat(), "kind": kind, "gap_minutes": gap})
     colds = cold_starts(commits, runs.values(), since, until)
+    firsts = cold_starts(commits, runs.values(), since, until, to_first_pass=True)
+    waits = first_pass_waits(runs.values(), since, until)
     return {
         "boundaries": list[JSONValue](found),
         "by_kind": dict(sorted(by_kind.items())),
@@ -329,7 +341,32 @@ def handoffs(
         "cold_starts": len(colds),
         "cold_start_p95_seconds": percentile(colds, 0.95),
         "cold_start_max_seconds": max(colds, default=None),
+        "cold_start_first_pass_p95_seconds": percentile(firsts, 0.95),
+        "cold_start_first_pass_max_seconds": max(firsts, default=None),
+        "first_pass_wait_max_seconds": max(waits, default=None),
     }
+
+
+def first_pass_waits(
+    runs: Iterable[Run], since: datetime | None = None, until: datetime | None = None
+) -> list[float]:
+    """Each run's wait from its ``ready`` notice to its ``first pass`` notice (a run that
+    started in the window and printed both): at most a grid slot, 300 s, by design."""
+    found: list[float] = []
+    for run in runs:
+        if run.workflow != "live-read" or run.started is None:
+            continue
+        if (since is not None and run.started < since) or (
+            until is not None and run.started > until
+        ):
+            continue
+        ready, first = _first(run, READY), _first(run, FIRST)
+        if ready is None or first is None:
+            continue
+        begun, passed = _moment(ready["at"]), _moment(first["at"])
+        if begun is not None and passed is not None:
+            found.append((passed - begun).total_seconds())
+    return found
 
 
 def cold_starts(
@@ -337,13 +374,19 @@ def cold_starts(
     runs: Iterable[Run],
     since: datetime | None = None,
     until: datetime | None = None,
+    *,
+    to_first_pass: bool = False,
 ) -> list[float]:
-    """Each live-read run's cold start: its job's start to its first pass's start, from the
-    loop's ``first pass`` notice (a successor's first pass may skip an unchanged upload, so
-    its first commit can be the next grid pass); from its first commit only when the notice
-    is missing (a job still running has no annotations yet). Only a run whose job started in
-    the window (``since`` to ``until``) counts: the commits are the window's own, so a run
-    that started before it would read its first commit in the window as its first pass."""
+    """Each live-read run's cold start: its job's start to the loop's ``ready`` notice, or
+    with ``to_first_pass`` to its ``first pass`` notice (the ready moment plus the wait for
+    the next grid mark when the run before read in that slot) (else
+    its ``first pass`` notice: a successor's first pass may wait for the grid or skip an
+    unchanged upload, so its first commit can be the next grid pass); from its first commit
+    only for a finished job that printed neither. A job still running has no annotations
+    yet, so it has no cold start in the report (its first commit would overstate it). Only a
+    run whose job started in the window (``since`` to ``until``) counts: the commits are the
+    window's own, so a run that started before it would read its first commit in the window
+    as its first pass."""
     first_commit: dict[str, datetime] = {}
     for commit in sorted(commits, key=lambda item: item.at):
         found = commit.parsed
@@ -359,7 +402,9 @@ def cold_starts(
             until is not None and run.started > until
         ):
             continue
-        notice = _first(run, FIRST)
+        notice = _first(run, FIRST) if to_first_pass else _first(run, READY) or _first(run, FIRST)
+        if notice is None and run.ended is None:
+            continue  # still running: its notices are not published yet
         first = _moment(notice["at"]) if notice is not None else first_commit.get(str(run.id))
         if first is not None and first >= run.started:
             colds.append((first - run.started).total_seconds())
@@ -481,6 +526,7 @@ def report(history: History) -> dict[str, JSONValue]:
     numbers: dict[str, JSONValue] = {
         "since": history.since.isoformat(),
         "until": history.until.isoformat(),
+        "prefix": history.prefix,
         "commits": len(commits),
         "gap_on_commits": gaps(
             [commit.at for commit in commits], history.incidents, history.since, history.until
@@ -734,7 +780,9 @@ def bars(numbers: Mapping[str, Any]) -> dict[str, JSONValue]:
         "sweep_full_max": at_most(
             numbers["sweep_full_max_seconds"], BARS["sweep_full_max_seconds"]
         ),
-        "no_v1_commits": numbers["reader_commits_under_v1"] == 0,
+        "no_v1_commits": (
+            None if numbers.get("prefix") == "v1" else numbers["reader_commits_under_v1"] == 0
+        ),
         "no_exit_1": not any(code in exits for code in ("1", "124")),
         "successor_gap_max": at_most(
             hand["successor_max_minutes"], BARS["successor_gap_max_minutes"]
@@ -744,6 +792,9 @@ def bars(numbers: Mapping[str, Any]) -> dict[str, JSONValue]:
         ),
         "other_gap_max": at_most(hand["other_max_minutes"], BARS["other_gap_max_minutes"]),
         "cold_start_p95": at_most(hand["cold_start_p95_seconds"], BARS["cold_start_p95_seconds"]),
+        "first_pass_wait_max": at_most(
+            hand["first_pass_wait_max_seconds"], BARS["first_pass_wait_max_seconds"]
+        ),
         "served_p95": at_most(numbers["served_delay_p95_seconds"], BARS["served_p95_seconds"]),
         "served_max": at_most(numbers["served_delay_max_seconds"], BARS["served_max_seconds"]),
         "state_size": at_most(numbers["state_max_bytes"], BARS["state_max_bytes"]),
@@ -817,16 +868,23 @@ COMMIT_PATHS: Final = (SHADOW_CLOSINGS, V1_LIVE, PREDICTIONS, SHADOW_ALERTS)
 
 
 def fetch_history(
-    client: httpx.Client, since: datetime, until: datetime, token: str = ""
+    client: httpx.Client,
+    since: datetime,
+    until: datetime,
+    token: str = "",
+    prefix: str = "v1-shadow",
 ) -> History:
-    """Every public record the report reads (see the module)."""
+    """Every public record the report reads (see the module), the reader's commits and
+    alerts under ``prefix`` (``v1`` once ``LIVE_PUBLISH`` is on)."""
+    if prefix not in {"v1", "v1-shadow"}:
+        raise ValueError("the prefix is v1 or v1-shadow")
     public = Public(client, token)
-    history = History(since, until)
+    history = History(since, until, prefix=prefix)
     wide_since, wide_until = since - timedelta(hours=1), until + timedelta(hours=1)
-    history.commits = commits_of(public, HOST, SHADOW_CLOSINGS, since, until)
+    history.commits = commits_of(public, HOST, f"{prefix}/live/closings.json", since, until)
     history.v1_commits = commits_of(public, HOST, V1_LIVE, since, until)
     history.other_commits = commits_of(public, HOST, PREDICTIONS, since, until)
-    history.alert_commits = commits_of(public, HOST, SHADOW_ALERTS, since, until)
+    history.alert_commits = commits_of(public, HOST, f"{prefix}/live/alerts.json", since, until)
     history.order = [
         commit.sha for commit in commits_of(public, HOST, None, wide_since, wide_until)
     ]

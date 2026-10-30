@@ -16,8 +16,11 @@ rows)``: the rows written each UTC day; ``holds(source_id, until, why)``: blocks
 **Pull** (:meth:`D1StateStore.pull`): read ``head``. With exactly one row, read its slot
 (16 chunks a request) and check its sha256 and that every SQLite file in it passes ``PRAGMA
 quick_check``; on a mismatch or a damaged ledger read the previous slot. Then take
-the epoch: ``UPDATE head SET epoch = epoch + 1 ... WHERE epoch = <read>`` must change one row
-(the newest puller wins), and the new epoch goes in ``d1.json`` (never packed). No ``head``
+the epoch: ``UPDATE head SET epoch = epoch + 1 ... WHERE epoch = <read> AND sha256 IS <read>``
+must change one row (the newest puller wins; a push that swapped ``head`` between the read and
+the take, such as the run before's end push, makes the pull read ``head`` and its slot again,
+up to :data:`TAKE_TRIES` times, so its state is never dropped), and the new epoch goes in
+``d1.json`` (never packed). No ``head``
 row (an HTTP 200 with zero rows, nothing else) means a first run: a plain ``INSERT`` of
 epoch 1, which fails when a row appeared meanwhile. The database is created only when the
 account's list answers HTTP 200 and names no database exactly ``snowlight-live-state``.
@@ -108,7 +111,11 @@ _HEAD: Final = (
     " pushed_at, run_id FROM head WHERE id = 1"
 )
 _CHUNKS: Final = "SELECT n, data FROM chunks WHERE slot = ? AND n >= ? AND n < ? ORDER BY n"
-_TAKE: Final = "UPDATE head SET epoch = epoch + 1, run_id = ? WHERE id = 1 AND epoch = ?"
+_TAKE: Final = (
+    "UPDATE head SET epoch = epoch + 1, run_id = ? WHERE id = 1 AND epoch = ? AND sha256 IS ?"
+)
+TAKE_TRIES: Final = 3
+"""Reads of ``head`` and its slot a pull makes when a push swaps ``head`` under it."""
 _FIRST: Final = "INSERT INTO head (id, epoch, run_id) VALUES (1, 1, ?)"
 _UPSERT: Final = (
     "INSERT INTO chunks (slot, n, data) VALUES (?, ?, ?)"
@@ -617,18 +624,28 @@ class D1StateStore:
             holds = self._holds(now)
             self._bill(now)
             return Pulled((), 1, cold=True, holds=holds)
-        data = self._slot(head.slot, head.parts, head.sha256)
-        if data is None and head.slot is not None:
-            LOG.warning("d1: the current slot fails its checks; reading the previous one")
-            data = self._slot(head.prev_slot, head.prev_parts, head.prev_sha256)
-        unreadable = data is None and head.slot is not None
-        if unreadable and (head.pushed_at is None or now - head.pushed_at <= STALE_HEAD):
-            raise UnreadableStateError("both slots fail their sha256")
-        answer = self._run([(_TAKE, (run_id, head.epoch))])[0]
-        # no row changed: the answer of an update that ran may have been lost and the update
-        # sent again; head then holds the next epoch under this run's id
-        if answer.changes != 1 and not self._took(head.epoch + 1, run_id):
-            raise D1Error("another run took the epoch first")
+        for _ in range(TAKE_TRIES):
+            data = self._slot(head.slot, head.parts, head.sha256)
+            if data is None and head.slot is not None:
+                LOG.warning("d1: the current slot fails its checks; reading the previous one")
+                data = self._slot(head.prev_slot, head.prev_parts, head.prev_sha256)
+            unreadable = data is None and head.slot is not None
+            if unreadable and (head.pushed_at is None or now - head.pushed_at <= STALE_HEAD):
+                raise UnreadableStateError("both slots fail their sha256")
+            # the take holds only while head still names the bytes just read: a push that
+            # swapped head meanwhile (the run before's end push) is read again, never lost
+            answer = self._run([(_TAKE, (run_id, head.epoch, head.sha256))])[0]
+            # no row changed: the answer of an update that ran may have been lost and the
+            # update sent again; head then holds the next epoch under this run's id
+            if answer.changes == 1 or self._took(head.epoch + 1, run_id):
+                break
+            moved = self.head()
+            if moved is None or moved.epoch != head.epoch:
+                raise D1Error("another run took the epoch first")
+            LOG.warning("d1: head moved while it was read; reading it again")
+            head = moved
+        else:
+            raise D1Error("head kept moving while it was read")
         epoch = head.epoch + 1
         names = () if data is None else tuple(unpack(data, folder))
         self._write_epoch(folder, epoch, head.sha256)

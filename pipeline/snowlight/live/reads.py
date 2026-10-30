@@ -32,7 +32,7 @@ from typing import Final
 
 import httpx
 
-from snowlight.live.cadence import AlertWatch, Cadence, county_zones
+from snowlight.live.cadence import AlertWatch, Cadence, county_zones, next_mark
 from snowlight.live.ingest import Ingest, SourceRead, station_zone
 from snowlight.live.ledger import Outcome, seen_row
 from snowlight.live.pool import (
@@ -200,6 +200,43 @@ class LiveReads:
     on_holds: Callable[[Sequence[tuple[str, datetime, str]]], None] | None = None
     """Told at once of each source a pass newly blocked or deferred ``(id, until, why)``, so
     the state database keeps it even if this process dies before its next push."""
+    unread: set[str] | None = None
+    """The sources whose last good read held rows and that this process has not read yet
+    (``None`` until the first pass asks the ledger): each is read as soon as the cadence's
+    politeness floor allows, whatever its cadence, so a successor never shows a status of
+    it dark while its calm interval runs (the ingest holds a source's statuses only once
+    this process has read it)."""
+
+    def pending(self) -> list[Station]:
+        """The sources still to be read first by this process (see :attr:`unread`)."""
+        if self.unread is None:
+            polled = due_sources(self.registry)
+            holding = self.ingest.holding() if self.ingest is not None else frozenset()
+            self.unread = set(holding & polled)
+        return [self.registry.stations[sid] for sid in sorted(self.unread)]
+
+    def waits(self, now: datetime) -> bool:
+        """Whether a run starting at ``now`` should hold its first pass for the next grid
+        mark: a source to read first was read too recently to ask again yet (its
+        predecessor read it in this grid slot, or under 4 minutes ago) but may be asked at
+        the mark; or there is no source to read first that may be asked now and the run
+        before passed in this grid slot, so a pass now would find almost nothing due, count
+        a share near 0 and be refused (the next mark reads what is due as any grid pass). A
+        source a server's wait or block holds past the mark, or one whose last read failed
+        and is not due by then, is not waited for. The alert set is brought to ``now``
+        first, as a pass's :meth:`~snowlight.live.cadence.Cadence.due` does, so a source in
+        an alert county is judged on its 5-minute interval."""
+        self.cadence.refresh_alerts(now)
+        pending = self.pending()
+        mark = next_mark(now)
+        if any(
+            not self.cadence.may_read(station, now) and self.cadence.may_read(station, mark)
+            for station in pending
+        ):
+            return True
+        if any(self.cadence.may_read(station, now) for station in pending):
+            return False
+        return self.cadence.passed_in_slot(now)
 
     def __call__(self, now: datetime, only: Sequence[str], tick: Tick) -> Sequence[SourceRead]:
         if only:
@@ -213,6 +250,15 @@ class LiveReads:
             self.cadence.note(now, due_sources(self.registry))
         else:
             due = self.cadence.due(now, due_sources(self.registry))
+            picked = {station.id for station in due}
+            first = [
+                station
+                for station in self.pending()
+                if station.id not in picked and self.cadence.may_read(station, now)
+            ]
+            if first:
+                self.cadence.note(now, (station.id for station in first))
+                due = sorted([*due, *first], key=lambda station: station.id)
         registry, reader = self.registry, self.reader
         whole = now.replace(microsecond=0)  # the stations' records keep whole seconds
 
@@ -222,6 +268,13 @@ class LiveReads:
         result = self.pool.run_pass(due, read, alerted=self.cadence.in_alert, tick=tick)
         before = {sid: clock.not_before for sid, clock in self.cadence.clocks.items()}
         keep_pass(self.cadence, result)
+        if self.unread is not None:
+            # asked (a late or deferred source is not: it is due again anyway)
+            self.unread -= {
+                item.source_id
+                for item in result.sources
+                if item.outcome not in {Outcome.LATE, Outcome.DEFERRED}
+            }
         self._tell_holds(before)
         if self.ingest is not None:
             self.ingest.due = self.cadence.recently_due(now)

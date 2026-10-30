@@ -324,8 +324,9 @@ def samples(
         local = lo.astimezone(_zone(name))
         mark = local.replace(minute=0, second=0, microsecond=0)
         while mark.astimezone(UTC) < hi:
-            for half in (mark, mark + timedelta(minutes=30)):
-                at = half.astimezone(UTC)
+            # the half hour in UTC: local arithmetic would take the repeated 01:30 of the night
+            # daylight saving time ends (fold 1) for the first one
+            for at in (mark.astimezone(UTC), mark.astimezone(UTC) + timedelta(minutes=30)):
                 if lo < at < hi:
                     found.add(at)
             mark = (mark.astimezone(UTC) + timedelta(hours=1)).astimezone(_zone(name))

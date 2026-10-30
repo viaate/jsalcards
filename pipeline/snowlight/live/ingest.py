@@ -24,7 +24,7 @@
    (read back from the host), and publishes through the gate
    (:class:`~snowlight.live.publish.LivePublisher`), with the share of the sources
    due (the registry's active, pollable stations) whose latest read in the last 15
-   minutes was healthy (G12b);
+   minutes was healthy (G12b; both windows counted from the passes' starts);
 6. queues the listings the matcher did not accept (private) and writes
    ``health.json``: counts, codes and source ids only (a failed write is logged by its
    type and leaves the pass's exit as it was);
@@ -65,6 +65,13 @@ from snowlight.sources.stations.registry import Station, StationStatus
 LOG: Final = logging.getLogger(__name__)
 HEALTH_WINDOW: Final = timedelta(minutes=15)
 """G12b counts the sources due in the last 15 minutes."""
+OWN_READS_MIN: Final = 10
+"""A pass that read at least this many sources also counts its own reads alone in G12b
+(:meth:`Ingest.gate_share`): an outage that starts at a pass is refused at that pass, while
+the window still holds the reads of the passes before it. (Each of the 1261 uploaded passes
+of Oct 25-29 with 10 reads or more had 84% or more of them good.) A broad degradation that
+keeps a pass's own reads under 60% so refuses every pass, not only the passes whose window
+holds no good sweep (docs/live.md, Health share)."""
 FALLBACK_ZONE: Final = "America/Chicago"
 EDITION_EVERY: Final = timedelta(seconds=60)
 """How often the directory handshake runs, between passes and while the reads run."""
@@ -218,8 +225,10 @@ class Ingest:
     """Called per read folded into the ledger and per source resolved (the loop's pulse, so
     a pass's resolve shows progress to the watcher; a hang inside one stops it)."""
 
-    def observe(self, reads: Iterable[SourceRead]) -> Counter[str]:
-        """Fold reads into the ledger; returns the outcomes as the ledger took them."""
+    def observe(self, reads: Iterable[SourceRead], at: datetime | None = None) -> Counter[str]:
+        """Fold reads into the ledger; returns the outcomes as the ledger took them. ``at`` is
+        the pass's start: G12b keeps each read under it (else under the read's own time), the
+        moment the cadence counts the source due at, so the two windows are one."""
         outcomes: Counter[str] = Counter()
         self.failed = set()
         self.taken = set()
@@ -234,7 +243,7 @@ class Ingest:
                 outcomes["error"] += 1
                 self.failed.add(read.source_id)
                 self.present.pop(read.source_id, None)
-                self.recent.append((read.fetched_at, read.source_id, False))
+                self.recent.append((at or read.fetched_at, read.source_id, False))
                 continue
             outcomes[observed.outcome.value] += 1
             if observed.outcome in GOOD:
@@ -245,7 +254,7 @@ class Ingest:
             # A "not modified" with no rows confirms the body this process last read; one
             # this process never read leaves the source unheld (dissents only) until a
             # full read (the fetch layer's first read after a start is a full GET).
-            self.recent.append((read.fetched_at, read.source_id, observed.outcome in GOOD))
+            self.recent.append((at or read.fetched_at, read.source_id, observed.outcome in GOOD))
         return outcomes
 
     def due_sources(self) -> frozenset[str]:
@@ -259,7 +268,14 @@ class Ingest:
 
     def healthy_share(self, now: datetime) -> float:
         """The share of the sources due whose latest read in the last 15 minutes was good (a
-        due source not read in that time counts as not healthy)."""
+        due source not read in that time counts as not healthy).
+
+        ``now`` is the pass's start in the loop: the reads are kept under their pass's start
+        (:meth:`observe`) and the cadence counts a source due from the start of the pass that
+        picked it, so a source due in the window always has its read of that pass in it. (Its
+        read's own time against the clock after the reads, as before S3, dropped the
+        half-hour sweep's reads 15 minutes on while their sources still counted due: every
+        :10 and :40 pass dipped under 60% and was refused.)"""
         while self.recent and now - self.recent[0][0] > HEALTH_WINDOW:
             self.recent.popleft()
         latest: dict[str, bool] = {}
@@ -267,6 +283,26 @@ class Ingest:
             latest[source_id] = good
         due = self.due_sources()
         return sum(latest.get(source_id, False) for source_id in due) / len(due) if due else 0.0
+
+    def gate_share(self, reads: Sequence[SourceRead], now: datetime) -> float:
+        """The share G12b gates on: :meth:`healthy_share` at ``now`` (the pass's start), and
+        no more than the share of this pass's own reads that were good when it read at
+        least :data:`OWN_READS_MIN` sources. A pass whose every read fails is so refused at
+        once, not only once the window holds nothing but failing reads (up to two passes
+        later after the half-hourly sweep)."""
+        share = self.healthy_share(now)
+        if len(reads) >= OWN_READS_MIN:
+            share = min(share, sum(read.outcome in GOOD for read in reads) / len(reads))
+        return share
+
+    def holding(self) -> frozenset[str]:
+        """The sources whose last good read held rows: their statuses stand only once this
+        process has read them again (:meth:`held`), so a new run reads them first."""
+        return frozenset(
+            state.source_id
+            for state in self.ledger.sources()
+            if state.rows_last > 0 and state.last_good_at is not None
+        )
 
     def resolve(self) -> list[Resolved]:
         """Every source the ledger knows, resolved against its present rows. A source whose
@@ -519,7 +555,7 @@ class Ingest:
         ``started`` is when the pass began, before its reads (the heartbeat's grid);
         ``always``: upload even when nothing changed (a grid pass, ``live once``)."""
         now = max([now, *(read.fetched_at for read in reads)])
-        outcomes = self.observe(reads)
+        outcomes = self.observe(reads, at=started)
         self.last_outcomes = self.source_outcomes(reads, now)
         resolved = self.resolve()
         directory = self.resolver.directory
@@ -535,7 +571,7 @@ class Ingest:
         unmatched = [query for source in resolved for query in source.unmatched]
         if self.queue is not None and unmatched:
             self.queue(unmatched, now)
-        share = self.healthy_share(now)
+        share = self.gate_share(reads, now if started is None else started)
         edition = self.check_edition(now)
         began = now if started is None else started
         self.publisher.summary = PassSummary(

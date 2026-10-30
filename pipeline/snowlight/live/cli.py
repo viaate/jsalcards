@@ -1023,9 +1023,15 @@ class _Loop:
     """Why the run ended (a code: ``until``, ``edition``, ``overrides``, or an exit-1 cause),
     in the loop's closing notice the soak report types each boundary by."""
     first_pass: datetime | None = None
-    """When the run's first pass started (the notice the soak's cold start ends at)."""
+    """When the run's first pass started (its notice; the soak's cold start ends at the
+    ``ready`` notice before it)."""
     next_evidence: datetime | None = None
     """When the idle time next asks the evidence store what it holds (``None``: never)."""
+    not_before: datetime | None = None
+    """The first pass's mark while the run waits for it (:meth:`Runner.first_waits`)."""
+    until: datetime | None = None
+    """``--until``: once the pass due is at or past it, the run ends and the idle time no
+    longer asks the evidence store (that would only hold the successor's start)."""
 
     def fail(self, cause: str) -> Exit:
         self.causes.append(cause)
@@ -1060,6 +1066,19 @@ class Runner:
     def step(self) -> timedelta:
         return timedelta(minutes=self.config.pass_minutes)
 
+    def first_waits(self, start: datetime) -> bool:
+        """Whether the run's first pass waits for the next grid mark (the reads say a source
+        to read first cannot be asked yet, :meth:`~snowlight.live.reads.LiveReads.waits`). A
+        check of the reads that fails never holds the loop."""
+        waits = getattr(self.parts.reads, "waits", None)
+        if not callable(waits):
+            return False
+        try:
+            return bool(waits(start))
+        except Exception as error:
+            LOG.error("first reads: %s", type(error).__name__)
+            return False
+
     def pulse(self) -> None:
         """Touch ``state/pulse`` (the workflow's watcher ends a process whose pulse is
         :data:`PULSE_MAX_AGE` old: a hang that holds the interpreter too)."""
@@ -1089,9 +1108,19 @@ class Runner:
         clock = self.loaders.clock
         start = clock()
         until = start + self.args.until
+        end_by = job_end_by(getattr(self.args, "job_started", None))
+        if end_by is not None and end_by < until:
+            _say(f"the job's limit ends this run by {_iso(end_by)}")
+            until = end_by
         step = self.step()
         check = timedelta(seconds=self.config.edition_check_seconds)
-        self.state = _Loop(due=start, next_check=start, grid=on_grid(start, step))
+        self.state = _Loop(due=start, next_check=start, grid=on_grid(start, step), until=until)
+        if self.first_waits(start):
+            # a source to read first was read in this slot by the run before: its statuses
+            # would be dark until it can be asked again, so the first pass is the next mark
+            self.state.due, self.state.grid = next_grid(start, step), True
+            self.state.not_before = self.state.due
+        annotate("notice", f"live-read ready {_iso(start)}")
         every = timedelta(minutes=int(getattr(self.args, "push_every", 0) or 0))
         if self.store is not None and every > timedelta(0):
             self.state.push_every = every
@@ -1253,7 +1282,7 @@ class Runner:
         state.blank_failing = None
         if was_ahead and verdict.ok:
             _say("edition: the deploy matches this run's directory; passing now")
-            state.due, state.grid = now, False
+            state.due, state.grid = self.at_once(now)
             return
         last = ingest.publisher.memory.last_stamp
         if (
@@ -1265,17 +1294,28 @@ class Runner:
         ):
             _say("edition: a new stamp for the same directory; passing now")
             state.restamped = verdict.stamp
-            state.due, state.grid = now, False
+            state.due, state.grid = self.at_once(now)
+
+    def at_once(self, now: datetime) -> tuple[datetime, bool]:
+        """A pass at once (its due mark and whether it is a grid pass), or the first pass's
+        mark while the run still waits for it (:meth:`first_waits`)."""
+        held = self.state.not_before
+        if held is not None and self.state.first_pass is None and now < held:
+            return held, True
+        return now, False
 
     def idle(self, now: datetime) -> None:
-        """Between passes: the state push on its slot (ending before the next grid mark)
-        and the owner's timer check."""
+        """Between passes: the state push on its slot (ending before the next grid mark),
+        the evidence check (:meth:`check_evidence`, never after the run's last pass) and the
+        owner's timer check."""
         state = self.state
         if self.holds is not None and self.holds.pending:
             self.holds.retry()
         if state.next_push is not None and now >= state.next_push and now < state.due:
             self.push(now, reason="slot")
-        if state.next_evidence is not None and now >= state.next_evidence:
+        ending = state.until is not None and state.due >= state.until
+        if state.next_evidence is not None and now >= state.next_evidence and not ending:
+            # after the run's last pass the check is left to the successor's start
             self.check_evidence(self.loaders.clock())
         if self.alerts is not None and state.next_timer is not None and now >= state.next_timer:
             state.next_timer = now + TIMER_EVERY
@@ -1758,6 +1798,31 @@ def run_overrides(args: argparse.Namespace, loaders: Loaders | None = None) -> i
 PULL_TRIES: Final = 3
 PULL_PAUSE: Final = 10.0
 PULL_AGAIN: Final = 60.0
+JOB_MINUTES: Final = timedelta(minutes=345)
+"""live-read.yml's job timeout (``timeout-minutes``): a job past it is cancelled, so it starts
+no successor and makes no end push."""
+JOB_RESERVE: Final = timedelta(minutes=15)
+"""What a run keeps of its job's time after its last pass's start: the pass (reads cut at
+4.5 minutes, then its resolve and publish), the watcher and the reap, the successor's
+dispatch (90 s at most), the record, the end push (its 60-s bound and the process's start),
+the closing report, the export, its check and the cache save."""
+
+
+def job_end_by(started: str | None) -> datetime | None:
+    """The moment a run's last pass must start by so its job's end steps still fit in the
+    job's timeout: the job's start (Unix seconds, from the workflow) plus
+    :data:`JOB_MINUTES` less :data:`JOB_RESERVE`. ``None`` without a start, or with one that
+    does not read (logged; the run keeps its own ``--until``)."""
+    if not started:
+        return None
+    try:
+        moment = datetime.fromtimestamp(int(started), UTC)
+    except (ValueError, OverflowError, OSError):
+        LOG.error("job start: not a time; the run keeps its --until")
+        return None
+    return moment + JOB_MINUTES - JOB_RESERVE
+
+
 PULL_FOR: Final = timedelta(minutes=6)
 """A pull is tried 3 times 10 s apart, then every 60 s, for up to 6 minutes in all, the
 request in progress included (a hanging API cannot stretch it): a cold start of about 1.5
@@ -2023,7 +2088,9 @@ def run_soak(args: argparse.Namespace, loaders: Loaders | None = None) -> int:  
     try:
         since, until = parse_moment(args.since), parse_moment(args.until)
         with loaders.client() as client:
-            history = fetch_history(client, since, until, loaders.env().get("GITHUB_TOKEN", ""))
+            history = fetch_history(
+                client, since, until, loaders.env().get("GITHUB_TOKEN", ""), args.prefix
+            )
         text = render(report(history))
     except Exception as error:
         return _fail(f"soak: {describe(error)}")
@@ -2210,6 +2277,16 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
     _inputs(loop)
     loop.add_argument("--until", type=minutes, required=True, help="how long, e.g. +320m")
     loop.add_argument(
+        "--job-started",
+        default=None,
+        metavar="UNIX_SECONDS",
+        help=(
+            "when the workflow job started: the run also ends by "
+            f"{int(JOB_MINUTES.total_seconds() // 60)} minutes after it less "
+            f"{int(JOB_RESERVE.total_seconds() // 60)} for its last pass and end steps"
+        ),
+    )
+    loop.add_argument(
         "--push-every",
         type=int,
         default=0,
@@ -2338,4 +2415,10 @@ def _register_state(actions: "argparse._SubParsersAction[argparse.ArgumentParser
     soak.add_argument("--since", required=True, help="e.g. 2026-10-31T18:00Z")
     soak.add_argument("--until", default="now", help="e.g. 2026-11-02T18:00Z (default now)")
     soak.add_argument("--out", type=Path, default=None, help="also write the report here")
+    soak.add_argument(
+        "--prefix",
+        choices=("v1-shadow", "v1"),
+        default="v1-shadow",
+        help="the prefix the reader wrote: v1 once LIVE_PUBLISH is on",
+    )
     soak.set_defaults(handler=run_soak)

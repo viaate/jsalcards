@@ -461,3 +461,66 @@ def test_a_live_read_run_is_timed_by_its_reader_job_not_its_evidence_job() -> No
     assert found.started == datetime(2026, 10, 31, 12, tzinfo=UTC)
     assert found.ended == datetime(2026, 10, 31, 17, 22, tzinfo=UTC)  # the successor's start
     assert found.jobs == {"read": "success", "evidence": "success"}
+
+
+def test_the_cold_start_ends_at_the_ready_notice_and_skips_a_running_job() -> None:
+    """The soak of Oct 25-27 read a p95 of 254 s: the last run was still running when the
+    report was made, so its notices were not published and its first commit (the G+5 pass)
+    stood in for its first pass. A running job now has no cold start in the report, and a
+    run that waits for the grid is measured to the moment it could pass."""
+    history = _history()
+    new = history.runs[1]
+    assert new.started is not None
+    ready = f"live-read ready {(new.started + timedelta(seconds=70)).isoformat()}"
+    first = f"live-read first pass {(new.started + timedelta(seconds=250)).isoformat()}"
+    history.runs[1] = _noted(new, ready, first)
+    hand = report(history)["handoffs"]
+    assert isinstance(hand, dict)
+    assert hand["cold_start_max_seconds"] == 70.0
+    # the first pass is reported beside it, with the wait for the grid mark between them
+    assert hand["cold_start_first_pass_max_seconds"] == 250.0
+    assert hand["first_pass_wait_max_seconds"] == 180.0
+    bars = report(history)["bars"]
+    assert isinstance(bars, dict)
+    assert bars["first_pass_wait_max"] is True
+    late = f"live-read first pass {(new.started + timedelta(seconds=70 + 400)).isoformat()}"
+    history.runs[1] = _noted(new, ready, late)
+    numbers = report(history)
+    hand, bars = numbers["handoffs"], numbers["bars"]
+    assert isinstance(hand, dict)
+    assert isinstance(bars, dict)
+    assert hand["first_pass_wait_max_seconds"] == 400.0
+    assert bars["first_pass_wait_max"] is False
+    running = _history()
+    running.runs[1] = replace(running.runs[1], ended=None, conclusion=None, annotations=())
+    hand = report(running)["handoffs"]
+    assert isinstance(hand, dict)
+    assert hand["cold_starts"] == 1  # the first run only
+
+
+def test_the_report_of_a_reader_in_on_reads_its_v1_commits() -> None:
+    """Since LIVE_PUBLISH is on (Oct 27) the reader writes v1/: ``--prefix v1`` reads its
+    commits there, so the gaps and handoffs are the live map's, and the shadow soak's bar of
+    no reader commit under v1/ does not apply."""
+    shadow = _history()
+    history = replace(shadow, prefix="v1")
+    history.commits = [
+        replace(commit, message=commit.message.replace("live v1-shadow ", "live v1 "))
+        for commit in shadow.commits
+    ]
+    history.v1_commits = list(history.commits)
+    on = report(history)
+    off = report(shadow)
+    assert on["prefix"] == "v1"
+    assert on["reader_commits_under_v1"] == on["commits"] == off["commits"]
+    bars_on, bars_off = on["bars"], off["bars"]
+    assert isinstance(bars_on, dict)
+    assert isinstance(bars_off, dict)
+    assert bars_on["no_v1_commits"] is None
+    assert on["gap_on_commits"] == off["gap_on_commits"]
+    assert on["handoffs"] == off["handoffs"]
+    # a shadow report that finds the reader's commits under v1/ still fails that bar
+    shadow.v1_commits = list(history.commits)
+    bars = report(shadow)["bars"]
+    assert isinstance(bars, dict)
+    assert bars["no_v1_commits"] is False

@@ -429,9 +429,9 @@ COLD_SHARE: Final = 0.25
 HEALTH_MIN: Final = 0.6
 CLEAN_PASSES: Final = 2
 HEALTH_PASSES: Final = 3
-"""Passes in a row under :data:`HEALTH_MIN` before ``health`` opens. The share dips for a single
-pass when a half-hour's sources come due together (31 such dips in the 48-hour soak, each over
-by the next pass), which is no reading problem; a real one lasts."""
+"""Passes in a row under :data:`HEALTH_MIN` before ``health`` opens: a real reading problem lasts.
+(The single-pass dips at :10 and :40 the 48-hour soak saw, 31 of them, were G12b's two windows
+counted from different clocks; they are one window since S3.)"""
 AHEAD_ALERT: Final = timedelta(minutes=15)
 SOURCE_HOURS: Final = timedelta(hours=3)
 SOURCE_BASELINE: Final = timedelta(hours=24)

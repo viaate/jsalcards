@@ -85,6 +85,9 @@ jobs:
         env:
           LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
         run: |
+          # the job's start: the loop ends early enough for its end steps to fit in the
+          # job's timeout (docs/live.md, The end)
+          echo "LIVE_JOB_STARTED=$(date -u +%s)" >> "$GITHUB_ENV"
           if [ -z "$LIVE_HOST_TOKEN" ]; then
             echo "::notice::No SNOWLIGHT_LIVE_TOKEN in the live environment: the reader does not run (docs/live.md)."
             echo "ready=false" >> "$GITHUB_OUTPUT"
@@ -93,11 +96,13 @@ jobs:
           fi
 
       - if: steps.token.outputs.ready == 'true'
+        timeout-minutes: 15
         uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - if: steps.token.outputs.ready == 'true'
+        timeout-minutes: 15
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: "3.12"
@@ -106,6 +111,7 @@ jobs:
           cache-dependency-glob: uv.lock
 
       - if: steps.token.outputs.ready == 'true'
+        timeout-minutes: 15
         run: uv sync --locked --no-dev
 
       # The NCES and Census downloads preview.yml keeps, and the NWS boundaries predict.yml
@@ -190,6 +196,7 @@ jobs:
           # reader itself. The runner's cancel (a mode change, the stall drill, a timeout)
           # signals only this shell, so the trap passes it on: the watcher ends the reader
           # within 5 s and no reader outlives the step.
+          if [ -n "${LIVE_JOB_STARTED:-}" ]; then mode+=(--job-started "$LIVE_JOB_STARTED"); fi
           setsid bash ../.github/scripts/pulse-watch.sh out/internal/live/state/pulse 210 10 -- \
             .venv/bin/snowlight live run --until +320m --push-every 30 "${mode[@]}" &
           watcher=$!

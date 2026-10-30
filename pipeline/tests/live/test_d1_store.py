@@ -791,3 +791,81 @@ def test_a_write_sent_again_after_a_lost_answer_is_billed_for_both_tries(tmp_pat
     other.keep(tmp_path / "c")
     plain = second.budget() - before
     assert lost >= plain + min(d1.WRITE_BATCH, d1.plan_parts(len(pack(tmp_path / "a"))))
+
+
+@dataclass
+class _PushAtTake:
+    """Runs the old writer's push just before the successor's epoch take (``times`` times):
+    the run before's end push landing between the successor's read of ``head`` and its take."""
+
+    api: FakeD1
+    old: D1StateStore
+    folder: Path
+    times: int = 1
+    pushed: list[str] = field(default_factory=list)
+
+    def __call__(self, sql: str) -> None:
+        if sql.startswith("UPDATE head SET epoch") and len(self.pushed) < self.times:
+            self.api.before = None
+            marker = f"old-{len(self.pushed) + 2}"
+            _state(self.folder, marker)
+            self.old.keep(self.folder)  # a good push: head still holds the old epoch
+            self.pushed.append(marker)
+            self.api.before = self
+
+
+def _racing_take(tmp_path: Path, times: int) -> tuple[FakeD1, D1StateStore, _PushAtTake]:
+    api = FakeD1()
+    old = _store(api)
+    old.take(tmp_path / "old")
+    _state(tmp_path / "old", "old-1")
+    old.keep(tmp_path / "old")
+    hook = _PushAtTake(api, old, tmp_path / "old", times)
+    api.before = hook
+    return api, old, hook
+
+
+def test_a_push_between_the_read_and_the_take_is_read_again(tmp_path: Path) -> None:
+    """S4: the take checks the sha256 the pull read, so an end push that swapped ``head`` in
+    between is read again: the successor starts from it, and the old writer's next push is
+    lost (it never overwrites the successor)."""
+    api, old, hook = _racing_take(tmp_path, times=1)
+    pulled = _store(api).take(tmp_path / "new")
+    assert hook.pushed == ["old-2"]
+    assert pulled.epoch == 2
+    assert _marker(tmp_path / "new") == "old-2"
+    head = api.head()
+    assert (
+        json.loads((tmp_path / "new" / EPOCH_FILE).read_text())["pulled_sha256"] == (head["sha256"])
+    )
+    _state(tmp_path / "old", "old-3")
+    with pytest.raises(LostStateError):
+        old.keep(tmp_path / "old")
+
+
+def test_without_the_sha256_in_the_take_the_push_between_was_dropped(tmp_path: Path) -> None:
+    """The control: the take before S4 checked the epoch alone, so the successor took the
+    epoch over the bytes it read before the push and the old writer's last state was gone."""
+    api, _, hook = _racing_take(tmp_path, times=1)
+    real = api.run
+    before_s4 = "UPDATE head SET epoch = epoch + 1, run_id = ? WHERE id = 1 AND epoch = ?"
+
+    def epoch_only(database: str, statements: Sequence[Statement]) -> list[Answer]:
+        fixed = [
+            (before_s4, params[:2]) if sql == d1._TAKE else (sql, params)
+            for sql, params in statements
+        ]
+        return real(database, fixed)
+
+    api.run = epoch_only  # type: ignore[method-assign]
+    _store(api).take(tmp_path / "new")
+    assert hook.pushed == ["old-2"]
+    assert _marker(tmp_path / "new") == "old-1"  # the end push's state was dropped
+
+
+def test_a_head_that_keeps_moving_fails_the_pull(tmp_path: Path) -> None:
+    api, _, hook = _racing_take(tmp_path, times=d1.TAKE_TRIES)
+    with pytest.raises(D1Error, match="kept moving"):
+        _store(api).take(tmp_path / "new")
+    assert len(hook.pushed) == d1.TAKE_TRIES
+    assert api.head()["epoch"] == 1  # nothing taken: the next try of the pull reads it again

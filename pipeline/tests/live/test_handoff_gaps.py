@@ -33,6 +33,7 @@ from live.test_cli import (
     CLOSINGS_PATH,
     MORNING,
     OWN,
+    STORM,
     Clock,
     Rig,
     Server,
@@ -43,12 +44,14 @@ from live.test_cli import (
     serve,
 )
 from live.test_edition import Source
-from live.world import at
+from live.test_live_workflows import load
+from live.world import World, at
 from snowlight.directory.deployed import DeployedEdition
 from snowlight.live import cli as live_cli
 from snowlight.live.d1 import PushResult
 from snowlight.live.edition import EditionWatch
 from snowlight.live.ingest import SourceRead
+from snowlight.live.ledger import Outcome as ReadOutcome
 from snowlight.schemas.live import ClosingsFile
 
 STEP = timedelta(minutes=5)
@@ -331,6 +334,34 @@ def test_a_broken_chain_is_restarted_by_the_reader_job_within_15_minutes(
     assert first - last <= BAR
 
 
+QUEUE = timedelta(seconds=30)
+"""A pending job's start after the group's running job completes (11-30 s in the successor
+handoffs of Oct 25-29: the same group rule starts a pending scheduled run)."""
+
+
+def test_a_broken_chain_with_the_timer_stopped_is_started_by_the_pending_scheduled_run(
+    tmp_path: Path, server: Server, clock: Clock, rig: Rig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """S8: the */20 schedule's run waits as the group's pending job while a reader runs (all
+    22 of Oct 25-29 did, none ran a step: each was replaced by the next successor). When a
+    run ends with no successor (three failed dispatches) and the timer is down too, that
+    pending job is the next to start, as each successor's pending job starts when its
+    predecessor's job completes: the gap is the failed dispatches, the end steps, the queue
+    and a cold start, under 15 minutes."""
+    workflow = load("live-read.yml")
+    job = workflow["jobs"]["read"]
+    assert workflow[True]["schedule"] == [{"cron": "*/20 * * * *"}]
+    assert str(job["if"]).startswith("github.event_name == 'schedule' || ")
+    assert job["concurrency"] == {"group": "live-read", "cancel-in-progress": False}
+    loaders = _reading(_loaders(rig, clock), clock, lambda: READS)
+    assert _loop(tmp_path, server, loaders, monkeypatch, "+30m") == 0
+    last = _times(server)[-1]
+    clock.now = clock.now + DISPATCH_FAILING + END_STEPS + QUEUE + COLD
+    count = len(_times(server))
+    assert _loop(tmp_path, server, loaders, monkeypatch, "+20m") == 0
+    assert _times(server)[count] - last <= BAR - timedelta(minutes=5)
+
+
 def test_an_edition_stop_blanks_and_its_successor_publishes_within_15_minutes(
     tmp_path: Path, server: Server, clock: Clock, rig: Rig, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -534,3 +565,229 @@ def test_the_end_steps_the_gaps_count_are_the_reader_jobs_and_the_evidence_never
     assert "concurrency" not in evidence
     assert "concurrency" not in workflow  # no workflow-level group holds the successor either
     assert evidence["needs"] == "read"
+
+
+def test_the_grid_runs_on_utc_through_the_night_daylight_saving_time_ends(
+    tmp_path: Path, server: Server, clock: Clock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Nov 1 05:00-07:00Z holds New York's 01:00 hour twice (S6): a pass on every 5-minute
+    mark all the same, none skipped, none repeated, and the run ends on time."""
+    night = at("2026-11-01 05:00")
+    world = World()
+    world.read(night - timedelta(days=1), [])
+    world.read(night - STEP, [])
+    rig = Rig(world, [SourceRead("gray-synthetic", ReadOutcome.OK, night, STORM)])
+    clock.now = night
+    loaders = _reading(_loaders(rig, clock), clock, lambda: timedelta(seconds=40))
+    assert _loop(tmp_path, server, loaders, monkeypatch, "+120m") == 0
+    starts = [moment - timedelta(seconds=40) for moment in _times(server)]
+    assert starts == [at("2026-11-01 05:00") + STEP * index for index in range(24)]
+    assert clock.now < at("2026-11-01 07:01")
+
+
+class Waiting:
+    """Reads that say a source to read first was read in this slot (``waits`` at the start)."""
+
+    def __init__(
+        self,
+        reads: Callable[[datetime, Sequence[str], Callable[[], None]], Sequence[SourceRead]],
+        start: datetime,
+    ) -> None:
+        self.reads = reads
+        self.start = start
+        self.asked: list[datetime] = []
+
+    def waits(self, now: datetime) -> bool:
+        self.asked.append(now)
+        return now == self.start
+
+    def __call__(
+        self, now: datetime, only: Sequence[str], tick: Callable[[], None]
+    ) -> Sequence[SourceRead]:
+        return self.reads(now, only, tick)
+
+
+def test_a_successor_waits_for_the_next_mark_when_its_first_reads_cannot_be_asked_yet(  # noqa: PLR0913, PLR0917 - fixtures
+    tmp_path: Path,
+    server: Server,
+    clock: Clock,
+    rig: Rig,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    loaders = _reading(_loaders(rig, clock), clock, lambda: timedelta(seconds=50))
+    assert _loop(tmp_path, server, loaders, monkeypatch, "+60m") == 0
+    first = list(_times(server))
+    last_pass = first[-1] - timedelta(seconds=50)
+    assert last_pass == at("2026-11-17 12:00")
+    start = last_pass + timedelta(minutes=2)  # the successor is ready at G+2
+    clock.now = start
+    base = _reading(_loaders(rig, clock), clock, lambda: timedelta(seconds=50))
+    made: list[Waiting] = []
+
+    def parts(
+        config: live_cli.LiveConfig, env: live_cli.Env, args: argparse.Namespace
+    ) -> live_cli.Parts:
+        built = base.parts(config, env, args)
+        waiting = Waiting(built.reads, start)
+        made.append(waiting)
+        return live_cli.Parts(built.ingest, waiting)
+
+    capsys.readouterr()
+    assert _loop(tmp_path, server, replace(base, parts=parts), monkeypatch, "+20m") == 0
+    out = capsys.readouterr().out
+    assert made[0].asked == [start]
+    assert f"::notice::live-read ready {start.isoformat()}" in out
+    # no pass at G+2: the first is the G+5 grid pass, and it uploads
+    assert "::notice::live-read first pass 2026-11-17T12:05:00+00:00" in out
+    second = _times(server)[len(first) :]
+    assert second[0] == at("2026-11-17 12:05") + timedelta(seconds=50)
+    gaps = [b - a for a, b in pairwise(_times(server))]
+    assert max(gaps) <= STEP + timedelta(seconds=1)
+
+
+class SlowEvidence:
+    """An evidence store that takes the whole time it is given on the fake clock (a check's
+    worst case, :data:`EVIDENCE_CHECK_FOR`) and holds nothing; ``asked``: when, and with how
+    many seconds."""
+
+    def __init__(self, clock: Clock) -> None:
+        self.clock = clock
+        self.asked: list[tuple[datetime, float | None]] = []
+
+    def held(
+        self, _kinds: Sequence[str], _since: str = "", *, seconds: float | None = None
+    ) -> dict[str, dict[tuple[str, str], frozenset[str]]]:
+        self.asked.append((self.clock.now, seconds))
+        self.clock.sleep(live_cli.EVIDENCE_CHECK_FOR.total_seconds())
+        return {}
+
+
+def _evidence(loaders: live_cli.Loaders, slow: SlowEvidence) -> live_cli.Loaders:
+    return replace(loaders, evidence=lambda _config, _env, _client: slow)
+
+
+def _pushing(tmp_path: Path, server: Server, until: str) -> list[str]:
+    """``live run`` with a state store (the evidence store is asked only with one)."""
+    return ["live", "run", "--until", until, "--push-every", "30", *_common(tmp_path, server)]
+
+
+@pytest.mark.parametrize("ready", [120, 240, 250, 260, 285], ids=lambda s: f"G+{s}s")
+def test_the_evidence_check_never_holds_a_waiting_successors_first_pass(  # noqa: PLR0913, PLR0917 - fixtures
+    tmp_path: Path,
+    server: Server,
+    clock: Clock,
+    rig: Rig,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    ready: int,
+) -> None:
+    # A successor that waits for its first pass's mark asks the evidence store in that wait
+    # (the check is due at the run's start), taking its whole 20 s: the check ends 30 s
+    # before the mark or waits for a later idle time, so the first pass is the G+5 pass
+    # all the same, within the 310-s bar of the ready notice.
+    loaders = _reading(_loaders(rig, clock), clock, lambda: timedelta(seconds=50))
+    assert _loop(tmp_path, server, loaders, monkeypatch, "+60m") == 0
+    first = list(_times(server))
+    mark = at("2026-11-17 12:05")
+    start = at("2026-11-17 12:00") + timedelta(seconds=ready)
+    clock.now = start
+    slow = SlowEvidence(clock)
+    base = _evidence(_reading(_loaders(rig, clock), clock, lambda: timedelta(seconds=50)), slow)
+
+    def parts(
+        config: live_cli.LiveConfig, env: live_cli.Env, args: argparse.Namespace
+    ) -> live_cli.Parts:
+        built = base.parts(config, env, args)
+        return live_cli.Parts(built.ingest, Waiting(built.reads, start))
+
+    capsys.readouterr()
+    loaders = replace(base, parts=parts)
+    assert _run(_pushing(tmp_path, server, "+20m"), loaders, monkeypatch) == 0
+    out = capsys.readouterr().out
+    assert f"::notice::live-read ready {start.isoformat()}" in out
+    assert f"::notice::live-read first pass {mark.isoformat()}" in out
+    assert mark - start <= timedelta(seconds=310)
+    asked, seconds = slow.asked[0]
+    assert seconds == live_cli.EVIDENCE_CHECK_FOR.total_seconds()
+    if mark - start >= live_cli.PUSH_MARGIN + live_cli.EVIDENCE_CHECK_FOR:
+        assert asked == start  # in the wait, and done 30 s before the mark
+        assert asked + live_cli.EVIDENCE_CHECK_FOR <= mark - live_cli.PUSH_MARGIN
+    else:
+        assert asked >= mark + timedelta(seconds=50)  # after the first pass, not before it
+    second = _times(server)[len(first) :]
+    assert second[0] == mark + timedelta(seconds=50)
+    gaps = [b - a for a, b in pairwise(_times(server))]
+    assert max(gaps) <= STEP + timedelta(seconds=1)
+
+
+@pytest.mark.parametrize("took", [40, 200, 225, 260], ids=lambda s: f"reads-{s}s")
+def test_a_cold_starts_first_pass_runs_at_its_ready_notice_and_the_grid_holds(  # noqa: PLR0913, PLR0917 - fixtures
+    tmp_path: Path,
+    server: Server,
+    clock: Clock,
+    rig: Rig,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    took: int,
+) -> None:
+    # A cold start (no run before it): its first pass starts at the ready notice, before the
+    # evidence check due at that start; the check takes its 20 s in the idle time after that
+    # pass only when it ends 30 s before the next mark, so every grid pass starts on its mark.
+    start = at("2026-11-17 11:05") + timedelta(seconds=30)
+    clock.now = start
+    slow = SlowEvidence(clock)
+    loaders = _evidence(
+        _reading(_loaders(rig, clock), clock, lambda: timedelta(seconds=took)), slow
+    )
+    capsys.readouterr()
+    assert _run(_pushing(tmp_path, server, "+30m"), loaders, monkeypatch) == 0
+    out = capsys.readouterr().out
+    assert f"::notice::live-read ready {start.isoformat()}" in out
+    assert f"::notice::live-read first pass {start.isoformat()}" in out
+    starts = [moment - timedelta(seconds=took) for moment in _times(server)]
+    assert starts == [start] + [at("2026-11-17 11:10") + STEP * index for index in range(6)]
+    # passes that read into the last 50 s of every slot leave the check no idle time: it
+    # waits (a later idle time asks), it never runs into a pass
+    assert bool(slow.asked) is (took <= 250)
+    for asked, _seconds in slow.asked:
+        assert asked >= start + timedelta(seconds=took)
+        mark = at("2026-11-17 11:05") + STEP * (1 + (asked - at("2026-11-17 11:05")) // STEP)
+        assert asked + live_cli.EVIDENCE_CHECK_FOR <= mark - live_cli.PUSH_MARGIN
+
+
+def test_the_evidence_check_never_runs_after_the_last_pass_so_the_run_ends_at_once(
+    tmp_path: Path,
+    server: Server,
+    clock: Clock,
+    rig: Rig,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The check comes due during the run's last slot (the pass before it read to the mark):
+    # it is left to the successor's start, so the run ends right after its last pass and the
+    # successor, which waits for this job alone (one writer of v1 at a time), is not held.
+    start = at("2026-11-17 11:05") + timedelta(seconds=30)
+    clock.now = start
+    slow = SlowEvidence(clock)
+
+    def took() -> timedelta:
+        late = at("2026-11-17 12:05") <= clock.now < at("2026-11-17 12:06")
+        return timedelta(seconds=285 if late else 40)
+
+    loaders = _evidence(_reading(_loaders(rig, clock), clock, took), slow)
+    assert _run(_pushing(tmp_path, server, "+65m"), loaders, monkeypatch) == 0
+    last_pass = at("2026-11-17 12:10")
+    assert _times(server)[-1] == last_pass + timedelta(seconds=40)
+    assert [moment for moment, _ in slow.asked] == [start + timedelta(seconds=40)]
+    assert clock.now < last_pass + timedelta(seconds=41)
+
+
+def test_the_evidence_job_writes_no_live_file_and_no_state() -> None:
+    import yaml  # type: ignore[import-untyped, unused-ignore]  # noqa: PLC0415
+
+    root = Path(__file__).resolve().parents[3]
+    workflow = yaml.safe_load((root / ".github" / "workflows" / "live-read.yml").read_text())
+    runs = [str(item["run"]) for item in workflow["jobs"]["evidence"]["steps"] if "run" in item]
+    commands = [line for run in runs for line in run.splitlines() if "snowlight" in line]
+    assert commands
+    assert all(" live evidence push " in f"{line} " for line in commands)
