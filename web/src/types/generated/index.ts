@@ -556,7 +556,7 @@ export type AlertKind =
   | 'extreme_cold_warning';
 
 /** Where the chance starts, before any reason. */
-export type Base = AlertBase | DayAfterBase | SimilarDaysBase | PooledBase;
+export type Base = AlertBase | DayAfterBase | SimilarDaysBase | PooledBase | ClassBase;
 
 /**
  * A chance of no school, from 0.01 to 0.99 in hundredths: never a certainty, so how it adds up
@@ -565,6 +565,45 @@ export type Base = AlertBase | DayAfterBase | SimilarDaysBase | PooledBase;
  * @maximum 0.99
  */
 export type ChanceOfNoSchool = number;
+
+/**
+ * A storm-class day (advisory-sane L3): districts like this one close or go remote on
+ * about ``points`` in 100 of the class's days, our level for the class (from priors corrected
+ * for how the archive's storm-day lists were picked, updated by the days we read live), with
+ * the district's standing: how often it gets the class's alerts against most districts.
+ *
+ * Never a share of recorded days: the sentence says what districts like it do, not what a
+ * record holds. Named by the day's own ``alert`` where the class is one alert kind, else by
+ * its ``weather``.
+ */
+export interface ClassBase {
+  readonly kind: 'class';
+  readonly points: Percent;
+  readonly alert?: AlertKind | null;
+  /** Whose chance: a district's, or a private school's. */
+  readonly of?: 'districts' | 'private_schools';
+  /**
+   * How often the district gets this class's alerts against most districts: more (so each one
+   * closes it less often), fewer (more often), or about as often (usual); always usual for a
+   * private school or a district whose own history is not known.
+   */
+  readonly standing?: 'usual' | 'more' | 'fewer';
+  /**
+   * On a warning-class day (winter storm, ice storm, blizzard, lake effect snow, hurricane or
+   * tropical storm warning): the district (a private school: its county) had a hurricane or
+   * tropical storm warning day in the winters its standing counts, so its warnings are named storm
+   * warnings; absent or false: winter storm warnings.
+   */
+  readonly tropical?: boolean;
+  /**
+   * With a standing of more or fewer: the class's level for a usual district, in points, under
+   * (more) or over (fewer) points; the sentence says the standing only where the two read as
+   * different shares.
+   */
+  readonly usual?: Percent | null;
+  /** With no alert: the weather of the day, for a class with no one alert kind. */
+  readonly weather?: CountedWeather | null;
+}
 
 /** It feels like ``feels_like`` at the bus stop that morning: it only adds points. */
 export interface ColdReason {

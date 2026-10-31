@@ -1395,3 +1395,19 @@ def test_a_state_inside_another_state_name_is_not_where_the_lit_schools_are() ->
     )
     assert _closings_places("A school in Virginia is closed.", shows)
     assert _closings_places("Schools in West Virginia are closed.", shows) == []
+
+
+def test_no_model_fact_says_a_share_as_a_count() -> None:
+    # W3-B2: a district that gets many advisories closes on a smaller share of them; read as a
+    # count, "fewer of them" is false (closures a winter rise with the advisories it gets).
+    model = [fact for fact in FACTS.facts if fact.id.startswith("model")]
+    assert len(model) >= len(FACTS.model)
+    for fact in model:
+        assert not re.search(r"\b(fewer|more) of them\b", fact.text, re.IGNORECASE), fact.id
+    places = FACTS.get("model-places")
+    assert places is not None
+    assert "closes on a smaller share of them" in places.text
+    # the chain's days are those with none of the classed alerts, tropical ones included
+    assert places.text.startswith(
+        "On a day with no winter advisory and no winter, cold, hurricane or tropical storm warning"
+    )

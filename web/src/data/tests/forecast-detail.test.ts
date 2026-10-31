@@ -392,6 +392,80 @@ describe('a forecast’s chance section parts', () => {
     expect(read(pooled).why).toBeNull();
   });
 
+  it('reads a storm-class base with its standing, and drops one that says too much', () => {
+    const forecast = night();
+    const base = (value: Json): unknown => {
+      (forecast.why as Json).base = value;
+      return read(forecast).why?.base ?? null;
+    };
+    expect(
+      base({ kind: 'class', points: 7, weather: 'advisory', standing: 'more', usual: 10 }),
+    ).toEqual({
+      kind: 'class',
+      points: 7,
+      alert: null,
+      weather: 'advisory',
+      standing: 'more',
+      usual: 10,
+      of: 'districts',
+      borrowed: false,
+      live: false,
+    });
+    // A standing comes with the usual level, on its side of it; the usual sentence with none.
+    expect(base({ kind: 'class', points: 7, weather: 'advisory', standing: 'more' })).toBeNull();
+    expect(
+      base({ kind: 'class', points: 12, weather: 'advisory', standing: 'more', usual: 10 }),
+    ).toBeNull();
+    expect(
+      base({ kind: 'class', points: 8, weather: 'advisory', standing: 'fewer', usual: 10 }),
+    ).toBeNull();
+    expect(base({ kind: 'class', points: 8, weather: 'advisory', usual: 10 })).toBeNull();
+    expect(
+      base({ kind: 'class', points: 7, weather: 'advisory', standing: 'more', usual: 10.5 }),
+    ).toBeNull();
+    expect(base({ kind: 'class', points: 30, alert: 'blizzard_warning' })).toEqual({
+      kind: 'class',
+      points: 30,
+      alert: 'blizzard_warning',
+      standing: 'usual',
+      of: 'districts',
+      borrowed: false,
+      live: false,
+    });
+    // W3-B1: the additive tropical flag is kept when true and absent otherwise.
+    expect(base({ kind: 'class', points: 30, alert: 'blizzard_warning', tropical: true })).toEqual({
+      kind: 'class',
+      points: 30,
+      alert: 'blizzard_warning',
+      standing: 'usual',
+      tropical: true,
+      of: 'districts',
+      borrowed: false,
+      live: false,
+    });
+    expect(
+      base({ kind: 'class', points: 30, alert: 'blizzard_warning', tropical: false }),
+    ).not.toHaveProperty('tropical');
+    // One name for the day, a standing only a district has, and never recorded or live days.
+    expect(base({ kind: 'class', points: 30 })).toBeNull();
+    expect(
+      base({ kind: 'class', points: 30, alert: 'blizzard_warning', weather: 'advisory' }),
+    ).toBeNull();
+    expect(base({ kind: 'class', points: 30, weather: 'advisory', standing: 'most' })).toBeNull();
+    expect(
+      base({
+        kind: 'class',
+        points: 30,
+        weather: 'advisory',
+        standing: 'more',
+        usual: 40,
+        of: 'private_schools',
+      }),
+    ).toBeNull();
+    expect(base({ kind: 'class', points: 30, weather: 'advisory', live: true })).toBeNull();
+    expect(base({ kind: 'class', points: 30, alert: 'tornado_warning' })).toBeNull();
+  });
+
   it('reads a said open line only as taking points away', () => {
     const said = night();
     (said.why as Json).base = { kind: 'pooled', scope: 'state', points: 38 };

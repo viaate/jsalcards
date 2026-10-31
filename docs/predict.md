@@ -157,6 +157,251 @@ winter storm warning or advisory for the area.
   hold means no district had the day off; one that cannot be read, or that indexes another
   directory and shows a closing, darkens the pass.
 
+## The storm-class levels (advisory-sane L3): what an alert day serves
+
+Every advisory, warning and cold day is served from its **class's level**, never from an
+archive closure share (`config/predict.yaml` `serve.anchor: true`,
+`pipeline/snowlight/predict/anchor.py`). The archive's lists were picked from storm mornings
+and big pages (it read 0.28% of plain mornings, 7.4% of advisory mornings and 20.6% of warning
+mornings), so its shares (74% to 93% on an advisory day) say how the lists were picked, not how
+often districts close. The days with no alert (`none`, `none_after`) stay on the chain above.
+
+- **Classes** (`live_score.classes`): `advisory` (winter weather, freezing rain and lake effect
+  snow advisories, and the day after a closing under one), `cold` (extreme cold warnings),
+  `warning` (winter storm, lake effect snow, ice storm, blizzard and tropical warnings: one
+  level until a kind has 5 live dates).
+- **The level** is `E_e[sigmoid(alpha + o + e)]`, the mean over a market-day effect `e ~ N(0,
+  1.5^2)` (20-point Gauss-Hermite), at the posterior mean of `alpha` (the plug-in level). The
+  prior on `alpha` is normal, its mean set so a reference district's level is the
+  capture-corrected target: 10% for advisory (80% band 4.3% to 20.6%), 10% for cold (3.6% to
+  23.1%), 45% for warning (21.2% to 71.0%), from the capture-odds correction (k about 26.4) and
+  the sampling bound. The delay chance is `(1 - p) x q`, `q` from Beta(1.1, 8.9) (11%) updated
+  on the rows not closed. *Lead ruling (Oct 31): serve the plug-in level (registered).* The
+  spec's words ("posterior mean of the marginal") would serve the Bayes predictive chance,
+  which with no live label is 11.5% advisory, 12.0% cold and 45.6% warning; its prior table
+  and the registered L0 comment ("mean solved so the level at the prior mean is the target")
+  give the plug-in. The predictive (advisory 0.1146) is reported in `anchor.json`
+  (`predictive`), not served; L4's frozen scorer judges calibration, and its shrink fallback
+  acts on misfit.
+- **The district's standing.** `o = delta_region + 0.5 x`, `x = -ln((f + 0.5) / (f_ref + 0.5))`
+  with `f` the district's school days of the class a winter (2015-16 to 2024-25) and `f_ref`
+  the national median over districts with at least one (advisory 4.0, warning 1.4, cold 0.3):
+  a district that gets many advisories closes on a smaller share of them (Methow Valley, 9.4 a
+  winter: 7%), one that rarely gets any on a larger share (at most 3 times the odds). A share,
+  never a count: with the exposure weight 0.5, the closures a winter (`f x p`) still rise with
+  `f`. A district with no history
+  of its own (no eligible schools: charter and virtual districts) takes its county's median
+  days and says nothing of its standing. The region delta is half the archive's log odds ratio
+  of the region against the nation, clipped to 1, only for the advisory class (the spec's G7:
+  "today only the advisory Northeast qualifies") and only where the region's archive record
+  has level support (30 days, 3 dates, no date over half): today advisory Northeast, -0.415.
+  The warning class's region shares sit at the archive's ceiling (Ohio Valley 106 of 107 closed
+  against 1,027 of 1,071 nationally, a log odds ratio resting on one open day), so warning and
+  cold take no region delta. A delta moves the level relatively; the archive's own share never
+  sets one.
+- **The live update** (Addendum B2). The posterior of `alpha` is refit, every process, on the
+  outcome-blind live labels of `predict read-labels` (L1's private record
+  `out/internal/predict/reads/`: `no_school`, `delayed`, and `unnamed` counted open, owner O5),
+  read through one adapter (`snowlight/predict/anchor_labels.py`), from 2026-10-27 on, each
+  market-day one cluster of the random effect. An unnamed row counts open with the list's
+  sensitivity: `P(unnamed) = 1 - s (p + (1 - p) q)`, `s_A` from Beta(9, 1) and `s_B` from Beta(4,
+  2) updated by the closed co-listing trials; tier B rows enter only once `s_B` is at least 0.7
+  over 20 trials on 5 dates. With 30 live market-days `tau` is chosen from 1, 1.5, 2 and 2.5 by
+  marginal likelihood. With no record (L1 not on the head, or no day labeled) the level is the
+  prior's, which is correct. The record is kept forever, so the adapter skips a day file
+  before 2026-10-27 by its name, unread (its trials too): a process reads only the days the
+  fit can use, and a test holds a winter-sized record (100 days, 60,000 rows) to the 10 s bar,
+  read and fit together.
+  - *The market-day integral.* Each market-day's likelihood is a function of `alpha + e` alone;
+    it is tabled once on the `alpha` grid's own points and summed against the `N(0, tau^2)`
+    density (the trapezoid rule on an even grid: exact to under 1e-6 for any market-day whose
+    likelihood is wider than one grid step). The registered 20-point Gauss-Hermite rule on
+    `N(0, tau^2)` was inaccurate once a market-day holds hundreds of rows, as live advisory and
+    warning markets will: its likelihood in `e` is then far narrower than the nodes' spacing
+    (simulated, 80 sets with heavy-tailed market sizes: level errors up to 0.035, a band that
+    could exclude the converged answer; the grid's level matches a 120-node rule to under 1e-4
+    in every set, its band ends to 0.007). `quadrature_points` now sets only a level's mean over
+    `e` (a smooth integrand, where 20 points are exact to 1e-6). *Lead ruling (Oct 31):
+    accepted*, the grid market-day integral for each market-day's likelihood, with the
+    registered 20-point quadrature for the served level.
+  - *The delay share.* `q` is fitted with `p` in every unnamed row's likelihood (an unnamed row
+    may hide a closing as well as a delay), at the posterior mean of `alpha`, in turn with
+    `alpha` until it moves under 1e-4. Fitted as if no unnamed row could hide a closing, it came
+    out low on warning days (0.092 at a true 0.10 at warning 45%, 0.085 at 70%); now 0.100 and
+    0.104.
+  - *The list sensitivity per row* (R2-S4). `s` is one list's naming rate
+    (the registered estimand `named`, which L1 notes is biased low), while an unnamed row means
+    no list named the district all day, and a row may be read by several. If the lists' misses
+    were independent, a row read by `k` lists would hide fewer closings (`1 - (1 - s)^k`); the
+    trials cannot tell, since they condition on a list having named the district, and misses a
+    district causes (it told no list) are common to every list. L3 keeps the registered form
+    and reports, per class, the unnamed rows read by two lists or more (`multi_list` in
+    `anchor.json`), the rows the one-list form may overstate. *Lead ruling (Oct 31): keep one
+    list's sensitivity per unnamed row (registered)*; the lead revisits once L1's real record
+    shows the multi-list share.
+  - *Speed and checks.* A row's offset is counted in whole grid steps (0.015, at most half a
+    step off), each label's log chance is tabled once on the grid, and the grid is computed in
+    full only where a coarse pass finds the posterior within e^-40 of its top: a season of rows
+    of all three classes (240 market-days of 40 to 60 districts each) fits in about 0.2 s of
+    one core. The fit is checked against scipy's adaptive quadrature (posterior mean of `alpha`
+    to 1e-3, `q` to 2e-4), against an independent fine-grid integration of a 300-row market-day
+    (mean and both band ends), and by simulated recovery (true levels 5%, 10%, 25% and 45%:
+    mean estimates within 0.02, `q` within 0.005 of its true 0.10).
+  - *The 80% band* (in `anchor.json` and the log line; not served). In simulations with
+    heavy-tailed market sizes and the real exposure offsets it covers the truth in 21 to 26 of
+    30 replicates at warning levels 30% to 70%, 32 of 40 at 30% over 80 market-days, and 22 to
+    27 of 30 at advisory levels 3% to 25% over 15 to 60 market-days (it was 16 to 28 of 30,
+    mostly under 20, with the fixed rule and the low `q`). It does not carry the uncertainty of
+    `q`, `s` or the choice of `tau`, so it can still run narrow at the edges (22 of 30 at 3%
+    and at 25%), and narrower when the lists name fewer closings: the figures above are at a
+    list sensitivity of 0.9; at 0.7 it covered about 20 of 30 at advisory 10% over 60
+    market-days, with the point estimate still unbiased (mean 0.100, `q` 0.102). L4 should
+    read it as a guide, not a calibrated interval.
+- **Deferred** (Addendum B2 makes the live update a pure posterior over per-class label
+  counts): the registered live region and state deviations (`standing.live_region_sd` 0.5,
+  `live_state_sd` 0.4, from 5 live dates) and the warning split by alert kind (`split`, from 5
+  live dates) are not fitted in L3; a test keeps them so until a later piece takes them up.
+- **The day after a closing under an advisory** (`advisory_after`) is served as a plain
+  advisory day, at the advisory level, and says the advisory sentence: the class has one level.
+- **Plausibility** (G6, Addendum A item 5, before anything serves). Implied closures a winter =
+  the sum over classes of `f x p`. Four steps, over the deployed districts:
+  1. *The registered pull.* A district over 6 is pulled toward its class levels on the
+     log-odds scale (`level + s (district - level)`, `s` down from 1 in steps of 0.05, never
+     below the level) to the largest `s` that passes.
+  2. *The cap (kept by the lead's ruling of Oct 31 as the G6 backstop on published chances,
+     with the class shrink of step 4; both act only when a published value would break G6).*
+     The districts over 6 are the most
+     exposed ones, whose exposure already puts them under their class level, so pulling them
+     toward it adds closures and the registered rule cannot reach 6. Such a district takes the
+     `s` with the fewest closures, then one downward shift of every class's log-odds, the least
+     that brings it to 6. Raised class levels well inside the prior's own bands would need it:
+     on the served path (18,227 deployed districts, county exposure and region deltas
+     included), advisory 12% and warning 50% cap 12 districts, advisory 21% and warning 71%
+     150, advisory 15% and warning 85% 336.
+  3. *The registered national steps.* While a national clause fails (advisory mean at most 1.0
+     and p99 at most 3.0, advisory and warning mean at most 2.0), the districts with the most
+     implied closures take one more step each toward their level, in that order, until it
+     passes. A round finds how many must step by bisection (a step must lower a district's
+     closures and add none of advisory, or of advisory and warning, so every clause only eases
+     as more step), at most 20 rounds: the same districts as one at a time, in milliseconds.
+  4. *A class level the national clauses refuse* (every movable district at its level and a
+     clause still failing) is shrunk toward its prior: `alpha = prior + w (posterior -
+     prior)`, `w` down from 1 in the pull's steps until the clauses pass (advisory alone; with
+     the advisory and warning clause, warning too). The priors pass, so a live update cannot
+     serve an implausible nation; this is Addendum A item 4's fallback, taken earlier. On
+     today's exposure the national steps never act (pulled 0 at every raised level tried):
+     this shrink does that work, and the advisory-mean clause holds the advisory reference
+     level to about 29% at most (an advisory raised to 35%, 40% or 52% serves at 28.5% to 28.7%).
+  Every clause is judged on the chances **as published** (to the hundredth, with the 1% floor),
+  never only on the raw ones: rounding adds up to half a hundredth of a class's days a winter,
+  so a capped district rounded up would be served over 6 (at advisory 21% and warning 71%, 97
+  districts at up to 6.11). A district rounding would put over 6 takes, class by class from
+  the one rounding raised most, the hundredth under its raw chance instead, and the national
+  steps check the published chances throughout; the log line and `anchor.json` report the
+  published figures, which publishing then keeps.
+  The pass logs `predict: anchor plausibility: advisory mean 0.31 p99 0.87, advisory and warning
+  mean 0.97, most 5.51; pulled 0, capped 0, shrunk 0` (districts pulled and capped, classes
+  shrunk) for every serving model it builds (the outlook's
+  too), warns (an Actions annotation) whenever a district was capped, a class shrunk or a clause
+  still fails, and writes it to `anchor.json` (`plausibility`: before and after, pulled, capped,
+  rounds, failing, shrunk, the served levels). Today, on the served path, nothing is pulled or
+  capped: advisory mean 0.31 and p99 0.87, advisory and warning mean 0.97, the most of any
+  district 5.51, all as published.
+- **What it serves** (dry run of the live head's directory, no live label). Advisory: 0.80
+  mean before (p10 0.56, p50 0.74, p90 0.97), 0.116 after (p10 0.07, p50 0.10, p90 0.21);
+  warning 0.95 before, 0.46 after (0.27 to 0.57); cold 0.77 before, 0.11 after. The exposure
+  term centres on the median district, not on the day-weighted mean, so averaged over the
+  advisory days districts actually get the served chance is 8.6% (warning 41.5%, cold 8.6%).
+  *Lead ruling (Oct 31): no re-centring on the day-weighted mean now*: about 8.6% over the
+  advisory days districts get is near 1 in 10, as the spec asks. L4 reports the day-weighted
+  served mean per class, and the lead revisits with scored nights. On October 28, Methow Valley
+  SD (advisory) went from 93% to 7%, and Yosemite-Wawona's advisory chance from 74% to 13%.
+- **Private schools** take the same levels at their county's exposure, with no private offset,
+  and never say a standing.
+- **The sentence.** The base is `class` (`ClassBase`): "Districts like Yosemite-Wawona close or
+  go remote on 1 in 8 winter advisory days." The share is true to the whole percent by the
+  record sentences' own rule (`shareOf`: an exact plain share, else "more than" the largest
+  under it, "more than 2 in 5" for 45%), never hedged. Where the district's standing holds of
+  the number shown (its exposure says it gets more of the class's alerts than most districts
+  and its chance is under the class level by a published point, or fewer and over it) and the
+  two read as different shares: "Methow Valley gets more winter advisories than most, so it
+  closes or goes remote on a smaller share of them: 1 in 14." (a share, never "fewer of them":
+  a district that gets more advisories may close on more of them in all). The share is joined
+  with no-break spaces, so a phone never wraps it. A share that is not exact is bounded the way
+  the sentence points: a smaller share "under" the smallest plain share over it ("under 2 in
+  5" for 34% to 39%), a larger one "more than" the largest under it; the fixed words are at
+  most 136 characters. "Half of" says "half of the days with a blizzard warning". The warning
+  class is named by the storms it warns of, never by amounts, and from the district's own
+  history: "winter storm warnings" for a district that had no hurricane or tropical storm
+  warning day in the winters its standing counts, "storm warnings" for one that had (the
+  base's additive `tropical` flag, sent on a warning-class day from the exposure file's list;
+  a private school takes its county's). A reader of an older file, or one without the flag,
+  says winter storm warnings. Every more and fewer claim stays true against most districts
+  with these names: on the committed exposure, 4,194 more and 3,768 fewer winter storm warning
+  claims (each against the other districts' winter warning days) and 398 more and 1,007 fewer
+  storm warning claims (against all warning days), 0 false. An advisory or extreme cold alert
+  names its own class. For a Northeast
+  district the advisory region delta (-0.415) also lowers the chance, so the "so" of a "more"
+  standing credits the whole gap to its advisory count; the line stays true (the number shown
+  is under the usual level and the district does get more advisories), and a capped
+  district's shift does the same. The base carries the class level (`usual`) for that check. It
+  never says "recorded".
+- **Previous chances across a change of method.** A storm day's cell whose last chance came
+  from the other method carries no previous chance: the first pass that serves it from its
+  class level (the old chain's 93% is another method's number, not the storm weakening), and
+  the first pass after `serve.anchor` is turned off (the class level's 7% beside the chain's
+  93% would read as the storm worsening). A day that was quiet at the last pass keeps its
+  previous chance when an alert comes ("Up from 3% at 5 PM" is an earlier forecast of the same
+  day), and so does a storm day whose alert has passed. A day counts as stormy when its
+  forecast named weather (a quiet outlook day with forecast snow counts too, so it drops a true
+  previous chance rather than show a false one).
+- **Learning.** `predict learn` builds the models it scores and compares with the class anchor
+  too, as the passes build them (`cli.learn_builder`), so its no-worse decision scores every
+  storm-class cell on the class level that serves it, the same in the committed and the
+  learned model, and rests on the days with no alert; the chain's storm numbers, which no
+  longer serve, never decide a swap.
+- **Turning it off** (`serve.anchor: false`): only outside an alert evening. Every storm-class
+  cell then serves the chain's numbers again (74% to 93% on an advisory day), with no previous
+  chance, and the chance pushes fire on them: a school whose chain chance is over a
+  subscriber's threshold sends its first "chance" push that evening.
+- **Files.** `data/predict/exposure.json.gz` (codes and counts: each district's class days a
+  winter in tenths, county medians, the national references, the archive's nation and region
+  tallies of each class, and the districts and counties with a hurricane or tropical storm
+  warning day in the winters) is built by `snowlight predict exposure --work <labels folder>`
+  from `weather.parquet`, `districts.parquet` and `labels.parquet`; the same inputs give the
+  same bytes. The command refuses to write a file whose class levels at the priors (no live
+  label) fail G6 over the districts it holds, after the pull and the backstop, so such a file
+  never reaches a pass (the committed one passes with nothing beyond the registered pull). A
+  file without the tropical list does not read (the pass then serves the class levels alone,
+  with no standing). A pass logs one line, `predict: anchor: advisory 0.100 (0.043-0.206) q 0.110 rows
+  0 on 0 dates; ...`, and keeps the private report `out/internal/predict/anchor.json` (never
+  published; per class the level, the prior's and the predictive, the band, `q`, `tau`, the
+  sensitivities, rows, market-days, dates, `k_eff` and `multi_list`; the labels' days and the
+  last labeled day, `through`; the plausibility outcome). An exposure file that does not read
+  leaves every unit at its class level. `anchor.json` is not kept after the job: no workflow
+  caches or stores it. Until L4 stores the score history (L4 is the next piece but one in this
+  lane), the two log lines of each pass (`predict: anchor:` and `predict: anchor
+  plausibility:`) in the Actions logs are the record.
+- **The lead's rulings (Oct 31)** (also in `config/predict.yaml`'s plausibility comments): (1)
+  the cap and the class shrink beyond the registered pull are kept as the G6 backstop on
+  published chances, acting only when a published value would break G6 (with them the
+  effective ceiling of about 29% on the advisory reference level), and the log line counts
+  pulled, capped and shrunk; (2) the plug-in level serves (registered), the predictive mean
+  (0.1146) is reported, not served, and L4's frozen scorer judges calibration, its shrink
+  fallback acting on misfit; (3) no re-centring on the day-weighted mean now (8.6% over the
+  advisory days districts get is near 1 in 10), L4 reports the day-weighted served mean per
+  class and the lead revisits with scored nights; (4) accepted: the grid market-day integral
+  for each market-day's likelihood, with the registered 20-point quadrature for the served
+  level; (5) one list's sensitivity per unnamed row is kept (registered), `anchor.json`
+  reports the multi-list rows, and the lead revisits once L1's real record shows their share.
+
+Not yet here: the forecast-amount adjustment (Addendum A item 3, the next piece) and the
+nightly scorer with its shrink toward the prior (L4). With L2's held record cancelled, nothing
+in L3 freezes the candidate variants (C-v2, C-prior, C-flat, C-exp) at 20:07 D-1 and 05:07 D;
+the fit is deterministic from the committed exposure file and the append-only label record
+(the labels of days before D, `through` in `anchor.json`), so L4 can rebuild each frozen
+variant exactly, or keep them in the private evidence store: L4's call, with the lead.
+
 ## Heights in alerts (addendum e, E1)
 
 A winter alert for a mountain zone often applies only to part of it: on October 22, 2026
@@ -279,7 +524,9 @@ alert only within the heights it names.
   on none. A dry pass over the October 22 advisories (`tests/predict/fixtures`, no heights
   read) has 6,292 thin district-days over its two days; the marker shows on the 4 under an
   advisory.
-- **Advisory rates stay the archive's recorded days.** Under an advisory alone every district
+- **Advisory rates stayed the archive's recorded days** (before L3; with `serve.anchor` on,
+  every advisory, warning and cold day is served from its class level, see "The storm-class
+  levels"; this is what `serve.anchor: false` serves). Under an advisory alone every district
   is above 50%: the nation's record is 495 of 667 recorded days (74%), and those days come
   mostly from the storm days the archive captured. Two ways to an honest lower rate were
   tried on 2026-10-24 and neither can be shipped:
@@ -376,11 +623,13 @@ alert only within the heights it names.
   private chain's sentences count the archive's recorded days only, never days read live.
   A private school on the districts' rates around it carries their live flag, so its
   sentence says "days we read live" only when those district rates were counted on them.
-- Launch gate (addendum d): the private storm levels are the archive's selection-biased
-  recorded days (an advisory 91%, nation, 226 of 248; 99% in a state or county holding 73 of
+- Launch gate (addendum d), with `serve.anchor` off only: the private storm levels are the
+  archive's selection-biased recorded days (an advisory 91%, nation, 226 of 248; 99% in a state or county holding 73 of
   74 or 57 of 57), worded truly as recorded days. Until the private learn follow-up
   re-anchors them on days read live, as `predict learn` does the districts', they block the
-  public launch the same way the districts' unlearned levels would.
+  public launch the same way the districts' unlearned levels would. With `serve.anchor` on
+  (L3) a private school's storm-class day takes the class level at its county's exposure, with
+  no private offset (advisory 0.127 mean, 0.05 to 0.21; "The storm-class levels").
 - Manual statuses the admin sets (the closings file's `manual` rows) light private schools
   as any status does; a posted status for a day hides that day's chance in the panel, and
   the area panel counts it as posted.
@@ -923,6 +1172,7 @@ Run from `pipeline/`. Exit codes: 0 done, 3 dark (nothing uploaded: the gate ref
 | `uv run snowlight predict blank` | Sets the hold and uploads a valid file with no districts to `v1/` and `v1-shadow/`: every chance disappears and stays off until `predict release`. |
 | `uv run snowlight predict release` | Clears the hold. |
 | `uv run snowlight predict check --max-age 45m` | The watchdog: exit 3 when the public file is missing, invalid, blank, ahead of the clock or older than the limit. The workflow runs it after every run, a failed pass included, and opens one issue, "Snow-day chances are stale", unless one is already open. |
+| `uv run snowlight predict exposure --work out/internal/predict` | Builds `data/predict/exposure.json.gz` (each district's storm-class days a winter, county medians, national references, the archive's region tallies) from the labels folder (see "The storm-class levels"). Codes and counts only. |
 | `uv run snowlight predict learn` | Labels the live-read days not yet labeled and swaps in a refit only when the held-out live days find it no worse (see "The model learns on its own"). Exit 0 swapped, reset (a served file counted an excluded day) or nothing to change, 4 kept the model served because the refit was worse, 1 an error (nothing changed). The workflow runs it before the passes. |
 | `uv run snowlight predict read-labels` | Labels the live school mornings not yet labeled by the outcome-blind read rule into the private record `out/internal/predict/reads/` and publishes `predictions/read-audit.json` (counts only) when a day is added (see "The read labels"). Exit 0, or 1 on an error (nothing more is labeled). The workflow runs it right after `predict learn` (it continues on error, 2-minute limit); it labels nothing while a coverage file is absent. |
 | `uv run snowlight predict read-sources` | Builds `data/predict/read-sources.json.gz` (county FIPS to the lists proven for it, every list's populated archive captures, and the row counts of its closing-size days, one value a day) and `data/predict/audiences.json.gz` (each list's districts listed in the current or previous season as of `--as-of`, default today, no dates; it logs the pairs dropped) from `out/internal/stations/coverage.json`, a match of the whole archive and the archive's weather classes (`out/internal/predict/weather.parquet`; heavy lock). Codes and counts only. |

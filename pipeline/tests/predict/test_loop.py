@@ -22,7 +22,7 @@ from snowlight.predict.artifact import RecordDay
 from snowlight.predict.pool import SCOPES
 from snowlight.predict.publish import Dark, DarkError, State, check_budget, due
 from snowlight.predict.situations import SITUATIONS
-from snowlight.predict.why import ALERT_KIND, Of, sayable
+from snowlight.predict.why import ALERT_KIND, Of, Standing, sayable
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.predictions import (
     MAX_OUTLOOKS,
@@ -461,7 +461,10 @@ def _every_day(at: datetime) -> list[Forecast]:
         0.43,
         PreviousChance(p_no_school=0.41, at=at - timedelta(minutes=60)),
         at - timedelta(minutes=30),
+        False,  # served by the chain then too: a chain cell keeps it
+        True,
     )
+    classed_earlier = (*earlier[:3], True, True)  # from its class level: a classed cell keeps it
     full = tuple(RecordDay(day=date(2025, 1, d + 1), did="closed") for d in range(8))
     for counted in SITUATIONS:
         for situation in SITUATIONS:
@@ -486,6 +489,20 @@ def _every_day(at: datetime) -> list[Forecast]:
                     records=records, of=of, thin=thin,
                 )  # fmt: skip
                 found.append(serve._forecast(cell, situation, day, last, at, said_open=said))
+            if serve.SITUATION_POSITION[counted.key] != serve.SITUATION_POSITION[situation.key]:
+                continue
+            # A storm-class day's base (advisory-sane L3), with its standing and usual level.
+            standings: tuple[Standing, ...] = ("usual", "more")
+            for standing, last, said in product(standings, (None, classed_earlier), (False, True)):
+                cell = serve._Cell(
+                    p=0.57, q=0.13, own=False, scope=SCOPES[0], counted=counted, live=False,
+                    records={}, of="districts", classed=True, standing=standing, usual=0.65,
+                    tropical=True,  # said on a warning-class day: its longest base
+                )  # fmt: skip
+                try:
+                    found.append(serve._forecast(cell, situation, day, last, at, said_open=said))
+                except ValueError:
+                    break  # a situation with no storm class has no class base
     return found
 
 

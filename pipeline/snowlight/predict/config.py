@@ -103,6 +103,10 @@ class ServeSettings(_Settings):
     elevation_margin_feet: float = Field(ge=0, le=5000)
     """An alert that names heights reaches a school within this many feet of its band
     (:mod:`snowlight.sources.nws.elevation`)."""
+    anchor: bool = False
+    """Advisory-sane L3: every storm-class day (``live_score.classes``) is served from its
+    class's level (:mod:`snowlight.predict.anchor`), never from an archive closure share. Off:
+    the served chain, as before."""
     reasons: bool = False
     """Piece 3: the districts' chances carry the reasons' terms (the forecast amounts and the
     districts next door, ``data/predict/terms.json.gz``). Off: the base alone, as before."""
@@ -197,8 +201,9 @@ class PredictConfig(_Settings):
     serve: ServeSettings
     learn: LearnSettings
     live_score: dict[str, dict[str, ScoreValue]]
-    """The live scoring rules, pre-registered (advisory-sane L0): read only by the live
-    scorer, never by serving."""
+    """The live scoring rules, pre-registered (advisory-sane L0): the class anchor
+    (:mod:`snowlight.predict.anchor`) serves by them with ``serve.anchor`` on, and the live
+    scorer scores by them; neither changes them."""
 
     @classmethod
     def load(cls, path: Path = CONFIG_PATH) -> "PredictConfig":

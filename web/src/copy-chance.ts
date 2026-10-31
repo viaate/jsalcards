@@ -117,6 +117,76 @@ const WEATHER_DAYS = {
 /** Every weather the contract names, and only those (checked by `satisfies` above). */
 export type CountedWeather = keyof typeof WEATHER_DAYS;
 
+/**
+ * A storm class's alerts, as a standing sentence counts them: "Methow Valley gets more winter
+ * advisories than most." The warning class (winter storm, ice storm, blizzard, lake effect
+ * snow, hurricane or tropical storm warnings) is one class, named by the storms it warns of,
+ * never by amounts ("more snow" is not the claim), and from the district's own history: winter
+ * storm warnings where it has had no hurricane or tropical storm warning day (or the file does
+ * not say), storm warnings where it has (:data:`TROPICAL_WARNINGS`). Never a tropical storm for
+ * a district that has had none.
+ */
+const CLASS_ALERTS = {
+  advisory: 'winter advisories',
+  cold: 'cold warnings',
+  warning: 'winter storm warnings',
+} as const;
+
+/** The warning class of a district that has had hurricane or tropical storm warning days too. */
+const TROPICAL_WARNINGS = 'storm warnings';
+
+type StormClass = keyof typeof CLASS_ALERTS;
+
+/** The storm class of each alert a class base can name its day by. */
+const CLASS_OF_ALERT = {
+  winter_storm_warning: 'warning',
+  winter_weather_advisory: 'advisory',
+  ice_storm_warning: 'warning',
+  blizzard_warning: 'warning',
+  extreme_cold_warning: 'cold',
+} as const satisfies Record<AlertKind, StormClass>;
+
+/** The storm class of each weather a class base can name its day by. */
+const CLASS_OF_WEATHER = {
+  advisory: 'advisory',
+  cold: 'cold',
+  lake_snow: 'warning',
+  tropical: 'warning',
+} as const satisfies Record<CountedWeather, StormClass>;
+
+/**
+ * A level as a share of days, true to the whole percent with no hedge, by the record's own rule
+ * (:func:`shareOf`): "1 in 14", "half of", else "more than 2 in 5" (the plain shares only: no
+ * twentieths but 19 in 20).
+ */
+function levelShare(percent: number): string {
+  const { some, of, more } = shareOf(percent);
+  const share = some === 1 && of === 2 ? 'half of' : `${String(some)} in ${String(of)}`;
+  return more ? `more than ${share}` : share;
+}
+
+/**
+ * A level as a share said against the usual level, its bound pointing the sentence's own way:
+ * exact where a plain share is true to the whole percent; else, for a smaller share, "under"
+ * the smallest plain share over it ("a smaller share of them: under 2 in 5" for 34 to 39), and
+ * for a larger one "more than" the largest under it. ``null``: no plain share bounds it that way.
+ */
+function standingShare(percent: number, smaller: boolean): string | null {
+  const said = (some: number, of: number): string =>
+    some === 1 && of === 2 ? 'half' : `${String(some)} in ${String(of)}`;
+  const found = shareOf(percent);
+  if (!found.more) return said(found.some, found.of);
+  if (!smaller) return `more than ${said(found.some, found.of)}`;
+  let above: readonly [number, number] | null = null;
+  for (const share of [...SHARES, ...Array.from({ length: 99 }, (_, n) => [1, n + 2] as const)]) {
+    const [some, of] = share;
+    if ((some * 100) / of >= percent + 0.5 && (above === null || some / of < above[0] / above[1])) {
+      above = share;
+    }
+  }
+  return above === null ? null : `under ${said(above[0], above[1])}`;
+}
+
 /** The districts a pooled base counts, as the start of its sentence, around the district's name. */
 const POOLS = {
   nearby: (district: string) => `Districts near ${district}`,
@@ -184,6 +254,30 @@ export type BaseInput =
       readonly live: boolean;
       /** Whose recorded days: districts' (the default), or private schools' only. */
       readonly of?: 'districts' | 'private_schools';
+    }
+  | {
+      /**
+       * A storm-class day: the class's level for districts (or schools) like this one, never a
+       * share of recorded days. Named by the day's alert, or with none by its weather.
+       */
+      readonly kind: 'class';
+      readonly points: number;
+      readonly alert: AlertKind | null;
+      readonly weather?: CountedWeather | null;
+      /** The district gets more of the class's alerts than most districts, fewer, or not. */
+      readonly standing: 'usual' | 'more' | 'fewer';
+      /** With a standing: the class's level for a usual district, in points. */
+      readonly usual?: number | null;
+      /**
+       * On a warning-class day: the district has had hurricane or tropical storm warning days,
+       * so its warnings are storm warnings; absent or false: winter storm warnings.
+       */
+      readonly tropical?: boolean;
+      /** A district's chance (the default), or a private school's. */
+      readonly of?: 'districts' | 'private_schools';
+      /** Never counted over other days, and never a count of days read live. */
+      readonly borrowed: false;
+      readonly live: false;
     };
 
 /** The district's record in storms like this, counted, for the sentence that cites it. */
@@ -770,7 +864,65 @@ function baseReason(input: BaseInput, district: string): string {
       const who = pools[checkKey(pools, input.scope, 'pool')](district);
       return input.borrowed ? lent(who, input.alert) : closed(who, input.alert, true);
     }
+    case 'class':
+      return classReason(input, district, extreme);
   }
+}
+
+/**
+ * A storm-class day's base: the class's level for districts like this one, in the present
+ * tense of what districts like it do ("Districts like Pine Hollow close or go remote on 1 in 8
+ * winter advisory days."), its share true to the whole percent with no hedge (:func:`levelShare`).
+ * Where the district gets more of the class's alerts than most districts and its chance reads as
+ * a smaller share than the usual level's (or fewer and larger), it says so, and why its number
+ * differs: "Methow Valley gets more winter advisories than most, so it closes or goes remote on
+ * a smaller share of them: 1 in 14." (a share, never "fewer of them": a district that gets more
+ * advisories may close on more of them in all). The share is one unbroken run (no-break spaces),
+ * so a phone never wraps it; a bound points the sentence's way (:func:`standingShare`). A
+ * warning-class standing names the warnings by the district's own history (:data:`CLASS_ALERTS`).
+ * Never "recorded": the level is not a share of a record.
+ */
+function classReason(
+  input: Extract<BaseInput, { kind: 'class' }>,
+  district: string,
+  extreme: 'almost never' | 'almost always' | null,
+): string {
+  const { alert } = input;
+  const weather = input.weather ?? null;
+  if ((alert === null) === (weather === null)) {
+    throw new RangeError('copy: a class base names its day by alert or by weather');
+  }
+  const days =
+    alert !== null
+      ? `days with ${ALERT_DAYS[checkKey(ALERT_DAYS, alert, 'alert')]}`
+      : `${WEATHER_DAYS[checkKey(WEATHER_DAYS, weather ?? 'advisory', 'weather')]} days`;
+  const school = input.of === 'private_schools';
+  if (school && input.standing !== 'usual') {
+    throw new RangeError('copy: a private school has no standing');
+  }
+  const who = school ? `Schools like ${district}` : `Districts like ${district}`;
+  const did = 'close or go remote';
+  if (extreme !== null) return `${who} ${extreme} ${did} on ${days}.`;
+  const share = levelShare(input.points);
+  const rate = `${who} ${did} on ${share.endsWith('half of') ? `${share} the` : share} ${days}.`;
+  const usual = input.usual ?? null;
+  if (input.standing === 'usual' || usual === null) return rate;
+  // Said only on its side of the usual level, and only where the two read differently.
+  const more = input.standing === 'more';
+  if ((more ? input.points >= usual : input.points <= usual) || usual < 2 || usual > 98) {
+    return rate;
+  }
+  if (levelShare(usual) === share) return rate;
+  const klass =
+    alert !== null
+      ? CLASS_OF_ALERT[checkKey(CLASS_OF_ALERT, alert, 'alert')]
+      : CLASS_OF_WEATHER[checkKey(CLASS_OF_WEATHER, weather ?? 'advisory', 'weather')];
+  const of = standingShare(input.points, more);
+  if (of === null) return rate;
+  const alerts =
+    klass === 'warning' && input.tropical === true ? TROPICAL_WARNINGS : CLASS_ALERTS[klass];
+  const unbroken = of.replaceAll(' ', NBSP);
+  return `${district} gets ${more ? 'more' : 'fewer'} ${alerts} than most, so it closes or goes remote on a ${more ? 'smaller' : 'larger'} share of them: ${unbroken}.`;
 }
 
 /** When the heaviest snow falls against the buses: "just before the buses". */

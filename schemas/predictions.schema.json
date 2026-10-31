@@ -48,6 +48,7 @@
       "discriminator": {
         "mapping": {
           "alert": "#/$defs/AlertBase",
+          "class": "#/$defs/ClassBase",
           "day_after": "#/$defs/DayAfterBase",
           "pooled": "#/$defs/PooledBase",
           "similar_days": "#/$defs/SimilarDaysBase"
@@ -66,6 +67,9 @@
         },
         {
           "$ref": "#/$defs/PooledBase"
+        },
+        {
+          "$ref": "#/$defs/ClassBase"
         }
       ]
     },
@@ -74,6 +78,78 @@
       "maximum": 0.99,
       "minimum": 0.01,
       "type": "number"
+    },
+    "ClassBase": {
+      "additionalProperties": false,
+      "description": "A storm-class day (advisory-sane L3): districts like this one close or go remote on\nabout ``points`` in 100 of the class's days, our level for the class (from priors corrected\nfor how the archive's storm-day lists were picked, updated by the days we read live), with\nthe district's standing: how often it gets the class's alerts against most districts.\n\nNever a share of recorded days: the sentence says what districts like it do, not what a\nrecord holds. Named by the day's own ``alert`` where the class is one alert kind, else by\nits ``weather``.",
+      "properties": {
+        "alert": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AlertKind"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "const": "class",
+          "type": "string"
+        },
+        "of": {
+          "description": "Whose chance: a district's, or a private school's.",
+          "enum": [
+            "districts",
+            "private_schools"
+          ],
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Percent"
+        },
+        "standing": {
+          "description": "How often the district gets this class's alerts against most districts: more (so each one closes it less often), fewer (more often), or about as often (usual); always usual for a private school or a district whose own history is not known.",
+          "enum": [
+            "usual",
+            "more",
+            "fewer"
+          ],
+          "type": "string"
+        },
+        "tropical": {
+          "description": "On a warning-class day (winter storm, ice storm, blizzard, lake effect snow, hurricane or tropical storm warning): the district (a private school: its county) had a hurricane or tropical storm warning day in the winters its standing counts, so its warnings are named storm warnings; absent or false: winter storm warnings.",
+          "type": "boolean"
+        },
+        "usual": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Percent"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "With a standing of more or fewer: the class's level for a usual district, in points, under (more) or over (fewer) points; the sentence says the standing only where the two read as different shares."
+        },
+        "weather": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CountedWeather"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "With no alert: the weather of the day, for a class with no one alert kind."
+        }
+      },
+      "required": [
+        "kind",
+        "points"
+      ],
+      "title": "ClassBase",
+      "type": "object"
     },
     "ColdReason": {
       "additionalProperties": false,

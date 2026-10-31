@@ -774,7 +774,9 @@ def test_a_private_outlook_table_too_long_steps_down_and_never_darkens(  # noqa:
     found, whole = storm_pass()
     assert found == 0
     made = PredictionsFile.from_json_bytes(whole)
-    live = [d for d in made.outlooks if isinstance(d, Forecast) and d.why.base.live]
+    live = [
+        d for d in made.outlooks if isinstance(d, Forecast) and getattr(d.why.base, "live", False)
+    ]
     assert live
     assert all(getattr(d.why.base, "of", None) == "districts" for d in live)
     plain = {d.model_copy(update={"previous": None}) for d in made.outlooks}
@@ -834,7 +836,7 @@ def test_a_pass_with_no_private_previous_chances_names_only_the_possible_outlook
         sizes.append(len(possible))
         named = _named_outlooks(model, days)
         assert named <= possible
-        assert any(isinstance(d, Forecast) and d.why.base.live for d in named)
+        assert any(isinstance(d, Forecast) and getattr(d.why.base, "live", False) for d in named)
         assert any(
             isinstance(d, Forecast) and d.why.reasons and d.why.reasons[0].kind == "said_open"
             for d in named
@@ -1213,9 +1215,9 @@ def test_a_learned_file_never_darkens_serving(monkeypatch: Any) -> None:
     real = build_model
 
     def refuse(*args: Any, **kwargs: Any) -> ServeModel:
-        if len(args) > 4 or kwargs:
+        if len(args) > 4:  # the learned file (the class anchor goes by keyword either way)
             raise ServeError("a sentence would be false")
-        return real(*args)
+        return real(*args, **kwargs)
 
     monkeypatch.setattr("snowlight.predict.learn.build_model", refuse)
     model, why = learn.serving_model(

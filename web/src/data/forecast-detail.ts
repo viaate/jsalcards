@@ -35,6 +35,8 @@ const REMOTE = 2;
 const SCOPES = ['nearby', 'county', 'state', 'region', 'nation'] as const;
 /** Whose recorded days a pooled base counts: districts', or private schools' only (C3). */
 const POOLED_OF = ['districts', 'private_schools'] as const;
+/** How often a district gets a storm class's alerts against most districts (a class base). */
+const STANDINGS = ['usual', 'more', 'fewer'] as const;
 const ALERTS: readonly AlertKind[] = [
   'winter_storm_warning',
   'winter_weather_advisory',
@@ -78,6 +80,9 @@ export type PoolScope = (typeof SCOPES)[number];
 /** Whose recorded days a pooled base counts. */
 export type PoolOf = (typeof POOLED_OF)[number];
 
+/** A district's standing in a storm class: it gets more of its alerts than most, fewer, or not. */
+export type ClassStanding = (typeof STANDINGS)[number];
+
 /**
  * Where the chance starts. `borrowed`: the day's own weather (or the day after a snow day)
  * has too few recorded days, so the chance is counted over other recorded days, which the
@@ -112,6 +117,33 @@ export type BaseDetail =
       readonly live: boolean;
       /** Whose days: districts', or private schools' only (a private school's chance). */
       readonly of: PoolOf;
+    }
+  | {
+      /**
+       * A storm-class day: the class's level for districts like this one (never a share of
+       * recorded days), named by the day's own alert, or with none by its weather.
+       */
+      readonly kind: 'class';
+      readonly points: number;
+      readonly alert: AlertKind | null;
+      readonly weather?: CountedWeather | null;
+      readonly standing: ClassStanding;
+      /**
+       * With a standing: the class's level for a usual district, in points, which the
+       * district's chance is under (more of the class's alerts) or over (fewer).
+       */
+      readonly usual?: number;
+      /**
+       * On a warning-class day: the district (a private school: its county) has had hurricane
+       * or tropical storm warning days, so its warnings are named storm warnings; absent:
+       * winter storm warnings.
+       */
+      readonly tropical?: true;
+      /** A district's chance, or a private school's (which has no standing of its own). */
+      readonly of: PoolOf;
+      /** Never counted over other days, and never a count of days read live. */
+      readonly borrowed: false;
+      readonly live: false;
     };
 
 export type ReasonDetail =
@@ -442,6 +474,37 @@ function baseOf(value: unknown): BaseDetail | null {
         borrowed: lent,
         live,
         of,
+      };
+    }
+    case 'class': {
+      // One name for the day, its alert or its weather, and a standing only a district has.
+      const alert = base.alert ?? null;
+      const standing = STANDINGS.find((item) => item === (base.standing ?? 'usual'));
+      const of = POOLED_OF.find((item) => item === (base.of ?? 'districts'));
+      if (alert !== null && !ALERTS.includes(alert as AlertKind)) return null;
+      if ((alert === null) === (named === null)) return null;
+      if (standing === undefined || of === undefined) return null;
+      if (of === 'private_schools' && standing !== 'usual') return null;
+      if (borrowed || live) return null;
+      // A standing comes with the usual level it is said against, on its side of it.
+      const usual = base.usual ?? null;
+      if ((standing === 'usual') !== (usual === null)) return null;
+      if (usual !== null) {
+        if (!isWhole(usual, 0, 100)) return null;
+        if (standing === 'more' ? points >= usual : points <= usual) return null;
+      }
+      return {
+        kind: 'class',
+        points,
+        alert: alert as AlertKind | null,
+        ...weatherOf(named),
+        standing,
+        ...(usual === null ? {} : { usual }),
+        // Additive: a file without it names the warnings winter storm warnings.
+        ...(base.tropical === true ? { tropical: true as const } : {}),
+        of,
+        borrowed: false,
+        live: false,
       };
     }
     default:

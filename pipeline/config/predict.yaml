@@ -94,6 +94,11 @@ serve:
   grid_minutes: [7, 37]       # the heartbeat passes, on the hour's grid
   opens_max_age_minutes: 60   # an opens file older than this says nothing (the usual chance stands)
   elevation_margin_feet: 500  # an alert "above N feet" reaches a school at N - 500 ft or higher ("below", "between" alike; docs/predict.md, Heights)
+  # Advisory-sane L3 (docs/predict.md, "The storm-class levels"): every advisory, warning and cold
+  # day is served from its class's level (capture-corrected priors, the district's exposure, the
+  # live outcome-blind labels, the plausibility pull; all set by live_score below), never from an
+  # archive closure share. Off: the served chain, as before.
+  anchor: true
   # Piece 3 (docs/predict.md, "The reasons"): off until the lead turns them on. Off, every chance
   # is the base alone, byte for byte as before piece 3.
   reasons: false              # the reasons' terms (forecast amounts, districts next door) move the chance
@@ -282,6 +287,32 @@ live_score:
     pull_step: 0.05               # ...s falling from 1 in steps of 0.05 (s = 0 is the class level itself, never below it)...
     pull_until: district_max      # ...to the largest s at which that district's implied closures are at or under district_max;
     pull_aggregate: largest_first # if the mean or p99 clause still fails, the districts with the most implied closures take one more step each, in that order, until it passes
+    # L3 (docs/predict.md, "The storm-class levels", Plausibility; comments only, the sha256 is of
+    # the values): the districts over district_max are the most exposed, whose exposure puts them
+    # under their class level, so the pull toward it cannot reach district_max. Such a district
+    # takes the s with the fewest closures, then one downward shift of every class's log-odds to
+    # district_max (the cap); the national steps go by bisection (the same districts as one at a
+    # time); a class level the national clauses still refuse is shrunk toward its prior (alpha =
+    # prior + w (posterior - prior), w down in pull_step) until they pass. Every clause is judged
+    # on the chances as published (hundredths, the floor), so a capped district is never served
+    # over district_max by rounding. On today's exposure the national steps never act (pulled 0
+    # at every raised level tried): the class shrink does that work, and the advisory-mean clause
+    # holds the advisory reference level to about 29% at most.
+    # The lead's rulings (Oct 31; docs/predict.md, "The storm-class levels"):
+    # (1) the cap and the class shrink beyond the registered pull are KEPT as the G6 backstop on
+    #     published chances; they act only when a published value would break G6, and the log
+    #     line counts pulled, capped and shrunk (with a warning whenever more than the pull acted);
+    # (2) the plug-in level SERVES (registered); the predictive mean (advisory 0.1146) is
+    #     reported in anchor.json, not served; L4's frozen scorer judges calibration and its
+    #     shrink fallback acts on misfit;
+    # (3) NO re-centring on the day-weighted mean now: about 8.6% over the advisory days
+    #     districts get is near 1 in 10 as the spec asks; L4 reports the day-weighted served
+    #     mean per class, and the lead revisits with scored nights;
+    # (4) ACCEPTED: the grid market-day integral for each market-day's likelihood, with the
+    #     registered 20-point quadrature (quadrature_points) for the served level;
+    # (5) KEEP one list's sensitivity per unnamed row (registered); anchor.json reports the
+    #     multi-list rows (multi_list), and the lead revisits once L1's real record shows their
+    #     share.
   supply:
     advisory: {rows: 300, dates: 8, states: 3, regions: 2, max_date_share: 0.25, k_eff: 15}
     warning: {rows: 100, dates: 4, states: 2, max_date_share: 0.40}

@@ -54,8 +54,8 @@ from snowlight.live.kept import (
 from snowlight.live.publish import LiveHold
 from snowlight.live.publishers import DirPublisher, GitHubPublisher, PublishError
 from snowlight.output import write_bytes_atomic, write_json
-from snowlight.predict import artifact as artifact_module
 from snowlight.predict import (
+    anchor_cli,
     backtest,
     candidates_cli,
     chart_evidence,
@@ -73,6 +73,7 @@ from snowlight.predict import (
     train,
     tuning_cli,
 )
+from snowlight.predict import artifact as artifact_module
 from snowlight.predict import outlook_learn as ol
 from snowlight.predict.alerts_live import (
     LiveEvent,
@@ -82,6 +83,13 @@ from snowlight.predict.alerts_live import (
     alerts_digest,
     live_events,
     withdrawn,
+)
+from snowlight.predict.anchor import Anchor
+from snowlight.predict.anchor_labels import (
+    ANCHOR_REPORT,
+    anchor_line,
+    serving_anchor,
+    write_report,
 )
 from snowlight.predict.calendar import is_school_day, previous_school_day, season_of
 from snowlight.predict.config import (
@@ -326,6 +334,7 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
                 candidates_cli,
                 night_replay,
                 read_cli,
+                anchor_cli,
             )
         ),
     ):
@@ -986,6 +995,12 @@ class Pass:
     learned: artifact_module.Learned | None = None
     """What the live days taught (``predictions/learned.json``), used with the committed
     model; ``None``: the committed model alone."""
+    anchor: Anchor | None = None
+    """The storm classes' levels (``serve.anchor``, :mod:`snowlight.predict.anchor`), fitted
+    once a process on the live labels of the read record; ``None``: the served chain."""
+    anchor_report: Path | None = None
+    """Where the private class-anchor report goes (``anchor.json``), rewritten with what the
+    plausibility check did each time the serving model is built; ``None``: not kept."""
     now: Callable[[], datetime] = field(default=lambda: datetime.now(UTC))
     write: Path | None = None
     history: Callable[[datetime, datetime], Sequence[NwsAlert]] | None = None
@@ -1064,10 +1079,16 @@ class Pass:
         when they were fit over this committed model."""
         if self._built is None or self._built[0] != directory.stamp:
             built, why = learn.serving_model(
-                directory, self.model(), self.learned, self.config, self.zone_fallback
+                directory,
+                self.model(),
+                self.learned,
+                self.config,
+                self.zone_fallback,
+                anchor=self.anchor,
             )
             if why is not None:
                 _warn(why)
+            said_plausible(built, report=self.anchor_report)
             if self.terms is not None and self.config.serve.reasons:
                 override = self.config.serve.reasons_gate_override
                 refused = terms_refused(
@@ -1097,10 +1118,16 @@ class Pass:
                 raise ServeError("the outlook is on but no outlook model is given")
             rates, found = self.outlook_model()
             built, why = learn.serving_model(
-                directory, rates, self.outlook_learned, self.config, self.zone_fallback
+                directory,
+                rates,
+                self.outlook_learned,
+                self.config,
+                self.zone_fallback,
+                anchor=self.anchor,
             )
             if why is not None:
                 _warn(f"outlook: v3 rates: {why}")
+            said_plausible(built, prefix="outlook: ")
             self._outlook = (directory.stamp, OutlookServe.of(built, found))
         return self._outlook[1]
 
@@ -1119,6 +1146,26 @@ class Pass:
         if self._heights is None or self._heights[0] != key or self._heights[1] is None:
             self._heights = (key, self.heights(directory))
         return self._heights[1]
+
+
+def said_plausible(built: ServeModel, *, prefix: str = "", report: Path | None = None) -> None:
+    """Say what the plausibility check (G6) did on this model's deployed districts: one
+    ``predict: anchor plausibility:`` line, and a warning (an annotation in Actions) whenever
+    more than the registered pull toward the class level was needed (a district capped, a class
+    shrunk toward its prior) or a clause still fails; never silent. ``report``: the private
+    ``anchor.json`` is rewritten with it."""
+    found = built.plausible
+    if found is None or built.anchor is None:
+        return
+    line = f"{prefix}{found.line()}"
+    _out(f"predict: {line}")
+    if not found.quiet:
+        _warn(line)
+    if report is not None:
+        try:
+            write_report(built.anchor, report, plausible=found)
+        except OSError as error:
+            _warn(f"anchor: the private report: {type(error).__name__}")
 
 
 def terms_refused(
@@ -2264,6 +2311,13 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
     committed = artifact_module.ModelArtifact.from_bytes(model_bytes)
     terms = terms_file.load(Path(args.terms)) if config.serve.reasons else None
     learned = served_learned(host, mode, artifact_module.sha256_of(model_bytes))
+    anchor = serving_anchor(config, committed, warn=_warn)
+    if anchor is not None:
+        _out(f"predict: {anchor_line(anchor)}")
+        try:
+            write_report(anchor)
+        except OSError as error:
+            _warn(f"anchor: the private report: {type(error).__name__}")
     alerts = AlertsReader(client({"Accept": "application/geo+json"}))
     history = AlertsHistory(client({"Accept": "application/geo+json"}))
     catalog = BoundaryCatalog(HttpCache(client()), args.weather_cache)
@@ -2304,6 +2358,8 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
         zone_fallback=lambda lon, lat: lookup.zone_for(None, lat, lon),
         model=lambda: committed,
         learned=learned,
+        anchor=anchor,
+        anchor_report=ANCHOR_REPORT if anchor is not None else None,
         state=load_state(args.state),
         write=args.write,
         history=history.read,
@@ -3577,6 +3633,24 @@ def run_learn(args: argparse.Namespace) -> int:  # pragma: no cover - the real w
         return _run_learn(args, Path(scratch))
 
 
+def learn_builder(
+    directory: DeployedDirectory,
+    rates: artifact_module.ModelArtifact,
+    config: PredictConfig,
+    zone_fallback: Callable[[float, float], str | None],
+    anchor: Anchor | None,
+) -> Callable[[artifact_module.Learned | None], ServeModel]:
+    """The serving models predict learn scores and compares (the rates' own, and each learned
+    file's), built as the passes build them: with the class anchor (R2-LEARN), so the
+    no-worse decision scores every storm-class cell on the class level that serves it (the
+    same in both models), never on the chain's numbers that no longer serve."""
+
+    def build(learned: artifact_module.Learned | None) -> ServeModel:
+        return build_model(directory, rates, config, zone_fallback, learned, anchor=anchor)
+
+    return build
+
+
 def _run_learn(args: argparse.Namespace, scratch: Path) -> int:  # pragma: no cover
     from snowlight.live.state import StateError  # noqa: PLC0415
     from snowlight.predict.live_labels import (  # noqa: PLC0415
@@ -3595,7 +3669,8 @@ def _run_learn(args: argparse.Namespace, scratch: Path) -> int:  # pragma: no co
         directory = run.directory()
         leave_for_evidence(EVIDENCE_DIR, directory=directory)
         committed = run.model()
-        model = build_model(directory, committed, run.config, run.zone_fallback)
+        build = learn_builder(directory, committed, run.config, run.zone_fallback, run.anchor)
+        model = build(None)
         mode = run.mode
         host: Host
         if run.host is not None and mode.key is not None:
@@ -3639,14 +3714,13 @@ def _run_learn(args: argparse.Namespace, scratch: Path) -> int:  # pragma: no co
         def outlook_build(learned: artifact_module.Learned | None) -> ServeModel:
             # The committed v3 rates' model is built once (the outlook and the v3 rates' own
             # learning both start from it); a learned one each time it is asked for.
+            from_outlook = learn_builder(
+                directory, outlook_rates(), run.config, run.zone_fallback, run.anchor
+            )
             if learned is not None:
-                return build_model(
-                    directory, outlook_rates(), run.config, run.zone_fallback, learned
-                )
+                return from_outlook(learned)
             if "model" not in outlook_built:
-                outlook_built["model"] = build_model(
-                    directory, outlook_rates(), run.config, run.zone_fallback
-                )
+                outlook_built["model"] = from_outlook(None)
             found: ServeModel = outlook_built["model"]
             return found
 
@@ -3669,9 +3743,7 @@ def _run_learn(args: argparse.Namespace, scratch: Path) -> int:  # pragma: no co
             model=model,
             archive_sha256=sha,
             snapshots=run.state.snapshots,
-            build=lambda learned: build_model(
-                directory, committed, run.config, run.zone_fallback, learned
-            ),
+            build=build,
             now=datetime.now(UTC),
             outlook_mode=run.outlook_mode,
             outlook_state=run.state.outlook,

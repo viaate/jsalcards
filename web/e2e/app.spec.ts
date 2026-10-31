@@ -1200,6 +1200,40 @@ function morningPredictions(generatedAt: string): string {
   });
 }
 
+/**
+ * SYNTHETIC: the chances made that morning at `generatedAt` on a winter advisory, served from
+ * the storm class's level (a class base): Shawnee Mission's Tuesday at 7%, under the usual 10%
+ * because it gets more advisories than most; Olathe's Wednesday at the usual 10%; Pembroke
+ * Hill's Tuesday at its county's level, 12%, a private school's with no standing.
+ */
+function classPredictions(generatedAt: string): string {
+  const day = (chance: number, base: Record<string, unknown>) => ({
+    state: 'forecast',
+    p_no_school: chance,
+    p_delay: 0.08,
+    reasons: [],
+    why: { base: { kind: 'class', points: Math.round(chance * 100), ...base } },
+  });
+  const advisory = { weather: 'advisory' };
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: generatedAt,
+    directory: STAMP,
+    days: ['2026-01-13', '2026-01-14'],
+    districts: [
+      { district: 0, time_zone: ZONE, days: [day(0.1, advisory), day(0.1, advisory)] },
+      {
+        district: 1,
+        time_zone: ZONE,
+        days: [day(0.07, { ...advisory, standing: 'more', usual: 10 }), day(0.1, advisory)],
+      },
+    ],
+    schools: [{ school: 4, zone: 0, days: [0, 0] }],
+    outlooks: [day(0.12, { ...advisory, of: 'private_schools' })],
+    zones: [ZONE],
+  });
+}
+
 /** SYNTHETIC: the live file that morning at `generatedAt`: Olathe North on a two-hour delay today. */
 function morningClosings(generatedAt: string): string {
   return JSON.stringify({
@@ -3329,6 +3363,94 @@ test.describe('with data staged', () => {
       }
     });
   }
+
+  test('a storm-class chance says how it is got: a standing district’s, a usual one’s and a private school’s, at 1440 and 390 px', async ({
+    browser,
+  }) => {
+    // R3-S2: the class base end to end, on a winter advisory before the day is under way.
+    test.setTimeout(480_000);
+    const NBSP = '\u00a0';
+    for (const phone of [false, true]) {
+      const context = await browser.newContext({
+        viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 900 },
+        ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
+        timezoneId: MORNING_VIEWER,
+        serviceWorkers: 'block',
+      });
+      const page = await context.newPage();
+      await fixDate(page, BEFORE_UNDER_WAY);
+      const { problems } = watch(page);
+      await page.route('**/data/predictions/latest.json*', (route) =>
+        route.fulfill({
+          contentType: 'application/json',
+          body: classPredictions(BEFORE_UNDER_WAY_FILES),
+        }),
+      );
+      await page.route('**/data/live/closings.json*', (route) =>
+        route.fulfill({
+          contentType: 'application/json',
+          body: morningClosings(BEFORE_UNDER_WAY_FILES),
+        }),
+      );
+      await page.route('**/data/live/covered.json*', (route) =>
+        route.fulfill({
+          contentType: 'application/json',
+          body: morningCovered(BEFORE_UNDER_WAY_FILES),
+        }),
+      );
+      const panel = page.locator('aside.detail');
+      const section = panel.locator('.chance');
+      const base = section.locator('.sum > li').first();
+      const said = async (): Promise<string> => (await base.textContent()) ?? '';
+      const cases = [
+        {
+          id: SHAWNEE_MISSION_EAST,
+          name: 'Shawnee Mission East High',
+          chance: 0.07,
+          words: new RegExp(
+            ` gets more winter advisories than most, so it closes or goes remote on a smaller share of them: 1${NBSP}in${NBSP}14\\.$`,
+            'u',
+          ),
+        },
+        {
+          id: '201014000137',
+          name: 'Olathe North Senior High',
+          chance: 0.1,
+          words: /Districts like \S.* close or go remote on 1 in 10 winter advisory days\.$/u,
+        },
+        {
+          id: PEMBROKE_HILL,
+          name: null,
+          chance: 0.12,
+          words:
+            /Schools like \S.* close or go remote on more than 1 in 9 winter advisory days\.$/u,
+        },
+      ] as const;
+      for (const [i, item] of cases.entries()) {
+        if (i === 0) await page.goto(`${site}?school=${item.id}`);
+        else await showSchool(page, item.id);
+        if (item.name !== null) {
+          await expect(panel.locator('h2')).toHaveText(item.name, { timeout: 60_000 });
+        } else {
+          await expect(panel.locator('.kind')).toContainText(copy.detail.privateSchool, {
+            timeout: 60_000,
+          });
+        }
+        const percent = `${String(Math.round(item.chance * 100))}%`;
+        await expect(section.locator('.number')).toHaveText(percent, { timeout: 60_000 });
+        await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(item.chance));
+        await expect.poll(said).toMatch(item.words);
+        // Never a share of a record, never a hedge, and inside the panel's width.
+        expect(await said()).not.toMatch(/recorded|read live|about/u);
+        await base.scrollIntoViewIfNeeded();
+        const box = await base.boundingBox();
+        const width = phone ? 390 : 1440;
+        expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(width);
+      }
+      expect(problems).toEqual([]);
+      await context.close();
+    }
+  });
 
   test('the chance section the evening of a closed day: the status first, then tomorrow’s chance and its cold night', async ({
     browser,

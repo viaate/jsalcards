@@ -73,6 +73,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from snowlight.live.history import is_final
 from snowlight.output import dumps_json
+from snowlight.predict.anchor import Anchor
 from snowlight.predict.artifact import (
     LEAID_PATTERN,
     SITUATION_KEYS,
@@ -801,20 +802,24 @@ def read_learned(data: bytes | None, archive_sha256: str) -> tuple[Learned | Non
     return found, None
 
 
-def serving_model(
+def serving_model(  # noqa: PLR0913 - the model's inputs, as build_model's
     directory: DeployedDirectory,
     artifact: ModelArtifact,
     learned: Learned | None,
     config: PredictConfig,
     zone_fallback: Callable[[float, float], str | None],
+    *,
+    anchor: Anchor | None = None,
 ) -> tuple[ServeModel, str | None]:
     """The serving model with the learned file, or the committed model alone when that one
     does not build (and why): a learned file never darkens a pass the committed model can
-    serve."""
+    serve. ``anchor``: the storm classes' levels (:mod:`snowlight.predict.anchor`), either way."""
     if learned is not None:
         try:
-            return build_model(directory, artifact, config, zone_fallback, learned), None
+            return build_model(
+                directory, artifact, config, zone_fallback, learned, anchor=anchor
+            ), None
         except ServeError as error:
             reason = f"the learned file does not build ({error}); serving the committed model"
-            return build_model(directory, artifact, config, zone_fallback), reason
-    return build_model(directory, artifact, config, zone_fallback), None
+            return build_model(directory, artifact, config, zone_fallback, anchor=anchor), reason
+    return build_model(directory, artifact, config, zone_fallback, anchor=anchor), None

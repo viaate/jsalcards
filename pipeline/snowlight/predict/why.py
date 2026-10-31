@@ -36,6 +36,7 @@ from datetime import date
 from typing import Final, Literal
 
 from snowlight.predict.artifact import RecordDay
+from snowlight.predict.exposure import CLASS_OF_WEATHER
 from snowlight.predict.pool import SCOPES, Scope
 from snowlight.predict.situations import Situation, WeatherClass
 from snowlight.schemas.predictions import (
@@ -43,6 +44,7 @@ from snowlight.schemas.predictions import (
     AlertBase,
     AlertKind,
     Base,
+    ClassBase,
     CountedWeather,
     DayAfterBase,
     PastDay,
@@ -96,6 +98,7 @@ STATUS_OF: Final[dict[str, Status | None]] = {
 _WHOLE: Final = 100
 
 type Of = Literal["districts", "private_schools"]
+type Standing = Literal["usual", "more", "fewer"]
 """Whose recorded days a pooled base counts (contract C3)."""
 
 
@@ -187,6 +190,51 @@ def base_for(  # noqa: PLR0913 - the counted days, the chance, where it comes fr
     )
 
 
+def class_base(  # noqa: PLR0913 - the day, its chance and what its sentence says
+    day: Situation,
+    p_no_school: float,
+    standing: Standing,
+    of: Of = "districts",
+    usual: float | None = None,
+    *,
+    tropical: bool = False,
+) -> ClassBase:
+    """The base of a storm-class day (:mod:`snowlight.predict.anchor`): the class's level for
+    districts like this one, named by the day's own alert (or weather), with the district's
+    standing (a private school's is always ``usual``) and, with one, the class's ``usual``
+    level it is said against (a standing on the wrong side of it, or with none, is not said).
+    ``tropical``: the unit's exposure holds a tropical storm or hurricane warning day; said on
+    a warning-class day only (``ClassBase.tropical``), so its sentence names storm warnings,
+    never winter storm warnings alone, and never a tropical storm where it has had none.
+
+    Raises:
+        ValueError: the day's weather is not a storm class.
+    """
+    alert = ALERT_KIND.get(day.weather)
+    weather = None if alert is not None else WEATHER_NAME.get(day.weather)
+    if alert is None and weather is None:
+        raise ValueError(f"a {day.key} day has no storm class")
+    points = percent(p_no_school)
+    level = percent(usual) if usual is not None else None
+    said = (
+        standing
+        if of == "districts"
+        and level is not None
+        and ((standing == "more" and points < level) or (standing == "fewer" and points > level))
+        else "usual"
+    )
+    return ClassBase(
+        kind="class",
+        points=points,
+        alert=alert,
+        weather=weather,
+        standing=said,
+        of=of,
+        usual=level if said != "usual" else None,
+        tropical=tropical and CLASS_OF_WEATHER.get(int(day.weather)) == "warning",
+    )
+
+
 def why_for(  # noqa: PLR0913 - as base_for
     situation: Situation,
     p_no_school: float,
@@ -199,13 +247,24 @@ def why_for(  # noqa: PLR0913 - as base_for
     said_open: float | None = None,
     whole: bool = False,
     thin: bool = False,
+    classed: Standing | None = None,
+    usual: float | None = None,
+    tropical: bool = False,
 ) -> Why:
     """The base alone: it adds up to the chance exactly. With ``said_open`` (the chance the
     unit's word that school is on leaves, the floor), a ``said_open`` line takes the rest of
     the base away, so the base and the line add up to that chance exactly (no line when the
-    base is already there)."""
-    base = base_for(
-        situation, p_no_school, own, scope, day, live=live, of=of, whole=whole, thin=thin
+    base is already there). ``classed``: the day is served from its storm class's level
+    (:func:`class_base`, with this standing, said against the class's ``usual`` level), never
+    from recorded days."""
+    base: Base = (
+        class_base(
+            situation if day is None else day, p_no_school, classed, of, usual, tropical=tropical
+        )
+        if classed is not None
+        else base_for(
+            situation, p_no_school, own, scope, day, live=live, of=of, whole=whole, thin=thin
+        )
     )
     if said_open is None:
         return Why(base=base)

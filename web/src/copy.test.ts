@@ -1276,6 +1276,368 @@ describe('format', () => {
       );
     });
 
+    it('says a storm-class day as the level of districts like it, never a record', () => {
+      const say = (input: BaseInput, name = 'Methow Valley'): string =>
+        chanceFormat.baseReason(input, name);
+      const nb = (share: string): string => share.replaceAll(' ', '\u00a0');
+      const advisory = {
+        kind: 'class',
+        alert: null,
+        weather: 'advisory',
+        borrowed: false,
+        live: false,
+      } as const;
+      expect(say({ ...advisory, points: 10, standing: 'usual' })).toBe(
+        'Districts like Methow Valley close or go remote on 1 in 10 winter advisory days.',
+      );
+      // A standing says why the number differs from the usual level, and only where it does.
+      expect(say({ ...advisory, points: 7, standing: 'more', usual: 10 })).toBe(
+        `Methow Valley gets more winter advisories than most, so it closes or goes remote on a smaller share of them: ${nb('1 in 14')}.`,
+      );
+      expect(say({ ...advisory, points: 14, standing: 'fewer', usual: 10 }, 'Pine Hollow')).toBe(
+        `Pine Hollow gets fewer winter advisories than most, so it closes or goes remote on a larger share of them: ${nb('1 in 7')}.`,
+      );
+      // The same share as the usual level's, the wrong side of it, or no level: no standing.
+      for (const [points, standing, usual] of [
+        [46, 'fewer', 45],
+        [10, 'more', 10],
+        [12, 'more', 10],
+        [8, 'fewer', 10],
+        [7, 'more', null],
+      ] as const) {
+        expect(say({ ...advisory, points, standing, usual })).toMatch(/^Districts like /);
+      }
+      expect(
+        say({
+          kind: 'class',
+          points: 31,
+          alert: 'blizzard_warning',
+          standing: 'more',
+          usual: 45,
+          borrowed: false,
+          live: false,
+        }),
+      ).toBe(
+        `Methow Valley gets more winter storm warnings than most, so it closes or goes remote on a smaller share of them: ${nb('under 1 in 3')}.`,
+      );
+      expect(
+        say({
+          kind: 'class',
+          points: 45,
+          alert: 'blizzard_warning',
+          standing: 'usual',
+          borrowed: false,
+          live: false,
+        }),
+      ).toBe(
+        'Districts like Methow Valley close or go remote on more than 2 in 5 days with a blizzard warning.',
+      );
+      // An advisory or cold alert names its own class, never storm warnings.
+      expect(
+        say({
+          kind: 'class',
+          points: 7,
+          alert: 'winter_weather_advisory',
+          standing: 'more',
+          usual: 10,
+          borrowed: false,
+          live: false,
+        }),
+      ).toMatch(/^Methow Valley gets more winter advisories than most,/);
+      expect(
+        say({
+          kind: 'class',
+          points: 14,
+          alert: 'extreme_cold_warning',
+          standing: 'fewer',
+          usual: 10,
+          borrowed: false,
+          live: false,
+        }),
+      ).toMatch(/^Methow Valley gets fewer cold warnings than most,/);
+      expect(
+        say({
+          kind: 'class',
+          points: 14,
+          alert: null,
+          weather: 'cold',
+          standing: 'fewer',
+          usual: 10,
+          borrowed: false,
+          live: false,
+        }),
+      ).toMatch(/^Methow Valley gets fewer cold warnings than most,/);
+      expect(
+        say({
+          kind: 'class',
+          points: 40,
+          alert: null,
+          weather: 'lake_snow',
+          standing: 'more',
+          usual: 45,
+          borrowed: false,
+          live: false,
+        }),
+      ).toMatch(/^Methow Valley gets more winter storm warnings than most,/);
+      // W3-B1: the warning class is named by the district's own history. A district that has had
+      // no hurricane or tropical storm warning day reads winter storm warnings on a blizzard or
+      // lake effect day, more or fewer; one that has had them reads storm warnings, never
+      // tropical for a district with none.
+      const warning = { kind: 'class', borrowed: false, live: false } as const;
+      expect(
+        say(
+          { ...warning, points: 31, alert: 'blizzard_warning', standing: 'more', usual: 45 },
+          'Fargo',
+        ),
+      ).toBe(
+        `Fargo gets more winter storm warnings than most, so it closes or goes remote on a smaller share of them: ${nb('under 1 in 3')}.`,
+      );
+      expect(
+        say(
+          {
+            ...warning,
+            points: 36,
+            alert: null,
+            weather: 'lake_snow',
+            standing: 'more',
+            usual: 45,
+          },
+          'Buffalo',
+        ),
+      ).toBe(
+        `Buffalo gets more winter storm warnings than most, so it closes or goes remote on a smaller share of them: ${nb('under 2 in 5')}.`,
+      );
+      expect(
+        say(
+          {
+            ...warning,
+            points: 55,
+            alert: null,
+            weather: 'lake_snow',
+            standing: 'fewer',
+            usual: 45,
+          },
+          'Erie',
+        ),
+      ).toBe(
+        `Erie gets fewer winter storm warnings than most, so it closes or goes remote on a larger share of them: ${nb('more than half')}.`,
+      );
+      expect(
+        say(
+          {
+            ...warning,
+            points: 55,
+            alert: 'blizzard_warning',
+            standing: 'fewer',
+            usual: 45,
+            tropical: false,
+          },
+          'Wichita',
+        ),
+      ).toMatch(/^Wichita gets fewer winter storm warnings than most,/);
+      expect(
+        say(
+          {
+            ...warning,
+            points: 33,
+            alert: null,
+            weather: 'tropical',
+            standing: 'more',
+            usual: 45,
+            tropical: true,
+          },
+          'Galveston',
+        ),
+      ).toBe(
+        `Galveston gets more storm warnings than most, so it closes or goes remote on a smaller share of them: ${nb('1 in 3')}.`,
+      );
+      expect(
+        say(
+          {
+            ...warning,
+            points: 60,
+            alert: 'ice_storm_warning',
+            standing: 'fewer',
+            usual: 45,
+            tropical: true,
+          },
+          'Mobile',
+        ),
+      ).toMatch(/^Mobile gets fewer storm warnings than most, so it closes/);
+      // The flag names warnings only: an advisory or cold day keeps its own class.
+      expect(say({ ...advisory, points: 7, standing: 'more', usual: 10, tropical: true })).toMatch(
+        /^Methow Valley gets more winter advisories than most,/,
+      );
+      expect(
+        say({ ...advisory, points: 12, standing: 'usual', of: 'private_schools' }, 'St. Ann'),
+      ).toBe('Schools like St. Ann close or go remote on more than 1 in 9 winter advisory days.');
+      expect(say({ ...advisory, points: 1, standing: 'usual' })).toBe(
+        'Districts like Methow Valley almost never close or go remote on winter advisory days.',
+      );
+      expect(() =>
+        say({ ...advisory, points: 12, standing: 'more', usual: 20, of: 'private_schools' }),
+      ).toThrow(RangeError);
+      expect(() =>
+        say({ ...advisory, alert: 'blizzard_warning', points: 12, standing: 'usual' }),
+      ).toThrow(RangeError);
+    });
+
+    it('says a level as a plain share true to its whole percent, never hedged', () => {
+      const share = (points: number): string => {
+        const sentence = chanceFormat.baseReason(
+          {
+            kind: 'class',
+            points,
+            alert: null,
+            weather: 'advisory',
+            standing: 'usual',
+            borrowed: false,
+            live: false,
+          },
+          'Pine Hollow',
+        );
+        expect(sentence).not.toMatch(/recorded|read live|about/);
+        const found = /on (more than )?(half of the|(\d+) in (\d+)) winter/.exec(sentence);
+        expect(found).not.toBeNull();
+        const value = found?.[3] === undefined ? 50 : (Number(found[3]) * 100) / Number(found[4]);
+        // exact to the whole percent, else the largest plain share under it
+        if (found?.[1] === undefined) expect(Math.round(value)).toBe(points);
+        else expect(value).toBeLessThan(points - 0.5);
+        return `${found?.[1] ?? ''}${found?.[2] ?? ''}`;
+      };
+      for (let points = 2; points <= 98; points += 1) share(points);
+      expect(share(7)).toBe('1 in 14');
+      expect(share(14)).toBe('1 in 7');
+      expect(share(16)).toBe('more than 1 in 7');
+      expect(share(17)).toBe('1 in 6');
+      expect(share(20)).toBe('1 in 5');
+      expect(share(33)).toBe('1 in 3');
+      expect(share(40)).toBe('2 in 5');
+      expect(share(45)).toBe('more than 2 in 5');
+      expect(share(50)).toBe('half of the');
+      expect(share(55)).toBe('more than half of the');
+      expect(share(75)).toBe('3 in 4');
+      expect(share(95)).toBe('19 in 20');
+    });
+
+    it('says a standing share bounded the way its sentence points, true and short', () => {
+      const say = (input: BaseInput, name = 'Methow Valley'): string =>
+        chanceFormat.baseReason(input, name);
+      const nb = (share: string): string => share.replaceAll(' ', '\u00a0');
+      const kinds = [
+        { alert: 'winter_weather_advisory', weather: null },
+        { alert: 'winter_storm_warning', weather: null },
+        { alert: 'blizzard_warning', weather: null },
+        { alert: 'extreme_cold_warning', weather: null },
+        { alert: null, weather: 'tropical' },
+        { alert: null, weather: 'lake_snow' },
+        { alert: null, weather: 'advisory' },
+      ] as const;
+      let said = 0;
+      for (const kind of kinds) {
+        for (const [usual, tropical] of [
+          [10, false],
+          [45, false],
+          [45, true],
+          [71, false],
+          [71, true],
+        ] as const) {
+          for (let points = 2; points <= 98; points += 1) {
+            const standing = points < usual ? 'more' : 'fewer';
+            const sentence = say({
+              kind: 'class',
+              points,
+              ...kind,
+              standing,
+              usual,
+              tropical,
+              borrowed: false,
+              live: false,
+            });
+            // W2-S5: short enough to read at a glance, the district's name aside (the longest,
+            // a larger share of winter storm warnings: more than 19 in 20)
+            expect(sentence.replace('Methow Valley', '').length).toBeLessThanOrEqual(136);
+            // W3-B1: never a tropical storm in a standing; storm warnings only with the flag
+            expect(sentence).not.toMatch(/tropical storm warnings than/u);
+            if (!tropical) expect(sentence).not.toMatch(/ more storm| fewer storm/u);
+            // W3-S1: the share is one unbroken run, so a phone never wraps it
+            const found =
+              /a (smaller|larger) share of them: (under\u00a0|more\u00a0than\u00a0)?(half|(\d+)\u00a0in\u00a0(\d+))\.$/u.exec(
+                sentence,
+              );
+            if (found === null) {
+              expect(sentence).toMatch(/^Districts like Methow Valley close or go remote on /u);
+              continue;
+            }
+            said += 1;
+            const value = found[4] === undefined ? 50 : (Number(found[4]) * 100) / Number(found[5]);
+            // W2-S2: a smaller share is bounded from above, a larger one from below
+            if (found[2] === 'under\u00a0') {
+              expect(found[1]).toBe('smaller');
+              expect(value).toBeGreaterThanOrEqual(points + 0.5);
+            } else if (found[2] === 'more\u00a0than\u00a0') {
+              expect(found[1]).toBe('larger');
+              expect(value).toBeLessThanOrEqual(points - 0.5);
+            } else {
+              expect(Math.round(value)).toBe(points);
+            }
+            expect(sentence).not.toMatch(/fewer of them|more of them|snow, ice/u);
+          }
+        }
+      }
+      expect(said).toBeGreaterThan(500);
+      expect(
+        say({
+          kind: 'class',
+          points: 36,
+          alert: 'winter_storm_warning',
+          standing: 'more',
+          usual: 45,
+          borrowed: false,
+          live: false,
+        }),
+      ).toBe(
+        `Methow Valley gets more winter storm warnings than most, so it closes or goes remote on a smaller share of them: ${nb('under 2 in 5')}.`,
+      );
+      expect(
+        say({
+          kind: 'class',
+          points: 55,
+          alert: 'winter_storm_warning',
+          standing: 'fewer',
+          usual: 45,
+          borrowed: false,
+          live: false,
+        }),
+      ).toBe(
+        `Methow Valley gets fewer winter storm warnings than most, so it closes or goes remote on a larger share of them: ${nb('more than half')}.`,
+      );
+      // W2-S4: "half of the days", never "half of days"
+      expect(
+        say({
+          kind: 'class',
+          points: 50,
+          alert: 'blizzard_warning',
+          standing: 'usual',
+          borrowed: false,
+          live: false,
+        }),
+      ).toBe(
+        'Districts like Methow Valley close or go remote on half of the days with a blizzard warning.',
+      );
+      expect(
+        say({
+          kind: 'class',
+          points: 58,
+          alert: null,
+          weather: 'tropical',
+          standing: 'usual',
+          borrowed: false,
+          live: false,
+        }),
+      ).toMatch(/ on more than half of the hurricane or tropical storm warning days\.$/u);
+    });
+
     it('names the weather of the days a class with no one alert kind counts', () => {
       const say = (input: BaseInput): string => chanceFormat.baseReason(input, 'Mammoth');
       expect(
@@ -1829,6 +2191,66 @@ describe('format', () => {
           );
         }
       }
+      // Every storm-class sentence: every alert and weather, every standing and usual level,
+      // a district's and a private school's, every level (the copy's house style, and never
+      // the record's words).
+      const classed: string[] = [];
+      const ALERT_KINDS = [
+        'winter_storm_warning',
+        'winter_weather_advisory',
+        'ice_storm_warning',
+        'blizzard_warning',
+        'extreme_cold_warning',
+      ] as const;
+      for (let percent = 0; percent <= 100; percent++) {
+        for (const name of [
+          ...ALERT_KINDS.map((alert) => ({ alert, weather: null })),
+          ...(['advisory', 'cold', 'lake_snow', 'tropical'] as const).map((weather) => ({
+            alert: null,
+            weather,
+          })),
+        ]) {
+          for (const of of ['districts', 'private_schools'] as const) {
+            classed.push(
+              chanceFormat.baseReason(
+                {
+                  kind: 'class',
+                  points: percent,
+                  ...name,
+                  standing: 'usual',
+                  of,
+                  borrowed: false,
+                  live: false,
+                },
+                'the district',
+              ),
+            );
+          }
+          for (const [standing, usual] of [
+            ['more', Math.min(100, percent + 3)],
+            ['more', Math.min(100, percent + 30)],
+            ['fewer', Math.max(0, percent - 3)],
+            ['fewer', Math.max(0, percent - 30)],
+          ] as const) {
+            const input = {
+              kind: 'class',
+              points: percent,
+              ...name,
+              standing,
+              usual,
+              borrowed: false,
+              live: false,
+            } as const;
+            // A standing said leads with the name; one left unsaid names it mid-sentence.
+            const led = chanceFormat.baseReason(input, 'Riverside');
+            classed.push(
+              led.startsWith('Riverside ') ? led : chanceFormat.baseReason(input, 'the district'),
+            );
+          }
+        }
+      }
+      for (const sentence of classed) expect(sentence).not.toMatch(/recorded|read live/);
+      outputs.push(...classed);
       for (const status of ['closed', 'delayed', 'remote', 'earlyDismissal'] as const) {
         outputs.push(chanceFormat.neighborPosted('Riverside', status, '2026-01-16'));
         outputs.push(
@@ -3794,6 +4216,7 @@ ${aliases}
     );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s
-    // before its short lists were made distinct pair by pair), and longer on a busy machine.
-  }, 120_000);
+    // before its short lists were made distinct pair by pair), and longer on a busy machine:
+    // 169 s once at load 15, so the bound is 300 s (R3-S1).
+  }, 300_000);
 });

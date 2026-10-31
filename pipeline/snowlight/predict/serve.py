@@ -23,7 +23,7 @@ Nothing here touches the network: the caller hands every input in.
 """
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime
 from enum import Enum
 from typing import Final, Protocol, cast
@@ -33,6 +33,7 @@ import numpy.typing as npt
 
 from snowlight.directory.points import NO_DISTRICT, Points
 from snowlight.predict.alerts_live import LiveEvent, UgcIndex
+from snowlight.predict.anchor import STANDINGS, Anchor, Grid, Plausible, Unit
 from snowlight.predict.announce import announces_at
 from snowlight.predict.artifact import (
     SITUATION_KEYS,
@@ -43,6 +44,7 @@ from snowlight.predict.artifact import (
 )
 from snowlight.predict.calendar import forecast_days, is_school_day, previous_school_day
 from snowlight.predict.config import PredictConfig
+from snowlight.predict.exposure import CLASSES
 from snowlight.predict.forecast_values import NO_FORECASTS, Forecasts
 from snowlight.predict.geography import REGION_OF, districts_near, neighbors, state_of_leaid
 from snowlight.predict.labels import NO_SCHOOL, WEATHER_REASONS
@@ -81,7 +83,15 @@ from snowlight.predict.situations import (
 )
 from snowlight.predict.terms import NO_TERMS
 from snowlight.predict.terms import Model as TermsModel
-from snowlight.predict.why import WEATHER_NAME, Of, reasons_for, record_for, sayable, why_for
+from snowlight.predict.why import (
+    WEATHER_NAME,
+    Of,
+    Standing,
+    reasons_for,
+    record_for,
+    sayable,
+    why_for,
+)
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.live import DayTimeline
 from snowlight.schemas.predictions import (
@@ -289,6 +299,12 @@ class PrivateServe:
     left_out: int = 0
     """Private schools of the contiguous states left out (no time zone): the pass says how
     many (:func:`snowlight.predict.cli.one_pass`), as a left-out school gets no chance."""
+    classed: tuple[bool, ...] = ()
+    """Per situation, whether it is served from its storm class's level (the class anchor,
+    the districts' own, with no private offset); empty: none is."""
+    tropical: npt.NDArray[np.bool_] = field(default_factory=lambda: np.zeros(0, dtype=np.bool_))
+    """Per school, whether its county's exposure holds a tropical storm or hurricane warning
+    day (:meth:`~snowlight.predict.exposure.Exposure.has_tropical`); empty: none does."""
 
     def __len__(self) -> int:
         return int(self.positions.size)
@@ -347,6 +363,24 @@ class ServeModel:
     announce: tuple[int | None, ...] = ()
     """Per deployed district, its usual posting time in minutes from the school day's midnight
     (:mod:`snowlight.predict.announce`), or ``None``; empty: none known."""
+    classed: tuple[bool, ...] = ()
+    """Per situation, whether it is served from its storm class's level (the class anchor,
+    :mod:`snowlight.predict.anchor`); empty: none is."""
+    standing: npt.NDArray[np.int8] = field(default_factory=lambda: np.zeros((0, 0), dtype=np.int8))
+    """(deployed districts, situations): the district's standing in a classed situation's
+    class (the index in :data:`~snowlight.predict.anchor.STANDINGS`); empty: usual."""
+    anchor: Anchor | None = None
+    """The class anchor the classed situations are served from."""
+    usual: tuple[float, ...] = ()
+    """Per situation, a classed situation's class level at the reference district as served
+    (after any shrink), which a standing sentence is said against; empty: none is classed."""
+    plausible: Plausible | None = None
+    """What the plausibility check (G6) found and did over the deployed districts before
+    serving (:class:`~snowlight.predict.anchor.Plausible`); ``None``: no class anchor."""
+    tropical: npt.NDArray[np.bool_] = field(default_factory=lambda: np.zeros(0, dtype=np.bool_))
+    """Per deployed district, whether the exposure it takes holds a tropical storm or hurricane
+    warning day, so its warning-class sentence names storm warnings, not winter storm warnings
+    alone (:meth:`~snowlight.predict.exposure.Exposure.has_tropical`); empty: none does."""
 
     @property
     def coverage(self) -> float:
@@ -515,11 +549,14 @@ def whole_weather(
     return whole
 
 
-def _check_true(rates: _Rates, rules: Rules) -> None:
-    """Every served base sentence is true of the recorded days of the place it names."""
+def _check_true(rates: _Rates, rules: Rules, classed: Sequence[bool] = ()) -> None:
+    """Every served base sentence is true of the recorded days of the place it names (a
+    ``classed`` situation's base names no recorded days: it is not checked)."""
     if rules.almost_share is None or not rates.p.size:
         return
     true = says_true(points_of(rates.p), rates.named_y, rates.named_n, rules.almost_share)
+    if classed:
+        true |= np.asarray(classed, dtype=np.bool_)[None, :]
     if not true.all():
         raise ServeError(
             f"{int((~true).sum())} served base sentences are not true of the recorded "
@@ -625,6 +662,7 @@ def _private_model(  # noqa: PLR0913 - the served schools, both chains and the m
     private: _Rates | None,
     artifact: ModelArtifact,
     near: Sequence[tuple[int, ...]],
+    classed: Sequence[bool] = (),
 ) -> PrivateServe:
     """Each served private school's rates, per situation: the private chain's where private
     schools hold enough recorded days of the situation itself; else the districts' around it
@@ -655,7 +693,7 @@ def _private_model(  # noqa: PLR0913 - the served schools, both chains and the m
         whole=pick(mine.whole, districts.whole),
         thin=pick(mine.thin, districts.thin),
     )
-    _check_true(rates, rules)
+    _check_true(rates, rules, classed)
     entry = artifact.private
     records = tuple(
         dict(entry[school].record) if school is not None and school in entry else {}
@@ -685,12 +723,14 @@ def _private_model(  # noqa: PLR0913 - the served schools, both chains and the m
     )
 
 
-def build_model(  # noqa: PLR0915 - the steps of one model, in order
+def build_model(  # noqa: PLR0913, PLR0915 - the steps of one model, in order
     directory: DeployedDirectory,
     artifact: ModelArtifact,
     config: PredictConfig,
     zone_fallback: Callable[[float, float], str | None],
     learned: Learned | None = None,
+    *,
+    anchor: Anchor | None = None,
 ) -> ServeModel:
     """Every deployed district's rates per situation (see the module docstring), and every
     private school's of the contiguous states (:class:`PrivateServe`).
@@ -698,6 +738,10 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
     ``zone_fallback(lon, lat)`` gives the zone of a district the model does not know.
     ``learned`` adds what the live-read days taught: its anchored situations are counted over
     the live days, the archive giving relative propensities only (:func:`_anchored_counts`).
+    ``anchor``: each storm-class situation (``live_score.classes``) is served from its class's
+    level instead (:mod:`snowlight.predict.anchor`: capture-corrected priors, the district's
+    exposure, the live labels, the plausibility pull), never from an archive closure share;
+    the private schools take the same levels with no private offset.
 
     Raises:
         ServeError: a deployed district has no time zone.
@@ -788,24 +832,39 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
         effective=no_school.situation[0] if no_school.situation.shape[0] else None,
         ratios=delay_ratios,
     )
-    p, q = publish_rates(no_school.p, delay.p, settings.floor, settings.ceiling)
+    position = places.position()
+    rows = np.array([position[d] for d in deployed], dtype=np.int64)
+    p_rate = np.array(no_school.p, dtype=np.float64)
+    q_rate = np.array(delay.p, dtype=np.float64)
+    own_rate = np.array(no_school.own, dtype=np.bool_)
+    classed, standing, plausible, tropical = _classed_rates(
+        anchor,
+        places,
+        states,
+        frozenset(pseudo),
+        rows,
+        (p_rate, q_rate, own_rate),
+        Grid(settings.floor, settings.ceiling),
+    )
+    p, q = publish_rates(p_rate, q_rate, settings.floor, settings.ceiling)
     named_y, named_n = named_counts(counts, no_school)
     whole = whole_weather(
         no_school, archive_counts if archive_counts is not None else counts, live_counts, anchored
     )
-    position = places.position()
-    rows = np.array([position[d] for d in deployed], dtype=np.int64)
-    effective = (
-        tuple(int(k) for k in no_school.situation[0])
-        if no_school.situation.shape[0]
-        else tuple(range(len(SITUATION_KEYS)))
+    effective = tuple(
+        k if classed[k] else int(target)
+        for k, target in enumerate(
+            no_school.situation[0] if no_school.situation.shape[0] else range(len(SITUATION_KEYS))
+        )
     )
+    flags = tuple(bool(value) for value in classed)
     # The chain names a place only when its share is true; check it again on the served
     # neighbors and the published (floored) chance, so a false base sentence never ships.
     _check_true(
-        _Rates(p[rows], q[rows], no_school.own[rows], no_school.scope[rows], effective,
+        _Rates(p[rows], q[rows], own_rate[rows], no_school.scope[rows], effective,
                named_y[rows], named_n[rows], whole[rows]),
         rules,
+        flags,
     )  # fmt: skip
     zones: list[str] = []
     eligible: list[npt.NDArray[np.int64]] = []
@@ -843,7 +902,10 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
             private=_private_chain(artifact, served, lon, lat, miles),
             artifact=artifact,
             near=private_near,
+            classed=flags,
         )
+        if classed.any():
+            private = _classed_private(private, p[prow], q[prow], classed, tropical[prow])
     return ServeModel(
         directory=directory,
         artifact=artifact,
@@ -852,9 +914,9 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
         eligible=tuple(eligible),
         p=p[rows],
         q=q[rows],
-        q_rate=delay.p[rows],
-        p_rate=no_school.p[rows],
-        own=no_school.own[rows],
+        q_rate=q_rate[rows],
+        p_rate=p_rate[rows],
+        own=own_rate[rows],
         scope=no_school.scope[rows],
         effective=effective,
         known=sum(1 for d in deployed if d in entry),
@@ -864,7 +926,93 @@ def build_model(  # noqa: PLR0915 - the steps of one model, in order
         anchored=live,
         private=private,
         whole=whole[rows],
-        thin=no_school.thin[rows],
+        thin=np.where(classed[None, :], False, no_school.thin[rows]),
+        classed=flags if classed.any() else (),
+        standing=standing[rows],
+        anchor=anchor,
+        usual=tuple(
+            plausible.levels[klass] if (klass := anchor.class_of(s.key)) is not None else 0.0
+            for s in SITUATIONS
+        )
+        if anchor is not None and plausible is not None
+        else (),
+        plausible=plausible,
+        tropical=tropical[rows],
+    )
+
+
+def _classed_rates(  # noqa: PLR0913, PLR0917 - the anchor, the places and their rates
+    anchor: Anchor | None,
+    places: Places,
+    states: Sequence[str | None],
+    pseudo: frozenset[str],
+    rows: npt.NDArray[np.int64],
+    rates: tuple[Floats, Floats, npt.NDArray[np.bool_]],
+    grid: Grid,
+) -> tuple[npt.NDArray[np.bool_], npt.NDArray[np.int8], Plausible | None, npt.NDArray[np.bool_]]:
+    """Serve each storm-class situation from its class's level (``anchor``), in place in
+    ``rates`` (chance of no school, delay rate, own record) per place: the situations so
+    served, each place's standing in their class and what the plausibility check did (G6:
+    every place with known days held to ``district_max``, the deployed districts (``rows``) to
+    the national clauses, all on the chances as published on ``grid``, which publishing then
+    keeps), and whether each place's exposure holds a tropical storm or hurricane warning day;
+    a private school's pseudo-district takes its county's exposure."""
+    p_rate, q_rate, own_rate = rates
+    classed = np.zeros(len(SITUATION_KEYS), dtype=np.bool_)
+    standing = np.zeros(p_rate.shape, dtype=np.int8)
+    tropical = np.zeros(places.size, dtype=np.bool_)
+    if anchor is None:
+        return classed, standing, None, tropical
+    units = [
+        Unit(None if d in pseudo else d, county, _region(state))
+        for d, state, county in zip(places.districts, states, places_county(places), strict=True)
+    ]
+    tropical[:] = [anchor.exposure.has_tropical(unit.leaid, unit.county) for unit in units]
+    pull = np.zeros(places.size, dtype=np.bool_)
+    pull[rows] = True
+    served = anchor.rates(units, pull=pull, grid=grid)
+    for k, situation in enumerate(SITUATIONS):
+        klass = anchor.class_of(situation.key)
+        if klass is None:
+            continue
+        j = CLASSES.index(klass)
+        classed[k] = True
+        p_rate[:, k] = served.p[:, j]
+        q_rate[:, k] = served.q[j]
+        standing[:, k] = served.standing[:, j]
+        own_rate[:, k] = False
+    return classed, standing, served.plausible, tropical
+
+
+def places_county(places: Places) -> list[str | None]:
+    """Each place's county FIPS, in :attr:`Places.districts` order."""
+    names = places.counties
+    return [names[int(code)] if code >= 0 else None for code in places.county.tolist()]
+
+
+def _classed_private(
+    private: PrivateServe,
+    p: npt.NDArray[np.float64],
+    q: npt.NDArray[np.float64],
+    classed: npt.NDArray[np.bool_],
+    tropical: npt.NDArray[np.bool_],
+) -> PrivateServe:
+    """The private schools with each classed situation served from the class level at the
+    school's own place (its pseudo-district's rates ``p`` and ``q``, and whether its county's
+    exposure holds a tropical warning day): no private offset."""
+    use = classed[None, :]
+    effective = tuple(k if classed[k] else e for k, e in enumerate(private.effective))
+    return replace(
+        private,
+        p=np.where(use, p, private.p),
+        q=np.where(use, q, private.q),
+        own=np.where(use, False, private.own),
+        effective=effective,
+        of_private=tuple(False if classed[k] else v for k, v in enumerate(private.of_private)),
+        live=tuple(False if classed[k] else v for k, v in enumerate(private.live)),
+        thin=np.where(use, False, private.thin) if private.thin.size else private.thin,
+        classed=tuple(bool(value) for value in classed),
+        tropical=tropical,
     )
 
 
@@ -1012,8 +1160,10 @@ type ClosedOn = Callable[[date], frozenset[int] | None]
 """The deployed districts (or private schools, by directory position) that had no school for
 weather on a day, or ``None`` when not published (then none counts as the day after)."""
 
-type Earlier = tuple[float, PreviousChance | None, datetime]
-"""A unit's chance of no school on a day in the last file, its previous, and that file's time."""
+type Earlier = tuple[float, PreviousChance | None, datetime, bool, bool]
+"""A unit's chance of no school on a day in the last file, its previous, that file's time,
+whether that chance was served from its storm class's level (a ``class`` base), and whether
+that day was stormy then (it named forecast weather)."""
 
 
 def _previous(last: PredictionsFile | None) -> dict[tuple[int, date], Earlier]:
@@ -1023,7 +1173,13 @@ def _previous(last: PredictionsFile | None) -> dict[tuple[int, date], Earlier]:
     for entry in last.districts:
         for day, item in zip(last.days, entry.days, strict=True):
             if isinstance(item, Forecast):
-                found[(entry.district, day)] = (item.p_no_school, item.previous, last.generated_at)
+                found[(entry.district, day)] = (
+                    item.p_no_school,
+                    item.previous,
+                    last.generated_at,
+                    item.why.base.kind == "class",
+                    bool(item.reasons),
+                )
     return found
 
 
@@ -1034,7 +1190,13 @@ def _previous_schools(last: PredictionsFile | None) -> dict[tuple[int, date], Ea
     for entry in last.schools:
         for day, item in zip(last.days, last.outlook_of(entry), strict=True):
             if isinstance(item, Forecast):
-                found[(entry.school, day)] = (item.p_no_school, item.previous, last.generated_at)
+                found[(entry.school, day)] = (
+                    item.p_no_school,
+                    item.previous,
+                    last.generated_at,
+                    item.why.base.kind == "class",
+                    bool(item.reasons),
+                )
     return found
 
 
@@ -1121,6 +1283,12 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
                         of="districts",
                         whole=bool(model.whole[index, k]) if model.whole.size else False,
                         thin=bool(model.thin.size and model.thin[index, k]),
+                        classed=bool(model.classed and model.classed[k]),
+                        standing=STANDINGS[int(model.standing[index, k])]
+                        if model.standing.size
+                        else "usual",
+                        usual=model.usual[k] if model.usual else None,
+                        tropical=bool(model.tropical.size and model.tropical[index]),
                     ),
                     situation,
                     day,
@@ -1225,9 +1393,13 @@ def _schools(  # noqa: PLR0913 - the private schools, their classes, the days an
                         counted=SITUATIONS[private.effective[k]],
                         live=private.live[k],
                         records=private.records[i] if records else {},
-                        of="private_schools" if private.of_private[k] else "districts",
+                        of="private_schools"
+                        if private.of_private[k] or bool(private.classed and private.classed[k])
+                        else "districts",
                         whole=bool(private.whole[i, k]) if private.whole.size else False,
                         thin=bool(private.thin.size and private.thin[i, k]),
+                        classed=bool(private.classed and private.classed[k]),
+                        tropical=bool(private.tropical.size and private.tropical[i]),
                     ),
                     situation,
                     day,
@@ -1261,8 +1433,9 @@ def possible_outlooks(
     found: set[Forecast | NoThreat] = {NoThreat(state="no_threat")}
     for k, situation in enumerate(SITUATIONS):
         counted = SITUATIONS[private.effective[k]]
-        of: Of = "private_schools" if private.of_private[k] else "districts"
-        cells: set[tuple[float, float, bool, int, tuple[RecordDay, ...], bool, bool]] = set()
+        classed = bool(private.classed and private.classed[k])
+        of: Of = "private_schools" if private.of_private[k] or classed else "districts"
+        cells: set[tuple[float, float, bool, int, tuple[RecordDay, ...], bool, bool, bool]] = set()
         for i in range(len(private)):
             own = bool(private.own[i, k])
             record = tuple(private.records[i].get(counted.key, ())) if own else ()
@@ -1275,9 +1448,10 @@ def possible_outlooks(
                     record,
                     bool(private.whole[i, k]) if private.whole.size else False,
                     bool(private.thin.size and private.thin[i, k]),
+                    bool(private.tropical.size and private.tropical[i]),
                 )
             )
-        for p, q, own, scope, record, whole, thin in cells:
+        for p, q, own, scope, record, whole, thin, tropical in cells:
             cell = _Cell(
                 p=p,
                 q=q,
@@ -1289,6 +1463,8 @@ def possible_outlooks(
                 of=of,
                 whole=whole,
                 thin=thin,
+                classed=classed,
+                tropical=tropical,
             )
             for day in days:
                 for said_open in (False, True):
@@ -1316,6 +1492,15 @@ class _Cell:
     situation counted over days read live names the nation's live record)."""
     q_rate: float | None = None
     """The delay rate among days with school, unrounded (``None``: taken from ``q``)."""
+    classed: bool = False
+    """The day is served from its storm class's level (:mod:`snowlight.predict.anchor`)."""
+    standing: Standing = "usual"
+    """The unit's standing in that class (a private school's is always usual)."""
+    usual: float | None = None
+    """The class's level at a usual district, which a standing is said against."""
+    tropical: bool = False
+    """The unit's exposure holds a tropical storm or hurricane warning day (a warning-class
+    base says so: :func:`~snowlight.predict.why.class_base`)."""
 
 
 def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
@@ -1360,8 +1545,15 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     record = record_for(cell.records.get(cell.counted.key, ()), day) if cell.own else None
     previous: PreviousChance | None = None
     if earlier is not None and not said_open:
-        last_p, last_previous, last_at = earlier
-        if last_at >= generated:
+        last_p, last_previous, last_at, last_classed, last_stormy = earlier
+        if last_at >= generated or (
+            last_classed != cell.classed and last_stormy and situation.weather != WeatherClass.NONE
+        ):
+            # A storm day's chance from the other method (the chain's before its class level
+            # served, or the class level's after ``serve.anchor`` is turned off) is not an
+            # earlier forecast: "Down from 93%" would read as the storm weakening, "Up from 7%"
+            # as it worsening. A quiet day's chance before an alert came, or a storm day's
+            # before it passed, is one: "Up from 3% at 5 PM" stays.
             previous = None
         elif round(last_p * 100) != round(shown * 100):
             previous = PreviousChance(p_no_school=last_p, at=last_at)
@@ -1377,7 +1569,10 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
         of=cell.of,
         said_open=floor,
         whole=cell.whole,
-        thin=cell.thin and not cell.live,
+        thin=cell.thin and not cell.live and not cell.classed,
+        classed=cell.standing if cell.classed else None,
+        usual=cell.usual,
+        tropical=cell.tropical,
     )
     if lines is not None:
         why = Why(base=why.base, reasons=lines.reasons)

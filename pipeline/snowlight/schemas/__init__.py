@@ -58,6 +58,7 @@ from snowlight.schemas.live import (
     ranges_from_indices,
 )
 from snowlight.schemas.predictions import (
+    ClassBase,
     DistrictForecast,
     Forecast,
     NoThreat,
@@ -74,6 +75,7 @@ __all__ = [
     "Alert",
     "AlertsFile",
     "Calibration",
+    "ClassBase",
     "Closing",
     "ClosingObservation",
     "ClosingsDay",

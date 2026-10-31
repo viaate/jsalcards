@@ -12,10 +12,11 @@ is one of two states, told apart by ``state``:
 * ``no_threat``: a day that is not a school day (a weekend, Thanksgiving Thursday and
   Friday, 24 December to 1 January): no school, so no chance to give.
 
-There is no "not enough data": the site always gives a number. A district whose own
-history is too short starts from a pooled base, the record of the districts around it
-(``PooledBase``). A district without an entry has no forecast yet, and the site shows
-none for it.
+There is no "not enough data": the site always gives a number. A storm-class day (an
+advisory, a warning, a cold warning) starts from the class's level (``ClassBase``); a day with
+no alert from the district's own record, or, where that is too short, a pooled base, the record
+of the districts around it (``PooledBase``). A district without an entry has no forecast yet,
+and the site shows none for it.
 
 What the school panel's chance section shows, and what a forecast carries for it
 (every part may be null where the engine cannot give it; the site then leaves that
@@ -520,8 +521,82 @@ class PooledBase(CompactModel):
         return self
 
 
+_WARNING_ALERTS: Final = frozenset(
+    {"winter_storm_warning", "ice_storm_warning", "blizzard_warning"}
+)
+"""The alerts of the warning class (``live_score.classes``)."""
+_WARNING_WEATHERS: Final = frozenset({"lake_snow", "tropical"})
+"""The weathers of the warning class with no one alert kind."""
+
+
+class ClassBase(CompactModel):
+    """A storm-class day (advisory-sane L3): districts like this one close or go remote on
+    about ``points`` in 100 of the class's days, our level for the class (from priors corrected
+    for how the archive's storm-day lists were picked, updated by the days we read live), with
+    the district's standing: how often it gets the class's alerts against most districts.
+
+    Never a share of recorded days: the sentence says what districts like it do, not what a
+    record holds. Named by the day's own ``alert`` where the class is one alert kind, else by
+    its ``weather``."""
+
+    kind: Literal["class"]
+    points: Percent
+    alert: AlertKind | None = None
+    weather: CountedWeather | None = Field(
+        default=None,
+        description="With no alert: the weather of the day, for a class with no one alert kind.",
+    )
+    standing: Literal["usual", "more", "fewer"] = Field(
+        default="usual",
+        description=(
+            "How often the district gets this class's alerts against most districts: more "
+            "(so each one closes it less often), fewer (more often), or about as often (usual); "
+            "always usual for a private school or a district whose own history is not known."
+        ),
+    )
+    of: Literal["districts", "private_schools"] = Field(
+        default="districts", description="Whose chance: a district's, or a private school's."
+    )
+    usual: Percent | None = Field(
+        default=None,
+        description=(
+            "With a standing of more or fewer: the class's level for a usual district, in "
+            "points, under (more) or over (fewer) points; the sentence says the standing only "
+            "where the two read as different shares."
+        ),
+    )
+    tropical: bool = Field(
+        default=False,
+        description=(
+            "On a warning-class day (winter storm, ice storm, blizzard, lake effect snow, "
+            "hurricane or tropical storm warning): the district (a private school: its county) "
+            "had a hurricane or tropical storm warning day in the winters its standing counts, "
+            "so its warnings are named storm warnings; absent or false: winter storm warnings."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _one_name(self) -> Self:
+        if (self.alert is None) == (self.weather is None):
+            raise ValueError("a class base names its day by alert or by weather, one of them")
+        if self.tropical and not (
+            self.alert in _WARNING_ALERTS or self.weather in _WARNING_WEATHERS
+        ):
+            raise ValueError("only a warning-class day says whether its warnings are tropical")
+        if self.of == "private_schools" and self.standing != "usual":
+            raise ValueError("a private school's class base has no standing")
+        if (self.standing == "usual") != (self.usual is None):
+            raise ValueError("a class base gives the usual level with a standing, and only then")
+        if self.usual is not None and (
+            (self.standing == "more" and not self.points < self.usual)
+            or (self.standing == "fewer" and not self.points > self.usual)
+        ):
+            raise ValueError("a standing is said only on its side of the usual level")
+        return self
+
+
 type Base = Annotated[
-    AlertBase | DayAfterBase | SimilarDaysBase | PooledBase,
+    AlertBase | DayAfterBase | SimilarDaysBase | PooledBase | ClassBase,
     Field(discriminator="kind", description="Where the chance starts, before any reason."),
 ]
 
