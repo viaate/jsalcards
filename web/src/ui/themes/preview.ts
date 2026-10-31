@@ -144,3 +144,27 @@ export function clearMarks(
       !(x >= cardLeft && x <= cardRight && y >= cardTop),
   );
 }
+
+/** The quiet schools under the cartoon night's lights: the rest of the metro's schools, open, as specks. */
+export const PREVIEW_SPECKS: readonly { readonly x: number; readonly y: number }[] = (() => {
+  const r = seeded(53);
+  const specks: { x: number; y: number }[] = [];
+  for (let i = 0; i < 150; i++) {
+    specks.push({ x: 6 + r() * (PREVIEW_WIDTH - 12), y: 58 + r() * (PREVIEW_HEIGHT - 60) });
+  }
+  return specks;
+})();
+
+/**
+ * The lit marks, each at least `gap` from every one kept before it, so a
+ * crowd reads as a few soft lights merging, not a heap of them.
+ */
+export function spacedMarks(gap: number): readonly PreviewMark[] {
+  const kept: PreviewMark[] = [];
+  for (const mark of PREVIEW_MARKS) {
+    if (mark.status === 4) continue;
+    if (kept.every((other) => Math.hypot(other.x - mark.x, other.y - mark.y) >= gap))
+      kept.push(mark);
+  }
+  return kept;
+}

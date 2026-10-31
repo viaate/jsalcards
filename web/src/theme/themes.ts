@@ -87,6 +87,7 @@ export interface ThemeTokens {
   readonly text1: string;
   readonly text2: string;
   readonly text3: string;
+  /** A fill that calls to act: the words on it are set in the ink, border2 (tests/contrast.test.ts). */
   readonly accent: string;
   readonly closed: string;
   readonly delayed: string;
@@ -149,7 +150,11 @@ export interface Theme {
    * left out. A flat theme's is see-through, so a label never cuts a mark.
    */
   readonly labelHalo?: string;
-  /** A toon map's own touches (map/basemap/style.ts MapTouches) and its ink edges' width. */
+  /**
+   * A toon map's own touches (map/basemap/style.ts MapTouches) and its ink
+   * edges' width. No theme sets them at present; they stay for a cartoon map
+   * to come, or go in a later cleanup.
+   */
   readonly toon?: {
     readonly edgeWidth: number;
     readonly coastBand: string;

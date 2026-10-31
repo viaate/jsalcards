@@ -1,6 +1,6 @@
 /**
- * Snowball's own rules, on top of its tokens (themes.ts): the cel-shaded
- * cartoon look. Cards and controls get a bold ink outline and a hard drop
+ * Snowball's own rules, on top of its tokens (unreleased.ts): the cel-shaded
+ * cartoon look over its night map. Cards and controls get a bold ink outline and a hard drop
  * offset in the same ink, corners grow rounder, and the type is Fredoka, a
  * round face licensed under the SIL Open Font License 1.1 (shipped as
  * fonts/fredoka-OFL.txt by tools/themes.ts), self-hosted from the build like Geist and
@@ -43,6 +43,11 @@ export function snowballFontFaces({ latin, latinExt }: SnowballFonts): readonly 
   );
 }
 
+/** A sticker under the words it backs: a card in the ink, drawn in full by its own rule. */
+function sticker(inset: string, radius: string): string {
+  return `position:absolute;inset:${inset};z-index:-1;pointer-events:none;content:'';background:var(--surface-1);border:${OUTLINE} solid var(--border-2);border-radius:${radius};box-shadow:3px 3px 0 0 var(--border-2)`;
+}
+
 /** The rules, one by one, scoped to :root[data-theme='snowball']. */
 export function snowballRules(fonts: SnowballFonts): readonly string[] {
   const root = ":root[data-theme='snowball']";
@@ -66,17 +71,18 @@ export function snowballRules(fonts: SnowballFonts): readonly string[] {
     `${root} .detail{border-radius:22px}`,
     `${root} .menu{border-radius:20px}`,
     `@media (max-width: 719px){${root} .detail{border-width:${OUTLINE} 0 0;border-radius:28px 28px 0 0;box-shadow:0 -${DROP} 0 0 var(--border-2),0 40px 0 0 var(--surface-1)}}`,
-    // The wordmark and the words on the map: bold, inked, set on the snow (css.ts's halo), and
-    // the update time on a sticker, as the key is.
+    // The info button over the bare sea: filled like the menu's and the locate buttons, so its ink
+    // outline frames a card (open, it keeps the page's own fill).
+    `${root} .maplibregl-ctrl.maplibregl-ctrl-attrib:not(.maplibregl-compact-show){background:var(--surface-1)}`,
+    // The wordmark and the words on the map: bold, set on the night, and the update time and the
+    // key each on a sticker. Every sticker is whole in these rules, whatever the page draws there:
+    // a word whose halo goes has a card that renders under it (tests/engine.test.ts). The update
+    // time keeps its halo as well, since a long line of it wraps past its sticker. The key's marks
+    // are the page's own glowing glyphs (index.html), as the night map lights them: no ink ring.
     `${root} .wordmark{font-weight:700;letter-spacing:0}`,
-    `${root} .updated{color:var(--text-1);text-shadow:none}`,
-    `${root} .updated::before{inset:calc(50% - 14px) -9px;background:var(--surface-1);border:${OUTLINE} solid var(--border-2);border-radius:14px;box-shadow:3px 3px 0 0 var(--border-2)}`,
+    `${root} .updated{color:var(--text-1)}`,
+    `${root} .updated::before{${sticker('calc(50% - 14px) -9px', '14px')}}`,
     `${root} .legend{font-weight:600;color:var(--text-1);text-shadow:none}`,
-    `${root} .legend::before{background:var(--surface-1);border:${OUTLINE} solid var(--border-2);box-shadow:3px 3px 0 0 var(--border-2)}`,
-    // The key's marks as the map draws them: each status ringed in ink.
-    `${root} .glyph.is-closed{box-shadow:0 0 0 1.5px var(--border-2)}`,
-    `${root} .glyph.is-delayed{box-shadow:inset 0 0 0 2px var(--status-delayed),0 0 0 1.5px var(--border-2)}`,
-    `${root} .glyph.is-remote{box-shadow:0 0 0 1.5px var(--border-2)}`,
-    `${root} .glyph.is-early-dismissal{box-shadow:inset 0 0 0 2px var(--status-early-dismissal),0 0 0 1.5px var(--border-2)}`,
+    `${root} .legend::before{${sticker('0 -8px', 'calc(var(--control-height) / 2)')}}`,
   ];
 }

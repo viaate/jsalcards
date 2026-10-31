@@ -15,10 +15,18 @@
  * dark theme's, the ground's own color), which parts them from a bright
  * road under them.
  *
+ * A fill in the accent (the cartoon's yellow call to act) carries its words
+ * in the ink (border2), at AA on it in every theme, and every rule in the
+ * page's source that fills with the accent sets its words in the ink.
+ *
  * Midnight is held where it was before themes, so it looks exactly as it
  * did: its dim text at 3:1 on its surfaces, and its names, its open schools'
  * marks and its glow as the map has always drawn them.
  */
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
 import { FLAT_FIELD_TONES } from '../../map/glow/curves';
@@ -145,6 +153,10 @@ describe.each(THEME_IDS)('the %s theme', (id) => {
     expect(contrast(t.onClosed, t.closed)).toBeGreaterThanOrEqual(4.5);
   });
 
+  it('sets the words on its accent, in its ink, at AA', () => {
+    expect(contrast(t.border2, t.accent)).toBeGreaterThanOrEqual(4.5);
+  });
+
   it('draws its coasts and a lit mark’s ring where it can be seen', () => {
     expect(worst(t.lineOutline, [t.land, t.bg])).toBeGreaterThanOrEqual(3);
     if (theme.glow.mode === 'flat' && theme.glow.outlineWidth > 0 && theme.id === 'snowball') {
@@ -155,5 +167,36 @@ describe.each(THEME_IDS)('the %s theme', (id) => {
 
   it('keeps dark themes glowing and light ones flat', () => {
     expect(theme.glow.mode).toBe(theme.scheme === 'dark' ? 'glow' : 'flat');
+  });
+});
+
+/** Every file under `dir` whose name ends in one of `ends`. */
+function filesUnder(dir: string, ends: readonly string[]): string[] {
+  return readdirSync(dir, { withFileTypes: true, recursive: true })
+    .filter((entry) => entry.isFile() && ends.some((end) => entry.name.endsWith(end)))
+    .map((entry) => path.join(entry.parentPath, entry.name));
+}
+
+describe('a fill in the accent', () => {
+  it('always sets its words in the ink, wherever the page’s source fills with it', () => {
+    const web = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+    const sources = [
+      path.join(web, 'index.html'),
+      ...filesUnder(path.join(web, 'src'), ['.svelte', '.ts']).filter(
+        (file) => !file.includes(`${path.sep}tests${path.sep}`) && !file.endsWith('.test.ts'),
+      ),
+    ];
+    let fills = 0;
+    for (const file of sources) {
+      const text = readFileSync(file, 'utf8');
+      // Each rule's declarations: a CSS block, or a rule written as one string.
+      for (const [, body = ''] of text.matchAll(/\{([^{}]*)\}/g)) {
+        if (!/background(?:-color)?:\s*var\(--accent\)/.test(body)) continue;
+        fills += 1;
+        expect(body, file).toMatch(/(?:^|[;\s])color:\s*var\(--border-2\)/);
+      }
+    }
+    // The shop's Try button, at least, is one.
+    expect(fills).toBeGreaterThan(0);
   });
 });

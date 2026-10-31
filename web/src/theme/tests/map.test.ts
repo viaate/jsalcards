@@ -93,55 +93,65 @@ describe('the map in a theme', () => {
     }
   });
 
-  it('draws Snowball’s map as a cartoon: ink lines, edges and casings, and flat steps', () => {
-    const colors = colorsOf(themeOf('snowball'));
-    const toon = themeOf('snowball').toon;
-    if (toon === undefined) throw new Error('Snowball has no touches');
+  it('draws Snowball’s map as a cartoon night: bold moonlit coasts, flat navy steps, no touches', () => {
+    const snowball = themeOf('snowball');
+    const colors = colorsOf(snowball);
     const { layers } = buildBasemapStyle({
       usLines: { type: 'FeatureCollection', features: [] },
       hairline: 0.75,
       colors,
     });
-    const at = (id: string): number => layers.findIndex((layer) => layer.id === id);
-    const visibility = (list: readonly LayerSpecification[], id: string): unknown =>
-      (list.find((layer) => layer.id === id)?.layout as { visibility?: unknown } | undefined)
+    const visibility = (id: string): unknown =>
+      (layers.find((layer) => layer.id === id)?.layout as { visibility?: unknown } | undefined)
         ?.visibility;
-    // Ink coasts, and ink state lines at least 2 px.
-    expect(paint(layers, BASEMAP_IDS.usOutline, 'line-width')).toBe(3);
-    expect(paint(layers, BASEMAP_IDS.usStates, 'line-width')).toBeGreaterThanOrEqual(2);
-    expect(paint(layers, BASEMAP_IDS.usStates, 'line-color')).toBe(
-      themeOf('snowball').tokens.border2,
-    );
-    // Ink edges around the water, the parks and the school grounds.
-    expect(paint(layers, BASEMAP_IDS.ofmWater, 'line-width')).toBe(toon.edgeWidth);
-    expect(paint(layers, BASEMAP_IDS.ofmSchoolGroundsEdge, 'line-width')).toBe(toon.edgeWidth);
-    expect(paint(layers, BASEMAP_IDS.ofmParkEdge, 'line-color')).toBe(toon.parkEdge);
-    // The through roads cased in ink, under every road.
-    expect(paint(layers, BASEMAP_IDS.ofmRoadCasing, 'line-color')).toBe(toon.roadCasing);
-    expect(at(BASEMAP_IDS.ofmRoadCasing)).toBeLessThan(at(BASEMAP_IDS.ofmRoad));
-    expect(at(BASEMAP_IDS.ofmRoadCasing)).toBeGreaterThan(at(BASEMAP_IDS.ofmRoadTunnel));
-    // A flat step of shallow water along the coasts, under the land; one of shade under each park.
-    expect(at(BASEMAP_IDS.usCoastBand)).toBe(at(BASEMAP_IDS.usLand) - 1);
-    expect(paint(layers, BASEMAP_IDS.usCoastBand, 'line-color')).toBe(toon.coastBand);
-    expect(paint(layers, BASEMAP_IDS.ofmParkShade, 'fill-color')).toBe(toon.parkShade);
-    expect(at(BASEMAP_IDS.ofmParkShade)).toBe(at(BASEMAP_IDS.ofmPark) - 1);
-    expect(at(BASEMAP_IDS.ofmParkEdge)).toBe(at(BASEMAP_IDS.ofmPark) + 1);
-    for (const id of TOUCH_LAYERS) expect(visibility(layers, id), id).toBe('visible');
-    // Labels' halos let a mark show through.
+    // Bold coasts in pale moonlit ink, and quieter state lines a step past the hairline.
+    expect(paint(layers, BASEMAP_IDS.usOutline, 'line-width')).toBe(2.5);
+    expect(paint(layers, BASEMAP_IDS.usOutline, 'line-color')).toBe(snowball.tokens.lineOutline);
+    expect(paint(layers, BASEMAP_IDS.usStates, 'line-width')).toBe(1.25);
+    expect(paint(layers, BASEMAP_IDS.usStates, 'line-color')).toBe(snowball.tokens.lineState);
+    // The night is flat steps alone: no ink casings, shade or bands to clutter it, hairline edges.
+    expect(snowball.toon).toBeUndefined();
+    for (const id of TOUCH_LAYERS) expect(visibility(id), id).toBe('none');
+    expect(paint(layers, BASEMAP_IDS.ofmWater, 'line-width')).toBe(0.75);
+    // Labels sit on a halo of the night's ground, the glow under them, as on Midnight.
+    expect(snowball.labelHalo).toBeUndefined();
     expect(paint(layers, BASEMAP_IDS.ofmStreetLabel, 'text-halo-color')).toBe(
-      themeOf('snowball').labelHalo,
+      snowball.tokens.ground,
     );
+  });
 
-    // Midnight has none of it: hairlines, and no touch drawn.
-    const midnight = buildBasemapStyle({
-      usLines: { type: 'FeatureCollection', features: [] },
-      hairline: 0.75,
-      colors: { ...colors, palette: {} },
-    });
+  it('lights Snowball’s schools as Midnight does: its glow, its statuses, no burst', () => {
+    const snowball = themeOf('snowball');
+    const midnight = themeOf('midnight');
+    const look = glowLook(reader(snowball));
+    expect(look.mode).toBe('glow');
+    expect(look.burst).toBe(false);
+    expect(look.beyond).toBeUndefined();
+    expect(look.status.slice(0, 4)).toEqual(glowLook(reader(midnight)).status.slice(0, 4));
+    for (const status of ['closed', 'delayed', 'remote', 'early'] as const)
+      expect(snowball.tokens[status], status).toBe(midnight.tokens[status]);
+    // Never the old dark ink: the closed light is light blue, and no glyph is ringed.
+    expect(snowball.tokens.closed).toBe('#7fd4ff');
+    expect(look.outlineWidth).toBe(0);
+    expect(snowball.glow).toEqual(midnight.glow);
+  });
+
+  it('keeps Midnight’s map as it was: hairlines, no touch drawn, its own roads and names', () => {
+    const colors = colorsOf(themeOf('snowball'));
+    const base = { usLines: { type: 'FeatureCollection', features: [] }, hairline: 0.75 } as const;
+    const snowball = buildBasemapStyle({ ...base, colors });
+    const midnight = buildBasemapStyle({ ...base, colors: { ...colors, palette: {} } });
+    const visibility = (id: string): unknown =>
+      (
+        midnight.layers.find((layer) => layer.id === id)?.layout as
+          { visibility?: unknown } | undefined
+      )?.visibility;
     expect(paint(midnight.layers, BASEMAP_IDS.usOutline, 'line-width')).toBe(0.75);
+    expect(paint(midnight.layers, BASEMAP_IDS.usStates, 'line-width')).toBe(0.75);
     expect(paint(midnight.layers, BASEMAP_IDS.ofmWater, 'line-width')).toBe(0.75);
-    for (const id of TOUCH_LAYERS) expect(visibility(midnight.layers, id), id).toBe('none');
-    expect(JSON.stringify(paint(layers, BASEMAP_IDS.ofmRoad, 'line-width'))).not.toBe(
+    for (const id of TOUCH_LAYERS) expect(visibility(id), id).toBe('none');
+    // Snowball's wider roads are its own.
+    expect(JSON.stringify(paint(snowball.layers, BASEMAP_IDS.ofmRoad, 'line-width'))).not.toBe(
       JSON.stringify(paint(midnight.layers, BASEMAP_IDS.ofmRoad, 'line-width')),
     );
   });

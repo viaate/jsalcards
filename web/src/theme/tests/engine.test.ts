@@ -398,4 +398,32 @@ describe('a theme as CSS', () => {
         expect(part.trim()).toMatch(/^:root\[data-theme='snowball'\]/);
     }
   });
+
+  it.each(THEME_IDS)(
+    'never takes a word’s halo away in %s without a card that renders under it',
+    (id) => {
+      /** The theme's rules outside any media query, by selector. */
+      const rules = new Map<string, string>();
+      for (const rule of rulesOf(id)) {
+        if (rule.startsWith('@')) continue;
+        const open = rule.indexOf('{');
+        const body = rule.slice(open + 1, rule.lastIndexOf('}'));
+        for (const part of rule.slice(0, open).split(','))
+          rules.set(part.trim(), `${rules.get(part.trim()) ?? ''};${body}`);
+      }
+      for (const [selector, body] of rules) {
+        if (!body.includes('text-shadow:none') || selector.includes('::')) continue;
+        // Whole in the theme's own rules, so it never leans on a card the page may not draw.
+        const card = rules.get(`${selector}::before`) ?? '';
+        expect(card, selector).toContain("content:''");
+        expect(card, selector).toContain('position:absolute');
+        expect(card, selector).toContain('z-index:-1');
+        expect(card, selector).toMatch(/background:var\(--surface-[12]\)/);
+      }
+      // The update time can wrap past its card (a long line on a phone): it keeps its halo.
+      expect(rules.get(`:root[data-theme='${id}'] .updated`) ?? '').not.toContain(
+        'text-shadow:none',
+      );
+    },
+  );
 });

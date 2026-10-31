@@ -12,67 +12,66 @@ export const UNRELEASED_IDS = ['snowball'] as const;
 export type UnreleasedThemeId = (typeof UNRELEASED_IDS)[number];
 
 /**
- * Snowball, the cel-shaded cartoon theme: flat snow and ice in two or three
- * steps, bold ink outlines, chunky round shapes and bright accents. Its own
- * palette and its own name; no game's colors, art or type.
+ * Snowball, the cel-shaded cartoon theme, at night: a deep navy sea and land
+ * in flat cel steps, bold moonlit coasts, and the schools' lights glowing on
+ * it as they do on Midnight, through Midnight's own glow and in Midnight's
+ * status colors (themes.ts DARK_STATUS and GLOW), so a closed school is a
+ * soft light-blue light and a storm a soft band of light, never a wall of
+ * marks. Cards and buttons keep the cartoon's ink outlines, hard drop
+ * offsets, round face and yellow accent (snowball.ts). Its own palette and
+ * its own name; no game's colors, art or type.
  */
 const SNOWBALL: Theme = {
   id: 'snowball',
-  scheme: 'light',
+  scheme: 'dark',
   access: 'shop',
   tokens: {
-    bg: '#8ccdf2',
-    surface1: '#ffffff',
-    surface2: '#e8f4fd',
-    border1: '#bcd7ec',
-    border2: '#16324f',
-    text1: '#12283e',
-    text2: '#36536f',
-    text3: '#566f88',
+    bg: '#0a1834',
+    surface1: '#173263',
+    surface2: '#1d3c73',
+    border1: '#2c5291',
+    border2: '#040c1d',
+    text1: '#f4f9ff',
+    text2: '#c0d6f0',
+    text3: '#97b3d6',
     accent: '#ffc93c',
-    closed: '#0a64c8',
-    delayed: '#ac5300',
-    remote: '#6a3bd2',
-    early: '#08784a',
-    open: '#768a9e',
-    chance: '#12283e',
-    onClosed: '#ffffff',
-    mapLabelDim: '#3b536a',
-    land: '#f7fbff',
-    ground: '#f7fbff',
-    water: '#8ccdf2',
-    park: '#c9efd6',
-    grounds: '#fff0b3',
-    groundsEdge: '#16324f',
-    shore: '#16324f',
-    minorRoad: '#cddff0',
-    majorRoad: '#ffffff',
-    lineOutline: '#16324f',
-    lineState: '#16324f',
-    lineOutlinePhone: '#16324f',
-    lineStatePhone: '#16324f',
-    dot: '#ffffff',
-    dotRing: '#16324f',
-    veil: '247 251 255',
-    shadow: '22 50 79',
+    // Midnight's statuses (themes.ts DARK_STATUS), with ink on a closed school's light blue.
+    closed: '#7fd4ff',
+    delayed: '#ffc46b',
+    remote: '#b79cff',
+    early: '#6bffb0',
+    onClosed: '#071a33',
+    open: '#a3bbd9',
+    chance: '#f4f9ff',
+    // The dim names, a step lighter than text-3, so a name inside school grounds reads at AA.
+    mapLabelDim: '#a6c0e0',
+    land: '#12284f',
+    ground: '#12284f',
+    water: '#0a1834',
+    park: '#14405a',
+    grounds: '#26457e',
+    groundsEdge: '#a9d3f7',
+    shore: '#a9d3f7',
+    minorRoad: '#1d3a6b',
+    majorRoad: '#2a4879',
+    lineOutline: '#a9d3f7',
+    lineState: '#3f679f',
+    lineOutlinePhone: '#bfe0fb',
+    lineStatePhone: '#5079b3',
+    dot: '#dcebfb',
+    dotRing: '#12284f',
+    veil: '10 24 52',
+    shadow: '4 12 29',
     sheen: '255 255 255',
-    halo: '#f7fbff',
+    halo: '#0f2349',
     amb: 'none',
   },
-  glow: { mode: 'flat', outline: '#12283e', outlineWidth: 1.5, burst: true },
-  lineWidths: { outline: 3, state: 2 },
-  roadScale: 1.6,
-  labelHalo: 'rgb(247 251 255 / 0.6)',
-  toon: {
-    edgeWidth: 1.75,
-    // Shallow water: a flat step lighter than the sea, along every coast.
-    coastBand: '#bfe5f9',
-    parkEdge: '#16324f',
-    // A park's shade: a flat step darker than the park.
-    parkShade: '#8fd3a8',
-    roadCasing: '#16324f',
-    casingWidth: 1,
-  },
+  // Midnight's own glow (themes.ts GLOW): the lights screened onto the night, with no ring and no
+  // burst, so no mark is ever ringed in a dark line. The roads stay dim enough that every glyph
+  // reads on them up close without one (tests/contrast.test.ts).
+  glow: { mode: 'glow', outline: '#000000', outlineWidth: 0, burst: false },
+  lineWidths: { outline: 2.5, state: 1.25 },
+  roadScale: 1.2,
 };
 
 /** The family Snowball sets its words in (snowball.ts has its faces). */

@@ -22,8 +22,10 @@
     PREVIEW_MARKS,
     PREVIEW_RIVER,
     PREVIEW_ROADS,
+    PREVIEW_SPECKS,
     PREVIEW_WIDTH,
     clearMarks,
+    spacedMarks,
   } from './preview';
 
   interface Props {
@@ -81,6 +83,26 @@
         )
       : PREVIEW_MARKS,
   );
+  /** The cartoon night's lights in the picture: each one's halo radius, and the room between two. */
+  const LIGHT_R = 11;
+  const LIGHT_GAP = 12;
+  /**
+   * The cartoon night's lights: spaced, so a crowd reads as a few soft lights
+   * merging, and each whole, none cut by the tile's edges or under its corner
+   * card, so no light crowds its words.
+   */
+  const lights = $derived(
+    toon
+      ? clearMarks(
+          spacedMarks(LIGHT_GAP),
+          {
+            width: pictureWidth,
+            card: { left: 8, bottom: 8, width: cardWidth, height: cardHeight },
+          },
+          LIGHT_R,
+        )
+      : [],
+  );
 
   function mixHalf(a: string, b: string): string {
     const channel = (hex: string, i: number): number =>
@@ -128,6 +150,17 @@
           <filter id={filterId} x="-100%" y="-100%" width="300%" height="300%">
             <feGaussianBlur stdDeviation="3.2" />
           </filter>
+          {#if toon}
+            {#each colors as color, i (i)}
+              <radialGradient id={`${filterId}-${String(i)}`}>
+                <stop offset="0" stop-color={color} />
+                <stop offset="0.22" stop-color={color} />
+                <stop offset="0.42" stop-color={color} stop-opacity="0.55" />
+                <stop offset="0.7" stop-color={color} stop-opacity="0.16" />
+                <stop offset="1" stop-color={color} stop-opacity="0" />
+              </radialGradient>
+            {/each}
+          {/if}
         </defs>
         <rect width={PREVIEW_WIDTH} height={PREVIEW_HEIGHT} fill={t.ground} />
         <path d={PREVIEW_RIVER} fill={t.water} stroke={t.shore} stroke-width={toon ? 1.6 : 0.6} />
@@ -140,7 +173,23 @@
             stroke-linecap="round"
           />
         {/each}
-        {#if !flat}
+        {#if toon}
+          <!-- The night: the open schools' pale specks, then each light, solid at its middle and
+            fading to nothing, screened so neighbours brighten where they meet. -->
+          {#each PREVIEW_SPECKS as speck, i (i)}
+            <circle cx={speck.x} cy={speck.y} r="1" fill={t.dot} opacity="0.4" />
+          {/each}
+          <g class="lights">
+            {#each lights as mark, i (i)}
+              <circle
+                cx={mark.x}
+                cy={mark.y}
+                r={LIGHT_R}
+                fill={`url(#${filterId}-${String(mark.status)})`}
+              />
+            {/each}
+          </g>
+        {:else if !flat}
           <g filter={`url(#${filterId})`} opacity="0.7">
             {#each PREVIEW_MARKS as mark, i (i)}
               {#if mark.status !== 4}
@@ -149,7 +198,7 @@
             {/each}
           </g>
         {/if}
-        {#each marks as mark, i (i)}
+        {#each toon ? [] : marks as mark, i (i)}
           {@const color = colors[mark.status]}
           {@const r = flat ? 3 : 2.2}
           {#if mark.status === 4}
@@ -444,8 +493,13 @@
     font-weight: 700;
   }
 
+  .lights {
+    mix-blend-mode: screen;
+  }
+
   .is-toon .try {
     font-weight: 600;
+    color: var(--border-2);
     background: var(--accent);
     border-width: 2.5px;
     border-radius: 999px;
@@ -453,16 +507,25 @@
   }
 
   .is-toon .try.on {
+    color: var(--text-2);
     background: var(--surface-1);
   }
 
-  .is-toon .sw i {
-    box-shadow: 0 0 0 1.5px var(--border-2);
+  /* The key's marks as the night map's lights: each glowing in its color, the open speck dim. */
+  .is-toon .sw .c {
+    box-shadow: 0 0 6px color-mix(in srgb, var(--status-closed) 70%, transparent);
   }
 
   .is-toon .sw .d {
     box-shadow:
       inset 0 0 0 2px var(--status-delayed),
-      0 0 0 1.5px var(--border-2);
+      0 0 6px color-mix(in srgb, var(--status-delayed) 55%, transparent);
+  }
+
+  .is-toon .sw .o {
+    align-self: center;
+    width: 5px;
+    height: 5px;
+    margin: 0 1.5px;
   }
 </style>
