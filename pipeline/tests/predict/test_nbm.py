@@ -252,8 +252,44 @@ def test_a_message_off_the_grid_is_a_grid_error() -> None:
 def test_the_listing_asks_for_the_needed_hours_only() -> None:
     url = nbm.listing_url(CYCLE, 4, 12)
     assert "prefix=blend.20260127/00/core/blend.t00z.core.f&" in url
-    assert "start-after=blend.20260127/00/core/blend.t00z.core.f003&" in url
+    # The bare key of hour 4 sorts before every key of hour 4, after every key of hour 3.
+    assert "start-after=blend.20260127/00/core/blend.t00z.core.f004&" in url
     assert url.endswith("max-keys=108")
+
+
+@pytest.mark.parametrize(("first", "last"), [(1, 13), (4, 12), (12, 12), (3, 36)])
+def test_a_posted_cycle_lists_in_one_page(first: int, last: int) -> None:
+    """Critic r3 S1: a posted cycle's needed hours fill exactly one listing page, every hour's
+    file and ``.idx`` is listed, and no hour outside them."""
+    bucket = _bucket(range(1, 37), CYCLE + timedelta(minutes=51))
+    reader = nbm.NbmReader(bucket.get, bucket.ranged)
+    found = reader.posted(CYCLE, first, last)
+    assert len([url for url in bucket.requests if "list-type" in url]) == 1
+    assert sorted(found.grib) == sorted(found.idx) == list(range(first, last + 1))
+    assert reader.requests == 1
+
+
+def test_a_listing_short_of_its_last_hour_reads_the_next_page() -> None:
+    # Hour 9 holds ten keys more than the 12 an hour the page is sized for, so a page of 108
+    # keys stops short of hour 12's CONUS files; the reader takes the next page, and only that.
+    bucket = _bucket(range(1, 37), CYCLE + timedelta(minutes=51))
+    for domain in ("q1", "q2", "q3", "q4", "q5"):
+        extra = nbm.core_key(CYCLE, 9).replace(".co.", f".{domain}.")
+        bucket.files[extra] = bucket.files[f"{extra}.idx"] = (b"", CYCLE)
+    reader = nbm.NbmReader(bucket.get, bucket.ranged)
+    found = reader.posted(CYCLE, 4, 12)
+    assert len([url for url in bucket.requests if "list-type" in url]) == 2
+    assert sorted(found.grib) == sorted(found.idx)
+    assert set(range(4, 13)) <= set(found.grib)
+
+
+def test_a_partly_posted_cycle_lists_in_one_page() -> None:
+    bucket = _bucket(range(1, 8), CYCLE + timedelta(minutes=51))
+    reader = nbm.NbmReader(bucket.get, bucket.ranged)
+    found = reader.posted(CYCLE, 4, 12)
+    assert len([url for url in bucket.requests if "list-type" in url]) == 1
+    assert sorted(found.grib) == [4, 5, 6, 7]
+    assert not found.counts(set(range(4, 13)), CYCLE + HOUR)
 
 
 def test_a_frozen_listing_hides_every_cycle_within_the_cap() -> None:
@@ -271,7 +307,8 @@ def test_a_frozen_listing_hides_every_cycle_within_the_cap() -> None:
     frozen = cli.frozen_read(nbm.NbmReader(bucket.get, bucket.ranged), serve)
     with pytest.raises(nbm.NbmStaleError):
         frozen(lat, lon, _hours(3, 5), at, timedelta(minutes=150))
-    assert cli.frozen_read(reader, world.CONFIG.serve) == reader.read
+    # The same reader, unfrozen, still reads the cycle: the fault is the call's, not the reader's.
+    assert reader.read(lat, lon, _hours(3, 5), at, timedelta(minutes=150))[0] == CYCLE
 
 
 # --- critic r1: the blend's HTTP reads are budgeted, and never take a whole core file ---

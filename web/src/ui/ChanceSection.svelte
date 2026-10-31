@@ -50,6 +50,33 @@
   function countdown(at: Date): string | null {
     return chance.countdown(at, new Date(now));
   }
+
+  /**
+   * The charts that failed to draw, each hidden until a new one comes (critic r3 S1): kept out
+   * of the reactive state, which would read their fields, and counted there instead.
+   */
+  const failedCharts = new WeakSet<object>();
+  let failures = $state(0);
+
+  function drawFailed(error: unknown): void {
+    chartFailed(error);
+    if (chance.chart !== null) failedCharts.add(chance.chart);
+    failures += 1;
+  }
+
+  /** The chart shows: it is there, before its own `until`, and it has not failed to draw. */
+  const drawn = $derived(
+    failures >= 0 && chartShown(chance.chart, now) && !failedCharts.has(chance.chart),
+  );
+
+  /**
+   * The timeline, the sum and the announcement as the chart beside them allows: once the chart
+   * stops showing (its clock, or a failed draw), the parts without it at once, so the amount
+   * and the usual announcement are never left out of the panel (critic r3 S1, S2).
+   */
+  const parts = $derived(
+    drawn || chance.chart === null || chance.bare === null ? chance : chance.bare,
+  );
 </script>
 
 <!--
@@ -112,9 +139,9 @@
       {/if}
     </div>
 
-    {#if chance.moments.length > 0}
+    {#if parts.moments.length > 0}
       <ol class="rows moments">
-        {#each chance.moments as moment, i (moment.key)}
+        {#each parts.moments as moment, i (moment.key)}
           {@const count = moment.at === null ? null : countdown(moment.at)}
           <li class="moment">
             <span class="label">{moment.time}</span>
@@ -124,7 +151,7 @@
             </span>
             <span class="rail" aria-hidden="true">
               <span class="mark {MARKS[moment.mark]}"></span>
-              {#if i < chance.moments.length - 1}<span class="link"></span>{/if}
+              {#if i < parts.moments.length - 1}<span class="link"></span>{/if}
             </span>
           </li>
         {/each}
@@ -132,25 +159,28 @@
     {/if}
   </div>
 
-  {#if chartShown(chance.chart, now)}
-    <!-- A chart bug is no chart: the number, its meaning and the sum around it still show. -->
-    <svelte:boundary onerror={chartFailed}>
+  {#if drawn && chance.chart !== null}
+    <!--
+      A chart bug is no chart: the number, its meaning and the sum around it still show, with
+      the chart's facts back in them; a new chart draws again in a new boundary.
+    -->
+    <svelte:boundary onerror={drawFailed}>
       <div class="block">
-        <ChanceChart chart={chance.chart} announces={chance.announces(new Date(now))} />
+        <ChanceChart chart={chance.chart} announces={parts.announces(new Date(now))} />
       </div>
       {#snippet failed()}{/snippet}
     </svelte:boundary>
   {/if}
 
-  {#if chance.why !== null}
+  {#if parts.why !== null}
     <div class="block why">
-      <h3 class="why-title">{chance.why.title}</h3>
+      <h3 class="why-title">{parts.why.title}</h3>
       <ol class="rows sum">
         <li class="row is-start">
-          <span class="label"><span class="num">{chance.why.base.number}</span>%</span>
-          <p>{chance.why.base.text}</p>
+          <span class="label"><span class="num">{parts.why.base.number}</span>%</span>
+          <p>{parts.why.base.text}</p>
         </li>
-        {#each chance.why.lines as line (line.key)}
+        {#each parts.why.lines as line (line.key)}
           <li class="row is-reason">
             <span class="label"><span class="num">{line.points}</span></span>
             <p>{line.text}</p>

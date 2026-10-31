@@ -20,9 +20,11 @@ odd rows are reversed, as in NDFD.
 Every read of a pass runs inside one time :class:`Budget` (:data:`READ_SECONDS`) through
 :class:`NbmHttp`: two tries, short timeouts, the budget checked before every request, every wait
 and every chunk of a body, a body never past its cap, and a range read answered with the whole
-file refused unread. So a bucket that is slow, hanging or down holds a pass back by at most the
-budget and one chunk's timeout, and never makes it download a whole core file (critic r1 B1,
-G1 and S2).
+file refused unread. The live client (:func:`bounded_client`) also ends every DNS lookup,
+connect, TLS handshake, socket read and write at the budget's deadline, so a bucket that is slow,
+trickling, hanging or down holds a pass back by at most the budget (and the decode of a message
+already read), and never makes it download a whole core file (critic r1 B1, G1 and S2;
+chart-shadow critic B1: a per-request timeout alone let a trickle run one read past it).
 
 A cycle counts at a moment once every file a pass needs, and its ``.idx``, is listed with an S3
 ``LastModified`` at or before it (a cycle's files post over up to about half an hour, and f036
@@ -32,12 +34,16 @@ most ``max_age`` old (:func:`choose_cycle`), for every night of its file.
 
 import math
 import re
+import socket
+import threading
 import time
-from collections.abc import Callable, Collection, Mapping
+import urllib.request
+from collections.abc import Callable, Collection, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any, Final
 
+import httpcore
 import httpx
 import numpy as np
 
@@ -45,6 +51,9 @@ from snowlight.predict import ndfd
 from snowlight.predict.ndfd import Cells, Floats, Ranged
 
 BUCKET_ROOT: Final = "https://noaa-nbm-grib2-pds.s3.amazonaws.com"
+BAD_HOST: Final = "https://noaa-nbm-grib2-pds.invalid"
+"""GC4's bad host (``serve.chart_fault: bad_host``, shadow only): ``.invalid`` never resolves
+(RFC 6761), so every request fails at once, costs no one anything, and gives ``nbm_unreadable``."""
 NX: Final = 2345
 NY: Final = 1597
 LA1_DEG: Final = 19.229
@@ -105,7 +114,9 @@ READ_SECONDS: Final = 60.0
 """A pass's time for every blend read of its night stage (listings, ``.idx`` files and
 messages). A cold pass reads about 30 requests and 9 MB; what it read before the time is up is
 kept, so the next pass goes on from there."""
-READ_TIMEOUT: Final = httpx.Timeout(10.0, connect=5.0)
+_READ_S: Final = 10.0
+_CONNECT_S: Final = 5.0
+READ_TIMEOUT: Final = httpx.Timeout(_READ_S, connect=_CONNECT_S)
 """One request's limits (as the outlook's NDFD reads): a hanging host costs at most these."""
 READ_ATTEMPTS: Final = 2
 """Tries per request (one retry), as the outlook's NDFD reads."""
@@ -133,6 +144,173 @@ class Budget:
         if self.clock() >= self.until:
             raise NbmSlowError(f"the night chart's {self.seconds:.0f} s of blend reads are up")
 
+    def left(self) -> float:
+        """The seconds left for the pass's blend reads (``inf`` before :meth:`start`)."""
+        return self.until - self.clock()
+
+    def timeout(self) -> httpx.Timeout:
+        """One request's limits at its start: :data:`READ_TIMEOUT`, cut to the time left. A
+        socket read's timeout holds for each read, not the whole request, so this alone does
+        not end a request that trickles at the deadline: :func:`bounded_client` does."""
+        left = self.left()
+        if left >= _READ_S:
+            return READ_TIMEOUT
+        left = max(left, 0.1)
+        return httpx.Timeout(left, connect=min(left, _CONNECT_S))
+
+
+Lookup = Callable[[str, int], Iterable[str]]
+"""A DNS lookup: a host's addresses for a TCP port."""
+
+
+def _lookup(host: str, port: int) -> list[str]:
+    """The system resolver's addresses for ``host`` (TCP), in its order, each once."""
+    found = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+    return list(dict.fromkeys(str(item[4][0]) for item in found))
+
+
+class _DeadlineStream(httpcore.NetworkStream):
+    """A connection whose every read, write and TLS handshake ends by the deadline: each socket
+    call's timeout is cut to the time left when it starts, and none starts with none left."""
+
+    def __init__(self, stream: httpcore.NetworkStream, left: Callable[[], float]) -> None:
+        self._stream = stream
+        self._left = left
+
+    def _limit(self, timeout: float | None, error: type[Exception]) -> float:
+        left = self._left()
+        if left <= 0:
+            raise error("the blend's reads are out of time")
+        return left if timeout is None else min(timeout, left)
+
+    def read(self, max_bytes: int, timeout: float | None = None) -> bytes:
+        return self._stream.read(max_bytes, self._limit(timeout, httpcore.ReadTimeout))
+
+    def write(self, buffer: bytes, timeout: float | None = None) -> None:
+        self._stream.write(buffer, self._limit(timeout, httpcore.WriteTimeout))
+
+    def close(self) -> None:
+        self._stream.close()
+
+    def start_tls(
+        self,
+        ssl_context: Any,
+        server_hostname: str | None = None,
+        timeout: float | None = None,
+    ) -> httpcore.NetworkStream:
+        limit = self._limit(timeout, httpcore.ConnectTimeout)
+        return _DeadlineStream(
+            self._stream.start_tls(ssl_context, server_hostname, limit), self._left
+        )
+
+    def get_extra_info(self, info: str) -> Any:
+        return self._stream.get_extra_info(info)
+
+
+class _DeadlineBackend(httpcore.NetworkBackend):
+    """httpcore's sockets with the deadline: the DNS lookup runs on a helper thread the pass
+    stops waiting for at the deadline, each address's connect is cut to the time left, and the
+    connection is a :class:`_DeadlineStream`."""
+
+    def __init__(
+        self, inner: httpcore.NetworkBackend, left: Callable[[], float], lookup: Lookup
+    ) -> None:
+        self._inner = inner
+        self._left = left
+        self._lookup = lookup
+
+    def _limit(self, timeout: float | None) -> float:
+        left = self._left()
+        if left <= 0:
+            raise httpcore.ConnectTimeout("the blend's reads are out of time")
+        return left if timeout is None else min(timeout, left)
+
+    def _addresses(self, host: str, port: int, limit: float) -> list[str]:
+        found: list[str] = []
+        failed: list[OSError] = []
+
+        def look() -> None:
+            try:
+                found.extend(self._lookup(host, port))
+            except OSError as error:
+                failed.append(error)
+
+        thread = threading.Thread(target=look, name="nbm-lookup", daemon=True)
+        thread.start()
+        thread.join(None if math.isinf(limit) else limit)
+        if thread.is_alive():
+            raise httpcore.ConnectTimeout(f"{host}: no address in time")
+        if failed or not found:
+            raise httpcore.ConnectError(f"{host}: {failed[0] if failed else 'no address'}")
+        return found
+
+    def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        timeout: float | None = None,
+        local_address: str | None = None,
+        socket_options: Iterable[Any] | None = None,
+    ) -> httpcore.NetworkStream:
+        error: Exception | None = None
+        for address in self._addresses(host, port, self._limit(timeout)):
+            try:
+                stream = self._inner.connect_tcp(
+                    address, port, self._limit(timeout), local_address, socket_options
+                )
+            except (httpcore.ConnectError, httpcore.ConnectTimeout) as failed:
+                error = failed
+                continue
+            return _DeadlineStream(stream, self._left)
+        raise error if error is not None else httpcore.ConnectError(f"{host}: no address")
+
+    def connect_unix_socket(
+        self,
+        path: str,
+        timeout: float | None = None,
+        socket_options: Iterable[Any] | None = None,
+    ) -> httpcore.NetworkStream:  # pragma: no cover - the blend is never on a unix socket
+        stream = self._inner.connect_unix_socket(path, self._limit(timeout), socket_options)
+        return _DeadlineStream(stream, self._left)
+
+    def sleep(self, seconds: float) -> None:  # pragma: no cover - httpcore's own retries are off
+        self._inner.sleep(min(seconds, max(self._left(), 0.0)))
+
+
+def env_proxy(url: str = BUCKET_ROOT) -> str | None:
+    """The proxy the environment names for ``url`` (as httpx reads it), or None."""
+    host = httpx.URL(url).host
+    if urllib.request.proxy_bypass(host):
+        return None
+    proxies = urllib.request.getproxies()
+    return proxies.get(httpx.URL(url).scheme) or proxies.get("all")
+
+
+def bounded_client(
+    budget: Budget,
+    *,
+    headers: Mapping[str, str] | None = None,
+    verify: Any = True,
+    proxy: str | None = None,
+    lookup: Lookup = _lookup,
+) -> httpx.Client:
+    """The blend's client: every DNS lookup, connect, TLS handshake, socket read and write ends
+    at ``budget``'s deadline (:class:`_DeadlineBackend`), so a host that trickles bytes and then
+    stalls, or never answers, holds a pass back by at most the budget, never one more read
+    timeout (chart-shadow critic B1). ``proxy`` is the one to use (:func:`env_proxy` for the
+    environment's); the client never reads proxies from the environment itself, so none
+    bypasses the deadline."""
+    transport = httpx.HTTPTransport(verify=verify, proxy=proxy)
+    pool = transport._pool  # httpx has no hook for httpcore's network backend
+    pool._network_backend = _DeadlineBackend(pool._network_backend, budget.left, lookup)
+    return httpx.Client(
+        headers=dict(headers or {}),
+        timeout=READ_TIMEOUT,
+        follow_redirects=True,
+        transport=transport,
+        trust_env=False,
+    )
+
 
 _CONTENT_RANGE: Final = re.compile(r"bytes (\d+)-(\d+)/(\d+|\*)")
 
@@ -157,8 +335,9 @@ class NbmHttp:
         self.sleep = sleep
 
     def _wait(self, seconds: float) -> None:
+        """Wait between tries, never past the budget."""
         self.budget.check()
-        self.sleep(seconds)
+        self.sleep(min(seconds, max(self.budget.left(), 0.0)))
 
     def _read(self, url: str, headers: Mapping[str, str], most: int) -> httpx.Response:
         """One answer (status, headers and a body of at most ``most`` bytes), tried again on a
@@ -174,7 +353,9 @@ class NbmHttp:
                 self._wait(min(8.0, 2.0 ** (attempt - 1)))
             self.budget.check()
             try:
-                with self.client.stream("GET", url, headers=dict(headers)) as response:
+                with self.client.stream(
+                    "GET", url, headers=dict(headers), timeout=self.budget.timeout()
+                ) as response:
                     status = response.status_code
                     if status >= 500 or status == 429:  # noqa: PLR2004
                         error = RuntimeError(f"HTTP {status}")
@@ -190,6 +371,7 @@ class NbmHttp:
                     return httpx.Response(status, headers=response.headers, content=bytes(body))
             except httpx.HTTPError as failed:
                 error = failed
+        self.budget.check()  # a timeout cut short by the budget is the budget's: nbm_slow
         raise NbmUnreadableError(f"{url}: {error}")
 
     def get(self, url: str) -> bytes:
@@ -242,10 +424,13 @@ def core_url(cycle: datetime, hour: int) -> str:
 
 def listing_url(cycle: datetime, first: int, last: int, token: str | None = None) -> str:
     """One S3 listing of a cycle's core keys from forecast hour ``first`` to ``last`` (all six
-    domains, in key order)."""
+    domains, in key order): it starts after the bare key ``...f{first}``, which sorts before every
+    key of hour ``first`` and after every key of the hour before, so a posted cycle's hours
+    ``first`` to ``last`` fill one page exactly (critic r3 S1: it started an hour early, so every
+    posted cycle took a second page)."""
     prefix = core_prefix(cycle)
     url = (
-        f"{BUCKET_ROOT}/?list-type=2&prefix={prefix}&start-after={prefix}{first - 1:03d}"
+        f"{BUCKET_ROOT}/?list-type=2&prefix={prefix}&start-after={prefix}{first:03d}"
         f"&max-keys={(last - first + 1) * _KEYS_PER_HOUR}"
     )
     return url if token is None else f"{url}&continuation-token={_quote(token)}"
@@ -275,6 +460,11 @@ class Posted:
     size: dict[int, int] = field(default_factory=dict)
     last_listed: int = 0
     """The highest forecast hour the listing reached (any domain)."""
+
+    def done(self, last: int) -> bool:
+        """Whether the listing has reached past hour ``last``'s CONUS files: keys come in order,
+        so every key up to them is listed, and a further page adds none the pass needs."""
+        return self.last_listed > last or (last in self.grib and last in self.idx)
 
     def counts(self, hours: Collection[int], at: datetime) -> bool:
         """Whether every hour's file and ``.idx`` is listed and posted at or before ``at``."""
@@ -492,11 +682,13 @@ class NbmReader:
     cycle reads no message again, and a file NOAA posts anew under the same cycle (a new
     LastModified or size) is read anew, never served from the old one's values (critic r2 S2).
     ``get`` and ``ranged`` are the pipeline's fetcher (its User-Agent, retries and range
-    checks)."""
+    checks); ``check`` (the pass's :meth:`Budget.check`) runs before each message's decode, so
+    the reads and their decoding together stop at the budget."""
 
-    def __init__(self, get: Get, ranged: Ranges) -> None:
+    def __init__(self, get: Get, ranged: Ranges, check: Callable[[], None] | None = None) -> None:
         self._get = get
         self._ranged = ranged
+        self._check = check
         self._posted: dict[datetime, Posted] = {}
         self._values: dict[tuple[datetime, int], tuple[Stamp, Floats]] = {}
         self._where: tuple[bytes, Cells] | None = None
@@ -522,7 +714,7 @@ class NbmReader:
             self.requests += 1
             self.bytes += len(xml)
             token = parse_listing(xml, found)
-            if token is None or found.last_listed > last:
+            if token is None or found.done(last):
                 break
         self._posted[cycle] = found
         return found
@@ -589,4 +781,6 @@ class NbmReader:
         self.bytes += len(raw)
         if len(raw) != size:
             raise NbmUnreadableError(f"f{hour:03d}: {len(raw)} bytes read of {size}")
+        if self._check is not None:
+            self._check()  # the decode is the pass's time too: none starts past the budget
         return decode(raw, cycle, hour)

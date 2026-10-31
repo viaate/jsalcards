@@ -23,7 +23,9 @@ import {
 import { copy } from '../../copy';
 import { chanceCopy } from '../../copy-chance';
 import { nightOf } from '../../data/night';
+import ChanceSection from '../ChanceSection.svelte';
 import DetailPanel from '../DetailPanel.svelte';
+import { rawProp } from './reactive-props.svelte';
 
 const NBSP = '\u00a0';
 const MINUS = '\u2212';
@@ -314,6 +316,111 @@ describe('the chance section', () => {
     flushSync();
     expect(section.querySelector('figure')).toBeNull();
     expect(text(section, '.number')[0]).toContain(view.number);
+  });
+
+  /** The section alone, with a `chance` the test replaces as a new reading would. */
+  function live(first: ChanceView): { section: HTMLElement; set: (next: ChanceView) => void } {
+    const target = document.createElement('div');
+    document.body.append(target);
+    const { props, set } = rawProp('chance', first);
+    component = mount(ChanceSection, { target, props });
+    flushSync();
+    const section = target.querySelector<HTMLElement>('.chance');
+    if (section === null) throw new Error('no section');
+    return {
+      section,
+      set: (next) => {
+        set(next);
+        flushSync();
+      },
+    };
+  }
+
+  /** A chart that draws nothing but throws (past the panel's own `until` check). */
+  function throwing(chart: NonNullable<ChanceView['chart']>): NonNullable<ChanceView['chart']> {
+    return new Proxy(chart, {
+      get(target, key): unknown {
+        if (key === 'until') return target.until;
+        throw new Error('a chart bug');
+      },
+    });
+  }
+
+  it('draws a later good chart after one fails, and keeps the chart’s facts meanwhile (critic r3 S1)', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    const view = chance(true);
+    const chart = view.chart;
+    const bare = view.bare;
+    if (chart === null || bare === null) throw new Error('no chart');
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { section, set } = live({ ...view, chart: throwing(chart) });
+    expect(section.querySelector('figure')).toBeNull();
+    // While the chart is failed, the timeline says when the district usually announces and the
+    // sum's snow line states its amount: the parts without the chart, never the chart's.
+    const moments = text(section, '.moment .m-text');
+    expect(moments.map((line) => line.replace(/ in \d+h \d+m$/u, ''))).toEqual(
+      bare.moments.map((m) => m.text),
+    );
+    expect(moments).toContain('Shawnee Mission usually announces in 8h 25m');
+    expect(view.moments.some((m) => m.key === 'announces')).toBe(false);
+    const lines = text(section, '.why .row.is-reason p');
+    expect(lines).toEqual(bare.why?.lines.map((line) => line.text));
+    expect(lines).not.toEqual(view.why?.lines.map((line) => line.text));
+    expect(lines.some((line) => line.includes('6 to 9'))).toBe(true);
+    // A later good chart (a new reading), with no null between: drawn again, its facts its own.
+    set({ ...view, chart: { ...chart } });
+    expect(section.querySelectorAll('figure')).toHaveLength(1);
+    expect(text(section, '.moment .m-text')).toEqual(view.moments.map((m) => m.text));
+    expect(text(section, '.why .row.is-reason p')).toEqual(view.why?.lines.map((l) => l.text));
+    // The same failed chart again stays hidden; a broken one after a good one fails alone.
+    set({ ...view, chart: throwing(chart) });
+    expect(section.querySelector('figure')).toBeNull();
+    expect(text(section, '.number')[0]).toContain(view.number);
+    errors.mockRestore();
+  });
+
+  it('puts the amount and the announcement back the moment the night chart hides (critic r3 S2)', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    const night = nightOf(
+      { least: [0.1, 0.4, 1.0, 2.0, 3.1, 4.2, 4.9, 5.4, 6.1], low: 6, high: 9, heavy: [3, 6] },
+      {
+        day: '2026-01-13',
+        timeZone: ZONE,
+        generatedAt: new Date('2026-01-13T03:00:00Z'),
+        nightAt: new Date('2026-01-13T01:00:00Z'),
+      },
+    );
+    const view = chanceView({
+      outlook: nightOutlook({ ...A_DETAIL, busesAt: null, hours: null, night }),
+      decided: { today: false, tomorrow: false },
+      status: [],
+      district: 'Shawnee Mission',
+      state: 'KS',
+      closings: A_CLOSINGS,
+      names: NAMES,
+      now: A_NOW,
+      timeZone: ZONE,
+    });
+    if (view === null) throw new Error('no chance');
+    const { bare } = view;
+    if (bare === null) throw new Error('no chart');
+    const { section } = live(view);
+    expect(section.querySelectorAll('figure')).toHaveLength(1);
+    // While the night chart shows, it states the amount and the announcement (O6).
+    expect(text(section, '.moment').some((line) => line.includes('usually announces'))).toBe(false);
+    expect(text(section, '.why .row.is-reason p').some((line) => line.includes('6 to 9'))).toBe(
+      false,
+    );
+    // Its `until` passes on the panel's clock: at the next tick, with no reading, both are back.
+    vi.setSystemTime(new Date('2026-01-13T04:15:10Z'));
+    vi.advanceTimersByTime(20_000);
+    flushSync();
+    expect(section.querySelector('figure')).toBeNull();
+    const moments = text(section, '.moment');
+    expect(moments.some((line) => line.includes('usually announces'))).toBe(true);
+    const lines = text(section, '.why .row.is-reason p');
+    expect(lines).toEqual(bare.why?.lines.map((line) => line.text));
+    expect(lines.some((line) => line.includes('6 to 9'))).toBe(true);
   });
 
   it('the next morning, says the decided status first, then the next day’s chance', () => {

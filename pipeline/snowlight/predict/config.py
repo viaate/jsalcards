@@ -126,17 +126,35 @@ class ServeSettings(_Settings):
     chart_nbm_max_age_minutes: int = Field(default=150, ge=1, le=150)
     """The oldest NBM cycle (cycle hour to pass) a night chart is drawn from; at most the
     contract's ``NIGHT_MAX_AGE``."""
+    chart_hold_seconds: float = Field(default=15.0, gt=0, le=60)
+    """With ``on``, the blend's reads hold a pass back before it publishes for at most this long
+    (critic r3 S5): the live client ends every DNS lookup, connect, TLS handshake and socket
+    read at the deadline (:func:`snowlight.predict.nbm.bounded_client`; a per-request timeout
+    alone let a trickling host run one 10 s read past it, chart-shadow critic B1), and the
+    budget is checked before each decode. A pass whose reads do not finish publishes without
+    nights (``nbm_slow``), and what it read is kept for the next pass. The whole delay before
+    an ``on`` pass publishes is this hold, plus the decode of a message already read when the
+    time ran out, plus the larger with-nights file build. Shadow reads after publishing, inside
+    :data:`snowlight.predict.nbm.READ_SECONDS`."""
     chart_min_inches: float = Field(default=1.0, ge=1.0, le=99.0)
     """A district charts only when its 50% value of the night's new snow is at least this."""
     night_max_raw_bytes: int = Field(default=16_446_182, ge=1)
     """A file with nights publishes only at or under this many bytes raw (today's measured worst
     case, so a phone never parses more than it did before the chart); otherwise the pass takes
     the next fit, without nights."""
-    chart_fault: Literal["none", "raise", "stale_night_at", "frozen_listing"] = "none"
-    """GC4's fault injections, refused unless ``chart`` is shadow: ``raise`` makes the night
-    builder raise, ``stale_night_at`` sets ``night_at`` one minute past the cycle cap, and
+    chart_fault: Literal[
+        "none", "raise", "stale_night_at", "frozen_listing", "bad_host", "nbm_slow", "rotate"
+    ] = "none"
+    """GC4's fault injections, refused unless ``chart`` is shadow; they act on the in-memory
+    shadow build only (:mod:`snowlight.predict.chart_evidence`): ``raise`` makes the night
+    builder raise, ``stale_night_at`` sets ``night_at`` one minute past the cycle cap,
     ``frozen_listing`` hides every NBM file posted within the cap and a minute (so no cycle
-    counts: ``nbm_stale``)."""
+    counts: ``nbm_stale``), ``bad_host`` sends every blend request to a host that never resolves
+    (``nbm_unreadable``), ``nbm_slow`` reads on a budget already spent (``nbm_slow``), each on
+    every pass; ``rotate`` injects them in turn on 1 grid slot in 6, by the pass's scheduled
+    grid slot and once per slot, and leaves every other pass clean. Turning the chart ``on``
+    sets this back to ``none`` in the same change: ``on`` with any fault is refused, so predict
+    would not load its config."""
 
     @model_validator(mode="after")
     def _check_chart(self) -> "ServeSettings":

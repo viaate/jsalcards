@@ -7,6 +7,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.parse import unquote
 
 import eccodes  # type: ignore[import-untyped]
 import numpy as np
@@ -22,6 +23,8 @@ GRID: Mapping[str, Any] = {
     "longitudeOfFirstGridPointInDegrees": nbm.LO1_DEG,
 }
 HOUR = timedelta(hours=1)
+OTHER_DOMAINS = ("ak", "gu", "hi", "oc", "pr")
+"""The core files' other domains beside CONUS (``co``): six in all, each a file and its ``.idx``."""
 
 
 def coded(true_order: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
@@ -113,15 +116,18 @@ class Bucket:
         late: Mapping[int, datetime] | None = None,
         lines: int = 1,
     ) -> None:
-        """A cycle's CONUS core files (and a filler Alaska file per hour, as a listing holds)."""
+        """A cycle's CONUS core files, and an empty file and ``.idx`` of each other domain per
+        hour, as a real listing holds (12 keys an hour)."""
         for hour, message in hours.items():
             body, idx = core_file(cycle, hour, message, lines=lines)
             when = (late or {}).get(hour, posted)
             key = nbm.core_key(cycle, hour)
             self.files[key] = (body, when)
             self.files[f"{key}.idx"] = (idx, when + timedelta(seconds=3))
-            alaska = key.replace(".co.", ".ak.")
-            self.files[alaska] = (b"", posted)
+            for domain in OTHER_DOMAINS:
+                other = key.replace(".co.", f".{domain}.")
+                self.files[other] = (b"", posted)
+                self.files[f"{other}.idx"] = (b"", posted)
 
     def get(self, url: str) -> bytes:
         self.requests.append(url)
@@ -146,9 +152,17 @@ class Bucket:
         return read
 
     def _listing(self, url: str) -> bytes:
-        query = dict(part.split("=", 1) for part in url.split("?", 1)[1].split("&"))
-        prefix, after, most = query["prefix"], query.get("start-after", ""), int(query["max-keys"])
-        keys = sorted(k for k in self.files if k.startswith(prefix) and k > after)[:most]
+        """One page as S3 lists it: keys after ``start-after`` (or the continuation token), at
+        most ``max-keys``, with a ``NextContinuationToken`` when more follow."""
+        query = {
+            name: unquote(value)
+            for name, value in (part.split("=", 1) for part in url.split("?", 1)[1].split("&"))
+        }
+        prefix, most = query["prefix"], int(query["max-keys"])
+        after = query.get("continuation-token", query.get("start-after", ""))
+        found = sorted(k for k in self.files if k.startswith(prefix) and k > after)
+        keys = found[:most]
+        more = f"<NextContinuationToken>{keys[-1]}</NextContinuationToken>" if found[most:] else ""
         blocks = "".join(
             f"<Contents><Key>{k}</Key><LastModified>{self.files[k][1]:%Y-%m-%dT%H:%M:%S}.000Z"
             f"</LastModified><Size>{len(self.files[k][0])}</Size></Contents>"
@@ -156,5 +170,5 @@ class Bucket:
         )
         return (
             '<?xml version="1.0" encoding="UTF-8"?><ListBucketResult><Name>noaa-nbm-grib2-pds'
-            f"</Name><Prefix>{prefix}</Prefix>{blocks}</ListBucketResult>"
+            f"</Name><Prefix>{prefix}</Prefix>{blocks}{more}</ListBucketResult>"
         ).encode()

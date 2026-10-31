@@ -36,7 +36,7 @@ from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, NamedTuple
 
 import httpx
 import numpy as np
@@ -58,6 +58,7 @@ from snowlight.predict import artifact as artifact_module
 from snowlight.predict import (
     backtest,
     candidates_cli,
+    chart_evidence,
     forecast_history,
     inputs,
     learn,
@@ -145,6 +146,7 @@ from snowlight.predict.publish import (
     Host,
     Mode,
     State,
+    beside,
     blank_file,
     check_alert_age,
     check_budget,
@@ -1263,8 +1265,9 @@ class _Made:
     chances: Chances | None = None
     said: SaidOpen = NOTHING_SAID
     """The units that said school is on at the pass (their chance shows the floor)."""
-    chart_after: Callable[[], None] | None = None
-    """``serve.chart: shadow``: the chart's in-memory build and report, run after publishing."""
+    chart_after: Callable[[str | None], None] | None = None
+    """``serve.chart: shadow``: the chart's in-memory build and report, run after publishing,
+    with the fault the pass injects (:func:`snowlight.predict.chart_evidence.fault_for`)."""
 
 
 def one_pass(run: Pass, *, grid: bool = True) -> int:
@@ -1334,7 +1337,9 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
     )
     if built.chart_after is not None:
         try:
-            built.chart_after()
+            setting, minutes = config.serve.chart_fault, config.serve.grid_minutes
+            done = run.state.chart_shadow
+            built.chart_after(chart_evidence.fault_for(setting, now, minutes, grid=grid, done=done))
         except Exception as error:  # the shadow chart never touches the pass
             _warn(f"predict: chart (shadow): withheld, invalid ({type(error).__name__})")
     if code == 0 and run.outlook_mode is not OutlookMode.OFF:
@@ -1382,7 +1387,7 @@ def _publish_pass(  # noqa: PLR0913, PLR0917 - the pass, its file and what its l
         _after_publish(run, made, directory, now)
         return 0
     try:
-        upload(run.host, key, data)
+        upload(run.host, key, data, extra=_shadow_summary(run, key, now))
     except (DarkError, PublishError) as error:
         _err(f"predict: dark ({error})")
         return EXIT_DARK
@@ -1392,6 +1397,25 @@ def _publish_pass(  # noqa: PLR0913, PLR0917 - the pass, its file and what its l
     _out(f"predict: uploaded {key}")
     _after_publish(run, made, directory, now)
     return 0
+
+
+def _shadow_summary(run: Pass, key: str, now: datetime) -> dict[str, bytes] | None:
+    """With ``serve.chart: shadow``, the counts-only summary of its last 48 hours of passes
+    (:func:`snowlight.predict.chart_evidence.summary`), to go up beside the file in the same
+    commit (``predictions/chart-shadow.json``); None otherwise, or on any failure here (it
+    never touches the pass or its file)."""
+    serve = run.config.serve
+    if serve.chart != "shadow" or not run.state.chart_shadow:
+        return None
+    try:
+        found = chart_evidence.summary(
+            run.state.chart_shadow, now, mode=serve.chart, setting=serve.chart_fault
+        )
+        text = json.dumps(found, sort_keys=True, separators=(",", ":")) + "\n"
+        return {beside(key, chart_evidence.NAME): text.encode()}
+    except Exception as error:  # the summary only: never the pass
+        _warn(f"predict: chart (shadow): no summary this pass ({type(error).__name__})")
+        return None
 
 
 def _outlook_forecasts(
@@ -1748,18 +1772,19 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
         )
 
     if serve.chart == "on":
-        nights, withheld, read_ms = _nights(run, model, days, now, classes)
+        stage = _nights(run, model, days, now, classes)
         started = time.monotonic()
-        made, data, packed, more = fitted(make, serve, nights)
+        made, data, packed, more = fitted(make, serve, stage.nights)
         built_ms = round((time.monotonic() - started) * 1000)
-        _chart_report(run, made, nights, withheld + more, read_ms, built_ms, now)
+        _chart_report(run, made, stage.nights, stage.withheld + more, stage.read_ms, built_ms, now)
         return _Made(made, data, packed, after, chances=chances, said=said)
     made, data, packed, _none = fitted(make, serve)
     shadow = None
-    if serve.chart == "shadow":
+    if serve.chart == "shadow" and run.night is not None:
+        published = data
 
-        def shadow() -> None:
-            _shadow_chart(run, model, days, now, classes, make)
+        def shadow(fault: str | None) -> None:
+            _shadow_chart(run, model, days, now, classes, make, published, fault)
 
     return _Made(made, data, packed, after, chances=chances, said=said, chart_after=shadow)
 
@@ -1771,22 +1796,69 @@ def _shadow_chart(  # noqa: PLR0913, PLR0917 - the pass, its model, days, classe
     now: datetime,
     classes: npt.NDArray[np.int64],
     make: Callable[[Fit, Nights], PredictionsFile],
+    published: bytes,
+    fault: str | None = None,
 ) -> None:
-    """``serve.chart: shadow``, after the pass published its file: the nights it would carry,
-    built through the same guard and ladder in memory and reported, never published. Runs only
-    after the chance is out, so a slow blend or a chart bug never holds a pass back; anything
-    that fails here is reported as ``invalid (<type>)`` and the pass goes on."""
+    """``serve.chart: shadow``, after the pass published its file (``published``, the chart-off
+    file): the nights it would carry, built through the same guard and ladder in memory and
+    reported, never published. Runs only after the chance is out, so a slow blend or a chart
+    bug never holds a pass back; anything that fails here is reported as ``invalid (<type>)``
+    and the pass goes on.
+
+    ``fault`` (GC4, :mod:`snowlight.predict.chart_evidence`) acts on this in-memory build only.
+    A pass that injects one and opens the gate builds the with-nights file whatever its nights,
+    and checks in the pass that it has no night and the published file's bytes. Every pass
+    adds its record to ``state.chart_shadow``."""
+    began = time.monotonic()
     try:
-        nights, withheld, read_ms = _nights(run, model, days, now, classes)
+        stage = _nights(run, model, days, now, classes, fault=fault)
+        nights = stage.nights
         started = time.monotonic()
         more = Withheld()
-        if nights:
+        clean: bool | None = None
+        if nights or (fault is not None and stage.gated):
             shadow, data, packed, more = fitted(make, run.config.serve, nights, shadow=True)
-            _say_chart(run, shadow, data, packed, now)
+            if nights:
+                _say_chart(run, shadow, data, packed, now)
+            if fault is not None:
+                clean = _no_night(shadow) and data == published
+                _out(
+                    f"predict: chart (shadow): fault {fault}: "
+                    f"{'no night, the published bytes' if clean else 'NOT CLEAN'}"
+                )
         built_ms = round((time.monotonic() - started) * 1000)
-        _chart_report(run, None, nights, withheld + more, read_ms, built_ms, now)
+        withheld = stage.withheld + more
+        _chart_report(run, None, nights, withheld, stage.read_ms, built_ms, now)
+        _remember_shadow(
+            run,
+            now,
+            chart_evidence.record(
+                now,
+                fault=fault,
+                gated=stage.gated,
+                cycle=nights.cycle,
+                codes=[code for code, _n in withheld.codes],
+                nights=len(nights),
+                read_ms=stage.read_ms,
+                build_ms=built_ms,
+                extra_ms=round((time.monotonic() - began) * 1000),
+                clean=clean,
+            ),
+        )
     except Exception as error:  # the chart's report only: never the pass
         _warn(f"predict: chart (shadow): withheld, invalid ({type(error).__name__})")
+
+
+def _no_night(made: PredictionsFile) -> bool:
+    """Whether a file carries no night and no ``night_at``."""
+    return made.night_at is None and not any(
+        getattr(day, "night", None) for entry in made.districts for day in entry.days
+    )
+
+
+def _remember_shadow(run: Pass, now: datetime, item: dict[str, object]) -> None:
+    """Add a shadow pass's record to the state's last 48 hours."""
+    run.state.chart_shadow = chart_evidence.kept([*run.state.chart_shadow, item], now)
 
 
 def _chart_report(  # noqa: PLR0913, PLR0917 - what the chart did this pass
@@ -1808,41 +1880,59 @@ def _chart_report(  # noqa: PLR0913, PLR0917 - what the chart did this pass
         _warn(f"predict: chart: withheld, invalid ({type(error).__name__})")
 
 
-def _nights(
+class _Stage(NamedTuple):
+    """The night stage of a pass: its nights, what it withheld, its time (ms), and whether the
+    fetch gate opened (so it read the blend)."""
+
+    nights: Nights
+    withheld: Withheld
+    read_ms: int
+    gated: bool = False
+
+
+def _nights(  # noqa: PLR0913 - the pass, its model, days, classes and fault
     run: Pass,
     model: ServeModel,
     days: tuple[date, ...],
     now: datetime,
     classes: npt.NDArray[np.int64],
-) -> tuple[Nights, Withheld, int]:
+    *,
+    fault: str | None = None,
+) -> _Stage:
     """The pass's night charts behind the fetch gate (:func:`night_serve.gate_days`), what was
-    withheld, and the time the stage took (ms). Never raises for the chart's sake."""
+    withheld, and the time the stage took (ms), with GC4's ``fault`` (shadow only) injected.
+    Never raises for the chart's sake."""
     serve = run.config.serve
     if serve.chart == "off" or run.night is None:
-        return NO_NIGHTS, Withheld(), 0
+        return _Stage(NO_NIGHTS, Withheld(), 0)
     started = time.monotonic()
     read = run.night
     try:
         charting = read.charting(model) if isinstance(read, NightReader) else None
         gated = gate_days(model.time_zone, days, classes, now, charting)
     except Exception as error:  # the gate is chart code too: no chart, never no file
-        return NO_NIGHTS, Withheld.invalid(type(error).__name__), 0
+        return _Stage(NO_NIGHTS, Withheld.invalid(type(error).__name__), 0)
     generated = now.astimezone(UTC).replace(microsecond=0)
 
-    def fault(_inputs: object) -> None:
+    def broken(_inputs: object) -> None:
         raise RuntimeError("serve.chart_fault: raise")
 
+    def reads(found: frozenset[date]) -> NightValues:
+        if isinstance(read, NightReader):
+            return read(model, found, now, fault=fault)
+        return read(model, found, now)
+
     nights, withheld = night_stage(
-        lambda found: read(model, found, now),
+        reads,
         gated,
         generated,
-        build=fault if serve.chart_fault == "raise" else None,
+        build=broken if fault == "raise" else None,
         min_inches=serve.chart_min_inches,
     )
-    if serve.chart_fault == "stale_night_at" and nights.at is not None:
+    if fault == "stale_night_at" and nights.at is not None:
         cap = timedelta(minutes=serve.chart_nbm_max_age_minutes)
-        nights = Nights(nights.kept, generated - cap - timedelta(minutes=1))
-    return nights, withheld, round((time.monotonic() - started) * 1000)
+        nights = Nights(nights.kept, generated - cap - timedelta(minutes=1), nights.cycle)
+    return _Stage(nights, withheld, round((time.monotonic() - started) * 1000), bool(gated))
 
 
 def _say_chart(run: Pass, made: PredictionsFile, data: bytes, packed: int, now: datetime) -> None:
@@ -2343,11 +2433,18 @@ class NightReader:
     Budget`)."""
 
     def __init__(
-        self, read: ReadBlend, max_age: timedelta, start: Callable[[], None] | None = None
+        self,
+        read: ReadBlend,
+        max_age: timedelta,
+        start: Callable[[], None] | None = None,
+        faults: Mapping[str, ReadBlend] | None = None,
     ) -> None:
         self._read = read
         self._max_age = max_age
         self._start = start
+        self._faults = dict(faults or {})
+        """GC4's reader faults (``frozen_listing``, ``bad_host``): the reads a pass injecting
+        one makes instead (shadow only)."""
         self._built: dict[object, tuple[Points, npt.NDArray[np.bool_]]] = {}
 
     def _points(self, model: ServeModel) -> tuple[Points, npt.NDArray[np.bool_]]:
@@ -2372,20 +2469,24 @@ class NightReader:
         """Each deployed district: whether its every deciding school is on the blend's grid."""
         return self._points(model)[1]
 
-    def __call__(self, model: ServeModel, days: frozenset[date], now: datetime) -> NightValues:
+    def __call__(
+        self, model: ServeModel, days: frozenset[date], now: datetime, *, fault: str | None = None
+    ) -> NightValues:
         points, _charting = self._points(model)
         if self._start is not None:
             self._start()
-        return night_values(
-            points, model.time_zone, days, now, read=self._read, max_age=self._max_age
-        )
+        read = self._faults.get(fault, self._read) if fault is not None else self._read
+        return night_values(points, model.time_zone, days, now, read=read, max_age=self._max_age)
 
 
 def night_reader(
-    read: ReadBlend, max_age: timedelta, start: Callable[[], None] | None = None
+    read: ReadBlend,
+    max_age: timedelta,
+    start: Callable[[], None] | None = None,
+    faults: Mapping[str, ReadBlend] | None = None,
 ) -> NightReader:
     """The night chart's reads for a pass (:class:`NightReader`)."""
-    return NightReader(read, max_age, start)
+    return NightReader(read, max_age, start, faults)
 
 
 def blend_night(
@@ -2396,28 +2497,59 @@ def blend_night(
     sleep: Callable[[float], None] = time.sleep,
 ) -> NightReader:
     """The blend from AWS for each pass that opens the gate: the client's User-Agent, each
-    request inside the pass's time ``budget`` (started once per pass) with two tries and short
-    timeouts (:class:`snowlight.predict.nbm.NbmHttp`), each (cycle, hour) read once and kept
-    between passes."""
+    request and decode inside the pass's time ``budget`` (started once per pass; with ``on``,
+    cut to ``serve.chart_hold_seconds``, the most the reads may hold a pass back before it
+    publishes) with two tries and short timeouts (:class:`snowlight.predict.nbm.NbmHttp`), each
+    (cycle, hour) read once and kept between passes."""
     client.timeout = nbm.READ_TIMEOUT
+    if serve.chart == "on":
+        budget.seconds = min(budget.seconds, serve.chart_hold_seconds)
     http = nbm.NbmHttp(client, budget, sleep=sleep)
-    reader = nbm.NbmReader(http.get, http.ranged)
+    reader = nbm.NbmReader(http.get, http.ranged, budget.check)
     cap = timedelta(minutes=serve.chart_nbm_max_age_minutes)
-    return night_reader(frozen_read(reader, serve), cap, budget.start)
+    faults: dict[str, ReadBlend] = {}
+    if serve.chart_fault != "none":  # shadow only (config): GC4's reader faults
+        spent = nbm.Budget(seconds=0.0, clock=budget.clock, until=-math.inf)
+        slow = nbm.NbmHttp(client, spent, sleep=sleep)
+        faults = {
+            "frozen_listing": frozen_read(reader, serve),
+            "bad_host": nbm.NbmReader(
+                _bad_host(http.get), _bad_host(http.ranged), budget.check
+            ).read,
+            "nbm_slow": nbm.NbmReader(slow.get, slow.ranged, spent.check).read,
+        }
+    return night_reader(reader.read, cap, budget.start, faults)
 
 
 def _live_night(config: PredictConfig) -> NightReader:  # pragma: no cover - AWS
-    """The blend from AWS (:func:`blend_night`), with the pipeline's client."""
-    return blend_night(forecast_history._client(), config.serve, nbm.Budget())
+    """The blend from AWS (:func:`blend_night`), with the pipeline's User-Agent and TLS check
+    on a client whose every lookup, connect and socket read ends at the pass's budget
+    (:func:`snowlight.predict.nbm.bounded_client`)."""
+    budget = nbm.Budget()
+    client = nbm.bounded_client(
+        budget,
+        headers={"User-Agent": inputs.USER_AGENT},
+        verify=inputs.verify(),
+        proxy=nbm.env_proxy(),
+    )
+    return blend_night(client, config.serve, budget)
 
 
 def frozen_read(reader: nbm.NbmReader, serve: ServeSettings) -> ReadBlend:
-    """The reader's reads, with GC4's frozen listing when ``serve.chart_fault`` asks for it:
-    every file posted within the cap and a minute hidden, so no cycle counts."""
-    if serve.chart_fault != "frozen_listing":
-        return reader.read
+    """GC4's frozen listing: the reader's reads with every file posted within the cap and a
+    minute hidden, so no cycle counts (``nbm_stale``)."""
     frozen = timedelta(minutes=serve.chart_nbm_max_age_minutes + 1)
     return functools.partial(reader.read, frozen=frozen)
+
+
+def _bad_host[T](call: Callable[[str], T]) -> Callable[[str], T]:
+    """GC4's bad host: ``call`` with every blend URL sent to a host that never resolves
+    (:data:`snowlight.predict.nbm.BAD_HOST`), so every read fails (``nbm_unreadable``)."""
+
+    def moved(url: str) -> T:
+        return call(url.replace(nbm.BUCKET_ROOT, nbm.BAD_HOST, 1))
+
+    return moved
 
 
 def _outlook_model(

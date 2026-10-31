@@ -1800,11 +1800,13 @@ identity instead; the lead decides before `on`), and the triggers in shadow (sha
 pass schedule: grid passes take every sample). The outlook's reader keeps a run's values only
 while a read can still use them (4 hours, `outlook_live.RUNS_KEPT`).
 
-## The night chart (option (iv), NOAA's hourly blend: built, switched off)
+## The night chart (option (iv), NOAA's hourly blend: built, in shadow)
 
 The owner chose option (iv) of the night snow chart spec (design `chart-data/spec.md`, revision 3,
-Oct 26): true hourly bars to 7 AM. `serve.chart` (`config/predict.yaml`) switches it, `off` until
-the lead turns it on after the shadow gates below.
+Oct 26): true hourly bars to 7 AM. `serve.chart` (`config/predict.yaml`) switches it: `shadow`
+since the chart-shadow piece (design `chart-shadow/spec.md`, Oct 31), so every gated pass builds
+the chart in memory and publishes the file with the chart off, byte for byte, while GC4's
+evidence collects itself (below). The lead turns it `on` after the shadow gates.
 
 **What it shows.** "New snow, hour by hour" on the panel's headline day, when that day carries a
 `night`: an empty first bar at Start (the first whole hour after the file's time, never before
@@ -1873,28 +1875,44 @@ district has a snow-bearing class that day (an advisory, lake effect snow, a win
 ice or a blizzard). So an Alaska advisory alone opens nothing (critic r1 S1). A calm night, a
 Friday night and July cost no request.
 
-**Cost when open.** Each pass lists afresh the newest cycles until one counts (a page or two each,
-about 130 KB), the one it takes included, so a core file NOAA posts anew under the same cycle (a
+**Cost when open.** Each pass lists afresh the newest cycles until one counts (one page each,
+starting at the first hour it needs: about 53 KB for a posted cycle, under 1 KB for one not yet
+posted, measured on live S3 on Oct 31; the listing started an hour early until critic r3 S1, so
+every posted cycle took a second page), the one it takes included, so a core file NOAA posts anew under the same cycle (a
 new LastModified or size) is seen. Each new cycle then costs one `.idx` and one range read per
 needed hour, kept by (cycle, hour) with the file's LastModified and size from the listing, so the
 :37 pass on the same cycle reads no message again, and a file posted anew is read again, never
 served from the old one's values (critic r2 S2): up to 13 to 16 messages, about 9.2 MB (the GC1
-replays read 438 requests and 111.7 MB over 20 passes, at most 34 requests a pass; a warm pass now
-makes one or two listing requests, about 0.1 to 0.3 MB). The gate is open from 7 AM Eastern the day before to 6 AM Pacific, about 26
-cycles, so a gated day is about 240 MB of messages and about 13 MB of listings (48 grid passes);
-other days cost nothing. All of it is free public data.
+replays read 438 requests and 111.7 MB over 20 passes, at most 34 requests a pass; a warm pass
+makes two listing requests, the newer cycle's empty page and the taken cycle's one page, about
+54 KB, and three, about 0.1 MB, while a newer cycle is part posted). The gate is open from 7 AM Eastern the day before to 6 AM Pacific, about 26
+cycles, so a gated day is about 240 MB of messages and about 3 to 5 MB of listings (48 grid
+passes at 54 KB to 0.1 MB each, and an event pass adds the same; it was about 13 MB at two pages
+a cycle before the listing fix); other days cost nothing. All of it is free public data.
 
 **A chart failure never touches a chance** (`predict/night_serve.py`, `cli.fitted`):
-0. every blend read of a pass runs inside one budget, `nbm.READ_SECONDS` (60 s), through
-   `nbm.NbmHttp`: two tries, 10 s read and 5 s connect timeouts, the budget checked before every
-   request, wait and chunk of a body, a body never past its size, and a range read answered with
-   the whole file (a 200) refused before its body is read (a core file is 166 to 202 MB). So a
-   slow, hanging or failing bucket holds a pass back by at most about 77 s (the 60 s budget, then
-   one chunk's 10 s timeout, a 5 s connect and a 2 s pause between range tries; a hanging listing
-   stops after two tries, about 21 s), plus the decode of the messages read (about 1 to 8 s of CPU,
-   outside the budget, as are a blocking DNS lookup and the nights' build), and what was read
-   before the time ran out is kept for the next pass (critic r1 B1, G1 and S2; critic r2 S5). With
-   `on` this is the only wait the chart can add before the chance is published;
+0. every blend read of a pass runs inside one budget through `nbm.NbmHttp`: two tries, 10 s read
+   and 5 s connect timeouts, the budget checked before every request, wait, chunk of a body and
+   message decode, a wait between tries never past it, a body never past its size, and a range
+   read answered with the whole file (a 200) refused before its body is read (a core file is 166
+   to 202 MB). The live client (`nbm.bounded_client`) ends every DNS lookup, connect, TLS
+   handshake and socket read at the budget's deadline: each socket call's timeout is cut to the
+   time left when it starts, and the lookup runs on a helper thread the pass stops waiting for.
+   A socket read's timeout holds for each read, not the whole request, so cutting only a
+   request's timeout at its start (as until chart-shadow critic B1) let a host that trickles a
+   byte now and then and then stalls hold a 15 s budget for 24.5 s; on a real local socket that
+   trickle now ends at the budget (`tests/predict/test_nbm_deadline.py`, and at live scale
+   15.0 s against 24.5 s before). In `shadow` the budget is `nbm.READ_SECONDS` (60 s), after the
+   pass has published. With `on` it is `serve.chart_hold_seconds` (15 s), before the pass
+   publishes: a slow, trickling, hanging or failing bucket holds the chance back by at most the
+   15 s, plus the decode of a message already read when the time ran out (about 0.1 to 0.6 s of
+   CPU), never the 77 s and 1 to 8 s of decode it could before (critic r3 S5). On six replay
+   moments, each cold and then warm 30 min later, the reads and decoding of an `on` pass took
+   0.8 to 8.8 s (p50 5.6, p95 8.8), nothing withheld. After the reads, `on` builds the larger
+   file with nights before it publishes (Pass time, below). A read the budget cut short says
+   `nbm_slow`, and what was read before the time ran out is kept for the next pass (critic r1
+   B1, G1 and S2; critic r2 S5). These are the only waits the chart can add before the chance is
+   published;
 1. the whole stage, reading included, runs under one guard before the file is made, and hands
    the file its nights as data;
 2. each district's night is built and checked alone with the contract's own check functions: one
@@ -1905,24 +1923,63 @@ other days cost nothing. All of it is free public data.
 4. the chart's own lines and health note, and all of shadow, run under their own guard: a failure
    there says `invalid (<type>)` and the pass goes on.
 
-The pass says `chart: withheld, <code>` and keeps it in `state.chart_health`: `nbm_stale`,
-`nbm_unreadable`, `nbm_slow` (the budget ran out), `grid`, `size` (published at `NO_NIGHTS` or below) and `invalid (<check>)` with
-counts (`invalid (least_falls) x3`, `invalid (RuntimeError)`, `invalid (night_at_age)`). Every
-chance, why line and base is byte for byte the file with the chart off
-(`tests/predict/test_night_guard.py`). On the phone, `data/night.ts` `nightOf` and the
+The pass says `chart: withheld, <code>` and keeps it in `state.chart_health`, with counts
+(`invalid (least_falls) x3`). Every chance, why line and base is byte for byte the file with the
+chart off (`tests/predict/test_night_guard.py`).
+
+| Code | When |
+|---|---|
+| `nbm_stale` | no cycle at most `serve.chart_nbm_max_age_minutes` (150) old has every file the pass needs posted |
+| `nbm_unreadable` | a listing, `.idx` or range read failed (after its two tries), or an `.idx` holds no one matching line |
+| `nbm_slow` | the reads' budget ran out: 60 s in shadow, `serve.chart_hold_seconds` (15 s) with `on`, a read the deadline ended included |
+| `grid` | a message is off NBM's grid |
+| `size` | the pass published at `NO_NIGHTS` or below |
+| `invalid (<check>)` | a night or the file failed a contract check (`least_falls`, `night_at_age`, ...), or the chart code raised (`RuntimeError`, ...) |
+
+On the phone, `data/night.ts` `nightOf` and the
 `forecast-detail` call around it are total, and `parsePredictions` never looks at `night` or
 `night_at` (a malformed `night_at` reads as no night): a bad night or a bug there is no chart,
-never a hidden chance, status or district (`web/src/data/tests/night-isolation.test.ts`).
+never a hidden chance, status or district (`web/src/data/tests/night-isolation.test.ts`). The
+section also holds itself without the chart (`app/chance.ts` `ChanceView.bare`): the moment the
+chart stops showing, on the panel's ticking clock at its `until` or because it failed to draw,
+the timeline says when the district usually announces and the snow reason states its amount at
+once, never up to a read later; a chart that failed to draw is hidden until a new reading brings
+another, which draws in a new boundary (`ui/tests/chance-section.test.ts`; critic r3 S1, S2). A
+day with a night that no longer shows has no chart, never the forecaster's hourly chart in its
+place, and the night chart's heaviest-hours key never stands in for a timing reason's own hours
+(`app/tests/chance-night.test.ts`; critic r3 S3, S4).
 
 **Pass time.** Measured by critic r2 under the heavy lock on the s4 directory (the 2024-01-08
 23:07Z replay): the pass's file with the chart off builds in 12.2 to 12.8 s of CPU; with 2,318
 real nights 15.7 to 17.6 s; with a night on all 18,227 districts 19.2 to 20.0 s; each strict
 parse of a file with nights 2.6 to 3.4 s. So `shadow` adds about 16 to 20 s of CPU per gated pass,
 after the pass has published, plus its reads (cold 6.4 to 7.0 s for 34 requests and about 9 MB on
-live S3; warm 0.7 s); `on` adds 3 to 7 s before publishing, plus its reads. The loop counts its
+live S3; warm 0.7 s). `on` builds the file with nights before publishing instead of the
+chart-off file: 3 to 5 s more CPU on that replay, and 11 to 18 s more on the GC3 national replay
+below (52 to 62 s against 41 to 44 s, a local CPU under load), plus its reads (at most the 15 s
+hold). Before `on`, the lead measures the whole delay before an `on` pass publishes (reads,
+decode and the with-nights build) on the GC3 every-district replay and on the 2-vCPU runners
+(chart-shadow critic S4). The loop counts its
 next alert check from the pass's start, so this tail never moves an alert check, or the pass an
 alert change brings, later (`tests/predict/test_loop.py`; critic r2 S3). GC4 logs `read N ms,
-built N ms` on every gated pass, on the 2-vCPU runners.
+built N ms` on every gated pass, on the 2-vCPU runners, and the summary counts them.
+
+**The job's time with the shadow tail** (chart-shadow W4, Oct 31). The job's limit is 345 min and
+`predict run` runs 320 min; a pass that starts just before the end runs to its end, shadow tail
+included. Measured: the two latest runs on fa24c4d (41180029926, 41157674791) took 321.1 and
+321.4 min in all: 46 and 61 s before `predict run` (the learning step 37 and 46 s, its limit 5 min),
+the run step 320.07 and 320.05 min, 18 s after it (the evidence steps' limits 2 and 1 min); a grid
+pass starts at :07:00 or :37:00 and its commit lands on the live host 14 to 34 s later. On the
+GC3 national replay (the s4 directory with every district on a warning and its record days, the
+2024-01-08 23:07Z nights; a local CPU under load from other work), the published chart-off file
+takes 41 to 44 s of CPU, the in-memory file with the replay's 2,318 nights 52 to 56 s, with a
+night on every district 57 to 62 s, and an injected pass's check 39 to 43 s. So the last pass ends
+at most about 1.3 min (publishing: the GC3 day's 44 s chart-off build plus the 34 s the slowest
+commit landed after its pass started; a light pass publishes in under 1 min) plus 2.1 min (60 s
+of reads, a 62 s build) after the 320 min, and the job at most 5.4 + 320 + 3.4 + 3.3 = 332.1 min
+with every step at its limit (12.9 min to spare), about 324 min as measured (21 min to spare).
+Nothing needed shortening. These are local CPU times, not a runner's: the first runs after
+landing check the run step's real time.
 
 **Size.** The longest night is 124 bytes (13 bars, a 2-digit span; the spec's 99.9 example fails
 its own range check, so the longest valid one is 13 bars of 99.0). `Fit.NO_NIGHTS` follows
@@ -1953,9 +2010,63 @@ MB or more under the night cap (16,446,182) and 0.84 MB or more under the gzip b
 `shadow`: the pass publishes the off file first; only then does it read the blend and build the
 file with nights in memory through the same guard and ladder, and report its nights, cycle, age,
 bytes, withheld codes and the stage's time ("would publish it with no ..." when it steps down), so
-shadow never delays a chance. `on`: it publishes the file with nights. GC4's fault hooks (`serve.chart_fault: raise |
-stale_night_at | frozen_listing`, refused unless shadow) make the builder raise, set `night_at` a
-minute past the cap, or hide every NBM file posted within the cap and a minute (`nbm_stale`).
+shadow never delays a chance. `on`: it publishes the file with nights.
+
+**GC4's faults, in shadow only** (`serve.chart_fault`, refused unless `shadow`;
+`predict/chart_evidence.py`). They act on the in-memory build alone; the published file is the
+chart-off file whatever they do (`tests/predict/test_night_guard.py`, each fault through the
+budgeted blend reader):
+
+| Fault | What it does | The code it must give |
+|---|---|---|
+| `raise` | the night builder raises | `invalid (RuntimeError)` |
+| `stale_night_at` | `night_at` one minute past the cycle cap | `invalid (night_at_age)` |
+| `frozen_listing` | the listing hides every file posted within the cap and a minute | `nbm_stale` |
+| `bad_host` | every blend request goes to `noaa-nbm-grib2-pds.invalid`, which never resolves | `nbm_unreadable` |
+| `nbm_slow` | the reads run on a budget already spent (no request is made) | `nbm_slow` |
+
+A fixed fault injects on every pass. `rotate` (the setting since chart-shadow) injects them in
+that order on 1 grid slot in 6, by the pass's scheduled grid slot (the latest :07 or :37 at or
+before it, counted from the epoch; slot `k` injects `FAULTS[(k // 6) % 5]` when `k % 6 == 0`),
+so a pass run again in its slot picks the same fault, each fault comes back every 15 hours (3
+or 4 times in 48 hours, 9 hours later in the day each day, so a calm hour does not hold a fault
+for good), and an event pass never injects. A slot injects once: a run's first pass counts as a
+grid pass wherever it starts, and one that lands in a slot the run before already injected (the
+records in the state say so) injects nothing, so at most 1 grid pass in 6 injects (chart-shadow
+critic S1). `nbm_slow` joined the four the spec names so the `on` hold's code is seen on the
+runners too (critic S5); it costs no request. A pass that injects one and opens the gate builds
+the file with nights in memory whatever its nights, and checks in the pass that it has no
+`night` and the published file's bytes ("fault bad_host: no night, the published bytes").
+`stale_night_at` moves the nights' `night_at`, so it acts only on a gated pass that built a
+night: one with none gives no code and counts apart, as `no_night`.
+
+**The evidence, on the public host** (W3). Each shadow pass adds a record to the state's last 48
+hours (`state.chart_shadow`: its time, fault, whether the gate opened, the cycle's age, its codes,
+its nights, and its read, build and whole-tail times), and each upload puts their summary beside
+the file in the same commit (`v1/predictions/chart-shadow.json`; one tree, so no GitHub request
+more; never the predictions file itself, and only in shadow): passes, how many opened the gate
+and how many injected; the cycle's age at the clean passes (min, p50, p95, max); the clean
+passes' withheld codes (passes per code); the shadow tail's whole, build and read times (p50,
+p95, max); and per fault `injected`, the passes it acted on (its slot came with the gate open,
+and for `stale_night_at` a night was built), `gate_shut` (its slots with the gate shut, which ran
+nothing), `no_night` (`stale_night_at`'s gated passes with no night), how many injected passes
+gave its code (`with_expected_code`) and left the with-nights file with no night and the
+published bytes (`clean_chances`), `not_clean` (every gated pass of it whose in-pass check
+failed: it must stay 0), and the codes it gave. Counts and codes only: no name, district or
+text. The summary lags the shadow pass by one upload (the shadow tail runs after its pass
+published). One plain GET reads it, with no GitHub API:
+`curl -s https://viaate.github.io/snowlight-live/v1/predictions/chart-shadow.json`.
+
+**When GC4 is met.** The lead judges it on `faults`, never on `passes`: for every fault,
+`injected` is 1 or more and `with_expected_code` and `clean_chances` both equal it, and
+`not_clean` is 0 for every fault. A fault's slot only acts when the gate is open (a snow-bearing
+class in a district that can chart, in its night window), so a calm 48 hours (early November, a
+Friday and Saturday) can leave a fault at `injected: 0` with only `gate_shut`; then shadow runs
+on until every fault has met it, and the 48 h window is read again then (its records keep the
+last 48 hours, so the lead reads it while the evidence is in the window, or notes the counts as
+they come). The file is written only in shadow: once the chart leaves shadow it keeps its last
+counts and `mode: shadow`, dated by its `generated_at`, and the lead removes it from the live
+host when turning the chart on.
 
 **GC1, the truth gate.** `snowlight predict night-replay --site-data <directory> --out <dir>
 <UTC moments>` makes the file a pass would have made at past moments (the NBM cycles as S3 listed
@@ -1972,11 +2083,17 @@ bar, range end, mode and heaviest span is the rule's exactly, and, both ways, th
 district on a night day carries a night exactly when its 50% value reaches 1 in. 100%, or nothing
 ships.
 
-**Before `on`** (the lead): the 48 h shadow review and the four GC4 injections, the owner's look
-at real shadow screenshots (GC5), and O7 (two NOAA forecasts on one panel: the chart is the blend,
+**Before `on`** (the lead): the 48 h shadow review and the GC4 faults (both read from the
+summary above, in shadow with `rotate`, by the rule in "When GC4 is met"), the whole delay before
+an `on` pass publishes measured on the GC3 every-district replay and the runners (Pass time),
+the owner's look at real shadow screenshots (GC5),
+and O7 (two NOAA forecasts on one panel: the chart is the blend,
 the reasons the forecaster's grid). O7 includes the words: the chart says "From the 7 PM hourly
 forecast" while the snow reason says "The 7:19 PM forecast ...", two forecasts from two products a
 few minutes apart that print the same range in 0.7 to 33% of districts; the copy rules forbid
 "model" and naming a source, so the lead and owner either accept that wording or pick a
-lint-clean name that tells them apart (critic r1 S4). The area (ZIP) panel carries no night chart
+lint-clean name that tells them apart (critic r1 S4). Turning it on is one change of two lines
+in `config/predict.yaml`: `chart: "on"` AND `chart_fault: none`. Config refuses any fault unless
+the chart is in shadow, so `on` with `rotate` left in would stop predict loading its config
+(`tests/predict/test_night_guard.py` loads the committed file). The area (ZIP) panel carries no night chart
 (the spec leaves it out); only a district's own panel does.

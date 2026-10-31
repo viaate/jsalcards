@@ -1633,9 +1633,44 @@ const DES_MOINES_9PM = {
   first: '10\u00a0PM',
 } as const;
 
+const SHAWNEE_MISSION_5PM = {
+  // 2025-01-05T2307 (chart-shadow GC5 replay, night-check 0 failures): district 6068, cycle
+  // 2025-01-05T22:00:00Z, 5:07 PM CT. The replays of 6:07 PM and 9:07 PM carry no night for it.
+  name: 'shawnee-mission-5pm-2025-01-05',
+  school: REAL_SCHOOLS.shawneeMission,
+  zone: 'America/Chicago',
+  now: '2025-01-05T23:07:00Z',
+  nightAt: '2025-01-05T22:00:00Z',
+  night: {
+    least: [0.3, 0.5, 0.7, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8],
+    low: 0.8,
+    high: 1.9,
+    heavy: [0, 3],
+  },
+  days: ['2025-01-05', '2025-01-06'],
+  on: 1,
+  words: '0.8 to 1.9\u00a0in by 7\u00a0AM',
+  first: '6\u00a0PM',
+} as const;
+
+/**
+ * A calm district on a storm night (GC5): Beach Park CCSD 3 at 8:07 PM CT on Sunday 2026-01-25
+ * (02:07Z on the 26th), when the GC1 replay (2026-01-26T0207, gate open for the East's storm)
+ * gives it no night. Scenes are named by the local evening, never the UTC date.
+ */
+const CALM_BEACH_PARK = {
+  name: 'calm-beach-park-8pm-2026-01-25-night',
+  school: REAL_SCHOOLS.beachPark,
+  zone: 'America/Chicago',
+  now: '2026-01-26T02:07:00Z',
+  days: ['2026-01-25', '2026-01-26'],
+  on: 1,
+} as const;
+
 const REAL_NIGHTS: readonly RealNight[] = [
   { ...BOSTON_9PM, name: 'boston-9pm' },
   { ...DES_MOINES_9PM, name: 'des-moines-9pm' },
+  SHAWNEE_MISSION_5PM,
   {
     // 2024-01-09T0307: district 6068, cycle 2024-01-09T02:00:00Z
     name: 'shawnee-mission-9pm',
@@ -1734,7 +1769,11 @@ function realDetails(school: RealSchool): string {
   return JSON.stringify({ ...value, rows });
 }
 
-function realPredictions(scene: RealNight): string {
+/** What a scene's file needs: its moment, days and zone, and its night when it has one. */
+type SceneFile = Pick<RealNight, 'now' | 'days' | 'zone' | 'on' | 'announces'> &
+  Partial<Pick<RealNight, 'night' | 'nightAt'>>;
+
+function realPredictions(scene: SceneFile): string {
   const day = (on: boolean) =>
     on
       ? {
@@ -1742,7 +1781,7 @@ function realPredictions(scene: RealNight): string {
           p_no_school: 0.64,
           p_delay: 0.18,
           reasons: [0],
-          night: scene.night,
+          ...(scene.night === undefined ? {} : { night: scene.night }),
           ...(scene.announces === undefined ? {} : { announces_at: scene.announces }),
           why: {
             base: {
@@ -1761,7 +1800,7 @@ function realPredictions(scene: RealNight): string {
     generated_at: scene.now,
     directory: STAMP,
     days: scene.days,
-    night_at: scene.nightAt,
+    ...(scene.nightAt === undefined ? {} : { night_at: scene.nightAt }),
     districts: [
       {
         district: 1,
@@ -4741,6 +4780,86 @@ test.describe('with data staged', () => {
       await context.close();
     }
   });
+  test('the GC5 owner pictures: Boston, Des Moines and Shawnee Mission on their real nights, and a calm district, every made-up fact blanked', async ({
+    browser,
+  }) => {
+    // Only with SNOWLIGHT_OWNER_SHOTS (a folder): the lead's pictures for the owner, on the
+    // default theme and the light one. The bars, range, span and forecast time are the GC1
+    // replays' own; the chance, its moves, its delay and its sum are made up for the scene and
+    // blanked, as is any usual announcement (none of these scenes has one).
+    const folder = process.env.SNOWLIGHT_OWNER_SHOTS ?? '';
+    test.skip(folder === '', 'SNOWLIGHT_OWNER_SHOTS is not set');
+    test.setTimeout(600_000);
+    const scenes = [
+      { ...BOSTON_9PM, name: 'boston-9pm-2026-01-25-night' },
+      { ...DES_MOINES_9PM, name: 'des-moines-9pm-2024-01-08-night' },
+      SHAWNEE_MISSION_5PM,
+      CALM_BEACH_PARK,
+    ];
+    for (const theme of ['midnight', 'daylight']) {
+      for (const phone of [true, false]) {
+        for (const scene of scenes) {
+          const now = new Date(new Date(scene.now).getTime() + 5 * 60_000);
+          const context = await browser.newContext({
+            viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 900 },
+            ...(phone ? { deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}),
+            timezoneId: scene.zone,
+            serviceWorkers: 'block',
+          });
+          const page = await context.newPage();
+          if (theme !== 'midnight') {
+            await page.addInitScript((id) => {
+              localStorage.setItem('snowlight:theme', JSON.stringify({ id }));
+            }, theme);
+          }
+          await fixDate(page, now);
+          const { problems } = watch(page);
+          await page.route('**/data/predictions/latest.json*', (route) =>
+            route.fulfill({ contentType: 'application/json', body: realPredictions(scene) }),
+          );
+          await page.route('**/data/schools/details/0*.json*', (route) =>
+            route.fulfill({ contentType: 'application/json', body: realDetails(scene.school) }),
+          );
+          await page.route('**/data/live/closings.json*', (route) =>
+            route.fulfill({ contentType: 'application/json', body: quietClosings(now) }),
+          );
+          const panel = page.locator('aside.detail');
+          const section = panel.locator('.chance');
+          const chart = section.locator('.chart');
+          await page.goto(`${site}?school=${SHAWNEE_MISSION_EAST}`);
+          await expect(section.locator('.number')).toHaveText('64%', { timeout: 60_000 });
+          const label = `${scene.name} ${theme} ${phone ? 'phone' : 'desktop'}`;
+          await expect(panel.locator('h2'), label).toHaveText(scene.school.name);
+          const night = 'night' in scene;
+          await expect(chart, label).toHaveCount(night ? 1 : 0);
+          if ('words' in scene) {
+            await expect(chart.locator('.words.is-end'), label).toHaveText(scene.words);
+          }
+          await expect(section.locator('.words.is-announces'), label).toHaveCount(0);
+          const mask = [
+            section.locator('.hero'),
+            section.locator('.why'),
+            section.locator('.words.is-announces'),
+            section.locator('.line.is-announces'),
+          ];
+          const file = path.join(
+            folder,
+            `${scene.name}-${theme}-${phone ? 'phone' : 'desktop'}.png`,
+          );
+          if (phone) {
+            if ((await panel.getAttribute('data-detent')) !== 'full') {
+              await panel.locator('.grip').tap();
+              await expect(panel).toHaveAttribute('data-detent', 'full');
+            }
+            await section.locator(night ? '.chart' : '.why').scrollIntoViewIfNeeded();
+            await page.screenshot({ path: file, mask });
+          } else await panel.screenshot({ path: file, mask });
+          expect(problems, label).toEqual([]);
+          await context.close();
+        }
+      }
+    }
+  });
   test('the night chart on real nights: 13 bars at 5 PM with the last lit, tenths, Boston and Des Moines at 9 PM, and 3 AM, on a phone and a desktop', async ({
     browser,
   }) => {
@@ -4790,6 +4909,37 @@ test.describe('with data staged', () => {
         }
         await expect(chart.locator('.words.is-end'), label).toHaveText(scene.words);
         await expect(chart.locator('.time').first(), label).toHaveText(scene.first);
+        // The heaviest span's key and the foot rule on real numbers (critic r3 S8): the key
+        // names the span's own hours, and no time sits under the gray bar where it starts or
+        // under a lit bar but the last, so the key's hours are never contradicted.
+        const HOUR = 3_600_000;
+        const start = Math.ceil(new Date(scene.now).getTime() / HOUR) * HOUR;
+        if (scene.night.heavy === undefined) {
+          await expect(chart.locator('.key li'), label).toHaveCount(0);
+        } else {
+          const [first, last] = scene.night.heavy;
+          const zones = { school: scene.zone, viewer: scene.viewer ?? scene.zone };
+          await expect(chart.locator('.key li'), label).toHaveText([
+            chanceFormat.heaviestKey(
+              new Date(start + first * HOUR),
+              new Date(start + last * HOUR),
+              zones,
+            ),
+          ]);
+          const hourOf = (at: number): string =>
+            new Intl.DateTimeFormat('en-US', { hour: 'numeric', timeZone: scene.zone })
+              .format(new Date(at))
+              .replace(' ', '\u00a0');
+          const feet = (await chart.locator('.time').allTextContents()).map((time) =>
+            time.replace(/\s[A-Z]T$/u, ''),
+          );
+          expect(feet, label).toContain(hourOf(start + last * HOUR));
+          for (let bar = Math.max(first, 1); bar < last; bar += 1) {
+            expect(feet, `${label}: a time under bar ${String(bar)}`).not.toContain(
+              hourOf(start + bar * HOUR),
+            );
+          }
+        }
         // Seen from another zone, every time at the foot names the district's.
         if (scene.viewer !== undefined) {
           for (const time of await chart.locator('.time').allTextContents())
@@ -4809,18 +4959,27 @@ test.describe('with data staged', () => {
         }
         await expect(chart, label).not.toContainText('Now');
         await expect(chart, label).not.toContainText('uses');
+        // The header follows the scene's reading; under SwiftShader on a loaded machine it can
+        // take longer than the default 5 s (critic S6: one red run, green alone).
         await expect(page.locator('p.updated:not(.replay) time'), label).toHaveAttribute(
           'datetime',
           new Date(now.getTime() - 5 * 60_000).toISOString().replace('.000Z', 'Z'),
+          { timeout: 20_000 },
         );
         await expectChartFits(page, label);
         const sideways = await panel.evaluate((node) => node.scrollWidth - node.clientWidth);
         expect(sideways, label).toBeLessThanOrEqual(0);
         if (shots !== '') {
           const file = path.join(shots, `real-${scene.name}-${phone ? 'phone' : 'desktop'}.png`);
-          // The chance, its delay line and its sum are made up for the scene: blanked in the
-          // owner's picture, so no made-up number or record sits under a real district's name.
-          const mask = [section.locator('.hero'), section.locator('.why')];
+          // The chance, its delay line and its sum are made up for the scene, as is the usual
+          // announcement where a scene has one: blanked in the picture, so no made-up number,
+          // record or time sits under a real district's name (critic r3 S1, data lens).
+          const mask = [
+            section.locator('.hero'),
+            section.locator('.why'),
+            chart.locator('.words.is-announces'),
+            chart.locator('.line.is-announces'),
+          ];
           if (phone) {
             if ((await panel.getAttribute('data-detent')) !== 'full') {
               await panel.locator('.grip').tap();

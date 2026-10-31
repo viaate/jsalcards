@@ -243,6 +243,20 @@ export interface ChanceView {
   readonly countdown: (at: Date, now: Date) => string | null;
   /** The chart's words at the announcement's line as the clock reads `now`, or null without one. */
   readonly announces: (now: Date) => string | null;
+  /**
+   * The same section without its chart, for the panel to show the moment the chart stops
+   * showing: on its own clock at the chart's `until`, or when it fails to draw. Its timeline
+   * then says when the district usually announces, and the snow reason states its amount, at
+   * once, never a read later (critic r3 S1, S2). Null when there is no chart.
+   */
+  readonly bare: ChartParts | null;
+}
+
+/** The parts of the section that depend on the chart: what the chart says is left out of them. */
+export interface ChartParts {
+  readonly moments: readonly MomentView[];
+  readonly why: WhyView | null;
+  readonly announces: (now: Date) => string | null;
 }
 
 export interface ChanceInput {
@@ -905,8 +919,10 @@ export function chartTimes(input: {
  */
 export function chartView(detail: ForecastDetail, now: Date, zones: Zones): ChartView | null {
   const { hours, busesAt, announcesAt } = detail;
-  if (detail.night !== null && nightShows(detail.night, now)) {
-    return nightView(detail.night, announcesAt, now, zones);
+  if (detail.night !== null) {
+    // The blend's chart or none: never the forecaster's hours in its place once it stops
+    // showing, so one night never shows two charts from two forecasts (spec 4.8; critic r3 S3).
+    return nightShows(detail.night, now) ? nightView(detail.night, announcesAt, now, zones) : null;
   }
   if (hours === null || busesAt === null) return null;
   const zone = zones.school;
@@ -1444,47 +1460,66 @@ export function chanceView(input: ChanceInput): ChanceView | null {
   } catch {
     chart = null;
   }
-  // The usual announcement is said once: on the chart where it falls in the night drawn.
-  const announcement = chart?.key.find((row) => row.mark === 'announces');
-  let moments: MomentView[];
-  let listed: Said['neighbors'] = [];
-  let stood: Standing[] = [];
-  let stopped: Date[] = [];
-  try {
-    stood = standings(closings, day, named, names, now);
-    const posts = neighborPosts(stood, neighbors);
-    moments = momentsOf(detail, posts, nameOf, {
-      day,
-      district,
-      now,
-      zones,
-      announces: announcement === undefined,
-    });
-    listed = posts.filter((post) => nameOf(post.district) !== null);
-    stopped = detail.events.flatMap((event) =>
-      event.kind === 'snow_stopped' && event.at <= now ? [event.at] : [],
-    );
-  } catch {
-    moments = [];
-  }
-  const answer = detail.hours?.values.at(-1) ?? null;
-  const night = chart?.night === true ? detail.night : null;
-  const said: Said = {
-    snow:
-      night !== null
-        ? { low: night.range.low, high: night.range.high }
-        : chart?.kind === 'snow_total' && answer !== null
-          ? (detail.hours?.range ?? { low: answer, high: answer })
-          : null,
-    cold: chart?.kind === 'wind_chill' ? answer : null,
-    heavy: chart?.key.some((row) => row.mark === 'heavy') ?? false,
-    neighbors: listed,
-    stood,
-    stopped,
-    // A night chart ends at 7 AM, never at the buses: the "snow stops" words never claim them.
-    buses: chart !== null && night === null,
-    night: night !== null,
+
+  /** The timeline, the sum and the announcement's words, with `shown` the chart beside them. */
+  const partsWith = (shown: ChartView | null): ChartParts => {
+    // The usual announcement is said once: on the chart where it falls in the night drawn.
+    const announcement = shown?.key.find((row) => row.mark === 'announces');
+    let moments: MomentView[];
+    let listed: Said['neighbors'] = [];
+    let stood: Standing[] = [];
+    let stopped: Date[] = [];
+    try {
+      stood = standings(closings, day, named, names, now);
+      const posts = neighborPosts(stood, neighbors);
+      moments = momentsOf(detail, posts, nameOf, {
+        day,
+        district,
+        now,
+        zones,
+        announces: announcement === undefined,
+      });
+      listed = posts.filter((post) => nameOf(post.district) !== null);
+      stopped = detail.events.flatMap((event) =>
+        event.kind === 'snow_stopped' && event.at <= now ? [event.at] : [],
+      );
+    } catch {
+      moments = [];
+    }
+    const answer = detail.hours?.values.at(-1) ?? null;
+    const night = shown?.night === true ? detail.night : null;
+    const said: Said = {
+      snow:
+        night !== null
+          ? { low: night.range.low, high: night.range.high }
+          : shown?.kind === 'snow_total' && answer !== null
+            ? (detail.hours?.range ?? { low: answer, high: answer })
+            : null,
+      cold: shown?.kind === 'wind_chill' ? answer : null,
+      // A night chart's key names the blend's hours, never a forecaster's timing reason's
+      // (critic r3 S4): that line always states its own hours.
+      heavy: night === null && (shown?.key.some((row) => row.mark === 'heavy') ?? false),
+      neighbors: listed,
+      stood,
+      stopped,
+      // A night chart ends at 7 AM, never at the buses: the "snow stops" words never claim them.
+      buses: shown !== null && night === null,
+      night: night !== null,
+    };
+    return {
+      moments,
+      why: whyView({ detail, chance: noSchool, day, district, nameOf, now, zones, said, state }),
+      announces: (clock) => {
+        if (announcement?.mark !== 'announces') return null;
+        try {
+          return chanceFormat.announcesKey(announcement.at, zones, clock);
+        } catch {
+          return announcement.text;
+        }
+      },
+    };
   };
+  const parts = partsWith(chart);
   const moved = movedView(noSchool, detail.previous, now, zones);
   let delay: string | null = null;
   if (Math.round(forecast.delay * 100) >= 1) {
@@ -1501,9 +1536,9 @@ export function chanceView(input: ChanceInput): ChanceView | null {
     meaning,
     fewRecords: fewLocalRecords(forecast) ? chanceCopy.fewRecords : null,
     moved,
-    moments,
+    moments: parts.moments,
     chart,
-    why: whyView({ detail, chance: noSchool, day, district, nameOf, now, zones, said, state }),
+    why: parts.why,
     delay,
     countdown: (at, clock) => {
       try {
@@ -1512,13 +1547,7 @@ export function chanceView(input: ChanceInput): ChanceView | null {
         return null;
       }
     },
-    announces: (clock) => {
-      if (announcement?.mark !== 'announces') return null;
-      try {
-        return chanceFormat.announcesKey(announcement.at, zones, clock);
-      } catch {
-        return announcement.text;
-      }
-    },
+    announces: parts.announces,
+    bare: chart === null ? null : partsWith(null),
   };
 }

@@ -67,6 +67,9 @@ class Nights:
 
     kept: Mapping[tuple[date, int], NightSnow] = field(default_factory=dict)
     at: datetime | None = None
+    cycle: datetime | None = None
+    """The cycle the stage read, whether or not any night was kept (``at`` is None then, as
+    the file wants): the shadow evidence's age of the blend at the pass. Never in the file."""
 
     def get(self, day: date, index: int) -> NightSnow | None:
         """The district's night on ``day``, or None."""
@@ -174,7 +177,8 @@ def guarded_nights(
             dropped[check_name(error)] += 1
             continue
         kept[(candidate.day, candidate.index)] = night
-    return Nights(kept, values.at if kept else None), Withheld.invalid_counts(dropped)
+    found = Nights(kept, values.at if kept else None, values.at)
+    return found, Withheld.invalid_counts(dropped)
 
 
 def open_districts(

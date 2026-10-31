@@ -224,6 +224,36 @@ describe('the night chart', () => {
   });
 });
 
+describe('one night, one source (critic r3 S3, S4)', () => {
+  it('never falls back to the forecaster’s hours once the night chart stops showing', () => {
+    const both = detail({ hours: A_DETAIL.hours, busesAt: A_DETAIL.busesAt });
+    expect(chartView(both, NOW, HERE)?.night).toBe(true);
+    // Its first hour past: no chart at all, never the old hourly chart in its place.
+    expect(chartView(both, at('2026-01-13T05:00:00Z'), HERE)).toBeNull();
+    expect(chartView(both, new Date(CYCLE.getTime() + 196 * MINUTE), HERE)).toBeNull();
+    // The same hours with no night still draw as before.
+    expect(chartView({ ...both, night: null }, at('2026-01-13T05:00:00Z'), HERE)).not.toBeNull();
+  });
+
+  it('never lets the night chart’s key stand in for a timing reason’s own hours', () => {
+    const why: WhyDetail = {
+      base: WHY.base,
+      reasons: [
+        {
+          kind: 'timing',
+          points: 16,
+          start: at('2026-01-13T08:00:00Z'),
+          end: at('2026-01-13T11:00:00Z'),
+        },
+      ],
+    };
+    const view = chanceView(input({}, detail({ why, busesAt: at('2026-01-13T13:00:00Z') })));
+    expect(view?.chart?.night).toBe(true);
+    expect(view?.chart?.key.some((row) => row.mark === 'heavy')).toBe(true);
+    expect(view?.why?.lines[0]?.text).toMatch(/^The forecast has the heaviest snow 2 to 5/u);
+  });
+});
+
 describe('the usual announcement on the night chart', () => {
   // A chart of 4 to 7 AM (made at 3:30 AM), and a usual announcement of 5:30 AM.
   const late = night(

@@ -507,6 +507,7 @@ describe('what the section leaves out', () => {
       delay: null,
       countdown: view?.countdown,
       announces: view?.announces,
+      bare: null,
     });
   });
 

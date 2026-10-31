@@ -50,6 +50,19 @@
       clearInterval(timer);
     };
   });
+
+  /**
+   * The charts that failed to draw, each hidden until a new one comes (critic r3 S1): kept out
+   * of the reactive state, which would read their fields, and counted there instead.
+   */
+  const failedCharts = new WeakSet<object>();
+  let failures = $state(0);
+
+  function drawFailed(error: unknown, chart: object | null): void {
+    chartFailed(error);
+    if (chart !== null) failedCharts.add(chart);
+    failures += 1;
+  }
 </script>
 
 <!--
@@ -102,9 +115,16 @@
         <p class="left">{chance.left}</p>
       {/if}
     </section>
-    {#if chartShown(chance.chart, now)}
-      <!-- A chart bug is no chart: the number, its meaning and the schools still show. -->
-      <svelte:boundary onerror={chartFailed}>
+    {#if failures >= 0 && chartShown(chance.chart, now) && !failedCharts.has(chance.chart)}
+      <!--
+        A chart bug is no chart: the number, its meaning and the schools still show; a new
+        chart draws again in a new boundary (critic r3 S1).
+      -->
+      <svelte:boundary
+        onerror={(error) => {
+          drawFailed(error, chance.chart);
+        }}
+      >
         <div class="block">
           <ChanceChart chart={chance.chart} announces={chance.announces(new Date(now))} />
           {#if chance.chartOf !== null}

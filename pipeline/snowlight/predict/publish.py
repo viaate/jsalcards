@@ -220,6 +220,9 @@ class State:
     chart_health: dict[str, object] = field(default_factory=dict)
     """The last pass with the night chart not off: when, its mode, the nights it built, their
     NBM cycle, and what it withheld (``chart: withheld, <code>``)."""
+    chart_shadow: list[dict[str, object]] = field(default_factory=list)
+    """Each shadow pass of the last 48 hours (:func:`snowlight.predict.chart_evidence.record`):
+    counts and times only, summed into ``predictions/chart-shadow.json`` on the host."""
 
     def as_json(self) -> dict[str, object]:
         """For the state store."""
@@ -258,6 +261,8 @@ class State:
             found["tables"] = self.tables
         if self.chart_health:
             found["chart_health"] = self.chart_health
+        if self.chart_shadow:
+            found["chart_shadow"] = self.chart_shadow
         return found
 
     @classmethod
@@ -280,6 +285,7 @@ class State:
         evidence = value.get("evidence")
         tables = value.get("tables")
         chart = value.get("chart_health")
+        shadow = value.get("chart_shadow")
         return cls(
             digest=digest if isinstance(digest, str) else None,
             uploaded_at=datetime.fromisoformat(uploaded) if isinstance(uploaded, str) else None,
@@ -308,6 +314,9 @@ class State:
             if isinstance(tables, dict)
             else {},
             chart_health=dict(chart) if isinstance(chart, dict) else {},
+            chart_shadow=[dict(item) for item in shadow if isinstance(item, dict)]
+            if isinstance(shadow, list)
+            else [],
         )
 
 
@@ -357,16 +366,23 @@ def held(data: bytes | None) -> bool:
     return holds(data)
 
 
-def upload(host: Host, key: str, data: bytes) -> None:
+def beside(key: str, name: str) -> str:
+    """The key of file ``name`` in the folder of ``key`` (``v1/predictions/chart-shadow.json``)."""
+    return f"{key.rsplit('/', 1)[0]}/{name}"
+
+
+def upload(host: Host, key: str, data: bytes, *, extra: Mapping[str, bytes] | None = None) -> None:
     """Write the file, guarded by the hold (read in the very commit on GitHub), and read it
-    back.
+    back. ``extra``: files written in the same commit (the night chart's shadow summary), never
+    the predictions file itself.
 
     Raises:
         DarkError: the hold is set, or the read-back differs.
         PublishError: the host failed.
     """
+    files = {**(extra or {}), key: data}
     try:
-        guarded_write(host, {key: data}, WriteGuard(hold_key(key), held))
+        guarded_write(host, files, WriteGuard(hold_key(key), held))
     except GuardRefusedError as error:
         raise DarkError(Dark.HELD, hold_key(key)) from error
     if host.read(key) != data:

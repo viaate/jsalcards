@@ -2,10 +2,13 @@ import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { AreaView } from '../../app/area';
+import { chartView } from '../../app/chance';
 import type { SchoolView } from '../../app/school';
+import { A_DETAIL, A_NOW, ZONE } from '../../app/tests/chance-fixtures';
 import { copy } from '../../copy';
 import AreaPanel from '../AreaPanel.svelte';
 import DetailPanel from '../DetailPanel.svelte';
+import { rawProp } from './reactive-props.svelte';
 
 /** An area's view as app/area.ts makes one, made up for these tests. */
 const VIEW: AreaView = {
@@ -208,6 +211,61 @@ describe('AreaPanel', () => {
     expect(panel.querySelectorAll('button.school')).toHaveLength(3);
     expect(errors.mock.calls.flat().some((arg) => String(arg).includes('a chart bug'))).toBe(true);
     errors.mockRestore();
+  });
+
+  it('draws a later good chart after one fails to (critic r3 S1)', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    // jsdom lays nothing out; the chart measures its words with a ResizeObserver.
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe = vi.fn();
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+      },
+    );
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const good = chartView(A_DETAIL, A_NOW, { school: ZONE, viewer: ZONE });
+    if (good === null) throw new Error('no chart');
+    const broken = new Proxy(good, {
+      get(target, key): unknown {
+        if (key === 'until') return target.until;
+        throw new Error('a chart bug');
+      },
+    });
+    const chance = {
+      day: '2026-01-13',
+      number: '64',
+      meaning: 'Chance of no school Tuesday',
+      fewRecords: null,
+      why: [{ key: 'a', number: '64%', text: 'Test Village decides for 1 school here.' }],
+      left: null,
+      chart: broken,
+      chartOf: null,
+      announces: () => null,
+    };
+    const target = document.createElement('div');
+    document.body.append(target);
+    const box = rawProp('view', { ...VIEW, chance });
+    component = mount(AreaPanel, {
+      target,
+      props: {
+        get view(): AreaView {
+          return box.props.view;
+        },
+        onclose: vi.fn(),
+        onschool: vi.fn(),
+      },
+    });
+    flushSync();
+    expect(target.querySelector('figure')).toBeNull();
+    // A new reading's good chart, with no null between: drawn.
+    box.set({ ...VIEW, chance: { ...chance, chart: { ...good } } });
+    flushSync();
+    expect(target.querySelectorAll('figure')).toHaveLength(1);
+    errors.mockRestore();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it('opens a school from its row, and closes', () => {
