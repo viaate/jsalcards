@@ -25,7 +25,10 @@ the 5-minute grid, so a pass whose reads end sooner than the last one's still
 uploads). A refused pass
 uploads nothing, so the file ages and the page says "Updated" after 20 minutes; two
 refused passes in a row raise an alert (:attr:`PassReport.alert`). A refusal exits
-3, a host or encoding error 1, a publish or a healthy hold 0 (:class:`Exit`).
+3, a host or encoding error 1, a publish or a healthy hold 0 (:class:`Exit`). A live host
+that refuses for a rate limit refuses the pass (``host``, 3) with the time it may be asked
+again (:attr:`PassReport.retry_at`), and leaves everything else as it was
+(:meth:`LivePublisher.host_refused`).
 
 When the directory handshake finds the deployed content changed under a stamp a
 public file carries, every public file with that stamp is blanked at once
@@ -104,9 +107,12 @@ from snowlight.live.history import (
 from snowlight.live.merge import AdminStatus, Merged, OpenSignal, with_overrides
 from snowlight.live.publishers import (
     GuardRefusedError,
+    HostRefusal,
+    HostRefusedError,
     Publisher,
     PublishError,
     WriteGuard,
+    clock_text,
     guarded_write,
 )
 from snowlight.live.resolve import LiveDirectory
@@ -566,6 +572,9 @@ class PassReport:
     counts: Mapping[str, int] = field(default_factory=dict)
     edition: str = ""
     """The directory handshake's verdict this pass (set by the ingest)."""
+    retry_at: datetime | None = None
+    """The live host refused for a rate limit: it is asked again at this time (not in
+    :meth:`to_json`; the note says it)."""
 
     def to_json(self) -> dict[str, JSONValue]:
         return {
@@ -583,6 +592,35 @@ class PassReport:
 
 def _never(_school: int) -> bool:
     return False
+
+
+def rate_limited(error: PublishError) -> HostRefusal | None:
+    """The host's refusal when ``error`` is the live host refusing for a rate limit (it
+    named a time to ask again), else ``None``: every other error keeps its own rule."""
+    if isinstance(error, HostRefusedError) and error.refusal.until is not None:
+        return error.refusal
+    return None
+
+
+@dataclass(frozen=True, slots=True)
+class _GateMemory:
+    """What the gate keeps between passes (the spike hold, the last healthy share and the
+    refused streak) as it was before a pass's gate ran: a pass the live host refuses for a
+    rate limit puts it back, so that pass leaves the gate as if it never ran (a spike it
+    released is still pending, and the streak goes on from where it was)."""
+
+    spike: frozenset[tuple[int, str]] | None
+    previous_healthy_share: float | None
+    refused_streak: int
+
+    @classmethod
+    def of(cls, memory: "Memory") -> "_GateMemory":
+        return cls(memory.spike, memory.previous_healthy_share, memory.refused_streak)
+
+    def restore(self, memory: "Memory") -> None:
+        memory.spike = self.spike
+        memory.previous_healthy_share = self.previous_healthy_share
+        memory.refused_streak = self.refused_streak
 
 
 def _text(value: object) -> str | None:
@@ -772,7 +810,13 @@ class LivePublisher:
             try:
                 remote = _read_closings(self.host, prefix)
             except PublishError as error:
-                LOG.warning("read back %s: %s", prefix, error)
+                # a call not sent while the host refuses was logged once, when it refused
+                LOG.log(
+                    logging.INFO if rate_limited(error) else logging.WARNING,
+                    "read back %s: %s",
+                    prefix,
+                    error,
+                )
                 complete = False
                 continue
             if remote is not None and remote.directory not in found:
@@ -804,7 +848,7 @@ class LivePublisher:
         body = json.dumps([stamp.to_json_value(), self.directory.edition], default=str)
         return hashlib.sha256(body.encode()).hexdigest()[:32]
 
-    def publish(  # noqa: PLR0911, PLR0913 - one pass: refusals, holds, skips and uploads
+    def publish(  # noqa: PLR0911, PLR0912, PLR0913 - one pass: refusals, holds, skips, uploads
         self,
         merged: Merged,
         *,
@@ -831,6 +875,8 @@ class LivePublisher:
             if edition.ok and edition.stamp is not None:
                 self._seed(edition.stamp, now)
         except PublishError as error:
+            if (refusal := rate_limited(error)) is not None:
+                return self.host_refused(refusal, now)
             LOG.error("read back: %s", error)
             return PassReport(Exit.ERROR, generated_at, note=f"read back: {error}")
         if held is not None:
@@ -861,6 +907,7 @@ class LivePublisher:
                     (closing.school, closing.day.isoformat()) for closing in merged.closings
                 )
         memory = self.memory
+        before = _GateMemory.of(memory)
         new_rows = lit_now - memory.lit
         alert_share = (
             sum(alerted(school) for school, _ in new_rows) / len(new_rows) if new_rows else 1.0
@@ -902,7 +949,9 @@ class LivePublisher:
                 and admin.digest != memory.last_admin
                 and self.mode is not Mode.OFF
             ):
-                return self._admin_only(admin, stamp=stamp, now=now, last=last, codes=codes)
+                return self._admin_only(
+                    admin, stamp=stamp, now=now, last=last, codes=codes, before=before
+                )
             return self._refuse(codes, generated_at, counts, alert=edition.alert)
         memory.refused_streak = 0
         if self.mode is Mode.OFF:
@@ -932,9 +981,10 @@ class LivePublisher:
             provenance=merged.provenance,
             counts=counts,
             admin=None if admin is None else admin.digest,
+            before=before,
         )
 
-    def _admin_only(
+    def _admin_only(  # noqa: PLR0913 - the gate's verdict and its memory before it
         self,
         admin: AdminPart,
         *,
@@ -942,6 +992,7 @@ class LivePublisher:
         now: datetime,
         last: datetime | None,
         codes: tuple[str, ...],
+        before: _GateMemory,
     ) -> PassReport:
         """The gate refused for health or the spike hold alone, and the admin's statuses
         changed: publish the last published list rows unchanged with the new statuses on
@@ -953,6 +1004,8 @@ class LivePublisher:
         try:
             remote = self.read_back()
         except PublishError as error:
+            if (refusal := rate_limited(error)) is not None:
+                return self.host_refused(refusal, now, before=before)
             LOG.error("read back: %s", error)
             return PassReport(Exit.ERROR, _whole(now), note=f"read back: {error}")
         ids = {school.index: nces_id for nces_id, school in self.directory.schools.items()}
@@ -1035,7 +1088,10 @@ class LivePublisher:
             provenance=merged.provenance,
             counts=counts,
             admin=admin.digest,
+            before=before,
         )
+        if report.retry_at is not None:
+            return report  # the host refused: nothing was written (the gate as it was)
         self.memory.refused_streak += 1  # the lists stay refused: the alert still counts
         self.memory.save(self.memory_path)
         return replace(
@@ -1069,6 +1125,7 @@ class LivePublisher:
                 else f"the blank failed ({report.note or 'refused'})"
             ),
             edition=edition.state.value,
+            retry_at=report.retry_at,
         )
 
     def _unknown_hold(self, now: datetime, counts: Mapping[str, int]) -> PassReport:
@@ -1344,6 +1401,16 @@ class LivePublisher:
                 self._message(f"live {' '.join(prefixes)} blank {stamp_text} run {run}")
             self.host.write(files)
         except PublishError as error:
+            if (refusal := rate_limited(error)) is not None:
+                LOG.info("blank: %s", error)
+                return PassReport(
+                    Exit.REFUSED,
+                    generated_at,
+                    refusals=(Refusal.HOST.value,),
+                    blank=True,
+                    note=f"blank: {error}",
+                    retry_at=refusal.until,
+                )
             LOG.error("blank: %s", error)
             return PassReport(Exit.ERROR, generated_at, blank=True, note=f"blank: {error}")
         if mine is not None and f"{mine}/{CLOSINGS}" in files:
@@ -1370,6 +1437,7 @@ class LivePublisher:
         provenance: Sequence[Mapping[str, JSONValue]],
         counts: Mapping[str, int],
         admin: str | None = None,
+        before: _GateMemory | None = None,
     ) -> PassReport:
         changes = self.changes.diff(
             generated_at, shown, past=school_past(self.directory, generated_at)
@@ -1392,6 +1460,11 @@ class LivePublisher:
             LOG.warning("upload refused: the hold was set while the pass ran")
             return self._held_late(generated_at, "the hold was set while the pass ran")
         except PublishError as error:
+            if (refusal := rate_limited(error)) is not None and not error.written:
+                # nothing was written: memory, the change log and the day files stay as they
+                # were, so the first upload after the wait carries every change
+                report = self.host_refused(refusal, generated_at, before=before)
+                return replace(report, counts=counts)
             LOG.error("upload: %s", error)
             if self.key(CLOSINGS) in error.written:
                 # The map changed: the change log and the memory keep what it shows. The
@@ -1439,6 +1512,28 @@ class LivePublisher:
             uploaded=tuple(keyed),
             counts={**counts, "changes": len(changes)},
         )
+
+    def host_refused(
+        self, refusal: HostRefusal, now: datetime, *, before: _GateMemory | None = None
+    ) -> PassReport:
+        """The live host refused for a rate limit: the pass is refused (``host``, exit 3,
+        counting toward the alert) with the time it may be asked again, and nothing else is
+        touched (what is lit, the change log, the spike hold and the day files), so the
+        first upload after the wait carries every change. A refusal after the gate ran
+        (``before``: the gate's memory as the pass found it) puts the gate's memory back
+        first, so a spike the pass released is still pending and the refused streak goes on
+        from its value before the pass."""
+        if before is not None:
+            before.restore(self.memory)
+        until = refusal.until
+        note = (
+            f"host refused until {clock_text(until)} ({refusal.reason})"
+            if until is not None
+            else f"host refused ({refusal.reason})"
+        )
+        LOG.info("%s", note)
+        report = self._refuse((Refusal.HOST.value,), _whole(now), {})
+        return replace(report, retry_at=until, note=note)
 
     def _message(self, text: str | None) -> None:
         """Set the host's commit message for the next write (a host that takes one)."""

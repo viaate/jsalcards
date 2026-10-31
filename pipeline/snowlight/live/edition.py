@@ -212,12 +212,16 @@ class EditionWatch:
         self,
         now: datetime,
         *,
-        published: Collection[DirectoryStamp],
+        published: Collection[DirectoryStamp] = (),
         complete: bool = True,
+        stamps: Callable[[], tuple[Collection[DirectoryStamp], bool]] | None = None,
     ) -> EditionVerdict:
         """The verdict at ``now``; ``published`` holds the stamps a public file carries (read
         back from the host, and remembered); ``complete`` is false when a public file could
-        not be read back (other content then blanks under the deployed stamp anyway)."""
+        not be read back (other content then blanks under the deployed stamp anyway).
+        ``stamps``, when given, gives both instead, and is called only when other content
+        is deployed (the only verdict that looks at them): an equal deploy reads no public
+        file."""
         try:
             deployed = deployed_edition(self.source)
         except UnverifiedDeployError as error:
@@ -244,6 +248,8 @@ class EditionWatch:
             )
         else:
             stamp = deployed.stamp()
+            if stamps is not None:
+                published, complete = stamps()
             verdict = EditionVerdict(
                 EditionState.DIFFERENT,
                 now,

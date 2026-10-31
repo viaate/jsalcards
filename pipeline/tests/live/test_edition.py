@@ -185,3 +185,19 @@ def test_the_verdict_names_the_deployed_stamp() -> None:
     assert watch.check(NOW, published=()).deployed == DirectoryStamp(
         generated_on=date(2026, 10, 14), schools=11, districts=3
     )
+
+
+def test_the_public_stamps_are_asked_only_when_other_content_is_deployed() -> None:
+    asked: list[int] = []
+
+    def stamps() -> tuple[tuple[DirectoryStamp, ...], bool]:
+        asked.append(1)
+        return (OWN.stamp(),), True
+
+    for answer in (OWN, None, DeployedEditionError("GitHub API: HTTP 502")):
+        EditionWatch(own=OWN, source=Source([answer])).check(NOW, stamps=stamps)
+    assert asked == []
+    deployed = edition(digest="b")
+    verdict = EditionWatch(own=OWN, source=Source([deployed])).check(NOW, stamps=stamps)
+    assert asked == [1]
+    assert verdict.blank == deployed.stamp()

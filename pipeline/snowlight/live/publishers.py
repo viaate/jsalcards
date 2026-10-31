@@ -24,15 +24,33 @@ when one file the host holds says so (the hold ``snowlight live blank`` sets). T
 GitHub publisher reads that file in the very commit it builds on, so the check and the
 fast forward are one step; the folder and the bucket read it just before writing.
 
-None of them logs a file's contents; errors name the key and the HTTP status only.
+None of them logs a file's contents; errors name the key, the HTTP status and GitHub's
+reason (a fixed code, the rate-limit counts and reset, the retry wait, the request id), never a
+response body.
+
+**When GitHub refuses** (:func:`refusal_of`, :class:`HostRefusal`): every error answer but a
+contents 404 (no such file) and the PATCH 422 (another writer moved the branch first) logs one
+warning with GitHub's reason, and a rate limit (primary or secondary) sets a time before which
+:class:`GitHubPublisher` sends nothing at all: every call raises :class:`HostRefusedError` at
+once, whoever makes it (the pass, an edition blank, the alerts, the overrides, predict). The
+token's 5,000 calls an hour are shared with everything acting as its user, so a reader that
+keeps calling while refused only spends what is left. The first answer after that clears it.
+
+**Fewer calls**: a read at the branch sends ``If-None-Match`` with the ETag it kept (GitHub
+answers 304, which costs nothing, while the file is unchanged); a read at a commit sha is
+never sent twice; each file written is kept with its git blob sha, which is GitHub's ETag;
+and a commit on the head this process made itself needs neither the head commit nor its
+guard read (both are known).
 """
 
 import hashlib
 import hmac
+import logging
 import re
+from collections import OrderedDict
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Final, Protocol
@@ -54,6 +72,7 @@ CACHE_CONTROL: Final = "public, max-age=15, stale-while-revalidate=15"
 """Spec 9.1: the edge and the browser keep a copy at most 15 s, then revalidate."""
 EMPTY_SHA256: Final = hashlib.sha256(b"").hexdigest()
 TIMEOUT: Final = httpx.Timeout(20.0)
+LOG: Final = logging.getLogger(__name__)
 
 
 class PublishError(RuntimeError):
@@ -78,6 +97,265 @@ class GuardRefusedError(PublishError):
 
 class MovedError(PublishError):
     """Another writer moved the branch first (not a fast forward): nothing was written."""
+
+
+# --- what GitHub says when it refuses -------------------------------------------------------
+
+BACKOFF_FIRST: Final = timedelta(seconds=60)
+"""A secondary rate limit that names no wait: wait this long, doubling on each repeat ..."""
+BACKOFF_MAX: Final = timedelta(minutes=15)
+"""... up to this."""
+REFUSED_MIN: Final = timedelta(seconds=10)
+REFUSED_MAX: Final = timedelta(minutes=61)
+"""A refusal's wait is never shorter or longer than these after the answer (a reset an
+hour ahead, plus a little skew)."""
+RATE_LIMITS: Final = frozenset({"primary_rate_limit", "secondary_rate_limit"})
+_PHRASES: Final = (
+    ("secondary rate limit", "secondary_rate_limit"),
+    ("abuse detection", "secondary_rate_limit"),  # GitHub's older words for it
+    ("rate limit", "primary_rate_limit"),
+    ("resource not accessible", "no_permission"),
+    ("bad credentials", "bad_credentials"),
+)
+"""Fixed phrases of the body's ``message`` that name the reason (the words are never kept)."""
+
+
+@dataclass(frozen=True, slots=True)
+class HostRate:
+    """GitHub's ``x-ratelimit-*`` headers of one answer (counts and the reset only)."""
+
+    limit: int | None
+    remaining: int | None
+    used: int | None
+    resource: str | None
+    reset: datetime | None
+    """When the window resets, on GitHub's clock."""
+
+    def text(self) -> str:
+        """``0 of 5000 left, used 5000, core, resets 17:31:15Z``."""
+        parts = [
+            f"{_count(self.remaining)} of {_count(self.limit)} left",
+            f"used {_count(self.used)}",
+            self.resource or "-",
+        ]
+        if self.reset is not None:
+            parts.append(f"resets {clock_text(self.reset)}")
+        return ", ".join(parts)
+
+
+@dataclass(frozen=True, slots=True)
+class HostRefusal:
+    """Why GitHub refused one call: a fixed code, counts, times and the request id only
+    (never the body's words)."""
+
+    status: int
+    reason: str
+    """``primary_rate_limit``, ``secondary_rate_limit``, ``bad_credentials``,
+    ``no_permission``, ``forbidden``, ``not_found``, ``conflict``, ``unprocessable``,
+    ``server`` or ``other``."""
+    rate: HostRate | None = None
+    retry_after: float | None = None
+    """``retry-after``, in seconds."""
+    request_id: str | None = None
+    """``x-github-request-id``."""
+    needs: str | None = None
+    """``x-accepted-github-permissions`` (``contents=write``, say)."""
+    at: datetime | None = None
+    """The answer's ``Date``."""
+    until: datetime | None = None
+    """On the local clock: nothing is sent before it (``None``: no rate limit, no wait)."""
+    backoff: timedelta | None = None
+    """The wait a secondary limit that named none was given (it doubles on each repeat)."""
+
+    def text(self) -> str:
+        """``primary_rate_limit; 0 of 5000 left, used 5000, core, resets 17:31:15Z; request
+        40BC:27D4F6``."""
+        parts = [self.reason]
+        if self.rate is not None and (self.rate.limit is not None or self.rate.reset):
+            parts.append(self.rate.text())
+        if self.retry_after is not None:
+            parts.append(f"retry after {self.retry_after:g} s")
+        if self.needs:
+            parts.append(f"needs {self.needs}")
+        if self.request_id:
+            parts.append(f"request {self.request_id}")
+        return "; ".join(parts)
+
+
+class HostRefusedError(PublishError):
+    """GitHub refused a call (or a call was not sent while it refuses): the error's text is
+    the step, the status and :meth:`HostRefusal.text`."""
+
+    def __init__(self, message: str, refusal: HostRefusal) -> None:
+        super().__init__(message)
+        self.refusal = refusal
+
+    @property
+    def rate_limited(self) -> bool:
+        """The host asked to be left alone until :attr:`HostRefusal.until`."""
+        return self.refusal.until is not None
+
+
+def _count(value: int | None) -> str:
+    return "-" if value is None else str(value)
+
+
+def clock_text(moment: datetime) -> str:
+    """``17:31:15Z``."""
+    return moment.astimezone(UTC).strftime("%H:%M:%SZ")
+
+
+def _int(text: str | None) -> int | None:
+    if text is None:
+        return None
+    try:
+        return int(text.strip())
+    except ValueError:
+        return None
+
+
+def rate_of(response: httpx.Response) -> HostRate | None:
+    """The rate headers of an answer, or ``None`` when it has none."""
+    headers = response.headers
+    if not any(name in headers for name in ("x-ratelimit-limit", "x-ratelimit-remaining")):
+        return None
+    reset = _int(headers.get("x-ratelimit-reset"))
+    return HostRate(
+        limit=_int(headers.get("x-ratelimit-limit")),
+        remaining=_int(headers.get("x-ratelimit-remaining")),
+        used=_int(headers.get("x-ratelimit-used")),
+        resource=_token_text(headers.get("x-ratelimit-resource")),
+        reset=None if reset is None else datetime.fromtimestamp(reset, UTC),
+    )
+
+
+def _token_text(text: str | None, size: int = 64) -> str | None:
+    """A header value that is a code or an id: letters, digits and ``:=,._-`` only."""
+    if text is None:
+        return None
+    kept = re.sub(r"[^A-Za-z0-9:=,._-]", "", text)[:size]
+    return kept or None
+
+
+def _retry_after(text: str | None, at: datetime | None) -> float | None:
+    """``retry-after`` in seconds (it may also be an HTTP date)."""
+    if text is None:
+        return None
+    try:
+        return max(0.0, float(text.strip()))
+    except ValueError:
+        pass
+    try:
+        moment = parsedate_to_datetime(text)
+    except (TypeError, ValueError):
+        return None
+    if moment.tzinfo is None or at is None:
+        return None
+    return max(0.0, (moment - at).total_seconds())
+
+
+def _message(response: httpx.Response) -> str:
+    """The body's ``message``, lower case, to match fixed phrases against (never kept)."""
+    try:
+        body = response.json()
+    except ValueError:
+        return ""
+    message = body.get("message") if isinstance(body, dict) else None
+    return message.lower() if isinstance(message, str) else ""
+
+
+def _phrase(response: httpx.Response) -> str | None:
+    """The reason the body's ``message`` names by one of the fixed phrases (the words
+    themselves are dropped here)."""
+    lowered = _message(response)
+    return next((code for phrase, code in _PHRASES if phrase in lowered), None)
+
+
+def _no_commit(response: httpx.Response) -> bool:
+    """A contents 404 that says GitHub does not know the commit asked for (a replica behind
+    a fresh head), not that the file is missing in it."""
+    return "no commit found" in _message(response)
+
+
+_FIXED: Final[Mapping[int, str]] = {
+    401: "bad_credentials",
+    403: "forbidden",
+    404: "not_found",
+    409: "conflict",
+    422: "unprocessable",
+    429: "secondary_rate_limit",
+}
+
+
+def _reason(status: int, phrase: str | None, rate: HostRate | None, retry: float | None) -> str:
+    """The fixed code of an error answer: a 403 or a 429 is a rate limit when no call is
+    left, the body says so, or it names a wait (a 429 always is)."""
+    forbidden = status == httpx.codes.FORBIDDEN
+    if forbidden or status == httpx.codes.TOO_MANY_REQUESTS:
+        if rate is not None and rate.remaining == 0:
+            return "primary_rate_limit"
+        if phrase in RATE_LIMITS:
+            return str(phrase)
+        if retry is not None:
+            return "secondary_rate_limit"
+    if phrase == "bad_credentials" or (forbidden and phrase == "no_permission"):
+        return phrase
+    if status >= httpx.codes.INTERNAL_SERVER_ERROR:
+        return "server"
+    return _FIXED.get(status, "other")
+
+
+def refusal_of(
+    response: httpx.Response, now: datetime, previous: HostRefusal | None = None
+) -> HostRefusal:
+    """Why GitHub refused (``response`` is a 4xx or a 5xx), and until when nothing is sent,
+    by GitHub's rules: ``Date`` + ``retry-after`` when it names one; else, with no call
+    left, the reset + 1 s; else, for a rate limit, 60 s doubling on each repeat
+    (``previous``) up to 15 minutes. GitHub's times are moved onto the local clock (``now``,
+    when the answer came) by the answer's ``Date``, and the wait is kept within 10 s and
+    61 min. Any other answer waits for nothing (``until`` is ``None``)."""
+    status = response.status_code
+    at = server_time(response)
+    rate = rate_of(response)
+    retry = _retry_after(response.headers.get("retry-after"), at)
+    needs = _token_text(response.headers.get("x-accepted-github-permissions"))
+    reason = _reason(status, _phrase(response), rate, retry)
+    skew = timedelta(0) if at is None else now - at
+    until: datetime | None = None
+    backoff: timedelta | None = None
+    if reason in RATE_LIMITS:
+        if retry is not None:
+            until = (at or now) + skew + timedelta(seconds=retry)
+        elif rate is not None and rate.remaining == 0 and rate.reset is not None:
+            until = rate.reset + timedelta(seconds=1) + skew
+        else:
+            last = previous.backoff if previous is not None else None
+            backoff = BACKOFF_FIRST if last is None else min(last * 2, BACKOFF_MAX)
+            until = now + backoff
+        until = min(max(until, now + REFUSED_MIN), now + REFUSED_MAX)
+        if until.microsecond:  # a whole second, never earlier than GitHub said
+            until = until.replace(microsecond=0) + timedelta(seconds=1)
+    return HostRefusal(
+        status=status,
+        reason=reason,
+        rate=rate,
+        retry_after=retry,
+        request_id=_token_text(response.headers.get("x-github-request-id")),
+        needs=needs,
+        at=at,
+        until=until,
+        backoff=backoff,
+    )
+
+
+def host_refused_until(host: object, now: datetime) -> datetime | None:
+    """Until when ``host`` sends nothing (it refused for a rate limit), or ``None``: a host
+    that never refuses so (a folder, a bucket) never waits."""
+    refused = getattr(host, "refused_until", None)
+    if not callable(refused):
+        return None
+    found = refused(now)
+    return found if isinstance(found, datetime) else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -358,6 +636,26 @@ class R2Publisher:
 
 # --- GitHub (Pages of a separate repository) --------------------------------------------------
 
+RAW: Final = "application/vnd.github.raw+json"
+SHAS_KEPT: Final = 16
+"""How many commit shas the reads at a sha are kept for (each never changes)."""
+_SHA: Final = re.compile(r"[0-9a-f]{40}")
+
+
+def blob_etag(body: bytes) -> str:
+    """GitHub's ETag of a file's raw contents: its git blob sha, quoted."""
+    header = b"blob %d\0" % len(body)
+    return f'"{hashlib.sha1(header + body, usedforsecurity=False).hexdigest()}"'
+
+
+@dataclass(frozen=True, slots=True)
+class _Own:
+    """The branch head this process made last: its tree, and the guard files it holds."""
+
+    head: str
+    tree: str
+    known: Mapping[str, bytes | None]
+
 
 @dataclass(slots=True)
 class GitHubPublisher:
@@ -365,7 +663,7 @@ class GitHubPublisher:
 
     The repository's own Pages workflow deploys each push (spec 9.1 H2; S8-A measured
     push to visible at about 20-40 s). ``token`` needs ``contents: write`` on that
-    repository only.
+    repository only. While GitHub refuses for a rate limit nothing is sent (see the module).
     """
 
     repository: str
@@ -383,6 +681,20 @@ class GitHubPublisher:
     server_time: datetime | None = None
     attempts: int = 3
     """How many times a commit is built when another writer keeps moving the branch."""
+    now: Callable[[], datetime] = _now
+    """The local clock (a refusal's wait is measured on it)."""
+    rate: HostRate | None = None
+    """The rate headers of the last answer that had them."""
+    refusal: HostRefusal | None = None
+    """The last refusal, until an answer clears it."""
+    _refused_since: datetime | None = field(default=None, init=False, repr=False)
+    _kept: dict[tuple[str, str], tuple[str, bytes]] = field(
+        default_factory=dict, init=False, repr=False
+    )
+    _at_sha: "OrderedDict[str, dict[str, bytes | None]]" = field(
+        default_factory=OrderedDict, init=False, repr=False
+    )
+    _own: _Own | None = field(default=None, init=False, repr=False)
 
     def _headers(self, accept: str = "application/vnd.github+json") -> dict[str, str]:
         return {
@@ -392,27 +704,79 @@ class GitHubPublisher:
             "X-GitHub-Api-Version": "2022-11-28",
         }
 
-    def _call(
-        self, method: str, path: str, *, body: object = None, accept: str | None = None
+    def refused_until(self, now: datetime) -> datetime | None:
+        """Until when nothing is sent (GitHub refused for a rate limit), or ``None``."""
+        refusal = self.refusal
+        if refusal is None or refusal.until is None or now >= refusal.until:
+            return None
+        return refusal.until
+
+    def _call(  # noqa: PLR0913 - one request and what it is for
+        self,
+        method: str,
+        path: str,
+        *,
+        what: str,
+        body: object = None,
+        accept: str | None = None,
+        etag: str | None = None,
+        expected: tuple[int, ...] = (),
     ) -> httpx.Response:
-        url = f"{self.api.rstrip('/')}/repos/{self.repository}/{path}"
-        try:
-            response = self.client.request(
-                method,
-                url,
-                headers=self._headers(accept or "application/vnd.github+json"),
-                json=body,
-                timeout=TIMEOUT,
+        """Send one request, unless GitHub refused until later (:class:`HostRefusedError`
+        at once). An error answer outside ``expected`` logs GitHub's reason as a warning and
+        is kept in :attr:`refusal`; the caller raises."""
+        held = self.refused_until(self.now())
+        if held is not None and self.refusal is not None:
+            raise HostRefusedError(
+                f"{what}: not sent, host refused until {clock_text(held)} ({self.refusal.reason})",
+                self.refusal,
             )
+        url = f"{self.api.rstrip('/')}/repos/{self.repository}/{path}"
+        headers = self._headers(accept or "application/vnd.github+json")
+        if etag is not None:
+            headers["If-None-Match"] = etag
+        try:
+            response = self.client.request(method, url, headers=headers, json=body, timeout=TIMEOUT)
         except httpx.HTTPError as error:
             where = path.split("?", maxsplit=1)[0]
             raise PublishError(f"{method} {where}: {type(error).__name__}") from error
+        # GitHub's times are moved onto the local clock as of the answer (its Date is no
+        # older than that): a slow answer never shortens the wait it names
+        now = self.now()
         self.server_time = server_time(response) or self.server_time
+        rate = rate_of(response)
+        if rate is not None:
+            self.rate = rate
+        status = response.status_code
+        if status >= httpx.codes.BAD_REQUEST and status not in expected:
+            found = refusal_of(response, now, self.refusal)
+            LOG.warning("live host refused %s: HTTP %d (%s)", what, status, found.text())
+            if self.refusal is None:
+                self._refused_since = now
+            self.refusal = found
+            return response
+        if status >= httpx.codes.BAD_REQUEST:
+            LOG.debug("live host %s: HTTP %d (%s)", what, status, refusal_of(response, now).text())
+        cleared = self.refusal
+        if cleared is not None:
+            since = self._refused_since or now
+            if cleared.until is not None:
+                waited = round((now - since).total_seconds())
+                LOG.info("live host answers again after %d s", waited)
+            else:  # an error answer that named no wait (a plain 403, a 5xx)
+                LOG.info("live host answers (after HTTP %d, %s)", cleared.status, cleared.reason)
+            self.refusal, self._refused_since = None, None
         return response
+
+    def _error(self, what: str, response: httpx.Response) -> HostRefusedError:
+        refusal = self.refusal
+        if refusal is None or refusal.status != response.status_code:
+            refusal = refusal_of(response, self.now())
+        return HostRefusedError(f"{what}: HTTP {response.status_code} ({refusal.text()})", refusal)
 
     def _json(self, response: httpx.Response, what: str) -> dict[str, object]:
         if not response.is_success:
-            raise PublishError(f"{what}: HTTP {response.status_code}")
+            raise self._error(what, response)
         try:
             value = response.json()
         except ValueError as error:
@@ -423,7 +787,7 @@ class GitHubPublisher:
 
     @staticmethod
     def _sha(value: object, what: str) -> str:
-        if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{40}", value):
+        if not isinstance(value, str) or not _SHA.fullmatch(value):
             raise PublishError(f"{what}: no commit or tree id")
         return value
 
@@ -431,17 +795,56 @@ class GitHubPublisher:
         return self._read_at(key, self.branch)
 
     def _read_at(self, key: str, ref: str) -> bytes | None:
+        """The file at ``ref``: at a commit sha it is read once (it never changes); at the
+        branch it is asked with the ETag kept, and a 304 gives the bytes kept."""
         check_key(key)
+        what = f"read {key}"
+        if _SHA.fullmatch(ref):
+            at = self._at_sha.get(ref)
+            if at is not None and key in at:
+                self._at_sha.move_to_end(ref)
+                return at[key]
+        kept = None if _SHA.fullmatch(ref) else self._kept.get((key, ref))
         response = self._call(
             "GET",
             f"contents/{quote(key)}?ref={quote(ref)}",
-            accept="application/vnd.github.raw+json",
+            what=what,
+            accept=RAW,
+            etag=None if kept is None else kept[0],
+            expected=(httpx.codes.NOT_FOUND,),
         )
-        if response.status_code == httpx.codes.NOT_FOUND:
-            return None
-        if response.status_code != httpx.codes.OK:
-            raise PublishError(f"read {key}: HTTP {response.status_code}")
-        return response.content
+        status = response.status_code
+        if status == httpx.codes.NOT_MODIFIED and kept is not None:
+            return kept[1]
+        if status == httpx.codes.NOT_FOUND:
+            data = None
+        elif status == httpx.codes.OK:
+            data = response.content
+        elif status >= httpx.codes.BAD_REQUEST:
+            raise self._error(what, response)
+        else:
+            raise PublishError(f"{what}: HTTP {status}")
+        if _SHA.fullmatch(ref):
+            self._keep_at(key, ref, data, response)
+        else:
+            etag = response.headers.get("etag")
+            if data is not None and etag:
+                self._kept[(key, ref)] = (etag, data)
+            else:
+                self._kept.pop((key, ref), None)
+        return data
+
+    def _keep_at(self, key: str, sha: str, data: bytes | None, response: httpx.Response) -> None:
+        """Keep the file read at commit ``sha`` (it never changes there), unless GitHub did
+        not know that commit yet: then nothing is known of the file, so the next read at it
+        asks again (and a guard read so is not carried on to the heads made on it)."""
+        if data is None and _no_commit(response):
+            LOG.info("read %s at %s: GitHub does not know the commit yet", key, sha[:12])
+            return
+        self._at_sha.setdefault(sha, {})[key] = data
+        self._at_sha.move_to_end(sha)
+        while len(self._at_sha) > SHAS_KEPT:
+            self._at_sha.popitem(last=False)
 
     def write(self, files: Mapping[str, bytes]) -> None:
         self._commit(files, None)
@@ -469,16 +872,41 @@ class GitHubPublisher:
         finally:
             self.message = self.default_message
 
+    def _base(self, head: str, guard: WriteGuard | None) -> tuple[str, dict[str, bytes | None]]:
+        """The tree of ``head`` and the guard files known there, the guard's checked. On the
+        head this process made last both are known (no other writer moved the branch); on
+        any other, the guard is read in that commit and the commit is read."""
+        own = self._own if self._own is not None and self._own.head == head else None
+        known = {} if own is None else dict(own.known)
+        if guard is not None:
+            found = known[guard.key] if guard.key in known else self._read_at(guard.key, head)
+            if guard.refuses(found):
+                raise GuardRefusedError(f"{guard.key} refuses the write")
+            if guard.key not in known and self._knows(guard.key, head):
+                # carried to the heads this process makes on it only when GitHub answered
+                # for that commit (a 404 from a replica that did not know it is read again)
+                known[guard.key] = found
+        if own is not None:
+            return own.tree, known
+        commit = self._json(
+            self._call("GET", f"git/commits/{head}", what="read commit"), "read commit"
+        )
+        tree = commit.get("tree")
+        return self._sha(tree.get("sha") if isinstance(tree, dict) else None, "read commit"), known
+
+    def _knows(self, key: str, sha: str) -> bool:
+        """Whether the file at ``key`` in commit ``sha`` was read (it is kept)."""
+        return key in self._at_sha.get(sha, {})
+
     def _commit_once(self, files: Mapping[str, bytes], guard: WriteGuard | None) -> None:
         """One commit on the branch's head, with the guard read in that very commit."""
-        ref = self._json(self._call("GET", f"git/ref/heads/{quote(self.branch)}"), "read branch")
+        branch = quote(self.branch)
+        ref = self._json(
+            self._call("GET", f"git/ref/heads/{branch}", what="read branch"), "read branch"
+        )
         target = ref.get("object")
         head = self._sha(target.get("sha") if isinstance(target, dict) else None, "read branch")
-        if guard is not None and guard.refuses(self._read_at(guard.key, head)):
-            raise GuardRefusedError(f"{guard.key} refuses the write")
-        commit = self._json(self._call("GET", f"git/commits/{head}"), "read commit")
-        tree = commit.get("tree")
-        base = self._sha(tree.get("sha") if isinstance(tree, dict) else None, "read commit")
+        base, known = self._base(head, guard)
         try:
             entries = [
                 {"path": key, "mode": "100644", "type": "blob", "content": body.decode("utf-8")}
@@ -487,15 +915,23 @@ class GitHubPublisher:
         except UnicodeDecodeError as error:
             raise PublishError("a live file is not UTF-8 text") from error
         made = self._json(
-            self._call("POST", "git/trees", body={"base_tree": base, "tree": entries}), "write tree"
+            self._call(
+                "POST",
+                "git/trees",
+                what="write tree",
+                body={"base_tree": base, "tree": entries},
+            ),
+            "write tree",
         )
         new_tree = self._sha(made.get("sha"), "write tree")
         if new_tree == base:
+            self._own = _Own(head, base, known)
             return  # the branch already holds these files
         created = self._json(
             self._call(
                 "POST",
                 "git/commits",
+                what="write commit",
                 body={"message": self.message, "tree": new_tree, "parents": [head]},
             ),
             "write commit",
@@ -503,9 +939,15 @@ class GitHubPublisher:
         new_head = self._sha(created.get("sha"), "write commit")
         moved = self._call(
             "PATCH",
-            f"git/refs/heads/{quote(self.branch)}",
+            f"git/refs/heads/{branch}",
+            what="move branch",
             body={"sha": new_head, "force": False},
+            expected=(httpx.codes.UNPROCESSABLE_ENTITY,),
         )
         if moved.status_code == httpx.codes.UNPROCESSABLE_ENTITY:
             raise MovedError("move branch: another writer moved it first (not a fast forward)")
         self._json(moved, "move branch")
+        known.update({key: files[key] for key in files if key in known})
+        self._own = _Own(new_head, new_tree, known)
+        for key, body in files.items():
+            self._kept[(key, self.branch)] = (blob_etag(body), body)

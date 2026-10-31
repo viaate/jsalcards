@@ -57,7 +57,15 @@ from snowlight.live.ledger import GOOD, LONGEST, Ledger, SeenRow
 from snowlight.live.ledger import Outcome as ReadOutcome
 from snowlight.live.merge import AdminStatus, Merged, merge, with_overrides
 from snowlight.live.morning import MorningLog, named_of, pass_reads
-from snowlight.live.publish import AdminPart, Exit, LivePublisher, PassReport, PassSummary
+from snowlight.live.publish import (
+    AdminPart,
+    Exit,
+    LivePublisher,
+    PassReport,
+    PassSummary,
+    rate_limited,
+)
+from snowlight.live.publishers import HostRefusedError
 from snowlight.live.resolve import LiveDirectory, Resolved, Resolver
 from snowlight.output import JSONValue, write_json
 from snowlight.sources.stations.registry import Station, StationStatus
@@ -357,11 +365,11 @@ class Ingest:
         )
 
     def check_edition(self, now: datetime) -> EditionVerdict:
-        """The directory handshake against the stamps the public files carry. Other content
-        deployed that is the content of the last upload is this run's code ahead of the
-        deploy: no blank (the run waits for the deploy)."""
-        stamps, complete = self.publisher.public_stamps()
-        verdict = self.watch.check(now, published=stamps, complete=complete)
+        """The directory handshake against the stamps the public files carry (read back only
+        when other content is deployed). Other content deployed that is the content of the
+        last upload is this run's code ahead of the deploy: no blank (the run waits for the
+        deploy)."""
+        verdict = self.watch.check(now, stamps=self.publisher.public_stamps)
         if verdict.state is EditionState.DIFFERENT and self.publisher.ahead_of(verdict):
             verdict = replace(
                 verdict,
@@ -481,6 +489,8 @@ class Ingest:
                 merged = with_overrides(
                     merged, statuses, now.astimezone(UTC).replace(microsecond=0)
                 )
+            except HostRefusedError as error:
+                return self._overrides_refused(error, now)
             except Exception as error:
                 LOG.error("overrides: %s", type(error).__name__)
                 return self.publisher.refuse_pass((Refusal.OVERRIDES.value,), now)
@@ -499,6 +509,15 @@ class Ingest:
         except OSError as error:
             LOG.error("publish: %s", type(error).__name__)
             return PassReport(Exit.ERROR, now, note=f"publish: {type(error).__name__}")
+
+    def _overrides_refused(self, error: HostRefusedError, now: datetime) -> PassReport:
+        """The overrides' read of the public file was refused by the live host: for a rate
+        limit the pass is the host's refusal (``host``, with its time), else the overrides'."""
+        refusal = rate_limited(error)
+        if refusal is not None:
+            return self.publisher.host_refused(refusal, now)
+        LOG.error("overrides: %s", type(error).__name__)
+        return self.publisher.refuse_pass((Refusal.OVERRIDES.value,), now)
 
     def source_outcomes(
         self, reads: Sequence[SourceRead], now: datetime
@@ -520,6 +539,8 @@ class Ingest:
         if self.overrides is not None:
             try:
                 statuses = self.overrides(now)
+            except HostRefusedError as error:
+                return self._overrides_refused(error, now)
             except Exception as error:
                 LOG.error("overrides: %s", type(error).__name__)
                 return self.publisher.refuse_pass((Refusal.OVERRIDES.value,), now)

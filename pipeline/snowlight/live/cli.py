@@ -129,9 +129,12 @@ from snowlight.live.publishers import (
     Credentials,
     DirPublisher,
     GitHubPublisher,
+    HostRate,
+    HostRefusal,
     Publisher,
     PublishError,
     R2Publisher,
+    host_refused_until,
 )
 from snowlight.live.resolve import LiveDirectory
 from snowlight.live.state import (
@@ -829,13 +832,24 @@ def minutes(text: str) -> timedelta:
         raise argparse.ArgumentTypeError(f"{text!r} is not a length like 15m or 2h") from error
 
 
-def _report(report: PassReport) -> None:
+def host_budget(host: object) -> str:
+    """``; host 4321/5000 reset 17:31Z``: what the live host's last answer said is left of
+    its hourly budget (no extra request; empty for a host that does not say)."""
+    rate = getattr(host, "rate", None)
+    if not isinstance(rate, HostRate) or rate.remaining is None or rate.limit is None:
+        return ""
+    reset = "" if rate.reset is None else f" reset {rate.reset.astimezone(UTC):%H:%MZ}"
+    return f"; host {rate.remaining}/{rate.limit}{reset}"
+
+
+def _report(report: PassReport, host: object = None) -> None:
     refusals = ",".join(report.refusals) or "-"
     _say(
         f"exit {int(report.exit)}: refusals {refusals}; uploaded {len(report.uploaded)}"
         f"{'; blank' if report.blank else ''}{'; ALERT' if report.alert else ''}"
         f"{'; edition ' + report.edition if report.edition else ''}"
         f"{'; ' + report.note if report.note else ''}"
+        f"{host_budget(host)}"
     )
 
 
@@ -903,7 +917,7 @@ def run_once(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
     except Exception as error:
         LOG.error("pass failed: %s", type(error).__name__)
         return leave(_fail(f"the pass failed: {type(error).__name__}"), parts, loaders)
-    _report(report)
+    _report(report, parts.ingest.publisher.host)
     if not _push(args, config, env, loaders):
         return leave(int(Exit.ERROR), parts, loaders)
     return leave(int(report.exit), parts, loaders)
@@ -969,7 +983,14 @@ def check_evidence(store: Any, state: Path, now: datetime, *, seconds: float) ->
 
 
 FAILED_TO_STOP: Final = 3
-"""Failed passes in a row after which the run stops (exit 1): its successor starts clean."""
+"""Failed passes in a row after which the run stops (exit 1): its successor starts clean. A
+pass the live host refused for a rate limit is no failed pass (exit 3): a successor would be
+refused the same way, so the run waits for the time the host gave."""
+RETRY_BEFORE_GRID: Final = timedelta(seconds=60)
+"""A pass the host refused runs again at the time it gave when that is at least this long
+before the next grid mark (else the grid pass is the one)."""
+HOST_NOTICES: Final = 2
+"""``live-read host refused`` notices a run prints at most (later ones are plain lines)."""
 PUSH_MARGIN: Final = timedelta(seconds=30)
 """A push in the loop's idle time ends this long before the next grid mark."""
 MIN_PUSH_TIME: Final = timedelta(seconds=20)
@@ -1032,6 +1053,13 @@ class _Loop:
     until: datetime | None = None
     """``--until``: once the pass due is at or past it, the run ends and the idle time no
     longer asks the evidence store (that would only hold the successor's start)."""
+    retried: datetime | None = None
+    """The time the live host gave that a pass was last moved to (one per refusal)."""
+    host_until: datetime | None = None
+    """The live host's refusal last announced (until then), while it lasts."""
+    host_notices: int = 0
+    blank_refused: bool = False
+    """The edition blank last failed because the live host refused for a rate limit."""
 
     def fail(self, cause: str) -> Exit:
         self.causes.append(cause)
@@ -1154,7 +1182,12 @@ class Runner:
 
     def finish(self) -> int:
         state = self.state
-        if state.blank_failing is not None and state.stop is None:
+        if state.blank_failing is not None and state.stop is None and state.blank_refused:
+            # nobody can write while the host refuses: its successor waits the same way
+            _say("edition: the run ended while the live host refused the blank")
+            state.exit = worst(state.exit, Exit.REFUSED)
+            state.end = "host"
+        elif state.blank_failing is not None and state.stop is None:
             _say("edition: the run ended while the blank was failing")
             state.causes.append("blank")
             annotate("notice", "live-read end blank")
@@ -1185,6 +1218,7 @@ class Runner:
         state.next_check = self.loaders.clock() + timedelta(
             seconds=self.config.edition_check_seconds
         )
+        self.host_news(self.loaders.clock())
         if report is None or report.exit is Exit.ERROR:
             state.failed += 1
             state.exit = worst(state.exit, Exit.REFUSED)
@@ -1193,8 +1227,10 @@ class Runner:
                 state.fail("passes")
             return
         state.failed = 0
-        _report(report)
-        state.held = Refusal.HELD.value in report.refusals
+        _report(report, self.ingest.publisher.host)
+        if Refusal.HOST.value not in report.refusals:
+            state.held = Refusal.HELD.value in report.refusals
+        self.retry_at(report.retry_at)
         state.exit = worst(state.exit, report.exit)
         self.after_report(report)
         if report.blank and report.uploaded:
@@ -1205,6 +1241,36 @@ class Runner:
 
     def one_pass(self, grid: bool) -> PassReport:
         return _pass(self.parts, self.loaders, (), always=grid, beat=self.pulse)
+
+    def retry_at(self, retry: datetime | None) -> None:
+        """The live host refused the pass until ``retry``: the next pass runs then, once per
+        refusal, when that is at least :data:`RETRY_BEFORE_GRID` before the next grid mark
+        (it uploads under the heartbeat rule; the reads ran on their cadence meanwhile)."""
+        state = self.state
+        if retry is None or retry == state.retried or retry > state.due - RETRY_BEFORE_GRID:
+            return
+        state.retried = retry
+        state.due, state.grid = retry, False
+
+    def host_news(self, now: datetime) -> None:
+        """Print a new refusal of the live host (a notice, at most :data:`HOST_NOTICES` a
+        run, then plain lines) and its end (a plain line), for the soak report."""
+        state = self.state
+        refusal = getattr(self.ingest.publisher.host, "refusal", None)
+        if not isinstance(refusal, HostRefusal):
+            if refusal is None and state.host_until is not None:
+                _say(f"live-read host answers {_iso(now)}")
+                state.host_until = None
+            return
+        if refusal.until is None or refusal.until == state.host_until:
+            return
+        text = f"live-read host refused {refusal.reason} until {_iso(refusal.until)}"
+        if state.host_notices < HOST_NOTICES:
+            annotate("notice", text)
+        else:
+            _say(text)
+        state.host_notices += 1
+        state.host_until = refusal.until
 
     def ahead_now(self) -> bool:
         verdict = self.ingest.last_verdict
@@ -1238,7 +1304,9 @@ class Runner:
             self.state.fail("threads")
 
     def different(self, now: datetime, *, failed: bool) -> None:
-        stop = _different(self.state, now, failed=failed)
+        refused = host_refused_until(self.ingest.publisher.host, now) if failed else None
+        self.state.blank_refused = refused is not None
+        stop = _different(self.state, now, failed=failed, refused_until=refused)
         if stop is Exit.ERROR:
             self.state.fail("blank")
         elif stop is not None:
@@ -1253,13 +1321,18 @@ class Runner:
         stamp, when the deployed stamp moved under equal content. A blank it publishes
         counts in the run's exit like a refused pass and the state is pushed after it."""
         state, ingest = self.state, self.ingest
+        # the handshake reads no public file while the deploy is equal (no request to beat
+        # for it): the check starts on a fresh pulse
+        self.request_beat()
         try:
             verdict, blank = ingest.guard(now)
         except Exception as error:
             LOG.error("edition check failed: %s", type(error).__name__)
             return
+        finally:
+            self.host_news(self.loaders.clock())
         if blank is not None:
-            _report(blank)
+            _report(blank, ingest.publisher.host)
             state.exit = worst(
                 state.exit, blank.exit if blank.exit is not Exit.ERROR else Exit.REFUSED
             )
@@ -1569,7 +1642,7 @@ def _reader_alerts(
         try:
             load_book(book, publisher.host.read(f"{prefix}/{ALERTS}"))
         except Exception as error:
-            LOG.warning("alerts.json: %s", type(error).__name__)
+            LOG.warning("alerts.json: %s", describe(error))
     return ReaderAlerts(book)
 
 
@@ -1598,12 +1671,21 @@ def _blank_failed(ingest: Ingest, report: PassReport | None) -> bool:
     return wanted and (report is None or not report.blank)
 
 
-def _different(state: _Loop, now: datetime, *, failed: bool) -> Exit | None:
+def _different(
+    state: _Loop, now: datetime, *, failed: bool, refused_until: datetime | None = None
+) -> Exit | None:
     """Other content is deployed: stop once the blank is done; while it fails, try again
-    at every check (no passes) for up to :data:`BLANK_RETRY`, then stop with an error."""
+    at every check (no passes) for up to :data:`BLANK_RETRY`, then stop with an error. While
+    the live host refuses for a rate limit (``refused_until``) nobody can write: the
+    :data:`BLANK_RETRY` clock starts when it allows calls again."""
     if not failed:
         _say("edition: different; stopping for the successor")
         return Exit.REFUSED
+    if refused_until is not None:
+        if state.blank_failing is None or state.blank_failing < refused_until:
+            state.blank_failing = refused_until
+        _say(f"edition: different and the live host refused the blank until {_iso(refused_until)}")
+        return None
     if state.blank_failing is None:
         state.blank_failing = now
     if now - state.blank_failing >= BLANK_RETRY:

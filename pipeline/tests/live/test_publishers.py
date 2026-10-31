@@ -6,24 +6,35 @@ The bucket and the repository are local stubs (httpx.MockTransport); every body 
 import base64
 import hashlib
 import json
+import logging
 from collections.abc import Callable
-from datetime import UTC, datetime
+from dataclasses import replace
+from datetime import UTC, datetime, timedelta
+from email.utils import format_datetime
 from pathlib import Path
 
 import httpx
 import pytest
 
+from snowlight.live.publish import holds
 from snowlight.live.publishers import (
     CACHE_CONTROL,
     CONTENT_TYPE,
     Credentials,
     DirPublisher,
     GitHubPublisher,
+    GuardRefusedError,
+    HostRefusedError,
     KeyRefusedError,
+    MovedError,
     PublishError,
     R2Publisher,
+    WriteGuard,
+    blob_etag,
     canonical_request,
     check_key,
+    host_refused_until,
+    refusal_of,
     sign,
     signing_key,
 )
@@ -578,3 +589,464 @@ def test_a_commit_message_is_one_writes_and_never_sticks_to_the_next() -> None:
     plain = live_cli.make_host(config, {"LIVE_HOST_TOKEN": "synthetic"}, httpx.Client())
     assert isinstance(plain, GitHubPublisher)
     assert plain.default_message == "Publish the live files"
+
+
+# --- live-403: GitHub's reason, the wait, and fewer calls ---------------------------------------
+
+T0 = datetime(2026, 11, 17, 17, 0, 15, tzinfo=UTC)
+
+
+def _answer(
+    status: int,
+    *,
+    at: datetime = T0,
+    message: str = "SYNTHETIC words",
+    **headers: str,
+) -> httpx.Response:
+    sent = {
+        "date": format_datetime(at, usegmt=True),
+        **{k.replace("_", "-"): v for k, v in headers.items()},
+    }
+    return httpx.Response(status, headers=sent, json={"message": message})
+
+
+def test_github_refusal_of_sets_the_reason_and_until() -> None:
+    reset = T0 + timedelta(minutes=26)
+    primary = _answer(
+        403,
+        message="API rate limit exceeded for user ID 1234567.",
+        x_ratelimit_limit="5000",
+        x_ratelimit_remaining="0",
+        x_ratelimit_used="5000",
+        x_ratelimit_resource="core",
+        x_ratelimit_reset=str(int(reset.timestamp())),
+        x_github_request_id="40BC:27D4F6",
+    )
+    found = refusal_of(primary, T0)
+    assert found.reason == "primary_rate_limit"
+    assert found.until == reset + timedelta(seconds=1)
+    assert found.text() == (
+        "primary_rate_limit; 0 of 5000 left, used 5000, core, resets 17:26:15Z; request 40BC:27D4F6"
+    )
+    # the server's clock 30 s ahead: its reset is moved onto the local clock
+    skewed = refusal_of(primary, T0 - timedelta(seconds=30))
+    assert skewed.until == reset + timedelta(seconds=1) - timedelta(seconds=30)
+    # retry-after counts from the answer's Date
+    waited = refusal_of(
+        _answer(403, message="You have exceeded a secondary rate limit.", retry_after="90"), T0
+    )
+    assert (waited.reason, waited.retry_after) == ("secondary_rate_limit", 90.0)
+    assert waited.until == T0 + timedelta(seconds=90)
+    # a secondary limit that names no wait: 60 s, doubling on each repeat, at most 15 min
+    bare = _answer(403, message="You have exceeded a secondary rate limit.")
+    first = refusal_of(bare, T0)
+    assert first.until == T0 + timedelta(seconds=60)
+    second = refusal_of(bare, T0, first)
+    assert second.until == T0 + timedelta(seconds=120)
+    long = replace(second, backoff=timedelta(minutes=10))
+    assert refusal_of(bare, T0, long).until == T0 + timedelta(minutes=15)
+    assert refusal_of(_answer(429), T0).until == T0 + timedelta(seconds=60)
+    # never under 10 s nor over 61 min after the answer
+    assert refusal_of(_answer(429, retry_after="0"), T0).until == T0 + timedelta(seconds=10)
+    far = _answer(
+        403,
+        x_ratelimit_remaining="0",
+        x_ratelimit_reset=str(int((T0 + timedelta(hours=3)).timestamp())),
+    )
+    assert refusal_of(far, T0).until == T0 + timedelta(minutes=61)
+    # every other answer: a fixed code and no wait
+    for status, message, reason in [
+        (401, "Bad credentials", "bad_credentials"),
+        (403, "Resource not accessible by personal access token", "no_permission"),
+        (403, "SYNTHETIC", "forbidden"),
+        (404, "Not Found", "not_found"),
+        (409, "SYNTHETIC", "conflict"),
+        (422, "SYNTHETIC", "unprocessable"),
+        (502, "SYNTHETIC", "server"),
+        (418, "SYNTHETIC", "other"),
+    ]:
+        other = refusal_of(_answer(status, message=message), T0)
+        assert (other.reason, other.until) == (reason, None)
+    needs = refusal_of(_answer(403, x_accepted_github_permissions="contents=write"), T0)
+    assert needs.text() == "forbidden; needs contents=write"
+
+
+def _clocked(repo: Repo, clock: list[datetime]) -> GitHubPublisher:
+    return GitHubPublisher(
+        repository="viaate/snowlight-synthetic",
+        token="synthetic-token",  # noqa: S106 - a test value
+        client=httpx.Client(transport=httpx.MockTransport(repo)),
+        api="https://api.synthetic.example",
+        now=lambda: clock[0],
+    )
+
+
+class Limited(Repo):
+    """:class:`Repo`, refusing every request with GitHub's primary limit until ``reset``."""
+
+    def __init__(self, clock: list[datetime], reset: datetime) -> None:
+        super().__init__()
+        self.clock, self.reset = clock, reset
+
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        if self.clock[0] < self.reset:
+            path = request.url.path.removeprefix("/repos/viaate/snowlight-synthetic/")
+            self.calls.append(f"{request.method} {path}")
+            return _answer(
+                403,
+                at=self.clock[0],
+                message="API rate limit exceeded for user ID 1234567.",
+                x_ratelimit_limit="5000",
+                x_ratelimit_remaining="0",
+                x_ratelimit_reset=str(int(self.reset.timestamp())),
+            )
+        return super().__call__(request)
+
+
+def test_github_refused_host_sends_nothing_until_allowed() -> None:
+    clock = [T0]
+    repo = Limited(clock, T0 + timedelta(minutes=26))
+    publisher = _clocked(repo, clock)
+    with pytest.raises(HostRefusedError, match=r"^read v1/live/closings\.json: HTTP 403 \("):
+        publisher.read("v1/live/closings.json")
+    until = T0 + timedelta(minutes=26, seconds=1)
+    assert publisher.refused_until(T0) == until
+    assert host_refused_until(publisher, T0) == until
+    assert host_refused_until(DirPublisher(Path("/nonexistent")), T0) is None
+    for minutes in (1, 10, 26):
+        clock[0] = T0 + timedelta(minutes=minutes)
+        with pytest.raises(HostRefusedError) as raised:
+            publisher.write({"v1/live/closings.json": b"{}"})
+        assert str(raised.value) == (
+            "read branch: not sent, host refused until 17:26:16Z (primary_rate_limit)"
+        )
+        assert raised.value.rate_limited
+    assert len(repo.calls) == 1
+    clock[0] = until
+    publisher.write({"v1/live/closings.json": b"{}"})
+    assert repo.tree() == {"v1/live/closings.json": b"{}"}
+
+
+def test_github_success_after_refusal_clears_it_and_logs_once(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.DEBUG, logger="snowlight")
+    clock = [T0]
+    repo = Limited(clock, T0 + timedelta(minutes=5))
+    publisher = _clocked(repo, clock)
+    with pytest.raises(HostRefusedError):
+        publisher.read("v1/live/closings.json")
+    clock[0] = T0 + timedelta(minutes=6)
+    assert publisher.read("v1/live/closings.json") is None
+    assert publisher.read("v1/live/closings.json") is None
+    assert publisher.refusal is None
+    answered = [rec for rec in caplog.records if "answers again" in rec.getMessage()]
+    assert [rec.getMessage() for rec in answered] == ["live host answers again after 360 s"]
+    assert [rec.levelno for rec in answered] == [logging.INFO]
+    warned = [rec for rec in caplog.records if rec.levelno >= logging.WARNING]
+    assert len(warned) == 1
+
+
+def test_github_contents_404_and_moved_422_are_not_warnings(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.DEBUG, logger="snowlight")
+    repo = Repo()
+    publisher = _github(repo)
+    assert publisher.read("v1/live/hold.json") is None
+    moves = iter(range(100))
+
+    def other_writer() -> None:
+        repo.head = repo._sha(f"someone else {next(moves)}")
+        repo.commits[repo.head] = next(iter(repo.trees))
+
+    repo.race = other_writer
+    with pytest.raises(MovedError):
+        publisher.write({"v1/live/closings.json": b"{}"})
+    assert not [rec for rec in caplog.records if rec.levelno >= logging.WARNING]
+    debug = [rec.getMessage() for rec in caplog.records if rec.levelno == logging.DEBUG]
+    assert any("HTTP 404 (not_found" in line for line in debug)
+    assert any("HTTP 422 (unprocessable" in line for line in debug)
+    assert publisher.refusal is None
+
+
+def test_github_error_text_keeps_its_prefix_and_never_the_body(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.DEBUG, logger="snowlight")
+
+    def failing(_request: httpx.Request) -> httpx.Response:
+        return _answer(
+            403,
+            message="Resource not accessible by SYNTHETIC Alpha token",
+            x_github_request_id="SYNT:1",
+            x_accepted_github_permissions="contents=write",
+        )
+
+    publisher = GitHubPublisher(
+        repository="viaate/snowlight-synthetic",
+        token="synthetic-secret-token",  # noqa: S106 - a test value
+        client=httpx.Client(transport=httpx.MockTransport(failing)),
+        api="https://api.synthetic.example",
+    )
+    with pytest.raises(HostRefusedError) as raised:
+        publisher.read("v1/live/closings.json")
+    assert str(raised.value) == (
+        "read v1/live/closings.json: HTTP 403 (no_permission; needs contents=write; request SYNT:1)"
+    )
+    assert not raised.value.rate_limited
+    for text in (str(raised.value), caplog.text):
+        assert "SYNTHETIC" not in text
+        assert "synthetic-secret-token" not in text
+        assert "Bearer" not in text
+
+
+class Conditional(Repo):
+    """:class:`Repo` whose contents reads carry the blob sha as the ETag and answer
+    ``If-None-Match`` with 304, and honour ``?ref=<sha>``."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.conditional: list[str | None] = []
+        self.lagging: set[str] = set()
+        """Commits GitHub's replica does not know yet (a read at one answers 404)."""
+
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        path = request.url.path.removeprefix("/repos/viaate/snowlight-synthetic/")
+        if request.method != "GET" or not path.startswith("contents/"):
+            return super().__call__(request)
+        self.calls.append(f"GET {path}@{request.url.params.get('ref')}")
+        self.conditional.append(request.headers.get("if-none-match"))
+        ref = request.url.params.get("ref", "main")
+        if ref in self.lagging:
+            return httpx.Response(404, json={"message": f"No commit found for the ref {ref}"})
+        files = self.trees[self.commits[self.head if ref == "main" else ref]]
+        key = path.removeprefix("contents/")
+        if key not in files:
+            return httpx.Response(404)
+        body = files[key]
+        etag = (
+            '"'
+            + hashlib.sha1(b"blob %d\0" % len(body) + body, usedforsecurity=False).hexdigest()
+            + '"'
+        )
+        if request.headers.get("if-none-match") == etag:
+            return httpx.Response(304, headers={"etag": etag})
+        return httpx.Response(200, headers={"etag": etag}, content=body)
+
+
+def test_github_conditional_read_sends_if_none_match_and_a_304_returns_the_kept_bytes() -> None:
+    repo = Conditional()
+    other = _github(repo)
+    other.write({"v1/live/opens.json": b'{"SYNTHETIC":1}'})
+    publisher = _github(repo)
+    assert publisher.read("v1/live/opens.json") == b'{"SYNTHETIC":1}'
+    assert publisher.read("v1/live/opens.json") == b'{"SYNTHETIC":1}'
+    assert repo.conditional[-2] is None
+    assert repo.conditional[-1] == blob_etag(b'{"SYNTHETIC":1}')
+    assert repo.calls[-2:] == ["GET contents/v1/live/opens.json@main"] * 2
+    other.write({"v1/live/opens.json": b'{"SYNTHETIC":2}'})
+    assert publisher.read("v1/live/opens.json") == b'{"SYNTHETIC":2}'
+
+
+def test_github_written_files_are_seeded_with_their_blob_sha() -> None:
+    repo = Conditional()
+    publisher = _github(repo)
+    body = b'{"SYNTHETIC":"closings"}'
+    publisher.write({"v1/live/closings.json": body})
+    assert publisher.read("v1/live/closings.json") == body
+    assert repo.conditional == [blob_etag(body)]  # answered 304: the read cost nothing
+    assert blob_etag(b"{}") == '"9e26dfeeb6e641a33dae4961196235bdb965b21b"'  # git hash-object
+
+
+def test_github_a_read_at_a_sha_is_never_sent_twice() -> None:
+    repo = Conditional()
+    publisher = _github(repo)
+    publisher.write({"v1/live/closings.json": b"{}"})
+    head = repo.head
+    for _ in range(3):
+        assert publisher._read_at("v1/live/closings.json", head) == b"{}"
+        assert publisher._read_at("v1/live/hold.json", head) is None
+    assert repo.calls.count(f"GET contents/v1/live/closings.json@{head}") == 1
+    assert repo.calls.count(f"GET contents/v1/live/hold.json@{head}") == 1
+    # only the last 16 shas are kept
+    for index in range(16):
+        publisher.write({"v1/live/closings.json": f'{{"n":{index}}}'.encode()})
+        publisher._read_at("v1/live/hold.json", repo.head)
+    publisher._read_at("v1/live/hold.json", head)
+    assert repo.calls.count(f"GET contents/v1/live/hold.json@{head}") == 2
+
+
+HOLD_GUARD = WriteGuard("v1/live/hold.json", holds)
+HELD = (
+    b'{"schema_version":1,"held":true,"at":"2026-11-17T17:00:00Z","held_at":"2026-11-17T17:00:00Z"}'
+)
+
+
+def test_github_commit_on_own_head_makes_get_ref_and_three_writes_only() -> None:
+    repo = Conditional()
+    publisher = _github(repo)
+    publisher.write_guarded({"v1/live/closings.json": b'{"a":1}'}, HOLD_GUARD)
+    repo.calls.clear()
+    publisher.write_guarded({"v1/live/closings.json": b'{"a":2}'}, HOLD_GUARD)
+    assert repo.calls == [
+        "GET git/ref/heads/main",
+        "POST git/trees",
+        "POST git/commits",
+        "PATCH git/refs/heads/main",
+    ]
+    assert repo.tree() == {"v1/live/closings.json": b'{"a":2}'}
+
+
+def test_github_commit_after_another_writer_takes_the_full_path_and_its_hold_refuses() -> None:
+    repo = Conditional()
+    publisher = _github(repo)
+    publisher.write_guarded({"v1/live/closings.json": b'{"a":1}'}, HOLD_GUARD)
+    _github(repo).write({"v1/predictions/latest.json": b'{"p":1}'})  # predict.yml
+    repo.calls.clear()
+    publisher.write_guarded({"v1/live/closings.json": b'{"a":2}'}, HOLD_GUARD)
+    head = repo.parents[repo.head][0]
+    assert repo.calls == [
+        "GET git/ref/heads/main",
+        f"GET contents/v1/live/hold.json@{head}",
+        f"GET git/commits/{head}",
+        "POST git/trees",
+        "POST git/commits",
+        "PATCH git/refs/heads/main",
+    ]
+    # live blank's hold lands with the other writer's next commit: the guard refuses
+    held = HELD
+    blank = _github(repo)
+    blank.write({"v1/live/hold.json": held})
+    repo.calls.clear()
+    with pytest.raises(GuardRefusedError):
+        publisher.write_guarded({"v1/live/closings.json": b'{"a":3}'}, HOLD_GUARD)
+    assert not [call for call in repo.calls if call.startswith(("POST", "PATCH"))]
+    assert repo.tree()["v1/live/closings.json"] == b'{"a":2}'
+
+
+def test_github_live_blank_between_get_ref_and_patch_is_still_refused() -> None:
+    repo = Conditional()
+    publisher = _github(repo)
+    publisher.write_guarded({"v1/live/closings.json": b'{"a":1}'}, HOLD_GUARD)
+    held = HELD
+
+    def live_blank() -> None:
+        repo.race = None
+        _github(repo).write({"v1/live/hold.json": held, "v1/live/closings.json": b"{}"})
+
+    repo.race = live_blank  # lands after this write's GET ref, before its PATCH
+    with pytest.raises(GuardRefusedError):
+        publisher.write_guarded({"v1/live/closings.json": b'{"a":2}'}, HOLD_GUARD)
+    assert repo.tree() == {"v1/live/hold.json": held, "v1/live/closings.json": b"{}"}
+
+
+class Slow(Repo):
+    """:class:`Repo` whose answers take ``delay`` on the clock, refusing in the way given
+    (its ``Date`` is when the answer leaves GitHub: the end of the delay)."""
+
+    def __init__(self, clock: list[datetime], delay: timedelta, refusal: dict[str, str]) -> None:
+        super().__init__()
+        self.clock, self.delay, self.refusal = clock, delay, refusal
+
+    def __call__(self, _request: httpx.Request) -> httpx.Response:
+        self.clock[0] += self.delay
+        message = (
+            "You have exceeded a secondary rate limit."
+            if "retry_after" in self.refusal
+            else "API rate limit exceeded for user ID 1234567."
+        )
+        return _answer(403, at=self.clock[0], message=message, **self.refusal)
+
+
+@pytest.mark.parametrize("delay", [timedelta(seconds=0.3), timedelta(seconds=2.5)])
+def test_github_a_slow_answer_never_shortens_the_wait_it_names(delay: timedelta) -> None:
+    """GitHub's wait counts from its answer, not from when the request went out: retry-after
+    is waited in full after the answer came, and a primary limit until its reset + 1 s."""
+    clock = [T0]
+    publisher = _clocked(Slow(clock, delay, {"retry_after": "60"}), clock)
+    with pytest.raises(HostRefusedError):
+        publisher.read("v1/live/closings.json")
+    until = publisher.refused_until(clock[0])
+    assert until is not None
+    assert until - clock[0] >= timedelta(seconds=60)
+    reset = T0 + timedelta(minutes=26)
+    clock = [T0]
+    primary = {
+        "x_ratelimit_limit": "5000",
+        "x_ratelimit_remaining": "0",
+        "x_ratelimit_reset": str(int(reset.timestamp())),
+    }
+    publisher = _clocked(Slow(clock, delay, primary), clock)
+    with pytest.raises(HostRefusedError):
+        publisher.read("v1/live/closings.json")
+    until = publisher.refused_until(clock[0])
+    assert until is not None
+    assert until >= reset + timedelta(seconds=1)
+
+
+def test_github_abuse_detection_is_a_secondary_rate_limit() -> None:
+    """GitHub's older words for a secondary limit (no retry-after, calls left) wait, as a
+    secondary limit does, and never take the failed-pass path."""
+    older = _answer(
+        403,
+        message="You have triggered an abuse detection mechanism. Please wait a few minutes.",
+        x_ratelimit_remaining="4000",
+    )
+    found = refusal_of(older, T0)
+    assert found.reason == "secondary_rate_limit"
+    assert found.until == T0 + timedelta(seconds=60)
+
+
+def test_github_answers_again_only_after_a_wait(caplog: pytest.LogCaptureFixture) -> None:
+    """``answers again`` ends a rate limit; after an error answer that named no wait (a 5xx,
+    a plain 403) the line says which answer it follows."""
+    caplog.set_level(logging.DEBUG, logger="snowlight")
+    repo = Repo()
+    failing = [True]
+
+    def transport(request: httpx.Request) -> httpx.Response:
+        if failing[0]:
+            failing[0] = False
+            return _answer(502, message="SYNTHETIC outage")
+        return repo(request)
+
+    publisher = GitHubPublisher(
+        repository="viaate/snowlight-synthetic",
+        token="synthetic-token",  # noqa: S106 - a test value
+        client=httpx.Client(transport=httpx.MockTransport(transport)),
+        api="https://api.synthetic.example",
+        now=lambda: T0,
+    )
+    with pytest.raises(HostRefusedError):
+        publisher.read("v1/live/closings.json")
+    assert publisher.refused_until(T0) is None  # no wait: today's rules apply
+    assert publisher.read("v1/live/closings.json") is None
+    lines = [rec.getMessage() for rec in caplog.records if "live host answers" in rec.getMessage()]
+    assert lines == ["live host answers (after HTTP 502, server)"]
+
+
+def test_github_a_guard_read_at_a_commit_github_does_not_know_yet_is_read_again() -> None:
+    """A replica behind a fresh head answers 404 "No commit found" for a read at it: that
+    says nothing of the file, so it is not kept and the guard is read again at the next
+    head this process makes (``live blank``'s hold is still caught by the commit)."""
+    repo = Conditional()
+    publisher = _github(repo)
+    publisher.write_guarded({"v1/live/closings.json": b'{"a":1}'}, HOLD_GUARD)
+    # live blank holds (with the other writer's commit); GitHub's replica lags behind it
+    _github(repo).write({"v1/live/hold.json": HELD})
+    repo.lagging.add(repo.head)
+    publisher.write_guarded({"v1/live/closings.json": b'{"a":2}'}, HOLD_GUARD)
+    repo.lagging.clear()
+    repo.calls.clear()
+    with pytest.raises(GuardRefusedError):
+        publisher.write_guarded({"v1/live/closings.json": b'{"a":3}'}, HOLD_GUARD)
+    assert f"GET contents/v1/live/hold.json@{repo.head}" in repo.calls
+    assert not [call for call in repo.calls if call.startswith(("POST", "PATCH"))]
+    # a plain 404 at a commit (no such file) is known there: never asked again
+    publisher = _github(repo)
+    head = repo.head
+    repo.calls.clear()
+    assert publisher._read_at("v1/live/none.json", head) is None
+    assert publisher._read_at("v1/live/none.json", head) is None
+    assert repo.calls == [f"GET contents/v1/live/none.json@{head}"]

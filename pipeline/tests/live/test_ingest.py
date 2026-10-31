@@ -7,9 +7,11 @@ from pathlib import Path
 
 import pytest
 
+from live.github_fake import GitHubFake
+from live.test_cli import Clock
 from live.test_edition import OWN, Source
 from live.world import ALPHA_SCHOOL, World, at, row, station
-from snowlight.live.edition import EditionWatch
+from snowlight.live.edition import EditionState, EditionWatch
 from snowlight.live.ingest import Ingest, SourceRead
 from snowlight.live.ledger import Outcome as ReadOutcome
 from snowlight.live.publish import Exit, LivePublisher
@@ -280,3 +282,67 @@ def test_a_skipped_station_gives_no_read() -> None:
     skipped = RunResult(health=[_health(HealthStatus.SKIPPED)])
     assert source_read(world.stations[A], skipped, world.dir) is None
     assert source_read(world.stations[A], RunResult(), world.dir) is None
+
+
+# --- live-403: the handshake reads the public files only when other content is deployed ------
+
+
+def _on_github(world: World, tmp_path: Path, source: Source) -> tuple[Ingest, GitHubFake]:
+    clock = Clock(at("2026-11-17 11:05"))
+    fake = GitHubFake(clock)
+    publisher = LivePublisher(
+        host=fake.publisher(),
+        directory=world.dir,
+        state_dir=tmp_path / "state",
+        internal_dir=tmp_path / "internal",
+    )
+    ingest = Ingest(
+        ledger=world.ledger,
+        resolver=world.resolver(),
+        stations=world.stations,
+        publisher=publisher,
+        watch=EditionWatch(own=EDITION, source=source),
+        internal_dir=tmp_path / "run",
+        due=frozenset({A}),
+    )
+    return ingest, fake
+
+
+def test_the_edition_check_reads_no_public_file_while_the_deploy_is_equal(
+    tmp_path: Path,
+) -> None:
+    world = _world()
+    now = at("2026-11-17 11:05")
+    _warm(world, A, now)
+    ingest, fake = _on_github(world, tmp_path, Source([EDITION]))
+    assert ingest.run_pass([SourceRead(A, ReadOutcome.OK, now, CLOSED)], now).exit is Exit.OK
+    fake.log.clear()
+    for minute in range(1, 5):
+        verdict, blank = ingest.guard(now + timedelta(minutes=minute))
+        assert (verdict.state, blank) == (EditionState.EQUAL, None)
+    assert fake.log == []  # four 60-s checks, no host call (they were 8 reads)
+
+
+def test_other_content_still_reads_both_prefixes_and_blanks_under_a_public_stamp(
+    tmp_path: Path,
+) -> None:
+    """T13d through the lazy stamps: other content under the stamp a public file carries
+    reads both prefixes' closings, and blanks the file under that stamp at once."""
+    world = _world()
+    now = at("2026-11-17 11:05")
+    _warm(world, A, now)
+    other = EDITION.model_copy(update={"content_sha256": "c" * 64})
+    ingest, fake = _on_github(world, tmp_path, Source([EDITION, other]))
+    assert ingest.run_pass([SourceRead(A, ReadOutcome.OK, now, CLOSED)], now).exit is Exit.OK
+    fake.log.clear()
+    verdict, blank = ingest.guard(now + timedelta(minutes=1))
+    assert verdict.state is EditionState.DIFFERENT
+    assert verdict.blank == EDITION.stamp()
+    assert [str(one) for one in fake.log[:2]] == [
+        "GET contents/v1/live/closings.json",
+        "GET contents/v1-shadow/live/closings.json",
+    ]
+    assert blank is not None
+    assert blank.blank
+    shown = ClosingsFile.from_json_bytes(fake.tree()["v1-shadow/live/closings.json"])
+    assert shown.days == ()

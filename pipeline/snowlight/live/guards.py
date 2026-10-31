@@ -268,6 +268,9 @@ class Refusal(StrEnum):
     OVERRIDES = "overrides"
     """The admin's statuses could not be read (an API error): nothing is published, so a
     status the admin set is never dropped on a blip."""
+    HOST = "host"
+    """The live host refused for a rate limit: nothing was uploaded, nothing is sent until
+    the time it gave, and the pass at that time uploads every change since."""
 
 
 @dataclass(frozen=True, slots=True)

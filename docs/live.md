@@ -111,8 +111,11 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   left and says `clear`; the record, end push, export, its check and the cache save run only
   then, so no state is packed while a reader may still write it. A step that stalls is
   bounded too: the directory step at 10 minutes, the pull at 8 (its own bound is 6).
-- **Exit codes.** A run exits 1 only for a persistent failure: 3 failed passes in a row, a
-  blank that keeps failing for 10 minutes, a lost state swap, more than 8 abandoned threads,
+- **Exit codes.** A run exits 1 only for a persistent failure: 3 failed passes in a row (a
+  pass the live host refused for a rate limit is not a failed pass: it is refused, exit 3,
+  and it starts the count again; see [When the live host refuses](#when-the-live-host-refuses)),
+  a blank that keeps failing for 10 minutes (counted from the end of a rate limit, which no
+  writer can get past), a lost state swap, more than 8 abandoned threads,
   a failed end push, a directory step that failed (the loop never ran), or the watcher's kill
   (124). Otherwise 3 when a pass was refused or the deployed directory changed, else 0. A 3
   never fails the loop step (refused passes are routine in a 320-minute run), so in `on` only
@@ -128,8 +131,12 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
 - **Notices for the soak report.** The loop prints `live-read ready <time>` when it could pass
   (the cold start ends there), `live-read first pass <time>` (a successor's first pass may
   wait for the next grid mark or skip an unchanged upload, so its first commit can be the next
-  grid pass) and `live-read end <cause>` (`until`, `edition`, `overrides`, or an exit-1 cause
-  such as `passes`, `threads`, `state`). A job still running has no annotations on the API
+  grid pass) and `live-read end <cause>` (`until`, `edition`, `overrides`, `host` (the run
+  ended while the live host refused an edition blank), or an exit-1 cause such as `passes`,
+  `threads`, `state`). `live-read host refused <reason> until <time>` is a notice for each new
+  refusal of the live host (2 a run at most, then plain lines), and `live-read host answers
+  <time>` a plain line when it answers again, so the soak report can type such a gap as
+  `host`. A job still running has no annotations on the API
   yet, so the report gives it no cold start. A step prints `live-read caches
   restored <bytes> bytes`, and live-ingest's `reader` job `github token used <n> of <limit>
   reset <time>` on every tick.
@@ -171,6 +178,72 @@ job set-up 0-2 s, checkout 2-6, setup-uv 3-9, `uv sync` 0-1, the cache restores 
 deployed edition and `directory build --zones --no-tiles` 24-42, the D1 pull 2-6, then about
 10 s for the matcher, gazetteer, registry and status reader. The job's own queue behind its
 predecessor adds 11-30 s.
+
+### When the live host refuses
+
+`LIVE_HOST_TOKEN` is the owner's fine-grained token, so its 5,000 GitHub API calls an hour
+are the owner's user's budget. Everything that acts as that user draws on the same budget:
+`predict.yml` (the same token), any other token of the user, and agents calling
+api.github.com through the agent proxy. On Oct 30 two soak fetches run in parallel by agents
+used it up twice (16:55-17:35Z and 18:15-18:35Z): every call of the reader was refused with
+HTTP 403 until the hour reset. So agent traffic follows a rule: soak routes never run in
+parallel, a fetch over more than 6 hours of history runs alone and only after `GET
+/rate_limit` shows core used under 2,000 (stopping when it passes 3,500), and nothing bulk
+runs while the host refuses.
+
+- **What is logged.** Every error answer of the live host but a missing file (404) and a
+  branch another writer moved first (422) logs one warning: the step, the status and
+  GitHub's reason, as a fixed code (`primary_rate_limit`, `secondary_rate_limit`,
+  `bad_credentials`, `no_permission`, `forbidden`, `not_found`, `conflict`, `unprocessable`,
+  `server`, `other`), the rate counts and reset, the retry wait, the permission it needs and
+  GitHub's request id, for example `live host refused read v1/live/hold.json: HTTP 403
+  (primary_rate_limit; 0 of 5000 left, used 5000, core, resets 17:31:15Z; request
+  40BC:27D4F6)`. The pass's error and its note carry the same text without the `live host
+  refused` prefix. GitHub's older words for a secondary limit ("abuse detection") count as
+  `secondary_rate_limit`. Never the body's words, never a header the reader sent. Every pass line ends with what the last answer said
+  is left, `host 4321/5000 reset 17:00Z`, so a budget that drains shows before it is gone.
+- **The wait.** A rate limit names when to ask again: the answer's `Date` + `retry-after`
+  when GitHub gives one; else, with no call left, its reset + 1 s; else (a secondary limit
+  that names no wait) 60 s, doubling on each repeat, up to 15 minutes. GitHub's times are
+  moved onto the box's clock by the answer's `Date`, as of when the answer came (a slow
+  answer never shortens the wait), and the wait is kept between 10 s and 61 minutes. Until then the host sends nothing at all, whoever asks (the pass, an edition
+  blank, the alerts, the admin's statuses, predict), so a refusal costs one request where it
+  cost 2-5 a minute (GitHub warns that calling on while limited may ban the integration).
+  The first answer after it logs `live host answers again after N s`; the first answer after
+  an error that named no wait (a 5xx, a plain 403) logs `live host answers (after HTTP 502,
+  server)`. An answer that succeeds with no call left does not stop the next call: that call
+  is refused (one request) and the wait starts from it.
+- **The state is kept.** A pass the host refuses is refused (`host`, exit 3): it counts toward
+  the `gate` alert (open from the second), and nothing else moves. What is lit, the change
+  log, the spike hold and the day files stay as they were, so the first upload after the
+  wait carries every change. A refusal that comes after the gate ran (in the commit, from
+  reading the branch to moving it) puts the gate's memory back as the pass found it: a spike
+  the pass would have released is still pending, so the first allowed pass releases it, and
+  the refused streak goes on from its value before the pass. The reads go on at their cadence meanwhile, so the ledger, the
+  health window and the held statuses stay current. The run does not stop and hand off: a
+  successor would be refused the same way and lose its statuses to a cold start.
+- **The pass at the reset.** When the time the host gave is at least a minute before the
+  next grid mark, the next pass runs then (once per refusal) and uploads under the heartbeat
+  rule. A refusal that outlasts the run ends it as usual (`live-read end until`, exit 3); its
+  successor learns of it from its first call and waits the same way.
+- **Other refusals** (a plain 403, a 401, a 5xx) keep their rule: the pass fails, and 3 in a
+  row stop the run for its successor.
+- **`live blank` cannot write either** until the host allows calls again: it fails with the
+  reason and the reset time. Run it again after the reset. An edition blank the reader owes is
+  tried at every 60-s check and goes out at the first check after the reset.
+- **Fewer calls.** A steady hour costs about 88 calls (76 counted, 36 of them writes) where it
+  cost 228: the 60-s checks read no public file while the deploy is equal, a read at the
+  branch asks with the ETag it has (a 304 is free), a read at a commit sha is never sent
+  twice, the files a write sends are kept with their git blob sha (GitHub's ETag), and a
+  commit on the head the process made itself skips reading that commit and its hold (both
+  are known). Both hold reads of a pass stay. A read at a commit GitHub does not know yet
+  (a 404 "No commit found", a replica behind a fresh head) is not kept, and a hold read so
+  is not carried on: the next commit reads it again. The 88 counts the reader alone, with
+  no admin statuses: on a day with admin statuses each pass also reads closings.json for
+  them (a free 304 after the reader's own write), about 100 sent an hour, 76 counted.
+  predict.yml's own reads and commits on the same token, and anything else acting as the
+  owner, come on top. live-ingest's checks of the public files use the workflow's
+  `GITHUB_TOKEN`, which has its own budget.
 
 ## The state
 
@@ -755,6 +828,7 @@ The ingest reacts within one 60 s check of a deploy going live. The host's cache
 | `edition` | The deployed directory is not the one this build indexes into, or it cannot be read (see above). | Nothing by hand: the run waits, or stops for its successor. If it repeats, see `docs/deployed-edition.md`. |
 | `held` | `live blank` set the hold. | `live release --prefix P` (or live-blank.yml, action `release`) once the cause is fixed. |
 | `overrides` | The admin's statuses could not be read from the API this pass. | Nothing by hand: the next pass reads them again. If it repeats, check the API (docs/accounts.md). |
+| `host` | The live host (GitHub) refused for a rate limit; the pass line says until when. Nothing was sent after the refusal and nothing is lost. | Nothing by hand: the pass at that time uploads every change. Stop any bulk GitHub API use acting as the owner ([When the live host refuses](#when-the-live-host-refuses)). |
 | `health` | Under 60% of the sources due (the active, pollable stations) read cleanly in the last 15 min, or the share is under half the previous pass's. A due source not read counts as not clean. | Look at `health.json` `reads`. A network or runner problem passes by itself. |
 | `not_newer` | Another writer published a newer file, or the clock went back. | Make sure only one ingest runs. |
 | `clock_ahead` | The box's clock is more than 60 s ahead of the host's. | Fix the clock (NTP). |
