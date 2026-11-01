@@ -67,6 +67,7 @@ from snowlight.predict import (
     night_replay,
     outlook_cli,
     pool,
+    read_cli,
     terms_cli,
     terms_file,
     train,
@@ -324,6 +325,7 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
                 outlook_cli,
                 candidates_cli,
                 night_replay,
+                read_cli,
             )
         ),
     ):
@@ -347,6 +349,12 @@ def _register_evidence(actions: "argparse._SubParsersAction[argparse.ArgumentPar
         type=Path,
         default=EVIDENCE_DIR,
         help="the district tables and labels predict learn left",
+    )
+    kept.add_argument(
+        "--reads",
+        type=Path,
+        default=PIPELINE_ROOT / "out" / "internal" / "predict" / "reads",
+        help="the outcome-blind live labels' private record (predict read-labels)",
     )
     kept.add_argument(
         "--check",
@@ -3321,48 +3329,133 @@ def left_for_evidence(folder: Path) -> tuple[dict[str, tuple[str, ...]], bytes |
     return tables, labels
 
 
-def keep_evidence(
+def keep_evidence(  # noqa: PLR0913 - the store, what it keeps and when
     store: Any,
     snapshots: Mapping[str, object],
     tables: Mapping[str, Sequence[str]],
     now: datetime,
     labels: bytes | None = None,
+    *,
+    reads: Sequence[Any] = (),
 ) -> int:
     """Keep the finished snapshots, every district table given (the directory content this
     run read: kept as soon as it is deployed, before any snapshot indexes it) and the labels
-    (``learn.json``, every version) in the evidence store (:mod:`snowlight.live.evidence`);
-    print one line a database, and a warning for a finished snapshot whose content has no
-    table kept anywhere (its indexes could not be read back). 0 when every database kept
-    them, 1 otherwise."""
+    (``learn.json``, every version) in the evidence store (:mod:`snowlight.live.evidence`),
+    then, with the time left, the outcome-blind record's ``reads`` offers
+    (:func:`read_offers`); print one line a database and push, and a warning for a finished
+    snapshot whose content has no table kept anywhere (its indexes could not be read back).
+    0 when every database kept them, 1 otherwise."""
     from snowlight.live import evidence  # noqa: PLC0415
-    from snowlight.live.d1 import D1Error  # noqa: PLC0415
 
     offers = evidence.snapshot_offers(snapshots, tables, now)
     if labels is not None:
         offers.append(evidence.Offer(evidence.LABELS, "learn", labels))
-    kinds = (evidence.SNAPSHOT, evidence.DISTRICTS, evidence.LABELS)
+    code = _push_evidence(store, offers, (evidence.SNAPSHOT, evidence.DISTRICTS, evidence.LABELS))
+    if code is None:
+        return 1
+    _warn_untabled(store, snapshots, tables, now)
+    if reads:
+        left = _evidence_left(store)
+        if left is not None and left < READS_LEAST:
+            _out(
+                f"predict evidence (read labels): {len(reads)} finished files offered, "
+                f"{max(left, 0.0):.0f} s left of the push's time: they wait for the next run"
+            )
+            return code
+        seconds = store.seconds
+        if left is not None:
+            # The second push's own budget ends before the first push's hard deadline, so it
+            # stops writing on its own and leaves the rest for the next run.
+            store.seconds = left - READS_MARGIN if seconds is None else min(
+                seconds, left - READS_MARGIN
+            )  # fmt: skip
+        try:
+            kinds = (evidence.LABELS, evidence.TRIALS, evidence.AUDIT)
+            later = _push_evidence(store, reads, kinds, " (read labels)")
+        finally:
+            store.seconds = seconds
+        code = 1 if later is None else max(code, later)
+    return code
+
+
+READS_LEAST: Final = 15.0
+"""Seconds the read labels' push needs left before the hard deadline to start at all."""
+READS_MARGIN: Final = 10.0
+"""Seconds kept back from it for listing what the databases hold and the writes of the file
+in flight when its own budget ends (the first push keeps 15 of the 45 back the same way)."""
+
+
+def _evidence_left(store: Any) -> float | None:
+    """Seconds left before the store's hard deadline (``None``: it has none)."""
+    api = getattr(store, "api", None)
+    deadline = getattr(api, "deadline", None)
+    if deadline is None:
+        return None
+    clock: Callable[[], float] = getattr(api, "monotonic", time.monotonic)
+    return float(deadline) - float(clock())
+
+
+def _push_evidence(
+    store: Any, offers: Sequence[Any], kinds: Sequence[str], what: str = ""
+) -> int | None:
+    """One push to the evidence store and its lines: 0 kept everywhere, 1 a database failed,
+    ``None`` none could be written."""
+    from snowlight.live import evidence  # noqa: PLC0415
+    from snowlight.live.d1 import D1Error  # noqa: PLC0415
+
     try:
         reports = store.push(offers, kinds)
         failed = ""
     except evidence.PartialPushError as error:
         reports, failed = list(error.reports), str(error)
     except D1Error as error:
-        _err(f"::error::predict evidence: {error}")
-        return 1
+        _err(f"::error::predict evidence{what}: {error}")
+        return None
     for report in reports:
         wait = f", {report.left} wait for the next run" if report.left else ""
         held = "" if report.stored is None else f"; it holds {report.stored} B in all"
         _out(
-            f"predict evidence {report.database}: {len(offers)} finished files offered,"
+            f"predict evidence {report.database}{what}: {len(offers)} finished files offered,"
             f" {report.held} held before, {report.kept} kept and read back ({report.copied}"
             f" copied from the other database), {report.bytes} B,"
             f" {report.rows_written} rows written{wait}{held}"
         )
-    _warn_untabled(store, snapshots, tables, now)
     if failed:
-        _err(f"::error::predict evidence: {failed}")
+        _err(f"::error::predict evidence{what}: {failed}")
         return 1
     return 0
+
+
+def read_offers(folder: Path, days: int | None = None) -> list[Any]:
+    """The outcome-blind record's newest ``days`` labeled days (every one when ``None``) as
+    evidence offers, read as bytes only (each day is frozen once written, so a day is kept
+    once): its rows (``labels``, key ``read-<day>``), its co-listing trials (``trials``, key
+    ``<day>``) and its audit counts (``audit``, key ``<day>``). None when the record does
+    not read (the next run offers them)."""
+    from snowlight.live import evidence  # noqa: PLC0415
+    from snowlight.predict import live_read  # noqa: PLC0415
+
+    found: list[Any] = []
+    try:
+        labeled = live_read.labeled_days(folder)
+        for day in labeled[-days:] if days is not None else labeled:
+            key = day.isoformat()
+            rows = live_read.rows_path(folder, day).read_bytes()
+            found.append(evidence.Offer(evidence.LABELS, f"read-{key}", rows))
+            trials = live_read.trials_path(folder, day)
+            if trials.is_file():
+                found.append(evidence.Offer(evidence.TRIALS, key, trials.read_bytes()))
+            audit = live_read.audit_path(folder, day)
+            data = (
+                audit.read_bytes()
+                if audit.is_file()
+                else live_read.audit_bytes(live_read.ReadDay.from_bytes(rows).audit)
+            )
+            found.append(evidence.Offer(evidence.AUDIT, key, data))
+    except (OSError, ValueError) as error:
+        _err(f"predict evidence: the read record: {type(error).__name__}")
+        return []
+    return found
 
 
 def _warn_untabled(
@@ -3442,6 +3535,7 @@ def run_evidence(args: argparse.Namespace) -> int:  # pragma: no cover - the rea
     from snowlight.live import evidence  # noqa: PLC0415
     from snowlight.live.cli import make_client  # noqa: PLC0415
     from snowlight.live.d1 import CloudflareD1  # noqa: PLC0415
+    from snowlight.predict import live_read  # noqa: PLC0415
     from snowlight.predict.inputs import read_deployed, read_local  # noqa: PLC0415
 
     if args.check:
@@ -3461,10 +3555,11 @@ def run_evidence(args: argparse.Namespace) -> int:  # pragma: no cover - the rea
         with make_client() as client:
             store = evidence.make_store(env, client)
             store.seconds = EVIDENCE_SECONDS
+            reads = read_offers(args.reads, live_read.OFFER_DAYS)  # before the clock starts
             if isinstance(store.api, CloudflareD1):
                 store.api.deadline = time.monotonic() + EVIDENCE_FOR
             now = datetime.now(UTC)
-            code = keep_evidence(store, snapshots, tables, now, labels)
+            code = keep_evidence(store, snapshots, tables, now, labels, reads=reads)
             if isinstance(store.api, CloudflareD1):
                 store.api.deadline = None
             known = ask_kept(store, snapshots, tables, kept_of(args.state), now, EVIDENCE_ASK_FOR)

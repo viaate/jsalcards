@@ -16,7 +16,14 @@
 # everywhere labels it, and a refit is swapped in only when the newest held-out live days find
 # it no worse. The step can never stop the passes: it may fail or time out on its own (after 5
 # minutes, so the chain's first pass is never held long; it takes under a minute), and a kept
-# refit (or a failed step) opens one issue, unless one is already open.
+# refit (or a failed step) opens one issue, unless one is already open. The outcome-blind read
+# labels follow it the same way (`predict read-labels`, after 2 minutes at most; about as long
+# as learning), so the first pass waits for both: about 1.5 minutes, 7 minutes at the worst.
+# The job's 347 minutes hold the worst case of every step: setup and the cache restores about
+# 4, learning 5, the read labels 2 and their save about 0.5, the passes 320 plus the last one
+# about 3, the evidence 2 and its check 1, the cache saves (the boundaries on a miss) about 2,
+# the successor, watchdog and issue steps about 1.5: about 341, so about 6 minutes to spare
+# (a job that hits its limit is cancelled, so its successor would not start).
 #
 # Publishing needs the secret SNOWLIGHT_LIVE_TOKEN in the environment `live`: a fine-grained
 # token with Contents read and write on viaate/snowlight-live only, which the owner creates
@@ -48,7 +55,7 @@ jobs:
     # Scheduled runs are always on the default branch (their payload names no repository).
     if: github.event_name == 'schedule' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
-    timeout-minutes: 345
+    timeout-minutes: 347
     environment: live
     defaults:
       run:
@@ -128,6 +135,48 @@ jobs:
         timeout-minutes: 5
         run: uv run snowlight predict learn
 
+      # The outcome-blind live labels' private record (docs/predict.md, "The read labels";
+      # advisory-sane L1): per labeled school morning a file of rows, one of co-listing trials
+      # and one of audit counts, frozen once written (up to about 1.5 MB raw on a heavy storm
+      # day). Under its own key, apart from the pass state, so neither cache changes the
+      # other's; saved only on a run that labeled a day. A restore that fails or hangs never
+      # holds the passes back (a missing record only means the step relabels nothing new).
+      - if: steps.token.outputs.ready == 'true'
+        uses: actions/cache/restore@v4
+        continue-on-error: true
+        timeout-minutes: 1
+        with:
+          path: pipeline/out/internal/predict/reads
+          key: predict-reads-${{ github.run_id }}
+          restore-keys: predict-reads-
+
+      # Labels the new live mornings by which lists were read (never by what they named), and
+      # publishes the public audit (predictions/read-audit.json, counts only) when a day is
+      # added. It never touches what the learning step did, and may fail or time out alone
+      # (after 2 minutes: the chain's first pass waits for it). It labels nothing while a
+      # coverage file (pipeline/data/predict/read-sources.json.gz, audiences.json.gz) is absent.
+      - if: steps.token.outputs.ready == 'true'
+        id: read_labels
+        name: Label the live mornings by what was read
+        continue-on-error: true
+        timeout-minutes: 2
+        run: uv run snowlight predict read-labels
+
+      # Saved right after it, before the passes, and only when a day was added (the step
+      # sets added as it writes each day, so a step its time limit cut off still saves the
+      # days it wrote): the public audit takes a day's counts in this step, so the record
+      # must not wait 320 minutes for a save a lost runner would skip. The record changes
+      # nowhere else, and every entry holds it whole (the newest is restored; older ones age
+      # out of the cache first). It may fail or time out alone (after a minute): a save that
+      # fails must never keep the passes from running.
+      - if: always() && steps.token.outputs.ready == 'true' && steps.read_labels.outputs.added == 'true'
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        timeout-minutes: 1
+        with:
+          path: pipeline/out/internal/predict/reads
+          key: predict-reads-${{ github.run_id }}
+
       - if: steps.token.outputs.ready == 'true'
         id: run
         env:
@@ -139,12 +188,13 @@ jobs:
         run: uv run snowlight predict run --until +320m
 
       # The finished weather-class snapshots the live days are labeled under, the district
-      # tables they index and the labels learn published, kept for good in the two evidence
-      # databases (docs/predict.md, "The evidence"; append-only). After the passes, never
-      # before the first pass: snapshots settle 12 hours after their day begins, so nothing
-      # is lost by the wait. It gives itself 30 seconds of writes (the rest waits for the next
-      # run), then notes in the pass state which snapshots and tables the databases hold:
-      # only those may leave the state after 45 days. It may fail or time out alone.
+      # tables they index, the labels learn published and the read labels' days, kept for
+      # good in the two evidence databases (docs/predict.md, "The evidence"; append-only).
+      # After the passes, never before the first pass: snapshots settle 12 hours after their
+      # day begins, so nothing is lost by the wait. It gives itself 30 seconds of writes (the
+      # rest waits for the next run), then notes in the pass state which snapshots and tables
+      # the databases hold: only those may leave the state after 45 days. It may fail or time
+      # out alone.
       - if: always() && steps.token.outputs.ready == 'true'
         id: evidence
         name: Keep the evidence

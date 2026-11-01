@@ -363,6 +363,9 @@ class ArchiveRun:  # pragma: no cover - the real archive
     """District to its market (:func:`district_markets`), once labeled."""
     eligible: frozenset[str] = frozenset()
     """The eligible schools' NCES ids (set before labeling): only their rows hold a label."""
+    captured: dict[tuple[str, str], set[tuple[str, date]]] = field(default_factory=dict)
+    """Each archive capture (source, ``fetched_at``): the districts its accepted rows named,
+    each with the capture's local day there (the read rule's closing-size captures)."""
     private: frozenset[str] = frozenset()
     """The private schools labeled as their own units (their NCES ids; set before labeling)."""
     settled_days: dict[date, DayLit] = field(default_factory=dict)
@@ -594,6 +597,7 @@ def prepare_archive(
         extras=extras,
     )
     listings: list[tuple[str, str, date]] = []
+    captured: dict[tuple[str, str], set[tuple[str, date]]] = {}
     for row in allowed_rows(ordered, registry):
         outcome = book.outcomes.get(row_query(row, registry))
         if outcome is None or not outcome.accepted:
@@ -609,6 +613,9 @@ def prepare_archive(
             zone = zone_of_district.get(district)
             if zone is not None:
                 listings.append((row.source_id, district, _local_day(moment, zone)))
+                captured.setdefault((row.source_id, row.fetched_at), set()).add(
+                    (district, _local_day(moment, zone))
+                )
         for school in sorted(set(outcome.direct)):
             zone = privates.get(school)
             if zone is not None:
@@ -617,7 +624,9 @@ def prepare_archive(
     with (paths.archive / "reads.jsonl").open(encoding="utf-8") as handle:
         records = sorted(parse_reads(handle), key=lambda read: read.fetched_at)
     index = DayIndex(ordered, [row.fetched_at for row in rows], [read.fetched_at for read in reads])
-    return ArchiveRun(inputs, index, listings, markets, records, private=frozenset(privates))
+    return ArchiveRun(
+        inputs, index, listings, markets, records, captured=captured, private=frozenset(privates)
+    )
 
 
 def _local_day(moment: datetime, zone: str) -> date:

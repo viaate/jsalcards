@@ -25,6 +25,28 @@ whole and atomically by every pass (:meth:`MorningLog.record`). Per 30-minute UT
   kinds for its days; a withheld row's status kinds when its words name status kinds only;
   :data:`ANY_KIND` for a dissent, or a withheld row whose words are unsure or unread. A row
   that only says school is open names nothing.
+* ``health`` (advisory-sane L1): the lowest healthy share, in thousandths, of the shown passes
+  of the slot inside :data:`READ_BAND` (the share the pass's gate read,
+  :meth:`snowlight.live.ingest.Ingest.gate_share`); absent when no such pass recorded one
+  (every slot recorded before 2026-10-31).
+* ``stale`` (advisory-sane L1): from the same passes, the sources whose whole read was an
+  ``empty`` the reader judged from old rows (a list typed by hand last changed more than 36
+  hours before, a feed of old posts, page text not yet dated, a list last written before
+  the last winter: the read's health gives a reason), not a page that says it holds nothing
+  now; and, from 2026-10-31, the sources whose whole read was a populated list whose rows
+  name only days before the day before (:func:`old_lists`: a list not updated since an
+  earlier storm). Absent when empty. The S7-L labels do not read it; the outcome-blind
+  labels never count such a read whole.
+
+Per UTC day, ``by`` (advisory-sane L1): from the shown passes inside :data:`READ_BAND`, each
+source read whole with, per slot, the districts its own present rows named for that UTC day
+or for every day (:func:`named_by`), so a closed district's other lists can be asked whether
+they named it (the co-listing trials of :mod:`snowlight.predict.live_read`). It is stored
+once per source as a run of ``[slot, added, removed]`` entries, each slot's set being the
+one before it with ``added`` taken in and ``removed`` let go, written only where the set
+changes (a slot holding a read of the source and no entry has the set as it last was), so a
+list that names the same districts all morning costs its districts once, not once a slot.
+Absent when empty.
 
 ``through`` is the last pass recorded. A file that does not read is never trusted again: the
 next pass marks it ``damaged`` (what it lost cannot be told), and no district-day of that UTC
@@ -40,6 +62,7 @@ holds codes, ids, counts and times only (no names, no list text).
 
 import json
 import logging
+import math
 from collections import defaultdict
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -82,6 +105,7 @@ UNPLACED: Final = frozenset({Withheld.UNMATCHED, Withheld.REJECTED_MATCH, Withhe
 OPEN_ONLY: Final = frozenset({"open"})
 
 READ_PARTS: Final = 3
+PERMILLE: Final = 1000
 type Read = tuple[int, int, int]
 """One whole read of a source: rows present, rows placed, rows read as no status."""
 
@@ -168,6 +192,14 @@ class Slot:
     reads: dict[str, set[Read]] = field(default_factory=dict)
     unknown: set[str] = field(default_factory=set)
     named: dict[str, Naming] = field(default_factory=dict)
+    health: int | None = None
+    """The lowest healthy share (thousandths) of the slot's shown passes in the read band."""
+    by: dict[str, set[str]] = field(default_factory=dict)
+    """Each source read whole by those passes, with the districts its own rows named for the
+    UTC day or every day (stored per day, :func:`by_json`)."""
+    stale: set[str] = field(default_factory=set)
+    """The sources whose whole read by those passes was judged from old rows: an empty the
+    reader judged so, or a populated list naming only days before the day before."""
 
     def to_json(self) -> dict[str, JSONValue]:
         reads: dict[str, JSONValue] = {}
@@ -177,12 +209,17 @@ class Slot:
             leaid: {day: list[JSONValue](sorted(kinds)) for day, kinds in sorted(days.items())}
             for leaid, days in sorted(self.named.items())
         }
-        return {
+        value: dict[str, JSONValue] = {
             "shown": list[JSONValue](sorted(self.shown)),
             "reads": reads,
             "unknown": list[JSONValue](sorted(self.unknown)),
             "named": named,
         }
+        if self.health is not None:
+            value["health"] = self.health
+        if self.stale:
+            value["stale"] = list[JSONValue](sorted(self.stale))
+        return value
 
     @classmethod
     def from_json(cls, value: object) -> "Slot":
@@ -193,11 +230,18 @@ class Slot:
         reads: dict[str, set[Read]] = {}
         for source, found in dict(value["reads"]).items():
             reads[str(source)] = {_read(item) for item in found}
+        health = value.get("health")
+        if health is not None and (
+            not isinstance(health, int) or isinstance(health, bool) or not 0 <= health <= PERMILLE
+        ):
+            raise ValueError("a slot's health is thousandths")
         return cls(
             shown={str(item) for item in value["shown"]},
             reads=reads,
             unknown={str(item) for item in value["unknown"]},
             named={str(k): _naming(days) for k, days in dict(value["named"]).items()},
+            health=health,
+            stale={str(item) for item in value.get("stale", ())},
         )
 
 
@@ -234,15 +278,17 @@ class MorningDay:
     damaged: bool = False
 
     def to_bytes(self) -> bytes:
-        return dumps_json(
-            {
-                "schema_version": SCHEMA_VERSION,
-                "day": self.day.isoformat(),
-                "through": None if self.through is None else self.through.isoformat(),
-                "damaged": self.damaged,
-                "slots": {key: slot.to_json() for key, slot in sorted(self.slots.items())},
-            }
-        )
+        value: dict[str, JSONValue] = {
+            "schema_version": SCHEMA_VERSION,
+            "day": self.day.isoformat(),
+            "through": None if self.through is None else self.through.isoformat(),
+            "damaged": self.damaged,
+            "slots": {key: slot.to_json() for key, slot in sorted(self.slots.items())},
+        }
+        by = by_json(self.slots)
+        if by:
+            value["by"] = by
+        return dumps_json(value)
 
     @classmethod
     def from_bytes(cls, data: bytes) -> "MorningDay":
@@ -253,9 +299,11 @@ class MorningDay:
             if body["schema_version"] != SCHEMA_VERSION:
                 raise ValueError("another schema")
             through = body["through"]
+            slots = {str(k): Slot.from_json(v) for k, v in dict(body["slots"]).items()}
+            by_from_json(body.get("by", {}), slots)
             return cls(
                 day=date.fromisoformat(body["day"]),
-                slots={str(k): Slot.from_json(v) for k, v in dict(body["slots"]).items()},
+                slots=slots,
                 through=None if through is None else datetime.fromisoformat(through),
                 damaged=bool(body["damaged"]),
             )
@@ -302,7 +350,7 @@ class MorningLog:
                 return found.through
         return None
 
-    def record(
+    def record(  # noqa: PLR0913 - one pass's parts
         self,
         at: datetime,
         *,
@@ -310,8 +358,15 @@ class MorningLog:
         reads: Mapping[str, Read],
         unknown: Collection[str],
         named: Mapping[str, Mapping[str, Collection[str]]],
+        health: float | None = None,
+        by: Mapping[str, Collection[str]] | None = None,
+        stale: Collection[str] = (),
     ) -> None:
-        """Fold one pass into its UTC day's file (see the module docstring)."""
+        """Fold one pass into its UTC day's file (see the module docstring): ``health`` is
+        the pass's healthy share (0 to 1), ``by`` the districts each source it read whole
+        named for the day, and ``stale`` the sources read whole as an empty judged from old
+        rows or a list naming only earlier days (:func:`old_lists`), all kept only for a
+        shown pass inside the read band."""
         moment = at.astimezone(UTC)
         found = self.day(moment.date()) or MorningDay(moment.date())
         slot = found.slots.setdefault(slot_of(moment), Slot())
@@ -320,6 +375,13 @@ class MorningLog:
             if in_band(moment):
                 for source, read in reads.items():
                     slot.reads.setdefault(source, set()).add(read)
+                if health is not None:
+                    share = min(PERMILLE, max(0, math.floor(health * PERMILLE)))
+                    slot.health = share if slot.health is None else min(slot.health, share)
+                for source, leaids in (by or {}).items():
+                    if source in reads:
+                        slot.by.setdefault(source, set()).update(leaids)
+                slot.stale.update(source for source in stale if source in reads)
         slot.unknown.update(unknown)
         for leaid, days in named.items():
             into = slot.named.setdefault(leaid, {})
@@ -383,6 +445,102 @@ class MorningLog:
             return self.path(day).stat().st_size
         except OSError:
             return 0
+
+
+def named_by(taken: Iterable[str], resolved: Sequence[Resolved], day: date) -> dict[str, set[str]]:
+    """Each source of ``taken`` (read whole this pass) with the districts its own present rows
+    name for ``day`` or for every day (:func:`naming`, any kind; a row that only says school
+    is open names none, and a row for another day does not count)."""
+    wanted = set(taken)
+    days = {day.isoformat(), EVERY_DAY}
+    found: dict[str, set[str]] = {}
+    for source in resolved:
+        if source.source_id not in wanted:
+            continue
+        into = found.setdefault(source.source_id, set())
+        for result in source.rows:
+            if result.present and not result.superseded and days & set(naming(result.derived)):
+                into.update(result.derived.reach)
+    return found
+
+
+def old_lists(taken: Iterable[str], resolved: Sequence[Resolved], day: date) -> set[str]:
+    """The sources of ``taken`` (read whole this pass) whose present rows give dated days
+    and none of them on or after the day before ``day``: a populated list still holding an
+    earlier storm's rows, judged from the rows' own dates (a row with no date of its own is
+    dated by when the list first posted it, so a row left up since an earlier storm counts),
+    never from what closed. Rows with no day (withheld or open-ended) say nothing either
+    way."""
+    wanted = set(taken)
+    since = day - timedelta(days=1)
+    found: set[str] = set()
+    for source in resolved:
+        if source.source_id not in wanted:
+            continue
+        dated = [
+            when
+            for result in source.rows
+            if result.present and not result.superseded
+            for when in (
+                *(claim.day for claim in result.derived.claims),
+                *result.derived.opens,
+                *(result.derived.dissent or ()),
+            )
+        ]
+        if dated and max(dated) < since:
+            found.add(source.source_id)
+    return found
+
+
+def by_json(slots: Mapping[str, Slot]) -> dict[str, JSONValue]:
+    """The slots' ``by`` as one run per source (see the module docstring): ``[slot, added,
+    removed]`` against the source's set before, only where the set changes."""
+    found: dict[str, list[JSONValue]] = {}
+    last: dict[str, set[str]] = {}
+    for key, slot in sorted(slots.items()):
+        for source, leaids in sorted(slot.by.items()):
+            before = last.get(source)
+            if before == leaids:
+                continue
+            before = before or set()
+            found.setdefault(source, []).append(
+                [
+                    key,
+                    list[JSONValue](sorted(leaids - before)),
+                    list[JSONValue](sorted(before - leaids)),
+                ]
+            )
+            last[source] = set(leaids)
+    return dict[str, JSONValue](found)
+
+
+def by_from_json(value: object, slots: Mapping[str, Slot]) -> None:
+    """Put a day's stored ``by`` (:func:`by_json`) back into its ``slots``: from a source's
+    first entry on, every slot holding a read of it has its set as of that slot.
+
+    Raises:
+        ValueError: it is not one, or an entry names a slot without a read of its source.
+    """
+    if not isinstance(value, dict):
+        raise ValueError("by is an object")
+    runs: dict[str, dict[str, tuple[set[str], set[str]]]] = {}
+    for source, entries in value.items():
+        run = runs.setdefault(str(source), {})
+        for entry in entries:
+            if not isinstance(entry, list) or len(entry) != READ_PARTS:
+                raise ValueError("a by entry is a slot, the districts added and those let go")
+            key, added, removed = entry
+            if key not in slots or source not in slots[key].reads:
+                raise ValueError("a by entry names a slot without a read of its source")
+            run[str(key)] = ({str(d) for d in added}, {str(d) for d in removed})
+    current: dict[str, set[str]] = {}
+    for key, slot in sorted(slots.items()):
+        for source, run in runs.items():
+            if key in run:
+                added, removed = run[key]
+                current[source] = (current.get(source, set()) | added) - removed
+            if source in current and source in slot.reads:
+                slot.by[source] = set(current[source])
 
 
 def pass_reads(taken: Iterable[str], resolved: Sequence[Resolved]) -> dict[str, Read]:

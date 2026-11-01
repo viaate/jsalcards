@@ -148,14 +148,59 @@ live_score:
   read:                           # a district is read on a school morning when one of its sources...
     window: ["06:30", "09:30"]    # ...had a whole read in a 30-minute slot of this local window
     healthy_share: 0.9            # ...in a slot whose reader healthy share is at least this
-    recent_days: 14               # ...and had a populated read in this many days before (or a second proven source read)
-    min_captures: 5               # a proven county source has at least this many populated captures
+    recent_days: 14               # ...and had a counted day (C2) in this many days before (or a second proven source read)
+    min_captures: 5               # a proven county source has at least this many closing-size captures
+                                  # (lead rulings B1.4, C1, C2: one test, archive and live alike: the
+                                  # list's OWN rows named at least 3 districts under a warning-or-
+                                  # above class (snow, lake snow, ice, blizzard, tropical warnings;
+                                  # cold and advisories are not); archive: on the capture's local day
+                                  # or the next, one value a day, the day's largest capture (review
+                                  # R5-S3); live: at the day's snapshot and lit closed, remote or
+                                  # delayed on our map, from a read that passed every check (shown,
+                                  # healthy, not stale, gated, labels.station_min_captures captures by
+                                  # then, at least labels.capture_min_share of its reference as it
+                                  # stood, or for a thin reference of its longest vouching market
+                                  # peer's read that day, by the read's one peer-vouch rule; in a slot
+                                  # inside the named districts' read window). Only such counted live
+                                  # days are a list's live captures
+                                  # (labels.station_min_captures), reference values, tier B captures
+                                  # and recent days; that our map lit districts the list carries is
+                                  # never enough. The reference is the median of the closing-size
+                                  # values, never under the archive's median when the archive alone
+                                  # holds labels.station_min_captures. B1.2: a list with fewer
+                                  # closing-size values (thin reference) reads on a storm day only
+                                  # when its read holds labels.capture_min_share of the longest read
+                                  # in the window of a market peer that vouches (review R6-B1: shown,
+                                  # healthy, not stale, not a district site, 5 captures, a reference
+                                  # of its own not thin, and its read at least
+                                  # labels.capture_min_share of it; an empty read never); else
+                                  # small_capture
+                                  # for all its districts. B1.3: on a warning-or-above morning a
+                                  # populated read naming no district for the day while its market
+                                  # named some is stale_populated, and on any morning so is a
+                                  # populated read whose rows name only days before the day before.
+                                  # C3: the closing-size row counts are numbers, not text, and may be
+                                  # committed. C4: the archive audiences keep the (list, district)
+                                  # pairs listed in the current or previous season (seasons begin Aug
+                                  # 1)
     open_if_unnamed: true         # a covered district a whole fresh read did not name counts as open (owner O5)
-  sensitivity:                    # list sensitivity from co-listing trials (closed districts only)
+  sensitivity:                    # list sensitivity from co-listing trials (closed districts only,
+                                  # lit no school, never delayed; reported with their distinct dates
+                                  # and lists and a day-aggregated interval;
+                                  # a trial: a list read whole in the window that had not lit the
+                                  # district by the window's end, on any log day; named = its rows
+                                  # named the district for the day in a slot it qualified in; each
+                                  # trial also keeps named_in_day, reported beside it)
     tier_a_prior: [9, 1]          # Beta(9 + hits, 1 + misses)
     tier_b_prior: [4, 2]          # Beta(4 + hits, 2 + misses)
     tier_b_min: 0.7               # tier B enters the primary set at this sensitivity...
-    tier_b_min_trials: 20         # ...over at least this many closed co-listing trials
+    tier_b_min_trials: 20         # ...over at least this many closed co-listing trials (lead ruling
+                                  # B1.5: from at least 5 distinct dates). Lead ruling C5: the by-date
+                                  # mean (each date one observation) is reported against tier_b_min
+                                  # beside it, "met by trials, not by date" when under it, as a
+                                  # diagnostic until 20 tier B lists exist (the larger of the lists
+                                  # tier B as of the run and the lists the trials come from); from
+                                  # then on G1 also needs it
   classes:                        # the class each weather class is scored and served in
     advisory: advisory
     advisory_after: advisory

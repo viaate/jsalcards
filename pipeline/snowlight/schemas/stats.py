@@ -4,7 +4,7 @@ Every number here is a count of observed events. Rates and percentages are left 
 the reader, so the files never hold a rounded figure that disagrees with its parts.
 """
 
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import Field, model_validator
 
@@ -178,4 +178,142 @@ class TrackRecord(PublishedModel):
                 raise ValueError("first_day and last_day are set once any day is scored")
         elif self.first_day > self.last_day or not scored:
             raise ValueError("first_day..last_day must be a scored span")
+        return self
+
+
+type ReadWeather = Literal[
+    "none",
+    "advisory",
+    "tropical",
+    "cold",
+    "lake_snow",
+    "snow_warning",
+    "ice",
+    "blizzard",
+    "unclassed",
+]
+"""A weather class at the snapshot, or ``unclassed`` (none was taken in time)."""
+
+type Thousandths = Annotated[int, Field(ge=0, le=1000, description="A share, in thousandths.")]
+
+
+class ReadClass(PublishedModel):
+    """One weather class on one school morning of the outcome-blind live labels (advisory-sane
+    L1): how many districts it held, how many were read, and what the read ones did.
+
+    ``alerted`` counts every deployed district of the class; ``covered`` those some list may
+    read. Each district is read (``read_a`` by a tier A list, else ``read_b``) or counted by
+    why not (``not_covered`` to ``not_recent``, in the order the read rule checks them;
+    ``thin_list`` is the rule's ``thin_station``; ``withheld_state``: no whole read, and a
+    slot of the window left out because a pass withheld the state; ``stale_populated``: on a
+    warning-or-above morning, a populated list naming nothing for the day while another list
+    of its market named districts for it). Each read district is
+    labeled (``lit_no_school``, ``lit_delayed``, ``unnamed``: covered and read, named by no
+    list, lit dark, which counts as open; ``unnamed_unplaced`` of them were read through a
+    list holding rows the matcher placed nowhere) or unknown by why (``unknown_*``);
+    ``unclassed`` districts are never labeled. ``named``: read districts some list named.
+    ``median_health``: the median healthy share of the read districts' first qualifying
+    slots. ``trials_*`` and ``hits_*``: the co-listing trials of the districts the map lit
+    no school (closed or remote; never delayed), per tier, and how many named it.
+    """
+
+    weather: ReadWeather
+    alerted: Count
+    covered: Count
+    read_a: Count
+    read_b: Count
+    named: Count
+    lit_no_school: Count
+    lit_delayed: Count
+    unnamed: Count
+    unnamed_unplaced: Count
+    unknown_listed: Count
+    unknown_partly_lit: Count
+    unknown_retracted: Count
+    unknown_break: Count
+    unknown_absent: Count
+    not_covered: Count
+    withheld_state: Count
+    no_whole_read: Count
+    dropped_read: Count
+    voided_empty: Count
+    stale_empty: Count
+    stale_populated: Count
+    thin_list: Count
+    small_capture: Count
+    empty_uncorroborated: Count
+    health_unrecorded: Count
+    unhealthy: Count
+    not_recent: Count
+    median_health: Thousandths | None
+    trials_a: Count
+    hits_a: Count
+    trials_b: Count
+    hits_b: Count
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        read = self.read_a + self.read_b
+        not_read = (
+            self.not_covered + self.withheld_state + self.no_whole_read + self.dropped_read
+            + self.voided_empty + self.stale_empty + self.stale_populated + self.thin_list
+            + self.small_capture
+            + self.empty_uncorroborated + self.health_unrecorded + self.unhealthy
+            + self.not_recent
+        )  # fmt: skip
+        labeled = (
+            self.lit_no_school + self.lit_delayed + self.unnamed + self.unknown_listed
+            + self.unknown_partly_lit + self.unknown_retracted + self.unknown_break
+            + self.unknown_absent
+        )  # fmt: skip
+        if read + not_read != self.alerted:
+            raise ValueError("every district is read or counted by why not")
+        if self.covered != self.alerted - self.not_covered:
+            raise ValueError("covered is every district but the ones not covered")
+        if labeled != (0 if self.weather == "unclassed" else read):
+            raise ValueError("every read district of a class is labeled or unknown by why")
+        if self.named > read:
+            raise ValueError("more named than read")
+        if self.unnamed_unplaced > self.unnamed:
+            raise ValueError("more unnamed with unplaced rows than unnamed")
+        if self.hits_a > self.trials_a or self.hits_b > self.trials_b:
+            raise ValueError("more hits than trials")
+        if (self.median_health is None) != (read == 0 or self.weather == "unclassed"):
+            raise ValueError("a median healthy share is given exactly when a district is read")
+        return self
+
+
+class ReadAuditDay(PublishedModel):
+    """One school morning of the read audit: its classes, or ``held`` (the emergency stop
+    held the map dark: nothing is labeled)."""
+
+    day: LocalDate
+    held: bool
+    classes: tuple[ReadClass, ...]
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        order = list(ReadWeather.__value__.__args__)
+        keys = [order.index(item.weather) for item in self.classes]
+        if keys != sorted(set(keys)):
+            raise ValueError("classes must be in class order and unique")
+        if self.held and self.classes:
+            raise ValueError("a held day counts nothing")
+        return self
+
+
+class ReadAudit(PublishedModel):
+    """predictions/read-audit.json on the live host: the outcome-blind live labels' public
+    audit trail (advisory-sane L1), codes and counts only. It holds no chance, no level and
+    no list: every count is of districts or co-listing trials."""
+
+    schema_version: SchemaVersion
+    generated_at: UtcInstant
+    days: tuple[ReadAuditDay, ...]
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        days = [item.day for item in self.days]
+        if days != sorted(set(days)):
+            raise ValueError("days must be sorted and unique")
         return self

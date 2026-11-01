@@ -95,7 +95,7 @@ def source_read(station: Station, result: RunResult, directory: LiveDirectory) -
     if last.status is HealthStatus.OK:
         outcome = Outcome.NOT_MODIFIED if last.not_modified else Outcome.OK
     elif last.status is HealthStatus.EMPTY:
-        return SourceRead(station.id, Outcome.EMPTY, last.checked_at)
+        return SourceRead(station.id, Outcome.EMPTY, last.checked_at, stale=last.reason is not None)
     elif last.http_status in _BLOCKED:
         return SourceRead(station.id, Outcome.BLOCKED, last.checked_at)
     else:

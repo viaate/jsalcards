@@ -192,3 +192,49 @@ def test_the_evidence_is_kept_after_the_passes_and_never_holds_the_first_one() -
     assert "gh issue create" in str(issue["run"])
     # the save still runs whatever the evidence steps did
     assert str(found[save]["if"]).startswith("always()")
+
+
+def test_the_read_labels_run_after_learning_in_their_own_cache_and_never_stop_the_passes() -> None:
+    found = steps()
+    ids = [step.get("id") for step in found]
+    read = found[ids.index("read_labels")]
+    assert ids.index("learn") < ids.index("read_labels") < ids.index("run")
+    assert read["run"] == "uv run snowlight predict read-labels"
+    assert read["continue-on-error"] is True
+    # The chain's first pass waits for it: 2 minutes at most.
+    assert int(str(read["timeout-minutes"])) <= 2
+    caches = [
+        (i, step)
+        for i, step in enumerate(found)
+        if "predict-reads" in str(step.get("with", {}).get("key", ""))  # type: ignore[attr-defined]
+    ]
+    assert [str(step["uses"]) for _i, step in caches] == [
+        "actions/cache/restore@v4",
+        "actions/cache/save@v4",
+    ]
+    (first, restore), (save, saved) = caches
+    # Saved right after the step, before the 320-minute passes: the public audit takes a
+    # day's counts in the step, so a runner lost later must not lose the record of them.
+    assert first < ids.index("read_labels") == save - 1 < ids.index("run")
+    assert str(saved["if"]).startswith("always()")
+    # Saved only on a run that labeled a day (the record changes nowhere else).
+    assert "steps.read_labels.outputs.added == 'true'" in str(saved["if"])
+    # The cache steps before the passes: a restore or save that fails or hangs never stops
+    # them (review R5-LS-2).
+    for step in (restore, saved):
+        assert step["continue-on-error"] is True
+        assert int(str(step["timeout-minutes"])) <= 1
+    for _i, step in caches:
+        assert step["with"]["path"] == "pipeline/out/internal/predict/reads"  # type: ignore[index]
+
+
+def test_the_job_s_limit_holds_every_step_s_worst_case() -> None:
+    # The passes' 320 minutes, the timed steps' limits, and about 15 minutes for the untimed
+    # ones (setup, caches, the last pass, the successor, the watchdog and the issue steps):
+    # a job cut off by its limit is cancelled, and a cancelled run starts no successor.
+    found = steps()
+    timed = sum(int(str(step["timeout-minutes"])) for step in found if "timeout-minutes" in step)
+    run = next(step for step in found if step.get("id") == "run")
+    assert str(run["run"]).endswith("--until +320m")
+    assert int(str(job()["timeout-minutes"])) >= 320 + timed + 15
+    assert int(str(job()["timeout-minutes"])) <= 360  # a hosted runner's ceiling

@@ -420,7 +420,29 @@ only once the evidence store holds it; the evidence store keeps every day.
   filled with synthetic days, xz compressed, base64 stored: a morning day is 27 to 66 KB with
   400 to 1,011 sources read every slot and counts that change every slot, 73 to 121 KB on a
   storm morning naming 800 to 9,000 districts; a change-log day 2 KB calm, 54 KB with 2,000
-  schools lit, 397 KB with 15,000; a snapshot 3 KB; a district table 58 KB. At the worst of
+  schools lit, 397 KB with 15,000; a snapshot 3 KB; a district table 58 KB. The read labels'
+  fields (`health`, `stale`, the per-day `by` run) add about 1.3% raw and 4.5% gzip to a
+  synthetic 8,000-district storm day named by 400 lists all morning (13.9 to 14.1 MB raw, so
+  one such day stays under the 16 MB valve; 1.36 to 1.42 MB gzip, so the 16 MB packed state
+  budget still holds about 11 such days; 13 to 57 KB xz in the evidence databases), and 4%
+  gzip at 2,000 districts; written per slot they had added 31% raw and 108% gzip. The run
+  helps only while lists are steady: in the worst case, every list rotating half its
+  districts in and out every slot, each change is written, and the same synthetic storm day
+  (8,000 districts in the size test's layout) grows 60% raw (7.0 to 11.2 MB), 21% gzip (0.67
+  to 0.81 MB) and from 11 to 83 KB xz, about the per-slot shape (the size test bounds it at
+  900 districts). On the 13.9 MB layout above such a day could pass the 16 MB valve on its
+  own; the valve then lets older days the databases hold leave first (never the last 10),
+  and only past 32 MB does a day leave unkept. Against the packed state's budget, the last
+  10 days are never pruned: 10 steady storm days are about 10 x 1.42 = 14.2 MB gzip, past
+  the 12 MB `state` alert and under the 16 MB budget; 10 rotating ones (21% over the
+  steady 1.36 MB, about 1.65 MB each) are about 16.5 MB before the ledger, over it, so the
+  push is refused (`state`, D1Error) and the loop runs on in memory: restart continuity is
+  lost, the map is not (its holding rules keep it from a false state). Each push bills two
+  D1 rows per 64 KB chunk: about 434 rows at 14.2 MB and 504 at 16.5 MB, so the 20,000-row
+  hourly fallback comes after about 46 or 39 such pushes in a UTC day, against about 48 at
+  13.6 MB without the read labels' fields. Ten storm days in a row at these sizes have not happened on the live
+  map; the lead accepted the risk as documented (advisory-sane Addendum B1.8), and the real
+  storm-day sizes are measured after landing. At the worst of
   those (every day of the year at 66 KB, 30 storm days, 15,000-school days included) a year
   is about 46 MB a database, 460 MB in 10 winters. October's real record is far smaller (the
   live export of 4 days of morning record and change log, with the schema-only ledger, was
@@ -681,7 +703,7 @@ Private state (`out/internal/live/state/`, kept by the state store, [The state](
 - `exits.json`: the last runs' exits (the `chain` alert).
 - `d1.json` (never packed): this run's epoch and its last push's counts. `pulse` (never packed): the watcher's heartbeat.
 - `cadence.json`: per source, the start of the pass that last read it, its outcome, and the earliest next read of a deferred or blocked source.
-- `morning/<UTC day>.json`: the morning record the prediction model learns from (docs/predict.md, "The model learns on its own"). Per 30-minute UTC slot: the prefixes a pass was shown under, each whole read of a shown pass between 09:00 and 21:00 UTC (rows, rows placed, rows read as no status), the states a pass withheld whole, and the districts its rows named with the days and the status kinds (`?` when a dissenting, unsure or unread row named it). Counts, ids and codes only. Rewritten whole and atomically by every pass; kept 45 days in the state, and every finished day kept for good in the evidence databases ([The evidence](#the-evidence)). A day leaves the state only once a database holds its exact bytes (`kept.json`): when it is over 45 days old, or (never the last 10) while the folder holds more than 16 MB; past 32 MB the oldest go even unkept, loudly. `live state export` and `predict learn` log `morning record: <days> days, <bytes> B (<first day> to <last day>)`. A file that does not read is marked damaged and no day of it is learned from.
+- `morning/<UTC day>.json`: the morning record the prediction model learns from (docs/predict.md, "The model learns on its own"). Per 30-minute UTC slot: the prefixes a pass was shown under, each whole read of a shown pass between 09:00 and 21:00 UTC (rows, rows placed, rows read as no status), the states a pass withheld whole, and the districts its rows named with the days and the status kinds (`?` when a dissenting, unsure or unread row named it); for the outcome-blind read labels (docs/predict.md, "The read labels"), the lowest healthy share of the slot's shown band passes in thousandths (`health`) and the sources whose whole read was an empty judged from old rows, a list typed by hand not changed for 36 hours, old posts, undated page text or a list last written before the last winter, and the populated lists whose present dated rows all name days before the day before (`old_lists`: a list still holding an earlier storm's rows, judged from the rows' own dates, a row with no date of its own dated by when the list first posted it, never from what closed) (`stale`; a page that says it holds nothing now is not one). The read labels never count a stale read whole, nor count it toward a list's captures, size reference or recent days (lead ruling C2). A worst case of 400 stale ids (about 20 characters each) in each of 24 band slots adds about 196 KB raw and 2.5 KB gzip to a day (measured on synthetic ids). Per UTC day, `by`: each source read whole with the districts its own rows named for that day or every day, stored once a day per source as a run of `[slot, added, removed]` entries written only where its set changes, so a list naming the same districts all morning costs them once, not once a slot. Counts, ids and codes only. Rewritten whole and atomically by every pass; kept 45 days in the state, and every finished day kept for good in the evidence databases ([The evidence](#the-evidence)). A day leaves the state only once a database holds its exact bytes (`kept.json`): when it is over 45 days old, or (never the last 10) while the folder holds more than 16 MB; past 32 MB the oldest go even unkept, loudly. `live state export` and `predict learn` log `morning record: <days> days, <bytes> B (<first day> to <last day>)`. A file that does not read is marked damaged and no day of it is learned from.
 - `kept.json`: what the evidence databases were last found to hold, per morning-record and change-log day: the sha256 of the file and the databases holding exactly it; when the first check was, and days the size valve dropped unkept ([The evidence](#the-evidence)).
 - `unmatched.json`: names the matcher did not place. Only ever in a private store, never in the Actions cache.
 - `good_reads` in the ledger keeps each source's first good read of every UTC hour for 14 days: all the resolver asks of it.

@@ -56,7 +56,7 @@ from snowlight.live.guards import Refusal, Rules, held
 from snowlight.live.ledger import GOOD, LONGEST, Ledger, SeenRow
 from snowlight.live.ledger import Outcome as ReadOutcome
 from snowlight.live.merge import AdminStatus, Merged, merge, with_overrides
-from snowlight.live.morning import MorningLog, named_of, pass_reads
+from snowlight.live.morning import MorningLog, named_by, named_of, old_lists, pass_reads
 from snowlight.live.publish import (
     AdminPart,
     Exit,
@@ -97,6 +97,11 @@ class SourceRead:
     outcome: ReadOutcome
     fetched_at: datetime
     rows: tuple[SeenRow, ...] = field(default=(), repr=False)
+    stale: bool = False
+    """An ``empty`` the reader judged from old rows (its health gives a reason: a list typed
+    by hand and not changed for 36 hours, old posts, undated page text, a list last written
+    before the last winter), not a page that says it holds nothing now. The ledger takes it
+    as any empty; only the morning record keeps it apart."""
 
 
 def orphan_station(source_id: str) -> Station:
@@ -219,6 +224,8 @@ class Ingest:
     """The morning record (:mod:`snowlight.live.morning`); ``None`` keeps none."""
     taken: set[str] = field(default_factory=set)
     """Sources the ledger took a whole read of this pass (ok, not_modified or empty)."""
+    stale: set[str] = field(default_factory=set)
+    """Sources of :attr:`taken` read as an empty judged from old rows (:attr:`SourceRead.stale`)."""
     overrides: Callable[[datetime], Sequence[AdminStatus]] | None = None
     """The admin's statuses at a moment (the API read each pass, S8-E); an error refuses
     the pass. ``None``: none are applied (tests, ``off``)."""
@@ -240,6 +247,7 @@ class Ingest:
         outcomes: Counter[str] = Counter()
         self.failed = set()
         self.taken = set()
+        self.stale = set()
         for read in reads:
             self.beat()
             try:
@@ -256,6 +264,8 @@ class Ingest:
             outcomes[observed.outcome.value] += 1
             if observed.outcome in GOOD:
                 self.taken.add(read.source_id)
+                if read.stale and observed.outcome is ReadOutcome.EMPTY:
+                    self.stale.add(read.source_id)
             confirmed = read.outcome is ReadOutcome.NOT_MODIFIED and not read.rows
             if observed.outcome in GOOD and not confirmed:
                 self.present[read.source_id] = read.rows
@@ -455,18 +465,25 @@ class Ingest:
         resolved: Sequence[Resolved],
         unknown: Collection[str],
         report: PassReport,
+        share: float | None = None,
     ) -> None:
-        """Add this pass to the morning record (a failed write is logged by its type)."""
+        """Add this pass to the morning record (a failed write is logged by its type), with
+        the healthy share its gate read."""
         if self.morning is None:
             return
         prefix = self.publisher.prefix
+        whole = self.taken - self.failed
+        day = now.astimezone(UTC).date()
         try:
             self.morning.record(
                 now,
                 shown=prefix if prefix is not None and shown(report) else None,
-                reads=pass_reads(self.taken - self.failed, resolved),
+                reads=pass_reads(whole, resolved),
                 unknown=unknown,
                 named=named_of(resolved),
+                health=share,
+                by=named_by(whole, resolved, day),
+                stale=(self.stale | old_lists(whole, resolved, day)) & whole,
             )
         except (OSError, ValueError) as error:
             LOG.error("morning record: %s", type(error).__name__)
@@ -626,7 +643,7 @@ class Ingest:
             )
         except OSError as error:
             LOG.error("health.json: %s", type(error).__name__)
-        self.record_morning(now, resolved, unknown, report)
+        self.record_morning(now, resolved, unknown, report, share)
         LOG.info(
             "pass: %d reads, healthy share %.2f, %d statuses, exit %d",
             len(reads),

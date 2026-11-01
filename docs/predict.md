@@ -924,6 +924,8 @@ Run from `pipeline/`. Exit codes: 0 done, 3 dark (nothing uploaded: the gate ref
 | `uv run snowlight predict release` | Clears the hold. |
 | `uv run snowlight predict check --max-age 45m` | The watchdog: exit 3 when the public file is missing, invalid, blank, ahead of the clock or older than the limit. The workflow runs it after every run, a failed pass included, and opens one issue, "Snow-day chances are stale", unless one is already open. |
 | `uv run snowlight predict learn` | Labels the live-read days not yet labeled and swaps in a refit only when the held-out live days find it no worse (see "The model learns on its own"). Exit 0 swapped, reset (a served file counted an excluded day) or nothing to change, 4 kept the model served because the refit was worse, 1 an error (nothing changed). The workflow runs it before the passes. |
+| `uv run snowlight predict read-labels` | Labels the live school mornings not yet labeled by the outcome-blind read rule into the private record `out/internal/predict/reads/` and publishes `predictions/read-audit.json` (counts only) when a day is added (see "The read labels"). Exit 0, or 1 on an error (nothing more is labeled). The workflow runs it right after `predict learn` (it continues on error, 2-minute limit); it labels nothing while a coverage file is absent. |
+| `uv run snowlight predict read-sources` | Builds `data/predict/read-sources.json.gz` (county FIPS to the lists proven for it, every list's populated archive captures, and the row counts of its closing-size days, one value a day) and `data/predict/audiences.json.gz` (each list's districts listed in the current or previous season as of `--as-of`, default today, no dates; it logs the pairs dropped) from `out/internal/stations/coverage.json`, a match of the whole archive and the archive's weather classes (`out/internal/predict/weather.parquet`; heavy lock). Codes and counts only. |
 | `uv run snowlight predict evidence` | Keeps every finished weather-class snapshot of the pass state, the district table of the directory predict learn read and the labels it published (`learn.json`, every version) for good in the evidence databases (docs/live.md, "The evidence"); it reads the table and labels learn left in `out/internal/predict/evidence/`, and the deployed directory only when learn left none (and the pass state keeps no table). Exit 0 when both kept them, 1 otherwise. Then it asks both databases which snapshots and tables they hold and notes it in the pass state (`evidence`). The workflow runs it after the passes and before the state's save, never before the first pass (it continues on error: 30 seconds of writes, 45 seconds for the push's requests, 15 for the question, a 2-minute limit). With `--check` it reads only the pass state: one line, and exit 1 with an `::error::` line when a finished snapshot or its district table has waited 2 days for a copy in both databases (the workflow's issue). |
 
 Environment: `PREDICT_PUBLISH` (`on` writes `v1/`, `shadow` writes `v1-shadow/`, `off`
@@ -1075,6 +1077,392 @@ ingest itself reads `out/internal/live/state` directly. No workflow runs the liv
 (`config/live.yaml` keeps its state `local`), so until one does the step logs "no live
 ingest state reached this run" and then "nothing to learn: no live-read district-days
 labeled yet; the model is unchanged".
+
+## The read labels (advisory-sane L1: a record, nothing served)
+
+`predict learn`'s labels come only from lists that already lit a district on two live days,
+so a district that is read every morning and never closes gives no label. `predict
+read-labels` labels each live school morning from **which lists were read**, decided before
+any outcome is looked at (`pipeline/snowlight/predict/live_read.py`; the rule is
+pre-registered in `config/predict.yaml` `live_score.read` and S7 addendum h). It is a second,
+separate record: `learn.json`, the learned file and their tests are unchanged.
+
+A district is **read** on a school day when a list that may read it (tier A: it carries the
+district in the archive audiences, or in the live audience built from the change log's days
+**before** that day, so the day's own lightings never decide who was read; tier B: it is
+proven for the district's county and has 5 **closing-size** captures in the archive and the
+live record before the day together; a district's own site is neither) had a whole read in a 30-minute
+slot of the district's 06:30-09:30 window, shown on the map, with the reader's healthy share
+at least 0.9 in that slot, and either had a **counted day** (below) in the 14 days before or
+a second list of the market read too. A whole read passes the archive's and S7-L's station
+gates, one rule for all three, and more of its own:
+
+- **closing-size captures, one test for the archive and the live record** (lead rulings C1
+  and C2, `closing_size` in `live_read.py`, which both sides call so they cannot drift): a
+  capture is closing-size only when the list's **own** rows named at least 3 districts under
+  a warning-or-above class (snow, lake snow, ice, blizzard or tropical warning; advisory and
+  cold are not). Archive: an archive capture is a Wayback snapshot of any hour of any day
+  (an August page, an evening church list, a one-row list), so only a capture whose rows
+  named, in the archive's match, 3 districts warned on its local day or the next (an evening
+  capture lists the next morning) counts, and only **one value a day**, that day's largest
+  capture (review R5-S3: an early snapshot of a list still growing is no second capture and
+  never the day's value). Live: a UTC day **counts** for a list only when that day's own
+  read passed every check the rule makes of a list (in a slot shown on the map with a
+  recorded healthy share of at least 0.9; not judged stale, the record's `stale`, which
+  holds the reader's old empties and its lists of old rows; not a read the replay step
+  would drop, its placed share judged against the record's days up to and including that
+  day (review R6-S5); not a district site; of a list with 5 captures by then; at least half
+  its reference as it stood that day, or, for a thin reference, half the longest read that
+  day of a market peer that vouches by the **same** peer-vouch rule the read applies,
+  `PeerVouch` in `live_read.py`, which both sides call, with the peer's captures and
+  reference as they stood that day: see the thin-reference bullet below) and its own rows
+  (the record's `by`) named at least 3 districts under a warning-or-above class at that
+  day's snapshot that our map lit closed, remote or delayed, in a slot wholly inside each
+  such district's 06:30-09:30 window (review R6-S5); its value is that day's largest such
+  read. A day whose timeline is in another directory's school indexes gives no lit
+  districts (review R6-S2). That our map lit districts the list carries or
+  is proven for is never enough (review R5-B1: four days of a stale 1-row list on mornings
+  the map lit three of its districts made a list tier B with a 1-row reference). Counted
+  days alone are a list's live captures, its live reference values, its tier B captures and
+  its recent days (condition 4); a quiet, advisory or cold day, a stale read, a short read
+  or a list that named fewer than 3 warned, lit districts itself never counts. The record
+  keeps 45 days, so the live part counts at most those;
+- never a list with under 5 captures (archive captures of any day and counted days),
+  populated **or empty** (`thin_station`: a list too thin to tell a whole read from a
+  partial one is never read; the archive and S7-L refuse only its populated reads);
+- never, on a storm day (any class above `none`, advisory included), a populated list under
+  half its **closing-size reference** (`small_capture`, a partial list): the median of its
+  closing-size values (archive days and counted days), never under the median of the
+  archive's alone when they number 5. Quiet days, live or archived, therefore never pull the
+  reference down (round-4 review R4-B1: with every archive capture counted, 18 of the 63
+  lists with 5 archive captures had a reference of 10 rows or fewer, and a 1- or 2-row
+  truncated read on a blizzard morning passed the gate);
+- a list with under 5 closing-size values has a **thin reference**: on a storm day a
+  populated read of it counts only when it holds at least half of the **longest** read in
+  the window of a market peer that vouches (review R5-S1: a short peer never vouches while a
+  longer one read a storm-size list). One peer-vouch rule (`PeerVouch`, review R6-B1) decides
+  this at read time and for counted days alike: a peer's read vouches only when its slot is
+  shown and healthy, the read is not stale (the record's `stale`, or, on a morning its market
+  named districts, a populated read naming none), the peer is not a district site, its
+  captures reach 5, its own reference as it stood that day is **not thin**, and the read
+  holds at least half of that reference. So two thin lists never vouch for each other, and a
+  peer reading a truncated page vouches for nothing (round-6 review: with any peer counted,
+  two thin lists in one market could vouch each other into tier B with a 10-row reference
+  against a 200-row archive storm day, after which a 6-row read labeled every district it
+  did not name open; tests P1 and P2). A vouching read is never empty and holds at least half
+  a reference of populated reads, so an **empty** read of a thin list is never whole on a
+  storm day (0 rows is not half of it). Otherwise it is `small_capture` for every district it
+  would read: the closed ones too, since dropping only the unnamed districts of such a read
+  would tilt the labels toward closings;
+- never a populated list the reader judged from old rows, on any morning: its rows give
+  dates and none of them is on or after the day before (a row with no date of its own is
+  dated by when the list first posted it, so a row left up since an earlier storm counts;
+  `stale_populated`; the live record's
+  `stale` holds it from 2026-10-31, judged from the rows' own dates, never from what
+  closed); and never, on a warning-or-above morning, a populated list that names no district
+  for the day while another list of its market names districts for it (`stale_populated`,
+  lead ruling B1.3: a list still holding the day before's rows);
+- never, on a storm day, an empty list no other list of its market read with
+  (`empty_uncorroborated`); only a peer whose read passed every gate in a healthy slot
+  counts (a thin or unhealthy peer corroborates nothing);
+- never an empty the reader judged from old rows: a list typed by hand not changed for 36
+  hours, old posts or undated page text (`stale_empty`; only a page that says it holds
+  nothing now is a whole empty read).
+
+The read set is computed from the morning record's reads, prefixes, withheld states, stale
+empties and healthy shares, the coverage, the change log before the day, the district's
+class at the snapshot, and the earlier days' snapshots and maps only; on a warning-or-above
+morning also whether each list named any district for the day (`stale_populated`), never
+which. Then what the lists named and what the map lit are joined. A read district is `no_school` or `delayed` (lit at least
+half), `unknown` with why (named for the day anywhere in the day's record and not lit, lit
+in part, retracted, a likely break, or dark in a storm while half its market closed), or
+`unnamed`: read, named by no list all day, and **dark**: not one of its schools lit with
+any status (one lit school with no list naming the district, an override or a closing lit
+on an earlier log day, makes it `unknown`, `partly_lit`). **An unnamed district counts as
+open** (the owner's O5). Every alerted district (a class above `none`) gets a row, read or
+not, with why not (`not_covered`, `withheld_state`, `no_whole_read`, `dropped_read`,
+`voided_empty`, `stale_empty`, `stale_populated`, `thin_station`, `small_capture`,
+`empty_uncorroborated`,
+`health_unrecorded`, `unhealthy`, `not_recent`: the furthest check any of its lists
+passed; `withheld_state` is `no_whole_read` with a window slot left out because a pass
+withheld the state, counted apart because lists hold rows mostly on closing mornings, so
+withholding may fall more on them: the first mornings after landing measure how often, by
+class and by whether the state had closings). The row's `after` is whether the map lit the
+district no school on its previous school day, read or not (`null` when that day's
+timeline is not known), and `unplaced` whether a qualifying read held rows the matcher
+placed nowhere (the district's own row may be among them; the hand audit checks those
+lists' unmatched rows for an `unnamed` row so marked).
+
+The morning record keeps each slot's lowest healthy share (`health`), the lists read whole
+as an empty judged from old rows or as a populated list whose rows name only days before
+the day before (`stale`) and, per day, the districts each list read whole named for that
+day (`by`, one run of changes a list) from the landing on (`snowlight.live.morning`). A slot
+recorded before has no share, so its reads never count (`health_unrecorded`). The live
+head before landing records no `health`, `by` or `stale` at all, so **every day from Oct 25
+to the landing labels nothing** (review E-R6-4): 0 read rows, every alerted row
+`not_covered` or `health_unrecorded` (and no counted day either, since a counted day needs a
+healthy slot and `by`). The first runs' audit is all not read for those 8 to 10 school days,
+as expected; the mornings of Oct 27-29 give `not_covered` (below).
+
+**Real slot health** (the round-4 review's count from the public live-read job logs of Oct
+26-30, 10:00-18:00 UTC, the slot's share taken as the lowest of its exit-0 passes, as the
+record keeps it): of 78 reconstructed slots, 44 reached 0.905 or more, 8 sat at the log's
+rounding edge (0.895 to 0.905; the log rounds to 2 decimals, the record keeps thousandths)
+and 26 fell below. The median pass share by UTC hour is 0.97 at 10-12Z and 0.92 to 0.94 at
+15-17Z, where the share of passes at 0.90 or more falls from 60 of 60 to 31 of 48. Healthy
+window slots of 6, by zone, on those days: Eastern 4 to 6, Central 4 to 6, Mountain 4 to 5,
+Pacific 2 to 4, Alaska 1 to 2. With the same UTC pattern under standard time (after Nov
+1): Eastern 4 to 6, Central 4 to 5, Mountain 2 to 4, Pacific 1 to 2, Alaska 0 to 1. A
+district is read when any one window slot is healthy and its list read whole in it, so on
+those days every contiguous zone kept at least one healthy slot every morning and Alaska
+had none on 3 of 5; the supply and trial figures below assume every list read whole and
+healthy, and the health-adjusted figures scale Alaska's by 2 in 5 (storm mornings may run
+lower shares: the per-zone healthy-slot counts after Nov 1 are measured after landing). The
+registered `named` estimand asks the naming in a qualifying slot, so fewer healthy slots
+also bias the registered s low (`named_in_day` is reported beside it).
+
+**Co-listing trials.** On a school day where the map lit a district **no school** (closed or
+remote: the registered trials are of closed districts only; a delayed district gives none),
+each list that read it whole in the window and had not lit it by the window's end gives one
+trial: did its own rows name the district for the day in a slot it qualified in (`named`,
+the registered estimand)? Each trial also keeps whether the list named it anywhere in the
+day's record of its whole reads (`named_in_day`). The label rule keeps a district from
+`unnamed` when any list named it anywhere in the day, so `named_in_day` is the event an
+unnamed row's correction turns on, and L3 uses its sensitivity for that; `named` is never
+above it, so the registered s is biased low (toward more closings hidden among unnamed
+rows; on the Oct 27-30 logs only 2 to 6 of a zone's 6 window slots were healthy, so a naming
+outside a qualifying slot is common). The report gives both. A list "lit it" when the change log
+holds its lighting or change of one of the district's schools for that day logged before the
+window ended, on any log day (a closing announced days ahead counts its lighter out); a list
+that lit it only after the window is a trial. `s_A ~ Beta(9 + hits, 1 + misses)` and `s_B ~
+Beta(4 + hits, 2 + misses)`, every trial taken as independent (the registered estimator).
+They are not independent: one list on one storm morning gives a trial for every district it
+read, all decided by whether it carried that morning's closings. So the report gives, per
+tier, the distinct dates and lists the trials come from and a **day-aggregated** 90%
+interval beside the Beta one (the same prior, each date one observation weighing its share
+of hits): twenty trials from one list on one morning give s_B 0.923 (90% 0.824 to 0.986) but
+0.714 by date (0.418 to 0.937). G1's tier B check is s_B at least 0.7 over at least 20
+closed trials from at least 5 distinct dates (lead ruling B1.5), always logged with its
+dates and lists (`not met (1 dates, 1 lists)`). The check can hold while the by-date mean
+is under 0.7 (one storm morning of 16 hits from one list and one miss on each of four other
+dates: s_B 0.769, by-date mean 0.455, by date 0.222 to 0.697). Lead ruling C5: the G1 line
+always prints tier B's **by-date mean** (each date one observation) against 0.7, with its
+interval, the number of lists the season's tier B trials come from and the number of lists
+that are tier B as of the run, and says `met by trials, not by date` (`tier_b_not_by_date`
+in `summary.json`) when the registered check holds and the by-date mean is under 0.7; the
+flag is taken from the mean, no longer from the interval's upper end. It is a diagnostic,
+not a gate, until **20 tier B lists exist**: the larger of the lists that are tier B as of
+the run (`tier_b_lists_now`: proven, not a district site, with 5 closing-size values,
+archive and counted days; review R6-S3, since the lists giving trials are never more and
+usually far fewer) and the lists the trials come from (`tier_b_lists`). From then on
+(`tier_b_by_date_gates`) G1 tier B also needs the by-date mean to reach 0.7, and the line
+says `not met: by date` when it does not. A run that labels no day keeps the last report's
+`tier_b_lists_now` (`summary.json` schema 6). The other way into G1 for tier B (the
+tier-A-only and tier-B levels within the date-block 90% band) is computed by the nightly
+scorer, L4.
+
+**The private report** (`reads/summary.json`, rewritten each run after the public audit is
+published, so a run cut off while making it has still published the days it labeled; the
+log gives its counts and the step's seconds, the co-listing trial totals over all seasons
+and the sensitivities over this season, each so labeled; the first line's label counts are
+`all seasons`): it covers the current school season (from Aug 1, the one season start of
+this piece, as lead ruling C4 sets it for the audiences; each run reads
+that season's days only, so its time does not grow season over season, while the public
+audit keeps every day). Per tier the trials, hits, the posterior mean with its 90% interval,
+the dates, lists and day-aggregated interval, and the `named_in_day` sensitivity with its
+interval; G1's tier B check; the alerted rows by NOAA region, class and label; the read rows
+by state; and G1's **hand audit**. When the Actions cache lost days the public audit holds,
+the trial totals still come from the audit but their dates, lists and hand-audit rows
+cannot, so the report says `record incomplete: k days` and never claims G1 tier B met. Each ISO week's draw of up to 50
+unnamed rows (by a fixed hash of day and district) is made once labeling has passed the
+week (days are labeled in order) and kept in `reads/hand-audit/<week>.json`, never drawn
+again, so later rows never push an audited one out. Results are entered by hand in
+`reads/hand-audit/results.jsonl`, one line a row: `{"day": ..., "district": ..., "open":
+true or false}` (a line that does not read stops the report, never a silent skip). The
+report counts the unnamed rows in the record, the rows drawn and audited, the false opens
+with their rate and its Jeffreys 90% interval, the rows still to audit, and G1's check (at
+least 50 audited, at most 5% false opens). The route by which results reach the record is
+L4's (lead ruling B1.6): the record stays in the private evidence store and the Actions
+cache, the weekly draw is frozen, and results enter through a private file L4 defines,
+merged into `reads/hand-audit/results.jsonl` before this step reads it.
+
+**Files.** Private, in `out/internal/predict/reads/` (its own Actions cache key,
+`predict-reads-`, saved right after the step, before the passes, on a run that labeled a
+day: the step sets `added` as it writes each day, so a step its 2-minute limit cut off still
+saves the days it wrote; kept for good by `predict evidence`, the newest 21 days offered each
+run after the snapshots and tables, with what is left of the push's 45 seconds less a
+10-second margin, or not at all with under 15 left: kind `labels` key `read-<day>`,
+`trials` and `audit` keyed by the day): `rows/<day>.json` (the alerted districts' rows:
+label, why, tier, market, lists, first slot, its healthy share, `after`, `unplaced`; and
+every district the map lit no school), `trials/<day>.jsonl`, `audit/<day>.json`,
+`hand-audit/` and `summary.json`. A labeled day is frozen. A run labels at most 5 days,
+oldest first (the morning record starts on Oct 25, 2026, so a first run at an
+early-November landing has about 8 to 10 school days to take in, two runs; the rest wait
+for the next runs), and reads the morning record and the change log once however
+many days it labels. Public, on the live host: `predictions/read-audit.json` (`ReadAudit` in
+`pipeline/snowlight/schemas/stats.py`): per day and class, the districts alerted, covered,
+read by tier, named, lit, unnamed (and of them read through a list with unplaced rows),
+unknown and not read by why (`thin_list` is `thin_station`), the median healthy share, and
+the trials and hits per tier. No chance, no level, no list. A day the published audit holds
+is never labeled again and never dropped or rewritten, even when the Actions cache lost the
+record (a warning says so; the evidence store keeps the day). A published audit that does
+not read (a schema change, a broken write) stops the step with an error and labels nothing,
+since the days it published could not be told apart; so does a host with no audit once the
+record has published one (`reads/published.json`: a wrong prefix or a listing glitch is
+never taken for a first run, which would relabel and drop published days). A day is marked
+`added` just before its files are written, so a step cut off between the two still saves
+the cache.
+
+**The coverage files** (committed, codes and counts only: county FIPS, NCES LEAIDs, the
+station ids already public in `config/sources`, capture counts and the closing-size values'
+row counts; no date, no name, no text; lead rulings B1.7 and C3). Schema 3:
+`data/predict/read-sources.json.gz` holds each county's proven lists, every list's populated
+archive captures of any day (the `thin_station` gate) and the row counts of its closing-size
+archive days only, one value a day, that day's largest closing-size capture (the size gate's
+reference and tier B's captures); `data/predict/audiences.json.gz` each list's districts by
+the archive's audience rule (listed on 2 local days), keeping only the pairs last listed in
+the current or previous season, from Aug 1 of the season before the build (lead ruling C4,
+`--as-of`), with no dates. A file of another schema is refused, never read as this one.
+Both are built by `predict read-sources` from the stations' coverage, a match of the whole
+archive and the archive's weather classes (under the heavy lock; the Oct 31 17:22Z build,
+`--as-of 2026-10-31`, took 1 min 13 s with 4 workers). That build: read-sources holds 2,864
+counties, 374 proven lists and 578 lists with 2,896 populated captures, of which 293 are
+closing-size; **5 proven lists have 5 closing-size days** (7 had 5 closing-size snapshots in
+schema 2: two of them, gray-koln and nbc-owned-kxas, had two snapshots of one storm day);
+18,118 bytes. Audiences holds 71 lists carrying 1,884 districts (2,389 pairs) in 6,490 bytes;
+the season bound dropped **3,211 pairs** last listed before 2025-08-01 (the archive's last
+listing day is 2026-08-13), and 2,168 districts no kept pair carries. It also holds its build
+season, a season code (`"season": 2026`, the year of the season's Aug 1; review R6-S4): its
+pairs are those of that season and the one before, so from the next Aug 1 (2027-08-01) the
+step reads none of them as tier A, logs a `::warning::` and keeps reading tier B, until the
+file is rebuilt with `predict read-sources --as-of <day>` each Aug 1 (the season code was
+added to the Oct 31 build's file; its pairs are unchanged).
+
+Of the 18,227 deployed districts (`r6/coverage_by_region.out` and `r7/cond4.out` in the
+build notes), 1,884 (10.3%) are tier A (22.2% before the season bound), 448 (2.5%) through
+two lists or more; 1,836 (10.1%) have a proven county list with 5 closing-size archive days
+(tier B from the first run); 3,212 (17.6%) have one or the other (29.1% before).
+
+**What condition 4 allows** (review E-R6-1; `r7/cond4.out`). Condition 4 counts only counted
+days as recent, so **before a list's first counted day no district is read through it
+alone**: 0 districts are read peer-free until warning mornings come. Until then a district
+is read only through a second candidate of the same market that read whole too: **785
+districts (4.3%)** have a same-market pair of tier A or B candidates (Northeast 12.7%, Ohio
+Valley 5.7%, South 1.5%, Upper Midwest 2.3%, Southeast 0.9%, Northwest 0.7%), and under the
+round-7 rule (each candidate with 5 captures, and a thin one only beside a peer that
+vouches) **502 (2.8%)** (Northeast 8.5%, Ohio Valley 4.3%, South 1.3%). The 1,836 districts
+(10.1%; Northeast 43.2%, Ohio Valley 4.3%, South 1.3%, no other region) with a list of 5
+closing-size values are the **non-thin coverage**: they read with no second list only within
+14 days after that list's counted day. The run's log line gives how many lists have a
+counted day in the 14 days before (`<n> lists with a counted day in the 14 days before`),
+the live peer-free reach (round 5: 12.4% non-thin; with every archive capture counted, round
+4, 38.1%). Lead ruling C1 accepts low coverage: it never blocks a chance, since L3 serves the
+class level with zero label counts.
+
+**How coverage grows over the season** (reviews E-R5-3 and R6-S1; `r7/cond4.out`, the
+archive's seasons 2015-2025 as stand-ins, codes and counts only). A day counts only for a
+list that already has 5 captures, and only counted days add captures, so **a list with under
+5 archive captures never gains a counted day and is never read** (311 of the 374 proven
+lists): that is lead ruling C2 read literally, and it is kept, since counting a live day
+for such a list on the other checks alone would need its own label-truth argument. A list
+with 5 captures and a thin reference counts a day only beside a market peer that vouches
+(`PeerVouch`), so a list alone in its market, or among thin lists only, never grows either.
+Upper bound under both barriers (every weekday with 3 or more of a list's districts under a
+warning-or-above class a counted day, every peer reading whole): the lists with 5
+closing-size values reach **5 to 8 by Dec 15** (median 6) and **5 to 8 by Jan 31** (median 8),
+against 5 now (round 6 gave 7 to 39 and 33 to 107 without the barriers). Requiring 3 of its
+districts closed or delayed in the archive's own labels gave 5 by Dec 15 in every season
+(`r6/growth.out`). **Freshness after a counted day** (upper bound, same seasons): a counted
+day keeps a list fresh for the next 14 days, at most 10 school days; Nov 1 to Dec 15, 0 to
+10 lists were ever fresh (median 2), for a median of 0 to 11 school days each (at most 15 of
+29 to 31), and the advisory district-days a fresh list of 5 closing-size values reads with
+no second list number 0 to 996 (median 60; 0 in 5 of 11 seasons). Each run that labels a day
+logs `counted live days through <day>: <n> days of <k> lists; <m> lists with 5 closing-size
+values, archive and live (lead ruling C2), <t> of them tier B; <f> lists with a counted day
+in the 14 days before`, which the first weeks measure.
+
+**The size reference's spread** (review R5-S3; `r6/s3_ratio.out`): the 5 lists' reference
+(median) against their largest closing-size value: abc-owned-wabc 32 of 239 (0.13; days of
+14, 27, 32, 74 and 239 rows, five different days, so one value a day does not lift it),
+nbc-owned-wbts 217 of 588 (0.37), nbc-owned-wvit 480 of 853 (0.56), nexstar-wdaf 168 of 263
+(0.64), scripps-kshb 98 of 128 (0.77). On a storm morning a wabc read of 16 rows or more
+passes the size gate. Counted live days (each the day's largest read, at least half the
+reference as it stood) raise it as storm days come; the first post-landing storm days
+measure each list's live values against its archive ones.
+
+While either file is absent `read-labels` labels nothing and freezes nothing (a day labeled
+without them would be frozen `not_covered`), and says so.
+
+On Oct 27-29 the five advisory district-days give `not_covered` with the committed files
+(5305020 twice, 5308430, 3000654 and 3009510: no list carries them in the archive audiences,
+and their counties' proven lists have under 5 closing-size days; `r6/oct27_29.out`). That
+rests on the coverage files only, so it holds whatever the lists read those mornings, unless
+a list lit one of their schools on 2 live days before (the live audience); the first run
+confirms it. The round-4 docs gave Stehekin `health_unrecorded` from a SYNTHETIC window;
+that was a prediction, not an outcome.
+
+**Lead rulings (Addendum B1, Oct 30, and Addendum C, Oct 31; decided conservatively: when in
+doubt a read does not label a district open).**
+
+1. Closing-size captures set the size gate's reference (B1.1), by one test for the archive
+   and the live record (C1, C2; `closing_size`): the list's own rows named at least 3
+   districts under a warning-or-above class. C1 confirms the archive rule as built (rule
+   (a): warned on the capture's local day or the next) and rejects counting advisory-day
+   captures (a') and taking short medians as thin (b): a quiet-day or advisory-day size is
+   not a storm-day size, and a weak reference lets a truncated storm read label unnamed
+   districts open. Low tier B coverage is accepted; it never blocks a chance, since L3
+   serves the class level with zero label counts and coverage grows over the season from
+   counted live days. C2: a live day counts (as a closing-size capture, a reference value,
+   a `thin_station` capture or a recent day) only when the list's own read that day passed
+   every check, was not stale and itself named 3 warned districts our map lit; that our map
+   lit 3 warned districts the list carries is not enough. The critic's probe (a list with
+   four stale 1-row days) gives `not_covered` or a thin reference, never tier B (tested).
+   The archive keeps one value a closing-size day (review R5-S3), as the live side does.
+2. A thin reference (under 5 closing-size values) reads on a storm day only beside the
+   longest market peer whose read vouches for its length (at least half of it; review
+   R5-S1) by the one peer-vouch rule the read and the counted days share (`PeerVouch`,
+   review R6-B1: never a thin, short, partial, stale, unhealthy or district-site peer), and
+   an empty read of it never; otherwise `small_capture`. The ruling allows named labels from such a read; the rule takes none,
+   so the read set stays outcome-blind.
+3. `stale_populated` as above; populated lists of old rows, on any morning, are refused
+   under the same reason.
+4. The capture unit: a live day counts toward a tier B list's 5 captures only when it is a
+   counted day (C2). The station gate (`thin_station`) counts the archive's captures of any
+   day and counted live days only; a live day with a populated read that was not
+   closing-size by the list's own rows no longer counts there (until round 5 it did).
+5. G1 tier B also needs 5 distinct dates (B1.5). C5: the G1 output reports tier B's by-date
+   mean against 0.7 as a diagnostic, `met by trials, not by date` when it is under, until
+   20 tier B lists exist (the larger of the lists tier B as of the run and the lists the
+   season's tier B trials come from; review R6-S3); from then on G1 tier B needs it too.
+6. The hand-audit route is L4's.
+7. The coverage files are committed, codes only; no owner approval is needed (B1.7). C3:
+   the closing-size captures' row counts are numbers, not text, and are kept; no dates,
+   names or list text. C4: the audiences keep only the pairs listed in the current or
+   previous season (seasons begin Aug 1); older pairs are dropped at build time, so the
+   file holds no dates. The build logs the number dropped (above).
+8. The 16 MB morning-folder valve risk is accepted as documented in `docs/live.md`; the real
+   storm-day sizes are measured after landing, and `morning.py` does not change here.
+9. Supply: the k about 26 posterior rests on the prior through most of November in about
+   half of seasons. Under the C2 and C4 files and condition 4 it does so through November 20
+   in **8 to 9 of 11 seasons** (review E-R6-2; the two-list bound below). On the archive's
+   seasons 2015-2025 (every list read whole and healthy: upper bounds; `r7/cond4.out`,
+   `r6/supply.out`, `r6/trials_expected.out`), before any counted day a district is read
+   only through a same-market pair, tier A included (condition 4): its advisory
+   district-days of Nov 1-20 reach 26 in 3 of 11 seasons and 300 in 2 of 11 (0, 0, 1, 526,
+   324, 1, 0, 251, 12, 0 and 16 district-days), and under the round-7 peer-vouch rule 26 in 3
+   of 11 and 300 in 1 of 11 (323, 145 and 196 in 2018, 2019 and 2022, none in the other
+   seasons). Two whole lists of 5 closing-size days reach 26 by November 20 in 2 of 11
+   seasons and 300 in none. The round-6 figures through any list with 5 closing-size days (26
+   in 5 of 11, 300 in 3 of 11) and through any tier A or B list (26 in 8 of 11) left
+   condition 4 out and are superseded. Once warning mornings give counted days, a fresh list
+   of 5 closing-size values reads with no second list (above: 0 to 996 advisory
+   district-days Nov 1 to Dec 15, median 60). Alaska's 2 healthy mornings in 5 change none of
+   these. The expected tier B co-listing trials by December 15 reach 20 in 1
+   of 11 seasons at the prior's central rates (4 of 11 at the band's high edge) and never
+   from 5 dates; 6.3% of the (district, list) pairs in counties with two such lists are tier
+   A pairs, whose trials go to s_A and are not counted there. Counted live days add lists as
+   warning mornings come (above). The served number stays the class level's prior-based
+   value until labels come (Addendum B2), which is correct, never stale.
 
 ## The forecast history (S7-F, piece F1: data only)
 
