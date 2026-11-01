@@ -598,10 +598,10 @@ def _two_schools(window: tuple[float, float], night: tuple[float, float]) -> his
     values = history.RunValues(run)
     values.snow = {}
     for end in ends:
-        if end.hour == 6:  # the first overnight period
-            values.snow[end] = np.array([n / 2 for n in night])
-        elif end.hour == 12:  # the second
-            values.snow[end] = np.array([n - n / 2 for n in night])
+        if end.hour == 6:  # the first overnight period, under way at the 9 PM snapshot
+            values.snow[end] = np.zeros(len(night))
+        elif end.hour == 12:  # the second: all of the overnight snow
+            values.snow[end] = np.array(night)
         else:
             values.snow[end] = np.array([w - n for w, n in zip(window, night, strict=True)])
     values.ice = {end: np.zeros(2) for end in ends}
@@ -1021,17 +1021,19 @@ def test_district_forecasts_from_one_run() -> None:
     assert found.problems == ()
     one = found.get(day, 1)
     assert one is not None
-    assert (one.snow_low, one.snow_high) == (5.0, 7.5)  # its two schools, as read
+    # The 9 PM snapshot (03Z) is half way through the period ending 06Z: only its half still
+    # to come counts (SF-R5-1), so 1 + 3 and 1.5 + 4.5 inches.
+    assert (one.snow_low, one.snow_high) == (4.0, 6.0)  # its two schools, as read
     assert (one.ice_low, one.ice_high) == (0.0, 0.0)
     assert (one.feels_low, one.feels_high, one.feels) == (5.0, 8.0, 5)
-    assert one.code == ndfd.Bucket.SNOW_6  # the 50% value: 7.5 inches
-    assert one.snow_night == 7.5  # all of it in the periods ending 06 and 12 UTC
-    assert (one.snow_night_low, one.snow_night_high) == (5.0, 7.5)  # each school's, as read
+    assert one.code == ndfd.Bucket.SNOW_6  # the 50% value: 6 inches
+    assert one.snow_night == 6.0  # all of it in the periods ending 06 and 12 UTC
+    assert (one.snow_night_low, one.snow_night_high) == (4.0, 6.0)  # each school's, as read
     assert one.run_time == run.time
     two = found.get(day, 2)
     assert two is not None
     assert two.code == 0
-    assert two.snow_high == pytest.approx(0.3)  # never rounded up to a whole inch
+    assert two.snow_high == pytest.approx(0.2)  # 0.1 + 0.1, never rounded up to a whole inch
     none = forecast_live.forecasts(
         schools,
         {"2900001": 1},
@@ -1297,7 +1299,7 @@ def _words_hold_every_school(
     part = np.zeros(int(mine.sum()))
     for end in ndfd.window_ends(day):
         if end.hour in forecast_live.OVERNIGHT_ENDS and end > at:
-            part = part + np.nan_to_num(values.snow[end][mine])
+            part = part + np.nan_to_num(values.snow[end][mine] * ndfd.still_to_come(end, at))
     part = np.minimum(part, school)
     assert (one.snow_night_low, one.snow_night_high) == (part.min(), part.max())
     if reasons.overnight(words, one.snow_night, one.snow_night_low, one.snow_night_high):

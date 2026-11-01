@@ -559,6 +559,32 @@ def test_both_stamps_read_from_real_section_4_bytes_and_decode() -> None:
         assert np.allclose(ndfd.decode(raw, parsed).values[:3, :3], 0.01)
 
 
+def test_snow_that_already_fell_is_never_counted() -> None:
+    """SF-R5-1: a run read at 03:00Z holds the whole 00-06Z period, snow before the run
+    included; the window counts only the half still to come, and nothing of a period over."""
+    day = date(2025, 1, 6)
+    first, second, third = ndfd.window_ends(day)
+    # 6 inches in the period under way, all of it fallen by 03:00 at worst; none later.
+    by_end = {
+        first: np.array([6.0, 0.0]),
+        second: np.array([0.0, 4.0]),
+        third: np.array([0.0, 0.0]),
+    }
+    at = grib.utc("2025-01-06T03:00")
+    assert ndfd.still_to_come(first, at) == 0.5
+    assert ndfd.still_to_come(second, at) == 1.0
+    assert ndfd.still_to_come(first, grib.utc("2025-01-06T06:00")) == 0.0
+    total = ndfd.window_total(by_end, day, at)
+    assert total is not None
+    assert total.tolist() == [3.0, 4.0]  # never the whole 6 inches of the period under way
+    late = ndfd.window_total(by_end, day, grib.utc("2025-01-06T05:59"))
+    assert late is not None
+    assert late[0] < 0.02  # one minute of the 6 hours: 6 / 360 inch
+    assert late[1] == 4.0
+    # The whole period only when the time asked is at or before its start.
+    assert ndfd.window_total(by_end, day, grib.utc("2025-01-05T21:00")).tolist() == [6.0, 4.0]  # type: ignore[union-attr]
+
+
 def test_a_files_reference_time_must_fit_its_run() -> None:
     run_time = grib.utc("2019-06-03T00:17")
     assert ndfd.reference_ok(grib.utc("2019-06-03T00:30"), run_time)
@@ -574,7 +600,9 @@ def test_the_window_is_the_periods_ending_06_12_18z_less_those_ended() -> None:
     ends = ndfd.window_ends(day)
     assert [e.hour for e in ends] == [6, 12, 18]
     by_end = {end: np.array([float(i + 1)]) for i, end in enumerate(ends)}
-    assert ndfd.window_total(by_end, day, grib.utc("2025-01-06T01:00")).tolist() == [6.0]  # type: ignore[union-attr]
+    assert ndfd.window_total(by_end, day, grib.utc("2025-01-06T00:00")).tolist() == [6.0]  # type: ignore[union-attr]
+    # SF-R5-1: the period under way counts only its part still to come (5 of its 6 hours).
+    assert ndfd.window_total(by_end, day, grib.utc("2025-01-06T01:00")).tolist() == [5.833333]  # type: ignore[union-attr]
     assert ndfd.window_total(by_end, day, grib.utc("2025-01-06T06:00")).tolist() == [5.0]  # type: ignore[union-attr]
     assert ndfd.window_total(by_end, day, grib.utc("2025-01-06T18:00")).tolist() == [0.0]  # type: ignore[union-attr]
     del by_end[ends[2]]

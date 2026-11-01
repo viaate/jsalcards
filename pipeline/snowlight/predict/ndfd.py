@@ -41,11 +41,13 @@ Window and values
 =================
 
 Snow and ice: the 6-hour periods ending 06Z, 12Z and 18Z on the school day D, less the
-periods ended by the time asked (as of). Every amount message holds a whole 6-hour period, the
-one ending at its end-of-interval time: the period under way at the run's reference time too,
-snow before the run included (measured over 2018-2025 runs, docs/predict.md). The files stamp it
-two ways (:class:`PeriodStamp`); both read alike (:func:`period_stamp`). Apparent temperature at
-07:00 local on D.
+periods ended by the time asked (as of), and less the part of the period under way that is
+already over (:func:`window_total`, SF-R5-1). Every amount message holds a whole 6-hour period,
+the one ending at its end-of-interval time: the period under way at the run's reference time
+too, snow before the run included (measured over 2018-2025 runs, docs/predict.md), so the
+period under way at the time asked counts only its share still to come, at an even rate. The
+files stamp it two ways (:class:`PeriodStamp`); both read alike (:func:`period_stamp`). Apparent
+temperature at 07:00 local on D.
 A district's value is the class's 50% rule (:func:`group_half`); its bucket is
 :func:`bucket_codes`.
 """
@@ -1053,9 +1055,23 @@ def apt_heads(heads: Sequence[Head], at: Iterable[datetime]) -> dict[datetime, H
     return {head.end: head for head in heads if head.end in wanted}
 
 
+def still_to_come(end: datetime, as_of: datetime) -> float:
+    """The share of the 6-hour period ending ``end`` still to come at ``as_of``: 1 for a period
+    not begun, 0 for one over, and the part after ``as_of`` for the period under way."""
+    return min(max((end - as_of) / PERIOD, 0.0), 1.0)
+
+
 def window_total(by_end: Mapping[datetime, Floats], day: date, as_of: datetime) -> Floats | None:
-    """The sum of the window's periods not ended by ``as_of``; ``None`` when a period the window
-    needs is not in the run. All ended: zeros of the right length (or ``None`` with no data)."""
+    """The window's amount still to come at ``as_of``: its periods not ended by then, the
+    period under way at ``as_of`` for the part still to come (:func:`still_to_come`); ``None``
+    when a period the window needs is not in the run. All ended: zeros of the right length (or
+    ``None`` with no data).
+
+    A message holds its whole period, the part before the run included (module docstring), and
+    gives no finer split, so the period under way is taken at an even rate through its 6 hours:
+    its amount times the share of the period after ``as_of``. Counting it whole would count snow
+    that already fell before ``as_of`` (SF-R5-1: "overnight" and "by 10 AM" said of snow already
+    down). Rounded to a millionth, as every amount is, so a bucket bound stays exact."""
     needed = [end for end in window_ends(day) if end > as_of]
     if any(end not in by_end for end in needed):
         return None
@@ -1064,8 +1080,9 @@ def window_total(by_end: Mapping[datetime, Floats], day: date, as_of: datetime) 
         return None if first is None else np.zeros_like(first)
     total = np.zeros_like(by_end[needed[0]])
     for end in needed:
-        total = total + by_end[end]
-    return total
+        share = still_to_come(end, as_of)
+        total = total + (by_end[end] if share == 1.0 else by_end[end] * share)
+    return np.round(total, _ROUND)
 
 
 # --- units, districts and buckets ---------------------------------------------------------------

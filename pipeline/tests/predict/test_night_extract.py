@@ -236,8 +236,10 @@ def test_a_night_reads_every_element_for_every_district_of_its_time() -> None:
     assert np.isnan(row["snow_e00"])  # over before the run
     assert row["snow_e06"] == pytest.approx(1.0)
     assert row["snow_e24"] == pytest.approx(1.0)
-    assert row["snow_window"] == pytest.approx(3.0)  # 06, 12 and 18 UTC
-    assert row["ice_window"] == pytest.approx(0.3)
+    # 06, 12 and 18 UTC, the period under way at 21:00 EST (02Z) for its 4 hours still to come
+    # (SF-R5-1): 2/3 + 1 + 1.
+    assert row["snow_window"] == pytest.approx(8 / 3, abs=1e-5)
+    assert row["ice_window"] == pytest.approx(0.8 / 3, abs=1e-5)
     assert row["qpf_e12"] == pytest.approx(0.2)
     assert row["pop_e12"] == pytest.approx(80.0)
     assert row["pop_e24"] == pytest.approx(40.0)

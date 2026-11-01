@@ -1757,7 +1757,8 @@ share by month is in `manifest.json`). Every decode asserts the grid (a change s
 row (the grids are scanned back and forth), and reads each school's cell. The window is the
 periods ending 06, 12 and 18 UTC on the school day (7 PM to 1 PM Eastern, 6 PM to noon
 Central, 5 PM to 11 AM Mountain, 4 PM to 10 AM Pacific, an hour later in daylight time),
-less the periods already over; apparent temperature is read at 7 AM local. A district's value
+less what is already over (whole periods, and the elapsed part of the period under way, below);
+apparent temperature is read at 7 AM local. A district's value
 is the one at least half its deciding schools reach (the class's rule), and its bucket is
 one of 0 quiet, 1-5 snow (0.5, 2, 4, 6, 9 inches), 6-8 ice (0.01, 0.10, 0.25 inches), 9-12
 feels (10, 0, -10, -20 F or colder), 13 unknown.
@@ -1767,9 +1768,16 @@ first message of a run is stamped from the run's reference time, but its values 
 whole period's: measured against the same period in the last run before the period began,
 cell by cell where it held 1 inch or more (0.1 inch of ice), the median ratio stays 1.00
 however late in the period the run comes (8% of the period left on 2025-01-06 snow, 2022-02-03
-ice; 42% on 2019-01-19 snow and 2018-10-14 snow). So the period under way counts whole, snow
-before the run included. Spec-f section 4 had assumed the part after the reference time; this
-is its one switch, and pieces F2 and F3 name the period's start. NCEI's files stamp the periods
+ice; 42% on 2019-01-19 snow and 2018-10-14 snow). So a message of the period under way holds
+snow before the run too, and the window counts that period only for its share still to come at
+the time asked (as of: the class snapshot, 9 PM the evening before, or the pass if earlier), at
+an even rate through its 6 hours, the forecast giving no finer split: a run read at 03Z counts
+half of the 00-06Z period, and nothing of a period already over (SF-R5-1, fixed in
+advisory-sane L5: counting the period whole said "overnight" and "by 10 AM" of snow already
+down, 71 of 85 Mountain lines on 2023-02-23). The overnight part of the words is counted the
+same way. The stored history (2018-19 to 2025-26) was collected before the fix, with the period
+under way whole; a rebuild counts it the fixed way. Spec-f section 4 had assumed the part after
+the reference time; pieces F2 and F3 name the period's start. NCEI's files stamp the periods
 two ways: until 2018-10-30 13:15Z every message at its period's end, after it every message at
 its start (the first at the reference time). Both read as the period ending at the message's
 end, once every message is checked: 6 hours long, ending 00, 06, 12 or 18 UTC, one reference

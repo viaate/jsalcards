@@ -17,7 +17,8 @@ forecast has"): the time, not the day, so a morning panel names last night's run
 saying it is last night's (also on the turn-on list).
 
 For the words it also keeps, over the district's deciding schools, the lowest and highest
-window snow, overnight snow (the periods ending 06 and 12 UTC on ``D``: 6 PM to 6 AM Central),
+window snow, overnight snow (the periods ending 06 and 12 UTC on ``D``: 6 PM to 6 AM Central;
+like the window, never the part of a period already over at the snapshot, SF-R5-1),
 window ice and 7 AM feel as read (never rounded, so the words can check that what they state
 holds every deciding school; a feel is ``None`` when a deciding school has none), the
 district's 50% value of the overnight snow, and its 50% values of ice
@@ -93,7 +94,8 @@ def zone_forecasts(
         night = np.zeros_like(school)
         for end in ends:
             if end.hour in OVERNIGHT_ENDS and end > at and end in values.snow:
-                part = values.snow[end][mine]
+                # Only the part still to come, as the window counts it (SF-R5-1).
+                part = values.snow[end][mine] * ndfd.still_to_come(end, at)
                 night = night + np.where(np.isnan(part), 0.0, part)
         # A school whose window total reads as none has none overnight either, so the
         # overnight part is never more than the total it is part of.

@@ -240,9 +240,9 @@ def test_a_night_codes_every_district_at_every_sample(night: fh.Night) -> None:
     assert code_at(night, kc, 2) == ndfd.Bucket.UNKNOWN
     # 21:00 CST (03Z): no run at most 3 hours old (the 03:46Z run counts from 03:56Z).
     assert code_at(night, kc, 13) == ndfd.Bucket.UNKNOWN
-    # 22:00 CST (04Z): the 03:46Z run: the period under way, 00-06Z whole (1 in), and 06-12Z
-    # (1 in).
-    assert code_at(night, kc, 14) == ndfd.Bucket.SNOW_2
+    # 22:00 CST (04Z): the 03:46Z run: the part of the period under way still to come (2 of
+    # 00-06Z's 6 hours: 1/3 of its 1 in, never the snow before 04Z, SF-R5-1) and 06-12Z (1 in).
+    assert code_at(night, kc, 14) == ndfd.Bucket.SNOW_HALF
     # Midnight CST (06Z): the 06Z period has ended; 1 inch left (feels about -10 F ranks lower).
     assert code_at(night, kc, 16) == ndfd.Bucket.SNOW_HALF
     # 01:00 CST (07Z): the run is over 3 hours old.
@@ -450,7 +450,7 @@ def test_an_element_that_does_not_read_leaves_the_others_to_decide() -> None:
     schools = fh.deciding_schools(world.directory(), world.model())
     store: dict[str, bytes] = {}
     files = {
-        Element.SNOW: amounts(reference, {6: 0.0254}),
+        Element.SNOW: amounts(reference, {6: 3 * 0.0254}),
         Element.ICE: ice(reference, None),
         Element.APT: [b"not grib"],
     }
@@ -463,7 +463,8 @@ def test_an_element_that_does_not_read_leaves_the_others_to_decide() -> None:
         lambda item: ndfd.bytes_reader(store[item.url]),
         SHARE,
     )
-    # 22:00 CST (04Z): 1 inch of snow outranks any apparent temperature: decided, not unknown.
+    # 22:00 CST (04Z): 1 inch of snow still to come (2 of the 6 hours of 3 inches) outranks any
+    # apparent temperature: decided, not unknown.
     assert code_at(night, "2900001", 14) == ndfd.Bucket.SNOW_HALF
     row = night.samples.filter(
         (pl.col("time_zone") == "America/Chicago") & (pl.col("sample") == 14)
