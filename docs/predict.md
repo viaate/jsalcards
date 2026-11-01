@@ -2836,17 +2836,16 @@ identity instead; the lead decides before `on`), and the triggers in shadow (sha
 pass schedule: grid passes take every sample). The outlook's reader keeps a run's values only
 while a read can still use them (4 hours, `outlook_live.RUNS_KEPT`).
 
-## The night chart (option (iv), NOAA's hourly blend: built, in shadow)
+## The night chart (option (iv), NOAA's hourly blend: on since Nov 1, 2026)
 
 The owner chose option (iv) of the night snow chart spec (design `chart-data/spec.md`, revision 3,
 Oct 26): true hourly bars to 7 AM. `serve.chart` (`config/predict.yaml`) switches it: `shadow`
-since the chart-shadow piece (design `chart-shadow/spec.md`, Oct 31), so every gated pass builds
-the chart in memory and publishes the file with the chart off, byte for byte, while GC4's
-evidence collects itself (below). The owner gave the OK on Nov 1 after the GC5 pictures (design
-`chart-on/spec.md`). It goes `on` in a change of its own, after this web, which never names the
-forecast's time, has reached returning visitors: a phone's installed copy runs its first session
-on the old code, which would say "From the 7 PM hourly forecast" under a chart (chart-on critic
-S1).
+from the chart-shadow piece (design `chart-shadow/spec.md`, Oct 31), so every gated pass built
+the chart in memory and published the file with the chart off, byte for byte, while GC4's
+evidence collected itself (below). `on` since Nov 1, 2026, with the owner's OK after the GC5
+pictures (design `chart-on/spec.md`), with `chart_fault: none` in the same change, landed after
+the web that never names the forecast's time had reached returning visitors (an installed copy
+runs its first session on the old code: chart-on critic S1).
 
 **What it shows.** "New snow, hour by hour" on the panel's headline day, when that day carries a
 `night`: an empty first bar at Start (the first whole hour after the file's time, never before

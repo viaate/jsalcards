@@ -289,13 +289,13 @@ def test_every_fault_setting_is_a_rotated_fault_or_rotate() -> None:
     assert set(_EVERY_FAULT) == {*chart_evidence.FAULTS, "rotate"}
 
 
-def test_the_shipped_config_loads_and_shadows_with_the_rotation() -> None:
-    """``config/predict.yaml`` loads as committed (a fault with ``on`` would not: turning the
-    chart on sets ``chart_fault: none`` in the same change), and the freshness gates as the
-    chart goes on with them."""
+def test_the_shipped_config_loads_with_the_chart_on_and_no_fault() -> None:
+    """``config/predict.yaml`` loads as committed: the chart on (Nov 1, the owner's OK) with
+    ``chart_fault: none`` in the same change (a fault with ``on`` would not load), and the
+    freshness gates as the shadow ran them."""
     found = PredictConfig.load(Path(__file__).parents[2] / "config" / "predict.yaml")
-    assert found.serve.chart == "shadow"
-    assert found.serve.chart_fault == "rotate"
+    assert found.serve.chart == "on"
+    assert found.serve.chart_fault == "none"
     assert found.serve.chart_nbm_max_age_minutes == 150
     assert found.serve.chart_hold_seconds == 15
     text = (Path(__file__).parents[2] / "config" / "predict.yaml").read_text()

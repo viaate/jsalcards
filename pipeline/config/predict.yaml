@@ -116,10 +116,11 @@ serve:
   # has no forecast run under 3 hours old gets the issued-alerts-only chance (identity, the lead's
   # decision of 2026-10-20), or the pass goes dark (dark). Off and shadow publish as before either way.
   forecast_stale: identity
-  # The night chart (docs/predict.md, "The night chart"; option (iv), NBM 1-hour snowfall): shadow
-  # until the lead turns it on. Shadow publishes the file with the chart off, byte for byte; only
-  # after that does the pass read the blend and build the file with nights in memory, to report it.
-  chart: "shadow"                 # off | shadow | on
+  # The night chart (docs/predict.md, "The night chart"; option (iv), NBM 1-hour snowfall): on since
+  # Nov 1, 2026, with the owner's OK. On, a gated pass reads the blend (at most chart_hold_seconds)
+  # and builds the file with nights before it publishes. Shadow published the chart-off file and
+  # built the one with nights in memory after, to report it.
+  chart: "on"                     # off | shadow | on
   chart_nbm_max_age_minutes: 150  # NBM cycle age at the 2025 and 2026 January heartbeats, on the files a pass needs: median 97, p98 127 and 157 min; over 150 min 0.27% and 2.76% (docs/predict.md)
   chart_hold_seconds: 15          # with on: the most the blend's reads hold a pass back before it publishes (then nbm_slow); every lookup, connect and socket read ends by it
   chart_min_inches: 1.0           # the district's 50% value of the night's new snow
@@ -128,7 +129,7 @@ serve:
   # frozen_listing, bad_host and nbm_slow in turn on 1 grid slot in 6, once a slot; the 48 h counts
   # go up beside the file (v1/predictions/chart-shadow.json). Config refuses any fault unless chart
   # is shadow: turning the chart on sets chart: "on" AND chart_fault: none in the same change.
-  chart_fault: rotate             # none | raise | stale_night_at | frozen_listing | bad_host | nbm_slow | rotate
+  chart_fault: none               # none | raise | stale_night_at | frozen_listing | bad_host | nbm_slow | rotate
 
 # Automatic learning (S7-L, spec addenda c and d): 'snowlight predict learn', nightly inside the
 # predict workflow. Live-read district-days become labels by the archive's rules; a storm situation
