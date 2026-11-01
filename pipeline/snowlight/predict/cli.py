@@ -59,6 +59,8 @@ from snowlight.predict import (
     backtest,
     candidates_cli,
     chart_evidence,
+    forecast_adjust,
+    forecast_adjust_cli,
     forecast_history,
     inputs,
     learn,
@@ -126,6 +128,7 @@ from snowlight.predict.nowcast import UNREAD, Neighbors, neighbors_posted
 from snowlight.predict.opens import NOTHING_SAID, OpensError, SaidOpen, said_open
 from snowlight.predict.outlook import Outlook, OutlookMode
 from snowlight.predict.outlook_live import (
+    ADJUST_SECONDS,
     READ_ATTEMPTS,
     READ_TIMEOUT,
     Budget,
@@ -135,7 +138,9 @@ from snowlight.predict.outlook_live import (
     as_shown_percent,
     forecast_reader,
     outlook_mode_of,
+    prune_days,
     published_percent,
+    settled_reader,
     stale_line,
     take_record,
 )
@@ -335,6 +340,7 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
                 night_replay,
                 read_cli,
                 anchor_cli,
+                forecast_adjust_cli,
             )
         ),
     ):
@@ -1019,6 +1025,10 @@ class Pass:
     """The committed model's SHA-256 (the terms name the model they were fit over)."""
     forecast: Callable[[ServeModel, tuple[date, ...], datetime], Forecasts] | None = None
     """The NDFD forecast at the class snapshot (:mod:`snowlight.predict.forecast_live`)."""
+    adjust_reads: dict[datetime, frozenset[tuple[int, date]]] = field(default_factory=dict)
+    """The district-days whose forecast this process's last pass read for the adjustment, by
+    the time its file was made (:func:`snowlight.predict.serve.forecast_file`'s
+    ``read_last``); empty after a restart, when it is not known."""
     night: Callable[[ServeModel, frozenset[date], datetime], NightValues] | None = None
     """The night chart's blend reads for the gate's days (:class:`NightReader`,
     :mod:`snowlight.predict.nbm`); ``None``: no chart (``serve.chart`` off reads nothing either
@@ -1152,7 +1162,9 @@ def said_plausible(built: ServeModel, *, prefix: str = "", report: Path | None =
     """Say what the plausibility check (G6) did on this model's deployed districts: one
     ``predict: anchor plausibility:`` line, and a warning (an annotation in Actions) whenever
     more than the registered pull toward the class level was needed (a district capped, a class
-    shrunk toward its prior) or a clause still fails; never silent. ``report``: the private
+    shrunk toward its prior) or a clause still fails; never silent. Where the forecast
+    adjustment is built, one ``predict: forecast adjustment plausibility:`` line too, a warning
+    where a clause fails (then the class levels serve: PHYS-R3-S3). ``report``: the private
     ``anchor.json`` is rewritten with it."""
     found = built.plausible
     if found is None or built.anchor is None:
@@ -1161,6 +1173,14 @@ def said_plausible(built: ServeModel, *, prefix: str = "", report: Path | None =
     _out(f"predict: {line}")
     if not found.quiet:
         _warn(line)
+    check = built.adjust_check
+    if check is not None:
+        # PHYS-R3-S3: G6 on the forecast adjustment's chances; a failing clause serves the
+        # class levels and warns.
+        said = f"{prefix}{check.line()}"
+        _out(f"predict: {said}")
+        if check.failing:
+            _warn(said)
     if report is not None:
         try:
             write_report(built.anchor, report, plausible=found)
@@ -1799,11 +1819,14 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
     chances: Chances | None = None
     forecast_at: datetime | None = None
     reasons = serve.reasons and outlook is None
+    adjust = outlook is None and _adjusting(model)
     if outlook is not None:
         chances, forecast_at = outlook(after)
     elif serve.reasons and model.terms.fits:
         forecasts = _forecasts(run, model, days, now)
         posted = _neighbors(run, model, days, now)
+    elif adjust:
+        forecasts = _forecasts(run, model, days, now)
 
     def make(fit: Fit, nights: Nights) -> PredictionsFile:
         return forecast_file(
@@ -1824,16 +1847,22 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
             outlook=chances,
             forecast_at=forecast_at,
             nights=nights,
+            adjust=adjust and not reasons,
+            read_last=run.adjust_reads.get(last.generated_at) if last is not None else None,
         )
 
     if serve.chart == "on":
         stage = _nights(run, model, days, now, classes)
         started = time.monotonic()
         made, data, packed, more = fitted(make, serve, stage.nights)
+        _adjust_note(made, adjust and not reasons, model)
+        _keep_reads(run, made, forecasts if adjust and not reasons else NO_FORECASTS)
         built_ms = round((time.monotonic() - started) * 1000)
         _chart_report(run, made, stage.nights, stage.withheld + more, stage.read_ms, built_ms, now)
         return _Made(made, data, packed, after, chances=chances, said=said)
     made, data, packed, _none = fitted(make, serve)
+    _adjust_note(made, adjust and not reasons, model)
+    _keep_reads(run, made, forecasts if adjust and not reasons else NO_FORECASTS)
     shadow = None
     if serve.chart == "shadow" and run.night is not None:
         published = data
@@ -2030,15 +2059,44 @@ def _chart_health(
     }
 
 
+def _adjust_note(made: PredictionsFile, adjust: bool, model: ServeModel | None = None) -> None:
+    """The pass's note of the forecast adjustment's shift off the class levels
+    (:func:`snowlight.predict.forecast_adjust.shift_note`, with the share at each class's lower
+    bound), where it is on."""
+    settings = model.anchor.adjust if model is not None and model.anchor is not None else None
+    note = forecast_adjust.shift_note(made, settings) if adjust else None
+    if note is not None:
+        _err(note)
+
+
+def _keep_reads(run: Pass, made: PredictionsFile, forecasts: Forecasts) -> None:
+    """Keep the district-days this pass read the forecast for, by its file's time, for the
+    next pass's previous chances (S-R2-3); only this pass's are kept."""
+    run.adjust_reads = {
+        made.generated_at: frozenset(
+            (index, day) for day, found in forecasts.by_day.items() for index in found
+        )
+    }
+
+
+def _adjusting(model: ServeModel) -> bool:
+    """Whether the pass's storm-class days take the forecast adjustment (advisory-sane L5:
+    ``serve.forecast_adjust`` on and the anchor carrying its climate)."""
+    anchor = model.anchor
+    return anchor is not None and anchor.adjust is not None and bool(model.usual_snow.size)
+
+
 def _forecasts(run: Pass, model: ServeModel, days: tuple[date, ...], now: datetime) -> Forecasts:
-    """The NDFD forecast at the class snapshot for the reasons; when it cannot be read, none
-    (the forecast's terms add nothing, the pass says why, and the base and neighbors stand)."""
+    """The NDFD forecast at the class snapshot for the reasons and the forecast adjustment;
+    when it cannot be read, none (the forecast's terms add nothing, the pass says why, and the
+    base, the class levels and neighbors stand). Any failure of the read is that: a forecast
+    never stops a pass."""
     if run.forecast is None:
         return NO_FORECASTS
     try:
         found = run.forecast(model, days, now)
-    except (OSError, ValueError, ndfd.NdfdError) as error:
-        _warn(f"forecast: {type(error).__name__}: no forecast reasons this pass")
+    except Exception as error:  # any failure of the forecast read: the class levels stand
+        _warn(f"forecast: {type(error).__name__}: no forecast this pass, the class levels stand")
         return NO_FORECASTS
     for problem in found.problems[:5]:
         _warn(f"forecast: {problem}")
@@ -2367,7 +2425,11 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
         heights=lambda found: school_heights(elevation.current(), found.school_ids, found.points),
         terms=terms,
         model_sha256=artifact_module.sha256_of(model_bytes),
-        forecast=_live_forecast(config) if config.serve.reasons else None,
+        forecast=_live_forecast(config)
+        if config.serve.reasons
+        else _adjust_reader(config)
+        if config.serve.anchor and config.serve.forecast_adjust == "on"
+        else None,
         night=_live_night(config) if config.serve.chart != "off" else None,
         **outlook,
     )
@@ -2672,8 +2734,29 @@ def _outlook_reader(config: PredictConfig, budget: Budget) -> ReadForecast:  # p
     forecast_reader`): short request limits, few tries, and every request inside ``budget``."""
     http = forecast_history._client()
     http.timeout = READ_TIMEOUT
-    fetcher = forecast_history.Fetcher(http, attempts=READ_ATTEMPTS, before=budget.check)
+    fetcher = forecast_history.Fetcher(
+        http, attempts=READ_ATTEMPTS, before=budget.check, left=budget.remaining
+    )
     return forecast_reader(fetcher, config.weather.covered_share)
+
+
+def _adjust_reader(
+    config: PredictConfig,
+) -> Callable[[ServeModel, tuple[date, ...], datetime], Forecasts]:  # pragma: no cover - AWS
+    """Reads the NDFD runs from AWS for the forecast adjustment (advisory-sane L5,
+    :func:`~snowlight.predict.outlook_live.settled_reader`): the outlook's short request limits
+    and few tries, every request inside the pass's :data:`~snowlight.predict.outlook_live.
+    ADJUST_SECONDS`, the day listings once a pass, and only the days whose class snapshot has
+    passed."""
+    http = forecast_history._client()
+    http.timeout = READ_TIMEOUT
+    budget = Budget(seconds=ADJUST_SECONDS)
+    fetcher = forecast_history.Fetcher(
+        http, attempts=READ_ATTEMPTS, before=budget.check, left=budget.remaining
+    )
+    return settled_reader(
+        forecast_reader(fetcher, config.weather.covered_share, prune_days), budget
+    )
 
 
 def _outlook_newest() -> Callable[[datetime], datetime | None]:  # pragma: no cover - AWS

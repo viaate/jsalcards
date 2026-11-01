@@ -985,6 +985,7 @@
           "outlook": "#/$defs/OutlookReason",
           "record": "#/$defs/RecordReason",
           "said_open": "#/$defs/SaidOpenReason",
+          "snow_hours": "#/$defs/SnowHoursReason",
           "snow_stops": "#/$defs/SnowStopsReason",
           "snow_total": "#/$defs/SnowTotalReason",
           "sun": "#/$defs/SunReason",
@@ -1008,6 +1009,9 @@
         },
         {
           "$ref": "#/$defs/TimingReason"
+        },
+        {
+          "$ref": "#/$defs/SnowHoursReason"
         },
         {
           "$ref": "#/$defs/WindChillReason"
@@ -1152,6 +1156,33 @@
       "title": "SimilarDaysBase",
       "type": "object"
     },
+    "SnowHoursReason": {
+      "additionalProperties": false,
+      "description": "When snow falls, against when the buses run, where that is not the heaviest snow: the\nperiod of the forecast's snow that moves the chance the way its timing does (the forecast\nadjustment's timing line where the heaviest snow by the hour falls on the other side).",
+      "properties": {
+        "end": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "kind": {
+          "const": "snow_hours",
+          "type": "string"
+        },
+        "points": {
+          "$ref": "#/$defs/Points"
+        },
+        "start": {
+          "$ref": "#/$defs/UtcInstant"
+        }
+      },
+      "required": [
+        "kind",
+        "points",
+        "start",
+        "end"
+      ],
+      "title": "SnowHoursReason",
+      "type": "object"
+    },
     "SnowStarted": {
       "additionalProperties": false,
       "description": "Snow started falling at ``at``.",
@@ -1222,10 +1253,12 @@
       "description": "How much snow is coming: ``low`` to ``high`` inches, overnight or not, weighed against\nthe recorded days of ``against``; or, with no ``low`` and ``high``, only that it is more or\nless snow than those days have.",
       "properties": {
         "against": {
-          "description": "The recorded days the forecast's snow is weighed against: winter storm and blizzard warning days (storms), or winter advisory days (advisory).",
+          "description": "What the forecast's snow is weighed against: the recorded winter storm and blizzard warning days (storms) or winter advisory days (advisory), or the snow usual on the district's own days of the alert's class (here: the forecast at which its chance is the class's level, from the 9 PM forecasts of those days); none: the deciding schools' snow lies on both sides of the usual snow, so the line states the range alone, with no comparison.",
           "enum": [
             "storms",
-            "advisory"
+            "advisory",
+            "here",
+            "none"
           ],
           "type": "string"
         },

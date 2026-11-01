@@ -22,6 +22,7 @@ stays the same in each; only a file over the budget even without both is dark.
 Nothing here touches the network: the caller hands every input in.
 """
 
+import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime
@@ -32,8 +33,10 @@ import numpy as np
 import numpy.typing as npt
 
 from snowlight.directory.points import NO_DISTRICT, Points
+from snowlight.predict import forecast_adjust, forecast_values
 from snowlight.predict.alerts_live import LiveEvent, UgcIndex
-from snowlight.predict.anchor import STANDINGS, Anchor, Grid, Plausible, Unit
+from snowlight.predict.anchor import STANDINGS, Anchor, Grid, Plausible, Unit, implied_summary
+from snowlight.predict.anchor import failing as failing_clauses
 from snowlight.predict.announce import announces_at
 from snowlight.predict.artifact import (
     SITUATION_KEYS,
@@ -84,6 +87,7 @@ from snowlight.predict.situations import (
 from snowlight.predict.terms import NO_TERMS
 from snowlight.predict.terms import Model as TermsModel
 from snowlight.predict.why import (
+    ALERT_KIND,
     WEATHER_NAME,
     Of,
     Standing,
@@ -381,6 +385,17 @@ class ServeModel:
     """Per deployed district, whether the exposure it takes holds a tropical storm or hurricane
     warning day, so its warning-class sentence names storm warnings, not winter storm warnings
     alone (:meth:`~snowlight.predict.exposure.Exposure.has_tropical`); empty: none does."""
+    usual_snow: npt.NDArray[np.float64] = field(default_factory=lambda: np.zeros((0, 0)))
+    """(deployed districts, situations): the snow usual for the district on days of a classed
+    situation's class (:mod:`snowlight.predict.forecast_adjust`), NaN where the forecast does
+    not move that situation; empty: the forecast moves none."""
+    snow_usual: npt.NDArray[np.float64] = field(default_factory=lambda: np.zeros((0, 0)))
+    """As ``usual_snow``, with the district's ice days of the class taken as quiet: its usual
+    snow alone, the snow line's second bar only (PHYS-R2-S1; never the snow term's anchor, the
+    lead's ruling of Nov 1); NaN where none balances."""
+    adjust_check: "AdjustCheck | None" = None
+    """The plausibility check (G6) on the forecast adjustment's chances as published, averaged
+    over each district's days (PHYS-R3-S3); ``None``: no adjustment."""
 
     @property
     def coverage(self) -> float:
@@ -881,6 +896,14 @@ def build_model(  # noqa: PLR0913, PLR0915 - the steps of one model, in order
             raise ServeError(f"district {leaid} has no time zone")
         zones.append(zone)
     live = tuple(bool(value) for value in anchored)
+    counties = places_county(places)
+    usual_snow, snow_usual, adjust_check = _usual_snow(
+        anchor,
+        p[rows],
+        [(places.districts[r], counties[r], _region(states[r])) for r in rows.tolist()],
+        zones,
+        Grid(settings.floor, settings.ceiling),
+    )
     private = None
     if served.positions.size:
         prow = np.array([position[unit] for unit in pseudo], dtype=np.int64)
@@ -938,7 +961,214 @@ def build_model(  # noqa: PLR0913, PLR0915 - the steps of one model, in order
         else (),
         plausible=plausible,
         tropical=tropical[rows],
+        usual_snow=usual_snow,
+        snow_usual=snow_usual,
+        adjust_check=adjust_check,
     )
+
+
+ORDERED: Final = frozenset({"snow_warning", "lake_snow", "ice", "blizzard"})
+"""The winter warning situations an advisory day's chance is never over for the same forecast
+(the class order, PHYS-R3-S1; a tropical storm or hurricane warning's hazard is not the
+snow)."""
+
+
+@dataclass(frozen=True, slots=True)
+class AdjustCheck:
+    """G6 (Addendum A item 5) on the forecast adjustment (PHYS-R3-S3): the national implied
+    closures a winter with the adjusted chances as published, averaged over each deployed
+    district's days and mornings of each class (:func:`snowlight.predict.forecast_adjust.
+    expected`), every clause asserted; where one fails, no district is adjusted (the class
+    levels serve) and the pass warns."""
+
+    summary: Mapping[str, float]
+    """:func:`snowlight.predict.anchor.implied_summary` of the adjusted means."""
+    failing: tuple[str, ...]
+    """The clauses that fail (:data:`snowlight.predict.anchor.CLAUSES` and ``district_max``)."""
+    capped: int
+    """Districts left unadjusted for ``district_max`` alone."""
+
+    def line(self) -> str:
+        """One log line."""
+        said = self.summary
+        text = (
+            f"forecast adjustment plausibility: advisory mean "
+            f"{said.get('advisory_mean', 0):.3f} p99 {said.get('advisory_p99', 0):.3f}, "
+            f"advisory and warning mean {said.get('advisory_warning_mean', 0):.3f}, most "
+            f"{said.get('district_max', 0):.2f}; {self.capped:,} districts at their class "
+            f"levels for the most"
+        )
+        if self.failing:
+            text += f"; FAILS {', '.join(self.failing)}: the class levels serve, no adjustment"
+        return text
+
+
+def _usual_snow(  # noqa: PLR0915 - each class's solve in order, then the plausibility check
+    anchor: Anchor | None,
+    p: Floats,
+    places: Sequence[forecast_adjust.Place],
+    zones: Sequence[str],
+    grid: Grid,
+) -> tuple[Floats, Floats, AdjustCheck | None]:
+    """Each deployed district's usual snow per situation (:func:`snowlight.predict.
+    forecast_adjust.usual_snow`): the forecast at which its adjusted chance is the situation's
+    class level ``p``, calibrated on its own days of the class, solved for each distinct level
+    (the situations of a class share one today, but each is solved at its own); NaN where a
+    situation is not adjusted (the chain, cold, tropical, blizzard, no usual snow) and where
+    the anchor carries no climate (empty: none adjusted).
+
+    The plausibility check (G6) is held on the adjusted chances as published, averaged over
+    each district's days (a class's days at its highest situation's average): a district whose
+    days would then come to more closures a winter than ``district_max`` (and more than at its
+    class levels) is not adjusted at all. Then every clause of G6 is asserted on the adjusted
+    means (PHYS-R3-S3: the national advisory mean and p99, advisory and warning mean, and the
+    most of any district); where one fails, no district is adjusted (:class:`AdjustCheck`).
+
+    Also each one's usual snow alone (its ice days of the class taken as quiet,
+    :func:`snowlight.predict.forecast_adjust.ice_as_quiet`), for the snow line's comparison
+    only (PHYS-R2-S1). Each zone's even snow has its timing term in the solve
+    (:func:`snowlight.predict.forecast_adjust.even_factor`, PHYS-R2-S2)."""
+    if anchor is None or anchor.climate is None or anchor.adjust is None:
+        return np.zeros((0, 0)), np.zeros((0, 0)), None
+    settings = anchor.adjust
+    climate = anchor.climate
+    found = np.full(p.shape, np.nan)
+    alone = np.full(p.shape, np.nan)
+    scale = np.array([climate.scale(zone) for zone in zones])
+    factors = {zone: forecast_adjust.even_factor(zone, settings) for zone in set(zones)}
+    even = np.array([factors[zone] for zone in zones])
+    level = np.full((len(places), len(CLASSES)), -np.inf)
+    mean = np.full((len(places), len(CLASSES)), -np.inf)
+    counts: dict[str, Floats] = {}
+    solved: dict[tuple[str, bytes], Floats] = {}
+    snow_alone: dict[tuple[str, bytes], Floats] = {}
+    # The warning class first: an advisory day is never over the same district's warning day
+    # for the same forecast (the class order, PHYS-R3-S1), so its solve takes their chances.
+    warned: list[Floats] = []
+    order = sorted(
+        range(len(SITUATIONS)),
+        key=lambda k: anchor.class_of(SITUATIONS[k].key) != "warning",
+    )
+    for k in order:
+        situation = SITUATIONS[k]
+        klass = anchor.class_of(situation.key)
+        if klass is None:
+            continue
+        j = CLASSES.index(klass)
+        level[:, j] = np.maximum(level[:, j], p[:, k])
+        ordered = klass == "warning" and situation.key in ORDERED
+        if klass not in settings.classes or situation.key in forecast_adjust.SKIP:
+            mean[:, j] = np.maximum(mean[:, j], p[:, k])
+            if ordered:
+                warned.append(
+                    np.broadcast_to(
+                        p[:, k, None, None],
+                        (len(places), forecast_adjust.CODES - 1, len(forecast_adjust.COLD_FEELS)),
+                    )
+                )
+            continue
+        if klass not in counts:
+            counts[klass] = np.array(
+                [climate.counts(klass, place, settings) for place in places]
+            ).reshape(len(places), forecast_adjust.CODES - 1)
+        most = (
+            forecast_adjust.order_cap(p[:, k], warned)
+            if klass == "advisory" and "warning" in settings.classes and warned
+            else None
+        )
+        key = (klass, p[:, k].tobytes())
+        if key not in solved:
+            # The snow alone first (its ice days as quiet: the snow line's second bar,
+            # PHYS-R2-S1), then the usual with its ice days. The snow term is NOT anchored at
+            # the snow alone's (the lead's ruling of Nov 1, round 4 by hand: the anchor's flat
+            # stretch let more snow lower the chance where ice is forecast; PHYS-R3-S1 (i) is a
+            # documented limit until a total that stays monotone replaces it).
+            snow_alone[key] = forecast_adjust.usual_snow(
+                p[:, k],
+                forecast_adjust.ice_as_quiet(counts[klass]),
+                scale,
+                klass,
+                settings,
+                even=even,
+                most=most,
+            )
+            solved[key] = forecast_adjust.usual_snow(
+                p[:, k],
+                counts[klass],
+                scale,
+                klass,
+                settings,
+                even=even,
+                most=most,
+            )
+        usual = solved[key]
+        if ordered:
+            warned.append(
+                forecast_adjust.climate_chances(p[:, k], usual, scale, klass, settings, even)
+            )
+        days = forecast_adjust.expected(
+            p[:, k],
+            counts[klass],
+            scale,
+            usual,
+            klass,
+            settings,
+            grid.floor,
+            grid.ceiling,
+            even=even,
+            most=most,
+        )
+        mean[:, j] = np.maximum(mean[:, j], days)
+        found[:, k] = usual
+        alone[:, k] = np.where(np.isfinite(usual), snow_alone[key], np.nan)
+    level = np.where(np.isfinite(level), level, np.nan)
+    mean = np.where(np.isfinite(mean), mean, np.nan)
+    days = np.array(
+        [
+            anchor.exposure.of(leaid, county)[0] or (np.nan,) * len(CLASSES)
+            for leaid, county, _ in places
+        ],
+        dtype=np.float64,
+    ).reshape(len(places), len(CLASSES))
+    limit = anchor.settings.plausibility.district_max
+    implied = np.nansum(days * mean, axis=1)
+    over = (implied > limit + 1e-9) & (implied > np.nansum(days * level, axis=1) + 1e-9)
+    found[over, :] = np.nan
+    alone[over, :] = np.nan
+    check = _adjust_check(
+        anchor, np.where(over[:, None], level, mean), level, days, int(over.sum())
+    )
+    if check.failing:
+        found[:] = np.nan
+        alone[:] = np.nan
+    return found, alone, check
+
+
+def _adjust_check(
+    anchor: Anchor, mean: Floats, level: Floats, days: Floats, capped: int
+) -> AdjustCheck:
+    """Every G6 clause on the adjusted means (districts by class: a class not adjusted at its
+    level), over the districts whose days are known (PHYS-R3-S3). A clause fails where the
+    adjusted chances break it and come to more than the class levels do (as ``district_max``
+    is held per district): the class levels' own check is the anchor's."""
+    rules = anchor.settings.plausibility
+    level = np.nan_to_num(level)
+    mean = np.where(np.isfinite(mean), mean, level)
+    mask = np.isfinite(days).all(axis=1)
+    known = np.nan_to_num(days)
+    summary = implied_summary(mean, known, mask)
+    held = implied_summary(level, known, mask)
+    failing = [
+        clause
+        for clause in failing_clauses(mean, known, mask, rules)
+        if summary[clause] > held[clause] + 1e-9
+    ]
+    if mask.any():
+        most = (mean[mask] * known[mask]).sum(axis=1)
+        at_level = (level[mask] * known[mask]).sum(axis=1)
+        if bool(((most > rules.district_max + 1e-9) & (most > at_level + 1e-9)).any()):
+            failing.append("district_max")
+    return AdjustCheck(summary, tuple(failing), capped)
 
 
 def _classed_rates(  # noqa: PLR0913, PLR0917 - the anchor, the places and their rates
@@ -1160,10 +1390,11 @@ type ClosedOn = Callable[[date], frozenset[int] | None]
 """The deployed districts (or private schools, by directory position) that had no school for
 weather on a day, or ``None`` when not published (then none counts as the day after)."""
 
-type Earlier = tuple[float, PreviousChance | None, datetime, bool, bool]
+type Earlier = tuple[float, PreviousChance | None, datetime, bool, bool, bool]
 """A unit's chance of no school on a day in the last file, its previous, that file's time,
-whether that chance was served from its storm class's level (a ``class`` base), and whether
-that day was stormy then (it named forecast weather)."""
+whether that chance was served from its storm class's level (a ``class`` base), whether that
+day was stormy then (it named forecast weather), and whether lines moved it off its base (on a
+``class`` base only the forecast adjustment's do)."""
 
 
 def _previous(last: PredictionsFile | None) -> dict[tuple[int, date], Earlier]:
@@ -1179,6 +1410,7 @@ def _previous(last: PredictionsFile | None) -> dict[tuple[int, date], Earlier]:
                     last.generated_at,
                     item.why.base.kind == "class",
                     bool(item.reasons),
+                    bool(item.why.reasons),
                 )
     return found
 
@@ -1196,6 +1428,7 @@ def _previous_schools(last: PredictionsFile | None) -> dict[tuple[int, date], Ea
                     last.generated_at,
                     item.why.base.kind == "class",
                     bool(item.reasons),
+                    bool(item.why.reasons),
                 )
     return found
 
@@ -1219,6 +1452,8 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     outlook: "OutlookLines | None" = None,
     forecast_at: datetime | None = None,
     nights: Nights = NO_NIGHTS,
+    adjust: bool = False,
+    read_last: frozenset[tuple[int, date]] | None = None,
 ) -> PredictionsFile:
     """The predictions file of one pass (see the module docstring): every district, and with
     ``private_classes`` (from :func:`unit_classes`) every served private school; ``fit``: what
@@ -1236,7 +1471,18 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     (every chance the issued-alerts-only one, as with no outlook). ``nights``: the night charts
     the pass built (:mod:`snowlight.predict.night_serve`), each on its district's day where
     ``fit`` carries them, and the file names their cycle, ``night_at``; nothing here computes a
-    night, so no chart code runs inside the file's making.
+    night, so no chart code runs inside the file's making. ``adjust``: the forecast read at the
+    class snapshot (``forecasts``) moves each advisory and warning day of a district within its
+    class (advisory-sane L5, :mod:`snowlight.predict.forecast_adjust`), with its lines, where
+    ``fit`` carries reasons, from the day's class snapshot on (9 PM the evening before); a
+    district-day before it keeps its class level, and so does one with no forecast read, unless
+    the last file holds its lines from the same snapshot at the same class level (a read that
+    failed this pass gives the same snapshot's chance, never a swing to the class level and
+    back); and so does every day where ``fit`` carries none. ``read_last``: the district-days
+    whose forecast the pass that made ``last`` read (``None``: not known, as after a restart):
+    a day at its class level in ``last`` that this pass's forecast moves shows no previous
+    chance unless that pass read it too (S-R2-3: a read that failed, then one that worked, is
+    not a change in the weather).
 
     Raises:
         TableError: the private schools' outlooks are more than the file may hold.
@@ -1244,6 +1490,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     generated = now.astimezone(UTC).replace(microsecond=0)
     same = last if last is not None and last.directory == model.directory.stamp else None
     earlier = _previous(same) if fit.previous else {}
+    kept = _kept(same, model) if adjust else {}
     after_sets = {
         day: (closed_on(previous_school_day(day)) or frozenset())
         if is_school_day(day)
@@ -1269,6 +1516,11 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
             )
             usual = model.announce[index] if announces and model.announce else None
             line = outlook.lines.get((index, d)) if outlook is not None and fit.reasons else None
+            moved_by, forecast_read, snapshot = (
+                _adjusted(model, index, k, day, forecasts, situation, generated, kept)
+                if adjust and fit.reasons and line is None
+                else (None, False, None)
+            )
             outlooks.append(
                 _forecast(
                     _Cell(
@@ -1302,6 +1554,10 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
                     outlook=None
                     if line is None or outlook is None
                     else (float(outlook.p[index, d]), float(outlook.delay[index, d]), line),
+                    adjusted=moved_by,
+                    forecast_read=forecast_read,
+                    last_read=read_last is not None and (index, day) in read_last,
+                    snapshot=snapshot,
                 )
             )
             night = nights.get(day, index) if fit.nights else None
@@ -1345,6 +1601,135 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
         else None,
         night_at=nights.at if carried else None,
     )
+
+
+type Kept = dict[tuple[int, date], tuple[tuple[int, str | None, str | None], Moved]]
+"""Each district-day the last file moved by the forecast adjustment from its class snapshot on:
+its class level (whole percent) with the alert or weather its base names, and its chance,
+delay and lines."""
+
+ADJUST_KINDS: Final = frozenset({"snow_total", "timing", "snow_hours", "ice", "wind_chill"})
+"""The line kinds the forecast adjustment gives (:func:`snowlight.predict.forecast_adjust.
+adjusted`)."""
+
+
+def _kept(last: PredictionsFile | None, model: ServeModel) -> Kept:
+    """The last file's adjusted district-days read at their class snapshot (the file made at or
+    after it, so from the same snapshot's run), for a pass whose own read fails (PHYS-S7):
+    the snapshot has not changed, so neither has what its read gives."""
+    if last is None or len(last.districts) != len(model.time_zone):
+        return {}
+    found: Kept = {}
+    for entry in last.districts:
+        zone = model.time_zone[entry.district]
+        for day, item in zip(last.days, entry.days, strict=True):
+            if (
+                not isinstance(item, Forecast)
+                or item.why.base.kind != "class"
+                or not item.why.reasons
+                or not all(reason.kind in ADJUST_KINDS for reason in item.why.reasons)
+                or last.generated_at < forecast_adjust.snapshot(day, zone)
+            ):
+                continue
+            moved = Moved(
+                p_no_school=item.p_no_school, p_delay=item.p_delay, reasons=item.why.reasons
+            )
+            base = item.why.base
+            found[(entry.district, day)] = ((base.points, base.alert, base.weather), moved)
+    return found
+
+
+def _adjusted(  # noqa: PLR0913, PLR0917 - the model, the cell, the day and its forecast
+    model: ServeModel,
+    index: int,
+    k: int,
+    day: date,
+    forecasts: Forecasts,
+    situation: Situation,
+    generated: datetime,
+    kept: Kept,
+) -> tuple[Moved | None, bool, datetime | None]:
+    """A district's storm-class day with the forecast on top of its class level
+    (:func:`snowlight.predict.forecast_adjust.adjusted`), or ``None`` where the forecast does
+    not move it: not an adjusted situation, before the day's class snapshot (9 PM the evening
+    before on the school's clock: turn-on items 8 and 10), no forecast read, or no term worth
+    a point; whether its forecast was read for the adjustment (adjusted or not, or the same
+    snapshot's lines kept from the last file where this pass's read failed); and the class
+    snapshot (``None`` where the day is not adjusted)."""
+    anchor = model.anchor
+    if anchor is None or anchor.adjust is None or not model.usual_snow.size:
+        return None, False, None
+    usual = float(model.usual_snow[index, k])
+    klass = anchor.class_of(situation.key)
+    if klass is None or not math.isfinite(usual):
+        return None, False, None
+    zone = model.time_zone[index]
+    snapshot = forecast_adjust.snapshot(day, zone)
+    if generated < snapshot:
+        return None, False, snapshot
+    p0 = float(model.p[index, k])
+    found = forecasts.get(day, index)
+    if found is None:
+        last = kept.get((index, day))
+        # The same snapshot's lines only for the same situation at the same level (PHYS-R2-S4):
+        # a lake effect warning's lines are never a winter storm warning's at the same level.
+        named = (
+            round(p0 * 100),
+            ALERT_KIND.get(situation.weather),
+            None if situation.weather in ALERT_KIND else WEATHER_NAME.get(situation.weather),
+        )
+        if last is not None and last[0] == named:
+            return last[1], True, snapshot
+        return None, False, snapshot
+    settings = model.artifact.settings
+    return (
+        forecast_adjust.adjusted(
+            p0,
+            float(model.q_rate[index, k]) if model.q_rate.size else 0.0,
+            klass,
+            usual,
+            found,
+            day,
+            zone,
+            anchor.adjust,
+            settings.floor,
+            settings.ceiling,
+            snow_usual=float(model.snow_usual[index, k]) if model.snow_usual.size else None,
+            cap=_order_cap(model, anchor, index, klass, day, zone, found),
+        ),
+        True,
+        snapshot,
+    )
+
+
+def _order_cap(  # noqa: PLR0913, PLR0917 - the model, the district, its day and forecast
+    model: ServeModel,
+    anchor: Anchor,
+    index: int,
+    klass: str,
+    day: date,
+    zone: str,
+    found: forecast_values.DistrictForecast,
+) -> float | None:
+    """On an advisory day, the lowest chance (unrounded) the same district's winter warning
+    situations would have with the same forecast, which the advisory day's is never over (the
+    class order, PHYS-R3-S1; as the solve counts it, :data:`ORDERED`); ``None`` otherwise."""
+    settings = anchor.adjust
+    if klass != "advisory" or settings is None or "warning" not in settings.classes:
+        return None
+    found_any: list[float] = []
+    for k, situation in enumerate(SITUATIONS):
+        if anchor.class_of(situation.key) != "warning" or situation.key not in ORDERED:
+            continue
+        p0 = float(model.p[index, k])
+        usual = float(model.usual_snow[index, k])
+        if situation.key in forecast_adjust.SKIP or not math.isfinite(usual):
+            found_any.append(p0)
+            continue
+        found_any.append(
+            forecast_adjust.raw_chance(p0, "warning", usual, found, day, zone, settings)
+        )
+    return min(found_any) if found_any else None
 
 
 def _schools(  # noqa: PLR0913 - the private schools, their classes, the days and lookups
@@ -1516,6 +1901,10 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     limits: tuple[float, float] = (FLOOR, 0.99),
     announces: datetime | None = None,
     outlook: tuple[float, float, OutlookReason] | None = None,
+    adjusted: Moved | None = None,
+    forecast_read: bool = False,
+    snapshot: datetime | None = None,
+    last_read: bool = False,
 ) -> Forecast:
     """One unit's forecast for one school day. ``said_open``: the unit said school is on that
     day, so its chance of no school is the floor and of a delay 0 (:mod:`snowlight.predict.
@@ -1523,12 +1912,18 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     line shows what the chance was and why it fell (contract C3; it keeps the file's worst
     case within budget). ``terms`` and ``extra``: the reasons on top of the base
     (:mod:`snowlight.predict.reasons`, never on a day said open); ``limits``: the published
-    floor and ceiling; ``announces``: the unit's usual posting time that day."""
+    floor and ceiling; ``announces``: the unit's usual posting time that day. ``adjusted``:
+    the day's chance and lines with the forecast on its class level (advisory-sane L5), never
+    on a day said open; ``forecast_read``: its forecast was read for that (moved or not);
+    ``snapshot``: its class snapshot, where the adjustment is on for it; ``last_read``: the
+    pass that made the last file read its forecast too."""
     p, q = cell.p, cell.q
     floor = FLOOR if said_open else None
     lines = None
     if floor is None and outlook is not None:
         lines = Moved(p_no_school=outlook[0], p_delay=outlook[1], reasons=(outlook[2],))
+    elif floor is None and adjusted is not None:
+        lines = adjusted
     elif floor is None and extra is not None:
         lines = moved(
             p,
@@ -1545,9 +1940,30 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     record = record_for(cell.records.get(cell.counted.key, ()), day) if cell.own else None
     previous: PreviousChance | None = None
     if earlier is not None and not said_open:
-        last_p, last_previous, last_at, last_classed, last_stormy = earlier
-        if last_at >= generated or (
-            last_classed != cell.classed and last_stormy and situation.weather != WeatherClass.NONE
+        last_p, last_previous, last_at, last_classed, last_stormy, last_lines = earlier
+        storm = situation.weather != WeatherClass.NONE
+        # A storm-class day's chance moved by the forecast against one at its class level
+        # with no forecast read (advisory-sane L5) is not a change in the weather: the forecast
+        # arriving (the last file was made before the day's class snapshot, so nothing could
+        # move it then) or this pass's read failing with no lines of the same snapshot to keep.
+        # A class-level chance with lines is a moved one: no other line is said on a class base.
+        # Kept where both files are from the snapshot on and both passes read it: a forecast
+        # that moved the chance less than a point the pass before and moves it now is a change.
+        # Where the last pass is not known to have read it (its read failed, or this process
+        # did not make it), its class level may be a failed read's: no previous chance (S-R2-3).
+        last_moved = last_classed and last_lines
+        now_moved = lines is not None
+        arrived = (
+            now_moved
+            and snapshot is not None
+            and (last_at < snapshot or (not last_moved and not last_read))
+        )
+        lost = last_moved and not now_moved and not forecast_read
+        unread_change = arrived or lost
+        if (
+            last_at >= generated
+            or (last_classed != cell.classed and last_stormy and storm)
+            or (cell.classed and last_classed and storm and unread_change)
         ):
             # A storm day's chance from the other method (the chain's before its class level
             # served, or the class level's after ``serve.anchor`` is turned off) is not an

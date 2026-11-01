@@ -107,6 +107,10 @@ class ServeSettings(_Settings):
     """Advisory-sane L3: every storm-class day (``live_score.classes``) is served from its
     class's level (:mod:`snowlight.predict.anchor`), never from an archive closure share. Off:
     the served chain, as before."""
+    forecast_adjust: Literal["off", "on"] = "off"
+    """Advisory-sane L5: with ``anchor`` on, the forecast at the class snapshot moves each
+    advisory and warning day within its class (:mod:`snowlight.predict.forecast_adjust`,
+    ``live_score.forecast_adjustment``). Off: the class level alone."""
     reasons: bool = False
     """Piece 3: the districts' chances carry the reasons' terms (the forecast amounts and the
     districts next door, ``data/predict/terms.json.gz``). Off: the base alone, as before."""
@@ -185,10 +189,11 @@ class LearnSettings(_Settings):
     out, and a learned file that counted one is no longer served."""
 
 
-LIVE_SCORE_SHA256: Final = "71916787853afb2369d96308445050a24e94cd5d3469c0315e7fa13782723d9b"
+LIVE_SCORE_SHA256: Final = "f03c3d9af8a3ed1b4da68d4c0cac8e8b8cededada3984204baf8d23bdbc657e4"
 """The sha256 of the pre-registered scoring rules (:func:`live_score_sha256`: the
 ``live_score`` block, the ``labels`` and ``weather`` blocks and ``learn.snapshot_slack_minutes``),
-as S7 addendum h records it. A test holds the two equal, so none of them changes without this."""
+as S7 addendum h records it (and addendum i, for the forecast adjustment of advisory-sane L5).
+A test holds the two equal, so none of them changes without this."""
 
 
 class PredictConfig(_Settings):

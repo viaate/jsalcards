@@ -622,11 +622,15 @@ class SnowTotalReason(CompactModel):
         default=None, description="The most snow the line states; null with low."
     )
     overnight: bool
-    against: Literal["storms", "advisory"] = Field(
+    against: Literal["storms", "advisory", "here", "none"] = Field(
         default="storms",
         description=(
-            "The recorded days the forecast's snow is weighed against: winter storm and "
-            "blizzard warning days (storms), or winter advisory days (advisory)."
+            "What the forecast's snow is weighed against: the recorded winter storm and "
+            "blizzard warning days (storms) or winter advisory days (advisory), or the snow "
+            "usual on the district's own days of the alert's class (here: the forecast at "
+            "which its chance is the class's level, from the 9 PM forecasts of those days); "
+            "none: the deciding schools' snow lies on both sides of the usual snow, so the "
+            "line states the range alone, with no comparison."
         ),
     )
     at: UtcInstant | None = Field(
@@ -645,6 +649,8 @@ class SnowTotalReason(CompactModel):
             raise ValueError("snow_total low is above its high")
         if self.low is None and self.overnight:
             raise ValueError("snow_total says overnight of no amount")
+        if self.against == "none" and self.low is None:
+            raise ValueError("snow_total with no comparison states its range")
         return self
 
 
@@ -695,6 +701,23 @@ class TimingReason(CompactModel):
     def _check(self) -> Self:
         if self.end <= self.start:
             raise ValueError("timing ends before it starts")
+        return self
+
+
+class SnowHoursReason(CompactModel):
+    """When snow falls, against when the buses run, where that is not the heaviest snow: the
+    period of the forecast's snow that moves the chance the way its timing does (the forecast
+    adjustment's timing line where the heaviest snow by the hour falls on the other side)."""
+
+    kind: Literal["snow_hours"]
+    points: Points
+    start: UtcInstant
+    end: UtcInstant
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        if self.end <= self.start:
+            raise ValueError("snow_hours ends before it starts")
         return self
 
 
@@ -886,6 +909,7 @@ type ReasonPoints = Annotated[
     | RecordReason
     | NeighborsReason
     | TimingReason
+    | SnowHoursReason
     | WindChillReason
     | ColdReason
     | SnowStopsReason

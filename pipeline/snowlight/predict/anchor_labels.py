@@ -18,6 +18,7 @@ day must not darken a pass.
 
 import json
 from collections.abc import Callable
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 from typing import Final, cast
@@ -38,6 +39,8 @@ from snowlight.predict.artifact import ModelArtifact
 from snowlight.predict.config import PIPELINE_ROOT, PredictConfig
 from snowlight.predict.exposure import EXPOSURE_PATH, Exposure
 from snowlight.predict.exposure import load as load_exposure
+from snowlight.predict.forecast_adjust import CLIMATE_PATH, AdjustSettings
+from snowlight.predict.forecast_adjust import load as load_climate
 from snowlight.predict.geography import REGION_OF
 from snowlight.predict.situations import Situation, WeatherClass
 
@@ -172,19 +175,23 @@ ANCHOR_REPORT: Final = PIPELINE_ROOT / "out" / "internal" / "predict" / "anchor.
 """The private report of the class levels a process serves (never published)."""
 
 
-def serving_anchor(
+def serving_anchor(  # noqa: PLR0913 - the config, the model and where each file is
     config: PredictConfig,
     artifact: ModelArtifact,
     *,
     folder: Path = READS_DIR,
     exposure_path: Path = EXPOSURE_PATH,
+    climate_path: Path = CLIMATE_PATH,
     warn: Callable[[str], None] = lambda _line: None,
 ) -> Anchor | None:
     """The class anchor a serving process uses (``serve.anchor``; off: ``None``), fitted on
     the live labels the record holds now (Addendum A item 4: refreshed with each day's run).
 
     An exposure file that does not read leaves every unit at its class level (no exposure
-    term, no region delta) and says so: never back to an archive closure share."""
+    term, no region delta) and says so: never back to an archive closure share. With
+    ``serve.forecast_adjust`` on it carries the forecast climate and the registered adjustment
+    (:mod:`snowlight.predict.forecast_adjust`); a climate file that does not read leaves every
+    day at its class level, and says so."""
     if not config.serve.anchor:
         return None
     settings = AnchorSettings.of(config)
@@ -198,7 +205,16 @@ def serving_anchor(
         leaid: (entry.county, REGION_OF.get(entry.state) if entry.state else None)
         for leaid, entry in artifact.districts.items()
     }
-    return fit(settings, exposure, labels, places)
+    anchor = fit(settings, exposure, labels, places)
+    if config.serve.forecast_adjust != "on":
+        return anchor
+    try:
+        adjust = AdjustSettings.of(config)
+        climate = load_climate(climate_path)
+    except (OSError, ValueError, KeyError) as error:
+        warn(f"anchor: the forecast climate: {type(error).__name__}: the class levels alone")
+        return anchor
+    return replace(anchor, climate=climate, adjust=adjust)
 
 
 def anchor_line(anchor: Anchor) -> str:

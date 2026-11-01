@@ -309,10 +309,12 @@ export type ReasonInput =
       /** The chart already says how much: the sentence names the reason alone. */
       readonly said?: boolean;
       /**
-       * The days the snow is weighed against: recorded storms (the default), or recorded
-       * winter advisory days.
+       * The days the snow is weighed against: recorded storms (the default), recorded winter
+       * advisory days, the snow usual on the district's own days of its alert's class ("more
+       * than usual here"), or nothing (`none`: the deciding schools' snow lies on both sides
+       * of the usual, so the sentence states the range alone).
        */
-      readonly against?: 'storms' | 'advisory';
+      readonly against?: 'storms' | 'advisory' | 'here' | 'none';
       /** When the forecast was issued: the sentence names it ("The 8:16 PM forecast has"). */
       readonly at?: Date | null;
       /** Where the forecast's amount ends ("by 1 PM"), said when it is not all overnight. */
@@ -339,6 +341,14 @@ export type ReasonInput =
       readonly buses: Date | null;
       /** The chart's key already says the hours. */
       readonly said?: boolean;
+    }
+  | {
+      /** Snow in these hours, where they are not the heaviest snow's. */
+      readonly kind: 'snow_hours';
+      readonly points: number;
+      readonly start: Date;
+      readonly end: Date;
+      readonly buses: Date | null;
     }
   | {
       readonly kind: 'wind_chill';
@@ -385,6 +395,8 @@ export type ReasonInput =
       readonly inches: number | null;
       /** When the forecast was issued: the sentence names it. */
       readonly at?: Date | null;
+      /** Where the forecast's ice ends ("by 1 PM"). */
+      readonly until?: Date | null;
     }
   /** The district or the school said school is on: the chance drops to the floor. */
   | { readonly kind: 'said_open'; readonly points: number }
@@ -935,6 +947,25 @@ function timingRest(start: Date, end: Date, buses: Date): string {
 }
 
 /**
+ * The forecast a line is from, by its time: "The 8:46 PM forecast" the day it was issued on
+ * the school's clock, "Last night's 8:46 PM forecast" from the evening before (a morning panel
+ * names last night's run as last night's), and the day's name for an older one.
+ */
+function forecastName(at: Date, now: Date, zones: Zones): string {
+  const issued = dayOf(at, zones.school);
+  const today = dayOf(now, zones.school);
+  const time = clock(at, zones);
+  if (issued >= today) return `The ${time} forecast`;
+  const yesterday = dayOf(new Date(parseLocalDate(today).getTime() - MS_PER_DAY), 'UTC');
+  if (issued === yesterday) {
+    return localHour(at, zones.school) >= 17
+      ? `Last night’s ${time} forecast`
+      : `Yesterday’s ${time} forecast`;
+  }
+  return `${weekday(issued)}’s ${time} forecast`;
+}
+
+/**
  * One reason, as one short sentence: "Blue Valley and Olathe, next door,
  * canceled."; a forecast as the forecast's claim. `district` is the
  * district's short name; `now` and `zones` word the times.
@@ -946,7 +977,12 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
     case 'snow_total': {
       const cited = input.record === null ? '' : ` ${recordSentence(input.record, 'It')}`;
       const than = input.points > 0 ? 'more' : 'less';
-      const most = input.against === 'advisory' ? 'most advisory days' : 'most storms';
+      const most =
+        input.against === 'advisory'
+          ? 'most advisory days'
+          : input.against === 'here'
+            ? 'usual here'
+            : 'most storms';
       const at = input.at ?? null;
       const until = input.until ?? null;
       const { low, high } = input;
@@ -957,6 +993,7 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
       // the window's snow (never "overnight").
       if (low === null || high === null) {
         if (input.overnight) throw new RangeError('copy: overnight with no amount');
+        if (input.against === 'none') throw new RangeError('copy: no amount and no comparison');
         const lighter = input.against === 'advisory' && than === 'less';
         if (input.said === true || at === null) {
           return lighter
@@ -964,7 +1001,7 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
             : `${than === 'more' ? 'More' : 'Less'} snow than ${most}.${cited}`;
         }
         const by = until === null ? '' : ` by ${clock(until, zones)}`;
-        return `The ${clock(at, zones)} forecast has ${than} snow${by} than ${most}.${cited}`;
+        return `${forecastName(at, now, zones)} has ${than} snow${by} than ${most}.${cited}`;
       }
       // The snow still to fall from the forecast's time: overnight, or by the window's end.
       const when = input.overnight
@@ -973,6 +1010,12 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
           ? ''
           : ` by ${clock(until, zones)}`;
       const amount = none ? 'no new snow' : inchWords(low, high);
+      if (input.against === 'none') {
+        // The deciding schools' snow lies on both sides of the usual: the range alone.
+        if (none) throw new RangeError('copy: no snow with no comparison');
+        const forecast = at === null ? 'The forecast' : forecastName(at, now, zones);
+        return `${forecast} has ${amount}${when}.${cited}`;
+      }
       if (input.said === true) {
         if (input.against === 'advisory' && than === 'less') {
           return `Lighter than most advisory days.${cited}`;
@@ -987,7 +1030,7 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
         }
         return `The forecast has ${amount}${when}, ${than} than ${most}.${cited}`;
       }
-      const forecast = `The ${clock(at, zones)} forecast has`;
+      const forecast = `${forecastName(at, now, zones)} has`;
       if (input.against === 'advisory' && than === 'less') {
         return `${forecast} ${amount}${when}, lighter than most advisory days.${cited}`;
       }
@@ -1030,10 +1073,18 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
         ? `${chanceCopy.heaviest} ${rest}.`
         : `The forecast has the heaviest snow ${span}, ${rest}.`;
     }
+    case 'snow_hours': {
+      if (input.end.getTime() <= input.start.getTime()) {
+        throw new RangeError('copy: the snow ends before it starts');
+      }
+      const span = hourSpan(input.start, input.end, zones);
+      if (input.buses === null) return `The forecast has snow ${span}.`;
+      return `The forecast has snow ${span}, ${timingRest(input.start, input.end, input.buses)}.`;
+    }
     case 'wind_chill': {
       if (input.said === true) return 'Wind chill at the bus stop.';
       const at = input.at ?? null;
-      const forecast = at === null ? 'The forecast has' : `The ${clock(at, zones)} forecast has`;
+      const forecast = at === null ? 'The forecast has' : `${forecastName(at, now, zones)} has`;
       return input.feelsLike === null
         ? `${forecast} a wind chill at the bus stop.`
         : `${forecast} a wind chill of ${degrees(input.feelsLike)} at the bus stop.`;
@@ -1087,10 +1138,13 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
       return `Side streets stay icy after ${inchWords(input.inches, input.inches)} of snow.`;
     case 'ice': {
       const at = input.at ?? null;
-      const forecast = at === null ? 'The forecast has' : `The ${clock(at, zones)} forecast has`;
+      const forecast = at === null ? 'The forecast has' : `${forecastName(at, now, zones)} has`;
+      // The ice still to fall by the window's end, which can be after the buses ("by 1 PM").
+      const until = input.until ?? null;
+      const by = until === null ? '' : ` by ${clock(until, zones)}`;
       return input.inches === null
-        ? `${forecast} freezing rain.`
-        : `${forecast} freezing rain leaving ${inchWords(input.inches, input.inches)} of ice.`;
+        ? `${forecast} freezing rain${by}.`
+        : `${forecast} freezing rain leaving ${inchWords(input.inches, input.inches)} of ice${by}.`;
     }
     case 'said_open':
       return `${district} said school is on.`;

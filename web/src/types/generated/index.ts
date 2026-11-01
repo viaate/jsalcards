@@ -926,6 +926,7 @@ export type ReasonPoints =
   | RecordReason
   | NeighborsReason
   | TimingReason
+  | SnowHoursReason
   | WindChillReason
   | ColdReason
   | SnowStopsReason
@@ -993,6 +994,18 @@ export interface SimilarDaysBase {
   readonly weather?: CountedWeather | null;
 }
 
+/**
+ * When snow falls, against when the buses run, where that is not the heaviest snow: the
+ * period of the forecast's snow that moves the chance the way its timing does (the forecast
+ * adjustment's timing line where the heaviest snow by the hour falls on the other side).
+ */
+export interface SnowHoursReason {
+  readonly kind: 'snow_hours';
+  readonly points: Points;
+  readonly start: UtcInstant;
+  readonly end: UtcInstant;
+}
+
 /** Snow started falling at ``at``. */
 export interface SnowStarted {
   readonly kind: 'snow_started';
@@ -1023,10 +1036,13 @@ export interface SnowTotalReason {
   readonly points: Points;
   readonly overnight: boolean;
   /**
-   * The recorded days the forecast's snow is weighed against: winter storm and blizzard warning
-   * days (storms), or winter advisory days (advisory).
+   * What the forecast's snow is weighed against: the recorded winter storm and blizzard warning
+   * days (storms) or winter advisory days (advisory), or the snow usual on the district's own days
+   * of the alert's class (here: the forecast at which its chance is the class's level, from the 9
+   * PM forecasts of those days); none: the deciding schools' snow lies on both sides of the usual
+   * snow, so the line states the range alone, with no comparison.
    */
-  readonly against?: 'storms' | 'advisory';
+  readonly against?: 'storms' | 'advisory' | 'here' | 'none';
   /**
    * When the weather service issued the forecast the amount is from; the amount is the snow it has
    * from then to the end of its window (18:00 UTC on the day).

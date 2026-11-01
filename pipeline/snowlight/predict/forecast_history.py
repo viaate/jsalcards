@@ -627,7 +627,10 @@ def _codes(  # noqa: PLR0913, PLR0917 - one sample of one zone
 class Fetcher:
     """GETs and range reads with retries (NCEI's THREDDS answers 503 at times), counting bytes.
     ``before``: called before every request and every wait between tries; it raises
-    :class:`~snowlight.predict.ndfd.NdfdError` to stop (the serving outlook's time limit)."""
+    :class:`~snowlight.predict.ndfd.NdfdError` to stop (the serving outlook's time limit).
+    ``left``: the seconds left in that limit; with it, each answer is read as it arrives and
+    stopped once they are up, so a host that drips bytes (each gap under the read timeout)
+    holds a read no longer than the limit and one gap (S-R2-4)."""
 
     def __init__(
         self,
@@ -635,8 +638,10 @@ class Fetcher:
         attempts: int = 6,
         range_attempts: int = ndfd.RANGE_ATTEMPTS,
         before: Callable[[], None] | None = None,
+        left: Callable[[], float] | None = None,
     ) -> None:
         self.client = client
+        self.left = left
         self.attempts = attempts
         self.range_attempts = range_attempts
         self.before = before
@@ -653,7 +658,7 @@ class Fetcher:
         for attempt in range(self.attempts):
             self._check()
             try:
-                response = self.client.get(url, headers=headers)
+                response = self._answer(url, headers)
             except httpx.HTTPError as failed:
                 error = failed
             else:
@@ -667,6 +672,24 @@ class Fetcher:
                 self._check()
                 clock.sleep(min(60.0, 2.0**attempt))
         raise ndfd.NdfdError(f"{url}: {error}")
+
+    def _answer(self, url: str, headers: Mapping[str, str] | None) -> httpx.Response:
+        if self.left is None:
+            return self.client.get(url, headers=headers)
+        with self.client.stream("GET", url, headers=headers) as streamed:
+            if streamed.is_stream_consumed:  # read whole already (a transport in memory)
+                return streamed
+            body = bytearray()
+            for chunk in streamed.iter_raw():
+                body.extend(chunk)
+                if self.left() <= 0:
+                    raise ndfd.NdfdError(f"{url}: the time for forecast reads ran out mid-answer")
+            return httpx.Response(
+                streamed.status_code,
+                headers=streamed.headers,
+                content=bytes(body),
+                request=streamed.request,
+            )
 
     def get(self, url: str) -> bytes:
         """The body of a 200.

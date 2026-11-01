@@ -672,8 +672,9 @@ describe('what the section leaves out', () => {
     expect(said([snow(6, 9, true, 1)], 0.75)).toEqual([
       `+1 The 8:16${NBSP}PM forecast has 6 to 9 inches overnight, more than most advisory days.`,
     ]);
+    // The ice falls by the window's end, which can be after the buses (B2b).
     expect(said([{ kind: 'ice', points: 25, inches: 0.2, at: issued }], 0.99)).toEqual([
-      `+25 The 8:16${NBSP}PM forecast has freezing rain leaving 0.2 inches of ice.`,
+      `+25 The 8:16${NBSP}PM forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
     ]);
     expect(said([{ kind: 'wind_chill', points: 5, feelsLike: -4, at: issued }], 0.79)).toEqual([
       `+5 The 8:16${NBSP}PM forecast has a wind chill of ${MINUS}4${NBSP}F at the bus stop.`,
@@ -683,7 +684,44 @@ describe('what the section leaves out', () => {
       `${MINUS}34 The 8:16${NBSP}PM forecast has less snow by 12${NBSP}PM than most advisory days.`,
     ]);
     expect(said([{ kind: 'ice', points: 25, inches: null, at: issued }], 0.99)).toEqual([
-      `+25 The 8:16${NBSP}PM forecast has freezing rain.`,
+      `+25 The 8:16${NBSP}PM forecast has freezing rain by 12${NBSP}PM.`,
+    ]);
+    // A snow line whose deciding schools' snow lies on both sides of the usual (SF-R4-1):
+    // the range alone, never a comparison one of them contradicts.
+    expect(said([{ ...snow(0, 6, false, -6), against: 'none' }], 0.68)).toEqual([
+      `${MINUS}6 The 8:16${NBSP}PM forecast has 0 to 6 inches by 12${NBSP}PM.`,
+    ]);
+    // Snow in hours that are not the heaviest snow's (the forecast adjustment's timing line).
+    expect(
+      said(
+        [
+          {
+            kind: 'snow_hours',
+            points: 3,
+            start: at('2026-01-13T06:00:00Z'),
+            end: at('2026-01-13T12:00:00Z'),
+          },
+        ],
+        0.77,
+      ),
+    ).toEqual([`+3 The forecast has snow 12 to 6${NBSP}AM, just before the buses.`]);
+    // At 6 AM the panel names last night's run as last night's (turn-on item 11).
+    const morning = lines(
+      whyView({
+        detail: {
+          ...A_DETAIL,
+          hours: null,
+          record: null,
+          why: { base, reasons: [{ kind: 'ice', points: 25, inches: 0.2, at: issued }] },
+        },
+        chance: 0.99,
+        nameOf: NAME_OF,
+        ...args,
+        now: at('2026-01-13T12:00:00Z'),
+      }),
+    ).slice(1);
+    expect(morning).toEqual([
+      `+25 Last night’s 8:16${NBSP}PM forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
     ]);
     expect(said([{ kind: 'wind_chill', points: 5, feelsLike: null, at: issued }], 0.79)).toEqual([
       `+5 The 8:16${NBSP}PM forecast has a wind chill at the bus stop.`,

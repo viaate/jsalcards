@@ -105,6 +105,13 @@ serve:
   announces: false            # a district's usual posting time is its forecasts' announces_at
   reasons_gate_override: ""   # names the lead who signed off on serving terms whose backtest v2 gate failed; empty: refused
   neighbors_max_age_minutes: 60  # a closings file older than this says nothing of the districts next door
+  # Advisory-sane L5 (docs/predict.md, "The forecast adjustment"): with anchor on, the forecast at
+  # the class snapshot moves each advisory and warning day within its class (live_score
+  # forecast_adjustment), each district's days still averaging its class level. Off: the class
+  # level alone, as L3 served it. Turn-on items 8 and 10 (L5 round 2, the docs' first option): a
+  # day is adjusted only from its class snapshot on (9 PM the evening before on the school's
+  # clock); before it, and for any day after the next school day's, the class level alone.
+  forecast_adjust: "on"       # off | on
   # S7-F (docs/predict.md, "The night-before outlook"): with PREDICT_OUTLOOK on, a district whose zone
   # has no forecast run under 3 hours old gets the issued-alerts-only chance (identity, the lead's
   # decision of 2026-10-20), or the pass goes dark (dark). Off and shadow publish as before either way.
@@ -267,9 +274,25 @@ live_score:
     fit_from: "2026-10-27"        # the level is fitted on labels from this school day on (every day the morning record holds)...
     score_from: "2026-11-01"      # ...but only rows from this school day on, after this registration, are scored
     prior_weight: alpha_sd        # the prior's weight is its alpha_sd (no extra pseudo-count; capture_k is the capture-odds constant)
-  forecast_adjustment:            # Addendum A item 3 (L5): not scored or served before its own addendum
-    registered: false
-    addendum: "i"                 # S7 addendum i fixes its bounds before any of its rows is scored
+  forecast_adjustment:            # Addendum A item 3 (L5): the forecast moves a storm-class day within its class
+    registered: true              # S7 addendum i (2026-11-01) fixes these before any of its rows is scored
+    addendum: "i"
+    classes: [advisory, warning]  # cold days stay at their class level (the cold is the class itself)
+    snow_per_log: 1.0             # a: log-odds per unit of ln((s + c) / (u + c)), s the window snow still to come
+    snow_offset: 0.5              # c (inches)
+    bounds_advisory: [-0.7, 2.0]  # the day's terms together, log-odds; -0.7: a 9 PM read cannot see snow already down (SF-R5-1), so no snow ahead lowers an advisory day to about half its level, no less (PHYS-R3-S2)
+    bounds_warning: [-0.4, 1.5]   # a 9 PM read cannot see a storm's snow already down: a light forecast lowers little
+    ice_snow: 25                  # an inch of window ice counts as this many inches of snow on top of the day's snow (0.1 in: 2.5 in)
+    chill_from: 15                # feels at 7 AM (F) below this...
+    chill_per_degree: 0.02        # ...adds this a degree...
+    chill_max: 0.3                # ...up to this
+    timing_outside: 0.5           # snow outside 10 PM to 9 AM on the school's clock weighs this (inside: 1)
+    timing_max: 0.4               # the timing term's bound either way
+    timing_min_snow: 0.5          # inches: the timing term phases in from no snow to this
+    timing_even_max: 0.9          # the window's even weight is taken at most this: snow at least 80% in the commute hours never lowers
+    shrink_days: 10               # u: the district's own 9 PM codes on its class days plus this many of its county's (region's) mix
+    county_min_days: 30           # a county with fewer class days lends its region's mix instead
+    usual_max: 30.0               # u is solved in [0, usual_max] inches
   calibration:
     ece_max: 0.05
     bin_min_rows: 30

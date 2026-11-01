@@ -395,12 +395,379 @@ often districts close. The days with no alert (`none`, `none_after`) stay on the
   level; (5) one list's sensitivity per unnamed row is kept (registered), `anchor.json`
   reports the multi-list rows, and the lead revisits once L1's real record shows their share.
 
-Not yet here: the forecast-amount adjustment (Addendum A item 3, the next piece) and the
+Not yet here: the
 nightly scorer with its shrink toward the prior (L4). With L2's held record cancelled, nothing
 in L3 freezes the candidate variants (C-v2, C-prior, C-flat, C-exp) at 20:07 D-1 and 05:07 D;
 the fit is deterministic from the committed exposure file and the append-only label record
 (the labels of days before D, `through` in `anchor.json`), so L4 can rebuild each frozen
 variant exactly, or keep them in the private evidence store: L4's call, with the lead.
+
+
+## The forecast adjustment (advisory-sane L5): the forecast within the class
+
+With `serve.anchor` and `serve.forecast_adjust: "on"`, the forecast for the school morning moves
+each advisory and warning day's chance within its class (Addendum A item 3,
+`pipeline/snowlight/predict/forecast_adjust.py`). The class level of the section above is the
+start, `p0`; from the day's class snapshot on (9 PM the evening before on the school's clock),
+the forecast read at that snapshot (the newest NDFD run at most 3 hours old, the district's 50%
+value over its deciding schools) adds transparent terms on the log-odds scale, each with a
+physical reason. It is our own method; nothing in it reads a closure share.
+
+- **Snow against the district's own climate** (both ways): `1.0 x ln((s + 0.5) / (u + 0.5))`,
+  `s` the window's snow still to come (the periods ending 06, 12 and 18 UTC on the day, the
+  period under way only for its part after the snapshot: SF-R5-1 is fixed first, so snow
+  already on the ground is never counted as coming), `u` the district's usual snow on days of
+  the class (below). The same inches matter more where snow is rare: an inch over Atlanta's
+  usual 0.65 in raises its advisory chance far more than an inch under Buffalo's usual 1.96 in
+  lowers Buffalo's. Where a district's days of the class are often icy, its `u` counts the ice
+  days and is over its usual snow alone `u_a` (`u` solved with its ice days as quiet ones), so
+  the same inches count for a little less there: a documented limit (PHYS-R3-S1 (i), counted
+  below). Round 4 anchored the term at `u_a` (never under 0 from `u_a` up); the lead withdrew
+  the anchor on Nov 1, since its flat stretch from `u_a` to `u` let the ice and timing terms
+  make more snow lower the chance (with 0.1 in of ice Memphis-Shelby's warning fell from 65% at
+  1.5 in to 55% at 5 in; at 0.25 in of ice the chance fell with more snow in 9,522 districts'
+  advisory days and 7,276 districts' warning days). `u_a` is the snow line's second bar only
+  (below).
+- **Timing** (both ways): snow from 10 PM the evening before to 9 AM on the school's clock is on
+  the roads for the buses, with little time to plow; snow earlier in the evening is plowed by
+  morning, and snow after 9 AM falls on a school day already under way. Each deciding school's
+  own snow in those hours is counted first (each period's snow taken as even through it), and
+  the district takes the 50% value of it by the same rule as `s` (`snow_commute`). The snow
+  weighed by its hours is `W = (0.5 s + 0.5 commute) / even`, `even` the window's even weight
+  (`0.5 + 0.5 x` the share of the window's hours inside 10 PM to 9 AM, taken at most 0.9, so
+  snow at least 80% inside those hours never lowers the chance, in Alaska and Hawaii too), and
+  the term is `ln((W + 0.5) / (s + 0.5))`, held within 0.4 either way, a band phased in from no
+  snow to half an inch (0.4 x min(1, s / 0.5)). In every zone the overnight period raises it
+  (Eastern 1 to 7 AM +0.15, Central midnight to 6 AM +0.13, Mountain 11 PM to 5 AM +0.10,
+  Pacific 10 PM to 4 AM +0.09, for 4 inches over a usual 3) and snow ending by evening or
+  falling after 9 AM lowers it.
+- **Ice** (adds only): an inch of the window's ice counts as 25 inches of snow on top of the
+  day's snow (a tenth of an inch as 2.5 inches): `ln((s F + 25 i + 0.5) / (s F + 0.5))`. A
+  trace of ice adds a little to a dusting's term (Buffalo's advisory: 1% with no ice, 2% with
+  0.01 in), never the jump to a raise that replacing the snow term made.
+- **Cold at the bus stop** (adds only, snow classes): 0.02 a degree that it feels below 15 F at
+  7 AM, at most 0.3.
+- **One log.** Snow, timing and ice together are `ln((W + 25 i + 0.5) / (u + 0.5))` (`W` held
+  to the timing band), one usual `u` for every forecast (the anchor withdrawn, above). `s`
+  and the commute snow are each a 50% value of a quantity that only grows with any school's
+  snow in any period, `W` only grows with both, and the band's edges
+  only rise with `s` (the settings are refused otherwise: (0.5 + 0.5) x 0.4 <= 1.0 x 0.5), so
+  more snow in any period at any deciding school, more ice or more cold never lowers the
+  chance. Round 2 took the timing factor from the periods' own 50% values while `s` was the 50%
+  value of the schools' totals; where the deciding schools differed, the two did not match and
+  adding snow could lower the chance (PHYS-R2-B1: New York advisory 28% to 27% when 1.9 in was
+  added after 7 AM at one of two schools, Los Angeles warning 75% to 72%; through the reader now
+  29% and 75%). Tests add snow to each period at one school and at every school of districts of
+  2 to 7 deciding schools through the reader, in Eastern, Central, Mountain and Pacific time and
+  both classes, and to each period of one-school districts on a grid: never lower. A probe of
+  432,000 additions through the reader, each checked in both classes (six zones, Alaska and
+  Hawaii too, 2 to 7 schools independent or sharing one timing pattern with 30% noise), found
+  none lower the total or the published chance (round 2: 53,005 of 960,000 lowered the total).
+  Through the path serving takes (`fa.adjusted` with the snow alone's `u_a` and
+  `serve._order_cap`'s cap) on the deployed directory, every one of 18,227 districts' advisory
+  and winter storm, lake effect, ice storm and blizzard warning days, snow 0 to 8 in even or
+  late in the window, ice 0, 0.05, 0.1 and 0.25 in, and 10, -5 and -20 F beside 25 F (0 to 8
+  in, even, with and without 0.1 in of ice): 0 falls with more snow, 0 with more ice, 0 with
+  more cold (the round-4 anchor: 14,558 advisory and 17,973 warning steps fell at 0.25 in of
+  ice). A test runs the same grid through the same path on
+  the committed climate's icy districts (the 30 warning and 10 advisory districts whose `u` is
+  most over `u_a`), the named ones and every 400th, and one through `forecast_file`; both fail
+  on the round-4 code (6,331 falls).
+  A timing line names the heaviest snow by the hour where that is on the term's side, else
+  the period on its side with the most snow by the hour
+  (`snow_hours`: "The forecast has snow 12 to 6 AM, just before the buses."). The periods' 50%
+  values only name the hours, and only where they add up to at least half of `s`: where the
+  deciding schools' snow falls at different hours no one period stands for them, and the
+  timing's points are said with the snow line instead (the chance is the same; PHYS-R2-S3).
+- **Bounds** on the terms together: advisory -0.7 to +2.0 (10% moves between about 5% and 45%);
+  warning -0.4 to +1.5. A 9 PM read cannot see snow already down (SF-R5-1 counts only the snow
+  still to come), so a forecast of no new snow lowers a warning day only a little and an
+  advisory day to about half its level, no less (PHYS-R3-S2, the lead's ruling of Nov 1: round
+  3's -1.5 took 82% of districts' 0.00 in advisory days under half their level and 6.6% to
+  1%). Each pass's shift note gives the share of each class's district-days at its lower bound.
+  `QUIET` (0.1 in, what a quiet day's code stands for) is assumed, a POSTLAND check: measuring
+  it on live advisory nights is on the after-landing list.
+- **Class order** (PHYS-R3-S1 (ii)): for the same forecast, an advisory day's chance is never
+  over the same district's winter storm, lake effect, ice storm or blizzard warning day's: the
+  advisory's terms are held under `logit(lowest warning chance) - logit(p0)` (the warning
+  situations' chances unrounded, a blizzard warning's its class level), so the published
+  advisory chance never passes the published warning chance. The warning class is solved first
+  and the advisory's `u` is solved with the cap in, so the advisory class still averages its
+  level. The cap only lowers, and is the lowest of chances that each only rise with snow, ice
+  and cold, so the direction rules hold. On the deployed directory every warning level at its
+  -0.4 bound is still over the advisory level (the least gap 0.56 log-odds), so the cap never
+  takes an advisory day under its level. Round 3 put an advisory day over the warning day in
+  279 of 255,178 district-forecasts (0 to 8 in, with and without 0.1 in of ice; Arkansas mostly)
+  and over a blizzard warning day in 36,429; now none: 0 of 2,150,786 for each warning
+  situation through `serve._order_cap` (the grid of the One log above). Tests hold it over
+  every committed-climate district and morning on the solve's chances, through
+  `serve._order_cap` and `fa.adjusted` on the served grid, and through `forecast_file` (every
+  class of the order on the same day and forecast).
+  A blizzard warning day keeps its class level (PHYS-S8):
+  its wind is the hazard as much as the new snow and wind is not a term, so a ground blizzard
+  with little new snow is never lowered; and since the class's climate does not tell blizzard
+  days apart, raising them without ever lowering them would put their days about 6 points over
+  their level (52% for 46%). A cold day is not moved (the cold is the class itself), nor a
+  tropical storm or hurricane warning day (its hazard is not the snow).
+- **Only from the class snapshot on** (turn-on items 8 and 10, the first option those items
+  gave): before 9 PM the evening before, and for any day after the next school day's, a day
+  keeps its class level and is not read. So no earlier run with a longer lead than the 9 PM
+  calibration is served, a Saturday evening pass says nothing of Monday's forecast (Monday's
+  snapshot is Sunday 9 PM), and "overnight" always means the night before the day.
+- **No forecast** (the run did not list or read, none at most 3 hours old, an unknown code, a
+  deciding school with no snow value in the run, such as one off the lower 48's grid, a day
+  said open, a private school, which has no deciding schools of its own to read): no term,
+  the chance is the class level and no forecast line shows, unless the last file holds the same
+  district-day's lines from the same snapshot at the same class level (below).
+
+**The reader's limits** (B1). The adjustment reads through the outlook's bounded reader
+(`outlook_live.settled_reader` over `forecast_reader`): 10 s per request (5 s to connect), 2
+tries, the day listings once a pass (`Listings(again=False)`), and every request inside the
+pass's 60 s (`ADJUST_SECONDS`, a `Budget` started each pass), each answer read as it arrives
+and stopped once the 60 s are up, so a host that drips bytes holds a pass no longer than its
+60 s and one 10 s gap (S-R2-4). A day is read at each zone's fixed 9 PM snapshot, so a run's
+values are kept until the day they were read for has passed everywhere (`prune_days`), not
+4 hours as the outlook keeps them: round 2 dropped them after 4 hours and re-read every zone's
+run on every pass from about 1 to 4 AM local on, the passes that matter most (S-R2-2, on the
+real feed for Oct 30: 21.7 to 27.6 s a pass, all 18,227 districts read). Now the first pass
+after each zone's 9 PM reads its run (one to five runs a night: about 22 to 30 s of the 60 s
+for all five together) and later passes of the same process read nothing new. The cache is per
+process: the predict job is one `snowlight predict run --until +320m` process that restarts
+every 320 minutes, so each restart's first pass reads every zone's snapshot run again (the same
+22 to 30 s), at least two full reads a night; the cache is not kept across restarts. Zones are
+read largest first by their deciding districts, so a pass whose time runs out part-way leaves
+the fewest districts unread (T-R3-S1).
+
+A run read that fails part-way (an element that does not read, a range read that fails twice,
+the pass's 60 s running out mid-run) is a failed read, never a read (T-R3-B1): it gives no
+district of its zones a forecast, is never kept, and leaves those zones unread (`error`) with
+one warning line a cause naming the zones and their runs ("forecast: 2026-10-30
+America/Chicago (run 03:47Z): not read, read again next pass: snow: read: the pass's 60 s of
+forecast reads are up"). The same snapshot's lines then stand (below), with no previous
+chance, and the next pass reads the run again with its own 60 s; the read memory for previous
+chances counts only district-days read without error. Round 3 kept such a run as read (every
+district code 13, no line), so on the real feed a 4 s budget swung all 18,227 adjusted
+district-days to their class level with "Down from N%" until the day was over. The outlook
+(S7-F) reads through the same function, so a partly read run is a skipped sample there, never
+one recorded as unknown. A host that stalls costs a pass at most its 60 s
+and one request under way (a test with a stalled fake host: under 72 s simulated, then the
+class levels with no previous chance), never the 14 minutes the history's reader (30 s limits,
+6 tries, listings again on every read) would take, so the chances never fall behind the
+alerts.
+
+**A failed read keeps the same snapshot's lines** (PHYS-S7). From the snapshot on every pass
+reads the same run, so a read that fails in a later pass gives the last file's chance and lines
+for that district-day where the last file was made at or after the snapshot and its class level
+and the alert or weather its base names are the same (a lake effect snow warning's lines are
+never kept for a winter storm warning at the same level: PHYS-R2-S4); never a swing to the
+class level and back. Where the class level or the situation changed (a new alert, the live
+labels) or no file holds the lines, the class level.
+
+**Calibration: each district's days still average its class level.** `u` is solved per district
+and class level (bisection on `ln(u + 0.5)` in 0 to 30 in) so that over the forecasts the
+district had on its own days of the class, its adjusted chance averages `p0`. Those forecasts
+are the forecast history's 9 PM codes (2018-19 to 2025-26) on the weather history's class days,
+`data/predict/forecast-climate.json.gz` (codes and counts only, 236 KB, built by `snowlight
+predict forecast-climate --codes <codes folder> --window whole|still_to_come --work <labels
+folder>`; the same inputs give the same bytes). Each code stands for its bucket's middle (0.5-2
+in 1.2; 2-4 3; 4-6 5; 6-9 7.5; 9 or more 11), a quiet day (and a cold or ice day, whose snow is
+under half an inch or not known) for 0.1 in; each snow or ice day's 7 AM is cold as the
+district's own quiet and cold mornings are, since the codes keep a morning's feel only on a
+day with under half an inch of snow while the live cold term counts a cold snowy morning too
+(PHYS-S1: the cold term is in the solve). The codes keep the window's total alone, so each
+day's snow is taken as even through the window, with the timing term even snow has in its zone:
+none where the window's even weight is under the 0.9 cap (Eastern, Central, Mountain), and
+where the cap holds it the solve counts it (Pacific 1.0205 times the snow inside the log;
+Alaska and Hawaii more), so those zones' days still average their level (PHYS-R2-S2: round 2
+left it out, about +0.01 log-odds in Pacific time and +0.05 in Alaska on the class level). A
+district with few days of a class takes 10 days' worth of its county's mix (its region's where
+the county has under 30). A place with no region of its own in the climate (it holds no Alaska
+or Hawaii rows) never borrows the nation's: its days keep their class level (S-R2-1; on the
+deployed directory every district has a region). Each situation's level is solved on its own
+(the situations of a class share one level today: PHYS-S4).
+
+The file says how its codes counted the period under way at 9 PM (`window`): `whole`, as the
+history was collected before SF-R5-1 was fixed. A `whole` climate's amounts are scaled to the
+fixed window by the zone's share of the window still to come at 9 PM (each period's snow even
+through its 6 hours, the window's even through its periods), averaged over five school days
+from November to March (daylight time in November and March; in Hawaii and Alaska 9 PM falls
+after the first period, so only the later periods count): Eastern 0.900, Central 0.844,
+Mountain 0.789, Pacific 0.733, Alaska 0.944, Hawaii 0.917. A climate built from codes collected
+the fixed way says `still_to_come` and is not scaled; a file that says neither is refused (the
+class levels alone), so a rebuild can never be scaled twice (PHYS-S5, S2, S10).
+
+The calibration is exact on those code values. How far the live days can sit off it (dry run of
+the live head's directory, the published chances averaged over each district's days, the
+solved `u` held): a live quiet day that reads 0.00 in instead of 0.1 takes the advisory class
+average from 0.1156 to 0.1131 (1 district in 100 has its own days 11% or more under its level,
+the median 1% under), one that reads 0.2 in to 0.1188 (1 in 100 10% or more over), 0.4 in to
+0.1253; snow spread evenly through each bucket instead of at its middle, 0.1161 (1 in 100 2%
+under or 3.5% over). Warning days: 0.4570 to 0.4593 for 0.0 to 0.2 in (round 4's anchor: advisory
+0.1112 to 0.1216, warning 0.4552 to 0.4611, where a quiet day sat on the steep part of its
+phase). How live quiet days read is a POSTLAND check (`QUIET`). Live snow is not even through the window, so a
+day's timing term is not even snow's: over random shapes (each period's rate drawn at random,
+1 to 6 in, January and March), its mean less the solve's even snow's is -0.008 to +0.002
+log-odds in Eastern, Central and Mountain time, -0.007 to -0.026 in Pacific, -0.003 to -0.001
+in Hawaii and +0.007 to -0.042 in Alaska (round 2 left the cap's part out: +0.005 to +0.015
+in Pacific, about +0.05 in Alaska and Hawaii); under a point at a 45% level. Each pass logs the class's mean shift
+(`forecast adjustment: advisory N days, M moved, mean +0.0012`), so a drift shows at once.
+
+Ice days set `u` too: ice only adds, so a district whose days of a class are often ice days
+balances them with a higher usual snow, and its snow-only days are moved against that `u`: the
+same inches count for less there (PHYS-R3-S1 (i), a documented limit since the lead's ruling of
+Nov 1). Of the 1,443 warning districts with at least 5 days of their own and 30% or more of
+them ice days, 2,068 snow-only warning cells (0, 1, 2, 3, 4, 6 and 8 in, no ice) over `u_a` are
+lowered, in 1,389 of those districts; over all 18,227 districts 6,384 of the 67,659 cells over
+`u_a` (in 5,412 districts), by at most 10 points. Memphis-Shelby's warning (`u` 3.55 in, 1.50
+alone): 0 to 2 in 35% (its lower bound), 2.5 in 38%, 3 in 41%, 4 in 48%, 5 in 53%, 6 in 57%, 8 in
+63%; with 0.1 in of ice 48% at 1.5 in, 62% at 5 in, never falling. Round 4's anchor lowered none
+of those cells but broke the direction rule (above), and a total that keeps both is a
+follow-up piece. The line between `u_a` and `u` says no comparison (below). A test pins the
+limit's count on the committed climate at its test levels (5,394 cells), so any change to it
+shows.
+
+Three guards keep the average true:
+
+- A district whose days of a class no `u` can balance keeps its class level on those days,
+  which is calibrated: on the committed files none of the 18,227 (round 4's anchor left 296
+  districts' advisory days and 165 districts' warning days without one).
+- G6 is checked again on the adjusted chances as published (to the hundredth, with the floor),
+  averaged over each district's days and mornings (a class's at its highest situation's): a
+  district whose days would then come to more than 6 closures a winter (and more than at its
+  class levels) is not adjusted at all. On the committed files no district is.
+- Then every G6 clause is asserted on those adjusted means in `build_model` (PHYS-R3-S3, the
+  lead's ruling of Nov 1): the national advisory mean (at most 1.0) and p99 (3.0), the advisory
+  and warning mean, and the most of any district. A clause that fails, where the adjustment
+  makes it worse than the class levels do, turns the adjustment off for every district (the
+  class levels serve) and the pass warns: `predict: forecast adjustment plausibility: advisory
+  mean 0.310 p99 0.876, ... FAILS advisory_mean: the class levels serve, no adjustment`. Every
+  pass logs the line. Tests cover both paths.
+
+**What it does** (dry run of the live head's directory, no live label, the committed climate):
+
+| | advisory | warning |
+|---|---|---|
+| usual snow `u`, median (p10 to p90) | 1.45 in (0.42 to 2.23) | 3.19 in (1.15 to 5.43) |
+| usual snow alone (ice days as quiet), median (p10 to p90) | 1.16 in (0.27 to 1.83) | 2.78 in (0.90 to 5.28) |
+| districts with no `u` (class level) | 0 (round 4: 296) | 0 (round 4: 165) |
+| class average, class level then adjusted (published, over each district's days) | 0.1158, 0.1156 | 0.4586, 0.4581 |
+| most any district's average moves | 0.0048 | 0.0047 |
+| a 0.00 in day: mean, p5 to p95 | 0.065, 0.03 to 0.13 (round 3: 0.046, 0.01 to 0.13) | |
+| a 0.00 in day under half its level, at 1%, at the lower bound | 0%, 0%, 87% (round 3: 82%, 6.6%, 47%) | |
+
+G6 at the class levels: advisory mean 0.310 and p99 0.868, advisory and warning mean 0.971,
+most 5.51; with the adjustment (expected over each district's days and mornings): 0.310 and
+0.876, 0.971, most 5.54; no district over 6 either way. The check in `build_model` passes
+every clause (0 districts held at their class levels for the most).
+
+**Worked examples** (a forecast even through the window, 25 F at 7 AM; each district's served
+level and usual snow):
+
+| Forecast snow | 0 | 0.3 in | 1 in | 2 in | 4 in | 6 in | 10 in |
+|---|---|---|---|---|---|---|---|
+| Atlanta, advisory (level 16%, usual 0.65 in, 0.44 alone) | 9% | 12% | 20% | 29% | 43% | 49% | 49% |
+| Buffalo, advisory (level 6%, usual 1.96 in, 1.73 alone) | 3% | 3% | 4% | 6% | 10% | 14% | 21% |
+| Atlanta, warning (level 49%, usual 1.62 in, 0.93 alone) | 39% | 39% | 40% | 53% | 67% | 75% | 81% |
+| Buffalo, warning (level 38%, usual 5.70 in) | 29% | 29% | 29% | 29% | 31% | 39% | 51% |
+
+(Round 4, with the anchor: Atlanta advisory 9, 13, 19, 29, 42, 49, 49%; Buffalo advisory 3, 3,
+4, 6, 10, 14, 21%; Atlanta warning 39, 39, 49, 49, 60, 69, 78%.) A dusting (0.3 in) takes
+Atlanta's advisory to 12% and 6 inches nearly quadruples it, held at Atlanta's warning level
+(49%) by the class order; Buffalo, where an advisory's inch or two is ordinary, moves from 3%
+(its lower bound) to 14% over the same range. Atlanta's warning days are often icy, so its
+warning `u` (1.62 in) is over its snow alone's 0.93 in and an inch of snow lowers its warning
+day to 40% (the documented limit above; round 4's anchor held it at 49%). Three inches on an
+Atlanta advisory day: 40% falling overnight into the commute, 37% spread evenly, 32% after 9
+AM; 0.15 in of ice alone 41%; 2 inches at -10 F feels 36% (29% at 25 F). Memphis-Shelby's
+warning (level 45%, `u` 3.55 in) from 0 to 8 in: 35, 35, 35, 35, 35, 38, 41, 48, 53, 57, 63% at
+0, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6 and 8 in.
+
+**October 28** (the 9 PM PDT read of Oct 27, run 03:47Z, 0.00 in still to come at each): Methow
+Valley SD went from 93% (the chain) to 7% (L3's class level) to 4% (round 3: 3%), at the
+advisory's lower bound, its usual advisory snow 1.01 in (0.96 in alone); Yosemite-Wawona from
+74% to 13% to 7%, at the bound too, usual 0.46 in (0.45 alone; Stehekin 7% to 4%, usual 0.78
+in). Each says one line: "The 8:47 PM forecast has no new snow by 11 AM, less than usual here."
+
+**The lines.** A moved day says its terms as lines on the class base, split by Shapley values in
+whole points that add up to the chance (the base's points plus the lines' is the chance shown):
+
+- `snow_total` with `against: "here"` ("The 8:47 PM forecast has 1 to 3 inches by 10 AM, more
+  than usual here."), the range only where every deciding school's forecast is in it and on the
+  line's side of the usual snow, "overnight" only of snow every deciding school gets overnight.
+  "More" or "less than usual here" holds against both `u` and the usual snow alone `u_a`: a
+  forecast between them is lowered (the documented limit above) but never called more or less
+  snow than usual (`against: "none"`, the range alone); one under both says less, one over
+  both more.
+  Where the deciding schools' snow lies on both sides of the usual snow (one school gets 6
+  inches, another none), `against: "none"`: the range alone, "The 8:47 PM forecast has 0 to 6
+  inches by 10 AM.", never "less snow than usual here" of a district one of whose deciding
+  schools gets 6 inches (SF-R4-1).
+- `timing` (the heaviest snow by the hour, S6) or `snow_hours` (above).
+- `ice`, said with the window's end: "The 8:47 PM forecast has freezing rain leaving 0.2 inches
+  of ice by 1 PM." (by 12 PM Central), since the window's ice can fall after the buses.
+- `wind_chill`.
+- A run from the evening before is named as last night's: at 6 AM, "Last night's 8:47 PM
+  forecast has ..." (turn-on item 11), an older one by its day.
+
+A term worth no whole point says nothing; a day no term moves by a point is the class level
+with no line. The period under way at the snapshot counts for its part still to come at an even
+rate through its 6 hours (NDFD gives no finer split): where snow fell early in that period, up
+to its share already down is still counted (at most the period under way's part, about 4 of 6
+hours in the East at 9 PM; PHYS-S6). The range a line states holds every deciding school's
+amount as read, so it is as true as that reading.
+
+**Previous chances.** A storm-class day's chance that moved only because the forecast arrived
+(the last file was made before the day's class snapshot) or because this pass's read failed
+with no lines of the same snapshot to keep carries no previous chance: "Down from 10%" would
+read as the storm weakening. Nor does one at its class level in the last file that this pass's
+forecast moves, unless the pass that made that file is known to have read it: the loop keeps
+the district-days its last pass read, by that file's time, so a failed read followed by one
+that works is never said as "Up from 10%" (S-R2-3); after a restart it is not known, and no
+previous chance is said. Between two files from the snapshot on that both read it, the change
+is the forecast's (a read that moved it under a point and one that moves it now too) and is
+said ("Up from 25% at 9 PM").
+
+**Cost.** Solving `u` (and the usual snow alone) per level with the cold mix adds about 4.7 s CPU
+to a model build (9.8 and 9.3 s without, 13.9 and 14.6 s with, on this machine; the class
+order's solve adds about 3 s more: 17.5 s under the heavy lock on Nov 1, round 4 17.4 s against
+14.4 s side by side); a zone's first forecast read of a night takes about 10 s for one run
+(1.3 s CPU) and 22 to 30 s for all five (30.2 s on Nov 1 for Oct 30's runs), later passes of
+the same process read nothing new, and each job restart (every 320 minutes) reads them all
+again; a file with every district under an advisory and a forecast on day one takes 4.2
+s CPU instead of 2.1 s and 10.5 MB raw instead of 7.3 MB, inside the worst case
+(`tests/predict/test_loop.py` holds every adjusted day to it).
+
+**Registered.** The numbers are `live_score.forecast_adjustment` (S7 addendum i, 2026-11-01,
+revised the same day before any row was scored: `ice_snow`, `timing_even_max`, the timing
+phase-in; revision 2, no value changed: the school-by-school timing, the timing band, even
+snow's timing in the solve and the snow alone in the words; revision 3: `bounds_advisory`
+-0.7, the snow term anchored at the snow alone, the class order and G6 asserted on the
+adjusted chances; `LIVE_SCORE_SHA256` f03c3d9a...; the anchor was withdrawn the same day by the
+lead's ruling, with no registered value changed);
+L4's frozen scorer scores the chance as served.
+Turning it off (`serve.forecast_adjust: "off"`) serves the class levels alone, as L3 did, with
+no previous chance on a day the forecast had moved.
+
+**Other users of the window.** Since SF-R5-1 the forecast history's live codes count the period
+under way for its part still to come. The outlook (S7-F, shadow) and piece 3's reason terms
+(off) were fit on codes that counted it whole, so the outlook shadow's private scoring now
+compares codes from a slightly shorter window (Pacific 9 PM: about 27% less of an even window)
+and the reason terms would read them so too; both are on their turn-on lists to be refit on
+codes of the fixed window before either serves (S3). The night chart (off) names its heaviest
+hours from the hourly blend, which will rarely equal an NDFD period: a timing line beside it
+makes the panel leave the sum out (it fails closed, never false); before the chart turns on,
+the timing line must be aligned with the chart's heaviest hours or the check relaxed for the
+adjustment's lines (S7, on the chart's turn-on list).
+
+**After it lands** (for the integrator, POSTLAND): deploy the web before the first file with
+the adjustment on and confirm the service worker updates (an old client leaves the sum out for
+a day with an `against: "here"` or `"none"` line or a `snow_hours` line: never false); on the
+first storm nights report the share of advisory and warning district-days with a forecast read,
+the share at each class's lower bound (the shift note), the quiet-day window snow (to check
+`QUIET`), how ice-heavy districts' snow warnings moved, any pass whose read failed part-way
+(its warning line) and the read time of the first pass after each job restart,
+the logged mean shift per class, the pass's forecast read time (p50 and most) and an
+Oct-28-style spot check; watch CI for the full pytest, desktop and phone e2e and Lighthouse.
 
 ## Heights in alerts (addendum e, E1)
 
@@ -1038,7 +1405,8 @@ Before the reasons are turned on (the lead and the owner):
    1 PM, 6.3% at 4 PM and 0.6 to 1.1% at 6 to 8 PM. Pick one before turn-on: serve the forecast
    terms only from the 21:00 D-1 snapshot on (earlier passes show the base alone), or fit and
    backtest the terms per pass slot from the history's samples 0 to 12, which the artifact
-   already holds.
+   already holds. (The forecast adjustment of advisory-sane L5 takes the first: it adjusts and
+   reads a day only from its class snapshot on.)
 9. Old web clients. The web on origin before piece 3, and any cached app bundle older than it,
    words every snow line "... than most storms" with no forecast time ("The forecast has 6 to
    7 inches overnight, more than most storms." for an advisory line, which is false: the storm
@@ -1049,11 +1417,14 @@ Before the reasons are turned on (the lead and the owner):
 10. A headline day that is not tomorrow. A Friday evening pass for Monday reads the newest run,
     2 to 3 days out, and says "overnight" or "by 12 PM" with no day, which reads as tonight;
     the terms were fit only at the D-1 9 PM snapshot. Either give forecast lines only for the
-    next school day's snapshot, or name the day ("Sunday night", "by 12 PM Monday").
+    next school day's snapshot, or name the day ("Sunday night", "by 12 PM Monday"). (The
+    forecast adjustment takes the first: no line before the day's class snapshot.)
 11. The morning panel names last night's run without its day ("The 8:46 PM forecast" at 6
     AM), and the chance stays at the 9 PM forecast while a newer run may differ (by design,
     item 5). The owner may want "Last night's 8:46 PM forecast" when the run's date is before
-    the viewer's day.
+    the viewer's day. (Done for every forecast line with L5: a run from the evening before is
+    "Last night's", one from earlier that day "Yesterday's", an older one by its weekday; an
+    ice line also says the window's end, "by 1 PM".)
 
 ## What the owner sets up once
 

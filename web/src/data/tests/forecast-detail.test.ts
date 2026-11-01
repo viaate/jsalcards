@@ -131,6 +131,57 @@ describe('a forecast’s chance section parts', () => {
     ]);
   });
 
+  it('reads a snow line weighed against the snow usual here', () => {
+    // The forecast adjustment (advisory-sane L5): the district's own days of its alert's class.
+    const adjusted = night();
+    const [snow] = reasons(adjusted) as Json[];
+    if (snow === undefined) throw new Error('the example changed');
+    snow.against = 'here';
+    expect(read(adjusted).why?.reasons[0]).toMatchObject({
+      kind: 'snow_total',
+      low: 6,
+      high: 9,
+      against: 'here',
+    });
+  });
+
+  it('reads a snow line with no comparison only with its range, and snow hours', () => {
+    // SF-R4-1: the deciding schools' snow on both sides of the usual: the range alone.
+    const spread = night();
+    const [snow] = reasons(spread) as Json[];
+    if (snow === undefined) throw new Error('the example changed');
+    snow.against = 'none';
+    expect(read(spread).why?.reasons[0]).toMatchObject({
+      kind: 'snow_total',
+      low: 6,
+      high: 9,
+      against: 'none',
+    });
+    // With neither a range nor a comparison it would say nothing: the sum is left out.
+    const empty = night();
+    const [bare] = reasons(empty) as Json[];
+    if (bare === undefined) throw new Error('the example changed');
+    Object.assign(bare, { against: 'none', low: null, high: null, overnight: false });
+    expect(read(empty).why).toBeNull();
+    // Snow in hours that are not the heaviest snow's (the forecast adjustment).
+    const hours = night();
+    (reasons(hours) as Json[]).splice(0, 1, {
+      kind: 'snow_hours',
+      points: (reasons(hours) as Json[])[0]?.points,
+      start: '2026-01-13T06:00:00Z',
+      end: '2026-01-13T12:00:00Z',
+    });
+    expect(read(hours).why?.reasons[0]).toMatchObject({ kind: 'snow_hours' });
+    const backwards = night();
+    (reasons(backwards) as Json[]).splice(0, 1, {
+      kind: 'snow_hours',
+      points: 3,
+      start: '2026-01-13T12:00:00Z',
+      end: '2026-01-13T06:00:00Z',
+    });
+    expect(read(backwards).why).toBeNull();
+  });
+
   it('reads a forecast from before the section as having none of it', () => {
     expect(read({ state: 'forecast', p_no_school: 0.3, p_delay: 0.1, reasons: [0] })).toEqual(
       NO_DETAIL,

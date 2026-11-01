@@ -11,7 +11,7 @@ after the file is published and any error it meets is only warned.
 
 import math
 import time
-from collections.abc import Callable, Collection, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from typing import Final
@@ -20,10 +20,10 @@ import httpx
 import numpy as np
 import numpy.typing as npt
 
-from snowlight.predict import forecast_history, forecast_live, ndfd
+from snowlight.predict import forecast_adjust, forecast_history, forecast_live, ndfd
 from snowlight.predict.alerts_live import ProductLog, UgcIndex
 from snowlight.predict.calendar import is_school_day
-from snowlight.predict.forecast_values import Forecasts
+from snowlight.predict.forecast_values import DistrictForecast, Forecasts
 from snowlight.predict.opens import SaidOpen
 from snowlight.predict.outlook import UNKNOWN, OutlookMode
 from snowlight.predict.outlook_record import (
@@ -68,6 +68,20 @@ READ_TIMEOUT: Final = httpx.Timeout(10.0, connect=5.0)
 """Each forecast request's limit for the outlook (the history's reader allows 30 seconds)."""
 READ_ATTEMPTS: Final = 2
 """Tries per forecast request for the outlook (the history's reader tries 6 times)."""
+ADJUST_SECONDS: Final = 60.0
+"""The most a pass's forecast adjustment (advisory-sane L5) spends on forecast reads
+(:func:`settled_reader`). Its reads are each zone's run at the class snapshot, about 5 a night
+(one per zone, fewer where zones share a run): on the real feed, the first pass to read them
+all took 22 to 28 seconds (Oct 30, 2026, five runs). Each run's values are kept in the
+process's memory until the day they were read for has passed (:func:`prune_days`), so later
+passes of the same process read nothing new; the cache is per process, and the predict job
+restarts every 320 minutes (``snowlight predict run --until +320m``), so each restart's first
+pass reads every zone's run again (the same 22 to 28 s): at least two full reads a night.
+Zones are read largest first (by deciding districts), so a pass whose time runs out leaves the
+fewest districts unread. A run read that fails part-way is never kept (T-R3-B1): its zones are
+unread that pass, which serves the same snapshot's lines the last file had (or the class
+levels) and warns, and the next pass reads the run again; so a feed that stalls never holds
+the chances back behind the alerts."""
 RUNS_KEPT: Final = timedelta(hours=4)
 """How old a run's values the outlook's reader keeps between passes: no run older than 3 hours
 counts at a sample hour, and a sample is taken within 15 minutes after its hour."""
@@ -93,12 +107,17 @@ class Budget:
         before every page)."""
         return self.clock() < self.until
 
+    def remaining(self) -> float:
+        """The seconds left of the pass's time (the fetcher's ``left``: an answer under way
+        stops once it is up)."""
+        return self.until - self.clock()
+
     def check(self) -> None:
         """Raises:
         ndfd.NdfdError: the pass's time for forecast reads is up.
         """
         if self.clock() >= self.until:
-            raise ndfd.NdfdError(f"the outlook's {self.seconds:.0f} s of forecast reads are up")
+            raise ndfd.NdfdError(f"the pass's {self.seconds:.0f} s of forecast reads are up")
 
 
 def prune_runs(
@@ -111,10 +130,29 @@ def prune_runs(
         del cache[key]
 
 
-def forecast_reader(fetcher: forecast_history.Fetcher, share: float) -> ReadForecast:
+def prune_days(
+    cache: dict[tuple[datetime, date], forecast_history.RunValues], now: datetime
+) -> None:
+    """Drop the runs read for a school day that has passed everywhere (before the UTC day
+    before ``now``'s): the forecast adjustment reads each day at its fixed class snapshot, so a
+    run's values for a day serve every pass until that day is over (S-R2-2), never re-read
+    each morning pass after :data:`RUNS_KEPT`."""
+    gone = now.astimezone(UTC).date() - timedelta(days=1)
+    for key in [key for key in cache if key[1] < gone]:
+        del cache[key]
+
+
+def forecast_reader(
+    fetcher: forecast_history.Fetcher,
+    share: float,
+    prune: Callable[
+        [dict[tuple[datetime, date], forecast_history.RunValues], datetime], None
+    ] = prune_runs,
+) -> ReadForecast:
     """Reads the NDFD runs for the outlook: the newest run at a moment, each run's values once
-    (kept between passes while a read can still use them, :func:`prune_runs`), and the day
-    listings once per pass (a day that did not list is not asked again that pass)."""
+    (kept between passes while a read can still use them, ``prune``: :func:`prune_runs` by
+    default, :func:`prune_days` for the adjustment's fixed snapshots), and the day listings once
+    per pass (a day that did not list is not asked again that pass)."""
     cache: dict[tuple[datetime, date], forecast_history.RunValues] = {}
     built: dict[object, tuple[forecast_history.Schools, dict[str, int]]] = {}
     listed: dict[datetime, forecast_history.Listings] = {}
@@ -137,7 +175,7 @@ def forecast_reader(fetcher: forecast_history.Fetcher, share: float) -> ReadFore
         if now not in listed:
             listed.clear()
             listed[now] = forecast_history.Listings(fetcher.get, again=False)
-            prune_runs(cache, now)
+            prune(cache, now)
         listings = listed[now]
 
         def runs_for(day: date) -> list[ndfd.Run] | None:
@@ -160,6 +198,35 @@ def forecast_reader(fetcher: forecast_history.Fetcher, share: float) -> ReadFore
         )
 
     return read
+
+
+def settled_reader(
+    read: ReadForecast, budget: Budget
+) -> Callable[[ServeModel, tuple[date, ...], datetime], Forecasts]:
+    """The forecast adjustment's reader (advisory-sane L5) over the outlook's bounded reader
+    (:func:`forecast_reader`: short request limits, few tries, each run's values kept a few
+    hours, the day listings once per pass): ``budget`` starts at each pass (its ``check`` is the
+    fetcher's ``before``), and only the zones whose class snapshot for a day has passed (9 PM
+    the evening before on the school's clock) are read, at that snapshot, so no earlier run and
+    no day after the next school day's is read (turn-on items 8 and 10)."""
+
+    def adjust_read(model: ServeModel, days: tuple[date, ...], now: datetime) -> Forecasts:
+        budget.start()
+        zones = sorted(set(model.time_zone))
+        by_day: dict[date, Mapping[int, DistrictForecast]] = {}
+        problems: list[str] = []
+        unread: dict[date, Mapping[str, str]] = {}
+        for day in days:
+            settled = [zone for zone in zones if forecast_adjust.snapshot(day, zone) <= now]
+            if not settled:
+                continue
+            found = read(model, (day,), now, forecast_adjust.snapshot, settled)
+            by_day.update(found.by_day)
+            problems.extend(found.problems)
+            unread.update(found.unread)
+        return Forecasts(by_day, tuple(problems), unread)
+
+    return adjust_read
 
 
 def outlook_mode_of(value: str | None) -> OutlookMode:

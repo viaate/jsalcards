@@ -1055,6 +1055,29 @@ def test_district_forecasts_from_one_run() -> None:
         0.5,
     )
     assert unlisted.problems == (f"{day}: the forecast runs did not list",)
+    # Two days ahead, before the UTC day before it begins, no run is issued for it yet: not
+    # read and not reported (nothing listed, nothing warned), the day after as before.
+    asked: list[date] = []
+
+    def runs_for(wanted: date) -> list[ndfd.Run]:
+        asked.append(wanted)
+        return [run]
+
+    early = forecast_live.forecasts(
+        schools,
+        {"2900001": 1},
+        (day, day + timedelta(days=1)),
+        world.utc("2026-01-06T23:59:00"),
+        runs_for,
+        lambda _r, _d: values,
+        0.5,
+    )
+    assert asked == [day]
+    assert early.get(day + timedelta(days=1), 1) is None
+    assert all(str(day + timedelta(days=1)) not in problem for problem in early.problems)
+    assert early.unread.get(day + timedelta(days=1), {}) == {}
+    assert forecast_live.readable(day, world.utc("2026-01-06T00:00:00"))
+    assert not forecast_live.readable(day, world.utc("2026-01-05T23:59:59"))
 
 
 # --- the serving pass ---------------------------------------------------------------------------

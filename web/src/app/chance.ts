@@ -1287,6 +1287,11 @@ function reasonInput(
         busTime: atLocalHour(day, OUTLOOK_BUS_HOUR, place.timeZone),
       };
     case 'snow_total':
+      if (said.night === true && reason.against === 'none') {
+        // The chart states the amount, and a line with no comparison is its amount alone: two
+        // forecasts' amounts are never said side by side, so the sum is not said.
+        return null;
+      }
       if (said.night === true) {
         // The night chart states the amount: the reason says its comparison alone, with its
         // forecast's time ("The 7:19 PM forecast has more snow by 1 PM than most storms.").
@@ -1337,6 +1342,8 @@ function reasonInput(
     }
     case 'timing':
       return { ...reason, buses: detail.busesAt, said: said.heavy };
+    case 'snow_hours':
+      return { ...reason, buses: detail.busesAt };
     case 'wind_chill':
       return {
         ...reason,
@@ -1361,8 +1368,10 @@ function reasonInput(
         said: said.stopped.some((at) => at.getTime() === reason.at.getTime()),
         busesSaid: said.buses,
       };
-    case 'icy_roads':
     case 'ice':
+      // The ice falls by the window's end ("by 1 PM"), as a snow line's amount does.
+      return { ...reason, until: reason.at === null ? null : windowEnd(day) };
+    case 'icy_roads':
     case 'said_open':
       return reason;
   }

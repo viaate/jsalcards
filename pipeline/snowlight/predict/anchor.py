@@ -60,6 +60,7 @@ import numpy.typing as npt
 
 from snowlight.predict.config import PredictConfig
 from snowlight.predict.exposure import CLASSES, Exposure, Tally
+from snowlight.predict.forecast_adjust import AdjustSettings, Climate
 from snowlight.predict.pool import level_supported
 
 type Floats = npt.NDArray[np.float64]
@@ -862,6 +863,11 @@ class Anchor:
     deltas: Mapping[str, Mapping[str, float]]
     """Class to region to its delta (only regions with level support are listed)."""
     labels: LiveLabels
+    climate: Climate | None = None
+    """The forecast climate the forecast adjustment is calibrated on (advisory-sane L5,
+    :mod:`snowlight.predict.forecast_adjust`); ``None``: no adjustment, the class level alone."""
+    adjust: AdjustSettings | None = None
+    """The registered adjustment (``live_score.forecast_adjustment``), with ``climate``."""
 
     def class_of(self, situation: str) -> str | None:
         """The class a situation is served in, or ``None`` (the chain)."""

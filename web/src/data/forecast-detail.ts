@@ -157,8 +157,13 @@ export type ReasonDetail =
       readonly low: number | null;
       readonly high: number | null;
       readonly overnight: boolean;
-      /** The recorded days the snow is weighed against, as the pipeline states it. */
-      readonly against: 'storms' | 'advisory';
+      /**
+       * What the snow is weighed against, as the pipeline states it: recorded storms or
+       * advisory days, the snow usual on the district's own days of its alert's class, or
+       * nothing (`none`: its deciding schools' snow lies on both sides of the usual, so the
+       * line states the range alone).
+       */
+      readonly against: 'storms' | 'advisory' | 'here' | 'none';
       /** When the forecast the amount is from was issued, or null where the file gives none. */
       readonly at: Date | null;
     }
@@ -170,6 +175,13 @@ export type ReasonDetail =
       readonly status: Status;
     }
   | { readonly kind: 'timing'; readonly points: number; readonly start: Date; readonly end: Date }
+  /** Snow in these hours, where they are not the heaviest snow's (the forecast adjustment). */
+  | {
+      readonly kind: 'snow_hours';
+      readonly points: number;
+      readonly start: Date;
+      readonly end: Date;
+    }
   | {
       readonly kind: 'wind_chill';
       readonly points: number;
@@ -539,12 +551,20 @@ function reasonOf(
       // A key the file leaves out is at its default: storms, and no forecast time.
       const against = reason.against ?? 'storms';
       const at = issuedAt(reason.at);
-      if (against !== 'storms' && against !== 'advisory') return null;
+      if (
+        against !== 'storms' &&
+        against !== 'advisory' &&
+        against !== 'here' &&
+        against !== 'none'
+      ) {
+        return null;
+      }
       if (at === undefined || typeof overnight !== 'boolean') return null;
       // No amount (both keys missing or null): the line states only the comparison, which is
       // of the window's snow, so never "overnight".
       if ((low ?? null) === null && (high ?? null) === null) {
-        return overnight
+        // A line with no comparison states its range: with neither, it would say nothing.
+        return overnight || against === 'none'
           ? null
           : { kind: 'snow_total', points, low: null, high: null, overnight, against, at };
       }
@@ -574,6 +594,13 @@ function reasonOf(
       const end = parseInstant(reason.end);
       return start !== null && end !== null && start < end
         ? { kind: 'timing', points, start, end }
+        : null;
+    }
+    case 'snow_hours': {
+      const start = parseInstant(reason.start);
+      const end = parseInstant(reason.end);
+      return start !== null && end !== null && start < end
+        ? { kind: 'snow_hours', points, start, end }
         : null;
     }
     case 'wind_chill': {

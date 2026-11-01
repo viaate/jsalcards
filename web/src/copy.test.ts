@@ -1800,7 +1800,7 @@ describe('format', () => {
         low: number,
         high: number,
         overnight: boolean,
-        against: 'storms' | 'advisory',
+        against: 'storms' | 'advisory' | 'here' | 'none',
       ): string =>
         reason({
           kind: 'snow_total',
@@ -1813,6 +1813,97 @@ describe('format', () => {
           at: issued,
           until,
         });
+      // The forecast adjustment (advisory-sane L5): weighed against the snow usual on the
+      // district's own days of its alert's class.
+      expect(timed(18, 4, 6, false, 'here')).toBe(
+        `The 8:16${NBSP}PM forecast has 4 to 6 inches by 12${NBSP}PM, more than usual here.`,
+      );
+      expect(timed(-4, 0, 0, false, 'here')).toBe(
+        `The 8:16${NBSP}PM forecast has no new snow by 12${NBSP}PM, less than usual here.`,
+      );
+      expect(timed(12, 3, 5, true, 'here')).toBe(
+        `The 8:16${NBSP}PM forecast has 3 to 5 inches overnight, more than usual here.`,
+      );
+      expect(
+        reason({
+          kind: 'snow_total',
+          points: 7,
+          low: null,
+          high: null,
+          overnight: false,
+          record: null,
+          against: 'here',
+          at: issued,
+          until,
+        }),
+      ).toBe(`The 8:16${NBSP}PM forecast has more snow by 12${NBSP}PM than usual here.`);
+      expect(
+        reason({
+          kind: 'snow_total',
+          points: -3,
+          low: null,
+          high: null,
+          overnight: false,
+          record: null,
+          against: 'here',
+          said: true,
+        }),
+      ).toBe('Less snow than usual here.');
+      // SF-R4-1: the deciding schools' snow on both sides of the usual: the range alone.
+      expect(timed(-6, 0, 6, false, 'none')).toBe(
+        `The 8:16${NBSP}PM forecast has 0 to 6 inches by 12${NBSP}PM.`,
+      );
+      expect(timed(5, 2, 5, true, 'none')).toBe(
+        `The 8:16${NBSP}PM forecast has 2 to 5 inches overnight.`,
+      );
+      expect(() =>
+        reason({
+          kind: 'snow_total',
+          points: -3,
+          low: null,
+          high: null,
+          overnight: false,
+          record: null,
+          against: 'none',
+          at: issued,
+        }),
+      ).toThrow(RangeError);
+      expect(() => timed(-3, 0, 0, false, 'none')).toThrow(RangeError);
+      // Turn-on item 11: a run from the evening before is last night's, an older one by its day.
+      const at6 = new Date('2026-01-13T12:00:00Z');
+      const later = (when: Date): string =>
+        reason({ kind: 'ice', points: 9, inches: null, at: issued, until }, when);
+      expect(later(at6)).toBe(
+        `Last night’s 8:16${NBSP}PM forecast has freezing rain by 12${NBSP}PM.`,
+      );
+      expect(later(new Date('2026-01-14T12:00:00Z'))).toBe(
+        `Monday’s 8:16${NBSP}PM forecast has freezing rain by 12${NBSP}PM.`,
+      );
+      expect(
+        reason(
+          { kind: 'wind_chill', points: 2, feelsLike: null, at: new Date('2026-01-12T20:00:00Z') },
+          at6,
+        ),
+      ).toBe(`Yesterday’s 2${NBSP}PM forecast has a wind chill at the bus stop.`);
+      // Snow in hours that are not the heaviest snow's.
+      expect(
+        reason({
+          kind: 'snow_hours',
+          points: 3,
+          start: new Date('2026-01-13T06:00:00Z'),
+          end: new Date('2026-01-13T12:00:00Z'),
+          buses: null,
+        }),
+      ).toBe(`The forecast has snow 12 to 6${NBSP}AM.`);
+      expect(() =>
+        reason({
+          kind: 'snow_hours',
+          points: 3,
+          start: new Date('2026-01-13T12:00:00Z'),
+          end: new Date('2026-01-13T06:00:00Z'),
+          buses: null,
+        }),
+      ).toThrow(RangeError);
       expect(timed(-30, 1, 2, false, 'advisory')).toBe(
         `The 8:16${NBSP}PM forecast has 1 to 2 inches by 12${NBSP}PM, lighter than most advisory days.`,
       );

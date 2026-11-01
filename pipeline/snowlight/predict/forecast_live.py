@@ -26,20 +26,38 @@ district's 50% value of the overnight snow, and its 50% values of ice
 amount only where every deciding school's forecast is in it, and otherwise only its comparison
 (:mod:`snowlight.predict.reasons`).
 
-A run that does not list or read leaves the zone's districts with no forecast: their terms add
-nothing (the chance is the base's, and no forecast line shows), as a night with no run is
-unknown in training. Nothing here is ever a guess.
+For the forecast adjustment (:mod:`snowlight.predict.forecast_adjust`) it keeps the district's
+50% value of the window snow (``None`` where a deciding school has no value: a school off the
+grid is not read, never read as no snow), the same of each school's own snow in the commute
+hours (weighed school by school first, so both only grow with any school's snow in any
+period), and each period's 50% value, which only names a timing line's hours.
+
+A run that does not list or read, or reads only in part (an element that did not read, the
+pass's time for reads running out mid-run), leaves the zone's districts with no forecast, its
+zone unread (``error``, one problem line per cause naming the zones) and the run not kept, so
+the next pass reads it again (T-R3-B1): their terms add nothing (the chance is the base's, or
+the same snapshot's lines the last file had, and no new forecast line shows), as a night with
+no run is unknown in training. Nothing here is ever a guess. A pass's day whose snapshot comes
+before any run that could count for it (before the UTC day ``D - 1``, the first the history
+lists for ``D``: :func:`readable`) is not read and not reported: its forecast is not issued
+yet, which is not a failure (a pass on Monday afternoon has no run for Wednesday).
 """
 
 import math
 from collections.abc import Callable, Collection, Mapping, Sequence
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 
 import numpy as np
 
 from snowlight.predict import forecast_history as history
 from snowlight.predict import ndfd
-from snowlight.predict.forecast_values import NO_FORECASTS, DistrictForecast, Forecasts
+from snowlight.predict.forecast_values import (
+    NO_FORECASTS,
+    DistrictForecast,
+    Forecasts,
+    SnowPart,
+    commute_share,
+)
 from snowlight.predict.ndfd import Floats, Run
 
 __all__ = [
@@ -47,6 +65,7 @@ __all__ = [
     "DistrictForecast",
     "Forecasts",
     "forecasts",
+    "readable",
     "run_reader",
     "snapshot_at",
 ]
@@ -61,6 +80,13 @@ def snapshot_at(day: date, zone: str, now: datetime) -> datetime:
     """When a pass at ``now`` reads the forecast for ``day`` in ``zone``: 21:00 the evening
     before, or now if earlier."""
     return min(now, history.sample_time(day, zone, SNAPSHOT_SAMPLE))
+
+
+def readable(day: date, at: datetime) -> bool:
+    """Whether a run can count for ``day`` at ``at``: the history lists the runs of the UTC
+    days ``D - 1`` and ``D`` for it (:meth:`~snowlight.predict.forecast_history.Listings.
+    around`), so none can before ``D - 1`` begins."""
+    return at >= datetime.combine(day - timedelta(days=1), time(0, 0), UTC)
 
 
 def _read(values: Floats | None, k: int) -> float | None:
@@ -86,10 +112,30 @@ def zone_forecasts(
     feels = values.feels.get(bus)
     count = group.groups.ids.shape[0]
     mine = group.schools
-    snow_low = snow_high = night_half = night_low = night_high = None
+    snow_low = snow_high = night_half = night_low = night_high = snow_half = None
+    commute_half = None
+    parts: list[tuple[datetime, datetime, Floats]] = []
     if snow is not None:
-        school = np.where(np.isnan(snow[mine]), 0.0, snow[mine])
+        raw = snow[mine]
+        school = np.where(np.isnan(raw), 0.0, raw)
         snow_low, snow_high = ndfd.group_min_max(school, group.groups)
+        # The adjustment's amount: NaN (not read) where a deciding school has no value, so a
+        # school off the grid is never taken as one with no snow (S-R2-1).
+        snow_half = ndfd.group_half(raw, group.groups, share)
+        commute = np.zeros_like(raw)
+        for end in ndfd.window_ends(day):
+            if end > at and end in values.snow:
+                # Each period's part still to come (SF-R5-1).
+                part = values.snow[end][mine] * ndfd.still_to_come(end, at)
+                start = max(end - ndfd.PERIOD, at)
+                parts.append(
+                    (start, end, ndfd.group_half(np.nan_to_num(part), group.groups, share))
+                )
+                # Each school's own snow in the commute hours, weighed school by school before
+                # the district's 50% value is taken (PHYS-R2-B1): it grows with any school's
+                # snow in any period, as ``snow`` does.
+                commute = commute + part * commute_share(start, end, day, group.zone)
+        commute_half = ndfd.group_half(np.minimum(commute, raw), group.groups, share)
         ends = ndfd.window_ends(day)
         night = np.zeros_like(school)
         for end in ends:
@@ -137,12 +183,43 @@ def zone_forecasts(
             feels_low=_read(feels_low, k),
             feels_high=_read(feels_high, k),
             run_time=values.run.time,
+            snow=_read(snow_half, k),
+            snow_commute=_read(commute_half, k) if _read(snow_half, k) is not None else None,
+            snow_parts=tuple(
+                SnowPart(start, end, round(float(half[k]), 4)) for start, end, half in parts
+            )
+            if snow_half is not None
+            else (),
         )
     return found
 
 
 type ReadRun = Callable[[Run, date], history.RunValues]
 """Reads one run's values for one school day (cached by the caller across passes)."""
+
+
+def _zone_run(
+    runs: Sequence[Run], at: datetime, day: date, read: ReadRun
+) -> tuple[history.RunValues | None, tuple[datetime, str] | None]:
+    """The newest run that counts at ``at`` and reads whole (a refused run gives way to the one
+    before it, as in the history), or why the read failed: the run's time and the cause.
+
+    A run read that failed part-way (an element that did not read: the pass's time ran out, a
+    range read failed twice) is a failed read, never a read: no district of the zone gets a
+    forecast from it, and the next pass reads the run again (T-R3-B1; :func:`run_reader` never
+    keeps it)."""
+    usable = list(runs)
+    while (run := ndfd.newest_run(usable, at)) is not None:
+        try:
+            values = read(run, day)
+        except ndfd.NdfdError as error:
+            return None, (run.time, str(error))
+        if values.refused is None:
+            if values.errors:
+                return None, (run.time, str(values.error))
+            return values, None
+        usable = [item for item in usable if item.time != run.time]
+    return None, None
 
 
 def forecasts(  # noqa: PLR0913, PLR0917 - the schools, the days, the runs and the reader
@@ -168,47 +245,47 @@ def forecasts(  # noqa: PLR0913, PLR0917 - the schools, the days, the runs and t
     groups = [
         group for group in history.zone_groups(schools) if zones is None or group.zone in zones
     ]
+    # Largest zones first (by deciding districts): a pass whose time runs out part-way leaves
+    # the fewest districts unread (T-R3-S1).
+    groups.sort(key=lambda group: -group.groups.ids.shape[0])
     by_day: dict[date, dict[int, DistrictForecast]] = {}
     problems: list[str] = []
     unread: dict[date, dict[str, str]] = {}
     for day in days:
+        failures: dict[str, list[str]] = {}
         mine: dict[int, DistrictForecast] = {}
         by_day[day] = mine
-        if not groups:
+        reading = groups
+        if moment is None:
+            # A pass's day with no run issued for it yet: not read, nothing to report.
+            reading = [g for g in groups if readable(day, snapshot_at(day, g.zone, now))]
+        if not reading:
             continue
         runs = runs_for(day)
         if runs is None:
             problems.append(f"{day}: the forecast runs did not list")
-            unread[day] = {group.zone: "error" for group in groups}
+            unread[day] = {group.zone: "error" for group in reading}
             continue
-        for group in groups:
+        for group in reading:
             at = snapshot_at(day, group.zone, now) if moment is None else moment(day, group.zone)
-            usable = list(runs)
-            values = None
-            failed = False
-            while True:
-                run = ndfd.newest_run(usable, at)
-                if run is None:
-                    break
-                try:
-                    values = read(run, day)
-                except ndfd.NdfdError as error:
-                    problems.append(f"{day} {group.zone}: run {run.time:%H:%MZ}: {error}")
-                    values = None
-                    failed = True
-                    break
-                if values.refused is None:
-                    break
-                usable = [item for item in usable if item.time != run.time]
-                values = None
+            values, cause = _zone_run(runs, at, day, read)
+            if cause is not None:
+                failures.setdefault(cause[1], []).append(f"{group.zone} (run {cause[0]:%H:%MZ})")
+                unread.setdefault(day, {})[group.zone] = "error"
+                continue
             if values is None:
                 problems.append(f"{day} {group.zone}: no run counts at {at:%Y-%m-%d %H:%MZ}")
-                unread.setdefault(day, {})[group.zone] = "error" if failed else "stale"
+                unread.setdefault(day, {})[group.zone] = "stale"
                 continue
             for k, found in zone_forecasts(values, group, day, at, share).items():
                 index = index_of.get(schools.districts[k])
                 if index is not None:
                     mine[index] = found
+        # One line per cause: the zones whose read failed with it (read again next pass).
+        problems.extend(
+            f"{day} {', '.join(zones)}: not read, read again next pass: {cause}"
+            for cause, zones in failures.items()
+        )
     return Forecasts(by_day, tuple(problems), unread)
 
 
@@ -222,7 +299,9 @@ def run_reader(
     opener: history.Opener,
     cache: dict[tuple[datetime, date], history.RunValues],
 ) -> ReadRun:
-    """Reads a run's values for a day once, kept in ``cache`` (pass to pass)."""
+    """Reads a run's values for a day once, kept in ``cache`` (pass to pass). A read that
+    failed part-way (any element in :attr:`~snowlight.predict.forecast_history.RunValues.
+    errors`) is never kept: the next pass reads the run again with its own time (T-R3-B1)."""
     where = ndfd.cells(schools.lat, schools.lon)
     zones = sorted(set(schools.zone_of_district))
 
@@ -230,7 +309,9 @@ def run_reader(
         key = (run.time, day)
         known = cache.get(key)
         if known is None:
-            known = cache[key] = history.run_values(run, day, bus_times(day, zones), where, opener)
+            known = history.run_values(run, day, bus_times(day, zones), where, opener)
+            if not known.errors:
+                cache[key] = known
             for old in [k for k in cache if k[1] < day - timedelta(days=2)]:
                 del cache[old]
         return known

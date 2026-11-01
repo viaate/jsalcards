@@ -265,7 +265,12 @@ def test_the_live_scoring_rules_are_pre_registered() -> None:
     assert plausible["pull_until"] == "district_max"
     assert plausible["pull_aggregate"] == "largest_first"
     assert score["shrink"]["pooled"] is True
-    assert score["forecast_adjustment"] == {"registered": False, "addendum": "i"}
+    # the forecast adjustment (L5) is registered by addendum i with every one of its numbers
+    adjust = score["forecast_adjustment"]
+    assert (adjust["registered"], adjust["addendum"]) == (True, "i")
+    assert adjust["classes"] == ["advisory", "warning"]
+    assert adjust["bounds_advisory"] == [-0.7, 2.0]  # PHYS-R3-S2
+    assert adjust["bounds_warning"] == [-0.4, 1.5]
 
 
 def test_the_label_rules_are_inside_the_pre_registration() -> None:

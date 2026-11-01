@@ -21,6 +21,7 @@ from snowlight.predict.alerts_live import Memory, alerts_digest, live_events, wi
 from snowlight.predict.artifact import RecordDay
 from snowlight.predict.pool import SCOPES
 from snowlight.predict.publish import Dark, DarkError, State, check_budget, due
+from snowlight.predict.reasons import Moved
 from snowlight.predict.situations import SITUATIONS
 from snowlight.predict.why import ALERT_KIND, Of, Standing, sayable
 from snowlight.schemas.directory import DirectoryStamp
@@ -39,7 +40,10 @@ from snowlight.schemas.predictions import (
     PredictionsFile,
     PreviousChance,
     SchoolForecast,
+    SnowTotalReason,
+    TimingReason,
     Why,
+    WindChillReason,
 )
 from snowlight.schemas.vocab import Reason, Status
 from snowlight.sources.nws.alerts import parse_active
@@ -463,8 +467,25 @@ def _every_day(at: datetime) -> list[Forecast]:
         at - timedelta(minutes=30),
         False,  # served by the chain then too: a chain cell keeps it
         True,
+        False,
     )
-    classed_earlier = (*earlier[:3], True, True)  # from its class level: a classed cell keeps it
+    classed_earlier = (*earlier[:3], True, True, False)  # from its class level: kept
+    adjusted_earlier = (*earlier[:3], True, True, True)  # moved by the forecast: kept
+    run = at - timedelta(hours=2)
+    # The forecast adjustment's longest lines (advisory-sane L5): the snow (or, instead, the
+    # shorter ice) line with a range, the timing and the cold, at three-character points.
+    longest = Moved(
+        p_no_school=0.57,
+        p_delay=0.13,
+        reasons=(
+            SnowTotalReason(
+                kind="snow_total", points=-34, low=12.5, high=17.5, overnight=True,
+                against="here", at=run,
+            ),
+            WindChillReason(kind="wind_chill", points=10, feels_like=-38, at=run),
+            TimingReason(kind="timing", points=-10, start=run, end=run + timedelta(hours=6)),
+        ),
+    )  # fmt: skip
     full = tuple(RecordDay(day=date(2025, 1, d + 1), did="closed") for d in range(8))
     for counted in SITUATIONS:
         for situation in SITUATIONS:
@@ -493,14 +514,21 @@ def _every_day(at: datetime) -> list[Forecast]:
                 continue
             # A storm-class day's base (advisory-sane L3), with its standing and usual level.
             standings: tuple[Standing, ...] = ("usual", "more")
-            for standing, last, said in product(standings, (None, classed_earlier), (False, True)):
+            for standing, last, said, moved in product(
+                standings, (None, classed_earlier, adjusted_earlier), (False, True), (None, longest)
+            ):
                 cell = serve._Cell(
                     p=0.57, q=0.13, own=False, scope=SCOPES[0], counted=counted, live=False,
                     records={}, of="districts", classed=True, standing=standing, usual=0.65,
                     tropical=True,  # said on a warning-class day: its longest base
                 )  # fmt: skip
                 try:
-                    found.append(serve._forecast(cell, situation, day, last, at, said_open=said))
+                    found.append(
+                        serve._forecast(
+                            cell, situation, day, last, at, said_open=said, adjusted=moved,
+                            forecast_read=moved is not None,
+                        )
+                    )  # fmt: skip
                 except ValueError:
                     break  # a situation with no storm class has no class base
     return found
