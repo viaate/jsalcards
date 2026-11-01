@@ -8,9 +8,32 @@
     day: LocalDate;
     /** Back to live. */
     onexit: () => void;
+    /**
+     * Each new value draws the bar anew, as a new element (App.svelte: a
+     * theme that sets it in another face), so no word is seen to move; the
+     * way back keeps the keyboard if it had it.
+     */
+    drawn?: number;
   }
 
-  let { day, onexit }: Props = $props();
+  let { day, onexit, drawn = 0 }: Props = $props();
+
+  /** Whether the way back had the keyboard as the bar was last drawn anew. */
+  let refocus = false;
+  let lastDrawn: number | null = null;
+  $effect.pre(() => {
+    if (drawn === lastDrawn) return;
+    lastDrawn = drawn;
+    const focused = document.activeElement;
+    refocus = focused instanceof HTMLElement && focused.matches('.replay .exit');
+  });
+
+  /** The new way back takes the keyboard where the old one had it. */
+  function keepFocus(button: HTMLButtonElement): void {
+    if (!refocus) return;
+    refocus = false;
+    button.focus();
+  }
 
   /** Back to live; the keyboard goes on from the menu's button, where a day is picked. */
   function exit(): void {
@@ -25,10 +48,13 @@
   the map, as the update time is. On a phone, where the wordmark's line has
   no room for both, it sits under the search field instead, on one line.
 -->
-<p class="updated replay" role="status" aria-live="polite">
-  <span class="day">{format.replayLine(day)}</span>
-  <button class="exit" type="button" onclick={exit}>{copy.replay.exit}</button>
-</p>
+{#key drawn}
+  <p class="updated replay" role="status" aria-live="polite">
+    <span class="day">{format.replayLine(day)}</span>
+    <button class="exit" type="button" onclick={exit} {@attach keepFocus}>{copy.replay.exit}</button
+    >
+  </p>
+{/key}
 
 <style>
   .replay {

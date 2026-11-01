@@ -14,8 +14,7 @@ import { accounts } from './tools/accounts.ts';
 import { pushWorker } from './tools/push-worker.ts';
 import { usMask } from './tools/us-mask.ts';
 import { schoolNames } from './tools/school-names.ts';
-import { THEMES_UNRELEASED } from './src/theme/themes.ts';
-import { shownThemes, themes } from './tools/themes.ts';
+import { carriesUnreleased, themes } from './tools/themes.ts';
 import { waitlist, waitlistPost, waitlistSettings } from './tools/waitlist.ts';
 
 const isVitest = process.env.VITEST !== undefined;
@@ -29,6 +28,8 @@ const EAGER_CHUNKS: ReadonlySet<string> = new Set([
   'maplibre',
   'maplibre-shared',
 ]);
+/** The module that holds every theme's palette (src/theme/themes.ts). */
+const THEME_PALETTES = /[\\/]src[\\/]theme[\\/]themes\.ts$/;
 /**
  * The build ships the data staged in public/data/ (npm run stage), if any.
  * SNOWLIGHT_DATA=none builds without it, whatever is staged.
@@ -49,9 +50,7 @@ export default defineConfig(({ mode }) => {
     define: isVitest
       ? {}
       : {
-          __UNRELEASED_THEMES__: JSON.stringify(
-            shownThemes(themesPreview).some((id) => THEMES_UNRELEASED.has(id)),
-          ),
+          __UNRELEASED_THEMES__: JSON.stringify(carriesUnreleased(themesPreview)),
         },
     // One static page and no client-side routes: unknown paths 404, as on GitHub Pages.
     appType: 'mpa',
@@ -93,6 +92,18 @@ export default defineConfig(({ mode }) => {
       // Every browser the app supports preloads modules itself; the polyfill would watch every
       // change to the page for as long as it is open.
       modulePreload: { polyfill: false },
+      rollupOptions: {
+        output: {
+          // The themes' palettes (src/theme/themes.ts) load with the shop alone (src/theme/shop.ts),
+          // from a folder the service worker does not precache (src/pwa/config.ts takes
+          // assets/*.js only), as Snowball's style sheet does: a device that never opens the shop
+          // never downloads them (src/theme/tests/build.test.ts).
+          chunkFileNames: (chunk) =>
+            chunk.moduleIds.some((id) => THEME_PALETTES.test(id))
+              ? 'assets/themes/[name]-[hash].js'
+              : 'assets/[name]-[hash].js',
+        },
+      },
     },
     test: {
       environment: 'jsdom',

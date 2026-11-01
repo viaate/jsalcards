@@ -230,7 +230,7 @@ export function createController(options: ControllerOptions): Controller {
 }
 
 /** The bar that names the day in the update time's place (ui/ReplayBar.svelte). */
-export type ReplayBar = Component<{ day: LocalDate; onexit: () => void }>;
+export type ReplayBar = Component<{ day: LocalDate; onexit: () => void; drawn?: number }>;
 
 export interface StartOptions {
   readonly data: AppData;

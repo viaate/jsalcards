@@ -16,9 +16,15 @@
   interface Props {
     /** The generated_at of the live file the map shows. */
     generatedAt: UtcInstant;
+    /**
+     * Each new value draws the line anew, as a new element (App.svelte: a
+     * theme that sets it in another face), so no word is seen to move; what
+     * the line knows, online or not and its clock, holds across.
+     */
+    drawn?: number;
   }
 
-  let { generatedAt }: Props = $props();
+  let { generatedAt, drawn = 0 }: Props = $props();
 
   /** How often the line is worked out again as the file ages. */
   const TICK_MS = 30_000;
@@ -105,10 +111,12 @@
   like the lights on the map.
 -->
 {#if line !== null}
-  <p class="updated" class:is-live={line.live}>
-    {#if line.live}<span class="dot" aria-hidden="true"></span>{/if}
-    <time datetime={generatedAt}>{line.text}</time>
-  </p>
+  {#key drawn}
+    <p class="updated" class:is-live={line.live}>
+      {#if line.live}<span class="dot" aria-hidden="true"></span>{/if}
+      <time datetime={generatedAt}>{line.text}</time>
+    </p>
+  {/key}
 {/if}
 
 <style>

@@ -13,8 +13,7 @@
   import { themeProperties } from '../../theme/css';
   import { themeAvailable } from '../../theme/engine';
   import { readPageThemes } from '../../theme/page';
-  import type { Theme } from '../../theme/themes';
-  import { SNOWBALL_FONT } from '../../theme/unreleased';
+  import { SNOWBALL_FONT, type Theme, type ThemeId } from '../../theme/themes';
   import {
     PREVIEW_BURST_HALF_WIDTH,
     PREVIEW_BURST_RADIUS,
@@ -40,6 +39,8 @@
   let { theme, badge, action = 'try', onaction }: Props = $props();
 
   const FONT_STYLE_ID = 'sl-theme-tile-fonts';
+  /** Each theme's name; one still waiting for approval may have none yet (theme/unreleased.ts). */
+  const NAMES: Readonly<Partial<Record<ThemeId, string>>> = themesCopy.names;
   const toon = $derived(theme.id === 'snowball');
   const flat = $derived(theme.glow.mode === 'flat');
   const t = $derived(theme.tokens);
@@ -119,11 +120,21 @@
   $effect(() => {
     // The cartoon theme's face, once, for its tile's words.
     if (!toon || !shown || document.getElementById(FONT_STYLE_ID) !== null) return;
+    // As the page carries Snowball (theme/page.ts): its style sheet, whose faces are the page's
+    // and whose rules wait for it to go on, or its rules, of which the faces are taken.
+    const page = readPageThemes(document).snowball;
+    if (page?.sheet !== undefined) {
+      const link = document.createElement('link');
+      link.id = FONT_STYLE_ID;
+      link.rel = 'stylesheet';
+      link.href = page.sheet;
+      document.head.append(link);
+      return;
+    }
     const style = document.createElement('style');
     style.id = FONT_STYLE_ID;
     document.head.append(style);
-    // As the page carries Snowball (theme/page.ts): only a build that may show it has its face.
-    const rules = readPageThemes(document).snowball?.rules ?? [];
+    const rules = page?.rules ?? [];
     for (const face of rules.filter((rule) => rule.startsWith('@font-face')))
       style.sheet?.insertRule(face, style.sheet.cssRules.length);
   });
@@ -297,7 +308,7 @@
     </div>
     <div class="meta">
       <div class="nm">
-        <b>{themesCopy.names[theme.id]}</b>
+        <b>{NAMES[theme.id]}</b>
         {@render badge?.()}
       </div>
       {#if action !== null}

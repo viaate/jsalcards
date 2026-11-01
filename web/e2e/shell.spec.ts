@@ -91,6 +91,23 @@ const MAPLIBRE_GZIP_BUDGET = 310_000;
 /** A name only MapLibre's shared module defines: each script containing it is a copy. */
 const SHARED_MODULE_MARKER = 'REGISTERED_PROTOCOLS';
 
+/**
+ * The one style sheet link the page's first script holds, which it writes in
+ * only for a kept theme with a sheet of its own (index.html, src/theme/page.ts).
+ */
+const THEME_SHEET_LINK = '<link rel="stylesheet" id="sl-theme" href="#">';
+
+/** The bodies of the page's inline scripts. */
+function scriptsOf(html: string): string {
+  return [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
+    .map((match) => match[1] ?? '')
+    .join('\n');
+}
+/** The page's markup, without its scripts. */
+function markupOf(html: string): string {
+  return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
+}
+
 /** "assets/maplibre-shared-AbCd1234.js" -> "maplibre-shared"; "geo/us-lines.1a2b.json" -> "us-lines". */
 function downloadName(url: string): string | null {
   const { pathname } = new URL(url);
@@ -892,7 +909,11 @@ test.describe('first paint, before any script', () => {
     request,
   }) => {
     const html = await (await request.get('/')).text();
-    expect(html).not.toMatch(/<link[^>]+rel="stylesheet"/);
+    // None in the page's markup. The first script writes one in only for a kept theme with a sheet
+    // of its own (Snowball's, src/theme/page.ts), which is no device's first visit, from the one
+    // literal it holds.
+    expect(markupOf(html)).not.toMatch(/<link[^>]+rel="stylesheet"/);
+    expect(scriptsOf(html).match(/<link[^>]+rel="stylesheet"[^>]*>/g)).toEqual([THEME_SHEET_LINK]);
     expect(html).toMatch(/<link[^>]+rel="preload"[^>]+as="font"/);
     expect(html).toMatch(/font-display:\s*swap/);
     expect(html).not.toMatch(/fonts\.googleapis|fonts\.gstatic/);
@@ -1104,8 +1125,9 @@ test.describe('handover to the WebGL map', () => {
       description: JSON.stringify({ page: gzipped(html), themes: gzipped(themes ?? '') }),
     });
     // Every visit downloads the page, and in it every released theme's CSS (tools/themes.ts),
-    // eight at about 3 kB gzipped. A theme the game adds grows both by about 0.4 kB: past these,
-    // carry the themes' tokens alone and write their rules on the device.
+    // eight at about 3 kB gzipped, and the address of Snowball's own style sheet, which only a
+    // device that puts it on fetches. A theme the game adds grows both by about 0.4 kB: past
+    // these, give it a sheet of its own too (tools/themes.ts SHEET_THEMES).
     expect(gzipped(html)).toBeLessThanOrEqual(PAGE_GZIP_BUDGET);
     expect(gzipped(themes ?? '')).toBeLessThanOrEqual(PAGE_THEMES_GZIP_BUDGET);
   });
@@ -1115,8 +1137,12 @@ test.describe('handover to the WebGL map', () => {
     request,
   }) => {
     const html = await (await request.get('/')).text();
-    // The page names no map code: MapLibre's class names are in its styles, never a script of it.
-    expect(html).not.toMatch(/basemap-|maplibre[\w-]*\.(?:js|css)|<link[^>]+stylesheet/);
+    // The page names no map code: MapLibre's class names are in its styles, never a script of it,
+    // and its markup links no style sheet (its first script writes one in only for a kept theme
+    // with a sheet of its own, Snowball's, src/theme/page.ts).
+    expect(html).not.toMatch(/basemap-|maplibre[\w-]*\.(?:js|css)/);
+    expect(markupOf(html)).not.toMatch(/<link[^>]+stylesheet/);
+    expect(scriptsOf(html).match(/<link[^>]+stylesheet[^>]*>/g)).toEqual([THEME_SHEET_LINK]);
     expect(html).toMatch(/\.maplibregl-map\s*\{/);
     const entry = /<script type="module" crossorigin src="([^"]+)"/.exec(html)?.[1];
     expect(entry).toBeDefined();

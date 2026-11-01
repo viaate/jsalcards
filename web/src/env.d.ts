@@ -21,7 +21,7 @@ interface ImportMetaEnv {
   readonly VITE_GITHUB_REPO?: string;
   /**
    * Themes built but not yet released (theme/themes.ts THEMES_UNRELEASED) that
-   * this build may use, comma-separated, such as "snowball": set only for the
+   * this build may use, comma-separated (none waits at present): set only for the
    * owner's screenshots and the e2e's own build, never the site's.
    */
   readonly VITE_THEMES_PREVIEW?: string;

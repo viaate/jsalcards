@@ -3,10 +3,11 @@
  * (tools/themes.ts): it puts on only this build's version of the theme a
  * device keeps, and never one this build may not show, before anything paints.
  */
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import indexHtml from '../index.html?raw';
-import { THEME_STORAGE_KEY } from '../src/theme/event';
+import { MIDNIGHT_BAR } from '../src/theme/engine';
+import { THEME_RETRY, THEME_STORAGE_KEY } from '../src/theme/event';
 import { PAGE_THEMES_ID } from '../src/theme/page';
 import { THEMES } from '../src/theme/themes';
 import { PAGE_THEMES_BLOCK, pageThemes, pageThemesJson, shownThemes } from '../tools/themes';
@@ -23,13 +24,16 @@ function firstScript(): string {
   return match[1];
 }
 
-/** Loads a page from a build that may show `preview`, with `kept` on the device. */
-function load(kept: unknown, preview?: string): void {
+/**
+ * Loads a page from a build that may show `preview`, with `kept` on the
+ * device, and the sheet themes' style sheets at `sheets`.
+ */
+function load(kept: unknown, preview?: string, sheets: Record<string, string> = {}): void {
   document.head.innerHTML = '<meta name="theme-color" content="#000000">';
   const block = document.createElement('script');
   block.type = 'application/json';
   block.id = PAGE_THEMES_ID;
-  block.textContent = pageThemesJson(pageThemes(shownThemes(preview), FONTS));
+  block.textContent = pageThemesJson(pageThemes(shownThemes(preview), FONTS, sheets));
   document.head.append(block);
   if (kept === null) localStorage.removeItem(THEME_STORAGE_KEY);
   else localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(kept));
@@ -48,8 +52,10 @@ function bg(): string {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
   localStorage.clear();
   document.documentElement.removeAttribute('data-theme');
+  document.documentElement.removeAttribute(THEME_RETRY);
   document.head.innerHTML = '';
 });
 
@@ -71,8 +77,8 @@ describe("index.html's first script", () => {
   });
 
   it('never puts on a theme this build does not carry, and leaves it kept for one that does', () => {
-    // Snowball, which a default build may not show, and a theme a newer build adds.
-    for (const id of ['snowball', 'a-theme-from-a-newer-build']) {
+    // A theme a newer build adds.
+    for (const id of ['a-theme-from-a-newer-build']) {
       load({ id });
       expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
       expect(document.getElementById('sl-theme')).toBeNull();
@@ -91,15 +97,48 @@ describe("index.html's first script", () => {
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
   });
 
-  it('in a build that may show Snowball, puts it on and fetches its face first', () => {
-    load({ id: 'snowball' }, 'snowball');
+  it('puts on a kept Snowball and fetches its face first', () => {
+    load({ id: 'snowball' });
     expect(document.documentElement.dataset.theme).toBe('snowball');
     const face = document.querySelector<HTMLLinkElement>('link[rel="preload"]');
     expect(face?.getAttribute('href')).toBe(FONTS.latin);
     expect(face?.as).toBe('font');
   });
 
-  it('carries no theme a default build may not show, and none of its face', () => {
+  it('writes in a kept theme’s own style sheet where it stands, so the page waits for it', () => {
+    const written: string[] = [];
+    vi.spyOn(document, 'write').mockImplementation((...html: string[]) => {
+      written.push(html.join(''));
+    });
+    load({ id: 'snowball' }, undefined, { snowball: '/assets/themes/snowball-1.css' });
+    expect(written).toHaveLength(1);
+    expect(written).toEqual([
+      '<link rel="stylesheet" id="sl-theme" href="/assets/themes/snowball-1.css">',
+    ]);
+    expect(document.documentElement.dataset.theme).toBe('snowball');
+    expect(document.querySelector('style#sl-theme')).toBeNull();
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
+      THEMES.snowball.tokens.bg,
+    );
+    expect(document.querySelector('link[rel="preload"]')?.getAttribute('href')).toBe(FONTS.latin);
+    // Where the sheet cannot load, the page is Midnight's, the browser's bar too, and marked for
+    // the engine to try the sheet again (src/app/boot.ts).
+    expect(document.documentElement.hasAttribute(THEME_RETRY)).toBe(false);
+    document.head.insertAdjacentHTML('beforeend', written[0] ?? '');
+    document.getElementById('sl-theme')?.dispatchEvent(new Event('error'));
+    expect(document.getElementById('sl-theme')).toBeNull();
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+    expect(document.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
+      MIDNIGHT_BAR,
+    );
+    expect(document.documentElement.hasAttribute(THEME_RETRY)).toBe(true);
+    // Every other theme the page carries whole: nothing written in.
+    load({ id: 'aurora' }, undefined, { snowball: '/assets/themes/snowball-1.css' });
+    expect(written).toHaveLength(1);
+    expect(document.querySelector('style#sl-theme')).not.toBeNull();
+  });
+
+  it('carries every released theme, in the shop’s order', () => {
     const json = pageThemesJson(pageThemes(shownThemes(''), FONTS));
     expect(Object.keys(JSON.parse(json) as object)).toEqual([
       'daylight',
@@ -107,11 +146,11 @@ describe("index.html's first script", () => {
       'ember',
       'glacier',
       'dusk',
+      'snowball',
       'bronze',
       'silver',
       'gold',
     ]);
-    expect(json).not.toMatch(/snowball|fredoka|woff2/i);
     // Safe inside a <script>, whatever a theme's CSS holds.
     expect(pageThemesJson({ daylight: { rules: ['</script>'], color: '#fff' } })).not.toContain(
       '</',

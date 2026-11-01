@@ -2219,8 +2219,9 @@
     <!-- waitlist:on:end -->
     <!--
       The themes this build may show, as it writes them (filled in by the build,
-      tools/themes.ts), and the one this device keeps (src/theme/engine.ts keeps
-      its id) put on from them before the first paint: so a page shows only its
+      tools/themes.ts: each one's CSS, or the address of its own style sheet),
+      and the one this device keeps (src/theme/engine.ts keeps its id) put on
+      from them before the first paint: so a page shows only its
       own build's version of a theme, and never one this build may not show,
       which it leaves kept and shows Midnight in its place. Midnight is this
       page's own CSS.
@@ -2239,10 +2240,36 @@
           var theme = Object.prototype.hasOwnProperty.call(themes, id) ? themes[id] : null;
           // A theme this build does not carry stays kept: a newer build's tab may have put it on.
           if (!theme) return;
-          var style = document.createElement('style');
-          style.id = 'sl-theme';
-          style.textContent = theme.rules.join('');
-          document.head.appendChild(style);
+          if (theme.sheet) {
+            // A theme with a style sheet of its own (Snowball): written in where this script
+            // stands, so the page waits for it as for any style sheet in its head. Where it
+            // cannot load, the page is Midnight's, bar and all, and the mark below has the page
+            // start the engine (src/app/boot.ts), which tries it again.
+            document.write(
+              '<link rel="stylesheet" id="sl-theme" href="#">'.replace('#', function () {
+                // The build's own address for it (tools/themes.ts sheetPath): no quote in it.
+                return theme.sheet;
+              }),
+            );
+            document.addEventListener(
+              'error',
+              function (event) {
+                if (event.target.id !== 'sl-theme') return;
+                event.target.remove();
+                var root = document.documentElement;
+                root.removeAttribute('data-theme');
+                root.setAttribute('data-theme-retry', '');
+                var midnight = document.querySelector('meta[name="theme-color"]');
+                if (midnight) midnight.setAttribute('content', '#000000');
+              },
+              true,
+            );
+          } else {
+            var style = document.createElement('style');
+            style.id = 'sl-theme';
+            style.textContent = theme.rules.join('');
+            document.head.appendChild(style);
+          }
           document.documentElement.setAttribute('data-theme', id);
           var bar = document.querySelector('meta[name="theme-color"]');
           if (bar) bar.setAttribute('content', theme.color);

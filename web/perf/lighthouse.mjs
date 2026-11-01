@@ -45,7 +45,8 @@
  * it (so a theme waiting for approval, such as Snowball, can be measured
  * before it is released) into dist-theme/, each run's browser keeping the id
  * before the page loads, report in perf/raw/lighthouse-theme-<id>.json. The
- * gates are the site's.
+ * gates are the site's. CI's perf job measures Snowball so, the one theme a
+ * kept device fetches a style sheet for before its first paint.
  *
  * WebGL runs wherever Chrome can run it. On a machine without a GPU that is
  * SwiftShader, a software renderer, which makes every map frame much slower

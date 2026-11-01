@@ -2432,6 +2432,79 @@ test.describe('with data staged', () => {
     await context.close();
   });
 
+  test('a theme going on with the day’s data shown moves no word: Snowball and back', async ({
+    browser,
+  }) => {
+    for (const device of [
+      { viewport: { width: 1440, height: 900 } },
+      { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+    ]) {
+      const context = await browser.newContext(device);
+      const page = await context.newPage();
+      await page.clock.setFixedTime(SYNTHETIC_NOW);
+      // On Aurora, so the theme engine runs; every layout shift from the first, with what moved.
+      await page.addInitScript(() => {
+        localStorage.setItem('snowlight:theme', JSON.stringify({ id: 'aurora' }));
+        const moved: string[] = [];
+        (window as unknown as { moved: string[] }).moved = moved;
+        new PerformanceObserver((list) => {
+          for (const entry of list.getEntries()) {
+            const { value, sources } = entry as unknown as {
+              value: number;
+              sources: { node?: Node | null }[];
+            };
+            const nodes = sources.map((source) => source.node?.nodeName ?? '?');
+            moved.push(`${String(value)} ${nodes.join(' ')}`);
+          }
+        }).observe({ type: 'layout-shift', buffered: true });
+      });
+      const { problems } = watch(page);
+      await page.goto(site);
+      await waitForMap(page);
+      await expect(page.locator('ul.legend .count')).toHaveCount(2, { timeout: 30_000 });
+      await expect(page.locator('p.updated')).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      await page.waitForTimeout(1500);
+      const moved = (): Promise<string[]> =>
+        page.evaluate(() => (window as unknown as { moved: string[] }).moved);
+      const before = await moved();
+      const engine = (id: string | null): Promise<boolean | undefined> =>
+        page.evaluate(
+          (next) =>
+            (
+              window as unknown as {
+                snowlightTheme?: { useTheme(id: string | null): Promise<boolean> };
+              }
+            ).snowlightTheme?.useTheme(next),
+          id,
+        );
+      // A theme in the same face changes colors alone: the same line stays, not one drawn anew.
+      await page.evaluate(() => {
+        document.querySelector('p.updated')?.setAttribute('data-first', '');
+      });
+      expect(await engine('glacier')).toBe(true);
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.getAttribute('data-theme')))
+        .toBe('glacier');
+      await expect(page.locator('p.updated[data-first]')).toHaveCount(1);
+      // Snowball sets the key and the update time in its own face, narrower than Geist; Aurora,
+      // and Midnight after it, in Geist again: each drawn anew in it.
+      for (const id of ['snowball', 'aurora', 'snowball', null]) {
+        expect(await engine(id)).toBe(true);
+        await expect
+          .poll(() => page.evaluate(() => document.documentElement.getAttribute('data-theme')))
+          .toBe(id);
+        await page.waitForTimeout(1200);
+        await expect(page.locator('ul.legend .count')).toHaveCount(2);
+        await expect(page.locator('p.updated')).toBeVisible();
+        await expect(page.locator('p.updated[data-first]')).toHaveCount(0);
+      }
+      expect(await moved()).toEqual(before);
+      expect(problems).toEqual([]);
+      await context.close();
+    }
+  });
+
   test('search loads the index on first focus, lists results, and a pick takes the map there', async ({
     browser,
   }) => {

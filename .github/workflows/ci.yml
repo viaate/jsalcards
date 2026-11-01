@@ -139,6 +139,9 @@ jobs:
       # Lighthouse drives the Chromium Playwright installs.
       - run: npx playwright install --with-deps chromium
       - run: npm run perf
+      # A returning visitor who kept Snowball: its own style sheet, which the page waits for on a
+      # first load, and its face. The same gates: 90 or more, mobile FCP under 1.5 s, CLS 0.
+      - run: npm run perf -- --theme=snowball
       # The waitlist build (tools/waitlist.ts) in both its looks: phone Performance 95 or more,
       # CLS 0, no script file and nothing asked of another site before a signup.
       - run: npm run perf:waitlist

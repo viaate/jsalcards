@@ -53,23 +53,35 @@ describe('a theme tile', () => {
     destroy();
   });
 
-  it('draws nothing, and fetches no face, for a theme waiting for approval', () => {
+  it('draws Snowball in a default build', () => {
     vi.stubEnv('VITE_THEMES_PREVIEW', '');
-    const { target, destroy } = tile('snowball');
-    expect(target.innerHTML.trim().replace(/<!---->/g, '')).toBe('');
-    expect(document.getElementById('sl-theme-tile-fonts')).toBeNull();
-    destroy();
-  });
-
-  it('draws it in a build that names it', () => {
-    vi.stubEnv('VITE_THEMES_PREVIEW', 'snowball');
     const { target, destroy } = tile('snowball');
     expect(target.querySelector('[data-theme-tile="snowball"]')).not.toBeNull();
     destroy();
   });
 
+  it('fetches Snowball’s face for its tile from its style sheet, and none for another', () => {
+    vi.stubEnv('VITE_THEMES_PREVIEW', '');
+    const block = document.createElement('script');
+    block.type = 'application/json';
+    block.id = 'sl-themes';
+    block.textContent = JSON.stringify({
+      snowball: { sheet: '/assets/themes/snowball-1.css', color: '#0a1834' },
+    });
+    document.head.append(block);
+    const aurora = tile('aurora');
+    expect(document.getElementById('sl-theme-tile-fonts')).toBeNull();
+    const snowball = tile('snowball');
+    const link = document.getElementById('sl-theme-tile-fonts');
+    expect(link?.tagName).toBe('LINK');
+    expect(link?.getAttribute('href')).toBe('/assets/themes/snowball-1.css');
+    aurora.destroy();
+    snowball.destroy();
+    block.remove();
+  });
+
   it('draws Snowball’s night as soft lights over pale specks, never ink-ringed marks', () => {
-    vi.stubEnv('VITE_THEMES_PREVIEW', 'snowball');
+    vi.stubEnv('VITE_THEMES_PREVIEW', '');
     // As a phone lays the tile out: the picture 320 px wide, the corner card 80 by 48.
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function (
       this: HTMLElement,

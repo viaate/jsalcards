@@ -1,20 +1,21 @@
 /**
- * Snowball's own rules, on top of its tokens (unreleased.ts): the cel-shaded
+ * Snowball's own rules, on top of its tokens (themes.ts): the cel-shaded
  * cartoon look over its night map. Cards and controls get a bold ink outline and a hard drop
  * offset in the same ink, corners grow rounder, and the type is Fredoka, a
  * round face licensed under the SIL Open Font License 1.1 (shipped as
  * fonts/fredoka-OFL.txt by tools/themes.ts), self-hosted from the build like Geist and
  * loaded only with this theme.
  *
- * The build writes these rules into the page (tools/themes.ts), and only a
- * build that may show Snowball does, with the face's files: a build that may
- * not ships neither.
+ * The build writes these rules into a style sheet of Snowball's own, which
+ * a device fetches only where Snowball goes on or is tried, and ships the
+ * face's files beside it (tools/themes.ts): a device on another theme loads
+ * neither.
  */
 import unicode from '@fontsource-variable/fredoka/unicode.json' with { type: 'json' };
 
-import { SNOWBALL_FONT } from './unreleased.ts';
+import { SNOWBALL_FONT } from './themes.ts';
 
-export { SNOWBALL_FONT } from './unreleased.ts';
+export { SNOWBALL_FONT } from './themes.ts';
 
 /** The ink outline's width on cards and controls, and the drop offset's. */
 const OUTLINE = '2.5px';

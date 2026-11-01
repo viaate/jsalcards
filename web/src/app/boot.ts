@@ -59,7 +59,7 @@ import type { Active, Controller, ReplayBar } from './replay';
 import { startDiagnostics } from './diagnostics';
 import { startServiceWorker } from './service-worker';
 import { ZOOM, selectionForHit, startupSelection, viewForHit, zipHit } from './startup';
-import { THEME_STORAGE_KEY } from '../theme/event';
+import { THEME_RETRY, THEME_STORAGE_KEY } from '../theme/event';
 
 export type { Screen } from './frame';
 export type { StatusCounts } from '../data/closings';
@@ -455,12 +455,14 @@ export function boot(options: BootOptions): Services {
   // The screen check, where the address asks for it (?diag=1).
   startDiagnostics();
   // The theme engine (theme/engine.ts), where index.html put on a theme the device keeps, or
+  // could not load its style sheet and showed Midnight (THEME_RETRY: the engine tries again), or
   // once another tab keeps one: from then on it follows every change. With Midnight, the page's
   // own CSS, nothing loads.
   const startThemes = (): void => {
     void import('../theme/engine').then(({ themeEngine }) => themeEngine()).catch(() => undefined);
   };
-  if (document.documentElement.hasAttribute('data-theme')) startThemes();
+  const root = document.documentElement;
+  if (root.hasAttribute('data-theme') || root.hasAttribute(THEME_RETRY)) startThemes();
   else {
     const heard = (event: StorageEvent): void => {
       if (event.key !== THEME_STORAGE_KEY && event.key !== null) return;

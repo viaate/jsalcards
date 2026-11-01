@@ -100,6 +100,34 @@ describe('UpdateTime', () => {
     online.mockRestore();
   });
 
+  it('drawn anew while offline, says offline in the new line with no frame of live', () => {
+    const props = reactiveProps({ generatedAt: GENERATED, drawn: 0 });
+    const target = show(GENERATED, props);
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    window.dispatchEvent(new Event('offline'));
+    flushSync();
+    const before = target.querySelector('.updated');
+    expect(before?.classList.contains('is-live')).toBe(false);
+    // Every line put in from here, as it is put in.
+    const watch = new MutationObserver(() => undefined);
+    watch.observe(target, { childList: true, subtree: true });
+    props.drawn = 1;
+    flushSync();
+    const lines = watch
+      .takeRecords()
+      .flatMap((record) => [...record.addedNodes])
+      .filter(
+        (node): node is HTMLElement => node instanceof HTMLElement && node.matches('.updated'),
+      )
+      .map((node) => `${String(node.classList.contains('is-live'))} ${node.textContent.trim()}`);
+    watch.disconnect();
+    online.mockRestore();
+    const after = target.querySelector('.updated');
+    expect(after).not.toBe(before);
+    expect(lines).toEqual([`false ${format.offline(generated, zone, new Date())}`]);
+    expect(after?.querySelector('.dot')).toBeNull();
+  });
+
   it('stops saying live within seconds of a device waking from a sleep that held its timers back', async () => {
     const target = show();
     expect(target.querySelector('.updated')?.classList.contains('is-live')).toBe(true);

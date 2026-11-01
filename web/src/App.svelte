@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import type { Component } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
 
@@ -29,6 +29,7 @@
   import { markStep, yieldToMain } from './map/basemap/steps';
   import { afterFirstPaint } from './shell/paint';
   import { retireStill } from './shell/still';
+  import { THEME_EVENT } from './theme/event';
   import { lateUrlStore } from './state/late-url-store';
   import type { LateUrlStore } from './state/late-url-store';
   import { pinnedSchool } from './state/pin';
@@ -53,6 +54,7 @@
 
   interface UpdateTimeProps {
     generatedAt: UtcInstant;
+    drawn?: number;
   }
 
   interface DetailProps {
@@ -135,6 +137,15 @@
   let replay = $state<{ day: LocalDate; bar: ReplayBar } | null>(null);
   /** How many schools the map lights in each status, by status code; null while none is lit. */
   let counts = $state<StatusCounts | null>(null);
+  /**
+   * How many times a theme has gone on in another face than the last
+   * (theme/event.ts THEME_EVENT: Snowball's, or back from it). Each time, the
+   * key and the update time (or the replay bar), whose words the new face
+   * sets narrower or wider, are drawn anew in it, as new counts draw a new
+   * key: so no word on the page is seen to move (a layout shift). A theme in
+   * the same face changes colors alone and draws nothing anew.
+   */
+  let themed = $state(0);
   /** The name the field shows for the last pick, until the text changes. */
   let pickedName: string | null = null;
   /** True while the phone is asked where it is. */
@@ -836,6 +847,32 @@
       }
       pickedName = null;
     });
+    // A theme goes on in another face: the key and the update time are drawn anew in it, in full
+    // view at once.
+    // The face, as the root sets it: a theme that sets the words in their own (Snowball) sets
+    // their weights and spacing with it (theme/snowball.ts).
+    const faceOf = (): string =>
+      getComputedStyle(document.documentElement).getPropertyValue('--font-sans');
+    let face = faceOf();
+    document.addEventListener(
+      THEME_EVENT,
+      () => {
+        const next = faceOf();
+        if (next === face) return;
+        face = next;
+        themed += 1;
+        void tick().then(() => {
+          for (const element of document.querySelectorAll('.legend .count, .updated')) {
+            try {
+              for (const animation of element.getAnimations()) animation.finish();
+            } catch {
+              // No Web Animations here: they fade in again.
+            }
+          }
+        });
+      },
+      { signal: controller.signal },
+    );
     // iOS moves no focus for a tap on the map, so its keyboard would stay up over it.
     mapElement?.addEventListener('click', () => inputElement?.blur(), {
       signal: controller.signal,
@@ -1029,18 +1066,21 @@
     The key to the map's four lights, each mark as the map draws it. Once the
     live file lights schools, each status gives how many the map shows, and a
     status with none dims. New counts draw a new key rather than widen the old
-    one's words, so no word on the page is ever seen to move (a layout shift).
+    one's words, and so does a theme going on, so no word on the page is ever
+    seen to move (a layout shift).
   -->
-  {#key counts}
-    <ul class="legend" aria-label={copy.legend.label}>
-      {#each STATUS_KEYS as key, code (key)}
-        {@const count = counts?.[code]}
-        <li class:is-none={count === 0}>
-          <span class="glyph {GLYPHS[code]}" aria-hidden="true"></span>{copy.status[key]}
-          {#if count}<span class="count">{shellFormat.number(count)}</span>{/if}
-        </li>
-      {/each}
-    </ul>
+  {#key themed}
+    {#key counts}
+      <ul class="legend" aria-label={copy.legend.label}>
+        {#each STATUS_KEYS as key, code (key)}
+          {@const count = counts?.[code]}
+          <li class:is-none={count === 0}>
+            <span class="glyph {GLYPHS[code]}" aria-hidden="true"></span>{copy.status[key]}
+            {#if count}<span class="count">{shellFormat.number(count)}</span>{/if}
+          </li>
+        {/each}
+      </ul>
+    {/key}
   {/key}
   <button
     class="locate"
@@ -1055,9 +1095,13 @@
     </svg>
   </button>
   {#if replay !== null}
-    <replay.bar day={replay.day} onexit={() => void services.then((app) => app?.replay(null))} />
+    <replay.bar
+      day={replay.day}
+      drawn={themed}
+      onexit={() => void services.then((app) => app?.replay(null))}
+    />
   {:else if UpdateTime !== null && updatedAt !== null}
-    <UpdateTime generatedAt={updatedAt} />
+    <UpdateTime generatedAt={updatedAt} drawn={themed} />
   {/if}
   {#if Detail !== null && schoolView !== null}
     <Detail

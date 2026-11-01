@@ -1,9 +1,10 @@
 /**
  * Whole-app themes in the built site (src/theme/engine.ts): a theme the
  * device keeps is on from the first paint, the page and the map change
- * together at run time with no reload and no layout shift, and a theme still
- * waiting for the owner's approval (Snowball) is never put on by this build,
- * which names none in VITE_THEMES_PREVIEW.
+ * together at run time with no reload and no layout shift, Snowball is
+ * offered like every shop theme, with its style sheet and its face fetched
+ * only where it goes on, and a theme still waiting for the owner's approval
+ * (theme/unreleased.ts; none at present) is carried by no default build.
  *
  * Runs against the default build (playwright.config.ts), which ships no data.
  */
@@ -17,13 +18,16 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 
 import { BASEMAP_IDS } from '../src/map/basemap/ids';
 import { THEME_STORAGE_KEY } from '../src/theme/event';
-import { THEMES } from '../src/theme/themes';
+import { THEMES, THEME_IDS } from '../src/theme/themes';
 import type { ThemeId } from '../src/theme/themes';
+import { UNRELEASED_IDS } from '../src/theme/unreleased';
 
 interface Engine {
   readonly current: ThemeId;
-  useTheme(id: ThemeId | null): boolean;
-  previewTheme(id: ThemeId): boolean;
+  /** Resolves true once the theme is on and kept (src/theme/engine.ts). */
+  useTheme(id: ThemeId | null): Promise<boolean>;
+  previewTheme(id: ThemeId): Promise<boolean>;
+  endPreview(): void;
 }
 
 declare global {
@@ -42,31 +46,60 @@ test.describe.configure({ timeout: 120_000 });
 /** The default build this spec runs against (playwright.config.ts builds it). */
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url));
 
-test('a default build carries nothing of a theme waiting for approval, in any file', () => {
+test('a default build carries no theme waiting for approval, and Snowball as a sheet of its own', () => {
   const files = readdirSync(DIST, { recursive: true, encoding: 'utf8' }).filter(
     (file) => !/\.(?:png|jpe?g|webp|avif|ico|woff2?|pmtiles|gz|br)$/i.test(file),
   );
   expect(files.length).toBeGreaterThan(10);
-  const found = files.filter((file) => {
-    const full = path.join(DIST, file);
+  const text = (file: string): string => {
     try {
-      const text = readFileSync(full, 'utf8');
-      const sources = file.endsWith('.map')
-        ? (JSON.parse(text) as { sources: string[] }).sources
-        : [];
-      return (
-        /snowball|fredoka/i.test(text) ||
-        /fredoka/i.test(file) ||
-        sources.some((source) => source.endsWith('theme/unreleased.ts'))
-      );
+      return readFileSync(path.join(DIST, file), 'utf8');
     } catch {
       // A directory.
-      return false;
+      return '';
     }
-  });
-  // Not its colors, its face or its license, its name, nor the module that holds it (source maps
-  // included).
-  expect(found).toEqual([]);
+  };
+  // No waiting theme's name in any file, and no source map names their module (with none
+  // waiting, a build with a stand-in listed is tested in src/theme/tests/build.test.ts).
+  for (const id of UNRELEASED_IDS) {
+    expect(files.filter((file) => text(file).includes(id))).toEqual([]);
+  }
+  expect(
+    files.filter(
+      (file) =>
+        file.endsWith('.map') &&
+        (JSON.parse(text(file)) as { sources: string[] }).sources.some((source) =>
+          source.endsWith('theme/unreleased.ts'),
+        ),
+    ),
+  ).toEqual([]);
+  // No script the page runs carries Snowball's palette (nor any theme's): the page carries its
+  // CSS, the engine the ids alone, and only a shop's script, outside what the worker precaches,
+  // the palettes.
+  const palette = [THEMES.snowball.tokens.surface1, THEMES.snowball.tokens.border1];
+  expect(
+    files.filter(
+      (file) =>
+        file.endsWith('.js') &&
+        !file.startsWith('assets/themes/') &&
+        palette.some((color) => text(file).includes(color)),
+    ),
+  ).toEqual([]);
+  // Snowball's rules are in its own sheet alone, which the service worker does not precache, nor
+  // its face: a device that never puts it on downloads neither.
+  const rules = files.filter(
+    (file) => !file.endsWith('.map') && text(file).includes("[data-theme='snowball']"),
+  );
+  expect(rules).toEqual([expect.stringMatching(/^assets\/themes\/snowball-[\w-]+\.css$/)]);
+  expect(text('sw.js')).not.toMatch(/themes\/snowball|fredoka/i);
+  const page = text('index.html');
+  expect(page).not.toMatch(/@font-face[^}]*Fredoka/);
+  const carried = /<script type="application\/json" id="sl-themes">([\s\S]*?)<\/script>/.exec(
+    page,
+  )?.[1];
+  expect(Object.keys(JSON.parse(carried ?? '{}') as object)).toEqual(
+    THEME_IDS.filter((id) => id !== 'midnight'),
+  );
 });
 
 /**
@@ -230,7 +263,7 @@ test('the map changes in the frame the page does, with no fade between the two',
       frames.push({ pixel: pixel(), ground: getComputedStyle(document.body).backgroundColor });
     };
     map.on('render', onRender);
-    window.snowlightTheme?.useTheme('aurora');
+    void window.snowlightTheme?.useTheme('aurora');
     await new Promise((resolve) => setTimeout(resolve, 1200));
     map.triggerRepaint();
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -252,53 +285,189 @@ async function frames(page: Page): Promise<{ theme: string | null; ground: strin
   return page.evaluate(() => window.themeFrames ?? []);
 }
 
-test('never puts on a theme waiting for approval, not for a single frame', async ({
-  context,
+/** Every request for Snowball's own files: its style sheet and its face. */
+function snowballFiles(page: Page): string[] {
+  const asked: string[] = [];
+  page.on('request', (request) => {
+    if (/themes\/snowball|fredoka/i.test(request.url())) asked.push(request.url());
+  });
+  return asked;
+}
+
+test('a device on another theme fetches nothing of Snowball', async ({ page }) => {
+  const asked = snowballFiles(page);
+  await record(page);
+  await page.goto('/');
+  await page.waitForFunction(() => window.snowlightMap?.isStyleLoaded() === true, null, {
+    timeout: 60_000,
+  });
+  await page.waitForTimeout(1500);
+  expect(asked).toEqual([]);
+  // Nor a device on Aurora, whose engine runs.
+  await page.evaluate((key) => {
+    localStorage.setItem(key, JSON.stringify({ id: 'aurora' }));
+  }, THEME_STORAGE_KEY);
+  await page.reload();
+  await mapReady(page);
+  await page.waitForTimeout(1500);
+  expect(await page.evaluate(() => window.snowlightTheme?.current)).toBe('aurora');
+  expect(asked).toEqual([]);
+});
+
+test('tries Snowball, puts it on and keeps it across a reload, its face fetched only then', async ({
   page,
 }) => {
-  await keep(page, 'snowball');
-  const faces: string[] = [];
-  page.on('request', (request) => {
-    if (/fredoka|\.woff2/i.test(request.url()) && !/geist/i.test(request.url())) {
-      faces.push(request.url());
-    }
-  });
+  // Aurora kept once, before the first load only: the reload below opens with what the page kept.
+  await page.addInitScript((key) => {
+    if (sessionStorage.getItem('kept once') !== null) return;
+    sessionStorage.setItem('kept once', 'yes');
+    localStorage.setItem(key, JSON.stringify({ id: 'aurora' }));
+  }, THEME_STORAGE_KEY);
+  await record(page);
+  const asked = snowballFiles(page);
   await page.goto('/');
-  // The page is Midnight's own: index.html passes over the kept Snowball, and no engine loads.
-  await page.waitForFunction(
-    () => document.querySelector('svg.still') === null && window.snowlightMap?.isStyleLoaded(),
-    null,
-    { timeout: 60_000 },
+  await mapReady(page);
+  await page.waitForTimeout(1000);
+  expect(asked).toEqual([]);
+
+  // Tried: the whole page and the map in Snowball, in its own face, and nothing kept.
+  expect(await page.evaluate(() => window.snowlightTheme?.previewTheme('snowball'))).toBe(true);
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.dataset.theme))
+    .toBe('snowball');
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(
+    rgb(THEMES.snowball.tokens.bg),
   );
-  const seen = await frames(page);
-  expect(seen.length).toBeGreaterThan(0);
-  expect(seen.filter((frame) => frame.theme !== null)).toEqual([]);
-  expect(seen.filter((frame) => frame.ground !== 'rgb(0, 0, 0)')).toEqual([]);
-  // The id stays kept, for a build that carries it.
+  expect(await page.evaluate(() => getComputedStyle(document.body).fontFamily)).toMatch(
+    /^"?Fredoka Variable"?,/,
+  );
+  expect(await page.evaluate(() => document.fonts.check("16px 'Fredoka Variable'"))).toBe(true);
+  await expect.poll(() => mapGround(page)).toContain(THEMES.snowball.tokens.ground);
+  expect(asked.some((url) => /\/assets\/themes\/snowball-[\w-]+\.css$/.test(url))).toBe(true);
+  expect(asked.some((url) => url.includes('fredoka-latin-wght'))).toBe(true);
+  // It went on in one change: no frame of Snowball's attribute on another ground.
+  expect(
+    (await frames(page)).filter(
+      (frame) => frame.theme === 'snowball' && frame.ground !== rgb(THEMES.snowball.tokens.bg),
+    ),
+  ).toEqual([]);
+  expect(await page.evaluate((key) => localStorage.getItem(key), THEME_STORAGE_KEY)).toBe(
+    JSON.stringify({ id: 'aurora' }),
+  );
+  await page.evaluate(() => {
+    window.snowlightTheme?.endPreview();
+  });
+  expect(await page.evaluate(() => window.snowlightTheme?.current)).toBe('aurora');
+
+  // Put on and kept.
+  expect(await page.evaluate(() => window.snowlightTheme?.useTheme('snowball'))).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.snowlightTheme?.current)).toBe('snowball');
   expect(await page.evaluate((key) => localStorage.getItem(key), THEME_STORAGE_KEY)).toBe(
     JSON.stringify({ id: 'snowball' }),
   );
-  // The build carries none of it.
-  expect(await page.content()).not.toMatch(/snowball|fredoka/i);
 
-  // Another tab keeps it: the engine starts here to follow, and refuses it.
-  const other = await context.newPage();
-  await other.goto('/robots.txt');
-  // Kept again there (a new value, so this tab hears it).
-  await other.evaluate((key) => {
-    localStorage.setItem(key, JSON.stringify({ id: 'snowball', from: 'another tab' }));
-  }, THEME_STORAGE_KEY);
-  await page.waitForFunction(() => window.snowlightTheme !== undefined, null, { timeout: 30_000 });
+  // Opened again: Snowball from the first frame, page and map, with no layout shift.
+  await page.reload();
+  await mapReady(page);
+  await page.waitForTimeout(1000);
+  const seen = await frames(page);
+  expect(seen.length).toBeGreaterThan(0);
+  expect(seen.filter((frame) => frame.theme !== 'snowball')).toEqual([]);
+  expect(seen.filter((frame) => frame.ground !== rgb(THEMES.snowball.tokens.bg))).toEqual([]);
+  expect(await page.evaluate(() => window.snowlightTheme?.current)).toBe('snowball');
+  await expect.poll(() => mapGround(page)).toContain(THEMES.snowball.tokens.ground);
+  expect(
+    await page.evaluate(() =>
+      document.querySelector('meta[name="theme-color"]')?.getAttribute('content'),
+    ),
+  ).toBe(THEMES.snowball.tokens.bg);
+  expect(await page.evaluate(() => window.themeShifts)).toBe(0);
+});
+
+test('a kept Snowball whose sheet cannot load shows Midnight, bar and all, until it loads', async ({
+  page,
+}) => {
+  await keep(page, 'snowball');
+  let refuse = true;
+  let refused = 0;
+  await page.route(/\/assets\/themes\/snowball-[\w-]+\.css$/, async (route) => {
+    if (!refuse) {
+      await route.continue();
+      return;
+    }
+    refused += 1;
+    await route.abort();
+  });
+  const bar = (): Promise<string | null | undefined> =>
+    page.evaluate(() =>
+      document.querySelector('meta[name="theme-color"]')?.getAttribute('content'),
+    );
+  await page.goto('/');
+  await mapReady(page);
+  // The first script's sheet, then the engine's try again: both refused.
+  await expect.poll(() => refused).toBe(2);
+  await page.waitForTimeout(1000);
+  const seen = await frames(page);
+  expect(seen.length).toBeGreaterThan(0);
+  // Midnight from the first frame, never Snowball's mark on it, and the bar Midnight's.
+  expect(seen.filter((frame) => frame.theme !== null)).toEqual([]);
+  expect(seen.filter((frame) => frame.ground !== rgb(THEMES.midnight.tokens.bg))).toEqual([]);
+  expect(await bar()).toBe(THEMES.midnight.tokens.bg);
   expect(await page.evaluate(() => window.snowlightTheme?.current)).toBe('midnight');
-  expect(await page.evaluate(() => document.documentElement.hasAttribute('data-theme'))).toBe(
-    false,
+  expect(await page.evaluate(() => getComputedStyle(document.body).fontFamily)).not.toMatch(
+    /Fredoka/,
   );
-  expect(await page.evaluate(() => window.snowlightTheme?.useTheme('snowball'))).toBe(false);
-  expect(await page.evaluate(() => window.snowlightTheme?.previewTheme('snowball'))).toBe(false);
-  expect((await frames(page)).filter((frame) => frame.theme !== null)).toEqual([]);
-  expect(faces).toEqual([]);
+  // Kept still, for the next visit, and nothing moved.
   expect(await page.evaluate((key) => localStorage.getItem(key), THEME_STORAGE_KEY)).toBe(
-    JSON.stringify({ id: 'snowball', from: 'another tab' }),
+    JSON.stringify({ id: 'snowball' }),
+  );
+  expect(await page.evaluate(() => window.themeShifts)).toBe(0);
+  // Put on again once the sheet can load: Snowball, in one change.
+  refuse = false;
+  expect(await page.evaluate(() => window.snowlightTheme?.useTheme('snowball'))).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe('snowball');
+  expect(await bar()).toBe(THEMES.snowball.tokens.bg);
+  expect(
+    (await frames(page)).filter(
+      (frame) => frame.theme === 'snowball' && frame.ground !== rgb(THEMES.snowball.tokens.bg),
+    ),
+  ).toEqual([]);
+  expect(await page.evaluate(() => window.themeShifts)).toBe(0);
+});
+
+test('every open tab follows Snowball put on in one', async ({ context }) => {
+  const first = await context.newPage();
+  await record(first);
+  await first.goto('/');
+  await first.waitForFunction(() => window.snowlightMap?.isStyleLoaded() === true, null, {
+    timeout: 60_000,
+  });
+  const second = await context.newPage();
+  await keep(second, 'daylight');
+  await second.goto('/');
+  await mapReady(second);
+  expect(await second.evaluate(() => window.snowlightTheme?.useTheme('snowball'))).toBe(true);
+  // The first tab, in Midnight with no engine yet, starts it and follows, page and map.
+  await expect
+    .poll(() => first.evaluate(() => document.documentElement.getAttribute('data-theme')), {
+      timeout: 30_000,
+    })
+    .toBe('snowball');
+  expect(await first.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(
+    rgb(THEMES.snowball.tokens.bg),
+  );
+  await expect.poll(() => mapGround(first)).toContain(THEMES.snowball.tokens.ground);
+  expect(
+    (await frames(first)).filter(
+      (frame) => frame.theme === 'snowball' && frame.ground !== rgb(THEMES.snowball.tokens.bg),
+    ),
+  ).toEqual([]);
+  await second.evaluate(() => window.snowlightTheme?.useTheme(null));
+  await expect
+    .poll(() => first.evaluate(() => document.documentElement.hasAttribute('data-theme')))
+    .toBe(false);
+  expect(await first.evaluate(() => getComputedStyle(document.body).fontFamily)).not.toMatch(
+    /Fredoka/,
   );
 });
 

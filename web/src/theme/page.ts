@@ -11,26 +11,52 @@ import type { ThemeId } from './themes.ts';
 /** The element whose JSON holds them, and the first script's. */
 export const PAGE_THEMES_ID = 'sl-themes';
 
-/** One theme as the page carries it. */
-export interface PageTheme {
-  /** Its CSS, rule by rule (theme/css.ts themeRules). */
-  readonly rules: readonly string[];
+/**
+ * One theme as the page carries it: its CSS in the page itself, or, for a
+ * theme whose rules are a look of their own (Snowball's), the address of its
+ * own style sheet, fetched only where it goes on (tools/themes.ts).
+ */
+export type PageTheme = {
   /** The bar color the browser shows over the page with it. */
   readonly color: string;
   /** A face its words are set in, to fetch first where it is kept (a toon theme's). */
   readonly font?: string;
-}
+  /** That face's family, loaded before the theme goes on at run time (engine.ts). */
+  readonly family?: string;
+} & (
+  | {
+      /** Its CSS, rule by rule (theme/css.ts themeRules). */
+      readonly rules: readonly string[];
+      readonly sheet?: undefined;
+    }
+  | {
+      /** Its style sheet's address: the same rules, in a file of their own. */
+      readonly sheet: string;
+      readonly rules?: undefined;
+    }
+);
 
 export type PageThemes = Readonly<Partial<Record<ThemeId, PageTheme>>>;
 
 function isPageTheme(value: unknown): value is PageTheme {
   if (typeof value !== 'object' || value === null) return false;
-  const theme = value as { rules?: unknown; color?: unknown; font?: unknown };
-  return (
+  const theme = value as {
+    rules?: unknown;
+    sheet?: unknown;
+    color?: unknown;
+    font?: unknown;
+    family?: unknown;
+  };
+  const rules =
     Array.isArray(theme.rules) &&
     theme.rules.every((rule) => typeof rule === 'string') &&
+    theme.sheet === undefined;
+  const sheet = typeof theme.sheet === 'string' && theme.rules === undefined;
+  return (
+    (rules || sheet) &&
     typeof theme.color === 'string' &&
-    (theme.font === undefined || typeof theme.font === 'string')
+    (theme.font === undefined || typeof theme.font === 'string') &&
+    (theme.family === undefined || typeof theme.family === 'string')
   );
 }
 

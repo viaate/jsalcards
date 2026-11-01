@@ -8,56 +8,40 @@
  * The approved looks are the game mockups' (branch wip-game-mockups,
  * web/mockups/game/tools/themes.mjs): Midnight and Daylight free, Aurora,
  * Ember, Glacier and Dusk in the shop, Bronze, Silver and Gold earned at a
- * season's end. A theme still waiting for the owner's yes is in
- * unreleased.ts (THEMES_UNRELEASED). Every theme keeps the four statuses readable on
- * its grounds (tests/contrast.test.ts).
+ * season's end; and Snowball, the owner's night snow cartoon, in the shop
+ * after Dusk. A theme still waiting for the owner's yes is in unreleased.ts
+ * (THEMES_UNRELEASED). Every theme keeps the four statuses readable on its
+ * grounds (tests/contrast.test.ts).
  *
- * This module loads with the engine, after the first paint: the page's first
- * script carries none of it.
+ * No script a device runs to show a theme carries this module: the page
+ * carries each theme's CSS (page.ts), and the engine needs only the ids
+ * (ids.ts). It loads with the shop alone (shop.ts), whose tiles draw every
+ * theme in its colors, into a chunk the service worker does not precache
+ * (vite.config.ts), and the build reads it to write the themes' CSS
+ * (tools/themes.ts).
  */
 
-import { UNRELEASED_IDS, UNRELEASED_THEMES, type UnreleasedThemeId } from './unreleased.ts';
+import type { ThemeId } from './ids.ts';
+import { UNRELEASED_THEMES, type UnreleasedThemeId } from './unreleased.ts';
 
-export type { UnreleasedThemeId } from './unreleased.ts';
+export {
+  DEFAULT_THEME,
+  THEMES_UNRELEASED,
+  THEME_IDS,
+  isThemeId,
+  type ThemeId,
+  type UnreleasedThemeId,
+} from './ids.ts';
 
 /**
- * Whether this build's scripts carry the unreleased themes (unreleased.ts)
- * at all: vite.config.ts says so (__UNRELEASED_THEMES__), true only where
- * VITE_THEMES_PREVIEW names one, so a default build's scripts hold none of
- * them, not even a name: they leave them out as code never run. The build's
- * own tools and the tests, which run with no such word, carry them.
+ * Whether this build carries the unreleased themes (ids.ts UNRELEASED_BUILT),
+ * worked out in this module again: the build leaves their palettes out of a
+ * default build, source maps and all, only where it can tell here, not
+ * through an import (tests/build.test.ts).
  */
 declare const __UNRELEASED_THEMES__: boolean | undefined;
 const UNRELEASED_BUILT: boolean =
   typeof __UNRELEASED_THEMES__ === 'boolean' ? __UNRELEASED_THEMES__ : true;
-
-const RELEASED = [
-  'midnight',
-  'daylight',
-  'aurora',
-  'ember',
-  'glacier',
-  'dusk',
-  'bronze',
-  'silver',
-  'gold',
-] as const;
-
-/** Every theme's id, whether this build carries it or not. */
-export type ThemeId = (typeof RELEASED)[number] | UnreleasedThemeId;
-
-/** The themes this build carries, in the shop's order: an unreleased one last, where built. */
-export const THEME_IDS: readonly ThemeId[] = UNRELEASED_BUILT
-  ? [...RELEASED, ...UNRELEASED_IDS]
-  : RELEASED;
-
-/** The unreleased themes this build carries. */
-export const THEMES_UNRELEASED: ReadonlySet<ThemeId> = new Set<ThemeId>(
-  UNRELEASED_BUILT ? UNRELEASED_IDS : [],
-);
-
-/** The theme a first visit gets, and the one the page's own CSS draws. */
-export const DEFAULT_THEME: ThemeId = 'midnight';
 
 /** How a theme is had: free to everyone, bought in the shop, or earned at a season's end. */
 export type ThemeAccess = 'free' | 'shop' | 'trophy';
@@ -318,6 +302,72 @@ const DAYLIGHT: Theme = {
   labelHalo: 'rgb(238 240 242 / 0.6)',
 };
 
+/**
+ * Snowball, the cel-shaded cartoon theme, at night: a deep navy sea and land
+ * in flat cel steps, bold moonlit coasts, and the schools' lights glowing on
+ * it as they do on Midnight, through Midnight's own glow and in Midnight's
+ * status colors (DARK_STATUS and GLOW), so a closed school is a
+ * soft light-blue light and a storm a soft band of light, never a wall of
+ * marks. Cards and buttons keep the cartoon's ink outlines, hard drop
+ * offsets, round face and yellow accent (snowball.ts). Its own palette and
+ * its own name; no game's colors, art or type.
+ */
+const SNOWBALL: Theme = {
+  id: 'snowball',
+  scheme: 'dark',
+  access: 'shop',
+  tokens: {
+    bg: '#0a1834',
+    surface1: '#173263',
+    surface2: '#1d3c73',
+    border1: '#2c5291',
+    border2: '#040c1d',
+    text1: '#f4f9ff',
+    text2: '#c0d6f0',
+    text3: '#97b3d6',
+    accent: '#ffc93c',
+    // Midnight's statuses (DARK_STATUS), with ink on a closed school's light blue.
+    closed: '#7fd4ff',
+    delayed: '#ffc46b',
+    remote: '#b79cff',
+    early: '#6bffb0',
+    onClosed: '#071a33',
+    open: '#a3bbd9',
+    chance: '#f4f9ff',
+    // The dim names, a step lighter than text-3, so a name inside school grounds reads at AA.
+    mapLabelDim: '#a6c0e0',
+    land: '#12284f',
+    ground: '#12284f',
+    water: '#0a1834',
+    park: '#14405a',
+    grounds: '#26457e',
+    groundsEdge: '#a9d3f7',
+    shore: '#a9d3f7',
+    minorRoad: '#1d3a6b',
+    majorRoad: '#2a4879',
+    lineOutline: '#a9d3f7',
+    lineState: '#3f679f',
+    lineOutlinePhone: '#bfe0fb',
+    lineStatePhone: '#5079b3',
+    dot: '#dcebfb',
+    dotRing: '#12284f',
+    veil: '10 24 52',
+    shadow: '4 12 29',
+    sheen: '255 255 255',
+    halo: '#0f2349',
+    amb: 'none',
+  },
+  // Midnight's own glow (GLOW): the lights screened onto the night, with no ring and no
+  // burst, so no mark is ever ringed in a dark line. The roads stay dim enough that every glyph
+  // reads on them up close without one (tests/contrast.test.ts).
+  glow: GLOW,
+  lineWidths: { outline: 2.5, state: 1.25 },
+  roadScale: 1.2,
+};
+
+/** The family Snowball sets its words in (snowball.ts has its faces). */
+export const SNOWBALL_FONT = 'Fredoka Variable';
+
 /** Every theme this build carries: each released one, and an unreleased one only where built. */
 export const THEMES: Readonly<
   Record<Exclude<ThemeId, UnreleasedThemeId>, Theme> & Partial<Record<UnreleasedThemeId, Theme>>
@@ -408,6 +458,7 @@ export const THEMES: Readonly<
     majorRoad: '#5a4785',
     amb: 'linear-gradient(180deg, rgb(170 95 245 / 0.34) 0%, rgb(115 75 215 / 0.14) 34%, rgb(45 55 150 / 0.08) 62%, transparent 80%), linear-gradient(0deg, rgb(25 45 140 / 0.36), transparent 40%)',
   }),
+  snowball: SNOWBALL,
   bronze: dark('bronze', 'trophy', {
     bg: '#0a0705',
     surface1: '#1a120c',
@@ -479,10 +530,6 @@ export function themeOf(id: ThemeId): Theme {
   const theme = THEMES[id];
   if (theme === undefined) throw new Error(`This build does not carry the theme ${id}`);
   return theme;
-}
-
-export function isThemeId(value: unknown): value is ThemeId {
-  return typeof value === 'string' && (THEME_IDS as readonly string[]).includes(value);
 }
 
 // Colors --------------------------------------------------------------------------------
