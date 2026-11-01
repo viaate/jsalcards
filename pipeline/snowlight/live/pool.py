@@ -241,10 +241,12 @@ class HostPacer:
                 last = self._last.get(key)
                 ready = now if last is None else max(now, last + wait_for)
                 busy = key in self._busy
-                if not busy and ready <= now:
-                    break
+                # The deadline first: a thread that wakes late (a busy machine) past the
+                # deadline starts nothing, even when its key is free.
                 if deadline is not None and (now >= deadline or (not busy and ready > deadline)):
                     raise TimeoutError(key)
+                if not busy and ready <= now:
+                    break
                 timeout = None if busy else ready - now
                 if deadline is not None:
                     timeout = deadline - now if timeout is None else min(timeout, deadline - now)

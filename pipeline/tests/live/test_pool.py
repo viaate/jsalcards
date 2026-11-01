@@ -446,6 +446,17 @@ def test_pacer_refuses_a_turn_after_the_deadline() -> None:
         pass  # pragma: no cover
 
 
+def test_pacer_starts_nothing_when_its_wait_ends_after_the_deadline() -> None:
+    # A late wake on a busy machine: the key's turn (0.05) is before the deadline (0.08),
+    # but the waiting thread reads the clock again only at 0.1, past it.
+    readings = iter([0.0, 0.0, 0.0, 0.1])
+    pacer = HostPacer(monotonic=lambda: next(readings))
+    with pacer.slot("k", 0.0):
+        pass
+    with pytest.raises(TimeoutError), pacer.slot("k", 0.05, deadline=0.08):
+        pass  # pragma: no cover - never reached
+
+
 def test_violations_name_overlaps_and_short_gaps() -> None:
     entries = [
         Request("k", 5.0, 0.0, 1.0),
