@@ -18,7 +18,7 @@ import pytest
 
 from predict import world
 from snowlight.predict import anchor as an
-from snowlight.predict import anchor_labels, exposure
+from snowlight.predict import anchor_labels, exposure, live_read
 from snowlight.predict.anchor_labels import read_labels, serving_anchor
 from snowlight.predict.config import CONFIG_PATH
 from snowlight.predict.exposure import CLASSES, Exposure, Tally
@@ -26,6 +26,7 @@ from snowlight.predict.serve import SITUATION_POSITION, ServeModel, build_model,
 from snowlight.predict.situations import SITUATIONS, Situation, WeatherClass
 from snowlight.predict.why import class_base
 from snowlight.schemas.predictions import ClassBase, Forecast, PredictionsFile
+from snowlight.schemas.stats import ReadAuditDay
 
 SETTINGS = an.AnchorSettings.of(world.CONFIG)
 DAY = date(2026, 11, 3)
@@ -713,6 +714,66 @@ def test_the_record_gives_its_labeled_read_rows_and_trials(tmp_path: Path) -> No
     assert anchor.fits["warning"].closed == 1
     assert anchor.fits["cold"].rows == 0  # tier B, too few trials
     assert float(anchor.fits["advisory"].level(0.0)) < 0.1
+
+
+def test_the_adapter_reads_the_record_l1_writes_with_its_own_models(tmp_path: Path) -> None:
+    # SYNTHETIC: a day written by L1's own write_day, ReadDay, ReadRow and Trial (the landed
+    # record format), read through the one adapter in L1's own folder.
+    assert anchor_labels.READS_DIR == live_read.READS_DIR
+    folder = tmp_path / "reads"
+
+    def read(
+        district: str,
+        label: str,
+        tier: live_read.Tier | None,
+        weather: int = 1,
+        sources: tuple[str, ...] = ("s",),
+    ) -> live_read.ReadRow:
+        return live_read.ReadRow(
+            district=district, weather=weather, after=False, label=live_read.Label(label),
+            why=None, tier=tier, market=None, sources=sources, slot="11:00", health=None,
+        )  # fmt: skip
+
+    live_read.write_day(
+        folder,
+        live_read.ReadDay(
+            schema_version=1,
+            day=DAY,
+            content="synthetic",
+            rows=(
+                read("2900001", "unnamed", live_read.Tier.A, sources=("s", "t")),
+                read("2900002", "no_school", live_read.Tier.A, weather=5),
+                read("2900003", "delayed", live_read.Tier.B, weather=3),
+                read("2000004", "unknown", live_read.Tier.A),
+                read("4900005", "not_read", None, sources=()),
+            ),
+            no_school=("2900002",),
+            audit=ReadAuditDay(day=DAY, held=False, classes=()),
+        ),
+        [
+            live_read.Trial(
+                district="2900002", source="s", tier=live_read.Tier.A, named=True, weather=5
+            ),
+            live_read.Trial(
+                district="2900002", source="t", tier=live_read.Tier.A, named=False, weather=5
+            ),
+        ],
+    )
+    said: list[str] = []
+    found = read_labels(folder, warn=said.append)
+    assert said == []
+    assert found.found
+    assert found.days == 1
+    assert [(r.district, r.label, r.tier, r.weather, r.lists) for r in found.rows] == [
+        ("2900001", "unnamed", "A", "advisory", 2),
+        ("2900002", "no_school", "A", "snow_warning", 1),
+        ("2900003", "delayed", "B", "cold", 1),
+    ]
+    assert found.trials == {"A": an.Trials(hits=1, trials=2, dates=1)}
+    anchor = serving_anchor(world.CONFIG, world.model(), folder=folder)
+    assert anchor is not None
+    assert anchor.fits["advisory"].rows == 1
+    assert anchor.fits["warning"].closed == 1
 
 
 def test_a_day_that_does_not_read_is_left_out_and_said(tmp_path: Path) -> None:

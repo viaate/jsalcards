@@ -1,16 +1,17 @@
 """The one adapter from the outcome-blind live labels (advisory-sane L1) to the class anchor's
 live update (:mod:`snowlight.predict.anchor`, Addendum B2).
 
-L1 keeps its private record in ``out/internal/predict/reads/`` (restored from its own Actions
-cache before the passes): ``rows/<day>.json``, one labeled school day (the alerted districts'
-rows: ``district``, ``weather`` (the class number), ``after``, ``label``, ``tier``,
-``market``, and ``sources``, the lists that read it, counted only), and
-``trials/<day>.jsonl``, its co-listing trials (``tier``, ``named``). This reads them as plain
-JSON, so the anchor depends on L1's file format only, never on its code.
+L1 (:mod:`snowlight.predict.live_read`) keeps its private record in its ``READS_DIR``,
+``out/internal/predict/reads/`` (restored from its own Actions cache before the passes):
+``rows/<day>.json``, one labeled school day (its ``ReadDay``: the alerted districts' rows,
+``district``, ``weather`` (the class number), ``after``, ``label``, ``tier``, ``market``, and
+``sources``, the lists that read it, counted only), and ``trials/<day>.jsonl``, its
+co-listing trials (``tier``, ``named``). The folder is L1's own constant; the files are read
+as plain JSON, so a day L1's models would refuse is left out and said here, never fatal.
 
 Only rows a read labeled (``no_school``, ``delayed``, ``unnamed``, the last counting open, the
-owner's O5) with a tier enter; ``unknown`` and ``not_read`` rows do not. With no record (L1 not
-on this head, or no day labeled yet) the labels are empty and the anchor serves its prior's
+owner's O5) with a tier enter; ``unknown`` and ``not_read`` rows do not. With no record (no day
+labeled yet, or the reads cache lost it) the labels are empty and the anchor serves its prior's
 level, which is correct. A day that does not read is left out and said, never fatal: a broken
 day must not darken a pass.
 """
@@ -21,6 +22,7 @@ from datetime import date
 from pathlib import Path
 from typing import Final, cast
 
+from snowlight.predict import live_read
 from snowlight.predict.anchor import (
     Anchor,
     AnchorSettings,
@@ -39,8 +41,8 @@ from snowlight.predict.exposure import load as load_exposure
 from snowlight.predict.geography import REGION_OF
 from snowlight.predict.situations import Situation, WeatherClass
 
-READS_DIR: Final = PIPELINE_ROOT / "out" / "internal" / "predict" / "reads"
-"""L1's private record (``live_read.READS_DIR``)."""
+READS_DIR: Final = live_read.READS_DIR
+"""L1's private record."""
 LABELS: Final[frozenset[str]] = frozenset({"no_school", "delayed", "unnamed"})
 TIERS: Final[frozenset[str]] = frozenset({"A", "B"})
 RECORD_SCHEMA: Final = 1
