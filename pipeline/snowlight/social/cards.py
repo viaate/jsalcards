@@ -65,6 +65,7 @@ from snowlight.social.rules import (
     mentions_closings,
     still_true,
 )
+from snowlight.social.shot import screenshot
 
 HERE: Final = Path(__file__).parent / "cards"
 
@@ -663,10 +664,12 @@ def lay(  # noqa: PLR0913 - one layout's parts
     map_png: Path,
     *,
     fallback: bool,
+    say: Callable[[str], None],
     headline: str | None = None,
     ringed: Sequence[tuple[int, int]] = (),
 ) -> tuple[bytes, str]:
-    """Lay out one candidate on ``page`` and screenshot it; its PNG and its words.
+    """Lay out one candidate on ``page`` and screenshot it; its PNG and its words. ``say``
+    gets a warning for each time the shot is taken again (snowlight.social.shot).
 
     Raises:
         CardError: the template refused the facts, or a word left the margin.
@@ -712,7 +715,7 @@ def lay(  # noqa: PLR0913 - one layout's parts
                 f" ({box['x0']:.0f}, {box['y0']:.0f}, {box['x1']:.0f}, {box['y1']:.0f})"
             )
     check_words(words, current=taken.current, fallback=fallback)
-    return page.screenshot(type="png", full_page=False), words
+    return screenshot(page, say=say), words
 
 
 def _first_line(error: Exception) -> str:
@@ -773,6 +776,7 @@ def compose(  # noqa: PLR0913 - the card's parts
                     post,
                     map_png,
                     fallback=fallback,
+                    say=say,
                     headline=headline,
                     ringed=ringed,
                 )

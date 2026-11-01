@@ -77,6 +77,7 @@ from snowlight.social.picture import (
     region,
 )
 from snowlight.social.rules import Facts, chances_shown, closings_shown
+from snowlight.social.shot import screenshot
 
 SITE: Final = "https://snowlightmap.com/"
 LOCK_KEY: Final = "sl-lock"
@@ -389,6 +390,22 @@ class Attempt:
         page.goto(self.site + picture.query, wait_until="load", timeout=TIMEOUT_MS)
         page.add_style_tag(content=MAP_ONLY)
         self.settle(page)
+        checked = self.check(page, picture)
+
+        def again() -> None:
+            # A retried shot is taken only of the map that was checked: the same state.
+            state = self.check(page, picture)
+            if state != checked:
+                raise RenderError(
+                    f"the map changed before the shot was taken again: {json.dumps(state)}"
+                )
+
+        screenshot(page, out / FILE, say=self.say, again=again)
+
+    def check(self, page: Page, picture: Picture) -> dict[str, object]:
+        """The map's state, once it matches the picture: as many schools lit as the
+        description counts, at the zoom asked, the lock gone, and school specks drawn where
+        the description says so."""
         state = page.evaluate(f"({STATE})()")
         if not isinstance(state, dict):
             raise RenderError("the page's state could not be read")
@@ -406,7 +423,7 @@ class Attempt:
             raise RenderError(f"the map opened at zoom {zoom}, not the {asked} asked")
         if picture.kind == "region" and not state.get("dustInView"):
             raise NoSpecksError("the map drew no school specks; the description says it does")
-        page.screenshot(path=out / FILE, type="png", full_page=False)
+        return state
 
 
 def _zoom(query: str) -> float | None:

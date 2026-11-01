@@ -55,6 +55,7 @@ from snowlight.social.rules import (
     parse_facts,
     still_true,
 )
+from snowlight.social.shot import capture_failed
 
 REPO = Path(__file__).resolve().parents[3]
 
@@ -257,7 +258,7 @@ def test_the_stamp_lays_a_closings_view_with_no_known_state_without_a_place(
 ) -> None:
     _, words = lay(
         page, "c-left", taken("closings", PRIVATE_ONLY), "dev-log", maps["storm"],
-        fallback=False, headline="Real school closings and delays",
+        say=print, fallback=False, headline="Real school closings and delays",
     )  # fmt: skip
     assert "Mostly" not in words
     assert "in this view" in words
@@ -481,7 +482,7 @@ def test_no_card_says_any_or_every_district_while_one_was_left_out(
     for candidate, kind, facts in cases:
         try:
             _, words = lay(page, candidate, taken(kind, facts), "dev-log", maps["calm"],
-                           fallback=False)  # fmt: skip
+                           say=print, fallback=False)  # fmt: skip
         except CardError as error:
             # A layout the words do not fit is refused, never shown cut.
             refused.append(str(error))
@@ -494,7 +495,7 @@ def test_no_card_says_any_or_every_district_while_one_was_left_out(
     assert laid == len(cases), refused
     # With none left out, a card still says "any" or "every" district where it did.
     _, words = lay(page, "c-right", taken("district", DISTRICT), "dev-log", maps["calm"],
-                   fallback=False)  # fmt: skip
+                   say=print, fallback=False)  # fmt: skip
     assert "any district" in words
 
 
@@ -616,7 +617,13 @@ def test_every_template_lays_out_every_view_inside_the_margin(
     for kind, seen, picture in CASES:
         for post in ("dev-log", "waitlist"):
             shot, words = lay(
-                page, candidate, taken(kind, seen), post, maps[picture], fallback=fallback
+                page,
+                candidate,
+                taken(kind, seen),
+                post,
+                maps[picture],
+                say=print,
+                fallback=fallback,
             )
             assert shot[:8] == b"\x89PNG\r\n\x1a\n"
             assert struct.unpack(">II", shot[16:24]) == (1600, 900)
@@ -631,22 +638,65 @@ def test_every_template_lays_out_every_view_inside_the_margin(
             assert "2616440" not in words
 
 
+def test_a_card_s_shot_is_the_plain_screenshot_byte_for_byte(
+    page: Page, maps: dict[str, Path]
+) -> None:
+    """The card's picture goes through the capture retry (snowlight.social.shot); it is the
+    very PNG the plain call takes of the same laid card. The plain call here is the
+    reference, so a busy machine's capture error on it is met by taking it again (that
+    error only, at most three times), as the card's own shot is."""
+    for candidate in ("c-left", "a", "b"):
+        shot, _ = lay(
+            page,
+            candidate,
+            taken("closings", STORM),
+            "dev-log",
+            maps["storm"],
+            say=print,
+            fallback=False,
+        )
+        assert shot == plain_screenshot(page), candidate
+
+
+def plain_screenshot(page: Page) -> bytes:
+    """``page.screenshot(type="png", full_page=False)`` itself, taken again only on the
+    capture error (snowlight.social.shot.capture_failed), at most three attempts."""
+    for attempt in range(1, 4):
+        try:
+            return page.screenshot(type="png", full_page=False)
+        except PlaywrightError as error:
+            if attempt == 3 or not capture_failed(error):
+                raise
+        page.wait_for_timeout(250 * attempt)
+    raise AssertionError("unreachable")
+
+
 def test_counts_in_view_are_labeled_and_the_total_named(page: Page, maps: dict[str, Path]) -> None:
-    _, c = lay(page, "c-left", taken("closings", STORM), "dev-log", maps["storm"], fallback=False)
+    _, c = lay(
+        page,
+        "c-left",
+        taken("closings", STORM),
+        "dev-log",
+        maps["storm"],
+        say=print,
+        fallback=False,
+    )
     assert "in this view" in c
     assert "5,021" in c
     assert "lit up across the US" in c
-    _, a = lay(page, "a", taken("closings", STORM), "dev-log", maps["storm"], fallback=False)
+    _, a = lay(
+        page, "a", taken("closings", STORM), "dev-log", maps["storm"], say=print, fallback=False
+    )
     assert "Mostly in Michigan and Ohio" in a
     assert "Across the US" in a
     for word in ("Closed", "Delayed", "Remote", "Early dismissal"):
         assert f"{word} in this view" in a, a
     _, waitlist = lay(
-        page, "a", taken("closings", STORM), "waitlist", maps["storm"], fallback=False
+        page, "a", taken("closings", STORM), "waitlist", maps["storm"], say=print, fallback=False
     )
     assert "Closed in this view" in waitlist
     _, c_calm = lay(page, "c-left", taken("national", Seen()), "dev-log", maps["calm"],
-                    fallback=False)  # fmt: skip
+                    say=print, fallback=False)  # fmt: skip
     assert "closed" not in c_calm, "nothing is said about closings from a 404"
 
 
@@ -696,7 +746,7 @@ def test_the_percent_sign_never_touches_a_final_seven(
         ("b", "national", national),
     )
     for candidate, kind, facts in cases:
-        lay(page, candidate, taken(kind, facts), "dev-log", maps["calm"], fallback=False)
+        lay(page, candidate, taken(kind, facts), "dev-log", maps["calm"], say=print, fallback=False)
         gaps = page.evaluate(PCT_GAP)
         assert gaps, (candidate, kind)
         for found in gaps:
@@ -859,7 +909,7 @@ def test_while_chances_are_testing_no_template_shows_a_chance(
 ) -> None:
     calm = without_chances(taken("national", CALM))
     for post in ("dev-log", "waitlist"):
-        _, words = lay(page, candidate, calm, post, maps["calm"], fallback=False)
+        _, words = lay(page, candidate, calm, post, maps["calm"], say=print, fallback=False)
         assert not mentions_chance(words), (candidate, post, words)
         if candidate == "a" and post == "dev-log":
             assert "A real model, not a guess" in words
@@ -993,19 +1043,19 @@ def test_the_stamp_lays_a_headline_small_and_inside_the_margin(
 ) -> None:
     calm = taken("region", REGION)
     _, words = lay(
-        page, "c-left", calm, "dev-log", maps["calm"], fallback=False,
+        page, "c-left", calm, "dev-log", maps["calm"], say=print, fallback=False,
         headline="A real model, not a guess",
     )  # fmt: skip
     assert "A real model, not a guess" in words
     assert "Dev log" not in words
     _, storm = lay(
         page, "c-right", taken("closings", STORM), "dev-log", maps["storm"], fallback=False,
-        headline="Real school closings and delays",
+        say=print, headline="Real school closings and delays",
     )  # fmt: skip
     assert "in this view" in storm
     with pytest.raises(CardError, match="refused"):
         lay(
-            page, "c-left", calm, "dev-log", maps["calm"], fallback=False,
+            page, "c-left", calm, "dev-log", maps["calm"], say=print, fallback=False,
             headline="One two three four five six seven",
         )  # fmt: skip
     alt = alt_text(calm, "dev-log", fallback=False, headline="A real model, not a guess")
@@ -1019,7 +1069,7 @@ def test_the_waitlist_stamp_over_lit_schools_carries_their_counts(
     from the picture's facts and labeled "in this view", with the country's total named."""
     _, words = lay(
         page, "c-right", taken("closings", STORM), "waitlist", maps["storm"], fallback=False,
-        headline="The Snowlight waitlist is open",
+        say=print, headline="The Snowlight waitlist is open",
     )  # fmt: skip
     assert "snowlightmap.com" in words
     assert "1,843" in words
@@ -1071,7 +1121,7 @@ def test_lit_private_schools_name_the_view_s_place_on_the_stamp_and_in_the_alt(
     assert c_slots(few, "dev-log", "left", fallback=False)["over"] == "New Mexico"
     assert a_facts(few, "dev-log", fallback=False)["picture"]["over"] == "New Mexico"  # type: ignore[index]
     _, words = lay(
-        page, "c-left", few, "dev-log", maps["storm"], fallback=False,
+        page, "c-left", few, "dev-log", maps["storm"], say=print, fallback=False,
         headline="Real school closings",
     )  # fmt: skip
     assert "Over New Mexico" in words
@@ -1104,7 +1154,7 @@ def test_states_holding_every_lit_school_read_in_not_mostly(
     assert ", in Nevada: 1 school closed in this view" in alt
     assert "mostly" not in alt
     _, words = lay(
-        page, "c-left", one, "dev-log", maps["storm"], fallback=False,
+        page, "c-left", one, "dev-log", maps["storm"], say=print, fallback=False,
         headline="Real school closings",
     )  # fmt: skip
     assert "In Nevada" in words
@@ -1132,7 +1182,7 @@ def test_a_calm_card_over_stale_closings_gives_its_date_and_no_clock(
     assert " on Dec 10" in alt
     assert "AM CT" not in alt
     _, words = lay(
-        page, "c-left", stale, "dev-log", maps["storm"], fallback=False,
+        page, "c-left", stale, "dev-log", maps["storm"], say=print, fallback=False,
         headline="A real model, not a guess",
     )  # fmt: skip
     assert "Dec 10" in words

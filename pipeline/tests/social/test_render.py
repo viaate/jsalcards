@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from playwright.sync_api import Error as PlaywrightError
@@ -21,10 +21,12 @@ from playwright.sync_api import sync_playwright
 from snowlight.directory.points import encode
 from snowlight.social import cli
 from snowlight.social.cards import Card
-from snowlight.social.picture import REGION_TRIES, Taken, calm_regions
+from snowlight.social.picture import REGION_TRIES, Picture, Seen, Taken, calm_regions
 from snowlight.social.render import (
     GL_ARGS,
     HOSTS,
+    STATE,
+    Attempt,
     RenderError,
     View,
     allowed,
@@ -43,6 +45,7 @@ from snowlight.social.rules import (
     mentions_closings,
     parse_facts,
 )
+from snowlight.social.shot import CAPTURE_ERROR
 
 LOCK = "c3ludGhldGlj"  # SYNTHETIC: this fixture's own lock value
 
@@ -620,3 +623,83 @@ def test_the_workflow_s_browser_runs_in_its_sandbox_when_the_runner_allows_it(
     local = _Chromium(sandbox_starts=False)
     assert launch(local, sandbox=False, say=said.append) == "browser"  # type: ignore[arg-type, comparison-overlap]
     assert local.launches == [False]
+
+
+class RetriedMap:
+    """A stand-in page for :meth:`Attempt.take` whose first shot meets Chromium's capture
+    error, and whose map state is read from ``states`` in turn (SYNTHETIC)."""
+
+    def __init__(self, *states: dict[str, object]) -> None:
+        self.states = list(states)
+        self.shots: list[object] = []
+
+    def goto(self, url: str, **_: object) -> None:
+        pass
+
+    def add_style_tag(self, **_: object) -> None:
+        pass
+
+    def wait_for_timeout(self, timeout: float) -> None:
+        pass
+
+    def wait_for_function(self, _script: str, **_: object) -> bool:
+        return True
+
+    def evaluate(self, script: str) -> object:
+        if script == f"({STATE})()":
+            return self.states.pop(0)
+        return True  # the frame waits
+
+    def screenshot(self, **kwargs: object) -> bytes:
+        self.shots.append(kwargs.get("path"))
+        if len(self.shots) == 1:
+            raise PlaywrightError(f"Page.screenshot: {CAPTURE_ERROR}")
+        return b"SYNTHETIC png"
+
+
+MAP: dict[str, object] = {"glow": 3, "dustInView": 40, "zoom": 3.4, "locked": False}
+
+
+def take_retried(page: RetriedMap, tmp_path: Path) -> list[str]:
+    said: list[str] = []
+    attempt = Attempt(cast("Any", None), "https://synthetic.example.test/", said.append)
+    picture = Picture(
+        kind="national",
+        query="",
+        shows="SYNTHETIC",
+        taken_at=datetime(2026, 12, 10, 12, tzinfo=UTC),
+        current=True,
+        lit=3,
+        seen=Seen(lit=3),
+    )
+    attempt.take(cast("Any", page), picture, tmp_path)
+    return said
+
+
+def test_a_retried_map_shot_is_taken_only_of_the_map_that_was_checked(tmp_path: Path) -> None:
+    page = RetriedMap(MAP, dict(MAP))
+    said = take_retried(page, tmp_path)
+    assert page.shots == [tmp_path / "picture.png"] * 2
+    assert page.states == []  # the state was read again before the second shot
+    assert said == [
+        "::warning::social: the screenshot had no frame to capture (attempt 1 of 3);"
+        " taking it again"
+    ]
+
+
+@pytest.mark.parametrize(
+    "after",
+    [
+        {**MAP, "zoom": 3.45},  # still inside the zoom slack, but not the map that was checked
+        {**MAP, "dustInView": 39},
+        {**MAP, "glow": 2},  # no longer what the description counts
+        {**MAP, "locked": True},
+    ],
+)
+def test_a_map_that_changed_before_a_retried_shot_ends_the_attempt(
+    after: dict[str, object], tmp_path: Path
+) -> None:
+    page = RetriedMap(MAP, after)
+    with pytest.raises(RenderError):
+        take_retried(page, tmp_path)
+    assert len(page.shots) == 1  # no picture of the changed map
