@@ -102,7 +102,7 @@ class Server:
             self.inflight[key] += 1
         start = time.monotonic()
         try:
-            time.sleep(self.stall.get(url, LATENCY))
+            self.delay(url)
             if urlsplit(url).path == "/robots.txt":
                 origin = f"{request.url.scheme}://{request.url.host}"
                 body = self.robots.get(origin)
@@ -115,6 +115,14 @@ class Server:
             with self.lock:
                 self.inflight[key] -= 1
                 self.hits.append((key, url, start, end))
+            self.answered(url)
+
+    def delay(self, url: str) -> None:
+        """How long the answer to ``url`` takes, before it is given."""
+        time.sleep(self.stall.get(url, LATENCY))
+
+    def answered(self, url: str) -> None:
+        """Called once ``url`` has been answered and recorded in :attr:`hits`."""
 
     def pages(self) -> list[str]:
         return [url for _, url, _, _ in self.hits if urlsplit(url).path != "/robots.txt"]
@@ -249,21 +257,79 @@ def test_t18_pool_keeps_every_key_paced_and_single_flight(tmp_path: Path) -> Non
     assert sum(server.robots_reads().values()) == 640 - 111 + 1
 
 
+STALL = 3.0
+"""Seconds the stalled page takes (300 s, scaled; under the 10 s source deadline). Every one
+of the 79 other hosts must be answered inside it, counted from the moment the stalled page is
+asked. Measured on this 4-CPU machine, from that moment until the last other host was
+answered: 0.15 to 0.31 s idle, 0.22 to 0.86 s under six CPU burners (30 runs), 0.34 to
+0.69 s under twelve (5 runs); in the one failure of the old test (the full pre-push suite)
+the last other host was answered at least 1.22 s after the stalled page was asked. So 3 s is
+over twice the slowest seen. A pool in which the stall holds each other host's request back
+for a quarter of it (0.75 s) fails here, idle and under six or twelve burners; one hold of
+every other host fails only once it and the others' own time pass 3 s (above about 2.5 s)."""
+
+
+class Stalled(Server):
+    """SYNTHETIC hosts where one page stalls for :data:`STALL`. No other page is answered
+    before the stalled one has been asked (so the two always overlap, however slowly a busy
+    machine starts the pass; a page that waited :data:`STALL` for that is kept in
+    :attr:`capped`), and the stalled page is answered :data:`STALL` after it was asked,
+    recorded in :attr:`late` if some other page was still unanswered then: the stall held a
+    host back for most of its length."""
+
+    def __init__(self, stalled: str, others: int) -> None:
+        super().__init__()
+        self.stalled = stalled
+        self.others = others
+        self.asked = threading.Event()
+        self.all_answered = threading.Event()
+        self.capped: list[str] = []
+        self.late: list[str] = []
+
+    def delay(self, url: str) -> None:
+        if url == self.stalled:
+            self.asked.set()
+            time.sleep(STALL)
+            if not self.all_answered.is_set():
+                self.late.append(url)
+            return
+        if urlsplit(url).path != "/robots.txt" and not self.asked.wait(STALL):
+            self.capped.append(url)
+        time.sleep(LATENCY)
+
+    def answered(self, url: str) -> None:
+        if url == self.stalled or urlsplit(url).path == "/robots.txt":
+            return
+        with self.lock:
+            done = sum(1 for page in self.pages() if page != self.stalled)
+        if done == self.others:
+            self.all_answered.set()
+
+
 def test_t18_a_stalled_host_delays_no_other_host(tmp_path: Path) -> None:
     stations = [
         station(f"synthetic-{i:03d}", f"https://h{i:03d}.example.test/c") for i in range(80)
     ]
     stalled = "https://h000.example.test/c"
-    server = Server(stall={stalled: 1.2})  # 120 s, scaled
+    # The stalled source's lane is handed to the workers before every other lane, so a
+    # worker takes it before any other page is asked (the others wait for it to be asked).
+    assert lanes_of(stations)[0] == [stations[0]]
+    server = Stalled(stalled, others=79)
     pool = make_pool(tmp_path, server)
-    began = time.monotonic()
     result = pool.run_pass(stations, read)
 
-    stall_end = next(end for _, url, _, end in server.hits if url == stalled)
-    others = [end for _, url, _, end in server.hits if url != stalled]
-    assert stall_end - began >= 1.2
-    assert max(others) < stall_end  # every other host finished while the one stalled
     assert result.counts() == {"empty": 80}
+    assert server.capped == []  # the stalled page was asked before any other was answered
+    # The proof: every other host was answered inside the stall, so none waited for it.
+    assert server.late == []
+    stall_start, stall_end = next(
+        (start, end) for _, url, start, end in server.hits if url == stalled
+    )
+    others = [end for _, url, _, end in server.hits if url != stalled]
+    assert stall_end - stall_start >= STALL
+    assert len([1 for url in server.pages() if url != stalled]) == 79
+    assert max(others) < stall_end  # the server's log agrees with the line above
+    assert server.overlaps == []
 
 
 def test_t18_retry_after_defers_only_that_source(tmp_path: Path) -> None:
@@ -329,14 +395,26 @@ def test_the_pass_deadline_leaves_the_rest_late_and_starts_nothing_after(
         station(f"synthetic-{i:02d}", f"https://long.example.test/c/{i}") for i in range(30)
     ]
     server = Server()
-    pool = make_pool(tmp_path, server, pass_deadline=0.4)
-    began = time.monotonic()
+    log = RequestLog()
+    pool = make_pool(tmp_path, server, log=log, pass_deadline=0.4)
+    origin: list[float] = []
+
+    def monotonic() -> float:
+        now = time.monotonic()
+        if not origin:  # the pass's first reading is its origin (Pool.run_pass)
+            origin.append(now)
+        return now
+
+    pool.monotonic = monotonic
     result = pool.run_pass(stations, read)
 
     counts = result.counts()
     assert counts.get("late", 0) >= 20
     assert counts.get("empty", 0) >= 3
-    assert all(start - began <= 0.4 + 0.05 for _, _, start, _ in server.hits)
+    # From the pool's own log, not the server's arrival times (a busy machine delays those):
+    # every request the server saw was started by the pacer, and none at or after the end.
+    assert len(server.hits) == len(log.entries)
+    assert all(entry.start < origin[0] + 0.4 for entry in log.entries)
 
 
 def test_a_403_blocks_the_source(tmp_path: Path) -> None:
