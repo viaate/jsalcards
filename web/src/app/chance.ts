@@ -185,8 +185,6 @@ export interface ChartView {
   readonly key: readonly KeyRowView[];
   /** The night chart (data/night.ts), not the legacy hourly series. */
   readonly night: boolean;
-  /** Under the chart, the forecast's time ("From the 7 PM hourly forecast"); null without one. */
-  readonly note: string | null;
   /**
    * The night chart is shown before this moment only (data/night.ts nightUntil, the moment
    * nightShows turns false), so a panel left open hides it on its own clock; null for the
@@ -1069,7 +1067,6 @@ export function chartView(detail: ForecastDetail, now: Date, zones: Zones): Char
       },
     ],
     night: false,
-    note: null,
     until: null,
   };
 }
@@ -1173,12 +1170,7 @@ function nightView(
   return {
     kind: 'snow_total',
     title: chanceCopy.newSnowTitle,
-    summary: chanceFormat.nightSummary(
-      { at: night.nightAt, start, end },
-      range.low,
-      range.high,
-      zones,
-    ),
+    summary: chanceFormat.nightSummary({ start, end }, range.low, range.high, zones),
     plot,
     zero,
     step: 1,
@@ -1197,7 +1189,6 @@ function nightView(
       },
     ],
     night: true,
-    note: chanceFormat.nightFrom(night.nightAt, zones),
     until: nightUntil(night),
   };
 }
@@ -1268,6 +1259,22 @@ function windowEnd(day: LocalDate): Date {
   return new Date(Date.UTC(year, month - 1, date, FORECAST_WINDOW_END_UTC_HOUR));
 }
 
+/**
+ * When the forecast the forecast adjustment's lines read was issued, or null: every line it
+ * gives (snow_total, timing or snow_hours, ice, wind_chill) is from one run, and the timing
+ * lines carry no time of their own, so they take their siblings' (the pipeline's
+ * forecast_adjust._line). A morning panel then says "Last night's forecast has snow 12 to 6
+ * AM", never last night's hours as the current forecast's.
+ */
+function adjustRun(detail: ForecastDetail): Date | null {
+  for (const reason of detail.why?.reasons ?? []) {
+    if (reason.kind === 'snow_total' || reason.kind === 'ice' || reason.kind === 'wind_chill') {
+      if (reason.at !== null) return reason.at;
+    }
+  }
+  return null;
+}
+
 /** A reason as copy.ts words it: its numbers, and what its sentence needs from the rest. */
 function reasonInput(
   reason: ReasonDetail,
@@ -1294,7 +1301,7 @@ function reasonInput(
       }
       if (said.night === true) {
         // The night chart states the amount: the reason says its comparison alone, with its
-        // forecast's time ("The 7:19 PM forecast has more snow by 1 PM than most storms.").
+        // forecast's day, never its time ("The forecast has more snow by 1 PM than most storms.").
         return {
           ...reason,
           low: null,
@@ -1341,9 +1348,9 @@ function reasonInput(
       };
     }
     case 'timing':
-      return { ...reason, buses: detail.busesAt, said: said.heavy };
+      return { ...reason, buses: detail.busesAt, said: said.heavy, at: adjustRun(detail) };
     case 'snow_hours':
-      return { ...reason, buses: detail.busesAt };
+      return { ...reason, buses: detail.busesAt, at: adjustRun(detail) };
     case 'wind_chill':
       return {
         ...reason,

@@ -706,8 +706,12 @@ whole points that add up to the chance (the base's points plus the lines' is the
 - `ice`, said with the window's end: "The 8:47 PM forecast has freezing rain leaving 0.2 inches
   of ice by 1 PM." (by 12 PM Central), since the window's ice can fall after the buses.
 - `wind_chill`.
-- A run from the evening before is named as last night's: at 6 AM, "Last night's 8:47 PM
-  forecast has ..." (turn-on item 11), an older one by its day.
+- A run from the evening before is named as last night's: at 6 AM, "Last night's forecast
+  has ..." (turn-on item 11), an older one by its day; since Nov 1, 2026 never with its time
+  (chart-on, below). The timing lines carry no run of their own; the web names theirs from
+  the same day's snow, ice or wind chill line ("Last night's forecast has snow 12 to 6 AM"),
+  which `forecast_adjust._line` builds from the same run. A timing line alone says "The
+  forecast has" (L5 turn-on list: give `timing` and `snow_hours` their run's `at`).
 
 A term worth no whole point says nothing; a day no term moves by a point is the class level
 with no line. The period under way at the snapshot counts for its part still to come at an even
@@ -1179,9 +1183,19 @@ The gate fails (below), so they stay off.
   the chance notifications could count it). A run that does not list or read leaves those
   terms out for the pass (it warns), as a night with no run is unknown in training.
 - **The forecast's time.** Each forecast line carries the run it was read from
-  (`snow_total.at`, `ice.at`, `wind_chill.at`), and the web words it "The 8:16 PM forecast
-  has ...". That names the run's time but not its day: a morning panel's "The 8:46 PM
-  forecast" is last night's, and the line does not say so (turn-on list). The
+  (`snow_total.at`, `ice.at`, `wind_chill.at`). Since Nov 1, 2026 the web never says its
+  time (the owner's ruling, chart-on), only its day: "The forecast has ..." for a run issued
+  on the school's day of the reader's clock, "Last night's forecast has ..." for one from the
+  evening before (every morning panel: these lines read the 9 PM run until noon, so a run up to
+  about 15 hours old is never passed off as the current forecast, and its amount, counted from
+  that run, is read as last night's), "Yesterday's forecast" for one from earlier that day and
+  the weekday's for an older one. In the panel, the area view and the outlook's line alike (the
+  outlook's "the weather service's 9:46 PM forecast has ... between then and 12 PM Tuesday" is
+  now "the forecast has ... by 12 PM Tuesday"). The examples elsewhere on this page keep the
+  time each round wrote. The fields stay in the file for older clients. The night chart's gates
+  (150 min in the pipeline, 195 on the phone) keep a stale cycle off the chart; these lines have
+  no age gate at the reader's clock, so their day word is what keeps an old run from reading as
+  current. The
   window ends at 18:00 UTC on the day (`ndfd.WINDOW_END_HOURS`, held to the web's
   `FORECAST_WINDOW_END_UTC_HOUR` by a test), worded in the school's zone ("by 12 PM" Central
   in winter, "by 1 PM" Eastern). A snow line also says the days it is weighed against
@@ -1424,7 +1438,8 @@ Before the reasons are turned on (the lead and the owner):
     item 5). The owner may want "Last night's 8:46 PM forecast" when the run's date is before
     the viewer's day. (Done for every forecast line with L5: a run from the evening before is
     "Last night's", one from earlier that day "Yesterday's", an older one by its weekday; an
-    ice line also says the window's end, "by 1 PM".)
+    ice line also says the window's end, "by 1 PM". Since chart-on, Nov 1, 2026, the day word
+    stays and the time goes: "Last night's forecast has ...", the timing lines too.)
 
 ## What the owner sets up once
 
@@ -2803,7 +2818,11 @@ v3 rates in under S7-L's own no-worse check (`predictions/outlook/learned-rates.
 `model-f.json.gz`). The passes use it with the v3 rates (shadow and on); a file made over
 another artifact, or that does not build, is ignored. The v2 store and its swap are untouched.
 
-**Before `on`, the lead decides** (none changes a file while the outlook is shadow): the size
+**Before `on`, the lead decides** (none changes a file while the outlook is shadow): the line's
+"by 12 PM Tuesday" (chart-on, Nov 1: the line no longer names its run's time) counts the snow from
+the run's time, up to about 3 h of run age and 90 min of file age before the reader's clock once
+the window is under way, so snow that fell in between can read as still to come: count it from
+the pass's time, or keep the line off once the window has begun; the size
 policy (above: the lines go first on the biggest nights); the tgftp fallback (below); that the
 identity of the Dark.FORECAST decision is `on`'s own v3 rates' issued-alerts-only chance (the
 class's rate under 5 AM labels, not the v2 rates' 9 PM one); that a file made before 5 AM keeps
@@ -2823,7 +2842,11 @@ The owner chose option (iv) of the night snow chart spec (design `chart-data/spe
 Oct 26): true hourly bars to 7 AM. `serve.chart` (`config/predict.yaml`) switches it: `shadow`
 since the chart-shadow piece (design `chart-shadow/spec.md`, Oct 31), so every gated pass builds
 the chart in memory and publishes the file with the chart off, byte for byte, while GC4's
-evidence collects itself (below). The lead turns it `on` after the shadow gates.
+evidence collects itself (below). The owner gave the OK on Nov 1 after the GC5 pictures (design
+`chart-on/spec.md`). It goes `on` in a change of its own, after this web, which never names the
+forecast's time, has reached returning visitors: a phone's installed copy runs its first session
+on the old code, which would say "From the 7 PM hourly forecast" under a chart (chart-on critic
+S1).
 
 **What it shows.** "New snow, hour by hour" on the panel's headline day, when that day carries a
 `night`: an empty first bar at Start (the first whole hour after the file's time, never before
@@ -2836,12 +2859,14 @@ only when every school gets 0.5 in or more, each school's heaviest 3 hours (the 
 fall inside it, and the bars rise over it at 1.5 times the night's mean rate or more. The times at
 the foot are Start, 7 AM, the span's end and every third hour where they keep clear, and never one
 under the gray bar where the span starts or under a lit bar but the last, so the key's hours are
-never contradicted (the forecast chart's rule since 4300322; critic r2 B1). Under the
-chart, "From the 7 PM hourly forecast" says the cycle's time, so a chart up to 3 h 15 min old is
-never shown as current (critic 3 S2). The screen reader's sentence names it the same way ("the
-weather service's 7 PM hourly forecast": the copy rules forbid "model" and naming a source, so the
-spec's "NOAA's blend model" wording is not used). No bus time is known anywhere, so no chart word
-names the buses.
+never contradicted (the forecast chart's rule since 4300322; critic r2 B1). The key under the
+chart sits with its words: the lit bar drawn small at the words' cap height, 7 px before
+"Heaviest snow 1 to 4 AM", from the chart's left edge like the hours (the owner's change, Nov 1).
+The chart never says the cycle's time (the owner's ruling, Nov 1: "From the 7 PM hourly forecast"
+under the chart until then): the gates below keep a stale cycle off the chart instead, the
+pipeline's 150 min and the phone's 195. The screen reader's sentence says "From 10 PM to 7 AM,
+the forecast has 6 to 9 inches of new snow at the district's public schools." No bus time is
+known anywhere, so no chart word names the buses.
 
 **The source.** NOAA's National Blend of Models (an NWS product) on AWS
 (`noaa-nbm-grib2-pds`, public, no key, no cost): the deterministic 1-hour snowfall
@@ -2855,8 +2880,8 @@ converted to inches unrounded and summed, and every rounding step runs after a 1
 school whose night is exactly 127 mm reads 5.0 in ("5 in", a 5.0 bar), never 4.9 or "4 to 5 in":
 whole-millimetre totals sit on a tenth step or at least 7.9e-4 in from one (critic r1 B1). The reasons quote the forecaster's grid
 (NDFD), which disagrees often on the same hours; so while a night chart shows, the snow reason
-states no amount (owner decision O6): "The 7:19 PM forecast has more snow by 1 PM than most
-storms." One amount for the night's snow is ever on screen.
+states no amount (owner decision O6): "The forecast has more snow by 1 PM than most storms."
+One amount for the night's snow is ever on screen.
 
 **When a district-day carries a night.** Its night is open at the pass (from 7 AM the day before
 to before 6 AM on the day, `schemas/predictions.py` `night_day` / `night_open`, one definition
@@ -2974,9 +2999,15 @@ after the pass has published, plus its reads (cold 6.4 to 7.0 s for 34 requests 
 live S3; warm 0.7 s). `on` builds the file with nights before publishing instead of the
 chart-off file: 3 to 5 s more CPU on that replay, and 11 to 18 s more on the GC3 national replay
 below (52 to 62 s against 41 to 44 s, a local CPU under load), plus its reads (at most the 15 s
-hold). Before `on`, the lead measures the whole delay before an `on` pass publishes (reads,
-decode and the with-nights build) on the GC3 every-district replay and on the 2-vCPU runners
-(chart-shadow critic S4). The loop counts its
+hold). Before `on` (chart-on, Nov 1, local CPU under the heavy lock, the s4 directory, live S3
+history): an `on` pass's reads and decode took 4.9 to 7.0 s cold and 0.8 to 4.9 s warm on the
+GC1 moments 2024-01-08 23:07Z, 2025-01-05 23:07Z and 2026-01-26 02:07Z (p50 4.9 s, nothing
+withheld; at most the 15 s hold), and on the 2024-01-08 23:07Z replay (every district on a
+warning) the file with its 2,318 nights built in 16.2 to 16.5 s against 12.4 to 13.3 s with the
+chart off: 2.9 to 4.1 s more. So `on` held that pass back 10 to 11 s before it published, and at
+most the 15 s hold plus the build's difference (11 to 18 s on the GC3 national replay). The
+2-vCPU runners' own numbers come from the `read N ms, built N ms` line on every gated pass. The
+loop counts its
 next alert check from the pass's start, so this tail never moves an alert check, or the pass an
 alert change brings, later (`tests/predict/test_loop.py`; critic r2 S3). GC4 logs `read N ms,
 built N ms` on every gated pass, on the 2-vCPU runners, and the summary counts them.
@@ -2997,6 +3028,11 @@ of reads, a 62 s build) after the 320 min, and the job at most 5.4 + 320 + 3.4 +
 with every step at its limit (12.9 min to spare), about 324 min as measured (21 min to spare).
 Nothing needed shortening. These are local CPU times, not a runner's: the first runs after
 landing check the run step's real time.
+With `on` (chart-on, Nov 1) the tail moves before publishing and the shadow's after-publish
+reads and build are gone: the last pass publishes at most 15 s of reads, a 62 s build (GC3, a
+night on every district) and the 34 s commit after its start, about 1.9 min after the 320 min,
+and the job at most 5.4 + 320 + 1.9 + 3.3 = 330.6 min with every step at its limit (14.4 min
+inside the 345), about 322 min with the GC1 replay's 7.0 s of reads and 16.5 s build (1.0 min).
 
 **Size.** The longest night is 124 bytes (13 bars, a 2-digit span; the spec's 99.9 example fails
 its own range check, so the longest valid one is 13 bars of 99.0). `Fit.NO_NIGHTS` follows

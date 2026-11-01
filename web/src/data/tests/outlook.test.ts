@@ -160,7 +160,7 @@ describe('the outlook golden', () => {
           const line = view?.lines[0];
           expect(line?.text).toMatch(
             new RegExp(
-              `^No winter storm warning, winter advisory or winter storm watch covers half of Olathe’s schools yet, but the weather service’s 7:46${NBSP}PM forecast has 6 to [89] inches of snow at Olathe’s schools between then and 12${NBSP}PM [A-Z][a-z]+day\\. Across (Kansas|Missouri) districts, in [34] of 5 cases like this, a winter (storm warning|advisory) was out by 5${NBSP}AM\\.$`,
+              `^No winter storm warning, winter advisory or winter storm watch covers half of Olathe’s schools yet, but the forecast has 6 to [89] inches of snow at Olathe’s schools by 12${NBSP}PM [A-Z][a-z]+day\\. Across (Kansas|Missouri) districts, in [34] of 5 cases like this, a winter (storm warning|advisory) was out by 5${NBSP}AM\\.$`,
               'u',
             ),
           );

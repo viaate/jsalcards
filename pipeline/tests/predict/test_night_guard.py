@@ -130,6 +130,21 @@ def test_on_publishes_the_nights_and_every_chance_as_off() -> None:
     assert run.state.chart_health["withheld"] == []
 
 
+@pytest.mark.parametrize(("age", "charts"), [(150, True), (151, False)])
+def test_on_charts_from_a_cycle_at_most_150_minutes_old_and_never_an_older_one(
+    age: int, charts: bool
+) -> None:
+    """The freshness gate the chart is on with (the chart never names its forecast's time, so a
+    stale cycle must never chart): 150 min old charts, 151 gives the chart-off file."""
+    shipped = PredictConfig.load(Path(__file__).parents[2] / "config" / "predict.yaml")
+    assert shipped.serve.chart_nbm_max_age_minutes == 150
+    data, run, _calls = _published("on", read=steady(cycle=NOW - timedelta(minutes=age)))
+    assert bool(_nights(data)) is charts
+    if not charts:
+        assert data == _off()
+        assert _withheld(run) == [["invalid (night_at_age)", 1]]
+
+
 def test_shadow_publishes_the_off_file_and_reports_the_nights(capsys: Any) -> None:
     data, run, calls = _published("shadow")
     assert calls == [frozenset({DAY})]
@@ -276,10 +291,13 @@ def test_every_fault_setting_is_a_rotated_fault_or_rotate() -> None:
 
 def test_the_shipped_config_loads_and_shadows_with_the_rotation() -> None:
     """``config/predict.yaml`` loads as committed (a fault with ``on`` would not: turning the
-    chart on sets ``chart_fault: none`` in the same change)."""
+    chart on sets ``chart_fault: none`` in the same change), and the freshness gates as the
+    chart goes on with them."""
     found = PredictConfig.load(Path(__file__).parents[2] / "config" / "predict.yaml")
     assert found.serve.chart == "shadow"
     assert found.serve.chart_fault == "rotate"
+    assert found.serve.chart_nbm_max_age_minutes == 150
+    assert found.serve.chart_hold_seconds == 15
     text = (Path(__file__).parents[2] / "config" / "predict.yaml").read_text()
     assert "chart_fault: none in the same change" in text
 

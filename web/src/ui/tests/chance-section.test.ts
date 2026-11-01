@@ -233,7 +233,10 @@ describe('the chance section', () => {
     ]);
     expect(text(section, '.time')).not.toContain(`1${NBSP}AM`);
     expect(text(section, '.key li')).toEqual([`${chanceCopy.heaviest} 1 to 4${NBSP}AM`]);
-    expect(text(section, '.chart .note')).toEqual([`From the 7${NBSP}PM hourly forecast`]);
+    // Never the forecast's time, in words or to a screen reader (the owner's ruling, Nov 1).
+    expect(section.querySelectorAll('.chart .note')).toHaveLength(0);
+    expect(section.querySelector('.chart')?.textContent).not.toContain(`7${NBSP}PM`);
+    expect(section.querySelector('.chart')?.textContent).not.toContain('hourly forecast');
     expect(text(section, '.chart .sr-only')[0]).toContain('6 to 9 inches of new snow');
     expect(section.textContent).not.toContain('Buses');
     expect(section.textContent).not.toContain('buses');

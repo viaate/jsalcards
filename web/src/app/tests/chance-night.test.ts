@@ -178,14 +178,15 @@ describe('the night chart', () => {
     ]);
   });
 
-  it('is titled new snow, sums up in a sentence, and says its forecast’s time', () => {
+  it('is titled new snow and sums up in a sentence that never names its forecast’s time', () => {
     const view = chart();
     expect(view.title).toBe('New snow, hour by hour');
     expect(view.summary).toBe(
-      `From 10${NBSP}PM to 7${NBSP}AM, the weather service’s 7${NBSP}PM hourly forecast has ` +
+      `From 10${NBSP}PM to 7${NBSP}AM, the forecast has ` +
         '6 to 9 inches of new snow at the district’s public schools.',
     );
-    expect(view.note).toBe(`From the 7${NBSP}PM hourly forecast`);
+    expect(view).not.toHaveProperty('note');
+    expect(JSON.stringify(view)).not.toContain(`7${NBSP}PM`);
   });
 
   it('says the zone where the viewer’s clock differs', () => {
@@ -312,7 +313,7 @@ describe('the snow reason beside a night chart', () => {
     const view = chanceView(input());
     expect(view?.chart?.night).toBe(true);
     expect(view?.why?.lines.map((line) => line.text)).toEqual([
-      `The 7:19${NBSP}PM forecast has more snow by 12${NBSP}PM than most storms.`,
+      `The forecast has more snow by 12${NBSP}PM than most storms.`,
     ]);
   });
 

@@ -1791,8 +1791,9 @@ describe('format', () => {
           against: 'advisory',
         }),
       ).toBe('Lighter than most advisory days, 1 to 2 inches overnight.');
-      // With the forecast's issue time: the sentence names it, and the snow still to fall by
-      // the end of its window (or overnight, when that is where it falls).
+      // With the forecast's issue time: the sentence names its day, never its time (the owner's
+      // ruling, Nov 1), and says the snow still to fall by the end of its window (or overnight,
+      // when that is where it falls).
       const issued = at('2026-01-13T02:16:00Z');
       const until = at('2026-01-13T18:00:00Z');
       const timed = (
@@ -1816,13 +1817,13 @@ describe('format', () => {
       // The forecast adjustment (advisory-sane L5): weighed against the snow usual on the
       // district's own days of its alert's class.
       expect(timed(18, 4, 6, false, 'here')).toBe(
-        `The 8:16${NBSP}PM forecast has 4 to 6 inches by 12${NBSP}PM, more than usual here.`,
+        `The forecast has 4 to 6 inches by 12${NBSP}PM, more than usual here.`,
       );
       expect(timed(-4, 0, 0, false, 'here')).toBe(
-        `The 8:16${NBSP}PM forecast has no new snow by 12${NBSP}PM, less than usual here.`,
+        `The forecast has no new snow by 12${NBSP}PM, less than usual here.`,
       );
       expect(timed(12, 3, 5, true, 'here')).toBe(
-        `The 8:16${NBSP}PM forecast has 3 to 5 inches overnight, more than usual here.`,
+        `The forecast has 3 to 5 inches overnight, more than usual here.`,
       );
       expect(
         reason({
@@ -1836,7 +1837,7 @@ describe('format', () => {
           at: issued,
           until,
         }),
-      ).toBe(`The 8:16${NBSP}PM forecast has more snow by 12${NBSP}PM than usual here.`);
+      ).toBe(`The forecast has more snow by 12${NBSP}PM than usual here.`);
       expect(
         reason({
           kind: 'snow_total',
@@ -1850,12 +1851,8 @@ describe('format', () => {
         }),
       ).toBe('Less snow than usual here.');
       // SF-R4-1: the deciding schools' snow on both sides of the usual: the range alone.
-      expect(timed(-6, 0, 6, false, 'none')).toBe(
-        `The 8:16${NBSP}PM forecast has 0 to 6 inches by 12${NBSP}PM.`,
-      );
-      expect(timed(5, 2, 5, true, 'none')).toBe(
-        `The 8:16${NBSP}PM forecast has 2 to 5 inches overnight.`,
-      );
+      expect(timed(-6, 0, 6, false, 'none')).toBe(`The forecast has 0 to 6 inches by 12${NBSP}PM.`);
+      expect(timed(5, 2, 5, true, 'none')).toBe(`The forecast has 2 to 5 inches overnight.`);
       expect(() =>
         reason({
           kind: 'snow_total',
@@ -1869,22 +1866,49 @@ describe('format', () => {
         }),
       ).toThrow(RangeError);
       expect(() => timed(-3, 0, 0, false, 'none')).toThrow(RangeError);
-      // Turn-on item 11: a run from the evening before is last night's, an older one by its day.
+      // Turn-on item 11: a run from the evening before is last night's, an older one by its
+      // day, and never by its time (the owner's ruling, Nov 1), so a morning panel never passes
+      // last night's run off as the current forecast.
       const at6 = new Date('2026-01-13T12:00:00Z');
       const later = (when: Date): string =>
         reason({ kind: 'ice', points: 9, inches: null, at: issued, until }, when);
-      expect(later(at6)).toBe(
-        `Last night’s 8:16${NBSP}PM forecast has freezing rain by 12${NBSP}PM.`,
-      );
+      expect(later(at6)).toBe(`Last night’s forecast has freezing rain by 12${NBSP}PM.`);
       expect(later(new Date('2026-01-14T12:00:00Z'))).toBe(
-        `Monday’s 8:16${NBSP}PM forecast has freezing rain by 12${NBSP}PM.`,
+        `Monday’s forecast has freezing rain by 12${NBSP}PM.`,
       );
       expect(
         reason(
           { kind: 'wind_chill', points: 2, feelsLike: null, at: new Date('2026-01-12T20:00:00Z') },
           at6,
         ),
-      ).toBe(`Yesterday’s 2${NBSP}PM forecast has a wind chill at the bus stop.`);
+      ).toBe(`Yesterday’s forecast has a wind chill at the bus stop.`);
+      expect(
+        reason(
+          {
+            kind: 'snow_total',
+            points: 18,
+            low: 4,
+            high: 6,
+            overnight: false,
+            record: null,
+            against: 'here',
+            at: issued,
+            until,
+          },
+          at6,
+        ),
+      ).toBe(`Last night’s forecast has 4 to 6 inches by 12${NBSP}PM, more than usual here.`);
+      // The timing lines name their run's day the same way.
+      const span = { start: at('2026-01-13T06:00:00Z'), end: at('2026-01-13T12:00:00Z') };
+      expect(reason({ kind: 'snow_hours', points: 3, ...span, buses, at: issued }, at6)).toBe(
+        `Last night’s forecast has snow 12 to 6${NBSP}AM, just before the buses.`,
+      );
+      expect(reason({ kind: 'timing', points: 3, ...span, buses, at: issued }, at6)).toBe(
+        `Last night’s forecast has the heaviest snow 12 to 6${NBSP}AM, just before the buses.`,
+      );
+      expect(reason({ kind: 'timing', points: 3, ...span, buses: null, at: issued })).toBe(
+        `The forecast has the heaviest snow 12 to 6${NBSP}AM.`,
+      );
       // Snow in hours that are not the heaviest snow's.
       expect(
         reason({
@@ -1905,25 +1929,25 @@ describe('format', () => {
         }),
       ).toThrow(RangeError);
       expect(timed(-30, 1, 2, false, 'advisory')).toBe(
-        `The 8:16${NBSP}PM forecast has 1 to 2 inches by 12${NBSP}PM, lighter than most advisory days.`,
+        `The forecast has 1 to 2 inches by 12${NBSP}PM, lighter than most advisory days.`,
       );
       expect(timed(-36, 0, 0, false, 'advisory')).toBe(
-        `The 8:16${NBSP}PM forecast has no new snow by 12${NBSP}PM, lighter than most advisory days.`,
+        `The forecast has no new snow by 12${NBSP}PM, lighter than most advisory days.`,
       );
       expect(timed(-36, 0, 0.5, false, 'advisory')).toBe(
-        `The 8:16${NBSP}PM forecast has 0 to 0.5 inches by 12${NBSP}PM, lighter than most advisory days.`,
+        `The forecast has 0 to 0.5 inches by 12${NBSP}PM, lighter than most advisory days.`,
       );
       expect(timed(16, 6, 9, true, 'storms')).toBe(
-        `The 8:16${NBSP}PM forecast has 6 to 9 inches overnight, more than most storms.`,
+        `The forecast has 6 to 9 inches overnight, more than most storms.`,
       );
       expect(timed(9, 10, 11, false, 'storms')).toBe(
-        `The 8:16${NBSP}PM forecast has 10 to 11 inches by 12${NBSP}PM, more than most storms.`,
+        `The forecast has 10 to 11 inches by 12${NBSP}PM, more than most storms.`,
       );
       expect(reason({ kind: 'ice', points: 9, inches: 0.2, at: issued })).toBe(
-        `The 8:16${NBSP}PM forecast has freezing rain leaving 0.2 inches of ice.`,
+        `The forecast has freezing rain leaving 0.2 inches of ice.`,
       );
       expect(reason({ kind: 'wind_chill', points: 5, feelsLike: -4, at: issued })).toBe(
-        `The 8:16${NBSP}PM forecast has a wind chill of ${MINUS}4${NBSP}F at the bus stop.`,
+        `The forecast has a wind chill of ${MINUS}4${NBSP}F at the bus stop.`,
       );
       // A deciding school's forecast leaves the range: no amount, only the comparison, which
       // is of the window's snow (never "overnight").
@@ -1945,13 +1969,13 @@ describe('format', () => {
           until: when === null ? null : until,
         });
       expect(unstated(-34, 'advisory')).toBe(
-        `The 8:16${NBSP}PM forecast has less snow by 12${NBSP}PM than most advisory days.`,
+        `The forecast has less snow by 12${NBSP}PM than most advisory days.`,
       );
       expect(unstated(9, 'storms')).toBe(
-        `The 8:16${NBSP}PM forecast has more snow by 12${NBSP}PM than most storms.`,
+        `The forecast has more snow by 12${NBSP}PM than most storms.`,
       );
       expect(unstated(6, 'advisory')).toBe(
-        `The 8:16${NBSP}PM forecast has more snow by 12${NBSP}PM than most advisory days.`,
+        `The forecast has more snow by 12${NBSP}PM than most advisory days.`,
       );
       expect(unstated(-34, 'advisory', null)).toBe('Lighter than most advisory days.');
       expect(unstated(9, 'storms', null)).toBe('More snow than most storms.');
@@ -1970,10 +1994,10 @@ describe('format', () => {
         }),
       ).toThrow(RangeError);
       expect(reason({ kind: 'ice', points: 9, inches: null, at: issued })).toBe(
-        `The 8:16${NBSP}PM forecast has freezing rain.`,
+        `The forecast has freezing rain.`,
       );
       expect(reason({ kind: 'wind_chill', points: 5, feelsLike: null, at: issued })).toBe(
-        `The 8:16${NBSP}PM forecast has a wind chill at the bus stop.`,
+        `The forecast has a wind chill at the bus stop.`,
       );
       // No snow at all is never said overnight, nor without the forecast's time.
       expect(() => timed(-36, 0, 0, true, 'advisory')).toThrow(RangeError);
@@ -2448,7 +2472,7 @@ describe('format', () => {
 
       it('says the three example lines the owner approves before the outlook shows', () => {
         expect(say(outlook({}), 'Olathe')).toBe(
-          `No winter storm warning, winter advisory or winter storm watch covers half of Olathe’s schools yet, but the weather service’s 4:46${S}PM forecast has 6 to 9 inches of snow at Olathe’s schools between 6${S}PM Monday and 12${S}PM Tuesday. Across Kansas districts, in 3 of 5 cases like this, a winter storm warning was out by 5${S}AM.`,
+          `No winter storm warning, winter advisory or winter storm watch covers half of Olathe’s schools yet, but the forecast has 6 to 9 inches of snow at Olathe’s schools between 6${S}PM Monday and 12${S}PM Tuesday. Across Kansas districts, in 3 of 5 cases like this, a winter storm warning was out by 5${S}AM.`,
         );
         expect(
           say(
@@ -2464,7 +2488,7 @@ describe('format', () => {
             'Fargo',
           ),
         ).toBe(
-          `No extreme cold warning, extreme cold watch or cold weather advisory covers half of Fargo’s schools yet, but the weather service’s 8:16${S}PM forecast has it feeling like −22 to −15${S}F at 7${S}AM Tuesday at Fargo’s schools. Across North Dakota districts, in 1 of 3 cases like this, an extreme cold warning was out by 5${S}AM.`,
+          `No extreme cold warning, extreme cold watch or cold weather advisory covers half of Fargo’s schools yet, but the forecast has it feeling like −22 to −15${S}F at 7${S}AM Tuesday at Fargo’s schools. Across North Dakota districts, in 1 of 3 cases like this, an extreme cold warning was out by 5${S}AM.`,
         );
         const ohio: Zones = { school: 'America/New_York', viewer: 'America/New_York' };
         expect(
@@ -2484,7 +2508,7 @@ describe('format', () => {
             ohio,
           ),
         ).toBe(
-          `A winter advisory is out, but the weather service’s 9:16${S}PM forecast has little or no snow at most of Lakota’s schools and little or no ice at most of them. Across Ohio districts, in 1 of 4 cases like this, the weather service had called off the advisory by 5${S}AM.`,
+          `A winter advisory is out, but the forecast has little or no snow at most of Lakota’s schools and little or no ice at most of them. Across Ohio districts, in 1 of 4 cases like this, the weather service had called off the advisory by 5${S}AM.`,
         );
       });
 
@@ -2494,10 +2518,10 @@ describe('format', () => {
         // would say the forecast changed when nothing says it did.
         const calm = say(outlook({ ...quiet, points: 1 }), 'Olathe');
         expect(calm).toBe(
-          `No winter storm warning, winter advisory or winter storm watch covers half of Olathe’s schools yet, and the weather service’s 4:46${S}PM forecast has little or no snow at most of Olathe’s schools and little or no ice at most of them. Across Kansas districts, in 3 of 5 cases like this, a winter storm warning was out by 5${S}AM.`,
+          `No winter storm warning, winter advisory or winter storm watch covers half of Olathe’s schools yet, and the forecast has little or no snow at most of Olathe’s schools and little or no ice at most of them. Across Kansas districts, in 3 of 5 cases like this, a winter storm warning was out by 5${S}AM.`,
         );
         const joined = (part: Partial<Extract<ReasonInput, { kind: 'outlook' }>>): string =>
-          /, (and|but) the weather service/u.exec(say(outlook(part), 'Olathe'))?.[1] ?? '';
+          /, (and|but) the forecast has/u.exec(say(outlook(part), 'Olathe'))?.[1] ?? '';
         const snow = { kind: 'snow', low: 6, high: 9 } as const;
         for (const points of [5, -5]) {
           expect(joined({ ...quiet, points })).toBe('and');
@@ -2524,7 +2548,7 @@ describe('format', () => {
         expect(
           say(outlook({ heads: 1, at: at('2026-01-13T03:46:00Z'), scope: 'region' }), 'Olathe'),
         ).toBe(
-          `A winter storm watch is out, and the weather service’s 9:46${S}PM forecast has 6 to 9 inches of snow at Olathe’s schools between then and 12${S}PM Tuesday. Across districts in Olathe’s region, in 3 of 5 cases like this, a winter storm warning was out by 5${S}AM.`,
+          `A winter storm watch is out, and the forecast has 6 to 9 inches of snow at Olathe’s schools by 12${S}PM Tuesday. Across districts in Olathe’s region, in 3 of 5 cases like this, a winter storm warning was out by 5${S}AM.`,
         );
         expect(say(outlook({ c0: 1, heads: 2, scope: 'nation', share: 64 }), 'Olathe')).toContain(
           'A winter advisory and an extreme cold watch are out, and',
@@ -2541,14 +2565,14 @@ describe('format', () => {
         expect(
           say(outlook({ forecast: { kind: 'ice', low: 0.1, high: 0.23 }, to: 6 }), 'Olathe'),
         ).toContain(
-          'No ice storm warning, winter advisory or winter storm watch covers half of Olathe’s schools yet, but the weather service’s',
+          'No ice storm warning, winter advisory or winter storm watch covers half of Olathe’s schools yet, but the forecast has',
         );
         expect(
           say(outlook({ forecast: { kind: 'ice', low: 0.1, high: 0.23 }, to: 6 }), 'Olathe'),
         ).toContain('has 0.10 to 0.23 inches of ice at Olathe’s schools');
         // Read from New York, the hours say Kansas City's zone.
         expect(say(outlook({}), 'Olathe', east)).toContain(
-          `4:46${S}PM${S}CT forecast has 6 to 9 inches of snow at Olathe’s schools between 6${S}PM${S}CT Monday and 12${S}PM${S}CT Tuesday`,
+          `the forecast has 6 to 9 inches of snow at Olathe’s schools between 6${S}PM${S}CT Monday and 12${S}PM${S}CT Tuesday`,
         );
         // The school day by its weekday, never "today" or "tomorrow": a file made at 11:37 PM
         // Monday says the same true words at 11:40 PM and, still on screen, at 12:20 AM Tuesday.
@@ -2559,7 +2583,7 @@ describe('format', () => {
         const before = chanceFormat.reason(late, 'Olathe', at('2026-01-13T05:40:00Z'), here);
         const after = chanceFormat.reason(late, 'Olathe', at('2026-01-13T06:20:00Z'), here);
         expect(before).toBe(after);
-        expect(after).toContain(`between then and 12${S}PM Tuesday.`);
+        expect(after).toContain(`Olathe’s schools by 12${S}PM Tuesday.`);
         expect(after).not.toMatch(/\b(today|tomorrow|tonight)\b/u);
         // So does the feel, after midnight about the next school day: 1:05 AM Monday, Tuesday.
         const feels = outlook({

@@ -664,32 +664,32 @@ describe('what the section leaves out', () => {
         at: issued,
       }) as const;
     expect(said([snow(0, 0.5, false, -36)], 0.38)).toEqual([
-      `${MINUS}36 The 8:16${NBSP}PM forecast has 0 to 0.5 inches by 12${NBSP}PM, lighter than most advisory days.`,
+      `${MINUS}36 The forecast has 0 to 0.5 inches by 12${NBSP}PM, lighter than most advisory days.`,
     ]);
     expect(said([snow(0, 0, false, -36)], 0.38)).toEqual([
-      `${MINUS}36 The 8:16${NBSP}PM forecast has no new snow by 12${NBSP}PM, lighter than most advisory days.`,
+      `${MINUS}36 The forecast has no new snow by 12${NBSP}PM, lighter than most advisory days.`,
     ]);
     expect(said([snow(6, 9, true, 1)], 0.75)).toEqual([
-      `+1 The 8:16${NBSP}PM forecast has 6 to 9 inches overnight, more than most advisory days.`,
+      `+1 The forecast has 6 to 9 inches overnight, more than most advisory days.`,
     ]);
     // The ice falls by the window's end, which can be after the buses (B2b).
     expect(said([{ kind: 'ice', points: 25, inches: 0.2, at: issued }], 0.99)).toEqual([
-      `+25 The 8:16${NBSP}PM forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
+      `+25 The forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
     ]);
     expect(said([{ kind: 'wind_chill', points: 5, feelsLike: -4, at: issued }], 0.79)).toEqual([
-      `+5 The 8:16${NBSP}PM forecast has a wind chill of ${MINUS}4${NBSP}F at the bus stop.`,
+      `+5 The forecast has a wind chill of ${MINUS}4${NBSP}F at the bus stop.`,
     ]);
     // A deciding school's forecast leaves the range: only the comparison, whatever the chart.
     expect(said([snow(null, null, false, -34)], 0.4)).toEqual([
-      `${MINUS}34 The 8:16${NBSP}PM forecast has less snow by 12${NBSP}PM than most advisory days.`,
+      `${MINUS}34 The forecast has less snow by 12${NBSP}PM than most advisory days.`,
     ]);
     expect(said([{ kind: 'ice', points: 25, inches: null, at: issued }], 0.99)).toEqual([
-      `+25 The 8:16${NBSP}PM forecast has freezing rain by 12${NBSP}PM.`,
+      `+25 The forecast has freezing rain by 12${NBSP}PM.`,
     ]);
     // A snow line whose deciding schools' snow lies on both sides of the usual (SF-R4-1):
     // the range alone, never a comparison one of them contradicts.
     expect(said([{ ...snow(0, 6, false, -6), against: 'none' }], 0.68)).toEqual([
-      `${MINUS}6 The 8:16${NBSP}PM forecast has 0 to 6 inches by 12${NBSP}PM.`,
+      `${MINUS}6 The forecast has 0 to 6 inches by 12${NBSP}PM.`,
     ]);
     // Snow in hours that are not the heaviest snow's (the forecast adjustment's timing line).
     expect(
@@ -705,26 +705,43 @@ describe('what the section leaves out', () => {
         0.77,
       ),
     ).toEqual([`+3 The forecast has snow 12 to 6${NBSP}AM, just before the buses.`]);
-    // At 6 AM the panel names last night's run as last night's (turn-on item 11).
-    const morning = lines(
-      whyView({
-        detail: {
-          ...A_DETAIL,
-          hours: null,
-          record: null,
-          why: { base, reasons: [{ kind: 'ice', points: 25, inches: 0.2, at: issued }] },
-        },
-        chance: 0.99,
-        nameOf: NAME_OF,
-        ...args,
-        now: at('2026-01-13T12:00:00Z'),
-      }),
-    ).slice(1);
+    // At 6 AM the panel names last night's run as last night's (turn-on item 11), by its day and
+    // never its time: an 8:16 PM run is never passed off as the current forecast, and the
+    // timing line, which carries no run of its own, takes its sibling's (the same run).
+    const hours = {
+      kind: 'snow_hours',
+      points: 3,
+      start: at('2026-01-13T06:00:00Z'),
+      end: at('2026-01-13T12:00:00Z'),
+    } as const;
+    const panel = (now: Date, reasons: WhyDetail['reasons'], chance: number): string[] =>
+      lines(
+        whyView({
+          detail: { ...A_DETAIL, hours: null, record: null, why: { base, reasons } },
+          chance,
+          nameOf: NAME_OF,
+          ...args,
+          now,
+        }),
+      ).slice(1);
+    const sixAm = at('2026-01-13T12:00:00Z');
+    const iced = { kind: 'ice', points: 22, inches: 0.2, at: issued } as const;
+    const morning = panel(sixAm, [iced, hours], 0.99);
     expect(morning).toEqual([
-      `+25 Last night’s 8:16${NBSP}PM forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
+      `+22 Last night’s forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
+      `+3 Last night’s forecast has snow 12 to 6${NBSP}AM, just before the buses.`,
+    ]);
+    expect(panel(sixAm, [snow(4, 6, false, 25)], 0.99)).toEqual([
+      `+25 Last night’s forecast has 4 to 6 inches by 12${NBSP}PM, more than most advisory days.`,
+    ]);
+    for (const line of morning) expect(line).not.toMatch(/\d:\d\d|\bThe forecast\b/u);
+    // The evening it was issued, the same lines say "The forecast".
+    expect(panel(A_NOW, [iced, hours], 0.99)).toEqual([
+      `+22 The forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
+      `+3 The forecast has snow 12 to 6${NBSP}AM, just before the buses.`,
     ]);
     expect(said([{ kind: 'wind_chill', points: 5, feelsLike: null, at: issued }], 0.79)).toEqual([
-      `+5 The 8:16${NBSP}PM forecast has a wind chill at the bus stop.`,
+      `+5 The forecast has a wind chill at the bus stop.`,
     ]);
   });
 

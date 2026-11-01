@@ -75,8 +75,8 @@
   bus hour's, with its range. The two dashed lines' words sit over the plot,
   each where its own line rises to meet it, by one rule at any width
   (chart-labels.ts), the announcement's with its live countdown; the lit
-  bars' words are the key under the chart, a row on the panel's two columns,
-  the bar drawn small in the first. The announcement's line is at its time,
+  bars' words are the key under the chart, from its left edge, the bar drawn
+  small just before them. The announcement's line is at its time,
   the bus hour's through the bar it answers for. Both lines are drawn behind
   the bars: where a line's time falls inside a bar, the bar covers it.
 -->
@@ -182,9 +182,6 @@
         </li>
       {/each}
     </ul>
-  {/if}
-  {#if chart.note !== null}
-    <p class="note">{chart.note}</p>
   {/if}
 </figure>
 
@@ -336,7 +333,7 @@
     transform: translateX(-50%);
   }
 
-  /* The key: the panel's two columns, the lit bar drawn small where a list's times go. */
+  /* The key: under the chart from its left edge, like the hours; each lit bar drawn small just before its words. */
   .key {
     display: flex;
     flex-direction: column;
@@ -346,29 +343,22 @@
     list-style: none;
   }
 
+  /* The bar and its words as one: a 7px gap, the words wrapping under themselves. */
   .row {
     display: grid;
-    grid-template-columns: var(--column) minmax(0, 1fr);
-    column-gap: var(--gutter);
-    align-items: start;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 7px;
+    align-items: baseline;
     font: var(--type-body);
     color: var(--text-1);
     text-wrap: pretty;
   }
 
+  /* The words' cap height, from their baseline up: an empty box's baseline is its foot. */
   .sample {
     position: relative;
     display: block;
-    height: 12px;
-    /* On the first line's middle. */
-    margin-top: 5px;
-  }
-
-  /* The hourly forecast's time, under the chart: small, so the chart stays the approved one. */
-  .note {
-    margin: var(--row) 0 0;
-    font: var(--type-small);
-    color: var(--text-2);
+    height: 0.7em;
   }
 
   .sample.is-bar {

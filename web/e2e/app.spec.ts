@@ -1864,6 +1864,57 @@ async function showSchool(page: Page, id: string | null): Promise<void> {
  * another, a bar, the range or a time; the key's rows inside the panel, none cut off, none
  * meeting another or a time; and nothing in the panel scrolling sideways.
  */
+/**
+ * The night chart's key reads as one unit with its words (the owner's change, Nov 1): the lit
+ * bar drawn small from the chart's left edge like the hours, 6 to 8 px before its words, its
+ * height the words' cap height from their baseline up, and the words wrapping under themselves.
+ */
+async function expectKeyWithWords(chart: Locator, label: string): Promise<void> {
+  const rows = await chart.locator('.key li').evaluateAll((items) =>
+    items.map((item) => {
+      const [sample, words] = [...item.children] as [HTMLElement, HTMLElement];
+      // An empty inline box sits on the baseline: its foot is the words' first baseline.
+      const probe = document.createElement('span');
+      probe.style.cssText = 'display:inline-block;width:0;height:0';
+      words.prepend(probe);
+      const baseline = probe.getBoundingClientRect().bottom;
+      probe.remove();
+      const style = getComputedStyle(words);
+      const context = document.createElement('canvas').getContext('2d');
+      if (context === null) throw new Error('no canvas');
+      context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      const cap = context.measureText('H').actualBoundingBoxAscent;
+      const bar = sample.getBoundingClientRect();
+      const text = words.getBoundingClientRect();
+      const plot = item.closest('.chart')?.querySelector('.drawing')?.getBoundingClientRect();
+      return {
+        gap: text.left - bar.right,
+        height: bar.height,
+        cap,
+        foot: bar.bottom - baseline,
+        left: bar.left - (plot?.left ?? Number.NaN),
+        right: item.getBoundingClientRect().right - (plot?.right ?? Number.NaN),
+        textLeft: text.left,
+        lines: (() => {
+          const range = document.createRange();
+          range.selectNodeContents(words);
+          return [...range.getClientRects()].map((rect) => rect.left);
+        })(),
+      };
+    }),
+  );
+  for (const row of rows) {
+    expect(row.gap, label).toBeGreaterThanOrEqual(6);
+    expect(row.gap, label).toBeLessThanOrEqual(8);
+    expect(Math.abs(row.height - row.cap), label).toBeLessThanOrEqual(1.5);
+    expect(Math.abs(row.foot), label).toBeLessThanOrEqual(1);
+    expect(Math.abs(row.left), label).toBeLessThanOrEqual(0.5);
+    expect(row.right, label).toBeLessThanOrEqual(0.5);
+    for (const left of row.lines)
+      expect(Math.abs(left - row.textLeft), label).toBeLessThanOrEqual(0.5);
+  }
+}
+
 async function expectChartFits(page: Page, label: string): Promise<void> {
   const layout = await page.locator('aside.detail').evaluate((panel) => {
     const box = (node: Element) => {
@@ -3180,7 +3231,7 @@ test.describe('with data staged', () => {
           // The words themselves, as the owner reads them (spec-f s. 8's first example).
           const S = '\u00a0';
           await expect(rows.nth(1).locator('p').first()).toHaveText(
-            `No winter storm warning, winter advisory or winter storm watch covers half of Shawnee Mission’s schools yet, but the weather service’s 4:46${S}PM forecast has 6 to 9 inches of snow at Shawnee Mission’s schools between 6${S}PM Monday and 12${S}PM Tuesday. Across Kansas districts, in 3 of 5 cases like this, a winter storm warning was out by 5${S}AM.`,
+            `No winter storm warning, winter advisory or winter storm watch covers half of Shawnee Mission’s schools yet, but the forecast has 6 to 9 inches of snow at Shawnee Mission’s schools between 6${S}PM Monday and 12${S}PM Tuesday. Across Kansas districts, in 3 of 5 cases like this, a winter storm warning was out by 5${S}AM.`,
           );
           await expect(rows.nth(1).locator('.help')).toHaveText(
             'A case is one district at one hour between 7:30 and 10:30 PM the night before, with no winter storm warning, winter advisory or winter storm watch covering half of its schools yet, and half or more of its schools forecast 6 inches of snow or more but fewer than half 9 or more.',
@@ -4869,7 +4920,7 @@ test.describe('with data staged', () => {
     expect(problems).toEqual([]);
     await context.close();
   });
-  test('the night chart: new snow hour by hour, its range by 7 AM and its forecast’s time, on a phone and a desktop, and none on a calm night', async ({
+  test('the night chart: new snow hour by hour, its range by 7 AM and never its forecast’s time, on a phone and a desktop, and none on a calm night', async ({
     browser,
   }) => {
     // First flights into streets, at two widths and three nights; with SNOWLIGHT_NIGHT_SHOTS
@@ -4914,13 +4965,16 @@ test.describe('with data staged', () => {
         'datetime',
         '2026-01-13T03:00:00Z',
       );
-      await expect(chart.locator('.note')).toHaveText(`From the 7${S}PM hourly forecast`);
+      // Never the forecast's time, in words or to a screen reader (the owner's ruling, Nov 1).
+      await expect(chart.locator('.note')).toHaveCount(0);
+      await expect(chart).not.toContainText(`7${S}PM`);
+      await expect(chart).not.toContainText('hourly forecast');
       await expect(chart.locator('.time').first()).toHaveText(`10${S}PM`);
       await expect(chart).not.toContainText('Now');
       await expect(chart).not.toContainText('uses');
-      // The snow line states no amount while the chart does (O6), with its forecast's time.
+      // The snow line states no amount while the chart does (O6), never its forecast's time.
       await expect(section.locator('.sum > li').nth(1).locator('p').first()).toHaveText(
-        `The 7:19${S}PM forecast has more snow by 12${S}PM than most storms.`,
+        `The forecast has more snow by 12${S}PM than most storms.`,
       );
       await expectChartFits(page, `night ${phone ? 'phone' : 'desktop'}`);
       const sideways = await panel.evaluate((node) => node.scrollWidth - node.clientWidth);
@@ -4979,9 +5033,10 @@ test.describe('with data staged', () => {
     browser,
   }) => {
     // Only with SNOWLIGHT_OWNER_SHOTS (a folder): the lead's pictures for the owner, on the
-    // default theme and the light one. The bars, range, span and forecast time are the GC1
-    // replays' own; the chance, its moves, its delay and its sum are made up for the scene and
-    // blanked, as is any usual announcement (none of these scenes has one).
+    // default theme, the light one and Snowball. The bars, range and span are the GC1 replays'
+    // own; the chance, its moves, its delay and its sum are made up for the scene and covered by
+    // a plain block that says so, as is any usual announcement (none of these scenes has one).
+    // Each picture's key box goes in keys.json beside it, for the key's crops.
     const folder = process.env.SNOWLIGHT_OWNER_SHOTS ?? '';
     test.skip(folder === '', 'SNOWLIGHT_OWNER_SHOTS is not set');
     test.setTimeout(600_000);
@@ -4991,7 +5046,8 @@ test.describe('with data staged', () => {
       SHAWNEE_MISSION_5PM,
       CALM_BEACH_PARK,
     ];
-    for (const theme of ['midnight', 'daylight']) {
+    const keys: Record<string, unknown> = {};
+    for (const theme of ['midnight', 'daylight', 'snowball']) {
       for (const phone of [true, false]) {
         for (const scene of scenes) {
           const now = new Date(new Date(scene.now).getTime() + 5 * 60_000);
@@ -5031,9 +5087,33 @@ test.describe('with data staged', () => {
             await expect(chart.locator('.words.is-end'), label).toHaveText(scene.words);
           }
           await expect(section.locator('.words.is-announces'), label).toHaveCount(0);
+          if (theme === 'snowball') {
+            // Kept on this device, as one who bought it: the page opens in it, in its own face.
+            await expect
+              .poll(() => page.evaluate(() => document.documentElement.dataset.theme))
+              .toBe('snowball');
+            await page.evaluate(() => document.fonts.ready);
+            await page.waitForTimeout(1000);
+          }
+          await expect(chart.locator('.note'), label).toHaveCount(0);
+          if (night) await expect(chart, label).not.toContainText('hourly forecast');
+          // The made-up facts under a plain block that says so, in the theme's own quiet colors.
+          await section.evaluate((node) => {
+            for (const hidden of node.querySelectorAll('.hero, .why')) {
+              if (!(hidden instanceof HTMLElement)) continue;
+              if (getComputedStyle(hidden).position === 'static')
+                hidden.style.position = 'relative';
+              const block = document.createElement('div');
+              block.textContent = 'test number hidden';
+              block.style.cssText =
+                'position:absolute;inset:-3px;z-index:5;display:flex;align-items:center;' +
+                'justify-content:center;font:12px/1.2 sans-serif;color:var(--text-2);' +
+                'background:color-mix(in srgb, var(--text-2) 18%, var(--surface-1));' +
+                'border-radius:6px';
+              hidden.append(block);
+            }
+          });
           const mask = [
-            section.locator('.hero'),
-            section.locator('.why'),
             section.locator('.words.is-announces'),
             section.locator('.line.is-announces'),
           ];
@@ -5047,13 +5127,30 @@ test.describe('with data staged', () => {
               await expect(panel).toHaveAttribute('data-detent', 'full');
             }
             await section.locator(night ? '.chart' : '.why').scrollIntoViewIfNeeded();
-            await page.screenshot({ path: file, mask });
-          } else await panel.screenshot({ path: file, mask });
+            await page.screenshot({ path: file, mask, maskColor: '#808080' });
+          } else await panel.screenshot({ path: file, mask, maskColor: '#808080' });
+          if (night) {
+            if ((await chart.locator('.key li').count()) > 0) {
+              await expectKeyWithWords(chart, label);
+            }
+            const box = await chart.locator('.key, .times').last().boundingBox();
+            const origin = phone ? { x: 0, y: 0 } : await panel.boundingBox();
+            const scale = phone ? 2 : 1;
+            if (box !== null && origin !== null) {
+              keys[path.basename(file)] = {
+                x: Math.round((box.x - origin.x) * scale),
+                y: Math.round((box.y - origin.y) * scale),
+                width: Math.round(box.width * scale),
+                height: Math.round(box.height * scale),
+              };
+            }
+          }
           expect(problems, label).toEqual([]);
           await context.close();
         }
       }
     }
+    writeFileSync(path.join(folder, 'keys.json'), `${JSON.stringify(keys, null, 2)}\n`);
   });
   test('the night chart on real nights: 13 bars at 5 PM with the last lit, tenths, Boston and Des Moines at 9 PM, and 3 AM, on a phone and a desktop', async ({
     browser,
@@ -5133,6 +5230,37 @@ test.describe('with data staged', () => {
             expect(feet, `${label}: a time under bar ${String(bar)}`).not.toContain(
               hourOf(start + bar * HOUR),
             );
+          }
+          await expectKeyWithWords(chart, label);
+          if (phone) {
+            // The narrowest phone: the key still one unit, its words wrapping under themselves.
+            await page.setViewportSize({ width: 320, height: 700 });
+            await expectKeyWithWords(chart, `${label} 320`);
+            await page.setViewportSize({ width: 390, height: 844 });
+            // Snowball, the one theme in another face (Fredoka, narrower than Geist): the key
+            // still sits with its words at 390 and 320 px (chart-on critic S4), then back.
+            const keep = (id: string | null): Promise<void> =>
+              page.evaluate((next) => {
+                if (next === null) localStorage.removeItem('snowlight:theme');
+                else localStorage.setItem('snowlight:theme', JSON.stringify({ id: next }));
+              }, id);
+            await keep('snowball');
+            await page.reload();
+            await expect(section.locator('.number')).toHaveText('64%', { timeout: 60_000 });
+            await expect
+              .poll(() => page.evaluate(() => document.documentElement.dataset.theme))
+              .toBe('snowball');
+            await page.evaluate(() => document.fonts.ready);
+            await expect
+              .poll(() => chart.evaluate((node) => getComputedStyle(node).fontFamily))
+              .toMatch(/Fredoka/u);
+            await expectKeyWithWords(chart, `${label} snowball`);
+            await page.setViewportSize({ width: 320, height: 700 });
+            await expectKeyWithWords(chart, `${label} snowball 320`);
+            await page.setViewportSize({ width: 390, height: 844 });
+            await keep(null);
+            await page.reload();
+            await expect(section.locator('.number')).toHaveText('64%', { timeout: 60_000 });
           }
         }
         // Seen from another zone, every time at the foot names the district's.
