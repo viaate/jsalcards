@@ -1712,6 +1712,106 @@ ingest itself reads `out/internal/live/state` directly. No workflow runs the liv
 ingest state reached this run" and then "nothing to learn: no live-read district-days
 labeled yet; the model is unchanged".
 
+## The frozen record (predict-next P1: a record, nothing served)
+
+Every later change to the chance, and the nightly scorer (L4), is judged on what was actually
+served. A storm night that is not recorded can never be scored, so each pass now keeps what it
+served and what it was made from (`pipeline/snowlight/predict/frozen.py`). It only records:
+the published files are the same byte for byte with it on or off (a test runs the same passes
+both ways), and any error in it is one warning a pass (`predict: frozen record: ...: nothing
+frozen this pass`) while the pass publishes as before. It is never a reason for a dark pass.
+
+- **When.** For each school day D and each time zone the districts are in, four freezes on that
+  zone's clock: 20:07 the evening before (`d1_2007`, L4's horizon 1), 21:30 the evening before
+  (`d1_2130`, when families look), 05:07 on the day (`d0_0507`, L4's horizon 0) and 06:30 on
+  the day (`d0_0630`). The first pass that publishes (or finds its file unchanged) at or after
+  a freeze's time takes it, once per day, zone and freeze; no later pass rewrites it. The
+  passes run every 30 minutes and on alert changes, so a freeze is usually taken up to 30
+  minutes after its time, and its header says how late (`late_by_s`); one taken later than its
+  time keeps the chance of the pass that took it. A freeze more than 90 minutes late (no pass,
+  or only dark passes, in between) is written `missed` with the number of districts it would
+  have held, never filled from a later chance. Daylight saving changes are on each zone's
+  clock (tests cover Nov 1, 2026 and Mar 14, 2027), for the four zones, Arizona, Alaska and
+  Hawaii. A row says its chance was served (`s` 1) only when the public file at the pass was
+  that pass's file: uploaded by it, or, on a pass that found its file unchanged, read back from
+  the host with the same content. Otherwise `s` is 0 and says why: `not_shown` (the public
+  file is another, as after `predict blank`, or after a release until the next upload),
+  `unconfirmed` (the read failed) or `not_public` (shadow mode).
+- **What.** Codes and numbers only: LEAIDs, days, times, codes and chances; no names, no list
+  text, no URLs. Each freeze of a zone is a header line (the freeze, zone, its time, how late,
+  the pass's file time, the run id, the code sha and the `live_score` sha256) and one line per
+  district of the zone: the chance of no school and of a delay as published and before
+  rounding; the situation, the serving class (none, advisory, warning, cold) and the alert
+  kind; on a class day its level (as published and before rounding) and the district's
+  exposure offset; the reasons shown (kind and points); whether it said school is on; the
+  forecast adjustment's read (`before` the 9 PM class snapshot, `none`, `read`, or `kept` from
+  the last file) with the forecast inputs it read (window snow, commute snow and each period's
+  snow to the hundredth of an inch, finer than the forecast's own tenths; ice to the
+  thousandth; the 7 AM feel in whole degrees; the code and the run time; each period's bounds
+  in minutes from the day's 00:00 UTC) and each term (snow, timing, ice, cold, to 4 decimals
+  of log odds) before the class's bounds, the bounds, and, only where the bounds clamped a
+  term, the terms after them; the span of the
+  class's alerts and whether one names heights; the strongest watch in the active feed
+  reaching the district that day; and an empty `variants` map, where later pieces score
+  shadow candidates on the same row. A district with no chance in the file still has a line
+  (`s` 0 and why), so coverage is measurable. The keys are listed in `frozen.ROW_KEYS`. The
+  adjustment's read and terms are written only where the file applied the adjustment: not
+  under a file cut to no reasons by the size budget, nor with the reasons' terms on. A file
+  the outlook made (`PREDICT_OUTLOOK=on`) says so in its headers (`maker`), and its rows hold
+  what it published, never the regular model's level, offset, unrounded chance or terms.
+- **Where.** One file a school day, `out/internal/predict/frozen/<D>.jsonl`, compact JSON
+  lines, in its own Actions cache (key `predict-frozen-`, apart from the pass state). A day is
+  finished an hour after the last zone's (Hawaii's) 06:30 freeze; a freeze still not taken
+  then is written missed. `predict evidence` then keeps the finished day in both evidence
+  databases (kind `frozen`, key D, xz compressed, append-only), and the day leaves the folder
+  only once both hold it byte for byte (the snapshots' keep-until-held rule, docs/live.md "The
+  evidence"). `predict evidence --check` fails, and the workflow opens "The live evidence is
+  not kept", when a finished frozen day has waited 2 days for both. If the Actions cache is
+  lost, the passes begin a fresh folder (a freeze already past by over 90 minutes is written
+  missed; a day first seen after it finished is not taken up), and the next `predict evidence`
+  restores the finished days of the last 7 the store holds, so they are kept until both
+  databases hold them; the restore has its own 20 seconds, before the push's 45. An index
+  that is lost, does not read or is of another schema is made again from the day files (every
+  whole freeze in them kept as taken or missed, never cut). A day file longer than its index
+  counts (a pass stopped mid-write) is cut back to the count; a shorter one (a cache that came
+  back short) is cut back to its last whole freeze, and a freeze lost there is taken again
+  while it is due, else written missed.
+- **Reading it.** `frozen.rows(first, last, folder, store)` returns each day's rows typed
+  (`FrozenRow`), and its missed freezes, from the folder and every version the evidence store
+  keeps, merged: each freeze once, a taken copy over a missed one, and of two taken the one
+  taken first. A day can be kept in two versions when a run's push went out but its cache was
+  not saved: the next run, on the older folder, closes the day without the freezes taken
+  since, and writes them missed; the merge reads them taken. The restore merges the same way.
+- **Budgets.** Measured on full synthetic days over the committed model's 18,227 districts
+  (synthetic points, alerts and forecasts; the forecasts at their own precision: snow in
+  tenths of an inch, ice in hundredths, whole-degree feel), four freezes in every zone, 72,908
+  rows a day. A finished day is kept at xz preset 9 (its 64 MiB window finds each district's
+  earlier freezes, which preset 6's 8 MiB misses; any preset reads back the same):
+
+  | Day | Rows with terms | Raw | xz | Stored (base64) | D1 rows a database |
+  | --- | --- | --- | --- | --- | --- |
+  | Quiet (no storm class) | 0 | 7.6 MB | 43 KB | 58 KB | 2 |
+  | Storm, 37% of districts in a class | 19,311 | 15.8 MB | 390 KB | 520 KB | 7 |
+  | Heavy storm, 70% in a class | 36,459 | 23.2 MB | 628 KB | 838 KB | 11 |
+  | Every district in a class | 52,008 | 29.8 MB | 804 KB | 1.07 MB | 14 |
+
+  So every day is under the 1 MB a day compressed (at preset 6 the last would be 1.17 MB).
+  Compressing the largest takes about 12 s in the evidence step, as at preset 6. The folder
+  holds a day raw until both databases have it, so a few days of it. The recorder takes at
+  most 1.60 s on a pass that freezes a whole zone on the day with every district in a class
+  (two runs: 1.46 s and 1.60 s; most such passes 0.6 to 0.8 s), 1.25 s at 70%, 0.93 s at
+  37% and 0.61 s on a quiet day, under the 2 s; a pass with no freeze due takes 0.006 s. It
+  takes each adjusted day's terms from the ones the file applied, never working them out
+  twice, and works out the exposure offsets once per model. Its own time is logged
+  (`predict frozen: recorded in ... s`) on every pass that took a freeze. In D1 a finished day
+  is one item row and one row per 64 KiB part (2 statements of part writes, 1 read back and
+  the item row on the largest day), against the free plan's 100,000 rows written a day. Stored, a winter of
+  about 150 quiet and 30 storm school days is about 25 MB a database (28 MB if 10 of the storm
+  days are heavy), 250 to 280 MB in 10 winters. With the other kinds' 21 to 46 MB a year
+  (docs/live.md "The evidence") a database passes the push's 300 MB warning in about 4 to 6
+  winters, and the next pair of databases comes then, before the free plan's 500 MB, by a
+  reviewed change (the rule docs/live.md states).
+
 ## The read labels (advisory-sane L1: a record, nothing served)
 
 `predict learn`'s labels come only from lists that already lit a district on two live days,

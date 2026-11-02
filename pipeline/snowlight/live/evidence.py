@@ -83,10 +83,13 @@ LABELS: Final = "labels"
 TRIALS: Final = "trials"
 AUDIT: Final = "audit"
 """The live labels' co-listing trials and read audit (advisory-sane L1), one version a day."""
-KINDS: Final = (MORNING, CHANGES, SNAPSHOT, DISTRICTS, LABELS, TRIALS, AUDIT)
+FROZEN: Final = "frozen"
+"""The frozen record (predict-next P1, :mod:`snowlight.predict.frozen`): every chance served
+and its inputs at four freezes a night, one finished day a key."""
+KINDS: Final = (MORNING, CHANGES, SNAPSHOT, DISTRICTS, LABELS, TRIALS, AUDIT, FROZEN)
 WRITERS: Final[Mapping[str, frozenset[str]]] = {
     "live-read": frozenset({MORNING, CHANGES}),
-    "predict": frozenset({SNAPSHOT, DISTRICTS, LABELS, TRIALS, AUDIT}),
+    "predict": frozenset({SNAPSHOT, DISTRICTS, LABELS, TRIALS, AUDIT, FROZEN}),
 }
 """The kinds each workflow (``GITHUB_WORKFLOW``) may write: only the live reader's evidence job
 holds the morning record and change log, and only the predict chain the snapshots, district
@@ -165,15 +168,23 @@ class Offer:
     data: bytes = field(repr=False)
 
 
-def compress(data: bytes) -> bytes:
-    """The stored form: xz, the same bytes for the same input."""
-    return lzma.compress(data, format=lzma.FORMAT_XZ, preset=6)
+PRESET: Final = 6
+PRESETS: Final[Mapping[str, int]] = {FROZEN: 9}
+"""The xz preset of a kind kept at another than :data:`PRESET`: a frozen record day is tens of
+MB raw, the same districts at four freezes some 7 MB apart, and only preset 9's 64 MiB window
+finds each district's earlier freeze (a day with every district under a storm class: 1.17 MB
+at 6, 0.80 MB at 9, in the same 11 s). Any preset reads back the same (``unpack``)."""
+
+
+def compress(data: bytes, preset: int = PRESET) -> bytes:
+    """The stored form: xz, the same bytes for the same input and preset."""
+    return lzma.compress(data, format=lzma.FORMAT_XZ, preset=preset)
 
 
 def item_of(offer: Offer, kept_at: str) -> tuple[Item, list[str]]:
     """The item row and base64 parts of ``offer`` (compressed here: only for a version some
     database lacks, :meth:`EvidenceStore.push`)."""
-    packed = compress(offer.data)
+    packed = compress(offer.data, PRESETS.get(offer.kind, PRESET))
     parts = [
         base64.b64encode(packed[start : start + PART_BYTES]).decode("ascii")
         for start in range(0, len(packed), PART_BYTES)
@@ -787,6 +798,7 @@ EXTENSIONS: Final[Mapping[str, str]] = {
     LABELS: ".json",
     TRIALS: ".jsonl",
     AUDIT: ".json",
+    FROZEN: ".jsonl",
 }
 
 

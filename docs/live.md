@@ -367,7 +367,9 @@ only once the evidence store holds it; the evidence store keeps every day.
   district table of every directory content predict ran under (kept while it is deployed,
   before a snapshot indexed under it settles; a finished snapshot whose content has no kept
   table is named in a warning) and every version of the labels (`learn.json`). The live
-  labels' trials and read audit (advisory-sane L1) go here too (kinds `trials` and `audit`).
+  labels' trials and read audit (advisory-sane L1) go here too (kinds `trials` and `audit`),
+  and each finished day of the frozen record (kind `frozen`: every chance served and its inputs
+  at four freezes a night, docs/predict.md "The frozen record").
   The bytes are the files' own, xz compressed: codes, LEAIDs, NCES ids, registry ids, keyed
   row HMACs, counts and times. No name, listing text, URL or secret; nothing personal.
 - **Append-only.** Tables `items(kind, key, sha256, bytes, packed, parts, codec, kept_at,
@@ -391,7 +393,7 @@ only once the evidence store holds it; the evidence store keeps every day.
   limit, then notes in the predict pass state what the databases hold (docs/predict.md). Both
   continue on error (one `::error::` line when not every database was written), and neither
   touches the live state. Only live-read keeps morning records
-  and change logs, and only predict snapshots, tables and labels.
+  and change logs, and only predict snapshots, tables, labels and the frozen record.
 - **Before a day leaves the state.** Once an hour, in the loop's idle time (20 seconds at most,
   ending 30 seconds before the next grid mark, and never after the run's last pass, so it never
   holds a pass, the run's end or its successor's start; a run's first check comes after a cold
@@ -451,7 +453,10 @@ only once the evidence store holds it; the evidence store keeps every day.
   winters. D1's free plan allows 500 MB a database, 5 GB and 10
   databases an account (accounts, state and the two evidence databases make 4). The push's
   size line gives the real growth; past the 300 MB warning, the next winters go to a new pair
-  of databases (or the paid plan's 10 GB) before the limit, by a reviewed change.
+  of databases (or the paid plan's 10 GB) before the limit, by a reviewed change. The frozen
+  record adds about 25 to 28 MB a database a winter (58 KB a quiet day, 0.5 to 1.07 MB a storm
+  day as stored: docs/predict.md "The frozen record"), so with it the warning comes in about
+  4 to 6 winters rather than 7 or more.
 - **Not here.** The public day timelines are on the live host, whose git history keeps every
   version.
 

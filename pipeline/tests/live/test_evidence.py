@@ -431,9 +431,9 @@ def test_only_versions_a_database_lacks_are_compressed(
     calls: list[int] = []
     real = evidence.compress
 
-    def counted(data: bytes) -> bytes:
+    def counted(data: bytes, preset: int = evidence.PRESET) -> bytes:
         calls.append(len(data))
-        return real(data)
+        return real(data, preset)
 
     monkeypatch.setattr(evidence, "compress", counted)
     _store(api).push(offers, (MORNING, CHANGES))

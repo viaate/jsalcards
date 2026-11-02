@@ -5,7 +5,7 @@ from pathlib import Path
 
 import yaml  # type: ignore[import-untyped, unused-ignore]
 
-from snowlight.predict import cli
+from snowlight.predict import cli, frozen
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "predict.yml"
@@ -238,3 +238,30 @@ def test_the_job_s_limit_holds_every_step_s_worst_case() -> None:
     assert str(run["run"]).endswith("--until +320m")
     assert int(str(job()["timeout-minutes"])) >= 320 + timed + 15
     assert int(str(job()["timeout-minutes"])) <= 360  # a hosted runner's ceiling
+
+
+def test_the_frozen_record_has_its_own_cache_restored_before_the_passes_saved_after_evidence() -> (
+    None
+):
+    found = steps()
+    ids = [step.get("id") for step in found]
+    caches = [
+        (i, step)
+        for i, step in enumerate(found)
+        if "predict-frozen" in str(step.get("with", {}).get("key", ""))  # type: ignore[attr-defined]
+    ]
+    assert [str(step["uses"]) for _i, step in caches] == [
+        "actions/cache/restore@v4",
+        "actions/cache/save@v4",
+    ]
+    (first, restore), (save, saved) = caches
+    # restored before the passes; saved after the evidence steps release what both databases
+    # hold, whatever the passes and the evidence steps did
+    assert first < ids.index("run") < ids.index("evidence") < ids.index("evidence_check") < save
+    assert str(saved["if"]).startswith("always()")
+    assert restore["with"]["restore-keys"] == "predict-frozen-"  # type: ignore[index]
+    for step in (restore, saved):
+        assert step["continue-on-error"] is True
+        assert int(str(step["timeout-minutes"])) <= 1
+        assert step["with"]["path"] == "pipeline/out/internal/predict/frozen"  # type: ignore[index]
+    assert str(frozen.FOLDER).endswith("pipeline/out/internal/predict/frozen")

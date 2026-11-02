@@ -19,10 +19,11 @@
 # refit (or a failed step) opens one issue, unless one is already open. The outcome-blind read
 # labels follow it the same way (`predict read-labels`, after 2 minutes at most; about as long
 # as learning), so the first pass waits for both: about 1.5 minutes, 7 minutes at the worst.
-# The job's 347 minutes hold the worst case of every step: setup and the cache restores about
-# 4, learning 5, the read labels 2 and their save about 0.5, the passes 320 plus the last one
+# The job's 349 minutes hold the worst case of every step: setup and the cache restores about
+# 4 (the frozen record's at most 1 more), learning 5, the read labels 2 and their save about 0.5, the passes 320 plus the last one
 # about 3, the evidence 2 and its check 1, the cache saves (the boundaries on a miss) about 2,
-# the successor, watchdog and issue steps about 1.5: about 341, so about 6 minutes to spare
+# the frozen record's at most 1, the successor, watchdog and issue steps about 1.5: about 343,
+# so about 6 minutes to spare
 # (a job that hits its limit is cancelled, so its successor would not start).
 #
 # Publishing needs the secret SNOWLIGHT_LIVE_TOKEN in the environment `live`: a fine-grained
@@ -55,7 +56,7 @@ jobs:
     # Scheduled runs are always on the default branch (their payload names no repository).
     if: github.event_name == 'schedule' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
-    timeout-minutes: 347
+    timeout-minutes: 349
     environment: live
     defaults:
       run:
@@ -114,6 +115,21 @@ jobs:
           path: pipeline/out/internal/predict/state.json
           key: predict-state-${{ github.run_id }}
           restore-keys: predict-state-
+
+      # The frozen record (docs/predict.md, "The frozen record"): every chance the passes served
+      # and its inputs at the night's four freezes, one file a school day, kept until both
+      # evidence databases hold the finished day. Under its own key, apart from the pass state,
+      # so neither cache changes the other's. A restore that fails or hangs never holds the
+      # passes back: the passes begin a fresh folder and the evidence step restores the
+      # finished days the store holds.
+      - if: steps.token.outputs.ready == 'true'
+        uses: actions/cache/restore@v4
+        continue-on-error: true
+        timeout-minutes: 1
+        with:
+          path: pipeline/out/internal/predict/frozen
+          key: predict-frozen-${{ github.run_id }}
+          restore-keys: predict-frozen-
 
       # The live ingest's packed private state (its row ledger, change log and morning record;
       # the cache store never holds the unmatched names), when its loop keeps it in this
@@ -188,7 +204,8 @@ jobs:
         run: uv run snowlight predict run --until +320m
 
       # The finished weather-class snapshots the live days are labeled under, the district
-      # tables they index, the labels learn published and the read labels' days, kept for
+      # tables they index, the labels learn published, the read labels' days and the frozen
+      # record's finished days, kept for
       # good in the two evidence databases (docs/predict.md, "The evidence"; append-only).
       # After the passes, never before the first pass: snapshots settle 12 hours after their
       # day begins, so nothing is lost by the wait. It gives itself 30 seconds of writes (the
@@ -219,6 +236,15 @@ jobs:
         with:
           path: pipeline/out/internal/predict/state.json
           key: predict-state-${{ github.run_id }}
+
+      # After the evidence steps, which release the days both databases hold.
+      - if: always() && steps.token.outputs.ready == 'true'
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        timeout-minutes: 1
+        with:
+          path: pipeline/out/internal/predict/frozen
+          key: predict-frozen-${{ github.run_id }}
 
       - if: always() && steps.token.outputs.ready == 'true' && steps.boundaries.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -262,7 +288,7 @@ jobs:
           open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$TITLE\"" --json title --jq "[.[] | select(.title == env.TITLE)] | length")
           if [ "$open" = "0" ]; then
             gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" \
-              --body "predict evidence --check found a finished weather-class snapshot, or the district table it indexes, not in both evidence databases after 2 days, in run $GITHUB_RUN_ID. The pass state keeps every such snapshot until a database holds it, so nothing is lost yet. The Keep the evidence step's log says why. See docs/predict.md, The evidence."
+              --body "predict evidence --check found a finished weather-class snapshot, the district table it indexes, or a finished frozen day, not in both evidence databases after 2 days, in run $GITHUB_RUN_ID. The pass state and the frozen record's folder keep every such file until the databases hold it, so nothing is lost yet. The Keep the evidence step's log says why. See docs/predict.md, The evidence and The frozen record."
           fi
 
       # A refit the held-out live days judged worse is kept out (exit 4), and a learning step

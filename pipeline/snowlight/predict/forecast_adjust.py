@@ -844,7 +844,25 @@ def _named(  # noqa: PLR0913, PLR0917 - the periods, the day, the place and the 
     return named, named is heaviest
 
 
-def day_terms(  # noqa: PLR0913, PLR0917 - the forecast, the place, the day and the settings
+@dataclass(frozen=True, slots=True)
+class TermParts:
+    """A day's terms before and after the class's bounds (log-odds, in :class:`Term` order:
+    snow, timing, ice, cold), with what they were made of: the window snow still to come, the
+    same weighed by its hours, the ice and the bounds used (``high`` already the class order's
+    cap where one applies). The frozen record keeps them (:mod:`snowlight.predict.frozen`)."""
+
+    raw: tuple[float, float, float, float]
+    bounded: tuple[float, float, float, float]
+    snow: float
+    weighted: float
+    ice: float
+    low: float
+    high: float
+    parts: tuple[SnowPart, ...] = ()
+    even: float | None = None
+
+
+def term_parts(  # noqa: PLR0913, PLR0917 - the forecast, the place, the day and the settings
     forecast: DistrictForecast,
     usual: float,
     klass: str,
@@ -853,23 +871,15 @@ def day_terms(  # noqa: PLR0913, PLR0917 - the forecast, the place, the day and 
     settings: AdjustSettings,
     alone: float | None = None,
     most: float | None = None,
-) -> Terms | None:
-    """The terms of a district's forecast on a day of ``klass`` with usual snow ``usual`` (and
-    ``alone``, its snow alone's: :func:`snow_term`; ``most``: the most the terms may add, the
-    class order's cap: :func:`order_cap`);
-    ``None`` where nothing moves it (no snow read, an unknown code, or not an adjusted
-    class). Snow, timing and ice are one log of the day's snow weighed by its hours
-    (:func:`weighed`, held to the timing band: :func:`timed`) with its ice
-    (:func:`amount_terms`); the cold adds; the sum is bounded per class. So the chance only
-    rises with more snow in any period at any deciding school, more ice or more cold. Where no
-    period can be named for the timing (:func:`_named`), its part is said with the snow's
-    line: the chance is the same."""
+) -> TermParts | None:
+    """The terms :func:`day_terms` adds, before and after the bounds; ``None`` where nothing
+    moves the day (as there)."""
     if klass not in settings.classes or not math.isfinite(usual):
         return None
     if forecast.code == ndfd.Bucket.UNKNOWN or forecast.snow is None:
         return None
     s = max(float(forecast.snow), 0.0)
-    parts = [part for part in forecast.snow_parts if part.end > part.start]
+    parts = tuple(part for part in forecast.snow_parts if part.end > part.start)
     even = None
     weighted = s
     if parts and forecast.snow_commute is not None and s > 0:
@@ -884,9 +894,50 @@ def day_terms(  # noqa: PLR0913, PLR0917 - the forecast, the place, the day and 
     low, high = settings.bounds[klass]
     if most is not None:
         high = min(high, max(most, low))
-    snow_term, timing_term, ice_term, cold = (
-        float(term) for term in bounded([snow_term, timing_term, ice_term, cold], low, high)
+    raw = (snow_term, timing_term, ice_term, cold)
+    after = tuple(float(term) for term in bounded(list(raw), low, high))
+    return TermParts(
+        raw=raw,
+        bounded=(after[0], after[1], after[2], after[3]),
+        snow=s,
+        weighted=weighted,
+        ice=ice,
+        low=low,
+        high=high,
+        parts=parts,
+        even=even,
     )
+
+
+def day_terms(  # noqa: PLR0913, PLR0917 - the forecast, the place, the day and the settings
+    forecast: DistrictForecast,
+    usual: float,
+    klass: str,
+    day: date,
+    zone: str,
+    settings: AdjustSettings,
+    alone: float | None = None,
+    most: float | None = None,
+    noted: list[TermParts] | None = None,
+) -> Terms | None:
+    """The terms of a district's forecast on a day of ``klass`` with usual snow ``usual`` (and
+    ``alone``, its snow alone's: :func:`snow_term`; ``most``: the most the terms may add, the
+    class order's cap: :func:`order_cap`; ``noted``: where given, the terms before and after
+    the bounds are added to it, for the frozen record);
+    ``None`` where nothing moves it (no snow read, an unknown code, or not an adjusted
+    class). Snow, timing and ice are one log of the day's snow weighed by its hours
+    (:func:`weighed`, held to the timing band: :func:`timed`) with its ice
+    (:func:`amount_terms`); the cold adds; the sum is bounded per class. So the chance only
+    rises with more snow in any period at any deciding school, more ice or more cold. Where no
+    period can be named for the timing (:func:`_named`), its part is said with the snow's
+    line: the chance is the same."""
+    found = term_parts(forecast, usual, klass, day, zone, settings, alone, most)
+    if found is None:
+        return None
+    if noted is not None:
+        noted.append(found)
+    s, parts, even = found.snow, found.parts, found.even
+    snow_term, timing_term, ice_term, cold = found.bounded
     period, heaviest = None, False
     if timing_term != 0 and even is not None:
         period, heaviest = _named(parts, s, even, timing_term > 0, day, zone, settings)
@@ -1014,6 +1065,34 @@ def raw_chance(  # noqa: PLR0913, PLR0917 - the class level, the day and the set
     return 1.0 / (1.0 + math.exp(-(_logit(p0) + sum(terms.values.values()))))
 
 
+def terms_detail(  # noqa: PLR0913, PLR0917 - the class level, the day and the settings
+    p0: float,
+    klass: str,
+    usual: float,
+    forecast: DistrictForecast,
+    day: date,
+    zone: str,
+    settings: AdjustSettings,
+    cap: float | None = None,
+) -> tuple[TermParts | None, float | None]:
+    """What :func:`adjusted` adds to the class level ``p0``: its terms before and after the
+    bounds (:func:`term_parts`), and the chance they give before publishing rounds it
+    (``None`` where no term moves it), with the same cap. Read only by the frozen record."""
+    most = None if cap is None else _logit(cap) - _logit(p0)
+    parts = term_parts(forecast, usual, klass, day, zone, settings, None, most)
+    if parts is None:
+        return None, None
+    return parts, chance_of(p0, parts)
+
+
+def chance_of(p0: float, parts: TermParts) -> float:
+    """The chance ``parts``' bounded terms give the class level ``p0``, before publishing
+    rounds it (as :func:`adjusted`'s)."""
+    # :func:`day_terms`'s values add up to the bounded terms, in the same order (the timing
+    # term is added to the snow term's either way; an ice or cold term of 0 adds nothing)
+    return 1.0 / (1.0 + math.exp(-(_logit(p0) + sum(parts.bounded))))
+
+
 def adjusted(  # noqa: PLR0913, PLR0917 - the class level, the day and the settings
     p0: float,
     q_rate: float,
@@ -1028,6 +1107,7 @@ def adjusted(  # noqa: PLR0913, PLR0917 - the class level, the day and the setti
     *,
     snow_usual: float | None = None,
     cap: float | None = None,
+    noted: list[TermParts] | None = None,
 ) -> Moved | None:
     """A storm-class day's chance and lines with the forecast on top of its class level ``p0``
     (published; ``q_rate`` the delay rate among days with school), or ``None`` where no term
@@ -1036,13 +1116,14 @@ def adjusted(  # noqa: PLR0913, PLR0917 - the class level, the day and the setti
     comparison's second bar only (:func:`_snow_line`), never the snow term's anchor (the
     lead's ruling of Nov 1, :func:`snow_term`); ``usual`` where not given. ``cap``: the chance
     (unrounded) it is never over, the same district's lowest warning chance for the same
-    forecast on an advisory day (the class order, :func:`order_cap`)."""
+    forecast on an advisory day (the class order, :func:`order_cap`). ``noted``: as
+    :func:`day_terms`'s."""
     if forecast is None:
         return None
     most = None if cap is None else _logit(cap) - _logit(p0)
     # ``snow_usual`` is the snow line's second bar only, never the snow term's anchor (the
     # lead's ruling of Nov 1: the anchor let more snow lower the chance with ice forecast).
-    terms = day_terms(forecast, usual, klass, day, zone, settings, None, most)
+    terms = day_terms(forecast, usual, klass, day, zone, settings, None, most, noted)
     if terms is None or not terms.values:
         return None
     raw = 1.0 / (1.0 + math.exp(-(_logit(p0) + sum(terms.values.values()))))

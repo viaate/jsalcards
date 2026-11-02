@@ -1454,6 +1454,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     nights: Nights = NO_NIGHTS,
     adjust: bool = False,
     read_last: frozenset[tuple[int, date]] | None = None,
+    noted: dict[tuple[int, date], "Noted"] | None = None,
 ) -> PredictionsFile:
     """The predictions file of one pass (see the module docstring): every district, and with
     ``private_classes`` (from :func:`unit_classes`) every served private school; ``fit``: what
@@ -1482,7 +1483,8 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     whose forecast the pass that made ``last`` read (``None``: not known, as after a restart):
     a day at its class level in ``last`` that this pass's forecast moves shows no previous
     chance unless that pass read it too (S-R2-3: a read that failed, then one that worked, is
-    not a change in the weather).
+    not a change in the weather). ``noted``: where given, each adjusted district-day's class
+    order cap and terms are noted in it (the frozen record reads it; nothing served does).
 
     Raises:
         TableError: the private schools' outlooks are more than the file may hold.
@@ -1517,7 +1519,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
             usual = model.announce[index] if announces and model.announce else None
             line = outlook.lines.get((index, d)) if outlook is not None and fit.reasons else None
             moved_by, forecast_read, snapshot = (
-                _adjusted(model, index, k, day, forecasts, situation, generated, kept)
+                _adjusted(model, index, k, day, forecasts, situation, generated, kept, noted)
                 if adjust and fit.reasons and line is None
                 else (None, False, None)
             )
@@ -1648,6 +1650,7 @@ def _adjusted(  # noqa: PLR0913, PLR0917 - the model, the cell, the day and its 
     situation: Situation,
     generated: datetime,
     kept: Kept,
+    noted: dict[tuple[int, date], "Noted"] | None = None,
 ) -> tuple[Moved | None, bool, datetime | None]:
     """A district's storm-class day with the forecast on top of its class level
     (:func:`snowlight.predict.forecast_adjust.adjusted`), or ``None`` where the forecast does
@@ -1682,24 +1685,105 @@ def _adjusted(  # noqa: PLR0913, PLR0917 - the model, the cell, the day and its 
             return last[1], True, snapshot
         return None, False, snapshot
     settings = model.artifact.settings
-    return (
-        forecast_adjust.adjusted(
-            p0,
-            float(model.q_rate[index, k]) if model.q_rate.size else 0.0,
-            klass,
-            usual,
-            found,
-            day,
-            zone,
-            anchor.adjust,
-            settings.floor,
-            settings.ceiling,
-            snow_usual=float(model.snow_usual[index, k]) if model.snow_usual.size else None,
-            cap=_order_cap(model, anchor, index, klass, day, zone, found),
-        ),
-        True,
-        snapshot,
+    cap = _order_cap(model, anchor, index, klass, day, zone, found)
+    parts: list[forecast_adjust.TermParts] | None = None if noted is None else []
+    moved = forecast_adjust.adjusted(
+        p0,
+        float(model.q_rate[index, k]) if model.q_rate.size else 0.0,
+        klass,
+        usual,
+        found,
+        day,
+        zone,
+        anchor.adjust,
+        settings.floor,
+        settings.ceiling,
+        snow_usual=float(model.snow_usual[index, k]) if model.snow_usual.size else None,
+        cap=cap,
+        noted=parts,
     )
+    if noted is not None:
+        noted[(index, day)] = Noted(cap, parts[0] if parts else None)
+    return moved, True, snapshot
+
+
+@dataclass(frozen=True, slots=True)
+class Noted:
+    """What the file noted of an adjusted district-day for the frozen record: its class order
+    cap and its terms (``None``: no term), as the file applied them."""
+
+    cap: float | None
+    parts: forecast_adjust.TermParts | None
+
+
+@dataclass(frozen=True, slots=True)
+class AdjustDetail:
+    """What the forecast adjustment did with one district's storm-class day, for the frozen
+    record (:mod:`snowlight.predict.frozen`): the serving class and its level (as published,
+    ``p0``), the day's class snapshot, the forecast read (``None``: none this pass, or before
+    the snapshot), its terms and the chance they give before rounding (``None``: no term)."""
+
+    klass: str
+    level: float
+    snapshot: datetime
+    forecast: forecast_values.DistrictForecast | None = None
+    parts: forecast_adjust.TermParts | None = None
+    raw: float | None = None
+
+
+def adjust_detail(  # noqa: PLR0913, PLR0917 - the model, the cell, the day and its forecast
+    model: ServeModel,
+    index: int,
+    k: int,
+    day: date,
+    forecasts: Forecasts,
+    generated: datetime,
+    noted: Mapping[tuple[int, date], Noted] | None = None,
+) -> AdjustDetail | None:
+    """:func:`_adjusted`'s inputs and terms for a district-day (``k`` its situation's
+    position): the terms the file noted (``noted``), else worked out again from the same model
+    and forecast; ``None`` where the day is not an adjusted one. Nothing served reads it."""
+    anchor = model.anchor
+    if anchor is None or anchor.adjust is None or not model.usual_snow.size:
+        return None
+    usual = float(model.usual_snow[index, k])
+    klass = anchor.class_of(SITUATIONS[k].key)
+    if klass is None or not math.isfinite(usual):
+        return None
+    zone = model.time_zone[index]
+    snapshot = forecast_adjust.snapshot(day, zone)
+    p0 = float(model.p[index, k])
+    found = forecasts.get(day, index) if generated >= snapshot else None
+    if found is None:
+        return AdjustDetail(klass, p0, snapshot)
+    kept = noted.get((index, day)) if noted is not None else None
+    if kept is not None:
+        parts = kept.parts
+        raw = None if parts is None else forecast_adjust.chance_of(p0, parts)
+        return AdjustDetail(klass, p0, snapshot, found, parts, raw)
+    cap = _order_cap(model, anchor, index, klass, day, zone, found)
+    parts, raw = forecast_adjust.terms_detail(
+        p0, klass, usual, found, day, zone, anchor.adjust, cap
+    )
+    return AdjustDetail(klass, p0, snapshot, found, parts, raw)
+
+
+def exposure_offsets(model: ServeModel) -> npt.NDArray[np.float64]:
+    """Each deployed district's offset per serving class (:data:`CLASSES` order) from its
+    exposure and region (:meth:`snowlight.predict.anchor.Anchor.offsets`), as the class
+    levels are made; NaN with no anchor. Read only by the frozen record."""
+    ids = model.directory.district_ids
+    found = np.full((len(ids), len(CLASSES)), np.nan, dtype=np.float64)
+    anchor = model.anchor
+    if anchor is None:
+        return found
+    entry = model.artifact.districts
+    for i, leaid in enumerate(ids):
+        known = entry.get(leaid)
+        state = known.state if known is not None else state_of_leaid(leaid)
+        county = known.county if known is not None else None
+        found[i] = anchor.offsets(Unit(leaid, county, _region(state)))[0]
+    return found
 
 
 def _order_cap(  # noqa: PLR0913, PLR0917 - the model, the district, its day and forecast

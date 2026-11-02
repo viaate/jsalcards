@@ -62,6 +62,7 @@ from snowlight.predict import (
     forecast_adjust,
     forecast_adjust_cli,
     forecast_history,
+    frozen,
     inputs,
     learn,
     nbm,
@@ -84,6 +85,7 @@ from snowlight.predict.alerts_live import (
     UgcIndex,
     alerts_digest,
     live_events,
+    live_heads_ups,
     withdrawn,
 )
 from snowlight.predict.anchor import Anchor
@@ -177,6 +179,7 @@ from snowlight.predict.publish import (
 from snowlight.predict.serve import (
     DeployedDirectory,
     Fit,
+    Noted,
     ServeError,
     ServeModel,
     TableError,
@@ -186,6 +189,7 @@ from snowlight.predict.serve import (
     district_classes,
     forecast_file,
     pass_days,
+    reached_by,
     unit_classes,
     with_terms,
 )
@@ -370,6 +374,12 @@ def _register_evidence(actions: "argparse._SubParsersAction[argparse.ArgumentPar
         type=Path,
         default=PIPELINE_ROOT / "out" / "internal" / "predict" / "reads",
         help="the outcome-blind live labels' private record (predict read-labels)",
+    )
+    kept.add_argument(
+        "--frozen",
+        type=Path,
+        default=frozen.FOLDER,
+        help="the frozen record's folder (docs/predict.md, The frozen record)",
     )
     kept.add_argument(
         "--check",
@@ -1058,6 +1068,10 @@ class Pass:
     the heads-ups' (:data:`~snowlight.predict.inputs.PRODUCT_EVENTS`), read apart from the alert
     memory's (:attr:`history`, whose events and bound stay as they are) and within
     :attr:`outlook_budget`; ``None``: :meth:`alert_history` (tests' histories hold both)."""
+    frozen: Path | None = None
+    """The frozen record's folder (:mod:`snowlight.predict.frozen`): each pass that publishes
+    (or finds its file unchanged) freezes what it served there at the night's four freezes;
+    ``None``: nothing is frozen. Nothing served reads it."""
     _products_retry: datetime | None = None
     """After the record step's product log rebuild failed: no new try before this time."""
     _built: tuple[object, ServeModel] | None = None
@@ -1343,6 +1357,17 @@ class _Made:
     chart_after: Callable[[str | None], None] | None = None
     """``serve.chart: shadow``: the chart's in-memory build and report, run after publishing,
     with the fault the pass injects (:func:`snowlight.predict.chart_evidence.fault_for`)."""
+    forecasts: Forecasts = NO_FORECASTS
+    """The forecast the adjustment read for the file (the frozen record's inputs)."""
+    noted: dict[tuple[int, date], Noted] = field(default_factory=dict)
+    """The class order cap and terms of each adjusted district-day (the frozen record's)."""
+    adjusted: bool = False
+    """Whether the file applied the forecast adjustment: adjusting, the reasons' terms off, no
+    outlook, at a fit with reasons (the frozen record's inputs)."""
+    maker: str = "model"
+    """What made the file's chances: ``model`` or ``outlook`` (the frozen record's)."""
+    uploaded: bool = False
+    """Whether this pass uploaded the file (the frozen record reads the host otherwise)."""
 
 
 def one_pass(run: Pass, *, grid: bool = True) -> int:
@@ -1417,9 +1442,77 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
             built.chart_after(chart_evidence.fault_for(setting, now, minutes, grid=grid, done=done))
         except Exception as error:  # the shadow chart never touches the pass
             _warn(f"predict: chart (shadow): withheld, invalid ({type(error).__name__})")
+    if code == 0 and run.frozen is not None:
+        _record_frozen(run, built, model, directory, classes, counted, feed, window)
     if code == 0 and run.outlook_mode is not OutlookMode.OFF:
         _outlook_after(run, model, directory, classes, days, now, window, feed, built)
     return code
+
+
+def _record_frozen(  # noqa: PLR0913, PLR0917 - the pass, what it served and made it from
+    run: Pass,
+    built: _Made,
+    model: ServeModel,
+    directory: DeployedDirectory,
+    classes: npt.NDArray[np.int64],
+    counted: Sequence[LiveEvent],
+    feed: Any,
+    window: Window,
+) -> None:
+    """Freeze what the pass served (:mod:`snowlight.predict.frozen`), one line per freeze
+    written. It never touches the pass or its file: any failure is one warning."""
+    if run.frozen is None:
+        return
+    try:
+        ugcs = run.ugc_index(directory)
+        heights = run.school_heights(directory)
+        margin = run.config.serve.elevation_margin_feet
+        inputs = frozen.PassInputs(
+            made=built.made,
+            model=model,
+            classes=classes,
+            after=built.after,
+            forecasts=built.forecasts,
+            noted=built.noted,
+            events=counted,
+            watches=live_heads_ups(feed),
+            reach=lambda event: reached_by(event, ugcs, heights, margin)[0],
+            reach_all=lambda event: ugcs.reached(event.ugcs),
+            window=window,
+            shown=lambda: _shown(run, built),
+            run_id=os.environ.get("GITHUB_RUN_ID") or None,
+            code_sha=os.environ.get("GITHUB_SHA") or None,
+            live_score_sha256=live_score_sha256(run.config),
+            adjusted=built.adjusted,
+            maker=built.maker,
+        )
+        started = time.monotonic()
+        taken = frozen.record(inputs, run.frozen)
+        for line in frozen.said(taken):
+            _out(line)
+        if any(item.zones for item in taken):
+            _out(f"predict frozen: recorded in {time.monotonic() - started:.2f} s")
+    except Exception as error:  # the record never touches the pass
+        _warn(f"predict: frozen record: {type(error).__name__}: nothing frozen this pass")
+
+
+def _shown(run: Pass, built: _Made) -> str | None:
+    """Why the pass's file is not the public one now (:data:`snowlight.predict.frozen.
+    ROW_KEYS`, ``why``), or ``None`` where it is: a pass that uploaded it is; one that found
+    it unchanged reads the public file back, since ``predict blank`` may have put a file with
+    no districts there since (or a release left that one up until the next upload)."""
+    key = run.mode.key
+    if run.mode is not Mode.ON or key is None or run.host is None:
+        return "not_public"
+    if built.uploaded:
+        return None
+    try:
+        found = run.host.read(key)
+        if found is None or content_digest(found) != content_digest(built.data):
+            return "not_shown"
+    except Exception:  # a read that fails: what the public saw is not known
+        return "unconfirmed"
+    return None
 
 
 def _publish_pass(  # noqa: PLR0913, PLR0917 - the pass, its file and what its lines say
@@ -1469,6 +1562,7 @@ def _publish_pass(  # noqa: PLR0913, PLR0917 - the pass, its file and what its l
     run.state.digest = digest
     run.state.uploaded_at = now
     run.state.alerts_digest = handled
+    built.uploaded = True
     _out(f"predict: uploaded {key}")
     _after_publish(run, made, directory, now)
     return 0
@@ -1818,8 +1912,10 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
     }
     chances: Chances | None = None
     forecast_at: datetime | None = None
+    noted: dict[tuple[int, date], Noted] = {}
     reasons = serve.reasons and outlook is None
     adjust = outlook is None and _adjusting(model)
+    fits: dict[int, Fit] = {}
     if outlook is not None:
         chances, forecast_at = outlook(after)
     elif serve.reasons and model.terms.fits:
@@ -1829,7 +1925,7 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
         forecasts = _forecasts(run, model, days, now)
 
     def make(fit: Fit, nights: Nights) -> PredictionsFile:
-        return forecast_file(
+        found = forecast_file(
             model,
             classes,
             days,
@@ -1849,7 +1945,20 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
             nights=nights,
             adjust=adjust and not reasons,
             read_last=run.adjust_reads.get(last.generated_at) if last is not None else None,
+            noted=noted,
         )
+        fits[id(found)] = fit
+        return found
+
+    def recorded(made: PredictionsFile) -> dict[str, Any]:
+        fit = fits.get(id(made))
+        applied = adjust and not reasons and fit is not None and fit.reasons
+        return {
+            "forecasts": forecasts if applied else NO_FORECASTS,
+            "noted": noted,
+            "adjusted": applied,
+            "maker": "model" if outlook is None else "outlook",
+        }
 
     if serve.chart == "on":
         stage = _nights(run, model, days, now, classes)
@@ -1859,7 +1968,7 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
         _keep_reads(run, made, forecasts if adjust and not reasons else NO_FORECASTS)
         built_ms = round((time.monotonic() - started) * 1000)
         _chart_report(run, made, stage.nights, stage.withheld + more, stage.read_ms, built_ms, now)
-        return _Made(made, data, packed, after, chances=chances, said=said)
+        return _Made(made, data, packed, after, chances=chances, said=said, **recorded(made))
     made, data, packed, _none = fitted(make, serve)
     _adjust_note(made, adjust and not reasons, model)
     _keep_reads(run, made, forecasts if adjust and not reasons else NO_FORECASTS)
@@ -1870,7 +1979,9 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
         def shadow(fault: str | None) -> None:
             _shadow_chart(run, model, days, now, classes, make, published, fault)
 
-    return _Made(made, data, packed, after, chances=chances, said=said, chart_after=shadow)
+    return _Made(
+        made, data, packed, after, chances=chances, said=said, chart_after=shadow, **recorded(made)
+    )
 
 
 def _shadow_chart(  # noqa: PLR0913, PLR0917 - the pass, its model, days, classes and maker
@@ -2431,6 +2542,7 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
         if config.serve.anchor and config.serve.forecast_adjust == "on"
         else None,
         night=_live_night(config) if config.serve.chart != "off" else None,
+        frozen=frozen.FOLDER,
         **outlook,
     )
 
@@ -3476,10 +3588,12 @@ def keep_evidence(  # noqa: PLR0913 - the store, what it keeps and when
     labels: bytes | None = None,
     *,
     reads: Sequence[Any] = (),
+    frozen_folder: Path | None = None,
 ) -> int:
     """Keep the finished snapshots, every district table given (the directory content this
-    run read: kept as soon as it is deployed, before any snapshot indexes it) and the labels
-    (``learn.json``, every version) in the evidence store (:mod:`snowlight.live.evidence`),
+    run read: kept as soon as it is deployed, before any snapshot indexes it), the labels
+    (``learn.json``, every version) and the frozen record's finished days (``frozen_folder``)
+    in the evidence store (:mod:`snowlight.live.evidence`),
     then, with the time left, the outcome-blind record's ``reads`` offers
     (:func:`read_offers`); print one line a database and push, and a warning for a finished
     snapshot whose content has no table kept anywhere (its indexes could not be read back).
@@ -3489,7 +3603,13 @@ def keep_evidence(  # noqa: PLR0913 - the store, what it keeps and when
     offers = evidence.snapshot_offers(snapshots, tables, now)
     if labels is not None:
         offers.append(evidence.Offer(evidence.LABELS, "learn", labels))
-    code = _push_evidence(store, offers, (evidence.SNAPSHOT, evidence.DISTRICTS, evidence.LABELS))
+    if frozen_folder is not None:
+        offers.extend(
+            evidence.Offer(evidence.FROZEN, key, data) for key, data in frozen.offers(frozen_folder)
+        )
+    code = _push_evidence(
+        store, offers, (evidence.SNAPSHOT, evidence.DISTRICTS, evidence.LABELS, evidence.FROZEN)
+    )
     if code is None:
         return 1
     _warn_untabled(store, snapshots, tables, now)
@@ -3517,6 +3637,9 @@ def keep_evidence(  # noqa: PLR0913 - the store, what it keeps and when
     return code
 
 
+FROZEN_RESTORE_FOR: Final = 20.0
+"""Seconds the frozen record's restore (only after its folder was lost) may take, before the
+push's own :data:`EVIDENCE_FOR` starts; one cut short is tried again next run."""
 READS_LEAST: Final = 15.0
 """Seconds the read labels' push needs left before the hard deadline to start at all."""
 READS_MARGIN: Final = 10.0
@@ -3597,6 +3720,34 @@ def read_offers(folder: Path, days: int | None = None) -> list[Any]:
     return found
 
 
+def restore_frozen(store: Any, folder: Path, now: datetime) -> None:
+    """After the frozen record's folder was lost (its index began afresh), the finished days
+    the store holds back into it (:func:`snowlight.predict.frozen.restore`). It never
+    raises."""
+    try:
+        restored = frozen.restore(folder, store, now)
+    except Exception as error:
+        _err(f"predict evidence: the frozen record's restore: {type(error).__name__}")
+        return
+    if restored:
+        _out(f"predict evidence: the frozen record restored {len(restored)} days from the store")
+
+
+def note_frozen(store: Any, folder: Path, now: datetime, seconds: float | None = None) -> None:
+    """Note which databases hold each finished frozen day; a day both hold leaves the folder
+    (:func:`snowlight.predict.frozen.note_held`). A database that does not answer changes
+    nothing known of it. It never raises."""
+    from snowlight.live import evidence  # noqa: PLC0415
+
+    try:
+        held = store.held((evidence.FROZEN,), seconds=seconds)
+        released = frozen.note_held(folder, held, now)
+    except Exception as error:
+        _err(f"predict evidence: the frozen days held: {type(error).__name__}")
+        return
+    _out(f"predict evidence: {len(released)} finished frozen days in both databases released")
+
+
 def _warn_untabled(
     store: Any, snapshots: Mapping[str, object], tables: Mapping[str, Sequence[str]], now: datetime
 ) -> None:
@@ -3622,14 +3773,14 @@ def _warn_untabled(
         )
 
 
-def check_kept(state: Path, now: datetime) -> int:
+def check_kept(state: Path, now: datetime, frozen_folder: Path = frozen.FOLDER) -> int:
     """``predict evidence --check`` (no network): one line saying how many finished snapshots
     both databases hold, with their district tables; 1 and an ``::error::`` line when one has
     waited more than 2 days for that (:func:`snowlight.live.kept.predict_verdict`), which
     opens the workflow's issue. The first check starts the grace."""
     if _state_json(state) is None:
         _out("predict evidence check: no pass state")
-        return 0
+        return check_frozen(frozen_folder, now)
     known, snapshots = kept_of(state), snapshots_of(state)
     if known.watch_from is None:
         known = PredictKept(now, known.snapshots, known.tables)
@@ -3651,12 +3802,27 @@ def check_kept(state: Path, now: datetime) -> int:
         f"predict evidence check: {whole} of {len(finished)} finished snapshots in both"
         f" databases with their district tables{late}"
     )
+    code = check_frozen(frozen_folder, now)
     if not verdict.active:
-        return 0
+        return code
     _out(
         f"::error::predict evidence: {verdict.count} finished weather-class snapshots (or their"
         " district tables) are not in both evidence databases after 2 days (docs/predict.md,"
         " The evidence)."
+    )
+    return 1
+
+
+def check_frozen(folder: Path, now: datetime) -> int:
+    """The frozen record's part of ``predict evidence --check`` (no network): 1 and an
+    ``::error::`` line when a finished frozen day has waited over 2 days for both databases."""
+    line, late = frozen.check(folder, now)
+    _out(line)
+    if not late:
+        return 0
+    _out(
+        f"::error::predict evidence: {late} finished frozen days are not in both evidence"
+        " databases after 2 days (docs/predict.md, The frozen record)."
     )
     return 1
 
@@ -3678,7 +3844,7 @@ def run_evidence(args: argparse.Namespace) -> int:  # pragma: no cover - the rea
     from snowlight.predict.inputs import read_deployed, read_local  # noqa: PLC0415
 
     if args.check:
-        return check_kept(args.state, datetime.now(UTC))
+        return check_kept(args.state, datetime.now(UTC), args.frozen)
     env = dict(os.environ)
     try:
         snapshots = snapshots_of(args.state)
@@ -3695,15 +3861,21 @@ def run_evidence(args: argparse.Namespace) -> int:  # pragma: no cover - the rea
             store = evidence.make_store(env, client)
             store.seconds = EVIDENCE_SECONDS
             reads = read_offers(args.reads, live_read.OFFER_DAYS)  # before the clock starts
+            now = datetime.now(UTC)
+            if isinstance(store.api, CloudflareD1):  # the restore's own time, before the push's
+                store.api.deadline = time.monotonic() + FROZEN_RESTORE_FOR
+            restore_frozen(store, args.frozen, now)
             if isinstance(store.api, CloudflareD1):
                 store.api.deadline = time.monotonic() + EVIDENCE_FOR
-            now = datetime.now(UTC)
-            code = keep_evidence(store, snapshots, tables, now, labels, reads=reads)
+            code = keep_evidence(
+                store, snapshots, tables, now, labels, reads=reads, frozen_folder=args.frozen
+            )
             if isinstance(store.api, CloudflareD1):
                 store.api.deadline = None
             known = ask_kept(store, snapshots, tables, kept_of(args.state), now, EVIDENCE_ASK_FOR)
             if not note_kept(args.state, known):
                 _out("predict evidence: no pass state to note what is kept in")
+            note_frozen(store, args.frozen, now, EVIDENCE_ASK_FOR)
             return code
     except Exception as error:
         _err(f"::error::predict evidence: {type(error).__name__}")
