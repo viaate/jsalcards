@@ -1094,8 +1094,8 @@ export function nightMarks(heavy: { readonly first: number; readonly last: numbe
  * announcement's dashed line only where it falls within [max(Start, now - 3 h), End] (the
  * timeline's own grace, so the same fact is never shown or hidden by where it would land); the
  * times at the foot: Start and End always, the span's end and every third hour where they keep
- * clear, none under the span's other bars (nightMarks); and under the chart, the hourly
- * forecast's time.
+ * clear, none under the span's other bars (nightMarks). The forecast's time is never shown
+ * (the owner's ruling, Nov 1).
  */
 function nightView(
   night: NightDetail,
@@ -1259,22 +1259,6 @@ function windowEnd(day: LocalDate): Date {
   return new Date(Date.UTC(year, month - 1, date, FORECAST_WINDOW_END_UTC_HOUR));
 }
 
-/**
- * When the forecast the forecast adjustment's lines read was issued, or null: every line it
- * gives (snow_total, timing or snow_hours, ice, wind_chill) is from one run, and the timing
- * lines carry no time of their own, so they take their siblings' (the pipeline's
- * forecast_adjust._line). A morning panel then says "Last night's forecast has snow 12 to 6
- * AM", never last night's hours as the current forecast's.
- */
-function adjustRun(detail: ForecastDetail): Date | null {
-  for (const reason of detail.why?.reasons ?? []) {
-    if (reason.kind === 'snow_total' || reason.kind === 'ice' || reason.kind === 'wind_chill') {
-      if (reason.at !== null) return reason.at;
-    }
-  }
-  return null;
-}
-
 /** A reason as copy.ts words it: its numbers, and what its sentence needs from the rest. */
 function reasonInput(
   reason: ReasonDetail,
@@ -1300,8 +1284,8 @@ function reasonInput(
         return null;
       }
       if (said.night === true) {
-        // The night chart states the amount: the reason says its comparison alone, with its
-        // forecast's day, never its time ("The forecast has more snow by 1 PM than most storms.").
+        // The night chart states the amount: the reason says its comparison alone, never its
+        // forecast's time or day ("The forecast has more snow by 1 PM than most storms.").
         return {
           ...reason,
           low: null,
@@ -1348,9 +1332,9 @@ function reasonInput(
       };
     }
     case 'timing':
-      return { ...reason, buses: detail.busesAt, said: said.heavy, at: adjustRun(detail) };
+      return { ...reason, buses: detail.busesAt, said: said.heavy };
     case 'snow_hours':
-      return { ...reason, buses: detail.busesAt, at: adjustRun(detail) };
+      return { ...reason, buses: detail.busesAt };
     case 'wind_chill':
       return {
         ...reason,

@@ -316,9 +316,9 @@ export type ReasonInput =
        */
       readonly against?: 'storms' | 'advisory' | 'here' | 'none';
       /**
-       * When the forecast was issued, or null. The sentence names its day, never its time (the
-       * owner's ruling, Nov 1; forecastName): "The forecast has" the day it was issued, "Last
-       * night's forecast has" in the morning; null keeps the shorter approved forms.
+       * When the forecast was issued, or null. The sentence never says when, neither its time nor
+       * its day (the owner's ruling, Nov 1): "The forecast has", while null keeps the shorter
+       * approved forms.
        */
       readonly at?: Date | null;
       /** Where the forecast's amount ends ("by 1 PM"), said when it is not all overnight. */
@@ -345,8 +345,6 @@ export type ReasonInput =
       readonly buses: Date | null;
       /** The chart's key already says the hours. */
       readonly said?: boolean;
-      /** When its forecast was issued, or null: the sentence names its day (forecastName). */
-      readonly at?: Date | null;
     }
   | {
       /** Snow in these hours, where they are not the heaviest snow's. */
@@ -355,8 +353,6 @@ export type ReasonInput =
       readonly start: Date;
       readonly end: Date;
       readonly buses: Date | null;
-      /** When its forecast was issued, or null: the sentence names its day (forecastName). */
-      readonly at?: Date | null;
     }
   | {
       readonly kind: 'wind_chill';
@@ -366,8 +362,8 @@ export type ReasonInput =
       /** The chart already says how cold. */
       readonly said?: boolean;
       /**
-       * When the forecast was issued, or null: the sentence names its day, never its time
-       * ("Last night's forecast has" in the morning; forecastName).
+       * When the forecast was issued, or null: never said (the owner's ruling, Nov 1), the
+       * sentence is "The forecast has".
        */
       readonly at?: Date | null;
     }
@@ -405,8 +401,8 @@ export type ReasonInput =
       /** The ice, or null where the schools' forecasts do not all read it. */
       readonly inches: number | null;
       /**
-       * When the forecast was issued, or null: the sentence names its day, never its time
-       * ("Last night's forecast has" in the morning; forecastName).
+       * When the forecast was issued, or null: never said (the owner's ruling, Nov 1), the
+       * sentence is "The forecast has".
        */
       readonly at?: Date | null;
       /** Where the forecast's ice ends ("by 1 PM"). */
@@ -955,24 +951,6 @@ function timingRest(start: Date, end: Date, buses: Date): string {
 }
 
 /**
- * The forecast a line is from, by its day and never its time (the owner's ruling, Nov 1): "The
- * forecast" when it was issued on the school's day of `now`, "Last night's forecast" from the
- * evening before (a morning panel never passes last night's run off as the current one), and
- * the day's name for an older one. Null (no run given) is "The forecast".
- */
-function forecastName(at: Date | null, now: Date, zones: Zones): string {
-  if (at === null) return 'The forecast';
-  const issued = dayOf(at, zones.school);
-  const today = dayOf(now, zones.school);
-  if (issued >= today) return 'The forecast';
-  const yesterday = dayOf(new Date(parseLocalDate(today).getTime() - MS_PER_DAY), 'UTC');
-  if (issued === yesterday) {
-    return localHour(at, zones.school) >= 17 ? 'Last night’s forecast' : 'Yesterday’s forecast';
-  }
-  return `${weekday(issued)}’s forecast`;
-}
-
-/**
  * One reason, as one short sentence: "Blue Valley and Olathe, next door,
  * canceled."; a forecast as the forecast's claim. `district` is the
  * district's short name; `now` and `zones` word the times.
@@ -1008,7 +986,7 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
             : `${than === 'more' ? 'More' : 'Less'} snow than ${most}.${cited}`;
         }
         const by = until === null ? '' : ` by ${clock(until, zones)}`;
-        return `${forecastName(at, now, zones)} has ${than} snow${by} than ${most}.${cited}`;
+        return `The forecast has ${than} snow${by} than ${most}.${cited}`;
       }
       // The snow still to fall from the forecast's time: overnight, or by the window's end.
       const when = input.overnight
@@ -1020,7 +998,7 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
       if (input.against === 'none') {
         // The deciding schools' snow lies on both sides of the usual: the range alone.
         if (none) throw new RangeError('copy: no snow with no comparison');
-        return `${forecastName(at, now, zones)} has ${amount}${when}.${cited}`;
+        return `The forecast has ${amount}${when}.${cited}`;
       }
       if (input.said === true) {
         if (input.against === 'advisory' && than === 'less') {
@@ -1036,11 +1014,10 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
         }
         return `The forecast has ${amount}${when}, ${than} than ${most}.${cited}`;
       }
-      const forecast = `${forecastName(at, now, zones)} has`;
       if (input.against === 'advisory' && than === 'less') {
-        return `${forecast} ${amount}${when}, lighter than most advisory days.${cited}`;
+        return `The forecast has ${amount}${when}, lighter than most advisory days.${cited}`;
       }
-      return `${forecast} ${amount}${when}, ${than} than ${most}.${cited}`;
+      return `The forecast has ${amount}${when}, ${than} than ${most}.${cited}`;
     }
     case 'record':
       return recordSentence(input.record, district);
@@ -1073,25 +1050,23 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
         throw new RangeError('copy: the heaviest snow ends before it starts');
       }
       const span = hourSpan(input.start, input.end, zones);
-      const forecast = forecastName(input.at ?? null, now, zones);
-      if (input.buses === null) return `${forecast} has the heaviest snow ${span}.`;
+      if (input.buses === null) return `The forecast has the heaviest snow ${span}.`;
       const rest = timingRest(input.start, input.end, input.buses);
       return input.said === true
         ? `${chanceCopy.heaviest} ${rest}.`
-        : `${forecast} has the heaviest snow ${span}, ${rest}.`;
+        : `The forecast has the heaviest snow ${span}, ${rest}.`;
     }
     case 'snow_hours': {
       if (input.end.getTime() <= input.start.getTime()) {
         throw new RangeError('copy: the snow ends before it starts');
       }
       const span = hourSpan(input.start, input.end, zones);
-      const forecast = forecastName(input.at ?? null, now, zones);
-      if (input.buses === null) return `${forecast} has snow ${span}.`;
-      return `${forecast} has snow ${span}, ${timingRest(input.start, input.end, input.buses)}.`;
+      if (input.buses === null) return `The forecast has snow ${span}.`;
+      return `The forecast has snow ${span}, ${timingRest(input.start, input.end, input.buses)}.`;
     }
     case 'wind_chill': {
       if (input.said === true) return 'Wind chill at the bus stop.';
-      const forecast = `${forecastName(input.at ?? null, now, zones)} has`;
+      const forecast = 'The forecast has';
       return input.feelsLike === null
         ? `${forecast} a wind chill at the bus stop.`
         : `${forecast} a wind chill of ${degrees(input.feelsLike)} at the bus stop.`;
@@ -1144,7 +1119,7 @@ function reason(input: ReasonInput, district: string, now: Date, zones: Zones): 
     case 'icy_roads':
       return `Side streets stay icy after ${inchWords(input.inches, input.inches)} of snow.`;
     case 'ice': {
-      const forecast = `${forecastName(input.at ?? null, now, zones)} has`;
+      const forecast = 'The forecast has';
       // The ice still to fall by the window's end, which can be after the buses ("by 1 PM").
       const until = input.until ?? null;
       const by = until === null ? '' : ` by ${clock(until, zones)}`;

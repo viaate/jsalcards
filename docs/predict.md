@@ -706,12 +706,9 @@ whole points that add up to the chance (the base's points plus the lines' is the
 - `ice`, said with the window's end: "The 8:47 PM forecast has freezing rain leaving 0.2 inches
   of ice by 1 PM." (by 12 PM Central), since the window's ice can fall after the buses.
 - `wind_chill`.
-- A run from the evening before is named as last night's: at 6 AM, "Last night's forecast
-  has ..." (turn-on item 11), an older one by its day; since Nov 1, 2026 never with its time
-  (chart-on, below). The timing lines carry no run of their own; the web names theirs from
-  the same day's snow, ice or wind chill line ("Last night's forecast has snow 12 to 6 AM"),
-  which `forecast_adjust._line` builds from the same run. A timing line alone says "The
-  forecast has" (L5 turn-on list: give `timing` and `snow_hours` their run's `at`).
+- Since Nov 1, 2026 every forecast line says "The forecast has ...", never when its run was
+  issued, neither its time nor its day (the owner's ruling, chart-on and its follow-up, below;
+  turn-on item 11). The timing lines carry no run of their own and need none.
 
 A term worth no whole point says nothing; a day no term moves by a point is the class level
 with no line. The period under way at the snapshot counts for its part still to come at an even
@@ -1183,19 +1180,19 @@ The gate fails (below), so they stay off.
   the chance notifications could count it). A run that does not list or read leaves those
   terms out for the pass (it warns), as a night with no run is unknown in training.
 - **The forecast's time.** Each forecast line carries the run it was read from
-  (`snow_total.at`, `ice.at`, `wind_chill.at`). Since Nov 1, 2026 the web never says its
-  time (the owner's ruling, chart-on), only its day: "The forecast has ..." for a run issued
-  on the school's day of the reader's clock, "Last night's forecast has ..." for one from the
-  evening before (every morning panel: these lines read the 9 PM run until noon, so a run up to
-  about 15 hours old is never passed off as the current forecast, and its amount, counted from
-  that run, is read as last night's), "Yesterday's forecast" for one from earlier that day and
-  the weekday's for an older one. In the panel, the area view and the outlook's line alike (the
+  (`snow_total.at`, `ice.at`, `wind_chill.at`). Since Nov 1, 2026 the web never says when it
+  was issued, neither its time nor its day: every line is "The forecast has ..." (the owner's
+  ruling, chart-on: "don't say which forecast time you got it from ... but you don't wanna say
+  that it's hella outdated", so the follow-up dropped the "Last night's forecast" and weekday
+  words the first pass gave). A run's `at` still picks the line's form (null keeps the shorter
+  approved forms) and its window's end ("by 1 PM"). In the panel, the area view and the outlook's line alike (the
   outlook's "the weather service's 9:46 PM forecast has ... between then and 12 PM Tuesday" is
   now "the forecast has ... by 12 PM Tuesday"). The examples elsewhere on this page keep the
   time each round wrote. The fields stay in the file for older clients. The night chart's gates
   (150 min in the pipeline, 195 on the phone) keep a stale cycle off the chart; these lines have
-  no age gate at the reader's clock, so their day word is what keeps an old run from reading as
-  current. The
+  no age gate at the reader's clock and no day word: they are given only from the day's class
+  snapshot (the 9 PM run before the school day), so the run they name is at most about 15 hours
+  old when the panel shows it, and the owner chose not to word its age. The
   window ends at 18:00 UTC on the day (`ndfd.WINDOW_END_HOURS`, held to the web's
   `FORECAST_WINDOW_END_UTC_HOUR` by a test), worded in the school's zone ("by 12 PM" Central
   in winter, "by 1 PM" Eastern). A snow line also says the days it is weighed against
@@ -1438,8 +1435,8 @@ Before the reasons are turned on (the lead and the owner):
     item 5). The owner may want "Last night's 8:46 PM forecast" when the run's date is before
     the viewer's day. (Done for every forecast line with L5: a run from the evening before is
     "Last night's", one from earlier that day "Yesterday's", an older one by its weekday; an
-    ice line also says the window's end, "by 1 PM". Since chart-on, Nov 1, 2026, the day word
-    stays and the time goes: "Last night's forecast has ...", the timing lines too.)
+    ice line also says the window's end, "by 1 PM". Since chart-on, Nov 1, 2026, the owner's
+    ruling: neither the time nor the day; every line is "The forecast has ...".)
 
 ## What the owner sets up once
 

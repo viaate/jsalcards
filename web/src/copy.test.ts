@@ -1791,8 +1791,8 @@ describe('format', () => {
           against: 'advisory',
         }),
       ).toBe('Lighter than most advisory days, 1 to 2 inches overnight.');
-      // With the forecast's issue time: the sentence names its day, never its time (the owner's
-      // ruling, Nov 1), and says the snow still to fall by the end of its window (or overnight,
+      // With the forecast's issue time: the sentence never says when, neither its time nor its
+      // day (the owner's ruling, Nov 1), and says the snow still to fall by the end of its window (or overnight,
       // when that is where it falls).
       const issued = at('2026-01-13T02:16:00Z');
       const until = at('2026-01-13T18:00:00Z');
@@ -1866,22 +1866,22 @@ describe('format', () => {
         }),
       ).toThrow(RangeError);
       expect(() => timed(-3, 0, 0, false, 'none')).toThrow(RangeError);
-      // Turn-on item 11: a run from the evening before is last night's, an older one by its
-      // day, and never by its time (the owner's ruling, Nov 1), so a morning panel never passes
-      // last night's run off as the current forecast.
+      // Never when it was issued, neither its time nor its day (the owner's ruling, Nov 1: no
+      // "Last night's", "Yesterday's" or weekday forecast): the morning after, two days after
+      // and for a run from midday the day before, every line is "The forecast has".
       const at6 = new Date('2026-01-13T12:00:00Z');
       const later = (when: Date): string =>
         reason({ kind: 'ice', points: 9, inches: null, at: issued, until }, when);
-      expect(later(at6)).toBe(`Last night’s forecast has freezing rain by 12${NBSP}PM.`);
+      expect(later(at6)).toBe(`The forecast has freezing rain by 12${NBSP}PM.`);
       expect(later(new Date('2026-01-14T12:00:00Z'))).toBe(
-        `Monday’s forecast has freezing rain by 12${NBSP}PM.`,
+        `The forecast has freezing rain by 12${NBSP}PM.`,
       );
       expect(
         reason(
           { kind: 'wind_chill', points: 2, feelsLike: null, at: new Date('2026-01-12T20:00:00Z') },
           at6,
         ),
-      ).toBe(`Yesterday’s forecast has a wind chill at the bus stop.`);
+      ).toBe(`The forecast has a wind chill at the bus stop.`);
       expect(
         reason(
           {
@@ -1897,16 +1897,16 @@ describe('format', () => {
           },
           at6,
         ),
-      ).toBe(`Last night’s forecast has 4 to 6 inches by 12${NBSP}PM, more than usual here.`);
-      // The timing lines name their run's day the same way.
+      ).toBe(`The forecast has 4 to 6 inches by 12${NBSP}PM, more than usual here.`);
+      // The timing lines say "The forecast" the same way, in the morning too.
       const span = { start: at('2026-01-13T06:00:00Z'), end: at('2026-01-13T12:00:00Z') };
-      expect(reason({ kind: 'snow_hours', points: 3, ...span, buses, at: issued }, at6)).toBe(
-        `Last night’s forecast has snow 12 to 6${NBSP}AM, just before the buses.`,
+      expect(reason({ kind: 'snow_hours', points: 3, ...span, buses }, at6)).toBe(
+        `The forecast has snow 12 to 6${NBSP}AM, just before the buses.`,
       );
-      expect(reason({ kind: 'timing', points: 3, ...span, buses, at: issued }, at6)).toBe(
-        `Last night’s forecast has the heaviest snow 12 to 6${NBSP}AM, just before the buses.`,
+      expect(reason({ kind: 'timing', points: 3, ...span, buses }, at6)).toBe(
+        `The forecast has the heaviest snow 12 to 6${NBSP}AM, just before the buses.`,
       );
-      expect(reason({ kind: 'timing', points: 3, ...span, buses: null, at: issued })).toBe(
+      expect(reason({ kind: 'timing', points: 3, ...span, buses: null })).toBe(
         `The forecast has the heaviest snow 12 to 6${NBSP}AM.`,
       );
       // Snow in hours that are not the heaviest snow's.

@@ -705,9 +705,9 @@ describe('what the section leaves out', () => {
         0.77,
       ),
     ).toEqual([`+3 The forecast has snow 12 to 6${NBSP}AM, just before the buses.`]);
-    // At 6 AM the panel names last night's run as last night's (turn-on item 11), by its day and
-    // never its time: an 8:16 PM run is never passed off as the current forecast, and the
-    // timing line, which carries no run of its own, takes its sibling's (the same run).
+    // At 6 AM the panel never says when the forecast was issued, neither its time nor its day
+    // (the owner's ruling, Nov 1: no "Last night's forecast"): every line is "The forecast has",
+    // as the evening it was issued.
     const hours = {
       kind: 'snow_hours',
       points: 3,
@@ -728,14 +728,16 @@ describe('what the section leaves out', () => {
     const iced = { kind: 'ice', points: 22, inches: 0.2, at: issued } as const;
     const morning = panel(sixAm, [iced, hours], 0.99);
     expect(morning).toEqual([
-      `+22 Last night’s forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
-      `+3 Last night’s forecast has snow 12 to 6${NBSP}AM, just before the buses.`,
+      `+22 The forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
+      `+3 The forecast has snow 12 to 6${NBSP}AM, just before the buses.`,
     ]);
     expect(panel(sixAm, [snow(4, 6, false, 25)], 0.99)).toEqual([
-      `+25 Last night’s forecast has 4 to 6 inches by 12${NBSP}PM, more than most advisory days.`,
+      `+25 The forecast has 4 to 6 inches by 12${NBSP}PM, more than most advisory days.`,
     ]);
-    for (const line of morning) expect(line).not.toMatch(/\d:\d\d|\bThe forecast\b/u);
-    // The evening it was issued, the same lines say "The forecast".
+    for (const line of morning) {
+      expect(line).not.toMatch(/\d:\d\d|night’s|Yesterday’s|day’s forecast/u);
+    }
+    // The evening it was issued, the same lines.
     expect(panel(A_NOW, [iced, hours], 0.99)).toEqual([
       `+22 The forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
       `+3 The forecast has snow 12 to 6${NBSP}AM, just before the buses.`,
