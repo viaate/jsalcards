@@ -1792,8 +1792,8 @@ describe('format', () => {
         }),
       ).toBe('Lighter than most advisory days, 1 to 2 inches overnight.');
       // With the forecast's issue time: the sentence never says when, neither its time nor its
-      // day (the owner's ruling, Nov 1), and says the snow still to fall by the end of its window (or overnight,
-      // when that is where it falls).
+      // day (the owner's ruling, Nov 1), and says the snow still to fall by the end of its
+      // window (or overnight, when that is where it falls).
       const issued = at('2026-01-13T02:16:00Z');
       const until = at('2026-01-13T18:00:00Z');
       const timed = (

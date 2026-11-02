@@ -1185,14 +1185,15 @@ The gate fails (below), so they stay off.
   ruling, chart-on: "don't say which forecast time you got it from ... but you don't wanna say
   that it's hella outdated", so the follow-up dropped the "Last night's forecast" and weekday
   words the first pass gave). A run's `at` still picks the line's form (null keeps the shorter
-  approved forms) and its window's end ("by 1 PM"). In the panel, the area view and the outlook's line alike (the
-  outlook's "the weather service's 9:46 PM forecast has ... between then and 12 PM Tuesday" is
-  now "the forecast has ... by 12 PM Tuesday"). The examples elsewhere on this page keep the
-  time each round wrote. The fields stay in the file for older clients. The night chart's gates
-  (150 min in the pipeline, 195 on the phone) keep a stale cycle off the chart; these lines have
-  no age gate at the reader's clock and no day word: they are given only from the day's class
-  snapshot (the 9 PM run before the school day), so the run they name is at most about 15 hours
-  old when the panel shows it, and the owner chose not to word its age. The
+  approved forms) and its window's end ("by 1 PM"). In the panel, the area view and the
+  outlook's line alike (the outlook's "the weather service's 9:46 PM forecast has ... between
+  then and 12 PM Tuesday" is now "the forecast has ... by 12 PM Tuesday", or "... between 6 PM
+  Monday and 12 PM Tuesday" for a run issued before the window opens). The examples elsewhere
+  on this page keep the time each round wrote. The fields stay in the file for older clients.
+  The night chart's gates (150 min in the pipeline, 195 on the phone) keep a stale cycle off the
+  chart; these lines have no age gate at the reader's clock and no day word: they are given only
+  from the day's class snapshot (the 9 PM run before the school day), so the run they read is at
+  most about 15 hours old when the panel shows it, and the owner chose not to word its age. The
   window ends at 18:00 UTC on the day (`ndfd.WINDOW_END_HOURS`, held to the web's
   `FORECAST_WINDOW_END_UTC_HOUR` by a test), worded in the school's zone ("by 12 PM" Central
   in winter, "by 1 PM" Eastern). A snow line also says the days it is weighed against
