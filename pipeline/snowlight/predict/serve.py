@@ -1099,12 +1099,17 @@ def _usual_snow(  # noqa: PLR0915 - each class's solve in order, then the plausi
                 klass,
                 settings,
                 even=even,
+                alone=snow_alone[key] if settings.snow_amount else None,
                 most=most,
             )
         usual = solved[key]
+        # With ``snow_amount`` on, the snow alone's floor in the solve, as serving applies it.
+        floor_at = snow_alone[key] if settings.snow_amount else None
         if ordered:
             warned.append(
-                forecast_adjust.climate_chances(p[:, k], usual, scale, klass, settings, even)
+                forecast_adjust.climate_chances(
+                    p[:, k], usual, scale, klass, settings, even, floor_at
+                )
             )
         days = forecast_adjust.expected(
             p[:, k],
@@ -1116,6 +1121,7 @@ def _usual_snow(  # noqa: PLR0915 - each class's solve in order, then the plausi
             grid.floor,
             grid.ceiling,
             even=even,
+            alone=floor_at,
             most=most,
         )
         mean[:, j] = np.maximum(mean[:, j], days)
@@ -1763,7 +1769,7 @@ def adjust_detail(  # noqa: PLR0913, PLR0917 - the model, the cell, the day and 
         return AdjustDetail(klass, p0, snapshot, found, parts, raw)
     cap = _order_cap(model, anchor, index, klass, day, zone, found)
     parts, raw = forecast_adjust.terms_detail(
-        p0, klass, usual, found, day, zone, anchor.adjust, cap
+        p0, klass, usual, found, day, zone, anchor.adjust, cap, _alone(model, index, k)
     )
     return AdjustDetail(klass, p0, snapshot, found, parts, raw)
 
@@ -1784,6 +1790,13 @@ def exposure_offsets(model: ServeModel) -> npt.NDArray[np.float64]:
         county = known.county if known is not None else None
         found[i] = anchor.offsets(Unit(leaid, county, _region(state)))[0]
     return found
+
+
+def _alone(model: ServeModel, index: int, k: int) -> float | None:
+    """The district's usual snow alone for situation ``k`` (its ice days as quiet), ``None``
+    where not known: the snow alone's floor (:func:`snowlight.predict.forecast_adjust.
+    floor_lift`, with ``snow_amount`` on) and the snow line's second bar."""
+    return float(model.snow_usual[index, k]) if model.snow_usual.size else None
 
 
 def _order_cap(  # noqa: PLR0913, PLR0917 - the model, the district, its day and forecast
@@ -1811,7 +1824,9 @@ def _order_cap(  # noqa: PLR0913, PLR0917 - the model, the district, its day and
             found_any.append(p0)
             continue
         found_any.append(
-            forecast_adjust.raw_chance(p0, "warning", usual, found, day, zone, settings)
+            forecast_adjust.raw_chance(
+                p0, "warning", usual, found, day, zone, settings, _alone(model, index, k)
+            )
         )
     return min(found_any) if found_any else None
 

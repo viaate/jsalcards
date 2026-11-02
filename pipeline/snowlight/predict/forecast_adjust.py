@@ -16,9 +16,10 @@ transparent terms, each with a physical reason:
   over a usual half inch (Atlanta) moves the chance far more than an inch under a usual 3
   inches (Buffalo): a dusting lowers it, a heavy forecast raises it. Where the district's
   days of the class are often icy, the usual snow counts the ice days, so the same inches
-  count for a little less there (PHYS-R3-S1 (i), a documented limit: :func:`snow_term`'s
-  anchor at the snow alone is not wired, the lead's ruling of Nov 1, since its flat stretch
-  let more snow lower the chance where ice is forecast).
+  count for a little less there (PHYS-R3-S1 (i), a documented limit: the round-4 anchor at
+  the snow alone is gone, the lead's ruling of Nov 1, since its flat stretch let more snow
+  lower the chance where ice is forecast; the snow amount term's floor, registered off, is
+  its monotone successor: :func:`floor_lift`).
 * **Timing** (two-sided): snow from 10 PM the evening before to 9 AM on the school's clock is
   on the roads for the buses, with little time to plow it; snow earlier in the evening is
   plowed and treated by morning, and snow after 9 AM falls on a school day already under way.
@@ -68,6 +69,13 @@ is exact on those code values; a live quiet day that reads 0.00 or 0.4 inches mo
 district's average a little off its level (docs/predict.md gives the measured bounds), and
 each pass logs the mean of the published chance less the class level per class
 (:func:`shift_note`).
+
+**The snow amount term** (predict-next SNOW-AMOUNT, registered off: ``snow_amount``): the
+total is never under the snow alone's floor (:func:`floor_lift`), and over the class's upper
+bound it bends toward ``snow_amount_high`` instead of stopping there (:func:`saturated`), so
+big amounts keep rising; the solve and serving hold the total the same way. The archive's
+held-out backtest did not show it better, so it is off and the terms are L5's exactly
+(docs/predict.md, "The snow amount term").
 
 No forecast, a forecast that did not read, a code that is unknown, or a stale run (none at
 most 3 hours old at the snapshot): no term, the chance is the class level ``p0`` and no
@@ -179,6 +187,16 @@ class AdjustSettings:
     shrink_days: float
     county_min_days: int
     usual_max: float
+    snow_amount: bool = False
+    """The snow amount term (predict-next SNOW-AMOUNT): the total is never under the snow
+    alone's floor (:func:`floor_lift`) and over the class's upper bound it bends toward
+    ``snow_amount_high`` (:func:`saturated`) instead of stopping. Off: L5 as registered."""
+    snow_amount_high: float = math.inf
+    """The upper asymptote of the total (log-odds) with ``snow_amount`` on: over the class's
+    upper bound the total bends toward it (:func:`saturated`), never reaching it."""
+    snow_amount_floor_ratio: float = math.inf
+    """With ``snow_amount`` on, the snow alone's floor is anchored at no less than the usual
+    over this (:func:`floor_lift`), so the solve for the usual stays determinate."""
 
     @classmethod
     def of(cls, config: PredictConfig) -> "AdjustSettings":
@@ -229,7 +247,16 @@ class AdjustSettings:
             shrink_days=number("shrink_days"),
             county_min_days=int(number("county_min_days")),
             usual_max=number("usual_max"),
+            snow_amount=_flag(block, "snow_amount"),
+            snow_amount_high=number("snow_amount_high"),
+            snow_amount_floor_ratio=number("snow_amount_floor_ratio"),
         )
+        if not found.snow_amount_high > max(high for _, high in found.bounds.values()):
+            raise ValueError(
+                "forecast_adjustment: snow_amount_high must be over every class's upper bound"
+            )
+        if not found.snow_amount_floor_ratio >= 1:
+            raise ValueError("forecast_adjustment: snow_amount_floor_ratio must be 1 or more")
         if found.ice_snow < 0 or found.chill_max < 0 or found.chill_per_degree < 0:
             raise ValueError("forecast_adjustment: ice and cold only add")
         if (
@@ -244,6 +271,13 @@ class AdjustSettings:
             # only rises with s while (m + c) timing_max <= a m (:func:`timed`).
             raise ValueError("forecast_adjustment: timing_max is too wide for timing_min_snow")
         return found
+
+
+def _flag(block: Mapping[str, object], key: str) -> bool:
+    value = block[key]
+    if not isinstance(value, bool):
+        raise ValueError(f"forecast_adjustment.{key} is not true or false: {value!r}")
+    return value
 
 
 # --- the climate --------------------------------------------------------------------------------
@@ -449,61 +483,34 @@ def _log(value: Floats | float) -> Floats:
 def snow_term(
     s: Floats | float,
     usual: Floats | float,
-    alone: Floats | float | None,
     settings: AdjustSettings,
 ) -> Floats:
     """The snow term of ``s`` inches for a place with usual snow ``usual`` (the amount its
-    chance is solved against, its class days' ice counted) and ``alone`` (the same solved with
-    its ice days taken as quiet: the snow alone; ``None`` or NaN: ``usual``).
+    chance is solved against, its class days' ice counted): ``a ln((s + c) / (u + c))``.
 
-    NOT WIRED (the lead's ruling of Nov 1, round 4 by hand): serving and the solve pass no
-    ``alone``, so the term is ``a ln((s + c) / (u + c))``. With ``alone`` its flat stretch from
-    ``alone`` to ``usual`` let the ice and timing terms make more snow lower the chance (the
-    round-4 verifier: up to about 9,500 advisory and 7,300 warning districts with ice in the
-    forecast). It returns only inside a total that stays monotone (a follow-up piece).
-
-    Never below 0 from the snow alone's usual up, so a forecast over what the snow alone makes
-    usual never lowers a day because the place's days of the class are often icy (PHYS-R3-S1):
-    ``max(0, a ln((s + c) / (usual + c)))`` there (0 from ``alone`` to ``usual``), and under
-    ``alone`` ``a ln((s + c) / (alone + c)) - D h`` with ``D = a ln((usual + c) / (alone +
-    c))`` phased out from no snow (``h`` 1: the term is ``a ln(c / (usual + c))``, as with one
-    usual) to ``alone`` (``h`` 0), linearly in ``ln((s + c) / c)``. The ice days' lift is
-    balanced by the days under the snow alone's usual and over ``usual``. The term is
-    continuous and only rises with ``s``; with no ice days ``usual`` is ``alone`` and it is
-    ``a ln((s + c) / (u + c))``."""
+    The round-4 anchor at the snow alone (a flat stretch from the snow alone's usual to
+    ``usual`` inside the snow term) is gone: its flat stretch let the ice and timing terms make
+    more snow lower the chance (the lead's ruling of Nov 1). With ``snow_amount`` on, the snow
+    alone's usual is a floor under the whole total instead (:func:`floor_lift`), which keeps
+    the total monotone."""
     a, c = settings.snow_per_log, settings.snow_offset
     s_ = np.maximum(np.asarray(s, dtype=np.float64), 0.0)
     u_ = np.asarray(usual, dtype=np.float64)
-    if alone is None:
-        alone = u_
-    b_ = np.asarray(alone, dtype=np.float64)
-    b_ = np.where(np.isfinite(b_), np.minimum(b_, u_), u_)
-    drop = a * (_log(u_ + c) - _log(b_ + c))
-    span = _log((b_ + c) / c)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        phase = np.clip(1.0 - _log((s_ + c) / c) / np.where(span > 0, span, 1.0), 0, 1)
-    under = a * (_log(s_ + c) - _log(b_ + c)) - drop * phase
-    over = np.maximum(a * (_log(s_ + c) - _log(u_ + c)), 0.0)
-    found: Floats = np.where(
-        b_ >= u_,
-        a * (_log(s_ + c) - _log(u_ + c)),
-        np.where((s_ < b_) & (span > 0), under, np.where(s_ < b_, 0.0, over)),
-    )
+    found: Floats = a * (_log(s_ + c) - _log(u_ + c))
     return found
 
 
-def amount_terms(  # noqa: PLR0913, PLR0917 - the day's amounts, the place's usuals and the settings
+def amount_terms(
     s: Floats | float,
     weighted: Floats | float,
     ice: Floats | float,
     usual: Floats | float,
     settings: AdjustSettings,
-    alone: Floats | float | None = None,
 ) -> tuple[Floats, Floats, Floats]:
     """The snow, timing and ice terms of ``s`` inches of window snow still to come, the same
     snow weighed by its hours (``weighted``: ``s`` where it is even through the window, more
     where it falls into the commute) and ``ice`` inches of ice, for a place with ``usual``
-    snow (and ``alone``, its snow alone's: :func:`snow_term`). Snow :func:`snow_term`, timing
+    snow. Snow :func:`snow_term`, timing
     ``a ln((weighted + c) / (s + c))`` and ice ``a ln((weighted + k ice + c) / (weighted +
     c))`` (never below 0): together, with one usual, ``a ln((weighted + k ice + c) / (u +
     c))``, one log of the day's snow weighed by its hours with its ice counted as ``ice_snow``
@@ -514,23 +521,98 @@ def amount_terms(  # noqa: PLR0913, PLR0917 - the day's amounts, the place's usu
     s_ = np.asarray(s, dtype=np.float64)
     w_ = np.asarray(weighted, dtype=np.float64)
     e_ = settings.ice_snow * np.asarray(ice, dtype=np.float64)
-    snow = snow_term(s_, usual, alone, settings)
+    snow = snow_term(s_, usual, settings)
     timing = a * (_log(w_ + c) - _log(s_ + c))
     iced = a * (_log(w_ + e_ + c) - _log(w_ + c))
     return snow, timing, iced
 
 
-def bounded(values: Sequence[Floats | float], low: float, high: float) -> list[Floats]:
-    """The terms scaled down on the side that passes a bound, so their sum is ``low`` or
-    ``high`` where it would pass it (the sum is the total clipped to the bounds)."""
+def saturated(
+    total: Floats | float,
+    low: float,
+    high: float,
+    settings: AdjustSettings | None = None,
+    most: Floats | float | None = None,
+) -> Floats:
+    """The day's total held to the class's bounds ``[low, high]``: clipped; with
+    ``snow_amount`` on (predict-next SNOW-AMOUNT), the total is as L5's up to ``high`` and over
+    it bends toward ``H`` (``snow_amount_high``) instead of stopping, ``high + (H - high)
+    tanh((total - high) / (H - high))``: slope 1 at ``high``, so it is continuous, only rises
+    and is never flat at a cap. The lower bound stays hard (a 9 PM read cannot see snow already
+    down: PHYS-R3-S2). ``most``: the class order's cap (:func:`order_cap`), the most the total
+    may be (never under ``low``). Serving (:func:`bounded`) and the solve
+    (:func:`climate_terms`) both hold the total here, so the usual is solved on the curve that
+    is served."""
+    t = np.asarray(total, dtype=np.float64)
+    if settings is None or not settings.snow_amount:
+        found: Floats = np.clip(t, low, high)
+    else:
+        room = settings.snow_amount_high - high
+        bent = high + room * np.tanh(np.maximum(t - high, 0.0) / room)
+        found = np.where(t > high, bent, np.maximum(t, low))
+    if most is not None:
+        found = np.minimum(found, np.maximum(most, low))
+    return found
+
+
+def floor_lift(
+    total: Floats | float,
+    weighted: Floats | float,
+    usual: Floats | float,
+    alone: Floats | float | None,
+    settings: AdjustSettings,
+) -> Floats:
+    """What the snow alone's floor adds to the day's total (log-odds, 0 or more): with
+    ``snow_amount`` on, the total is never under ``min(0, a ln((W + c) / (u_a + c)))``,
+    ``W`` the snow weighed by its hours and ``u_a`` the place's usual snow alone (its ice days
+    as quiet; ``usual`` where it is not known or over it). So snow from what the snow alone
+    makes usual up never lowers a day because the place's days of the class are often icy
+    (PHYS-R3-S1 (i)), and since the floor only rises with the snow and the total with the snow,
+    the ice and the cold, the larger of them only rises: the round-4 anchor's flat stretch,
+    which let more snow lower the chance with ice forecast, is not here. The floor is the snow
+    alone's, with no cold: the snow alone's usual is solved with the ice days' mornings taken
+    as quiet ones, so a floor with the cold on top would leave a place whose few quiet mornings
+    are cold with no usual that balances its days. The floor's anchor is never under ``u / R``
+    (``snow_amount_floor_ratio``): where the snow alone's usual is about a quiet day's trace, a
+    floor at it would hold every day of the class at its level or over whatever the usual, so
+    no usual would balance them and the solve would run to ``usual_max`` with the chance flat
+    in the snow (SA-R1-B2); anchored with the usual, the floor falls as the usual rises and the
+    solve stays determinate. Off, or with no ``alone``: 0."""
+    t = np.asarray(total, dtype=np.float64)
+    if not settings.snow_amount or alone is None:
+        return np.zeros_like(t)
+    a, c = settings.snow_per_log, settings.snow_offset
+    u_ = np.asarray(usual, dtype=np.float64)
+    b_ = np.asarray(alone, dtype=np.float64)
+    b_ = np.where(np.isfinite(b_), b_, u_)
+    b_ = np.minimum(np.maximum(b_, u_ / settings.snow_amount_floor_ratio), u_)
+    w_ = np.maximum(np.asarray(weighted, dtype=np.float64), 0.0)
+    floor = np.minimum(0.0, a * (_log(w_ + c) - _log(b_ + c)))
+    found: Floats = np.maximum(floor - t, 0.0)
+    return found
+
+
+def bounded(
+    values: Sequence[Floats | float],
+    low: float,
+    high: float,
+    settings: AdjustSettings | None = None,
+    most: float | None = None,
+) -> list[Floats]:
+    """The terms scaled down on the side that passes a bound, so their sum is the total held
+    to the bounds (:func:`saturated`: clipped, or with ``snow_amount`` on bending toward its
+    asymptote over ``high``; ``most`` the class order's cap)."""
     terms = [np.asarray(value, dtype=np.float64) for value in values]
     up = sum((np.maximum(term, 0.0) for term in terms), np.zeros(np.shape(terms[0])))
     down = sum((np.minimum(term, 0.0) for term in terms), np.zeros(np.shape(terms[0])))
     total = up + down
+    target = saturated(total, low, high, settings, most)
     with np.errstate(divide="ignore", invalid="ignore"):
-        up_scale = np.where((total > high) & (up > 0), (high - down) / np.where(up > 0, up, 1), 1)
+        up_scale = np.where(
+            (total > target) & (up > 0), (target - down) / np.where(up > 0, up, 1), 1
+        )
         down_scale = np.where(
-            (total < low) & (down < 0), (low - up) / np.where(down < 0, down, -1), 1
+            (total < target) & (down < 0), (target - up) / np.where(down < 0, down, -1), 1
         )
     return [np.where(term > 0, term * up_scale, term * down_scale) for term in terms]
 
@@ -569,26 +651,25 @@ def climate_terms(  # noqa: PLR0913, PLR0917 - the places, the class and the set
     window: its timing is the zone's even snow's (``even``, :func:`even_factor`; 1 where the
     window's even weight is under the cap, as in the lower 48), so a zone whose even snow has a
     timing term (PHYS-R2-S2) still averages its class level. ``alone``: each place's snow
-    alone's usual (:func:`snow_term`; ``None``: ``usual``). ``most``: the most each code's and
+    alone's usual (:func:`floor_lift`; ``None``: no floor). ``most``: the most each code's and
     morning's terms may add (places, 13, 5; the class order, :func:`order_cap`)."""
     low, high = settings.bounds[klass]
     snow_in = np.array(SNOW_CODE)[None, :] * scale[:, None]
     ice_in = np.array(ICE_CODE)[None, :] * scale[:, None]
     factor = np.ones_like(scale) if even is None else even
     weighted = timed(snow_in, snow_in * factor[:, None], settings)
-    snow, timing, iced = amount_terms(
-        snow_in,
-        weighted,
-        ice_in,
-        usual[:, None],
-        settings,
-        None if alone is None else alone[:, None],
-    )
+    snow, timing, iced = amount_terms(snow_in, weighted, ice_in, usual[:, None], settings)
     cold = np.array([chill_value(feels, settings) for feels in COLD_FEELS])  # (5,)
-    amount = (snow + timing + iced)[:, :, None]
-    found: Floats = np.clip(amount + cold[None, None, :], low, high)
-    if most is not None:
-        found = np.minimum(found, np.maximum(most, low))
+    total = (snow + timing + iced)[:, :, None] + cold[None, None, :]
+    if alone is not None:
+        total = total + floor_lift(
+            total,
+            weighted[:, :, None],
+            usual[:, None, None],
+            alone[:, None, None],
+            settings,
+        )
+    found: Floats = saturated(total, low, high, settings, most)
     return found
 
 
@@ -682,7 +763,7 @@ def usual_snow(  # noqa: PLR0913 - the levels, the climate and the settings
     """Each place's usual snow ``u`` (inches): the one at which its chance, adjusted over its
     climate's days and mornings (``counts``, places by code, :func:`cold_mix`), averages its
     class level ``p0`` exactly (bisection on ``ln(u + c)`` over ``[0, usual_max]``, from
-    ``alone`` up where given: the snow alone's usual, :func:`snow_term`, which ice days only
+    ``alone`` up where given: the snow alone's usual, :func:`floor_lift`, which ice days only
     raise). NaN where the place has no climate, or where no ``u`` in the range does (then its
     days keep the class level). ``even``: each place's zone's :func:`even_factor`; ``most``:
     the class order's cap (:func:`order_cap`)."""
@@ -888,14 +969,22 @@ def term_parts(  # noqa: PLR0913, PLR0917 - the forecast, the place, the day and
     weighted = float(timed(s, weighted, settings))
     ice = max(float(forecast.ice), 0.0) if forecast.ice is not None else 0.0
     snow_term, timing_term, ice_term = (
-        float(term) for term in amount_terms(s, weighted, ice, usual, settings, alone)
+        float(term) for term in amount_terms(s, weighted, ice, usual, settings)
     )
     cold = 0.0 if forecast.feels is None else chill_value(float(forecast.feels), settings)
+    # With ``snow_amount`` on, the snow alone's floor lifts the snow term (:func:`floor_lift`).
+    snow_term += float(
+        floor_lift(snow_term + timing_term + ice_term + cold, weighted, usual, alone, settings)
+    )
     low, high = settings.bounds[klass]
+    raw = (snow_term, timing_term, ice_term, cold)
+    # The total held as the solve holds it (:func:`saturated`, :func:`climate_terms`).
+    after = tuple(float(term) for term in bounded(list(raw), low, high, settings, most))
+    if settings.snow_amount:
+        # The upper side bends toward this (:func:`saturated`), never reaching it.
+        high = settings.snow_amount_high
     if most is not None:
         high = min(high, max(most, low))
-    raw = (snow_term, timing_term, ice_term, cold)
-    after = tuple(float(term) for term in bounded(list(raw), low, high))
     return TermParts(
         raw=raw,
         bounded=(after[0], after[1], after[2], after[3]),
@@ -921,7 +1010,7 @@ def day_terms(  # noqa: PLR0913, PLR0917 - the forecast, the place, the day and 
     noted: list[TermParts] | None = None,
 ) -> Terms | None:
     """The terms of a district's forecast on a day of ``klass`` with usual snow ``usual`` (and
-    ``alone``, its snow alone's: :func:`snow_term`; ``most``: the most the terms may add, the
+    ``alone``, its snow alone's: :func:`floor_lift`; ``most``: the most the terms may add, the
     class order's cap: :func:`order_cap`; ``noted``: where given, the terms before and after
     the bounds are added to it, for the frozen record);
     ``None`` where nothing moves it (no snow read, an unknown code, or not an adjusted
@@ -1054,12 +1143,14 @@ def raw_chance(  # noqa: PLR0913, PLR0917 - the class level, the day and the set
     day: date,
     zone: str,
     settings: AdjustSettings,
+    alone: float | None = None,
 ) -> float:
     """A day's chance with the forecast on its class level before it is published (unrounded):
-    ``p0`` where no term moves it (for the class order's cap, :func:`order_cap`)."""
+    ``p0`` where no term moves it (for the class order's cap, :func:`order_cap`). ``alone``:
+    the usual snow alone (:func:`floor_lift`)."""
     if forecast is None or not math.isfinite(usual):
         return p0
-    terms = day_terms(forecast, usual, klass, day, zone, settings)
+    terms = day_terms(forecast, usual, klass, day, zone, settings, alone)
     if terms is None or not terms.values:
         return p0
     return 1.0 / (1.0 + math.exp(-(_logit(p0) + sum(terms.values.values()))))
@@ -1074,12 +1165,13 @@ def terms_detail(  # noqa: PLR0913, PLR0917 - the class level, the day and the s
     zone: str,
     settings: AdjustSettings,
     cap: float | None = None,
+    alone: float | None = None,
 ) -> tuple[TermParts | None, float | None]:
     """What :func:`adjusted` adds to the class level ``p0``: its terms before and after the
     bounds (:func:`term_parts`), and the chance they give before publishing rounds it
     (``None`` where no term moves it), with the same cap. Read only by the frozen record."""
     most = None if cap is None else _logit(cap) - _logit(p0)
-    parts = term_parts(forecast, usual, klass, day, zone, settings, None, most)
+    parts = term_parts(forecast, usual, klass, day, zone, settings, alone, most)
     if parts is None:
         return None, None
     return parts, chance_of(p0, parts)
@@ -1113,17 +1205,19 @@ def adjusted(  # noqa: PLR0913, PLR0917 - the class level, the day and the setti
     (published; ``q_rate`` the delay rate among days with school), or ``None`` where no term
     moves it by a whole point (then the chance is ``p0``, as with no forecast).
     ``snow_usual``: the district's usual snow alone (its ice days as quiet): the snow line's
-    comparison's second bar only (:func:`_snow_line`), never the snow term's anchor (the
-    lead's ruling of Nov 1, :func:`snow_term`); ``usual`` where not given. ``cap``: the chance
+    comparison's second bar, and with ``snow_amount`` on the snow alone's floor
+    (:func:`floor_lift`), never the round-4 anchor (the lead's ruling of Nov 1,
+    :func:`snow_term`'s note); ``usual`` where not given. ``cap``: the chance
     (unrounded) it is never over, the same district's lowest warning chance for the same
     forecast on an advisory day (the class order, :func:`order_cap`). ``noted``: as
     :func:`day_terms`'s."""
     if forecast is None:
         return None
     most = None if cap is None else _logit(cap) - _logit(p0)
-    # ``snow_usual`` is the snow line's second bar only, never the snow term's anchor (the
-    # lead's ruling of Nov 1: the anchor let more snow lower the chance with ice forecast).
-    terms = day_terms(forecast, usual, klass, day, zone, settings, None, most, noted)
+    # ``snow_usual`` is the snow line's second bar, and with ``snow_amount`` on the floor of a
+    # total that stays monotone (:func:`floor_lift`); never the round-4 anchor (the lead's
+    # ruling of Nov 1: the anchor let more snow lower the chance with ice forecast).
+    terms = day_terms(forecast, usual, klass, day, zone, settings, snow_usual, most, noted)
     if terms is None or not terms.values:
         return None
     raw = 1.0 / (1.0 + math.exp(-(_logit(p0) + sum(terms.values.values()))))

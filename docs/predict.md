@@ -745,7 +745,9 @@ snow's timing in the solve and the snow alone in the words; revision 3: `bounds_
 -0.7, the snow term anchored at the snow alone, the class order and G6 asserted on the
 adjusted chances; `LIVE_SCORE_SHA256` f03c3d9a...; the anchor was withdrawn the same day by the
 lead's ruling, with no registered value changed);
-L4's frozen scorer scores the chance as served.
+L4's frozen scorer scores the chance as served. Revised Nov 2, 2026 (predict-next SNOW-AMOUNT,
+below): `snow_amount` (false), `snow_amount_high` (3.0) and `snow_amount_floor_ratio` (3.0)
+added, no served value changed, `LIVE_SCORE_SHA256` e3903496....
 Turning it off (`serve.forecast_adjust: "off"`) serves the class levels alone, as L3 did, with
 no previous chance on a day the forecast had moved.
 
@@ -769,6 +771,177 @@ the share at each class's lower bound (the shift note), the quiet-day window sno
 (its warning line) and the read time of the first pass after each job restart,
 the logged mean shift per class, the pass's forecast read time (p50 and most) and an
 Oct-28-style spot check; watch CI for the full pytest, desktop and phone e2e and Lighthouse.
+
+## The snow amount term (predict-next SNOW-AMOUNT: built, switched off)
+
+The owner asked (Nov 2) that the forecast snow amount, against the place's normal, drive the
+chance: under L5 a typical warning district stops at 79% from about 15 inches up, so 15 and 30
+inches read the same. This piece measured the snow's effect on the archive's alert days,
+built a term that keeps rising, backtested it against L5, and lands it switched off
+(`live_score.forecast_adjustment.snow_amount: false`): the backtest did not pass its serve
+rule. Nothing served changes.
+
+**What the record shows.** The archive's labeled district-days (the model as fit) joined to
+the forecast history's 9 PM codes on the same day (`code_filled`, sample 13), on advisory and
+winter storm, lake effect and ice storm warning days, 2018-19 on: 1,436 district-days on 24
+dates (609 advisory on 18, 827 warning on 11). Each day's `x = ln((s + 25 i + 0.5) / (u + 0.5))`,
+`s` and `i` its code's amounts as the climate counts them (scaled to the fixed window) and `u`
+its district's usual snow solved at the class's typical level (advisory 0.1158, warning
+0.4586). The archive is storm-picked (the owner's ruling O6), so only the relative effect is
+read: a logistic fit with a free intercept for each date and class, so a date's level never
+counts, gives the slope on `x`:
+
+| rows | slope (log-odds per unit of `x`) | 90% bounds (date blocks) |
+|---|---|---|
+| both classes | 0.97 | 0.77 to 3.67 |
+| advisory | 1.54 | 1.29 to 4.12 |
+| warning | 0.40 | 0.19 to 5.17 |
+
+The bounds are lopsided because many dates close nearly every district: a resample heavy in
+those dates separates almost completely and its slope runs high, so the upper bounds say
+little. Left out a season at a time the pooled slope is 0.90 to 0.97, and 2.39 without
+2022-23; by region it is not stable (Northeast 0.79, Ohio Valley 2.04, the upper Midwest's days
+separate completely). L5's hand slope of 1.0 sits on the measured one, so it stays. Each `u`
+is solved from the committed climate, which counts every season's forecast days, the held-out
+one's too: the normal is not held out (the same for both arms below, and a small part of each
+district's count).
+
+The closed share by bins of `x` (pooled across dates, so each bin mixes the dates' levels;
+shown for the record, no number is set from it):
+
+| class | `x` | rows | dates | closed | 90% bounds (date blocks) |
+|---|---|---|---|---|---|
+| advisory | under -0.75 | 28 | 2 | 21.4% | 18.5% to 100.0% |
+| advisory | -0.75 to -0.25 | 41 | 8 | 70.7% | 57.4% to 94.3% |
+| advisory | -0.25 to 0.25 | 83 | 14 | 71.1% | 56.0% to 82.3% |
+| advisory | 0.25 to 0.75 | 351 | 14 | 86.9% | 59.8% to 98.0% |
+| advisory | 0.75 and over | 106 | 6 | 76.4% | 36.4% to 100.0% |
+| warning | under -0.75 | 57 | 5 | 86.0% | 62.5% to 98.2% |
+| warning | -0.75 to -0.25 | 117 | 6 | 97.4% | 87.0% to 100.0% |
+| warning | -0.25 to 0.25 | 278 | 10 | 94.2% | 80.4% to 97.8% |
+| warning | 0.25 to 0.75 | 371 | 7 | 97.6% | 92.2% to 99.7% |
+| warning | 0.75 and over | 4 | 3 | 100.0% | 100.0% to 100.0% |
+
+The codes stop at 9 inches or more (bucket 5), so no archive day's total is over L5's upper
+bound (the most of any warning day is `x` 0.82, under the 1.5 bound; of any advisory day 1.74,
+under 2.0): the record cannot say where the effect flattens. An earlier build of this term
+bent from 0 (`H tanh(T / H)`); its likelihood profile preferred `H` 1.5, the low end of its
+grid, only because that bend moved days under the bounds. The term below is L5's exactly up to
+the bounds, so its likelihood is the same at every `H` (445.5533 at 2.5, 3, 4, 6 and 12 for
+1,436 rows): the record cannot set `H`, and it is chosen.
+
+**The term** (`forecast_adjust.saturated` and `floor_lift`, with `snow_amount` on):
+
+- The total (snow, timing and ice as one log, with the cold) is never under the snow alone's
+  floor `min(0, ln((W + 0.5) / (b + 0.5)))`, `W` the snow weighed by its hours and `b` the
+  usual snow alone (ice days as quiet), but never under `u / 3` and never over `u`
+  (`snow_amount_floor_ratio` 3). So snow from what the snow alone makes usual up never lowers
+  a day because the place's days of the class are often icy (PHYS-R3-S1 (i)); the floor and
+  the total each only rise with snow, so the larger does too, and the round-4 anchor's flat
+  stretch with ice is not here (its code is gone). The floor has no cold: the snow alone's
+  usual is solved with the ice days' mornings as quiet ones, and a floor with the cold on top
+  left 9 advisory and 15 warning districts of 894 tried with no usual that balances their
+  days. The anchor at `u / 3` or more keeps the solve determinate: a floor anchored at a snow
+  alone's usual near a quiet day's trace held every day of the class at its level or over
+  whatever `u` was, so the solve ran to its 30-inch end and the chance was flat in the snow
+  (17 of 3,351 advisory and 5 of 3,351 warning districts, every 4th of the committed climate);
+  anchored with `u`, none is (the floor falls as `u` rises). `u` is under 3 times its snow
+  alone's usual for 95% of those advisory and 97% of those warning districts, so for them the
+  anchor is the snow alone's usual.
+- Up to the class's upper bound (+2.0 advisory, +1.5 warning) the total is L5's; over it, it
+  bends toward 3.0 instead of stopping, `high + (3.0 - high) tanh((T - high) / (3.0 - high))`:
+  slope 1 at the bound, so it is continuous and keeps rising, never reaching 3.0. 3.0
+  (`snow_amount_high`) is chosen, not measured (above): twice the warning bound, 1.5 of room
+  over it and 1.0 over the advisory bound. The lower bounds stay hard (-0.7, -0.4: a 9 PM
+  read cannot see snow already down, PHYS-R3-S2).
+- The solve and serving hold the total in one function (`saturated`, with the class order's
+  cap as the most it may be), so each code's total in the solve is the served total for that
+  forecast, and each district's days of each class still average its class level as served.
+  `u` is solved with the floor and the bend in; the class order's cap, G6 on the published
+  chances and the floor and ceiling are unchanged. Serving passes the usual snow alone to
+  every path (the served day, the class order's warning chances, the frozen record's terms);
+  off, it changes nothing.
+- The chance never falls with more snow. It is level only where the floor holds a day at its
+  class level (snow between the floor's anchor and `u`) or at the class's lower bound, and it
+  rises strictly from `u` up.
+- The words stay true with no new copy: a lift is the snow term's points, and a snow line
+  compares the forecast with both `u` and `u_a` (above), so a day the floor holds up between
+  them says the range alone, never more or less snow than usual. The frozen record keeps the
+  lifted snow term in `raw` and the asymptote as `hi`.
+
+Tests (`tests/predict/test_snow_amount.py`): off is L5 exactly, with and without the class
+order's cap; a bad block is refused (an asymptote not over every upper bound, a floor ratio
+under 1); on, the chance never falls with more snow over a grid of usuals (0.3 to 6 in),
+snow-alone usuals, ice (0 to 0.25 in), timing (even, overnight, late) and cold, nor with more
+ice or cold; up to the bound it is L5's, and 18, 24, 30 and 60 inches each read higher, under
+the asymptote; for every code and cold morning, usual, snow-alone usual and cap, off and on,
+the served terms add up to the solve's total; an icy place's snow over its snow alone's usual
+never lowers its day; random climates still average their level; every 15th committed-climate
+district solves, none at the 30-inch end, and G6 holds; over 1 to 30 inches each solved
+district's chance never falls, is level only where the floor holds it or at the lower bound,
+and rises strictly from its usual up; through the served path the class order, the direction
+and the floor and ceiling hold.
+
+**Backtest** (a season held out at a time; each class's intercept fit on the other seasons
+with the term in, so the archive's levels are never scored; L5 as served against the term as
+it would serve, each arm's `u` and snow-alone usual solved with that arm's settings; `H`
+chosen on the training seasons of each fold from 2.5, 3, 4, 6 and 12, which gives the same
+table as the registered 3.0 since no day passes the bounds; cold is not in the codes, timing
+as the climate's even snow; 90% bounds by date-block bootstrap of the difference):
+
+| stratum | rows | dates | log loss L5 | log loss new | 90% bounds (new less L5) | Brier L5 | Brier new | 90% bounds |
+|---|---|---|---|---|---|---|---|---|
+| all | 1436 | 24 | 0.4440 | 0.4477 | -0.0009 to +0.0089 | 0.1194 | 0.1206 | -0.0002 to +0.0027 |
+| advisory | 609 | 18 | 0.7475 | 0.7560 | -0.0027 to +0.0173 | 0.2209 | 0.2236 | -0.0004 to +0.0050 |
+| warning | 827 | 11 | 0.2205 | 0.2207 | -0.0002 to +0.0003 | 0.0447 | 0.0447 | -0.0000 to +0.0000 |
+| big snow (6 in or more: codes 4-5) | 541 | 8 | 0.1369 | 0.1369 | -0.0004 to +0.0002 | 0.0236 | 0.0236 | -0.0000 to +0.0000 |
+| small snow (under 2 in: codes 0-1) | 152 | 12 | 0.9903 | 1.0014 | -0.0265 to +0.0315 | 0.3274 | 0.3266 | -0.0125 to +0.0045 |
+| region northeast | 954 | 8 | 0.5202 | 0.5243 | -0.0016 to +0.0115 | 0.1407 | 0.1421 | -0.0000 to +0.0032 |
+| region northwest | 82 | 2 | 0.3392 | 0.3376 | -0.0049 to +0.0011 | 0.0906 | 0.0898 | -0.0022 to +0.0002 |
+| region ohio_valley | 162 | 5 | 0.2707 | 0.2782 | -0.0068 to +0.0176 | 0.0690 | 0.0717 | -0.0028 to +0.0066 |
+| region south | 39 | 2 | 0.1269 | 0.1367 | -0.0081 to +0.0418 | 0.0189 | 0.0212 | -0.0032 to +0.0121 |
+| region upper_midwest | 179 | 6 | 0.2546 | 0.2547 | -0.0181 to +0.0041 | 0.0587 | 0.0585 | -0.0086 to +0.0015 |
+
+The serve rule was: no worse overall and better on the big-snow stratum, G6 and the class
+order holding. The new term is worse overall (log loss +0.0037, bounds -0.0009 to +0.0089)
+and not better on the big-snow stratum (+0.0000, bounds -0.0004 to +0.0002): the archive has
+no day past L5's bounds, where the term differs most, and what it does change there (the
+floor's 248 lifted days, and the usuals the floor raises: 890 of 1,436 days' totals differ
+from L5's) scores a little worse, most on advisory days. So it is off. Turning it on is one
+registered change (`snow_amount: true`) once a record with amounts past the bounds (live
+labels with the forecast's inches, not buckets) shows the gain.
+
+**The owner's table** (a forecast even through the window, no ice, 25 F; each district's
+usual and snow-alone usual solved as serving solves them, with the term off for before and on
+for after, and its advisory held under its own warning by the class order; typical: the
+district with the median usual of the committed climate at the national levels, advisory
+11.58% and warning 45.86%, for each class):
+
+| place, class | 1 in | 2 in | 4 in | 6 in | 9 in | 12 in | 18 in | 24 in | 30 in |
+|---|---|---|---|---|---|---|---|---|---|
+| typical warning district, warning (level 46%, usual 3.37 in), before | 36% | 36% | 50% | 59% | 68% | 73% | 79% | 79% | 79% |
+| typical warning district, warning (level 46%, usual 3.37 in), after | 36% | 36% | 50% | 59% | 68% | 73% | 80% | 84% | 87% |
+| typical advisory district, advisory (level 12%, usual 1.46 in), before | 9% | 14% | 23% | 30% | 39% | 45% | 49% | 49% | 49% |
+| typical advisory district, advisory (level 12%, usual 1.58 in), after | 11% | 14% | 22% | 29% | 37% | 44% | 54% | 60% | 64% |
+| low usual (Atlanta), warning (level 49%, usual 1.62 in), before | 40% | 53% | 67% | 75% | 81% | 81% | 81% | 81% | 81% |
+| low usual (Atlanta), warning (level 49%, usual 1.97 in), after | 49% | 49% | 64% | 72% | 79% | 83% | 88% | 90% | 91% |
+| low usual (Atlanta), advisory (level 16%, usual 0.65 in), before | 20% | 29% | 43% | 52% | 58% | 58% | 58% | 58% | 58% |
+| low usual (Atlanta), advisory (level 16%, usual 0.78 in), after | 18% | 27% | 40% | 49% | 59% | 65% | 72% | 75% | 76% |
+| high usual (Buffalo), warning (level 38%, usual 5.70 in), before | 29% | 29% | 31% | 39% | 48% | 55% | 65% | 71% | 73% |
+| high usual (Buffalo), warning (level 38%, usual 5.70 in), after | 29% | 29% | 31% | 39% | 48% | 55% | 65% | 71% | 75% |
+| high usual (Buffalo), advisory (level 6%, usual 1.96 in), before | 4% | 6% | 10% | 14% | 20% | 24% | 32% | 32% | 32% |
+| high usual (Buffalo), advisory (level 6%, usual 2.01 in), after | 4% | 6% | 10% | 14% | 19% | 24% | 32% | 38% | 43% |
+
+With the term on, big amounts keep rising where L5 stops (a typical warning 80, 84 and 87% at
+18, 24 and 30 inches, L5 79% at each; Atlanta's advisory 72 to 76%, L5 58%). Up to the bounds
+the curve is L5's, but the floor lifts some of a place's days, so its usual is solved higher
+and the low and middle amounts read a little lower where the floor lifts many days: Atlanta's
+warning usual goes from 1.62 to 1.97 inches, so 2 inches reads 49% (L5 53%) and 4 to 9 inches
+2 to 3 points under L5, and its advisory at 1 to 2 inches 18 and 27% (L5 20 and 29%); the
+typical advisory reads 1 to 2 points under L5 from 4 to 12 inches. Under the snow alone's
+usual the floor raises a day instead: Atlanta's warning at 1 inch reads 49% (L5 40%), held at
+its level, and the typical advisory at 1 inch 11% (L5 9%). Where the snow alone is
+the usual (the typical warning district, Buffalo's warning) nothing under the bounds changes.
 
 ## Heights in alerts (addendum e, E1)
 

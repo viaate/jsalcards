@@ -294,6 +294,9 @@ live_score:
     shrink_days: 10               # u: the district's own 9 PM codes on its class days plus this many of its county's (region's) mix
     county_min_days: 30           # a county with fewer class days lends its region's mix instead
     usual_max: 30.0               # u is solved in [0, usual_max] inches
+    snow_amount: false            # predict-next SNOW-AMOUNT (Nov 2): the total never under the snow alone's floor, as L5's up to the class's upper bound and over it bending toward snow_amount_high; off: the archive backtest did not pass its serve rule (docs/predict.md, "The snow amount term")
+    snow_amount_high: 3.0         # log-odds, chosen, not measured: no archive row's total passes L5's upper bounds, so the record cannot set it; twice the warning bound (room 1.5 over it; 1.0 over the advisory bound)
+    snow_amount_floor_ratio: 3.0  # the snow alone's floor is anchored at no less than u / 3 (u is under 3 times its snow alone's usual for 95% of advisory and 97% of warning districts, every 4th of the committed climate, with the term off), so the solve stays determinate
   calibration:
     ece_max: 0.05
     bin_min_rows: 30

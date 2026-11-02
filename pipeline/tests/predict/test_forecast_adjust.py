@@ -1250,15 +1250,18 @@ def test_an_icy_district_s_snow_warning_between_its_two_usuals_is_lowered_a_docu
             lowered += int(shown[key] < p0)
             assert inches < usual or shown[key] >= p0
     assert lowered == LIMIT_I
-    # The unwired anchor's own property (:func:`fa.snow_term` with ``alone``), kept for the
-    # follow-up piece that returns it inside a total that stays monotone.
+    # The round-4 anchor's successor (predict-next SNOW-AMOUNT, registered off): with
+    # ``snow_amount`` on the snow alone's floor holds the snow term from the snow alone's usual
+    # up at 0 or more (:func:`fa.floor_lift`, its anchor never under u / 3).
+    on = replace(SETTINGS, snow_amount=True)
     solved = np.isfinite(committed.usual[:, k])
+    usual_k, alone_k = committed.usual[solved, k], committed.alone[solved, k]
+    anchor = np.minimum(np.maximum(alone_k, usual_k / on.snow_amount_floor_ratio), usual_k)
     for inches in AMOUNTS:
-        terms = fa.snow_term(
-            inches, committed.usual[solved, k], committed.alone[solved, k], SETTINGS
-        )
-        over = inches > committed.alone[solved, k]
-        assert (terms[over] >= 0).all()
+        terms = fa.snow_term(inches, usual_k, on)
+        terms = terms + fa.floor_lift(terms, inches, usual_k, alone_k, on)
+        over = inches > anchor
+        assert (terms[over] >= -1e-12).all()
 
 
 def test_an_advisory_day_is_never_over_the_same_district_s_warning_day(
