@@ -18,17 +18,36 @@ single-threaded, so on an idle machine the two agree. A timed step that still
 misses its bar is run again, cold, up to :data:`ATTEMPTS` times, and the fastest
 run counts, as ``timeit`` takes the best of its repeats.
 
+The index build ends with one full garbage collection (``index._no_cyclic_gc``),
+and a full collection walks every object alive in the process. In a test
+session that is also everything the thousands of tests before this one left
+alive, a heap that grows with the suite, and, on a repeat, the previous
+attempt's whole index, which :func:`_fastest` keeps as its best so far: a repeat
+then took 4.4 to 5.1 s against 3.6 to 3.9 s for a first attempt, so the best of
+three was in effect the first, and a full run on CI took the index past its bar
+on code that had not changed (5.05 s against 5.02 s). So each timed call first
+collects and then freezes the objects that already exist (``gc.freeze``), and
+unfreezes them after. The collector still walks every object the timed work
+makes. It no longer walks what was there before: the session's heap, the
+previous index, and also the records the index is built from and, while
+matching, the index itself, which the pipeline's collector would walk; leaving
+those out measured within the run-to-run noise (about 0.2 s of the build). The
+unfreeze thaws everything frozen, including any objects an interpreter freezes
+at start-up (Ubuntu's Python 3.12 does): nothing here relies on them staying
+frozen.
+
 CPU time still depends on the CPU: CI's runners are not all the same machine,
 and on a slower one the index took 7.1 s (run 36465387215) on code that takes
 under 4 s here. The bars were set on this machine, so each is scaled by how
 much slower the machine running the test does a fixed piece of plain Python
 string and dict work (:func:`_calibration`) than this one did
 (:data:`REFERENCE_CALIBRATION`). A faster machine keeps the bars as they are.
-Slower code still fails anywhere: the index takes about 14 times the
+Slower code still fails anywhere: the index takes about 13 times the
 calibration, and the bar allows about 17.7.
 """
 
 import functools
+import gc
 import sys
 import time
 from collections.abc import Callable
@@ -57,14 +76,18 @@ def big() -> list[synthetic.SyntheticRecord]:
 
 
 def _timed[T](work: Callable[[], T]) -> tuple[T, float]:
-    """Run ``work`` untraced; return its result and the CPU seconds it took."""
+    """Run ``work`` untraced, with the objects that already exist frozen out of the
+    garbage collector's reach; return its result and the CPU seconds it took."""
     tracer = sys.gettrace()
     sys.settrace(None)
     try:
+        gc.collect()
+        gc.freeze()
         started = time.process_time()
         result = work()
         return result, time.process_time() - started
     finally:
+        gc.unfreeze()
         sys.settrace(tracer)
 
 
@@ -164,6 +187,25 @@ def test_timing_restores_the_tracer() -> None:
         assert sys.gettrace() is tracer
     finally:
         sys.settrace(previous)
+
+
+def test_timing_freezes_the_heap_that_was_there_and_always_unfreezes_it() -> None:
+    """While the work runs, an object that was there is out of the collector's reach
+    and one the work makes is not; afterwards, even after an error, none is frozen."""
+    there = [object()]
+    seen: list[tuple[bool, bool]] = []
+
+    def work() -> None:
+        made = [object()]
+        reached = {id(item) for item in gc.get_objects()}
+        seen.append((id(there) in reached, id(made) in reached))
+
+    _timed(work)
+    assert seen == [(False, True)]
+    assert gc.get_freeze_count() == 0
+    with pytest.raises(ZeroDivisionError):
+        _timed(lambda: 1 / 0)
+    assert gc.get_freeze_count() == 0
 
 
 def _spin(seconds: float) -> None:
