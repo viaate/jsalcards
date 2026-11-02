@@ -92,7 +92,7 @@ from snowlight.live.edition import (
     deployed_edition,
     own_edition,
 )
-from snowlight.live.guards import Refusal
+from snowlight.live.guards import Refusal, Rules
 from snowlight.live.ingest import Ingest, SourceRead
 from snowlight.live.merge import AdminStatus, with_overrides
 from snowlight.live.morning import MorningLog
@@ -160,6 +160,13 @@ PASS: Final = timedelta(minutes=5)
 BLANK_RETRY: Final = timedelta(minutes=10)
 """How long the loop keeps trying a failed edition blank before it stops."""
 _SEVERITY: Final = {Exit.OK: 0, Exit.REFUSED: 1, Exit.ERROR: 2}
+LIVE_MERGE_RULES: Final = Rules(breaker_floor=15000)
+"""The live merge's rules (the Ingest's only, never the Resolver's: its rules digest is part
+of ``derived_version``). The archived per-source breaker limits are not built yet, and the
+flat floor of 50 tripped on a real storm list on Nov 2; 15000 is above twice the largest
+single station's coverage (about 6,800 schools), so no legitimate two-day list trips it
+(three window days would need over 5,000 schools on each). G8, the spike hold, the size gate
+and ``live blank`` still bound a misread."""
 
 
 def worst(*codes: Exit) -> Exit:
@@ -588,6 +595,7 @@ def build_parts(  # pragma: no cover - loads the directory, the matcher and the 
         morning=MorningLog(args.state / "morning"),
         boosted=reads.cadence.boosted,
         overrides=reader_overrides(env, client, publisher, lambda: local_schools(args.site_data)),
+        rules=LIVE_MERGE_RULES,
     )
     reads.ingest = ingest
     return Parts(ingest, reads)

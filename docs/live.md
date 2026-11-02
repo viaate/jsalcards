@@ -877,3 +877,11 @@ Some sources' say is unknown in a pass:
 - a source due for reading (active, on a platform whose terms permit polling) holding a row that was read but never resolved within the last 36 hours (a run cut off mid-pass).
 
 Each such source holds back every status and open statement in its registry states until it is read again. The rest of the map publishes. A source not due (the registry no longer lists it, it has no endpoint, or its terms do not permit polling) is never read again, so its unresolved rows are left out and expire.
+
+## The breaker (G9)
+
+Each pass counts, per source, the claim items it kept after the day window: one per school and day each row claims, so a district row that claims today and tomorrow counts each of its schools twice, and duplicate rows, until-further-notice extensions and vanished rows still kept all count. A source over its limit has every claim and open statement dropped for that pass (its dissents stay); its claims are counted under `withheld` `breaker`, it is named in `health.json` `breakers`, and the `breaker` alert opens. The limit is the larger of the floor and 3 times the source's archived limit (`snowlight/live/guards.py`, `breaker_limit`).
+
+The archived per-source limits are not built yet, so the floor alone decides. The default floor is 50: on Nov 2 it tripped on a real storm list and hid one station's statuses for about 5 hours. Until the per-source limits exist, the live run's merge uses a floor of 15000 (`LIVE_MERGE_RULES` in `snowlight/live/cli.py`), above twice the largest single station's coverage (about 6,800 schools), so no real list for two days trips it. The window can hold three days for a school west of Eastern time in the hours after midnight in the East, and a list would then need over 5,000 schools on each of them; G8, the spike hold, the size gate and `live blank` still bound a misread. Only the ingest's merge takes it: the resolver keeps the default rules, whose digest is part of `derived_version`, so no stored row is derived again.
+
+A trip logs one warning line naming the tripped source ids and nothing else: `breaker: <id>,<id>`.

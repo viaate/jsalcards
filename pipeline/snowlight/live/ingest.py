@@ -604,6 +604,8 @@ class Ingest:
             generated_at=now,
             rules=self.rules,
         )
+        if merged.breakers:
+            LOG.warning("breaker: %s", ",".join(merged.breakers))
         unknown = self.unknown_states(now)
         merged, _ = withhold_states(merged, unknown, directory)
         unmatched = [query for source in resolved for query in source.unmatched]
