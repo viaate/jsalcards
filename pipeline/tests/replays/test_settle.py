@@ -456,6 +456,7 @@ def test_a_void_by_a_read_whose_rows_did_not_tie_is_counted() -> None:
 
 
 def test_reasons_that_disagree_become_null() -> None:
+    """Ice and Winter storm (the stub's reason when a row names none of its own)."""
     world = _world()
     world.row("gray-a", MORN, f"closed;{ON};reason=Ice", direct=[S1])
     world.row("gray-b", MORN, f"closed;{ON}", direct=[S1])
@@ -464,6 +465,20 @@ def test_reasons_that_disagree_become_null() -> None:
     settled = _settle(world)
     assert settled.lit[S1].reason is None
     assert settled.lit[S2].reason is None
+
+
+def test_a_reason_named_beside_none_stays_in_a_list_and_across_stations() -> None:
+    world = _world()
+    world.row("gray-a", MORN, f"closed;{ON};reason=Ice", direct=[S1])
+    world.row("gray-b", MORN, f"closed;{ON};reason=none", direct=[S1])
+    world.row("gray-a", MORN, f"closed;{ON};reason=Ice", name="two", direct=[S2])
+    world.row("gray-a", MORN, f"closed;{ON};reason=none", name="three", direct=[S2])
+    world.row("gray-a", MORN, f"closed;{ON};reason=none", name="four", direct=[S3])
+    world.row("gray-b", MORN, f"closed;{ON};reason=none", direct=[S3])
+    settled = _settle(world)
+    assert settled.lit[S1].reason is Reason.ICE  # across stations
+    assert settled.lit[S2].reason is Reason.ICE  # in one list
+    assert settled.lit[S3].reason is None
 
 
 def test_reasons_that_agree_stay() -> None:

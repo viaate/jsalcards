@@ -5,7 +5,8 @@
   ``"closed"`` (no date: the posting day before noon local, else the next day),
   ``"remote;on=2024-01-16"`` (a stated date), and options after ``;``:
   ``conf=0.5``, ``note=hedged``, ``cause=holiday``, ``open``, ``ufn``,
-  ``reason=Ice``, ``also=2024-01-06`` (another stated date); words after a note's
+  ``reason=Ice`` (``reason=none``: no reason named; Winter storm without one),
+  ``also=2024-01-06`` (another stated date); words after a note's
   value are the row's own (``note=revoked Friday 1/19``), and :data:`NOTE_CODES`
   stand for notes that take a status back. ``"nothing"`` is a
   text it recognizes nothing in (confidence 0.1). ``"open"`` is read as the real
@@ -133,7 +134,8 @@ def stub_parse(text: str, *, posted_at: datetime, tz: str) -> FakeParsed:
     )
     schedule = (entry, *(FakeEntry(kind=kind, dates=(when,)) for when in also))
     confidence = next((float(o[5:]) for o in options if o.startswith("conf=")), 0.95)
-    reason = next((o[7:] for o in options if o.startswith("reason=")), "Winter storm")
+    named = next((o[7:] for o in options if o.startswith("reason=")), "Winter storm")
+    reason = None if named == "none" else named
     return FakeParsed(
         kind=kind,
         schedule=schedule,

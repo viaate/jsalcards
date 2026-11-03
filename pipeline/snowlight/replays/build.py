@@ -1123,11 +1123,12 @@ def capture_state(readings: Sequence[Reading]) -> CaptureState:
     evidence = tuple(reading for reading in readings if reading.claim is not None)
     if not any(reading.anchored for reading in evidence):
         return CaptureState(listed=True, votes=votes, unanchored=True)
-    reasons = {claim.reason for claim in claims}
+    # The one reason the claims name, claims that name none left out (two different: none).
+    reasons = {claim.reason for claim in claims} - {None}
     merged = Claim(
         kind=first.kind,
         status=first.status,
-        reason=first.reason if len(reasons) == 1 else None,
+        reason=reasons.pop() if len(reasons) == 1 else None,
         dated=all(claim.dated for claim in claims),
         notes=tuple(sorted({note for claim in claims for note in claim.notes})),
     )
@@ -1236,12 +1237,13 @@ def _settle(day: _Day) -> tuple[dict[str, Lit], list[str], Counter[str], int]:
         ):
             school_drops[Drop.WITHDRAWN.value] += 1
             continue
-        reasons_named = {item.claim.reason for _station, item in claims}
+        # (As in a capture: the one reason the stations name, stations naming none left out.)
+        reasons_named = {item.claim.reason for _station, item in claims} - {None}
         first = claims[0][1].claim
         lit[sid] = Lit(
             school=sid,
             status=first.status,
-            reason=first.reason if len(reasons_named) == 1 else None,
+            reason=reasons_named.pop() if len(reasons_named) == 1 else None,
             stations=tuple(sorted(station for station, _item in claims)),
             evidence=tuple(r for _station, item in claims for r in item.evidence),
             school_type=inputs.directory.schools[sid].school_type,
