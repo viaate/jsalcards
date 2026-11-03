@@ -501,6 +501,28 @@ Where an alert goes depends on the mode:
 | `stale` | the served file is over 15 minutes old, missing or over 60 s ahead (`watch` job) | a fresh file is served |
 | `evidence` | a finished morning-record or change-log day not in both evidence databases 2 days after it ended, or a day the size valve dropped before any database held it ([The evidence](#the-evidence)) | both hold every finished day (a dropped day: a week on) |
 
+**What `unknown_start` counts.** The `cold` alert's `unknown_start` is the resolver's count of
+rows withheld because their posting time cannot be bounded (`Withheld.UNKNOWN_START`): a present
+row with no row stamp near its first sighting whose `lo` is unknown from a cold start
+(`Start.COLD`). A row starts cold three ways: its list had no good read in the 36 hours before
+the read that first held it (a first read, or a reader gap); it came back after 3 hours or more
+on a later day; or it is a successor whose predecessor ties with another (the ledger's rules,
+`live/ledger.py`). The count is of rows, not of districts, and a row stays withheld as long as it
+stands, so the same rows are counted pass after pass: 115 to 117 rows on each morning from Oct 27
+to Nov 2. Which of
+the three made them is inferred, not measured, until the census: `live state export` (the end of
+every live-read run) prints one counts-only line, `ledger cold census:` (read only, never
+raising, no ids). It counts the standing rows the resolver withholds as `unknown_start` when it
+reaches them: present, `lo` unknown from a cold start, and no row stamp in the 36 hours up to
+their first sighting (a row with one is dated by it, never withheld). It splits them into those
+first seen with no good read of their list in the 36 hours before, those with one (back after 3
+hours, or a tied successor) and those older than the 14 days of good reads the ledger keeps, with
+the rows by UTC first-seen day and how many lists hold them. The ledger keeps only the first good
+read of each UTC hour, so a row first seen within an hour of the 36-hour edge can count as having
+no good read when a later read in that hour was good. With status words such a row names its districts `*` (every day) in
+the morning record each slot, so the prediction's call time never counts a district it names as
+proven silent (docs/predict.md, "The usual call time").
+
 Titles, bodies, comments, annotations and `alerts.json` carry kinds, times, counts, codes,
 registry ids and the run link only: never a listing's words, a name, an email, a token or a
 response body.

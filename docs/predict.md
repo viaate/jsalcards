@@ -1183,6 +1183,146 @@ the new `LIVE_SCORE_SHA256`, as it did on the snow amount term's switch night: n
 stale state (it is the same snapshot's chance), but rows kept across the switch carry L5's timing,
 which a refit can leave out.
 
+## The usual call time (predict-next CALL-TIME: off)
+
+The owner asked (Nov 2) for "average call time, with the chance declining once it passes", and
+only while the district's lists were read healthily (audit piece 19). CALL-TIME-1 lands the
+samples, the estimator, the proof that the lists were read, the decline, its registered test and
+two counts lines, with the term **off**: nothing served changes, the golden serve files and the
+frozen rows are as before (but the header's `live_score_sha256`, now 6484a3c3...: `call_time`
+registered, the term off, no served value changed), and only `predict read-labels` imports
+`predict/call_time.py`. The archive cannot time a call (it holds capture times, not map times),
+and no storm morning has come since the live read began, so nothing here is fitted yet.
+
+**Samples are map times.** A district's call on school day D is the first local minute of D's
+final day timeline at which the map showed it no school for the weather (the labels' share rule:
+at least half its eligible schools closed or remote for the weather) on an advisory, warning or
+cold day. Before 18:00 the evening before it is *ahead* (no sample); 18:00 to midnight, *evening*
+(kept apart, never in u); midnight to 09:30, *morning* (the samples); later, *late*. A day with any
+school of the district taken back (relit or not), a likely break or another directory's timeline
+gives none. The minute is the wall clock's, also on the days the clocks change.
+
+**The usual call time u.** The median of the district's own morning calls (weight 1 each) and 3
+pseudo-samples at its pool's median. The pool is the district's market on D (the registry market
+of its tier-A list with the most days of a whole read in the record's 14 days before D; ties: more
+captures, then the lowest id, so a dead lowest-id list never picks it) when the market's districts
+hold 10 morning calls from 3 districts; else its state on that minimum; else none, and then no
+term (never a national u). With 3 own calls the decline starts 15 minutes past u, else 30. u is
+worked out again on each run from the final day timelines before D (public, kept for good), with no
+store of its own. A call also needs its day's weather class, and that comes from the predict
+state's class snapshots, which leave the state after 45 days (the evidence store keeps them, and
+the predict job does not read it). So for now u reaches back only about 45 days, not to every
+final timeline: a district's own u and its pools forget older storms, and the counts line's u
+kinds count only the calls of those days. Keeping each final day's class for good (codes only), so
+u grows every storm morning, is left to CALL-TIME-2.
+
+**Proof that the lists were read.** Every tier-A list of the district that the live reader attempts
+(it is in the registry) is required. One with no whole read in the record's 45 days is *dark*: it
+proves nothing, and by the lead's ruling it is still required, so its districts are never proven
+and a reading failure (refused, failed, deferred or never whole) can never lower a chance; the
+counts line counts those districts by cause where the host holds the ledger's outcomes (below). A list only the archive knows is not required. Tier B
+never proves. At each slot end s, L1's read checks 1 to 3 run on a copy of the rule windowed
+[05:00, s) and on D's record cut at s (no read or peer read after s), with condition 4 for the
+district; each required list's mark is the end of its latest qualifying slot whose read holds no
+unplaced row, and P(s) is the earliest mark (none while any required list has none). P* is P's
+running maximum: a failed, refused, deferred, partial, unshown, stale, unhealthy, thin or withheld
+read adds no slot, so P* holds. If a required list's mark falls (its latest qualifying slot fails a
+peer check of the longer window, `stale_populated` or `voided_empty`, and no later slot
+qualifies), D's proof is void: Delta 0, a rise, counted. A row naming the district for D or for
+every day (`*`) in D-1's record or in a slot before s ends proof the same way; a row with no
+status names its districts `*` `?`, so it does too.
+
+**The decline.** x = 0 before proof; at each slot end s_k from 05:30 to 09:30,
+x_k = max(x_{k-1}, min(P*_k - (u + g), x_{k-1} + 30)), held after 09:30; Delta =
+ln(m + (1 - m) exp(-x / tau)). (m, tau) come only from the registered domain F: m 0.35 to 0.60 by
+0.05, tau 20 to 90 minutes by 5, and Delta(30) at least -0.40, 75 of the 90 points; a point outside F
+is refused, never clamped. On F, Delta is never under ln 0.35 = -1.05, and since x grows at most 30
+a slot and the curve's steepest 30 minutes are its first, no slot falls more than 0.40. Before any
+training date (m, tau) is (0.35, 45), whose first 30 minutes are -0.3802:
+
+| minutes past an own u (grace 15) | 15 | 30 | 45 | 60 | 105 | 165 | floor |
+|---|---|---|---|---|---|---|---|
+| x | 0 | 15 | 30 | 45 | 90 | 150 | |
+| Delta | 0 | -0.20 | -0.38 | -0.53 | -0.83 | -0.99 | -1.05 |
+| a 50% chance | 50% | 45% | 41% | 37% | 30% | 27% | 26% |
+| an 80% chance | 80% | 77% | 73% | 70% | 64% | 60% | 58% |
+| a 20% chance | 20% | 17% | 15% | 13% | 10% | 9% | 8% |
+
+At the corners of F the first 30 minutes are -0.3802 (0.35, 45), -0.1203 (0.60, 90), -0.3721
+(0.60, 20) and -0.2037 (0.35, 90). Once on, Delta would be added to the log-odds of the model's own
+chance (no reason kinds, or kinds within the forecast adjustment's with the raw chance known: the
+cells the frozen record keeps a `pr` for, never `said_open`, a lit status, an override or the
+outlook) after L5, `serve._order_cap` and the G6 pull, then the publish floor and ceiling, on D's
+morning and unlit districts only, the published delay held at its value without the term. Delta is
+0 or below, so the class order and G6 hold.
+
+**What the archive says** (counts only, probes p1 to p6). Own posted stamps: 614 districts with one
+day, 123 with two, none with three. The first capture showing a known closing (1,547 days; capture
+times, not calls): 172 before 18:00 the evening before, 3 at 00:00 to 04:00, none at 04:00 to 06:00,
+281 at 06:00 to 07:30, 1,066 at 07:30 to 09:30, 25 later. A carrying list captured silent before
+06:00: 8 of 2,388 known district-days, on one date. **How fast u can qualify** (p6, the morning
+first captures of known closings standing in for calls: 1,350 on 31 dates in 909 districts): no
+district held 3 in one season (1,062 held one, 144 two), and 115 districts reach 3 over 10 seasons;
+of the 18 archive markets with any, 12 held 10 calls from 3 districts on their first such date (26
+of 39 date-market pairs lit 10 or more). So a market's pool can qualify on its first storm morning,
+while a district's own u takes about three closings: the first season is pool-driven.
+
+**Switching on (CALL-TIME-2).** The switch will be automatic in the learn step, as the owner asked
+for the bus hour timing term: on only when the registered rule below holds on live mornings,
+checked again on every learn run with several passing evaluations in a row, and back off if it
+later fails, each switch logged with its numbers. Until LIVE-READS lands (the per-pass proof from
+the live reader, with a test that it equals `call_time.proof` on the same record cut),
+`live_score.call_time.serve` is `off` and config refuses any other value. The rule, registered now
+with every number (`live_score.call_time`, under `LIVE_SCORE_SHA256` and its test): rows are each
+live date with an advisory, warning or cold class, every 30 minutes from 05:30 to 09:30 and at
+10:00 (the held value); at risk are the class's districts in L1's read set with a served frozen row
+(`s` 1, `pr` known, no `sa`; `d0_0507` before 06:30, `d0_0630` from 06:30), not lit no school and
+not named by then; L1's labels score them (unknown dropped, counted). OFF and ON share the frozen
+base; the score is the within-date conditional log-likelihood of which districts closed given how
+many, with a 2,000-resample date-block bootstrap and 90% bounds, in bands [05:30, 06:30), [06:30,
+07:30), [07:30, 08:30), [08:30, 09:30] and 10:00. (m, tau) maximise the training rows' likelihood
+over F: with one live season, the dates before D; from two, each season held out, with no call of
+it in a fitted value. It needs 8 dates, 3 states and 200 at-risk district-times with Delta under 0,
+and turns on only with: the overall gain at least 0 and its lower bound at least -0.005 a
+district-time; no class under -0.005 and no stratum of 100 or more such rows with a lower bound
+under -0.005; at least -0.005 with every dropped row a closing; the observed closings on Delta < 0
+rows, pooled and per class, within the 90% interval of ON's expected count and no further from it
+than OFF's; every safety check; and LIVE-READS landed.
+
+**The counts line.** After each run's summary, `predict read-labels` logs one counts-only line per
+day it added, `call time (off) <day>:` calls by kind and lit after a reader gap (the lighting list
+had no whole read in the hour before); the read districts of a class day by the kind of their u
+(own, market, state, none); the districts named `*` in D's or D-1's record, and of them read; at
+07:30, those at risk, named by then and dropped later; the districts proven by 06:30, 07:30, 08:30
+and 09:30; voided; and the unproven by cause (no required list, dark lists, a required list with
+no qualifying slot, named). At risk at 07:30 counts only districts with a served `d0_0630` row (the
+rule's freeze from 06:30), so one with only a `d0_0507` row is not served. A district with dark
+lists counts once, under every cause they show joined by `+` (`dark refused+failed`). The cause
+is the ledger's last outcome of each dark list, and the predict job reads the live state's export,
+whose ledger is schema only (no rows, no outcomes), so there every dark district counts as `dark
+(cause not on this host)`, never as one cause guessed; the causes show where the full ledger is
+read (the box, a dry run). Counting them by cause in the predict job needs codes-only outcomes in
+the export, a privacy decision for the lead. Only the timelines of final days whose class
+snapshot the state holds with a district of an advisory, warning or cold class are read from the
+host, each once a run. The line stops 90 s after the step's process began (its limit is 2
+minutes): the clock is checked before each day, each timeline read, the morning record's parse and
+each district, so at most one host read (20 s a phase) runs past it, and then one `skipped past 90
+s` line is printed instead. An error there is one warning: it never changes a label, the audit,
+`added` or the exit.
+
+**Limits.** The term never fixes the standing cold rows (the live lane's; `docs/live.md`, "What
+`unknown_start` counts"). Their cost to the samples is a late or missing call, never an early one
+(the map cannot show a call before a read of a list holding it): a closing posted on a list read
+cold lights only from another list or not at all, and one lit after a reader gap lights late, so
+u errs late and the decline starts later, the safe side; the counts line counts calls lit after a
+gap. Their districts are never proven (a `*` naming ends proof). The gate needs D's morning
+record, which the cache keeps 45 days, while a call needs only the public timeline and its day's
+class, so a call is never gated by its day's reads.
+
+**After it lands** (POSTLAND): the first live-read run's export logs the census (the standing
+against the re-cold rows), and the first `predict read-labels` after a class day logs the counts
+line.
+
 ## Heights in alerts (addendum e, E1)
 
 A winter alert for a mountain zone often applies only to part of it: on October 22, 2026
@@ -1660,7 +1800,11 @@ The gate fails (below), so they stay off.
   description.
 - **Usual posting time.** `announces_at` is the median of a district's own posted stamps in
   the archive, from 18:00 the evening before to 09:30, with 3 or more days (`announce.py`). The
-  archive holds at most 2 such days for any district, so no district has one yet.
+  archive holds at most 2 such days for any district (614 districts one, 123 two), so no district
+  has one, `terms.json.gz` holds none, and it is not shown (`serve.announces` false, riding only
+  with `serve.reasons`, off). The usual call time ("The usual call time" above) takes its place
+  for the chance: it reads the map's own times from the live day timelines, not posted stamps,
+  and pools a district with its market or state until it has 3 calls of its own.
 
 Backtest v2 on the labels of 2026-10-25 (internal report; storm district-days of the test
 seasons 2019-20 to 2025-26; 2019-20 has no storm rows), under the per-fold rule (each row's base
