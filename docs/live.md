@@ -154,6 +154,18 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   statuses changed since the last upload, publishes the last published list rows unchanged
   with the new statuses under `generated_at` = the last published + 1 s, so the file's age
   stays the list's age (a status set after that moment shows no "Posted" time).
+- **Reasons.** A status shows the one reason its winning rows name, rows that name none
+  left out (two different reasons: none). When they name none, it shows the one reason the
+  rows of the same status since the school's status last changed name (after a real tie,
+  the school's own rows only). Wherever every winning row names one reason, it is that one,
+  as before Nov 3, 2026; status, times and the winning row never change with it. The
+  replay settles a reason the same way, in one list and across stations. The status reader
+  reads "power issues" and "power problems" (not after "no"), and "lack of power", as a
+  power outage, and a water break, water lines and building problems as causes that are not
+  weather: a status that names one of those does not light, as one naming a water main or
+  building issues did not. Downed power lines are storm damage, the weather on an ice day,
+  and name no cause. The reader, the merge and the replay are part of `derived_version`, so
+  a change to them lands on a day the public closings file holds few rows, not in a storm.
 - **Commits.** Each upload's commit message is `live <prefix> pass <start> run <id> sweep <s>
   due <n> good <n> lit <n> state <bytes>`: counts only, the public record the soak report reads.
   A message names its own commit only: any other write of a live-read process (an alerts file,

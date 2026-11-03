@@ -32,6 +32,13 @@ winter storm warning or advisory for the area.
     (`partly_lit`, 252).
   A station carries a district from the first day it listed it (never earlier), when it
   listed it on 2 or more days.
+  Label reason rule 2 (Nov 3, 2026, `labels.reason_rule`): flooding, severe storms and a
+  hurricane are a weather closing only on a day whose class is `tropical`; on any other
+  class they are never positive, as heat and a power outage are not. A likely break day is
+  also the general Election Day, Veterans Day as observed (the Friday or Monday for a
+  weekend one), Columbus Day and Good Friday, so a planned day off, listed or not, labels
+  nothing. Neither changed a label here: none of the labeled dates is one of those four
+  days, and no flooding, storm or hurricane closing was lit on a labeled day.
 - The 100-label audit (`out/internal/predict/labels-audit.{md,jsonl}` and
   `labels-audit-verdicts.md`, internal: they hold list rows): every label with its morning
   reads, its rows and a verdict. 50 of 50 no-school labels are correct (the row says closed
@@ -1835,6 +1842,19 @@ the pre-registered live scoring rules (the `live_score:` block of `config/predic
 `labels:` and `weather:` blocks and `learn.snapshot_slack_minutes`; `config.LIVE_SCORE_SHA256`,
 held by a test), so the public run logs date the registration. A change to any of them is a
 reviewed commit that changes the sha256 and applies only to rows that arrive after it.
+
+`labels.reason_rule: 2` (Nov 3, 2026) is registered this way: flooding, severe storms and a
+hurricane count as a weather closing only on a `tropical` day, and Election Day, Veterans Day,
+Columbus Day and Good Friday are break days ("The model as fit"). It decides by reason codes
+and dates only, never by outcomes, and applies to every day a label run reads: the archive and
+the live record `predict learn` labels. Landed with it, the merge keeps a reason one list
+names beside one that names none, and the reader reads a few more causes (docs/live.md, "The
+reader").
+Run over the archive against the code before it, with the same inputs, all of it changed 0 of
+the 5,134 labels (advisory 0 of 667 known, none 0 of 618, blizzard 0 of 211, snow warning 0
+of 860, cold 0 of 32) and moved no no-school or delayed share; 4 snow-warning school-days
+gained a named winter storm reason. The committed model is not refit for it: the next refit
+(a swap here, or a retrain) takes the labels as they are.
 
 1. **Labels.** A school day is labeled once it is over everywhere, its timeline on the live
    host (`live/days/<day>.json`) is final (or the host's day index, written after the day,
