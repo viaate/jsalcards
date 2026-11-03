@@ -28,7 +28,7 @@ from snowlight.predict.situations import SITUATIONS
 
 ON = fa.AdjustSettings.of(base.CONFIG)
 """As registered (SNOW-AMOUNT-2: on)."""
-OFF = replace(ON, snow_amount=False)
+OFF = replace(ON, snow_amount=False, timing_bus=False)
 """L5 as served before SNOW-AMOUNT-2."""
 DAY, EAST = base.DAY, base.EAST
 AMOUNTS = (0.0, 0.1, 0.3, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 9.0, 12.0, 18.0, 24.0, 30.0)

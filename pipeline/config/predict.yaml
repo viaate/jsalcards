@@ -294,6 +294,9 @@ live_score:
     timing_max: 0.4               # the timing term's bound either way
     timing_min_snow: 0.5          # inches: the timing term phases in from no snow to this
     timing_even_max: 0.9          # the window's even weight is taken at most this: snow at least 80% in the commute hours never lowers
+    timing_bus: true              # predict-next BUS-TIMING (Nov 3): the timing weighs snow before the bus hour (07:00 on the school's clock) against snow after it, in place of 10 PM to 9 AM (off: L5's timing exactly); on: the within-date test with a season held out found it no worse than L5 (docs/predict.md, "The bus hour timing term")
+    timing_after_bus: 0.95        # o: what snow after the bus hour weighs against snow before it (1: no timing); fit within date with each season held out over 0.0-0.9 by 0.1 and 0.95, ties to the largest (docs/predict.md, "The bus hour timing term")
+    timing_bus_share_max: 0.8     # F: the window's before-bus share is taken at most this in its even weight: snow at least 80% before the bus hour never lowers
     shrink_days: 10               # u: the district's own 9 PM codes on its class days plus this many of its county's (region's) mix
     county_min_days: 30           # a county with fewer class days lends its region's mix instead
     usual_max: 30.0               # u is solved in [0, usual_max] inches

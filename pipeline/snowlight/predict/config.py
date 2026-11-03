@@ -194,7 +194,7 @@ class LearnSettings(_Settings):
     out, and a learned file that counted one is no longer served."""
 
 
-LIVE_SCORE_SHA256: Final = "2b46a351e0101bd8bf608cc600e87d773f2d300da19fd9b9533c1966c66944e4"
+LIVE_SCORE_SHA256: Final = "78861639ca23b4ae9df777b248484ea59306049f9c4a12d57e0c96088eaa9b15"
 """The sha256 of the pre-registered scoring rules (:func:`live_score_sha256`: the
 ``live_score`` block, the ``labels`` and ``weather`` blocks and ``learn.snapshot_slack_minutes``),
 as S7 addendum h records it (and addendum i, for the forecast adjustment of advisory-sane L5;
@@ -202,7 +202,9 @@ revised Nov 2, 2026 by predict-next SNOW-AMOUNT: ``snow_amount``, ``snow_amount_
 ``snow_amount_floor_ratio`` added, the term off, no served value changed; revised Nov 3, 2026
 by predict-next SNOW-AMOUNT-2: the term on, ``snow_amount_slope_advisory`` and
 ``snow_amount_slope_warning`` added, for rows after it; revised Nov 3, 2026 by predict-next
-REASONS: ``labels.reason_rule`` 2 added, no served value changed).
+REASONS: ``labels.reason_rule`` 2 added, no served value changed; revised Nov 3, 2026 by
+predict-next BUS-TIMING: ``timing_bus`` on, ``timing_after_bus`` and ``timing_bus_share_max``
+added, for rows after it).
 A test holds the two equal, so none of them changes without this."""
 
 

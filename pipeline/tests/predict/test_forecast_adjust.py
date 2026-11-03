@@ -34,6 +34,7 @@ from snowlight.predict.forecast_values import (
     DistrictForecast,
     Forecasts,
     SnowPart,
+    bus_share,
     commute_share,
 )
 from snowlight.predict.geography import REGION_OF
@@ -52,9 +53,10 @@ from snowlight.schemas.predictions import (
 )
 
 CONFIG = PredictConfig.load()
-SETTINGS = replace(fa.AdjustSettings.of(CONFIG), snow_amount=False)
-"""L5's terms (the snow amount term off): SNOW-AMOUNT-2 registers the term on, and
-tests/predict/test_snow_amount.py holds the registered terms against these."""
+SETTINGS = replace(fa.AdjustSettings.of(CONFIG), snow_amount=False, timing_bus=False)
+"""L5's terms (the snow amount term and the bus hour timing off): SNOW-AMOUNT-2 registers the
+snow amount term on, and tests/predict/test_snow_amount.py holds the registered terms against
+these; tests/predict/test_bus_timing.py holds the bus hour timing term."""
 DAY = date(2026, 1, 14)
 EAST = "America/New_York"
 RUN = world.utc("2026-01-14T01:00:00")
@@ -77,6 +79,11 @@ def parts(day: date, at: datetime, amounts: tuple[float, ...]) -> tuple[SnowPart
 def commute_of(found: Sequence[SnowPart], zone: str, day: date = DAY) -> float:
     """A one-school district's snow in the commute hours: each period's by its share in them."""
     return sum(part.snow * commute_share(part.start, part.end, day, zone) for part in found)
+
+
+def bus_of(found: Sequence[SnowPart], zone: str, day: date = DAY) -> float:
+    """A one-school district's snow before the bus hour: each period's by its share before it."""
+    return sum(part.snow * bus_share(part.start, part.end, day, zone) for part in found)
 
 
 def forecast(  # noqa: PLR0913 - a forecast's parts
@@ -113,6 +120,7 @@ def forecast(  # noqa: PLR0913 - a forecast's parts
         snow=snow,
         snow_parts=parts(DAY, SNAPSHOT, amounts),
         snow_commute=commute_of(parts(DAY, SNAPSHOT, amounts), EAST),
+        snow_bus=bus_of(parts(DAY, SNAPSHOT, amounts), EAST),
     )
 
 
@@ -141,6 +149,7 @@ def zoned(
         snow=snow,
         snow_parts=found,
         snow_commute=commute_of(found, zone),
+        snow_bus=bus_of(found, zone),
     )
 
 

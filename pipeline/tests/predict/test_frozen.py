@@ -305,7 +305,7 @@ def test_a_watch_reaching_a_district_is_flagged(tmp_path: Path) -> None:
 def adjusting_pass(folder: Path | None, clock: Clock, host: MemoryHost) -> cli.Pass:
     built, anchor = fa_test.adjusting_model(fa_test.NATION)
     del built
-    heavy = replace(fa_test.forecast(6.0), run_time=fa_test.RUN)
+    heavy = replace(fa_test.forecast(6.0), run_time=fa_test.RUN, snow_bus=4.0)
     found = Forecasts({fa_test.DAY: {1: heavy, 2: fa_test.forecast(0.0)}})
     run = frozen_pass(folder, clock, host, anchor=anchor)
     run.forecast = lambda _model, _days, _now: found
@@ -341,6 +341,7 @@ def test_an_adjusted_day_keeps_its_terms_clamps_inputs_and_unrounded_chance(
     assert heavy.p > heavy.points / 100
     assert heavy.forecast is not None
     assert heavy.forecast["sn"] == 6.0
+    assert heavy.forecast["bb"] == 4.0  # the snow before the bus hour, on every freeze
     assert heavy.forecast["rt"] == fa_test.RUN.isoformat()
     assert len(heavy.forecast["pp"]) >= 1
     assert heavy.terms is not None
@@ -358,6 +359,30 @@ def test_an_adjusted_day_keeps_its_terms_clamps_inputs_and_unrounded_chance(
     assert unread.terms is None
     assert unread.points is not None
     assert unread.p == unread.points / 100
+
+
+def test_a_row_frozen_before_the_bus_hour_snow_was_kept_still_reads(tmp_path: Path) -> None:
+    # BUS-TIMING: rows frozen before ``bb`` was kept read as they did, with no ``bb``.
+    clock = Clock("2026-01-14T03:35:00")
+    assert cli.one_pass(adjusting_pass(tmp_path, clock, MemoryHost())) == 0
+    path = frozen.day_path(tmp_path, fa_test.DAY.isoformat())
+    new = frozen.parse_day(path.read_bytes())
+    old_lines = []
+    for line in path.read_bytes().splitlines():
+        value = json.loads(line)
+        if isinstance(value.get("f"), dict):
+            value["f"].pop("bb", None)
+        old_lines.append(json.dumps(value).encode())
+    old = frozen.parse_day(b"\n".join(old_lines))
+    assert len(old.rows) == len(new.rows)
+    assert any(row.forecast and "bb" in row.forecast for row in new.rows)
+    for was, now in zip(old.rows, new.rows, strict=True):
+        assert was.forecast is None or "bb" not in was.forecast
+        bare = None
+        if now.forecast is not None:
+            bare = {k: v for k, v in now.forecast.items() if k != "bb"}
+        assert was.forecast == bare
+        assert (was.p, was.terms, was.leaid) == (now.p, now.terms, now.leaid)
 
 
 def test_an_evening_freeze_before_the_snapshot_says_the_forecast_was_not_read_yet(

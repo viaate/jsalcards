@@ -78,6 +78,21 @@ keep rising; the solve and serving hold the total the same way. A within-date te
 season held out found it no worse than L5 (docs/predict.md, "The snow amount term"); off, the
 terms are L5's exactly.
 
+**The bus hour timing term** (predict-next BUS-TIMING, registered on: ``timing_bus``): the
+timing weighs snow down by the bus hour (07:00 on the school's clock,
+:func:`snowlight.predict.ndfd.bus_time`) against snow after it, in place of 10 PM to 9 AM.
+Each deciding school's own snow before the bus hour is counted first and the district takes
+its 50% value by the same rule as ``s`` (``snow_bus``); ``W = (o s + (1 - o) snow_bus) /
+even_bus``, ``o`` ``timing_after_bus``, ``even_bus = o + (1 - o) min(f, F)``, ``f`` the
+window's before-bus share by the hour and ``F`` ``timing_bus_share_max`` (:func:`window_even`,
+:func:`weighed`), in the same band and log as L5's. Even snow weighs exactly as itself wherever
+``f <= F`` (every lower-48 zone at 9 PM and every later snapshot), so their even factors are 1;
+a line that raises names only a period more than half before the bus hour, one that lowers only
+a period more than half after it (:func:`_named`). ``o`` was fit within date with each season
+held out over 0.0 to 0.95 (ties to the largest, the weakest timing): 0.95, the grid's top;
+docs/predict.md, "The bus hour timing term", says what the record can and cannot show. Off,
+the timing is L5's exactly.
+
 No forecast, a forecast that did not read, a code that is unknown, or a stale run (none at
 most 3 hours old at the snapshot): no term, the chance is the class level ``p0`` and no
 forecast line shows (or, once the snapshot has passed, the same snapshot's lines as the last
@@ -102,7 +117,7 @@ import polars as pl
 
 from snowlight.predict import ndfd
 from snowlight.predict.config import PIPELINE_ROOT, PredictConfig
-from snowlight.predict.forecast_values import DistrictForecast, SnowPart, commute_share
+from snowlight.predict.forecast_values import DistrictForecast, SnowPart, bus_share, commute_share
 from snowlight.predict.geography import REGION_OF
 from snowlight.predict.reasons import Moved, chill_amount, ice_amount
 from snowlight.predict.shapley import shapley, whole_points
@@ -201,6 +216,17 @@ class AdjustSettings:
     snow_amount_slopes: Mapping[str, float] = field(default_factory=dict)
     """With ``snow_amount`` on, each class's ``a`` (``snow_amount_slope_<class>``) in place of
     ``snow_per_log``, for the solve and serving alike (:meth:`for_class`)."""
+    timing_bus: bool = False
+    """The bus hour timing term (predict-next BUS-TIMING): the timing weighs snow before the
+    bus hour (07:00 on the school's clock) against snow after it (:func:`bus_weight`,
+    :func:`weighed`), in place of L5's 10 PM to 9 AM weighting. Off: L5's timing exactly."""
+    timing_after_bus: float = 1.0
+    """With ``timing_bus`` on, what snow after the bus hour weighs against snow before it
+    (``o``; 1: no timing, the term is 0 everywhere and every even factor 1)."""
+    timing_bus_share_max: float = 0.8
+    """With ``timing_bus`` on, the window's before-bus share is taken at most this in its even
+    weight (``F``, :func:`window_even`): snow at least this share before the bus hour never
+    lowers."""
 
     def for_class(self, klass: str) -> "AdjustSettings":
         """The settings a day of ``klass`` is adjusted (and its usual solved) by: with
@@ -266,6 +292,9 @@ class AdjustSettings:
                 for klass in classes
                 if klass != "cold"
             },
+            timing_bus=_flag(block, "timing_bus"),
+            timing_after_bus=number("timing_after_bus"),
+            timing_bus_share_max=number("timing_bus_share_max"),
         )
         if not found.snow_amount_high > max(high for _, high in found.bounds.values()):
             raise ValueError(
@@ -281,6 +310,10 @@ class AdjustSettings:
             or found.snow_offset <= 0
         ):
             raise ValueError("forecast_adjustment: timing_outside or snow_offset out of range")
+        if not 0 <= found.timing_after_bus <= 1:
+            raise ValueError("forecast_adjustment: timing_after_bus must be in [0, 1]")
+        if not 0 < found.timing_bus_share_max <= 1:
+            raise ValueError("forecast_adjustment: timing_bus_share_max must be in (0, 1]")
         m, c = found.timing_min_snow, found.snow_offset
         for a in (found.snow_per_log, *found.snow_amount_slopes.values()):
             if a <= 0 or found.timing_max < 0 or (m > 0 and (m + c) * found.timing_max > a * m):
@@ -877,16 +910,39 @@ def commute_weight(
     return settings.timing_outside + (1 - settings.timing_outside) * inside
 
 
+def bus_weight(
+    start: datetime, end: datetime, day: date, zone: str, settings: AdjustSettings
+) -> float:
+    """With ``timing_bus`` on, the weight of snow from ``start`` to ``end`` for school day
+    ``day``: ``timing_after_bus`` plus the rest by its share before the bus hour (07:00 on the
+    school's clock, :func:`~snowlight.predict.forecast_values.bus_share`)."""
+    o = settings.timing_after_bus
+    return o + (1 - o) * bus_share(start, end, day, zone)
+
+
 def window_even(
     spans: Sequence[tuple[datetime, datetime]], day: date, zone: str, settings: AdjustSettings
 ) -> tuple[float, float]:
     """The window's even weight (its periods' :func:`commute_weight` by their hours) and the
     same taken at most ``timing_even_max``: where nearly the whole window is in the commute
     hours (Alaska, Hawaii, the West's 9 PM), snow wholly in them still never lowers. ``(1, 1)``
-    with no period."""
+    with no period.
+
+    With ``timing_bus`` on (BUS-TIMING), the window's before-bus share ``f`` (its periods'
+    shares before the bus hour by their hours): ``o + (1 - o) f`` and the same with ``f`` taken
+    at most ``timing_bus_share_max`` (``F``), ``o`` ``timing_after_bus``. So snow even through
+    the window weighs exactly as itself wherever ``f <= F`` (every lower-48 zone at 9 PM and
+    every later snapshot), and snow at least ``F`` before the bus hour never lowers."""
     hours = [(end - start).total_seconds() for start, end in spans]
     if sum(hours) <= 0:
         return 1.0, 1.0
+    if settings.timing_bus:
+        o, cap = settings.timing_after_bus, settings.timing_bus_share_max
+        f = sum(
+            bus_share(start, end, day, zone) * h
+            for (start, end), h in zip(spans, hours, strict=True)
+        ) / sum(hours)
+        return o + (1 - o) * f, o + (1 - o) * min(f, cap)
     weights = [commute_weight(start, end, day, zone, settings) for start, end in spans]
     even = sum(w * h for w, h in zip(weights, hours, strict=True)) / sum(hours)
     return even, min(even, settings.timing_even_max)
@@ -896,8 +952,9 @@ def even_factor(zone: str, settings: AdjustSettings) -> float:
     """What snow even through the window weighs in ``zone`` against itself: the window's even
     weight over the same taken at the cap (:func:`window_even`), at 9 PM the evening before
     each of :data:`SEASON_DAYS`, averaged. 1 where the window's even weight is under the cap
-    (the lower 48's Eastern, Central and Mountain time); over 1 where the cap holds it (the
-    climate's even snow then has the timing term live even snow has: PHYS-R2-S2)."""
+    (the lower 48's Eastern, Central and Mountain time; with ``timing_bus`` on, every lower-48
+    zone); over 1 where the cap holds it (the climate's even snow then has the timing term live
+    even snow has: PHYS-R2-S2)."""
     found: list[float] = []
     for day in SEASON_DAYS:
         nine = snapshot(day, zone)
@@ -914,8 +971,10 @@ def weighed(s: float, commute: float, even: float, settings: AdjustSettings) -> 
     hours (:attr:`~snowlight.predict.forecast_values.DistrictForecast.snow_commute`). Each
     school's snow is weighed before the district's 50% value is taken, so this only rises with
     any school's snow in any period (PHYS-R2-B1); ``s`` where the snow is even through the
-    window."""
-    o = settings.timing_outside
+    window. With ``timing_bus`` on, ``commute`` is the snow before the bus hour
+    (:attr:`~snowlight.predict.forecast_values.DistrictForecast.snow_bus`) and ``outside`` is
+    ``timing_after_bus``: ``(o s + (1 - o) snow_bus) / even_bus``."""
+    o = settings.timing_after_bus if settings.timing_bus else settings.timing_outside
     return (o * s + (1 - o) * min(max(commute, 0.0), s)) / even
 
 
@@ -923,6 +982,9 @@ NAMED_SHARE: Final = 0.5
 """A timing line names hours only where the district's 50% values of the window's periods add
 up to at least this share of its window snow: where its deciding schools' snow falls at
 different hours, no one period stands for them (PHYS-R2-S3)."""
+BUS_SIDE: Final = 0.5
+"""With ``timing_bus`` on, a timing line that raises names only a period more than this share
+before the bus hour, one that lowers only a period more than this share after it (BT-S5)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -951,14 +1013,23 @@ def _named(  # noqa: PLR0913, PLR0917 - the periods, the day, the place and the 
     """The period a timing line names, and whether it is the heaviest snow's: the heaviest snow
     by the hour where it is on the term's side of the even weight, else the heaviest on that
     side; ``None`` where no period with snow is on it, or where the periods' 50% values do not
-    stand for the window's snow (:data:`NAMED_SHARE`)."""
+    stand for the window's snow (:data:`NAMED_SHARE`). With ``timing_bus`` on, each period
+    weighs :func:`bus_weight`, and a line that raises names only a period more than half before
+    the bus hour, one that lowers only a period more than half after it."""
     if sum(part.snow for part in parts) < NAMED_SHARE * s:
         return None, False
-    weights = [commute_weight(part.start, part.end, day, zone, settings) for part in parts]
+    if settings.timing_bus:
+        shares = [bus_share(part.start, part.end, day, zone) for part in parts]
+        weights = [bus_weight(part.start, part.end, day, zone, settings) for part in parts]
+        # A line that raises names a period mostly before the bus hour; one that lowers, after.
+        sided = [g > BUS_SIDE if up else g < 1 - BUS_SIDE for g in shares]
+    else:
+        weights = [commute_weight(part.start, part.end, day, zone, settings) for part in parts]
+        sided = [True] * len(parts)
     side = [
         part
-        for part, w in zip(parts, weights, strict=True)
-        if part.snow > 0 and (w > even if up else w < even)
+        for part, w, ok in zip(parts, weights, sided, strict=True)
+        if ok and part.snow > 0 and (w > even if up else w < even)
     ]
     if not side:
         return None, False
@@ -1008,9 +1079,11 @@ def term_parts(  # noqa: PLR0913, PLR0917 - the forecast, the place, the day and
     parts = tuple(part for part in forecast.snow_parts if part.end > part.start)
     even = None
     weighted = s
-    if parts and forecast.snow_commute is not None and s > 0:
+    # With ``timing_bus`` on, the snow before the bus hour; else L5's commute snow.
+    timing = forecast.snow_bus if settings.timing_bus else forecast.snow_commute
+    if parts and timing is not None and s > 0:
         _, even = window_even([(part.start, part.end) for part in parts], day, zone, settings)
-        weighted = weighed(s, float(forecast.snow_commute), even, settings)
+        weighted = weighed(s, float(timing), even, settings)
     weighted = float(timed(s, weighted, settings))
     ice = max(float(forecast.ice), 0.0) if forecast.ice is not None else 0.0
     snow_term, timing_term, ice_term = (

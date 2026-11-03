@@ -10,6 +10,8 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Final
 from zoneinfo import ZoneInfo
 
+from snowlight.predict.ndfd import bus_time
+
 COMMUTE: Final = (time(22, 0), time(9, 0))
 """The hours on the school's clock whose snow is on the roads for the buses: 10 PM the evening
 before to 9 AM."""
@@ -25,6 +27,16 @@ def commute_share(start: datetime, end: datetime, day: date, zone: str) -> float
     lo = datetime.combine(day - timedelta(days=1), COMMUTE[0], tzinfo=tz).astimezone(UTC)
     hi = datetime.combine(day, COMMUTE[1], tzinfo=tz).astimezone(UTC)
     return max(0.0, (min(end, hi) - max(start, lo)).total_seconds()) / length
+
+
+def bus_share(start: datetime, end: datetime, day: date, zone: str) -> float:
+    """The share of ``start`` to ``end`` before the bus hour of school day ``day`` (07:00 on
+    ``zone``'s clock, :func:`snowlight.predict.ndfd.bus_time`): snow down by then is on the
+    roads when the buses go out (0 for an empty span)."""
+    length = (end - start).total_seconds()
+    if length <= 0:
+        return 0.0
+    return max(0.0, (min(end, bus_time(day, zone)) - start).total_seconds()) / length
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,6 +95,12 @@ class DistrictForecast:
     window snow in the commute hours (:data:`COMMUTE`; a period's snow taken as even through
     it): the adjustment's timing. Never more than ``snow``, and it only grows with any school's
     snow in any period. ``None`` where ``snow`` is."""
+    snow_bus: float | None = None
+    """The district's 50% value, by the same rule as ``snow``, of each deciding school's own
+    window snow from the snapshot to the bus hour (07:00 on the school's clock,
+    :func:`bus_share`; a period's snow taken as even through it): the bus hour timing term's
+    input (``timing_bus``). Never more than ``snow``, and it only grows with any school's snow
+    in any period. ``None`` where ``snow`` is."""
 
 
 @dataclass(frozen=True, slots=True)

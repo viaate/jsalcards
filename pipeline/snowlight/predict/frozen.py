@@ -114,7 +114,8 @@ ROW_KEYS: Final[Mapping[str, str]] = {
     "sa": "1 when the district said school is on",
     "fr": "the forecast adjustment's read: before (the class snapshot), none, read or kept; "
     "absent where the file did not apply the adjustment",
-    "f": "the forecast read: sn window snow, cm commute snow (inches, hundredths), pp periods "
+    "f": "the forecast read: sn window snow, cm commute snow, bb snow before the bus hour "
+    "(07:00 local; inches, hundredths), pp periods "
     "[start, end, snow] (minutes from the day's 00:00 UTC), ice (inches, thousandths), fl 7 AM "
     "feel, code, rt run time",
     "t": "the adjustment's terms (snow, timing, ice, cold; log odds, 4 decimals): raw, lo/hi "
@@ -514,6 +515,7 @@ def _forecast_json(detail: AdjustDetail, day: date) -> dict[str, object] | None:
     value: dict[str, object] = {
         "sn": _r(found.snow, SNOW_ROUND),
         "cm": _r(found.snow_commute, SNOW_ROUND),
+        "bb": _r(found.snow_bus, SNOW_ROUND),
         "pp": [
             [_minutes(p.start, day), _minutes(p.end, day), _r(p.snow, SNOW_ROUND)]
             for p in found.snow_parts

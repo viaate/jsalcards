@@ -29,7 +29,8 @@ amount only where every deciding school's forecast is in it, and otherwise only 
 For the forecast adjustment (:mod:`snowlight.predict.forecast_adjust`) it keeps the district's
 50% value of the window snow (``None`` where a deciding school has no value: a school off the
 grid is not read, never read as no snow), the same of each school's own snow in the commute
-hours (weighed school by school first, so both only grow with any school's snow in any
+hours and the same of each school's own snow before the bus hour (07:00 on the school's clock;
+each weighed school by school first, so all three only grow with any school's snow in any
 period), and each period's 50% value, which only names a timing line's hours.
 
 A run that does not list or read, or reads only in part (an element that did not read, the
@@ -56,6 +57,7 @@ from snowlight.predict.forecast_values import (
     DistrictForecast,
     Forecasts,
     SnowPart,
+    bus_share,
     commute_share,
 )
 from snowlight.predict.ndfd import Floats, Run
@@ -113,7 +115,7 @@ def zone_forecasts(
     count = group.groups.ids.shape[0]
     mine = group.schools
     snow_low = snow_high = night_half = night_low = night_high = snow_half = None
-    commute_half = None
+    commute_half = bus_half = None
     parts: list[tuple[datetime, datetime, Floats]] = []
     if snow is not None:
         raw = snow[mine]
@@ -122,7 +124,7 @@ def zone_forecasts(
         # The adjustment's amount: NaN (not read) where a deciding school has no value, so a
         # school off the grid is never taken as one with no snow (S-R2-1).
         snow_half = ndfd.group_half(raw, group.groups, share)
-        commute = np.zeros_like(raw)
+        commute = before_bus = np.zeros_like(raw)
         for end in ndfd.window_ends(day):
             if end > at and end in values.snow:
                 # Each period's part still to come (SF-R5-1).
@@ -135,7 +137,12 @@ def zone_forecasts(
                 # the district's 50% value is taken (PHYS-R2-B1): it grows with any school's
                 # snow in any period, as ``snow`` does.
                 commute = commute + part * commute_share(start, end, day, group.zone)
-        commute_half = ndfd.group_half(np.minimum(commute, raw), group.groups, share)
+                # The same of each school's own snow before the bus hour (BUS-TIMING).
+                before_bus = before_bus + part * bus_share(start, end, day, group.zone)
+        commute_half, bus_half = (
+            ndfd.group_half(np.minimum(timed, raw), group.groups, share)
+            for timed in (commute, before_bus)
+        )
         ends = ndfd.window_ends(day)
         night = np.zeros_like(school)
         for end in ends:
@@ -185,6 +192,7 @@ def zone_forecasts(
             run_time=values.run.time,
             snow=_read(snow_half, k),
             snow_commute=_read(commute_half, k) if _read(snow_half, k) is not None else None,
+            snow_bus=_read(bus_half, k) if _read(snow_half, k) is not None else None,
             snow_parts=tuple(
                 SnowPart(start, end, round(float(half[k]), 4)) for start, end, half in parts
             )
