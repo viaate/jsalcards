@@ -16,6 +16,9 @@ labels:
   first_season: 2015          # 2015-16
   excluded_from: "2020-03-13" # the pandemic closures: never a weather label
   excluded_until: "2020-08-14"
+  reason_rule: 2              # REASONS decisions 4 and 5: flooding, severe storms and a hurricane
+                              # count only on a tropical day; Election Day, Veterans Day,
+                              # Columbus Day and Good Friday are breaks
 
 # Weather class (spec b): the alerts that count for a school day.
 weather:

@@ -137,16 +137,18 @@ def pt_morning(  # noqa: PLR0913 - every part a test sets
     by: Mapping[str, Sequence[str]] | None = None,
     audience: Mapping[str, Mapping[str, date]] | None = None,
     market_of: Mapping[str, str] | None = None,
+    day: date | None = None,
 ) -> Morning:
-    """SYNTHETIC: Oct 28 06:30-09:30 PT shown under v1, ``reads`` in the ``at`` slot (07:00
-    PT by default) with the given healthy share."""
+    """SYNTHETIC: Oct 28 (or ``day``) 06:30-09:30 PT shown under v1, ``reads`` in the ``at``
+    slot (07:00 PT by default) with the given healthy share."""
+    day = OCT28 if day is None else day
     slots = {
-        slot_start(OCT28, key): Slot(shown={"v1"}, health=health if key == at else 990)
+        slot_start(day, key): Slot(shown={"v1"}, health=health if key == at else 990)
         for key in WINDOW_PT
     }
-    first = slots[slot_start(OCT28, at)] if at in WINDOW_PT else Slot(shown={"v1"})
+    first = slots[slot_start(day, at)] if at in WINDOW_PT else Slot(shown={"v1"})
     if at not in WINDOW_PT:
-        slots[slot_start(OCT28, at)] = first
+        slots[slot_start(day, at)] = first
         first.health = health
     first.reads = {source: set(found) for source, found in reads.items()}
     first.by = {source: set(found) for source, found in (by or {}).items()}
@@ -156,7 +158,7 @@ def pt_morning(  # noqa: PLR0913 - every part a test sets
         }
     markets = market_of or {"tegna-krem": "Spokane", "flashalert-spokane": "Spokane"}
     return Morning(
-        day=OCT28,
+        day=day,
         slots=slots,
         audience=audience or {},
         market_of=markets,
@@ -425,6 +427,59 @@ def test_a_trial_is_recorded_only_for_a_lit_district() -> None:
     )  # fmt: skip
     assert found.trials == []
     assert [r.label for r in found.rows] == [Label.NO_SCHOOL]
+
+
+def test_a_flooding_closing_on_an_advisory_day_is_not_no_school() -> None:
+    def label(reason: Reason) -> Label:
+        found = label_read_day(
+            OCT28,
+            morning=pt_morning(
+                {"tegna-krem": [WHOLE]},
+                by={"tegna-krem": [METHOW]},
+                named={METHOW: {OCT28.isoformat(): ["closed"]}},
+            ),
+            coverage=COUNTY, weather=[WeatherClass.ADVISORY],
+            lit=Lit({s: LitStatus(Status.CLOSED, reason) for s in (0, 1)}, frozenset()),
+            directory=one_district(), rule=RULE, recent={"tegna-krem": 3},
+            lit_by={METHOW: {"tegna-krem": LIT_AT}},
+        )  # fmt: skip
+        (row,) = found.rows
+        return row.label
+
+    assert label(Reason.WINTER_STORM) is Label.NO_SCHOOL
+    assert label(Reason.FLOODING) is not Label.NO_SCHOOL
+
+
+@pytest.mark.parametrize(
+    ("day", "beside"),
+    [(date(2026, 10, 12), date(2026, 10, 13)), (date(2027, 3, 26), date(2027, 3, 25))],
+)
+def test_a_planned_day_off_labels_nothing(day: date, beside: date) -> None:
+    # Columbus Day and Good Friday (in daylight time, as the window's slots are), read whole
+    # at 07:00 PT, the district lit closed or dark: unknown either way.
+    for lit in (DARK, closed_lit([0, 1])):
+        found = label_read_day(
+            day,
+            morning=pt_morning(
+                {"tegna-krem": [WHOLE]}, day=day,
+                by={"tegna-krem": [METHOW]} if lit is not DARK else None,
+                named={METHOW: {day.isoformat(): ["closed"]}} if lit is not DARK else None,
+            ),
+            coverage=COUNTY, weather=[WeatherClass.SNOW_WARNING], lit=lit,
+            directory=one_district(), rule=RULE, recent={"tegna-krem": 3},
+        )  # fmt: skip
+        (row,) = found.rows
+        assert row.label is Label.UNKNOWN
+        assert row.why == "break"
+    # The school day beside it is read as ever.
+    found = label_read_day(
+        beside,
+        morning=pt_morning({"tegna-krem": [WHOLE]}, day=beside),
+        coverage=COUNTY, weather=[WeatherClass.SNOW_WARNING], lit=DARK,
+        directory=one_district(), rule=RULE, recent={"tegna-krem": 3},
+    )  # fmt: skip
+    (row,) = found.rows
+    assert row.label is not Label.UNKNOWN
 
 
 def test_the_sensitivity_priors() -> None:

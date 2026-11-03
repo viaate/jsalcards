@@ -36,6 +36,11 @@ class LabelSettings(_Settings):
     first_season: int
     excluded_from: date
     excluded_until: date
+    reason_rule: Literal[2]
+    """Rule 2 (predict-next REASONS, Nov 3, 2026): flooding, severe storms and a hurricane are
+    a weather closing only on a ``tropical`` day, and Election Day, Veterans Day, Columbus Day
+    and Good Friday are likely breaks (:func:`~snowlight.predict.labels.weather_positive`,
+    :func:`~snowlight.predict.calendar.likely_break`)."""
 
 
 class WeatherSettings(_Settings):
@@ -189,14 +194,15 @@ class LearnSettings(_Settings):
     out, and a learned file that counted one is no longer served."""
 
 
-LIVE_SCORE_SHA256: Final = "a228204e0624316e4e1d8410b0bba61604c847ac69263da8af19dfce5584ed95"
+LIVE_SCORE_SHA256: Final = "2b46a351e0101bd8bf608cc600e87d773f2d300da19fd9b9533c1966c66944e4"
 """The sha256 of the pre-registered scoring rules (:func:`live_score_sha256`: the
 ``live_score`` block, the ``labels`` and ``weather`` blocks and ``learn.snapshot_slack_minutes``),
 as S7 addendum h records it (and addendum i, for the forecast adjustment of advisory-sane L5;
 revised Nov 2, 2026 by predict-next SNOW-AMOUNT: ``snow_amount``, ``snow_amount_high`` and
 ``snow_amount_floor_ratio`` added, the term off, no served value changed; revised Nov 3, 2026
 by predict-next SNOW-AMOUNT-2: the term on, ``snow_amount_slope_advisory`` and
-``snow_amount_slope_warning`` added, for rows after it).
+``snow_amount_slope_warning`` added, for rows after it; revised Nov 3, 2026 by predict-next
+REASONS: ``labels.reason_rule`` 2 added, no served value changed).
 A test holds the two equal, so none of them changes without this."""
 
 

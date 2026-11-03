@@ -9,6 +9,7 @@ import pytest
 
 from snowlight.predict.config import PredictConfig
 from snowlight.predict.labels import (
+    WEATHER_REASONS,
     DayLit,
     LabelInputs,
     LitStatus,
@@ -276,6 +277,74 @@ def test_an_empty_read_alone_on_a_storm_day_needs_a_market_peer() -> None:
     elsewhere = {"kaaa": "Kansas City", "kbbb": "Wichita"}
     found = label_day(DAY, inputs(reads=[empty, peer], market_of=elsewhere), {}, SETTINGS)
     assert outcomes(found)["d1"] == "unknown"
+
+
+TROPICAL_ONLY = (Reason.FLOODING, Reason.SEVERE_STORMS, Reason.HURRICANE)
+
+
+@pytest.mark.parametrize("weather", list(WeatherClass))
+def test_flooding_storms_and_a_hurricane_count_only_on_a_tropical_day(
+    weather: WeatherClass,
+) -> None:
+    for reason in TROPICAL_ONLY:
+        for status in (Status.CLOSED, Status.REMOTE, Status.DELAYED):
+            found = weather_positive(LitStatus(status, reason), weather)
+            assert found is (weather is WeatherClass.TROPICAL)
+    for reason in (Reason.WINTER_STORM, Reason.ICE, Reason.EXTREME_COLD):
+        assert weather_positive(LitStatus(Status.CLOSED, reason), weather)
+    assert weather_positive(LitStatus(Status.CLOSED, None), weather) is (
+        weather is not WeatherClass.NONE
+    )
+
+
+def _positive_before_rule_2(lit: LitStatus, weather: WeatherClass) -> bool:
+    if lit.status not in (Status.CLOSED, Status.REMOTE, Status.DELAYED):
+        return False
+    if lit.reason is None:
+        return weather is not WeatherClass.NONE
+    return lit.reason in WEATHER_REASONS
+
+
+def test_rule_2_is_positive_only_where_the_rule_before_it_was() -> None:
+    for status in Status:
+        for reason in (None, *Reason):
+            for weather in WeatherClass:
+                lit = LitStatus(status, reason)
+                if weather_positive(lit, weather):
+                    assert _positive_before_rule_2(lit, weather)
+
+
+def test_a_flooding_row_on_a_winter_day_is_not_no_school() -> None:
+    flooding = LitStatus(Status.CLOSED, Reason.FLOODING)
+    lit = {"s1": flooding, "s2": flooding, "s3": flooding}
+    rows = label_day(DAY, inputs(), lit, SETTINGS)
+    assert outcomes(rows)["d1"] == "unknown"
+    tropical = inputs(weather={("d1", DAY): WeatherClass.TROPICAL})
+    assert outcomes(label_day(DAY, tropical, lit, SETTINGS))["d1"] == "no_school"
+
+
+def test_a_clear_day_district_whose_schools_name_ice_is_no_school() -> None:
+    """The merge now shows a reason one list names beside one that names none: on a clear
+    day a named winter reason is a weather closing, a closing with none is not."""
+    iced = LitStatus(Status.CLOSED, Reason.ICE)
+    assert outcomes(label_day(DAY, inputs(), {"s5": iced, "s6": iced}, SETTINGS))["d2"] == (
+        "no_school"
+    )
+    bare = LitStatus(Status.CLOSED, None)
+    assert outcomes(label_day(DAY, inputs(), {"s5": bare, "s6": bare}, SETTINGS))["d2"] == (
+        "unknown"
+    )
+
+
+@pytest.mark.parametrize("day", [date(2026, 11, 3), date(2026, 11, 11), date(2026, 10, 12)])
+def test_a_planned_day_off_labels_nothing(day: date) -> None:
+    reads = [read("kaaa", f"{day.isoformat()}T13:00:00"), read("kbbb", f"{day}T13:00:00")]
+    weather = {(d, day): WeatherClass.SNOW_WARNING for d in ("d1", "d2", "d3")}
+    closed = {f"s{i}": CLOSED_SNOW for i in range(1, 8)}
+    for lit in ({}, closed):
+        rows = label_day(day, inputs(reads=reads, weather=weather), lit, SETTINGS)
+        assert set(outcomes(rows).values()) == {"unknown"}
+        assert set(whys(rows).values()) == {"break"}
 
 
 def test_likely_break_days_are_never_labeled() -> None:

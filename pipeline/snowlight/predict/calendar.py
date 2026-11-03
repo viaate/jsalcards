@@ -12,7 +12,11 @@ from zoneinfo import ZoneInfo
 
 FRIDAY: Final = 4
 THURSDAY: Final = 3
+SATURDAY: Final = 5
+SUNDAY: Final = 6
+OCTOBER: Final = 10
 NOVEMBER: Final = 11
+VETERANS_DAY: Final = 11
 DECEMBER: Final = 12
 JULY: Final = 7
 FIRST_DAY: Final = (8, 15)
@@ -46,18 +50,65 @@ BREAK_UNTIL: Final = (1, 3)
 FEBRUARY: Final = 2
 
 
+def election_day(year: int) -> date:
+    """The general Election Day: the Tuesday after the first Monday of November."""
+    first = date(year, NOVEMBER, 1)
+    return first + timedelta(days=(-first.weekday()) % 7 + 1)
+
+
+def veterans_day(year: int) -> date:
+    """Veterans Day as observed: 11 November, or the Friday before a Saturday one or the
+    Monday after a Sunday one."""
+    day = date(year, NOVEMBER, VETERANS_DAY)
+    if day.weekday() == SATURDAY:
+        return day - _ONE_DAY
+    if day.weekday() == SUNDAY:
+        return day + _ONE_DAY
+    return day
+
+
+def columbus_day(year: int) -> date:
+    """The second Monday of October."""
+    first = date(year, OCTOBER, 1)
+    return first + timedelta(days=(-first.weekday()) % 7 + 7)
+
+
+def good_friday(year: int) -> date:
+    """The Friday before Easter Sunday (Gregorian, by the anonymous Gregorian algorithm)."""
+    golden = year % 19
+    century, of_century = divmod(year, 100)
+    leap_centuries, century_rest = divmod(century, 4)
+    correction = (century + 8) // 25
+    moon = (century - correction + 1) // 3
+    epact = (19 * golden + century - leap_centuries - moon + 15) % 30
+    quarters, years_rest = divmod(of_century, 4)
+    weekday = (32 + 2 * century_rest + 2 * quarters - epact - years_rest) % 7
+    shift = (golden + 11 * epact + 22 * weekday) // 451
+    month, day = divmod(epact + weekday - 7 * shift + 114, 31)
+    return date(year, month, day + 1) - timedelta(days=2)
+
+
 def likely_break(day: date) -> bool:
     """Whether many districts take ``day`` off though it is a school day here: the Monday to
-    Wednesday of Thanksgiving week, 18 December to 3 January, Martin Luther King Jr. Day and
-    Presidents' Day. A list that shows nothing then says nothing about the weather, so the
-    labels leave these days unknown (the serving pass still gives them a chance)."""
+    Wednesday of Thanksgiving week, 18 December to 3 January, Martin Luther King Jr. Day,
+    Presidents' Day, and (reason rule 2) the general Election Day, Veterans Day as observed,
+    Columbus Day and Good Friday. A list that shows nothing then says nothing about the
+    weather, and a closing listed then is a planned day off, so the labels leave these days
+    unknown (the serving pass still gives them a chance)."""
     month_day = (day.month, day.day)
     if month_day >= BREAK_FROM or month_day <= BREAK_UNTIL:
         return True
     feast = thanksgiving(day.year)
     if feast - timedelta(days=3) <= day < feast:
         return True
-    return day in (third_monday(day.year, 1), third_monday(day.year, FEBRUARY))
+    return day in (
+        third_monday(day.year, 1),
+        third_monday(day.year, FEBRUARY),
+        election_day(day.year),
+        veterans_day(day.year),
+        columbus_day(day.year),
+        good_friday(day.year),
+    )
 
 
 def in_season(day: date) -> bool:

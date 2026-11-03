@@ -7,6 +7,7 @@ import pytest
 from snowlight.predict.calendar import (
     forecast_days,
     is_school_day,
+    likely_break,
     previous_school_day,
     school_days,
     season_label,
@@ -135,3 +136,26 @@ def test_the_district_class_covers_half_its_schools_or_more() -> None:
     assert district_class_from_counts(covered, 4, 0.5) is snow
     assert district_class_from_counts(covered, 5, 0.5) is none
     assert district_class_from_counts(covered, 0, 0.5) is none
+
+
+@pytest.mark.parametrize(
+    "day",
+    [
+        date(2026, 11, 3),  # Election Day
+        date(2026, 11, 11),  # Veterans Day, a Wednesday
+        date(2023, 11, 10),  # Veterans Day on a Saturday, observed the Friday
+        date(2018, 11, 12),  # Veterans Day on a Sunday, observed the Monday
+        date(2026, 10, 12),  # Columbus Day
+        date(2027, 3, 26),  # Good Friday
+        date(2024, 3, 29),  # Good Friday
+    ],
+)
+def test_planned_days_off_are_likely_breaks(day: date) -> None:
+    assert is_school_day(day)
+    assert likely_break(day)
+
+
+@pytest.mark.parametrize("day", [date(2026, 11, 4), date(2026, 11, 10)])
+def test_the_days_beside_them_are_not(day: date) -> None:
+    assert is_school_day(day)
+    assert not likely_break(day)

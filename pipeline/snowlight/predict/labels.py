@@ -10,10 +10,13 @@ gate display, not labels.
   fully virtual schools (the ``points.bin`` kind flags).
 * **Lit on D**: :func:`settle_day` gives the school a status dated for D, from any read
   whose window covers D (evening-before lists count).
-* **Weather positive**: closed, remote or delayed, for a winter storm, ice, extreme cold,
-  a hurricane, flooding or severe storms; or with no reason named on a day the district's
-  weather class is not ``none``. Heat, a power outage, any other cause, and a closing
-  with no reason on a clear day are unknown: never positive, never open.
+* **Weather positive**: closed, remote or delayed, for a winter storm, ice or extreme
+  cold; for a hurricane, flooding or severe storms only on a day the district's weather
+  class is ``tropical`` (reason rule 2: on a winter or clear day they are no winter
+  closing); or with no reason named on a day the district's weather class is not
+  ``none``. Heat, a power outage, any other cause, a closing with no reason on a clear
+  day, and flooding, severe storms or a hurricane on a day not ``tropical`` are unknown:
+  never positive, never open.
 * **Audience** of station ``s``: the districts it listed (any school or the district row,
   any status) on at least ``audience_days`` distinct local days; ``s`` carries ``d`` on D
   only from the first day it listed ``d`` (a list never shows a district open before it is
@@ -89,6 +92,8 @@ WEATHER_REASONS: Final = frozenset(
     }
 )
 """The reasons a weather closing names; heat and a power outage are not weather here."""
+TROPICAL_REASONS: Final = frozenset({Reason.HURRICANE, Reason.FLOODING, Reason.SEVERE_STORMS})
+"""The weather reasons a label counts only on a ``tropical`` day (reason rule 2)."""
 NO_SCHOOL: Final = frozenset({Status.CLOSED, Status.REMOTE})
 COUNTED_STATES: Final = frozenset({"populated", "empty"})
 """Read states that can show a district was read (deferred and count-only never do)."""
@@ -150,6 +155,8 @@ def weather_positive(lit: LitStatus, weather: WeatherClass) -> bool:
         return False
     if lit.reason is None:
         return weather is not WeatherClass.NONE
+    if lit.reason in TROPICAL_REASONS:
+        return weather is WeatherClass.TROPICAL
     return lit.reason in WEATHER_REASONS
 
 
