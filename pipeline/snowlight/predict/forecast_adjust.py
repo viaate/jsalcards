@@ -18,7 +18,7 @@ transparent terms, each with a physical reason:
   days of the class are often icy, the usual snow counts the ice days, so the same inches
   count for a little less there (PHYS-R3-S1 (i), a documented limit: the round-4 anchor at
   the snow alone is gone, the lead's ruling of Nov 1, since its flat stretch let more snow
-  lower the chance where ice is forecast; the snow amount term's floor, registered off, is
+  lower the chance where ice is forecast; the snow amount term's floor, registered on, is
   its monotone successor: :func:`floor_lift`).
 * **Timing** (two-sided): snow from 10 PM the evening before to 9 AM on the school's clock is
   on the roads for the buses, with little time to plow it; snow earlier in the evening is
@@ -70,12 +70,13 @@ district's average a little off its level (docs/predict.md gives the measured bo
 each pass logs the mean of the published chance less the class level per class
 (:func:`shift_note`).
 
-**The snow amount term** (predict-next SNOW-AMOUNT, registered off: ``snow_amount``): the
-total is never under the snow alone's floor (:func:`floor_lift`), and over the class's upper
-bound it bends toward ``snow_amount_high`` instead of stopping there (:func:`saturated`), so
-big amounts keep rising; the solve and serving hold the total the same way. The archive's
-held-out backtest did not show it better, so it is off and the terms are L5's exactly
-(docs/predict.md, "The snow amount term").
+**The snow amount term** (predict-next SNOW-AMOUNT, registered on by SNOW-AMOUNT-2:
+``snow_amount``): each class has its own slope (:meth:`AdjustSettings.for_class`), the total
+is never under the snow alone's floor (:func:`floor_lift`), and over the class's upper bound it
+bends toward ``snow_amount_high`` instead of stopping there (:func:`saturated`), so big amounts
+keep rising; the solve and serving hold the total the same way. A within-date test with a
+season held out found it no worse than L5 (docs/predict.md, "The snow amount term"); off, the
+terms are L5's exactly.
 
 No forecast, a forecast that did not read, a code that is unknown, or a stale run (none at
 most 3 hours old at the snapshot): no term, the chance is the class level ``p0`` and no
