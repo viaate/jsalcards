@@ -1998,6 +1998,7 @@ def run_state(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
             return _fail(f"export: {describe(error)}")
         _say(f"state exported: {len(names)} files, {len(data)} bytes")
         _say(morning_line(args.state / "morning"))  # it never raises
+        _say(census_line(args.state))  # it never raises
         return int(Exit.OK)
     try:
         config = LiveConfig.load(args.config)
@@ -2053,6 +2054,19 @@ def morning_line(folder: Path) -> str:
             continue
     span = f" ({found[0].stem} to {found[-1].stem})" if found else ""
     return f"morning record: {len(found)} days, {size} B{span}"
+
+
+def census_line(state: Path) -> str:
+    """The ledger's cold census (:func:`snowlight.live.ledger.cold_census`), counts only: the
+    standing rows the resolver withholds as ``unknown_start`` when it reaches them (``lo``
+    unknown from a cold start, no row stamp in the live rules' ``stamp_window`` up to their
+    first sighting). It never raises, so the export it follows is never changed by it."""
+    try:
+        from snowlight.live.ledger import cold_census  # noqa: PLC0415
+
+        return cold_census(state / "ledger.sqlite", stamp_window=LIVE_MERGE_RULES.stamp_window)
+    except Exception as error:  # the census is a log line, never a step's outcome
+        return f"ledger cold census: unreadable ({type(error).__name__})"
 
 
 EVIDENCE_SECONDS: Final = 240.0

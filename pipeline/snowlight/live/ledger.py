@@ -63,6 +63,7 @@ import json
 import secrets
 import sqlite3
 import unicodedata
+from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, timedelta
@@ -908,4 +909,110 @@ def _ledger_row(found: tuple[object, ...]) -> LedgerRow:
         ident=ident,
         pred=pred,
         lapsed=bool(lapsed),
+    )
+
+
+# --- read-only counts ---------------------------------------------------------------------------
+
+
+def _read_only(path: Path) -> sqlite3.Connection:
+    """The ledger opened read only (nothing in it can change).
+
+    Raises:
+        FileNotFoundError: there is no ledger at ``path``.
+        sqlite3.Error: it does not open.
+    """
+    if not path.is_file():
+        raise FileNotFoundError(path.name)
+    return sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+
+
+def last_outcomes(path: Path) -> dict[str, str]:
+    """Each source's last read outcome (``sources.last_outcome``), read only.
+
+    Raises:
+        FileNotFoundError: there is no ledger at ``path``.
+        sqlite3.Error: it does not read.
+    """
+    db = _read_only(path)
+    try:
+        return {
+            str(source): str(outcome)
+            for source, outcome in db.execute("SELECT source_id, last_outcome FROM sources")
+        }
+    finally:
+        db.close()
+
+
+def _dates_row(stamp: object, hi: object, window: timedelta) -> bool:
+    """Whether a row stamp dates its row as the resolver does: within ``window`` up to the
+    first sighting ``hi``."""
+    if stamp is None:
+        return False
+    at, first = datetime.fromisoformat(str(stamp)), datetime.fromisoformat(str(hi))
+    return first - window <= at <= first
+
+
+def cold_census(path: Path, *, stamp_window: timedelta = LONGEST) -> str:
+    """One counts-only line (no ids) of the standing rows the resolver withholds as
+    ``unknown_start`` when it reaches them: present, ``lo`` unknown from a cold start, and no
+    row stamp in the ``stamp_window`` (the resolver's ``Rules.stamp_window``, 36 h) up to their
+    first sighting (a row with one is dated by it, never withheld). Of them: first seen with no
+    good read of their source in the ``LONGEST`` (36 h) before (``good_reads``: a first read or
+    a gap), with one (back after 3 hours on a later day, or a tied successor), or before what
+    ``good_reads`` keeps (its 14 days before the source's last good read); the rows by UTC
+    first-seen day; and how many sources hold them. ``good_reads`` keeps the first good read
+    of each UTC hour only, so a row first seen within an hour of the 36 h edge can count as
+    with no good read when a later read of that hour was good. It reads the ledger read only
+    and never raises."""
+    try:
+        db = _read_only(path)
+    except FileNotFoundError:
+        return "ledger cold census: no ledger"
+    except Exception as error:  # a counts line never stops the step
+        return f"ledger cold census: unreadable ({type(error).__name__})"
+    try:
+        rows = [
+            (source, hi)
+            for source, hi, stamp in db.execute(
+                "SELECT source_id, hi, row_stamp FROM rows WHERE absent_since IS NULL AND gone = 0"
+                " AND lo IS NULL AND start = ?",
+                (Start.COLD.value,),
+            )
+            if not _dates_row(stamp, hi, stamp_window)
+        ]
+        last = {
+            str(source): datetime.fromisoformat(str(at))
+            for source, at in db.execute(
+                "SELECT source_id, last_good_at FROM sources WHERE last_good_at IS NOT NULL"
+            )
+        }
+        kinds: Counter[str] = Counter()
+        days: Counter[str] = Counter()
+        holding: set[str] = set()
+        for source, hi_text in rows:
+            hi = datetime.fromisoformat(str(hi_text))
+            holding.add(str(source))
+            days[hi.astimezone(UTC).date().isoformat()] += 1
+            newest = last.get(str(source), hi)
+            if hi - LONGEST < newest - PRUNE:
+                kinds["past"] += 1
+                continue
+            found = db.execute(
+                "SELECT 1 FROM good_reads WHERE source_id = ? AND at >= ? AND at < ? LIMIT 1",
+                (str(source), _iso((hi - LONGEST).astimezone(UTC)), _iso(hi.astimezone(UTC))),
+            ).fetchone()
+            kinds["warm" if found is not None else "first"] += 1
+    except Exception as error:  # a counts line never stops the step
+        return f"ledger cold census: unreadable ({type(error).__name__})"
+    finally:
+        db.close()
+    by_day = ", ".join(f"{day} {n}" for day, n in sorted(days.items())) or "none"
+    return (
+        f"ledger cold census: {len(rows)} rows present with lo unknown from a cold start "
+        "and no row stamp dating them (unknown_start) "
+        f"({kinds['first']} with no good read of their source in the 36 h before: a first read "
+        f"or a gap; {kinds['warm']} with one: back after 3 h on a later day, or a tied "
+        f"successor; {kinds['past']} before what good_reads keeps) in {len(holding)} sources; "
+        f"by first-seen UTC day: {by_day}"
     )

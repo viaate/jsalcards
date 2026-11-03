@@ -359,3 +359,35 @@ live_score:
   accuracy:
     brier_vs_live_rate: 0.005
   hand_audit: {rows: 50, false_open_max: 0.05}
+  call_time:                      # predict-next CALL-TIME (Nov 3; docs/predict.md, "The usual call time"): each district's usual call time u and a decline past it, while every required list proves the district silent; the term off (CALL-TIME-1), nothing served changes
+    serve: "off"                  # off only: config refuses any other until LIVE-READS lands (the switch is CALL-TIME-2's, automatic in the learn step)
+    classes: [advisory, warning, cold]  # a call is a map time on a day of these serving classes
+    evening_from: "18:00"         # D-1 local: before it a call is ahead (no sample); from it to midnight, evening (kept apart, never in u)
+    morning_until: "09:30"        # 00:00 to this local on D: a morning call (in u); later, late (never in u)
+    proof_from: "05:00"           # a proof at slot end s reads the rule copy's window [proof_from, s) and D's record cut at s
+    slots: ["05:30", "09:30"]     # slot ends s every step_minutes, local; held after the last
+    held_row: "10:00"             # the decision rule's extra row: the held value
+    step_minutes: 30              # x grows at most this a slot
+    own_min_calls: 3              # an own u needs this many morning calls...
+    own_grace: 15                 # ...and starts the decline this many minutes past u
+    pool_grace: 30                # a pool-driven u's grace
+    shrink: 3                     # u: the weighted median of the own morning calls (weight 1) and this many pseudo-samples at the pool's median
+    pool_min_calls: 10            # a pool (market, else state; never national) holds this many morning calls...
+    pool_min_districts: 3         # ...from this many districts
+    pool_order: [market, state]
+    market_lead: [whole_days, captures, id]  # d's market on D: its tier-A list with the most days of a whole read in lead_days, then more captures, then lowest id
+    lead_days: 14
+    required_days: 45             # a required list: every tier-A list of d in the live registry; one with no whole read in these days is dark, still required (lead ruling)
+    m_grid: [0.35, 0.60, 0.05]    # F: m from 0.35 to 0.60 by 0.05...
+    tau_grid: [20, 90, 5]         # ...tau from 20 to 90 minutes by 5...
+    first_slot_max: 0.40          # ...and |Delta(30)| at most this (75 of the 90 points); outside F refused, never clamped
+    default: [0.35, 45]           # (m, tau) before any training date: Delta(30) -0.3802
+    fold: prequential_then_season_out  # one live season: dates before D; from two, each season held out (no call of it in a fitted value)
+    bands: ["05:30", "06:30", "07:30", "08:30", "09:30"]  # strata [05:30, 06:30), [06:30, 07:30), [07:30, 08:30), [08:30, 09:30], plus 10:00
+    frozen: [d0_0507, d0_0630]    # the base: d0_0507 before 06:30, d0_0630 from 06:30
+    pr_moved: 0.05                # reported: the share of rows at risk at 06:30 whose two bases differ by over this
+    supply: {dates: 8, states: 3, rows: 200}  # at-risk district-times with Delta < 0
+    stratum_min_rows: 100
+    bootstrap_resamples: 2000
+    bound: 0.90
+    tolerance: 0.005              # per district-time: overall gain at least 0, its lower bound and every class at least -tolerance

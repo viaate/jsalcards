@@ -30,9 +30,9 @@ import sys
 import tempfile
 import time
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Final
 
@@ -45,6 +45,9 @@ from snowlight.predict.publish import Host
 from snowlight.schemas.base import check_published_bytes
 from snowlight.schemas.stats import ReadAudit
 
+STARTED: Final = time.monotonic()
+"""When this module was first imported: the CLI imports it to register its commands, so this
+is about the start of the step's process (the call time counts line's limit counts from it)."""
 INTERNAL: Final = PIPELINE_ROOT / "out" / "internal"
 COVERAGE: Final = INTERNAL / "stations" / "coverage.json"
 
@@ -128,6 +131,12 @@ class ReadLabelsRun:
     outputs: Path | None = None
     """The step's ``GITHUB_OUTPUT``: ``added=true`` when a day was added (the cache is saved
     only then)."""
+    frozen: Path | None = None
+    """The frozen record's folder (:data:`snowlight.predict.frozen.FOLDER`), for the call time
+    counts line's served rows; ``None``: not read (none counted served)."""
+    started: float | None = None
+    """When the step's process began (``time.monotonic``; the CLI's :data:`STARTED`), which the
+    call time counts line's limit counts from; ``None``: when :func:`read_once` began."""
 
 
 COVERAGE_ABSENT: Final = "the coverage files are absent ({}): nothing is labeled or frozen"
@@ -224,8 +233,224 @@ def read_once(run: ReadLabelsRun) -> int:
         return 1
     for line in summary(audit, run.folder, report):
         _out(f"predict read-labels: {line}")
+    step = began if run.started is None else min(run.started, began)
+    call_time_lines(run, done, step, coverage)
     _out(f"predict read-labels: {time.monotonic() - began:.1f} s")
     return 0
+
+
+CALL_TIME_SECONDS: Final = 90.0
+"""The call time counts lines stop once the step has run this long (its limit is 2 minutes):
+the clock is checked before each day, before each timeline read, before the morning record is
+parsed and between districts, so at most one host read (20 s a phase) runs past it."""
+SKIPPED: Final = "call time (off): skipped past {:.0f} s of the step"
+GAP_MINUTES: Final = 60
+"""A morning call is lit after a reader gap when the list that lit it had no whole read in the
+record in this many minutes before the lighting pass's slot."""
+
+
+def call_time_lines(
+    run: ReadLabelsRun,
+    done: live_read.ReadRun,
+    began: float,
+    coverage: live_read.Coverage | None = None,
+    *,
+    clock: Callable[[], float] | None = None,
+) -> None:
+    """One counts-only line per day added (predict-next CALL-TIME, the term off:
+    :func:`snowlight.predict.call_time.day_counts`), on ``coverage``, the one L1 read the day
+    with (``None``: the run's). Past :data:`CALL_TIME_SECONDS` from ``began`` (on ``clock``,
+    ``time.monotonic`` when ``None``) the day's work stops wherever it is and one skip line
+    is printed instead; any error is one warning: it never changes a label, the audit,
+    ``added`` or the exit."""
+    now = clock or time.monotonic
+
+    def late() -> bool:
+        return now() - began > CALL_TIME_SECONDS
+
+    try:
+        calls: dict[date, list[Any]] = {}
+        for day in done.added:
+            if late():
+                raise TimeoutError
+            line = _call_time_line(
+                run, done, day, calls, coverage=coverage or run.coverage, late=late
+            )
+            if line is not None:
+                _out(f"predict read-labels: {line}")
+    except TimeoutError:
+        _out("predict read-labels: " + SKIPPED.format(CALL_TIME_SECONDS))
+    except Exception as error:  # a counts line never changes what the step did
+        _out(f"::warning::predict read-labels: call time counts: {type(error).__name__}")
+
+
+def _outcomes(source: Any) -> Mapping[str, str] | None:
+    """Each source's last outcome in the live state's ledger, or ``None`` when the host holds
+    none: no ledger, or the state export's schema-only one (what the predict job reads), so a
+    dark list's cause is never guessed."""
+    from snowlight.live.ledger import last_outcomes  # noqa: PLC0415
+
+    folder = getattr(getattr(source, "state", None), "folder", None)
+    if not isinstance(folder, Path) or not (folder / "ledger.sqlite").is_file():
+        return None
+    return last_outcomes(folder / "ledger.sqlite") or None
+
+
+def _call_time_line(  # noqa: PLR0913 - the run, its day, the calls read and the limit
+    run: ReadLabelsRun,
+    done: live_read.ReadRun,
+    day: date,
+    known: dict[date, list[Any]],
+    *,
+    coverage: live_read.Coverage,
+    late: Callable[[], bool],
+) -> str | None:
+    """One day's counts line; ``known``: each final timeline's calls, read once a run. Only
+    a final day whose class snapshot the predict state still holds with a district of a
+    term's class is read from the host (any other day gives no call), and ``late()`` is
+    asked before each read.
+
+    Raises:
+        TimeoutError: ``late()`` turned true.
+    """
+    from snowlight.live.morning import EVERY_DAY  # noqa: PLC0415
+    from snowlight.predict import call_time  # noqa: PLC0415
+    from snowlight.predict.live_labels import Morning, snapshot_classes  # noqa: PLC0415
+    from snowlight.predict.situations import Window  # noqa: PLC0415
+
+    config = run.config
+    settings = call_time.CallSettings.of(config)
+    rule = live_read.ReadRule.of(config)
+    source = run.source
+    morning = source.morning(day)
+    found = live_read.read_day(run.folder, day)
+    if not isinstance(morning, Morning) or found is None:
+        return f"call time (off) {day.isoformat()}: no record"
+    weather = config.weather
+    window = Window(weather.window_from, weather.window_until, weather.snapshot_hour)
+    slack = timedelta(minutes=config.learn.snapshot_slack_minutes)
+    directory = run.directory
+
+    def classes_of(when: date) -> list[Any]:
+        return snapshot_classes(
+            run.snapshots, when, content=directory.content, zones=directory.zones,
+            window=window, slack=slack,
+        )  # fmt: skip
+
+    classes = classes_of(day)
+    closing = done.closing_rule
+    least = config.labels.station_min_captures
+    live = source.captures(day, live_read.CAPTURE_DAYS, closing)
+    stats = live_read.ListStats.of(coverage, live, least)
+    recent = source.captures(day, rule.recent_days, closing).days
+    index = source.index()
+    calls: list[call_time.Call] = []
+    for entry in index.days if index is not None else ():
+        if entry.day > day or not entry.final:
+            continue
+        if entry.day not in known:
+            # u reaches back only as far as the class snapshots kept (about 45 days): a day
+            # with no district of a term's class gives no call, so its timeline is not read
+            them = classes_of(entry.day)
+            if not any(call_time.serves(k, settings) for k in them):
+                known[entry.day] = []
+            else:
+                if late():
+                    raise TimeoutError
+                known[entry.day] = list(
+                    call_time.called_minutes(
+                        source.timeline(entry.day), directory, them, settings, rule
+                    ).values()
+                )
+        calls.extend(known[entry.day])
+    if late():
+        raise TimeoutError
+    days = _record_days(source, morning, day - timedelta(days=settings.required_days))
+    record = call_time.whole_reads(days, morning.prefix)
+    every_before = frozenset(
+        leaid
+        for slot in days.get(day - timedelta(days=1), {}).values()
+        for leaid, named in slot.named.items()
+        if EVERY_DAY in named
+    )
+    read = {r.district for r in found.rows if r.label is not live_read.Label.NOT_READ}
+    unknown = {r.district for r in found.rows if r.label is live_read.Label.UNKNOWN}
+    outcomes = _outcomes(source)
+    calls_today = [c for c in calls if c.day == day]
+    lit_by = source.lit_by(day) or {}
+    gapped = {
+        c.leaid
+        for c in calls_today
+        if c.kind is call_time.CallKind.MORNING
+        and _after_gap(lit_by.get(c.leaid, {}), days.get(day, {}))
+    }
+    counts = call_time.day_counts(
+        call_time.DayInputs(
+            day=day, morning=morning, directory=directory, coverage=coverage, stats=stats,
+            classes=classes, read=read, unknown=unknown, calls=calls, record=record,
+            recent=recent, every_before=every_before, served=_served(run.frozen, day),
+            outcomes=outcomes, gapped=gapped,
+        ),
+        settings,
+        rule,
+        late=late,
+    )  # fmt: skip
+    if run.frozen is None:
+        counts["no frozen record read"] = 1
+    return call_time.counts_line(day, counts)
+
+
+def _record_days(source: Any, morning: Any, first: date) -> dict[date, Mapping[datetime, Any]]:
+    """The morning record's slots of each UTC day from ``first`` to the morning's: from the live
+    state's folder when the source reads one (each day parsed once), else from the source."""
+    from snowlight.live.morning import MorningLog, slot_start  # noqa: PLC0415
+    from snowlight.predict.live_labels import Morning  # noqa: PLC0415
+
+    day = morning.day
+    days: dict[date, Mapping[datetime, Any]] = {}
+    folder = getattr(getattr(source, "state", None), "folder", None)
+    if isinstance(folder, Path):
+        log = MorningLog(folder / "morning")
+        for when in log.days():
+            if first <= when <= day and (kept := log.day(when)) is not None:
+                days[when] = {slot_start(when, k): v for k, v in kept.slots.items()}
+        return days
+    when = first
+    while when <= day:
+        other = morning if when == day else source.morning(when)
+        if isinstance(other, Morning):
+            days[when] = other.slots
+        when += timedelta(days=1)
+    return days
+
+
+def _after_gap(lit: Mapping[str, datetime], slots: Mapping[datetime, Any]) -> bool:
+    """Whether the list that first lit a district lit it after a reader gap: no whole read of
+    it in the record in :data:`GAP_MINUTES` before the lighting pass's slot."""
+    if not lit:
+        return False
+    source, at = min(lit.items(), key=lambda item: (item[1], item[0]))
+    moment = at.astimezone(UTC)
+    start = moment.replace(minute=moment.minute // 30 * 30, second=0, microsecond=0)
+    begin = start - timedelta(minutes=GAP_MINUTES)
+    return not any(begin <= when < start and source in slot.reads for when, slot in slots.items())
+
+
+def _served(folder: Path | None, day: date) -> frozenset[str]:
+    """The districts with a served ``d0_0630`` frozen row the decline applies to (``s`` 1,
+    ``pr`` known, no ``sa``), from the frozen record's folder."""
+    if folder is None:
+        return frozenset()
+    from snowlight.predict import frozen  # noqa: PLC0415
+
+    found = frozen.rows(day, day, folder).get(day)
+    if found is None:
+        return frozenset()
+    return frozenset(
+        row.leaid
+        for row in found.rows
+        if row.freeze == "d0_0630" and row.served and row.p_raw is not None and not row.said_open
+    )
 
 
 def _publish(run: ReadLabelsRun, key: str, held: ReadAudit | None, audit: ReadAudit) -> bool:
@@ -427,7 +652,7 @@ def _run_read_labels(args: argparse.Namespace, scratch: Path) -> int:  # pragma:
 
     from snowlight.live.publishers import DirPublisher  # noqa: PLC0415
     from snowlight.live.state import StateError  # noqa: PLC0415
-    from snowlight.predict import learn  # noqa: PLC0415
+    from snowlight.predict import frozen, learn  # noqa: PLC0415
     from snowlight.predict.cli import (  # noqa: PLC0415
         NO_STATE_WHERE,
         live_state_folder,
@@ -504,6 +729,8 @@ def _run_read_labels(args: argparse.Namespace, scratch: Path) -> int:  # pragma:
             now=datetime.now(UTC),
             missing=missing,
             outputs=Path(env["GITHUB_OUTPUT"]) if env.get("GITHUB_OUTPUT") else None,
+            frozen=frozen.FOLDER,
+            started=STARTED,
         )
     )
 

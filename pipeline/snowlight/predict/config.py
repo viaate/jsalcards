@@ -194,7 +194,7 @@ class LearnSettings(_Settings):
     out, and a learned file that counted one is no longer served."""
 
 
-LIVE_SCORE_SHA256: Final = "78861639ca23b4ae9df777b248484ea59306049f9c4a12d57e0c96088eaa9b15"
+LIVE_SCORE_SHA256: Final = "6484a3c3f0f487f817b8f0e7b1d6d156967975375b9b87f4fc15d7eb4937acff"
 """The sha256 of the pre-registered scoring rules (:func:`live_score_sha256`: the
 ``live_score`` block, the ``labels`` and ``weather`` blocks and ``learn.snapshot_slack_minutes``),
 as S7 addendum h records it (and addendum i, for the forecast adjustment of advisory-sane L5;
@@ -204,7 +204,8 @@ by predict-next SNOW-AMOUNT-2: the term on, ``snow_amount_slope_advisory`` and
 ``snow_amount_slope_warning`` added, for rows after it; revised Nov 3, 2026 by predict-next
 REASONS: ``labels.reason_rule`` 2 added, no served value changed; revised Nov 3, 2026 by
 predict-next BUS-TIMING: ``timing_bus`` on, ``timing_after_bus`` and ``timing_bus_share_max``
-added, for rows after it).
+added, for rows after it; revised Nov 3, 2026 by predict-next CALL-TIME: values registered, the
+term off, no served value changed: ``call_time`` added).
 A test holds the two equal, so none of them changes without this."""
 
 
@@ -221,6 +222,15 @@ class PredictConfig(_Settings):
     """The live scoring rules, pre-registered (advisory-sane L0): the class anchor
     (:mod:`snowlight.predict.anchor`) serves by them with ``serve.anchor`` on, and the live
     scorer scores by them; neither changes them."""
+
+    @model_validator(mode="after")
+    def _check_call_time(self) -> "PredictConfig":
+        # predict-next CALL-TIME: the usual call time's decline is off until LIVE-READS lands
+        # (its per-pass proof and the parity test); any other value is refused.
+        found = self.live_score.get("call_time", {}).get("serve", "off")
+        if found != "off":
+            raise ValueError(f"live_score.call_time.serve is off only, not {found!r}")
+        return self
 
     @classmethod
     def load(cls, path: Path = CONFIG_PATH) -> "PredictConfig":

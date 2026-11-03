@@ -2400,6 +2400,9 @@ class ReadRun:
     """The counted days in the ``recent_days`` days before then: the lists that read with no
     second list of their market (condition 4), the read's live peer-free reach (review
     E-R6-1)."""
+    closing_rule: Closing | None = None
+    """What decided the run's counted days (one object a run, so a source's counted days are
+    worked out once), for a later reader of the same days' captures."""
 
     def skip(self, day: date, why: str) -> None:
         self.skipped[why] += 1
@@ -2546,6 +2549,7 @@ def read_new_days(  # noqa: PLR0912, PLR0913, PLR0915 - the record, the inputs a
         ),
         zones=dict(zip(directory.districts, directory.zones, strict=True)),
     )  # fmt: skip
+    done.closing_rule = closing
     day = today - timedelta(days=config.learn.morning_reads_days)
     while day < today:
         candidate, day = day, day + timedelta(days=1)
