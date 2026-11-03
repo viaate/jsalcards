@@ -15,6 +15,10 @@ is recent). For each school and local day:
    Identical ones merge and keep the earliest trustworthy ``announced_at`` since
    the status last changed. (The spec compares first sightings only; two lists
    read a few minutes apart would then be ordered by when they were read.)
+   The reason shown is the one reason the winning rows name, rows that name none
+   left out (two different ones: none); when they name none, the one reason the
+   rows of the same status since it last changed name (the school's own rows only
+   after a real tie). Wherever the winning rows all name one reason, it is that one.
 2. **Open and dissent.** When the latest word is an open statement (owner
    decision Q8) or a dissent (a retraction, a denial, a narrowing, a cause that is
    not weather), nothing is published (``RETRACTED``); an open statement is kept as
@@ -403,11 +407,12 @@ def merge(  # noqa: PLR0912, PLR0915 - the steps of the module, in order
                 withheld[Withheld.RETRACTED.value] += 1
             continue
         school_level = [item for item in top if item.level == "school"]
-        if (
+        narrowed = (
             len({item.key() for item in top}) > 1
-            and school_level
+            and bool(school_level)
             and len({item.posted_hi for item in top}) == 1
-        ):
+        )
+        if narrowed:
             top = school_level  # a real tie: one list holds both, and the school's own row wins
         if len({item.key() for item in top}) > 1:
             withheld[Withheld.CONFLICT.value] += 1
@@ -418,7 +423,13 @@ def merge(  # noqa: PLR0912, PLR0915 - the steps of the module, in order
             continue
         winner = min(top, key=_order)
         closing, announced_by = _closing(
-            school, day, winner=winner, top=top, group=group, generated_at=generated_at
+            school,
+            day,
+            winner=winner,
+            top=top,
+            group=group,
+            narrowed=narrowed,
+            generated_at=generated_at,
         )
         closings.append(closing)
         provenance.append(_provenance(closing, winner, top, announced_by, generated_at))
@@ -492,15 +503,17 @@ def _closing(  # noqa: PLR0913 - the school-day, its winners and its group
     winner: Item,
     top: Sequence[Item],
     group: Sequence[Item],
+    narrowed: bool,
     generated_at: datetime,
 ) -> tuple[Closing, Item | None]:
-    """The published status, and the row whose announcement it shows (if any)."""
+    """The published status, and the row whose announcement it shows (if any).
+
+    ``narrowed`` says a real tie cut ``top`` to the school's own rows (see :func:`merge`).
+    """
     claim = winner.claim
     if claim is None:
         raise ValueError("a published status comes from a claim")
     status = STATUS_BY_KIND[claim.kind]
-    reasons = {item.claim.reason for item in top if item.claim is not None}
-    label = reasons.pop() if len(reasons) == 1 else None
     shift = (
         claim.shift_minutes
         if claim.shift_minutes and claim.shift_minutes <= MAX_SHIFT_MINUTES
@@ -515,6 +528,19 @@ def _closing(  # noqa: PLR0913 - the school-day, its winners and its group
     same = winner.key()
     changed = [item.posted_hi for item in group if item.key() != same]
     since = max(changed, default=None)
+    # The reason: the one the winning rows name (rows that name none left out), or with none
+    # named there, the one the same-status rows since the change name.
+    reasons = {item.claim.reason for item in top if item.claim is not None} - {None}
+    if not reasons:
+        reasons = {
+            item.claim.reason
+            for item in group
+            if item.claim is not None
+            and item.key() == same
+            and (since is None or item.posted_hi > since)
+            and (not narrowed or item.level == "school")
+        } - {None}
+    label = reasons.pop() if len(reasons) == 1 else None
     announced = [
         (at, _order(item), item)
         for item in group

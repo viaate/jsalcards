@@ -1,7 +1,13 @@
 """Merge: latest wins, conflicts, open signals, vanished rows, ufn, holds, expiry, breaker (T8,
 T9, T12)."""
 
-from datetime import date, timedelta
+import dataclasses
+import itertools
+from collections.abc import Sequence
+from datetime import date, datetime, timedelta
+from typing import Any
+
+import pytest
 
 from live.world import (
     ALPHA_DISTRICT,
@@ -14,11 +20,14 @@ from live.world import (
     lit,
     row,
     station,
+    stub_reader,
 )
+from snowlight.live import merge as merge_module
 from snowlight.live.guards import Rules
-from snowlight.live.merge import school_today
+from snowlight.live.merge import Item, school_today
 from snowlight.schemas.directory import DirectoryStamp
-from snowlight.schemas.live import ClosingsFile
+from snowlight.schemas.live import Closing, ClosingsFile
+from snowlight.schemas.vocab import REASON_BY_LABEL, Reason
 
 A = "gray-synthetic"
 B = "nexstar-synthetic"
@@ -69,7 +78,7 @@ def test_t8b_a_conflicting_tie_is_withheld_and_an_identical_one_merges() -> None
     same.read(at("2026-11-17 11:05"), [row(ALPHA_SCHOOL, "Closed due to snow")], source=B)
     merged = same.publish(at("2026-11-17 11:06"))
     assert lit(merged) == {(0, "2026-11-17"): "CLOSED"}
-    assert merged.closings[0].reason is None  # the reasons differ: none is shown
+    assert merged.closings[0].reason is Reason.WINTER_STORM  # the one reason a row names
     assert merged.provenance[0]["sources"] == 2
 
 
@@ -294,3 +303,160 @@ def test_the_merged_rows_encode_into_the_published_file() -> None:
         (1, "DELAYED"),
         (7, "CLOSED"),
     ]
+
+
+C = "scripps-synthetic"
+
+
+def _ice_reader(text: str, *, posted_at: datetime, tz: str) -> Any:
+    """The stub reader, which also reads "ice" as the reason Ice (SYNTHETIC)."""
+    parsed = stub_reader(text, posted_at=posted_at, tz=tz)
+    if parsed.schedule and "ice" in text.casefold().split():
+        return dataclasses.replace(parsed, names_weather=True, reason="Ice")
+    return parsed
+
+
+def _three() -> World:
+    world = World(reader=_ice_reader, stations={s: station(s) for s in (A, B, C)})
+    for source in (A, B, C):
+        world.read(at("2026-11-17 02:00"), [], source=source)
+        world.read(at("2026-11-17 11:00"), [], source=source)
+    return world
+
+
+def _reason(world: World) -> Reason | None:
+    merged = world.publish(at("2026-11-17 11:59"))
+    (closing,) = [c for c in merged.closings if c.school == 0]
+    return closing.reason
+
+
+def test_a_reason_one_list_names_is_shown_when_another_names_none() -> None:
+    world = _three()
+    world.read(at("2026-11-17 11:05"), [row(ALPHA_SCHOOL, "Closed")], source=A)
+    world.read(at("2026-11-17 11:05"), [row(ALPHA_SCHOOL, "Closed due to ice")], source=B)
+    assert _reason(world) is Reason.ICE
+    two = _three()
+    two.read(at("2026-11-17 11:05"), [row(ALPHA_SCHOOL, "Closed due to ice")], source=A)
+    two.read(at("2026-11-17 11:05"), [row(ALPHA_SCHOOL, "Closed due to snow")], source=B)
+    assert _reason(two) is None  # two reasons: none is shown
+
+
+def test_an_earlier_row_of_the_same_status_since_the_change_gives_the_reason() -> None:
+    world = _three()
+    world.read(at("2026-11-17 11:05"), [row(ALPHA_SCHOOL, "Closed due to ice")], source=A)
+    world.read(at("2026-11-17 11:10"), [], source=B)
+    world.read(at("2026-11-17 11:20"), [row(ALPHA_SCHOOL, "Closed")], source=B)
+    assert _reason(world) is Reason.ICE
+    changed = _three()
+    changed.read(at("2026-11-17 11:05"), [row(ALPHA_SCHOOL, "Closed due to ice")], source=A)
+    changed.read(at("2026-11-17 11:10"), [], source=B)
+    changed.read(at("2026-11-17 11:20"), [row(ALPHA_SCHOOL, "2 hour delay")], source=B)
+    changed.read(at("2026-11-17 11:30"), [], source=C)
+    changed.read(at("2026-11-17 11:40"), [row(ALPHA_SCHOOL, "Closed")], source=C)
+    assert _reason(changed) is None  # the row naming ice came before the delay
+
+
+def test_a_district_row_gives_no_reason_when_a_real_tie_chose_the_school_row() -> None:
+    world = _three()
+    world.read(
+        at("2026-11-17 11:05"),
+        [row(ALPHA_DISTRICT, "2 hour delay due to ice"), row(ALPHA_SCHOOL, "Closed")],
+        source=A,
+    )
+    world.read(at("2026-11-17 11:05"), [row(ALPHA_DISTRICT, "Closed due to ice")], source=B)
+    merged = world.publish(at("2026-11-17 11:59"))
+    closing = {c.school: c for c in merged.closings}[0]
+    assert closing.status.name == "CLOSED"
+    assert closing.reason is None
+
+
+_TEXTS = (
+    None,
+    "Closed",
+    "Closed due to ice",
+    "Closed due to snow",
+    "2 hour delay",
+    "2 hour delay due to ice",
+)
+_GRID = list(itertools.product(_TEXTS, _TEXTS, _TEXTS, (True, False)))
+
+
+def _no_reason_reader(text: str, *, posted_at: datetime, tz: str) -> Any:
+    """:func:`_ice_reader` with every reason left out (SYNTHETIC)."""
+    return dataclasses.replace(_ice_reader(text, posted_at=posted_at, tz=tz), reason=None)
+
+
+def _grid_world(texts: tuple[str | None, ...], district: bool, reader: Any) -> World:
+    world = _three()
+    world.reader = reader
+    for source, text, minute in zip((A, B, C), texts, (5, 20, 5), strict=True):
+        if minute == 20:
+            world.read(at("2026-11-17 11:10"), [], source=source)
+        name = ALPHA_DISTRICT if district and source == C else ALPHA_SCHOOL
+        world.read(
+            at(f"2026-11-17 11:{minute:02d}"),
+            [] if text is None else [row(name, text)],
+            source=source,
+        )
+    return world
+
+
+@pytest.mark.parametrize(("first", "second", "third", "district"), _GRID)
+def test_the_new_reason_rule_keeps_every_reason_the_old_one_showed(
+    monkeypatch: pytest.MonkeyPatch,
+    first: str | None,
+    second: str | None,
+    third: str | None,
+    district: bool,
+) -> None:
+    """Over a grid of groups (B's row posted after A's and C's; C a district row or not):
+    wherever the old rule (one reason over the winning rows, a row naming none counting as
+    one) showed a reason, the new rule shows the same; and the reasons rows name change
+    nothing published but the reason (status, times, shift, clock, what is withheld)."""
+    real = merge_module._closing
+    seen: list[tuple[Reason | None, Reason | None]] = []
+
+    def checked(  # noqa: PLR0913 - the arguments of _closing
+        school: int,
+        day: date,
+        *,
+        winner: Item,
+        top: Sequence[Item],
+        group: Sequence[Item],
+        narrowed: bool,
+        generated_at: datetime,
+    ) -> tuple[Closing, Item | None]:
+        found = real(
+            school,
+            day,
+            winner=winner,
+            top=top,
+            group=group,
+            narrowed=narrowed,
+            generated_at=generated_at,
+        )
+        reasons = {item.claim.reason for item in top if item.claim is not None}
+        old = reasons.pop() if len(reasons) == 1 else None
+        seen.append((found[0].reason, None if old is None else REASON_BY_LABEL[old]))
+        return found
+
+    monkeypatch.setattr(merge_module, "_closing", checked)
+    texts = (first, second, third)
+    named = _grid_world(texts, district, _ice_reader).publish(at("2026-11-17 11:59"))
+    for new, old in seen:
+        if old is not None:
+            assert new is old
+    plain = _grid_world(texts, district, _no_reason_reader).publish(at("2026-11-17 11:59"))
+
+    def fields(closing: Closing) -> tuple[object, ...]:
+        return (
+            closing.school,
+            closing.day,
+            closing.status,
+            closing.announced_at,
+            closing.shift_minutes,
+            closing.clock_minute,
+        )
+
+    assert [fields(c) for c in named.closings] == [fields(c) for c in plain.closings]
+    assert named.withheld == plain.withheld

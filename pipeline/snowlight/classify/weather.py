@@ -122,15 +122,19 @@ _TERMS: tuple[tuple[str, str, Category], ...] = (
     ),
     (r"storms?", "storm", None),
 )
+# ("No power issues" says the power is fine: the "no power" form stops before "issues" or
+# "problems", and "power issues" counts only where "no" does not come before it.)
 _POWER = re.compile(
     r"\b(?:power\s+(?:outages?|failures?|loss|is\s+out|out)|(?:no|without|loss\s+of|lost)\s+"
-    r"(?:electric\s+)?power|electrical\s+outages?|electric\s+outages?|blackouts?)\b",
+    r"(?:electric\s+)?power(?!\s+(?:issues?|problems?))|(?<!no\s)power\s+(?:issues?|problems?)"
+    r"|lack\s+of\s+(?:electric\s+)?power|electrical\s+outages?|electric\s+outages?|blackouts?)\b",
     re.ASCII,
 )
 _CAUSES: tuple[tuple[str, str], ...] = (
     (
-        r"water\s+main|water\s+line|water\s+leak|no\s+water|water\s+outage|boil\s+water"
-        r"|water\s+(?:issues?|problems?)|(?:burst|broken|frozen|leaking)\s+pipes?|pipes?\s+burst",
+        r"water\s+main|water\s+(?:main\s+)?break|water\s+line|water\s+lines|water\s+leak"
+        r"|no\s+water|water\s+outage|boil\s+water|water\s+(?:issues?|problems?)"
+        r"|(?:burst|broken|frozen|leaking)\s+pipes?|pipes?\s+burst",
         "Water service",
     ),
     (
@@ -181,6 +185,7 @@ _CAUSES: tuple[tuple[str, str], ...] = (
         r"|flooded\s+(?:gym|gymnasium|building|basement|classrooms?|cafeteria|hallways?|library"
         r"|kitchen|auditorium|boiler\s+room|locker\s+rooms?)"
         r"|air\s+condition(?:ing|er)|\ba/c\b|hvac|mold|construction|maintenance|building\s+issues?"
+        r"|building\s+problems?"
         r"|internet\s+outage|network\s+outage|phone\s+outage|sewer|septic",
         "Building",
     ),
@@ -449,24 +454,24 @@ _WEATHER_STARTS = (
     "strong wind", "gust", "heavy", "torrent", "rain", "inclement", "weather",
 )  # fmt: skip
 _CAUSE_STARTS = (
-    "water main", "water line", "water leak", "no water", "water outage", "boil water",
-    "water issue", "water problem", "burst", "broken pipe", "frozen pipe", "leaking pipe",
-    "pipe", "no heat", "without heat", "lack of heat", "loss of heat", "heating", "boiler",
-    "furnace", "heat outage", "heat is out", "heat issue", "heat problem", "heat not",
-    "heat failure", "gas leak", "gas odor", "gas smell", "smell of gas", "fire", "illness",
-    "wildfire", "forest fire", "brush fire", "grass fire", "smoke from", "smoky", "air quality",
-    "aqi", "unhealthy air", "poor air", "red flag", "earthquake", "quake", "seismic",
-    "flu", "influenza", "sickness", "virus", "outbreak", "covid", "norovirus", "strep",
-    "threat", "lockdown", "shelter in place", "police activity", "security issue",
+    "water main", "water break", "water line", "water leak", "no water", "water outage",
+    "boil water", "water issue", "water problem", "burst", "broken pipe", "frozen pipe",
+    "leaking pipe", "pipe", "no heat", "without heat", "lack of heat", "loss of heat",
+    "heating", "boiler", "furnace", "heat outage", "heat is out", "heat issue", "heat problem",
+    "heat not", "heat failure", "gas leak", "gas odor", "gas smell", "smell of gas", "fire",
+    "illness", "wildfire", "forest fire", "brush fire", "grass fire", "smoke from", "smoky",
+    "air quality", "aqi", "unhealthy air", "poor air", "red flag", "earthquake", "quake",
+    "seismic", "flu", "influenza", "sickness", "virus", "outbreak", "covid", "norovirus",
+    "strep", "threat", "lockdown", "shelter in place", "police activity", "security issue",
     "security concern", "bomb", "staff shortage", "staffing", "teacher shortage",
     "driver shortage", "bus driver", "substitute shortage", "shortage of", "holiday",
-    "teacher work", "work day", "workday", "professional development",
-    "professional learning", "pd day", "in-service", "inservice", "institute day",
-    "records day", "parent-teacher", "conferences", "winter break", "spring break",
-    "fall break", "thanksgiving", "christmas", "vacation", "election day", "mlk",
-    "martin luther", "presidents", "memorial day", "labor day", "veterans", "new year",
-    "air condition", "a/c", "hvac", "mold", "construction", "maintenance", "building issue",
-    "internet outage", "network outage", "phone outage", "sewer", "septic", "funeral", "flood",
+    "teacher work", "work day", "workday", "professional development", "professional learning",
+    "pd day", "in-service", "inservice", "institute day", "records day", "parent-teacher",
+    "conferences", "winter break", "spring break", "fall break", "thanksgiving", "christmas",
+    "vacation", "election day", "mlk", "martin luther", "presidents", "memorial day",
+    "labor day", "veterans", "new year", "air condition", "a/c", "hvac", "mold", "construction",
+    "maintenance", "building issue", "building problem", "internet outage", "network outage",
+    "phone outage", "sewer", "septic", "funeral", "flood",
 )  # fmt: skip
 
 

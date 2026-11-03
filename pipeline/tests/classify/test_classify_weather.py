@@ -74,6 +74,12 @@ def test_reason(text: str, reason: str, term: str) -> None:
         "Closed - no power",
         "Closed - power failure",
         "Closed; building without power",
+        "Closed due to power issues",
+        "Closed - power issue",
+        "Closed due to power problems",
+        "Closed due to a power problem",
+        "Closed due to lack of power",
+        "Closed due to lack of electric power",
     ],
 )
 def test_power_outage_is_a_reason_but_not_weather(text: str) -> None:
@@ -81,6 +87,21 @@ def test_power_outage_is_a_reason_but_not_weather(text: str) -> None:
     assert result.kind == "closed"
     assert result.reason == "Power outage"
     assert result.names_weather is False
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Open - no power issues",
+        "Open, no power problems",
+        "Power Elementary closed",
+        "Closed - downed power lines",
+    ],
+)
+def test_power_words_that_name_no_outage(text: str) -> None:
+    result = parse_status(text, posted_at=POSTED, tz=TZ)
+    assert result.reason is None
+    assert "Power outage" not in result.reasons
 
 
 @pytest.mark.parametrize(
@@ -137,6 +158,13 @@ def test_weather_without_a_specific_label(text: str, term: str) -> None:
         ("Closed due to a flood in the gym", "Building"),
         ("Closed - flooded basement", "Building"),
         ("Closed - teacher work day", "Planned day"),
+        ("Closed due to a water break", "Water service"),
+        ("Closed - water line break", "Water service"),
+        ("Closed due to frozen water lines", "Water service"),
+        ("Closed - water line", "Water service"),
+        ("Closed due to building problems", "Building"),
+        ("Closed - building problem", "Building"),
+        ("Closed due to building issues", "Building"),
     ],
 )
 def test_other_causes_are_not_weather(text: str, cause: str) -> None:
