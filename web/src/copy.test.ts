@@ -206,6 +206,18 @@ describe('copy', () => {
     },
   );
 
+  it('says what districts nearby said for every weather reason but a power outage', () => {
+    const area = REASON_KEYS.filter((key) => key !== 'powerOutage');
+    const said = area.flatMap((key) => [1, 2, 5].map((n) => format.reasonNearby(key, n)));
+    expect(allProblems(said)).toEqual([]);
+    expect(format.reasonNearby('flooding', 1)).toBe('A district nearby said flooding');
+    expect(format.reasonNearby('flooding', 2)).toBe('Districts nearby said flooding');
+    expect(format.reasonNearby('severeStorms', 3)).toBe('Districts nearby said severe storms');
+    expect(() => format.reasonNearby('flooding', 0)).toThrow(RangeError);
+    // @ts-expect-error a power outage is no weather of an area
+    expect(() => format.reasonNearby('powerOutage', 1)).toThrow(RangeError);
+  });
+
   it.skipIf(!existsSync(schemaFile('alerts.schema.json')))(
     'names every alert hazard and level the alerts file uses',
     () => {

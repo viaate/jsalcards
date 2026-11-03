@@ -16,7 +16,7 @@ import {
   testMeta,
   testPoints,
 } from '../../data/tests/builders';
-import { namesOf, readLiveFiles, schoolView, watchSchool } from '../school';
+import { namesOf, nearbyReason, readLiveFiles, schoolView, watchSchool } from '../school';
 import type { SchoolView, ViewInput } from '../school';
 
 /** How long a test waits for code loaded on demand, on a busy machine. */
@@ -1254,6 +1254,315 @@ describe('the chance section in the panel', () => {
     expect((await watch(new Date('2026-01-13T04:30:00Z')))?.chance?.number).toBe('45');
     fetchImpl.mockClear();
     expect((await watch(new Date('2026-01-13T04:31:00Z')))?.chance).toBeNull();
+    fetchImpl.mockRestore();
+  });
+});
+
+describe('what districts nearby said, where a school’s own status names no reason', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /**
+   * The panel's school (district 0, two schools), district 1 next door with two schools,
+   * district 2 next door with one, and district 3 with one, not next door. Made up.
+   */
+  const schools = [
+    { id: '290000199999', name: 'BELLE ELEM.', lon: -94.6, lat: 39, district: 0 },
+    { id: '290000199998', name: 'BELLE HIGH', lon: -94.6, lat: 39, district: 0 },
+    { id: '290000299999', name: 'NEXT DOOR ELEM.', lon: -94.5, lat: 39, district: 1 },
+    { id: '290000299998', name: 'NEXT DOOR HIGH', lon: -94.5, lat: 39, district: 1 },
+    { id: '290000399999', name: 'OTHER SIDE ELEM.', lon: -94.7, lat: 39, district: 2 },
+    { id: '290000499999', name: 'FAR AWAY ELEM.', lon: -95.7, lat: 39, district: 3 },
+  ];
+  const meta = testMeta(schools, ['2999999', '2900002', '2900003', '2900004']);
+  const points = parsePoints(testPoints(schools, 4), meta);
+  if (points === null) throw new Error('no points');
+  const directory = createDirectory(meta, points);
+  const names = namesOf(directory);
+  const stamp = { generated_on: meta.generated_on, schools: 6, districts: 4 };
+  const record: SchoolRecord = {
+    ...PUBLIC,
+    index: 0,
+    district: { index: 0, id: '2999999', name: 'MARIES CO. R-II' },
+    directory: stamp,
+  };
+  const TODAY = '2026-01-12';
+  const TOMORROW = '2026-01-13';
+  const FLOODING = 3;
+  const ICE = 1;
+  const POWER = 7;
+  type Row = readonly [number, number | null];
+  /** A day group of closed rows, [school, reason], in school order. */
+  const day = (on: string, rows: readonly Row[]) => ({
+    ...testDay(
+      on,
+      rows.map(([school]) => [school, 0] as const),
+    ),
+    reasons: rows.map(([, reason]) => reason as 0 | null),
+  });
+  const file = (days: readonly { day: string; rows: readonly Row[] }[]) =>
+    testClosings(
+      '2026-01-12T17:55:00Z',
+      meta,
+      days.map((item) => day(item.day, item.rows)),
+    );
+  const outlook = {
+    today: { state: 'no_threat' } as const,
+    tomorrow: { state: 'no_threat' } as const,
+    neighbors: [1, 2],
+    timeZone: 'America/Chicago',
+  };
+  const closed = (reason: 0 | 1 | null): StatusRow => ({
+    status: 0,
+    reason,
+    announcedAt: null,
+    shiftMinutes: null,
+    clockMinute: null,
+    manual: false,
+  });
+  const notes = (
+    closings: ReturnType<typeof file> | null,
+    overrides: Partial<ViewInput> = {},
+  ): (string | null)[] =>
+    schoolView(
+      input({
+        id: record.id,
+        record,
+        status: { today: closed(null), tomorrow: null },
+        outlook,
+        closings,
+        names,
+        ...overrides,
+      }),
+    )?.status.map((line) => line.note) ?? [];
+
+  it('says what one district next door said, whole, in the place of the school’s own reason', () => {
+    const one = file([
+      {
+        day: TODAY,
+        rows: [
+          [2, FLOODING],
+          [3, FLOODING],
+        ],
+      },
+    ]);
+    expect(notes(one)).toEqual(['A district nearby said flooding']);
+    expect(nearbyReason(one, TODAY, [1, 2], names)).toBe('A district nearby said flooding');
+  });
+
+  it('says districts when two or more stand whole with it', () => {
+    const two = file([
+      {
+        day: TODAY,
+        rows: [
+          [2, FLOODING],
+          [3, FLOODING],
+          [4, FLOODING],
+        ],
+      },
+    ]);
+    expect(notes(two)).toEqual(['Districts nearby said flooding']);
+  });
+
+  it('says nothing when a row next door names another reason, even one school’s', () => {
+    const mixed = file([
+      {
+        day: TODAY,
+        rows: [
+          [2, FLOODING],
+          [3, FLOODING],
+          [4, ICE],
+        ],
+      },
+    ]);
+    expect(notes(mixed)).toEqual([null]);
+  });
+
+  it('never gives a power outage as what districts nearby said', () => {
+    const power = file([
+      {
+        day: TODAY,
+        rows: [
+          [2, POWER],
+          [3, POWER],
+        ],
+      },
+    ]);
+    expect(notes(power)).toEqual([null]);
+  });
+
+  it('says nothing for a district next door only partly listed', () => {
+    const part = file([{ day: TODAY, rows: [[2, FLOODING]] }]);
+    expect(notes(part)).toEqual([null]);
+    // A school of it listed with no reason: listed whole, but not every row names it.
+    const unnamedRow = file([
+      {
+        day: TODAY,
+        rows: [
+          [2, FLOODING],
+          [3, null],
+        ],
+      },
+    ]);
+    expect(notes(unnamedRow)).toEqual([null]);
+  });
+
+  it('gives the school’s own reason alone where it names one', () => {
+    const one = file([
+      {
+        day: TODAY,
+        rows: [
+          [2, FLOODING],
+          [3, FLOODING],
+        ],
+      },
+    ]);
+    expect(notes(one, { status: { today: closed(ICE), tomorrow: null } })).toEqual(['Ice']);
+  });
+
+  it('counts only districts next door, never the school’s own or one farther off', () => {
+    const far = file([{ day: TODAY, rows: [[5, FLOODING]] }]);
+    expect(notes(far)).toEqual([null]);
+    expect(notes(far, { outlook: { ...outlook, neighbors: [1, 2] } })).toEqual([null]);
+    const own = file([
+      {
+        day: TODAY,
+        rows: [
+          [0, FLOODING],
+          [1, FLOODING],
+        ],
+      },
+    ]);
+    expect(notes(own, { outlook: { ...outlook, neighbors: [0, 1, 2] } })).toEqual([null]);
+  });
+
+  it('says nothing on another directory, or with no outlook, neighbors, names or file', () => {
+    const one = file([
+      {
+        day: TODAY,
+        rows: [
+          [2, FLOODING],
+          [3, FLOODING],
+        ],
+      },
+    ]);
+    const other = { ...one, directory: { ...one.directory, generated_on: '2026-01-06' } };
+    expect(notes(other)).toEqual([null]);
+    expect(notes(one, { outlook: null })).toEqual([null]);
+    expect(notes(one, { outlook: { ...outlook, neighbors: [] } })).toEqual([null]);
+    const without = {
+      today: outlook.today,
+      tomorrow: outlook.tomorrow,
+      timeZone: outlook.timeZone,
+    };
+    expect(notes(one, { outlook: without })).toEqual([null]);
+    expect(notes(one, { names: null })).toEqual([null]);
+    expect(notes(null)).toEqual([null]);
+    expect(nearbyReason(null, TODAY, [1, 2], names)).toBeNull();
+  });
+
+  it('reads each line from its own day: tomorrow’s rows never feed today’s line, nor today’s tomorrow’s', () => {
+    const tomorrowOnly = file([
+      {
+        day: TOMORROW,
+        rows: [
+          [2, FLOODING],
+          [3, FLOODING],
+        ],
+      },
+    ]);
+    expect(notes(tomorrowOnly)).toEqual([null]);
+    const both = { today: closed(null), tomorrow: closed(null) };
+    expect(notes(tomorrowOnly, { status: both })).toEqual([
+      null,
+      'A district nearby said flooding',
+    ]);
+    const todayOnly = file([
+      {
+        day: TODAY,
+        rows: [
+          [2, FLOODING],
+          [3, FLOODING],
+        ],
+      },
+    ]);
+    expect(notes(todayOnly, { status: both })).toEqual(['A district nearby said flooding', null]);
+  });
+
+  it('asks for the directory for a status line with no reason, with no chance shown, and says it once names come', async () => {
+    /** Monday Jan 12, 2026, 9:05 PM in Kansas City. */
+    const evening = new Date('2026-01-13T03:05:00Z');
+    const predictions = {
+      schema_version: 1,
+      generated_at: '2026-01-13T03:00:00Z',
+      directory: stamp,
+      days: [TODAY, TOMORROW],
+      districts: [
+        {
+          district: 0,
+          time_zone: 'America/Chicago',
+          neighbors: [1, 2],
+          days: [{ state: 'no_threat' }, { state: 'no_threat' }],
+        },
+      ],
+    };
+    const closings = {
+      ...file([
+        {
+          day: TODAY,
+          rows: [
+            [0, null],
+            [2, FLOODING],
+            [3, FLOODING],
+          ],
+        },
+        {
+          day: TOMORROW,
+          rows: [
+            [0, null],
+            [2, FLOODING],
+            [3, FLOODING],
+          ],
+        },
+      ]),
+      generated_at: '2026-01-13T03:00:00Z',
+    };
+    const files = createDataFiles(
+      ['live/closings.json', 'predictions/latest.json', 'schools/details/index.0123456789.json'],
+      ROOT,
+    );
+    const fetchImpl = vi.spyOn(globalThis, 'fetch').mockImplementation((request) => {
+      const url = request instanceof Request ? request.url : request.toString();
+      return Promise.resolve(jsonResponse(url.includes('predictions') ? predictions : closings));
+    });
+    const asked = vi.fn(() => Promise.resolve(directory));
+    const views: (SchoolView | null)[] = [];
+    const stop = watchSchool({
+      files,
+      details: { get: vi.fn(() => Promise.resolve(record)) },
+      id: record.id,
+      hint: null,
+      onView: (view) => views.push(view),
+      now: () => evening,
+      timeZone: () => 'America/Chicago',
+      directory: asked,
+    });
+    await vi.waitFor(() => {
+      expect(views.at(-1)?.status.map((line) => line.note)).toEqual([
+        'A district nearby said flooding',
+        'A district nearby said flooding',
+      ]);
+    }, WAIT);
+    const last = views.at(-1);
+    expect(last?.chance).toBeNull();
+    expect(last?.status.map((line) => line.headline)).toEqual(['Closed today', 'Closed tomorrow']);
+    // Before the names came, the lines without it.
+    const first = views.find((view) => (view?.status.length ?? 0) > 0);
+    expect(first?.status.map((line) => line.note)).toEqual([null, null]);
+    expect(asked).toHaveBeenCalledTimes(1);
+    expect(asked).toHaveBeenCalledWith(stamp);
+    stop();
     fetchImpl.mockRestore();
   });
 });

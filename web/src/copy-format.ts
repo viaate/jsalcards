@@ -11,7 +11,7 @@
  */
 
 import { LOCALE, STATUS_KEYS, checkCount, copy, shellFormat } from './copy.ts';
-import type { AlertLevelKey, HazardKey, StatusKey } from './copy.ts';
+import type { AlertLevelKey, HazardKey, ReasonKey, StatusKey } from './copy.ts';
 
 /** Between a time and AM or PM, so "6:42 AM" never breaks across lines. */
 const NBSP = '\u00a0';
@@ -398,6 +398,33 @@ function alertName(hazard: HazardKey, level: AlertLevelKey): string {
   return `${name} ${kind.toLocaleLowerCase(LOCALE)}`;
 }
 
+/** The reasons districts nearby can be said to have given: the weather of an area, no power outage. */
+export type NearbyReasonKey = Exclude<ReasonKey, 'powerOutage'>;
+
+/** Each such reason as a district says it, within a sentence. */
+const SAID: Readonly<Record<NearbyReasonKey, string>> = {
+  winterStorm: 'winter storm',
+  ice: 'ice',
+  extremeCold: 'extreme cold',
+  flooding: 'flooding',
+  hurricane: 'hurricane',
+  severeStorms: 'severe storms',
+  heat: 'heat',
+};
+
+/**
+ * A status line's note where the school's own status names no reason: the one weather of the
+ * area that `districts` districts next door said for the day (1 or more), never beside the
+ * school's own reason. "A district nearby said flooding", "Districts nearby said flooding".
+ */
+function reasonNearby(reason: NearbyReasonKey, districts: number): string {
+  const said = SAID[checkKey(SAID, reason, 'reason')];
+  if (checkCount(districts, 'districts') < 1) {
+    throw new RangeError('copy: districts nearby said it: 1 or more');
+  }
+  return districts === 1 ? `A district nearby said ${said}` : `Districts nearby said ${said}`;
+}
+
 // Functions only, so freezing the object freezes all of it.
 export const format = /* @__PURE__ */ Object.freeze({
   number,
@@ -433,6 +460,7 @@ export const format = /* @__PURE__ */ Object.freeze({
   replayStatus,
   speed,
   alert: alertName,
+  reasonNearby,
   // The date and clock workings the chance section's sentences share with these
   // (src/copy-chance.ts, which loads with the school panel): not words of their own.
   checkInstant,

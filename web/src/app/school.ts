@@ -35,6 +35,8 @@ import { DISTRICT_NAME_FIXES, SCHOOL_NAME_FIXES } from 'virtual:snowlight/school
 import { REASON_KEYS, STATUS_KEYS, copy } from '../copy';
 import { format } from '../copy-format';
 import type { StatusKey } from '../copy';
+import type { NearbyReasonKey } from '../copy-format';
+import { decodeDay } from '../data/closings';
 import { createDetailsSource } from '../data/details';
 import { DETAILS_INDEX_PATH } from '../data/details-format';
 import type { DetailsSource, SchoolRecord } from '../data/details';
@@ -52,6 +54,7 @@ import {
 } from '../data/live';
 import {
   NO_STATUS,
+  nextDay,
   parseCovered,
   parsePredictions,
   schoolOutlook,
@@ -63,13 +66,13 @@ import type { Directory } from '../data/directory';
 import type { ReplayOn } from '../data/replay';
 import { casedName, displayName } from '../text/names';
 import { stateOfId } from '../text/school-names';
-import { PUBLISHED_PATHS, Status } from '../types/generated';
+import { PUBLISHED_PATHS, Reason, Status } from '../types/generated';
 import type {
   ClosingsFile,
   CoveredFile,
   DirectoryStamp,
+  LocalDate,
   PredictionsFile,
-  Reason,
   SchoolId,
 } from '../types/generated';
 import { chanceView, latestZone, nextTurn, shortDistrictName, todayUnderWay } from './chance';
@@ -187,11 +190,63 @@ export function townOf(record: SchoolRecord): string | null {
   return record.city === null ? null : `${casedName(record.city)}, ${record.state}`;
 }
 
+/**
+ * What districts next door said of a day, for a status line whose own row names no reason:
+ * the one reason any row of theirs in `day`'s group of the closings file names, when it is the
+ * weather of an area (never a power outage) and at least one of them stands whole with it
+ * (every school the directory gives it listed that day, each row naming it). Worded by how
+ * many stand so: "A district nearby said flooding", "Districts nearby said flooding". Null
+ * otherwise, and wherever the file's directory is not the one `names` comes from.
+ */
+export function nearbyReason(
+  closings: ClosingsFile | null,
+  day: LocalDate,
+  neighbors: readonly number[],
+  names: Names | null,
+): string | null {
+  if (closings === null || names === null || neighbors.length === 0) return null;
+  const { stamp } = names;
+  const same =
+    closings.directory.generated_on === stamp.generated_on &&
+    closings.directory.schools === stamp.schools &&
+    closings.directory.districts === stamp.districts;
+  const group = closings.days.find((item) => item.day === day);
+  if (!same || group === undefined) return null;
+  const next = new Set(neighbors);
+  const rows = decodeDay(group);
+  const said = new Set<Reason>();
+  const found = new Map<number, { listed: number; reasons: Set<Reason | null> }>();
+  rows.schools.forEach((school, i) => {
+    const district = names.districtOf(school);
+    if (!next.has(district)) return;
+    const reason = group.reasons[i] ?? null;
+    if (reason !== null) said.add(reason);
+    const seen = found.get(district);
+    if (seen === undefined) found.set(district, { listed: 1, reasons: new Set([reason]) });
+    else {
+      seen.listed++;
+      seen.reasons.add(reason);
+    }
+  });
+  const [reason] = said;
+  if (said.size !== 1 || reason === undefined || reason === Reason.power_outage) return null;
+  const key = REASON_KEYS[reason];
+  if (key === undefined || key === 'powerOutage') return null;
+  let whole = 0;
+  for (const [district, { listed, reasons }] of found) {
+    if (listed === names.schools(district) && reasons.size === 1 && reasons.has(reason)) whole++;
+  }
+  if (whole === 0) return null;
+  const area: NearbyReasonKey = key;
+  return format.reasonNearby(area, whole);
+}
+
 function statusLine(
   row: StatusRow,
   day: 'today' | 'tomorrow',
   now: Date,
   timeZone: string,
+  nearby: string | null = null,
 ): StatusLineView {
   const key = statusKey(row.status);
   const detail =
@@ -201,7 +256,8 @@ function statusLine(
         ? format.dismissal(row.shiftMinutes, row.clockMinute)
         : null;
   const notes: string[] = [];
-  const reason = row.reason === null ? null : reasonName(row.reason);
+  // The school's own reason; with none, what districts nearby said, in its place.
+  const reason = row.reason === null ? nearby : reasonName(row.reason);
   if (row.manual) notes.push(copy.detail.confirmed);
   if (reason !== null) notes.push(reason);
   if (row.announcedAt !== null) notes.push(format.posted(row.announcedAt, timeZone, now));
@@ -231,15 +287,55 @@ function replayLines(id: SchoolId, replay: ReplayOn): StatusLineView[] {
   ];
 }
 
-function statusLines(status: SchoolStatus, now: Date, timeZone: string): StatusLineView[] {
+/** What districts nearby said of the school's today and tomorrow (see nearbyReason). */
+interface NearbySaid {
+  readonly today: string | null;
+  readonly tomorrow: string | null;
+}
+
+const NOTHING_SAID: NearbySaid = { today: null, tomorrow: null };
+
+function statusLines(
+  status: SchoolStatus,
+  now: Date,
+  timeZone: string,
+  said: NearbySaid = NOTHING_SAID,
+): StatusLineView[] {
   const lines: StatusLineView[] = [];
   if (status.today === 'open') {
     lines.push({ tone: 'open', headline: copy.open.today, detail: null, note: null });
   } else if (status.today !== null) {
-    lines.push(statusLine(status.today, 'today', now, timeZone));
+    lines.push(statusLine(status.today, 'today', now, timeZone, said.today));
   }
-  if (status.tomorrow !== null) lines.push(statusLine(status.tomorrow, 'tomorrow', now, timeZone));
+  if (status.tomorrow !== null) {
+    lines.push(statusLine(status.tomorrow, 'tomorrow', now, timeZone, said.tomorrow));
+  }
   return lines;
+}
+
+/** Whether a day's row is a status that names no reason of its own. */
+function unnamed(row: StatusRow | 'open' | null): boolean {
+  return row !== null && row !== 'open' && row.reason === null;
+}
+
+/**
+ * What districts next door said of each day a status line shows without a reason of its own:
+ * the school's today (the same day schoolStatus reads, by the outlook's zone) from today's
+ * group, its tomorrow from tomorrow's; the school's own district never counts.
+ */
+function nearbySaid(input: ViewInput, own: number | null): NearbySaid {
+  const neighbors = (input.outlook?.neighbors ?? []).filter((district) => district !== own);
+  const closings = input.closings ?? null;
+  const names = input.names ?? null;
+  if (neighbors.length === 0 || closings === null || names === null) return NOTHING_SAID;
+  const today = schoolToday(input.now, input.outlook?.timeZone ?? null);
+  if (today === null) return NOTHING_SAID;
+  return {
+    today: unnamed(input.status.today) ? nearbyReason(closings, today, neighbors, names) : null,
+    tomorrow: unnamed(input.status.tomorrow)
+      ? nearbyReason(closings, nextDay(today), neighbors, names)
+      : null,
+  };
 }
 
 /** A district's name as the panel shows it whole: "Shawnee Mission Public Schools". */
@@ -429,7 +525,15 @@ export function schoolView(input: ViewInput): SchoolView | null {
   const replay = input.replay ?? null;
   let status: StatusLineView[] = [];
   try {
-    status = replay === null ? statusLines(input.status, now, timeZone) : replayLines(id, replay);
+    status =
+      replay === null
+        ? statusLines(
+            input.status,
+            now,
+            timeZone,
+            nearbySaid(input, record.district?.index ?? null),
+          )
+        : replayLines(id, replay);
   } catch {
     // A time zone or a value the formatters refuse: no status rather than a wrong one.
   }
@@ -544,7 +648,8 @@ export interface WatchOptions {
   readonly pollMs?: number;
   /**
    * The directory a stamp names, or null, for the names of the districts next
-   * door; asked only when a chance is shown for a district that has neighbors.
+   * door; asked only for a district that has neighbors, when a chance is shown
+   * or a status line names no reason of its own (what they said may fill it).
    */
   readonly directory?: (stamp: DirectoryStamp) => Promise<Directory | null>;
   /**
@@ -627,14 +732,15 @@ export function watchSchool(options: WatchOptions): () => void {
     if (replay === null && record !== null) {
       turn.set(nextTurn(outlook, latestZone(record.state), at), at);
     }
-    // A chance for a district with neighbors: their names, and their schools' districts, come
-    // from the directory, read once (the glow has most often read it already).
+    // A chance for a district with neighbors, or a status line with no reason of its own:
+    // their names, and their schools' districts, come from the directory, read once (the glow
+    // has most often read it already).
     const neighbors = outlook?.neighbors ?? [];
     const stamp = live.closings?.directory ?? live.predictions?.directory ?? null;
     if (
       !askedNames &&
       view !== null &&
-      view.chance !== null &&
+      (view.chance !== null || unnamed(status.today) || unnamed(status.tomorrow)) &&
       neighbors.length > 0 &&
       stamp !== null
     ) {
