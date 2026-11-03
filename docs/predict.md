@@ -447,7 +447,10 @@ physical reason. It is our own method; nothing in it reads a closure share.
   snow to half an inch (0.4 x min(1, s / 0.5)). In every zone the overnight period raises it
   (Eastern 1 to 7 AM +0.15, Central midnight to 6 AM +0.13, Mountain 11 PM to 5 AM +0.10,
   Pacific 10 PM to 4 AM +0.09, for 4 inches over a usual 3) and snow ending by evening or
-  falling after 9 AM lowers it.
+  falling after 9 AM lowers it. This is L5's timing, served until Nov 3, 2026; since then the
+  bus hour timing term serves in its place (`timing_bus`: snow before 7 AM against snow after
+  it, measured on past winters; "The bus hour timing term" below), and with it off the timing
+  is this one exactly.
 - **Ice** (adds only): an inch of the window's ice counts as 25 inches of snow on top of the
   day's snow (a tenth of an inch as 2.5 inches): `ln((s F + 25 i + 0.5) / (s F + 0.5))`. A
   trace of ice adds a little to a dusting's term (Buffalo's advisory: 1% with no ice, 2% with
@@ -586,7 +589,10 @@ day's snow is taken as even through the window, with the timing term even snow h
 none where the window's even weight is under the 0.9 cap (Eastern, Central, Mountain), and
 where the cap holds it the solve counts it (Pacific 1.0205 times the snow inside the log;
 Alaska and Hawaii more), so those zones' days still average their level (PHYS-R2-S2: round 2
-left it out, about +0.01 log-odds in Pacific time and +0.05 in Alaska on the class level). A
+left it out, about +0.01 log-odds in Pacific time and +0.05 in Alaska on the class level). With
+the bus hour timing term on (below), even snow has no timing term in any lower-48 zone, so
+their factor is exactly 1 (Pacific's too), and Alaska's and Hawaii's are 1.0013 and 1.0055 (L5:
+1.0570 and 1.0606); no district of the committed climate is in Alaska or Hawaii time. A
 district with few days of a class takes 10 days' worth of its county's mix (its region's where
 the county has under 30). A place with no region of its own in the climate (it holds no Alaska
 or Hawaii rows) never borrows the nation's: its days keep their class level (S-R2-1; on the
@@ -616,7 +622,13 @@ day's timing term is not even snow's: over random shapes (each period's rate dra
 1 to 6 in, January and March), its mean less the solve's even snow's is -0.008 to +0.002
 log-odds in Eastern, Central and Mountain time, -0.007 to -0.026 in Pacific, -0.003 to -0.001
 in Hawaii and +0.007 to -0.042 in Alaska (round 2 left the cap's part out: +0.005 to +0.015
-in Pacific, about +0.05 in Alaska and Hawaii); under a point at a 45% level. Each pass logs the class's mean shift
+in Pacific, about +0.05 in Alaska and Hawaii); under a point at a 45% level. Re-measured for
+the bus hour timing term (each 6-hour period's snow drawn at random, 1 to 6 in, a period under
+way for its part, January and March, a usual of 3 in, the registered class slopes, 2,000
+shapes each): -0.000 to +0.001 log-odds in every lower-48 zone, -0.003 to +0.001 in Alaska and
+0.000 in Hawaii; L5's at the same slopes is -0.005 to +0.000 in Eastern, Central and Mountain
+time, +0.005 to -0.064 in Pacific, +0.020 to -0.094 in Alaska and -0.002 to -0.001 in Hawaii.
+Each pass logs the class's mean shift
 (`forecast adjustment: advisory N days, M moved, mean +0.0012`), so a drift shows at once.
 
 Ice days set `u` too: ice only adds, so a district whose days of a class are often ice days
@@ -662,10 +674,10 @@ Three guards keep the average true:
 | a 0.00 in day: mean, p5 to p95 | 0.065, 0.03 to 0.13 (round 3: 0.046, 0.01 to 0.13) | |
 | a 0.00 in day under half its level, at 1%, at the lower bound | 0%, 0%, 87% (round 3: 82%, 6.6%, 47%) | |
 
-G6 at the class levels: advisory mean 0.310 and p99 0.868, advisory and warning mean 0.971,
-most 5.51; with the adjustment (expected over each district's days and mornings): 0.310 and
-0.876, 0.971, most 5.54; no district over 6 either way. The check in `build_model` passes
-every clause (0 districts held at their class levels for the most).
+G6 at the class levels: advisory mean 0.310 and p99 0.868, advisory and warning mean 0.971, most
+5.51; with the adjustment (expected over each district's days and mornings): 0.310 and 0.876, 0.971,
+most 5.54 (L5's; with the snow amount term on, below); no district over 6 either way. The check in
+`build_model` passes every clause (0 districts held at their class levels for the most).
 
 **Worked examples** (a forecast even through the window, 25 F at 7 AM; each district's served
 level and usual snow):
@@ -759,7 +771,10 @@ added, no served value changed, `LIVE_SCORE_SHA256` e3903496.... Revised Nov 3, 
 `snow_amount_slope_advisory` (1.65) and `snow_amount_slope_warning` (3.0) added,
 `LIVE_SCORE_SHA256` a228204e...: each class's slope is its own (not `snow_per_log`'s 1.0), the
 total bends toward 3.0 over the upper bounds instead of stopping, and the snow alone's floor
-holds (below); the description above is the term off.
+holds (below); the description above is the term off. Revised Nov 3, 2026 (predict-next
+BUS-TIMING, below), for rows after it: `timing_bus` true, `timing_after_bus` (0.95) and
+`timing_bus_share_max` (0.8) added, `LIVE_SCORE_SHA256` 78861639...: the timing weighs snow
+before the bus hour (7 AM) against snow after it in place of 10 PM to 9 AM.
 Turning it off (`serve.forecast_adjust: "off"`) serves the class levels alone, as L3 did, with
 no previous chance on a day the forecast had moved.
 
@@ -923,15 +938,16 @@ here can say which is right.
   term in `raw` and the asymptote as `hi` (SA-R2-S5, out of scope here: the bend's start, the
   class's upper bound, is not recorded; it is the registered bound).
 
-**Safety, with the term on as registered** (every district of the committed climate, 13,404,
-solved as serving solves it at four mixes of class levels): every advisory, snow warning, lake
-effect and ice storm usual is solved (none unsolved, none at the 30-inch end), G6 holds (no
-check failing), and over 0 to 30 inches with ice (0, 0.05, 0.25 in), timing (even, overnight,
-late) and cold (25 F, -20 F) no chance falls for every 7th district (0 falls). A residual
-plateau remains (SA-R2-S1): at advisory 30% and warning 85% levels, 2 of 13,404 districts whose
-advisory days are almost all traces solve to any usual from 0.09 to 0.27 inches (their chance
-at 1 inch reads 56 to 67% across that range); at the typical levels and at 5, 20 and 45%
-advisory levels none does.
+**Safety, with the term on as registered** (every district of the committed climate, 13,404, solved
+as serving solves it at four mixes of class levels): every advisory, snow warning, lake effect and
+ice storm usual is solved (none unsolved, none at the 30-inch end), G6 holds (no check failing; the
+first predict run with the term on, 41618702328, logged advisory mean 0.311 p99 0.889, advisory and
+warning mean 0.973, most 5.59, 0 districts at their class levels), and over 0 to 30 inches with ice
+(0, 0.05, 0.25 in), timing (even, overnight, late) and cold (25 F, -20 F) no chance falls for every
+7th district (0 falls). A residual plateau remains (SA-R2-S1): at advisory 30% and warning 85%
+levels, 2 of 13,404 districts whose advisory days are almost all traces solve to any usual from 0.09
+to 0.27 inches (their chance at 1 inch reads 56 to 67% across that range); at the typical levels and
+at 5, 20 and 45% advisory levels none does.
 
 Tests (`tests/predict/test_snow_amount.py`): the block is registered on with its slopes, and
 off it is L5 exactly, with and without the class order's cap; a bad block is refused (an
@@ -978,6 +994,183 @@ rise (Buffalo's warning 5.70 to 6.39 inches, Atlanta's 1.62 to 2.39) and some fa
 typical warning district's 3.37 to 3.05), and amounts under a usual that rose read a little
 lower (Buffalo's warning 34% at 6 inches, L5 39%; Atlanta's warning 49% at 2 inches, L5 53%).
 From about 12 inches a warning day nears the asymptote (above).
+
+## The bus hour timing term (predict-next BUS-TIMING: on)
+
+The owner asked (Nov 2) that snow down by the time the buses go out raise the chance. L5's
+timing (above) was set by hand: snow from 10 PM to 9 AM weighs 1, snow outside it 0.5, held to
+0.4 log-odds either way, and no fair test had measured it (every test took each archive day's
+snow as even through the window). BUS-TIMING replaces it with a weight measured on past winters
+by the bus hour, switched on by the within-date test with each season held out, for rows after
+Nov 3, 2026 (`live_score.forecast_adjustment.timing_bus: true`).
+
+**The bus hour.** 7 AM on each district's own clock (`ndfd.bus_time`, the cold term's hour).
+No source gives district bus times, first buses run about 6:15 to 7:30, and the forecast's
+6-hour periods (each taken even through its hours) cannot resolve finer: half an hour moves a
+twelfth of a period. The web's timing words stay free of bus times ("The forecast has the
+heaviest snow 12 to 6 AM.", no bus clause), so no line names a bus time the pipeline does not
+have.
+
+**The term** (`forecast_adjust.window_even`, `weighed`, `bus_weight` and `_named`, with
+`timing_bus` on):
+
+- `snow_bus`: each deciding school's own window snow from the snapshot to 7 AM (each period's
+  snow even through it), the district's 50% value taken by the same rule as `s`, never over
+  `s`, school by school first, so it only grows with any school's snow in any period.
+- `W = (o s + (1 - o) snow_bus) / even_bus`, `even_bus = o + (1 - o) min(f, F)`: `f` the
+  window's share before 7 AM by the hour, `F` 0.8 (`timing_bus_share_max`: snow at least 80%
+  before the bus hour never lowers), `o` 0.95 (`timing_after_bus`, what snow after the bus hour
+  weighs against snow before it). The term is L5's log with this `W`, `a ln((W + 0.5) / (s +
+  0.5))`, in L5's band (0.4 either way, phased in to half an inch) and at each class's slope.
+- Zero point: even snow gives `snow_bus = f s`, so `W = s` and a timing part of 0 wherever `f <=
+  0.8`. At 9 PM `f` is 0.625 in Eastern (0.588 daylight), 0.667 Central, 0.714 Mountain, 0.769
+  Pacific (0.714 daylight), 0.833 Alaska (0.769 daylight) and 0.909 Hawaii, and it only falls
+  as the snapshot moves later, so every lower-48 zone has no timing part for even snow at every
+  snapshot to the bus hour and a solve factor of exactly 1. Only Alaska (standard time) and
+  Hawaii cap it: factors 1.0013 and 1.0055 (L5: Pacific 1.0205, Alaska 1.0570, Hawaii 1.0606).
+  The factor is solved at 9 PM; in Alaska the cap holds until 11 PM and in Hawaii until 3 AM,
+  after which an unchanged even forecast's timing part goes from at most +0.016 log-odds (Hawaii,
+  warning slope) to 0 while the usual keeps the 9 PM factor (a bound for the newest-run piece).
+- The timing line weighs each period by `o + (1 - o) g`, `g` its share before 7 AM, against
+  `even_bus`; a line that raises names only a period more than half before 7 AM, one that
+  lowers only a period more than half after it, else its points go with the snow line. At 9 PM
+  the split period is 12-18 UTC (Eastern daylight: 06-12 UTC, 5/6 before): Central's (1/6
+  before) is never named by a line that raises; Pacific standard (3/6), Alaska standard (4/6)
+  and Alaska daylight time's (3/6) are named by neither; Hawaii's (5/6) may be named by a line
+  that raises.
+- More snow in any period at any school, more ice or more cold, or snow moved before the bus
+  hour, never lowers the chance: `W` only rises with `snow_bus` and with `s`, `even_bus` is a
+  constant of the window, and the band's edges only rise with `s`.
+
+**What the archive can and cannot show** (a row: a labelled advisory or warning district-day,
+2018-19 on, that the replay read; a date-class is informative when it has a closed and an open
+row):
+
+- The forecast history's codes hold one bucket of the window total per sample hour, so 0 of
+  the 1,436 labelled district-days carry snow before or after the bus hour; the 4 AM code is a
+  run 7 hours later, not a split of the 9 PM one. The codes alone cannot show timing.
+- The archived NDFD runs can be replayed: the 9 PM read through the live reader on 26
+  zone-nights (24 dates), 0 failed, gives each row's `snow_bus`. Rows: 1,436 on 24 dates, 29
+  date-classes; 15 informative date-classes (928 rows, 13 dates), with 157 open district-days
+  in all, most of them on two date-classes (2023-03-14 and the 2023-02-28 advisory day).
+- The hourly blend's archive (NOAA's no-cost `noaa-nbm-grib2-pds` bucket) holds the 1-hour
+  snowfall from the 2020-09-29 12 UTC cycle on: 17 of the 24 dates, 1,209 rows, 22
+  date-classes and 11 of the 15 informative ones. Read at each zone's 9 PM (the cycle 2 hours
+  before, one a 9 PM pass could read: 18 zone-nights, 0 failed), its before-bus share
+  correlates 0.933 with the NDFD replay's (mean difference 0.081), its window total 0.913.
+
+**The test** (the snow amount term's within-date test: per date and class, the exact
+conditional log-likelihood of which districts closed given how many, per district-day; each
+season held out in turn; date-block bootstrap 90% bounds, 2,000 draws; every arm at today's
+served settings: snow amount on, slopes 1.65 and 3.0, no class order cap). Arms: (a) L5's
+timing as served; (b) the bus term, `o` fit on the training seasons over 0.0 to 0.9 by 0.1 and
+0.95 (ties to the largest, the weakest timing, since the record does not show the effect), the
+usual re-solved at its factor; (n) no timing (`o` 1.0). The rule: on only if (b - a) is at
+least 0 at the point with its lower bound at least -0.005, no class's (b - a) is under -0.005,
+and every safety check holds.
+
+- Profile, all seasons (fit grid, then 1.0): 0.0 -169.124, 0.3 -169.769, 0.5 -169.571, 0.8
+  -168.400, 0.9 -167.881, 0.95 -167.614, 1.0 -167.356; L5 -169.292. Both classes rise from 0.3
+  or 0.4 to 1.0. Every fold's training profile peaks at 0.95 and picks it (the 2022-23 and
+  2023-24 seasons carry most of the held-out signal; 2025-26 has no informative date-class).
+- (b) less (a): +0.0012 (-0.0000 to +0.0029); advisory +0.0019 (-0.0004 to +0.0058); warning
+  +0.0006 (+0.0002 to +0.0010). The rule holds: on at `o` 0.95.
+- (n) less (a): +0.0013 (+0.0000 to +0.0033); advisory +0.0022 (-0.0004 to +0.0064); warning
+  +0.0007 (+0.0002 to +0.0013). L5 at its hand-set strength measurably lowers the warning
+  class's within-date likelihood.
+- (n) less (b): +0.0002 (+0.0000 to +0.0004); advisory +0.0002 (-0.0000 to +0.0006); warning
+  +0.0001 (+0.0001 to +0.0002).
+- Concordance (4,346 pairs): L5 0.645, the bus term 0.672, no timing with L5's usual 0.674
+  (it differs from (n) only on 66 Pacific rows, whose usual L5 inflates by 1.0205).
+- Size at 0.95, the timing part on the rows: advisory mean +0.003 (sd 0.014, largest 0.042),
+  warning -0.020 (sd 0.044, largest 0.091); L5's +0.017 (sd 0.083) and -0.039 (sd 0.175).
+- The blend's hours (information only, the 1,209 covered rows: the bus term with `snow_bus` as
+  `s` times the blend's before-bus share, the NDFD amount kept): profile 0.0 -142.316, 0.5
+  -141.521, 0.95 -141.487; the NDFD-timed 0.5 -143.734, 0.95 -141.658; no timing -141.395; L5
+  -143.371. The blend's timing less the NDFD's at 0.5: +0.0018 (-0.0001 to +0.0054); at 0.95
+  +0.0001 (-0.0000 to +0.0004); less no timing at 0.5 -0.0001 (-0.0007 to +0.0008).
+
+**The finding.** On this record neither the 9 PM forecast's 6-hour periods nor the blend's hours
+rank districts within a storm date by timing: no timing scores best. The rule switches the bus term
+on at the weakest timing the fit grid holds, which removes L5's hand-set 10 PM to 9 AM weighting,
+whose swings reached the 0.4 band (measurably worse on warning days), and keeps the factor wired,
+measured and refittable. The band stays registered and holds the bus term too; only the weighting
+changed, and at `o` 0.95 the term's largest value on the archive rows is 0.091 log-odds, so the band
+rarely binds. The measured `o` is the grid's top, not an interior optimum; `o` 1.0 (the term 0
+everywhere, every factor 1) is the registered way to drop timing, and that is the owner's call, not
+the fit's. Serving the blend's hours is a later piece: it must first be calibrated against NDFD
+(their amounts differ), its reader splits the CONUS and Alaska files, and on this record it would
+not pass against no timing either.
+
+**Safety, with the term on as registered** (every district of the committed climate, 13,404,
+solved as serving solves it at four mixes of class levels): G6 holds (no check failing), every
+advisory, snow warning, lake effect and ice storm usual is solved within 1e-6 of its level
+(none unsolved, none at the 30-inch end); Eastern, Central, Mountain and Arizona usuals are
+unchanged from L5's, Pacific's move with its factor (median advisory 0.687 to 0.670 in,
+warning 2.642 to 2.603 in); for every 7th district in its own zone, over 0 to 24 inches even
+and in each single period, no chance falls (0 falls). The replay's reader `snow_bus` equals the
+probe's school-by-school value (to its 4-place rounding) on all 1,436 rows, and the served
+path's total equals the test's bus arm (largest difference 4e-16) at every `o`.
+
+Tests (`tests/predict/test_bus_timing.py`): `snow_bus` is each school's own, never over `s`, grows
+with any school's snow in any period, and is unread where a school is; the 7 AM split of each zone's
+period in standard and daylight time; off, every term, bound, line and even factor over a grid of
+zones, both times, shapes, ice, cold, usuals, classes and floors is L5's bit for bit (a digest taken
+at the head before the change), with any `snow_bus` and bus settings; on, over 1 to 7 schools, six
+zones, both times, `o` 0 to 1, usuals, both classes, floors and class order caps, more snow at one
+or every school, snow moved before the bus hour, more ice or more cold never lowers; even snow has
+no timing part and no timing line in each lower-48 zone at 9 PM and every hourly snapshot to 6 AM,
+and even snow at the solved usual reads usual (snow and timing parts 0, no snow or timing line)
+through the live reader in each; the even factors by zone; `o` or `F` out of range is refused, `o`
+1.0 is accepted and gives no timing; each place's days still average its class level in every zone;
+the line's side rule per zone; and through `serve._order_cap`, for the owner's table's districts, an
+advisory day never over the warning level or any warning's chance for the same forecast, never
+falling with more snow, and Atlanta's at its 49% from 4 inches. `tests/predict/test_frozen.py`: the
+record keeps `bb` and rows without it still read.
+
+**The owner's table** (each district's usual solved as serving solves it with L5's timing and
+with the bus term; 9 PM read on a January school day, no ice, 25 F; "before": all the snow in
+the last period to end by 7 AM local, 1 to 7 AM in Eastern time, midnight to 6 AM in Central; "after":
+all of it in the next period, 7 AM to 1 PM Eastern, 6 AM to noon Central (five sixths of it
+after 7 AM); each advisory day held by the class order through `serve._order_cap`, as serving
+holds it: under every winter warning's chance for the same forecast, where a blizzard warning
+keeps the district's warning level; typical: the median usual at the national levels):
+
+| place, class | 4 in before | 4 in even | 4 in after | 8 in before | 8 in even | 8 in after |
+|---|---|---|---|---|---|---|
+| typical warning district, warning (level 46%, usual 3.94 in), L5 | 57% | 47% | 38% | 89% | 85% | 80% |
+| typical warning district, warning, bus term | 48% | 47% | 45% | 86% | 85% | 84% |
+| typical advisory district, advisory (level 12%, usual 1.70 in), L5 | 34% | 30% | 26% | 46% | 46% | 46% |
+| typical advisory district, advisory, bus term | 30% | 30% | 29% | 46% | 46% | 46% |
+| low usual (Atlanta), warning (level 49%, usual 2.39 in), L5 | 84% | 78% | 71% | 94% | 94% | 93% |
+| low usual (Atlanta), warning, bus term | 79% | 78% | 77% | 94% | 94% | 93% |
+| low usual (Atlanta), advisory (level 16%, usual 0.87 in), L5 | 49% | 49% | 49% | 49% | 49% | 49% |
+| low usual (Atlanta), advisory, bus term | 49% | 49% | 49% | 49% | 49% | 49% |
+| snow belt (Buffalo), warning (level 38%, usual 6.39 in), L5 | 29% | 29% | 29% | 63% | 53% | 44% |
+| snow belt (Buffalo), warning, bus term | 29% | 29% | 29% | 55% | 53% | 51% |
+| snow belt (Buffalo), advisory (level 6%, usual 2.21 in), L5 | 16% | 13% | 9% | 35% | 30% | 23% |
+| snow belt (Buffalo), advisory, bus term | 13% | 13% | 12% | 30% | 30% | 29% |
+
+Even snow reads the same under both (each district here is in Eastern or Central time, factor
+1). The class order holds an advisory day at the district's warning level: Atlanta's advisory
+reads 49%, its warning level, in every cell, and the typical advisory district 46% at 8
+inches, under both, so the bus term cannot move those cells. Elsewhere, snow all before 7 AM
+now raises a day 0 to 2 points over even snow (L5: 0 to 10), and snow after it (all of it in
+Eastern time, five sixths of it in Central) lowers a day 0 to 2 points (L5: 0 to 9): on this
+record the timing is a small tilt, not the large swing L5 gave it.
+
+**Limits.** One `o` for both classes (15 informative date-classes cannot fit two); the bus hour is 7
+AM everywhere; the archive's dates were picked for storms, so the absolute log loss is not a measure
+of the term (only the within-date comparison is). The frozen record keeps `bb` on every freeze; with
+`sn` and each period's span (`pp`) it is enough to refit `o` and `F` under this shape and bus hour.
+Another bus hour, per-district bus times or hourly timing need each school's snow by period or hour,
+which the record does not keep (`pp` holds the district's 50% value per period, and 50% values do
+not add across schools): such a change needs a replay of the archived runs, as this measurement did.
+On the first passes after the switch, a district-day whose read fails keeps the last file's chance
+and lines (the same snapshot's, above), which L5's timing made, and the frozen record stamps it with
+the new `LIVE_SCORE_SHA256`, as it did on the snow amount term's switch night: never a false or
+stale state (it is the same snapshot's chance), but rows kept across the switch carry L5's timing,
+which a refit can leave out.
 
 ## Heights in alerts (addendum e, E1)
 
@@ -1967,7 +2160,8 @@ frozen this pass`) while the pass publishes as before. It is never a reason for 
   kind; on a class day its level (as published and before rounding) and the district's
   exposure offset; the reasons shown (kind and points); whether it said school is on; the
   forecast adjustment's read (`before` the 9 PM class snapshot, `none`, `read`, or `kept` from
-  the last file) with the forecast inputs it read (window snow, commute snow and each period's
+  the last file) with the forecast inputs it read (window snow, commute snow, snow before the
+  bus hour (7 AM local, `bb`, on every freeze, the bus hour term on or off) and each period's
   snow to the hundredth of an inch, finer than the forecast's own tenths; ice to the
   thousandth; the 7 AM feel in whole degrees; the code and the run time; each period's bounds
   in minutes from the day's 00:00 UTC) and each term (snow, timing, ice, cold, to 4 decimals
