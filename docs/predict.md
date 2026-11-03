@@ -967,33 +967,44 @@ and the floor and ceiling hold. `tests/predict/test_forecast_adjust.py` holds L5
 (the term off).
 
 **The owner's table** (a forecast even through the window, no ice, 25 F; each district's usual
-and snow-alone usual solved as serving solves them, with the term off for before and on for
-after, and its advisory held under its own warning by the class order; typical: the district
-with the median usual of the committed climate at the national levels, advisory 11.58% and
-warning 45.86%, for each class):
+and snow-alone usual solved as serving solves them (`serve._usual_snow`), with the term off for
+before and on for after; every advisory cell through `serve._order_cap`, as serving holds it;
+typical: the district with the median usual of the committed climate at the national levels,
+advisory 11.58% and warning 45.86%, for each class, as picked when the term was measured; the bus
+hour timing on or off gives every cell the same, since the snow is even):
 
 | place, class | 1 in | 2 in | 4 in | 6 in | 9 in | 12 in | 18 in | 24 in | 30 in |
 |---|---|---|---|---|---|---|---|---|---|
 | typical warning district, warning (level 46%, usual 3.37 in), before | 36% | 36% | 50% | 59% | 68% | 73% | 79% | 79% | 79% |
 | typical warning district, warning (level 46%, usual 3.05 in), after | 36% | 36% | 63% | 84% | 92% | 94% | 94% | 94% | 94% |
-| typical advisory district, advisory (level 12%, usual 1.46 in), before | 9% | 14% | 23% | 30% | 39% | 45% | 49% | 49% | 49% |
-| typical advisory district, advisory (level 12%, usual 1.80 in), after | 8% | 13% | 28% | 42% | 57% | 65% | 70% | 72% | 72% |
+| typical advisory district, advisory (level 12%, usual 1.46 in), before | 9% | 14% | 23% | 30% | 39% | 45% | 46% | 46% | 46% |
+| typical advisory district, advisory (level 12%, usual 1.80 in), after | 8% | 13% | 28% | 42% | 46% | 46% | 46% | 46% | 46% |
 | low usual (Atlanta), warning (level 49%, usual 1.62 in), before | 40% | 53% | 67% | 75% | 81% | 81% | 81% | 81% | 81% |
 | low usual (Atlanta), warning (level 49%, usual 2.39 in), after | 39% | 49% | 78% | 91% | 94% | 95% | 95% | 95% | 95% |
-| low usual (Atlanta), advisory (level 16%, usual 0.65 in), before | 20% | 29% | 43% | 52% | 58% | 58% | 58% | 58% | 58% |
-| low usual (Atlanta), advisory (level 16%, usual 0.87 in), after | 18% | 34% | 57% | 70% | 76% | 78% | 79% | 79% | 79% |
+| low usual (Atlanta), advisory (level 16%, usual 0.65 in), before | 20% | 29% | 43% | 49% | 49% | 49% | 49% | 49% | 49% |
+| low usual (Atlanta), advisory (level 16%, usual 0.87 in), after | 18% | 34% | 49% | 49% | 49% | 49% | 49% | 49% | 49% |
 | high usual (Buffalo), warning (level 38%, usual 5.70 in), before | 29% | 29% | 31% | 39% | 48% | 55% | 65% | 71% | 73% |
 | high usual (Buffalo), warning (level 38%, usual 6.39 in), after | 29% | 29% | 29% | 34% | 62% | 78% | 89% | 92% | 92% |
 | high usual (Buffalo), advisory (level 6%, usual 1.96 in), before | 4% | 6% | 10% | 14% | 20% | 24% | 32% | 32% | 32% |
-| high usual (Buffalo), advisory (level 6%, usual 2.21 in), after | 3% | 6% | 13% | 21% | 34% | 43% | 52% | 54% | 55% |
+| high usual (Buffalo), advisory (level 6%, usual 2.21 in), after | 3% | 6% | 13% | 21% | 34% | 38% | 38% | 38% | 38% |
 
-With the term on, the snow amount moves the chance much more: a typical warning district reads
-63% at 4 inches and 84% at 6 (L5 50 and 59%), and an advisory 42% at 6 inches and 70% at 18
-(L5 30 and 49%). Each usual is solved again so the class's days still average its level: some
-rise (Buffalo's warning 5.70 to 6.39 inches, Atlanta's 1.62 to 2.39) and some fall (the
-typical warning district's 3.37 to 3.05), and amounts under a usual that rose read a little
-lower (Buffalo's warning 34% at 6 inches, L5 39%; Atlanta's warning 49% at 2 inches, L5 53%).
-From about 12 inches a warning day nears the asymptote (above).
+**The class order caps every advisory day.** `serve._order_cap` holds an advisory day at or under
+the lowest chance any of the same district's winter warning situations has with the same
+forecast, and a blizzard warning is never moved by the forecast, so it keeps the district's
+warning level: an advisory day never serves over its district's warning level. Atlanta's
+advisory stops at 49%, its warning level, from 6 inches before and from 4 inches after;
+Buffalo's at 38% from 12 inches after; the typical advisory district's at 46% from 18 inches
+before and from 9 inches after. Without the cap the term on would read Atlanta's advisory 57 to
+79% from 4 inches and the typical advisory district's 57 to 72% from 9 inches: serving never
+publishes those. Under the cap, the term still moves an advisory day from 1 to about 6 inches
+(the typical district 30% at 6 inches before, 42% after).
+
+With the term on, the snow amount moves a warning day much more: a typical warning district
+reads 63% at 4 inches and 84% at 6 (L5 50 and 59%). Each usual is solved again so the class's
+days still average its level: some rise (Buffalo's warning 5.70 to 6.39 inches, Atlanta's 1.62
+to 2.39) and some fall (the typical warning district's 3.37 to 3.05), and amounts under a usual
+that rose read a little lower (Buffalo's warning 34% at 6 inches, L5 39%; Atlanta's warning 49% at
+2 inches, L5 53%). From about 12 inches a warning day nears the asymptote (above).
 
 ## The bus hour timing term (predict-next BUS-TIMING: on)
 
