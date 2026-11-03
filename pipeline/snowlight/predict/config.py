@@ -189,12 +189,14 @@ class LearnSettings(_Settings):
     out, and a learned file that counted one is no longer served."""
 
 
-LIVE_SCORE_SHA256: Final = "e39034962611ffd7c3e93b2eacf2451cd030b7ebc97b1fec97a9e4c514bc28cc"
+LIVE_SCORE_SHA256: Final = "a228204e0624316e4e1d8410b0bba61604c847ac69263da8af19dfce5584ed95"
 """The sha256 of the pre-registered scoring rules (:func:`live_score_sha256`: the
 ``live_score`` block, the ``labels`` and ``weather`` blocks and ``learn.snapshot_slack_minutes``),
 as S7 addendum h records it (and addendum i, for the forecast adjustment of advisory-sane L5;
 revised Nov 2, 2026 by predict-next SNOW-AMOUNT: ``snow_amount``, ``snow_amount_high`` and
-``snow_amount_floor_ratio`` added, the term off, no served value changed).
+``snow_amount_floor_ratio`` added, the term off, no served value changed; revised Nov 3, 2026
+by predict-next SNOW-AMOUNT-2: the term on, ``snow_amount_slope_advisory`` and
+``snow_amount_slope_warning`` added, for rows after it).
 A test holds the two equal, so none of them changes without this."""
 
 

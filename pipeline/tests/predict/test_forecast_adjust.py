@@ -52,7 +52,9 @@ from snowlight.schemas.predictions import (
 )
 
 CONFIG = PredictConfig.load()
-SETTINGS = fa.AdjustSettings.of(CONFIG)
+SETTINGS = replace(fa.AdjustSettings.of(CONFIG), snow_amount=False)
+"""L5's terms (the snow amount term off): SNOW-AMOUNT-2 registers the term on, and
+tests/predict/test_snow_amount.py holds the registered terms against these."""
 DAY = date(2026, 1, 14)
 EAST = "America/New_York"
 RUN = world.utc("2026-01-14T01:00:00")
@@ -2082,7 +2084,7 @@ def test_with_forecast_adjust_off_or_no_climate_the_anchor_carries_none(tmp_path
     on = serving_anchor(CONFIG, world.model(), folder=tmp_path)
     assert on is not None
     assert on.climate is not None
-    assert on.adjust == SETTINGS
+    assert on.adjust == fa.AdjustSettings.of(CONFIG)  # as registered (the term on)
 
 
 def test_the_registered_settings_are_the_module_s_and_refuse_a_bad_block() -> None:

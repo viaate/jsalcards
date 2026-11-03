@@ -88,7 +88,7 @@ import gzip
 import json
 import math
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, time, timedelta
 from enum import StrEnum
 from pathlib import Path
@@ -197,6 +197,16 @@ class AdjustSettings:
     snow_amount_floor_ratio: float = math.inf
     """With ``snow_amount`` on, the snow alone's floor is anchored at no less than the usual
     over this (:func:`floor_lift`), so the solve for the usual stays determinate."""
+    snow_amount_slopes: Mapping[str, float] = field(default_factory=dict)
+    """With ``snow_amount`` on, each class's ``a`` (``snow_amount_slope_<class>``) in place of
+    ``snow_per_log``, for the solve and serving alike (:meth:`for_class`)."""
+
+    def for_class(self, klass: str) -> "AdjustSettings":
+        """The settings a day of ``klass`` is adjusted (and its usual solved) by: with
+        ``snow_amount`` on, the class's own slope as ``snow_per_log``; else these."""
+        if not self.snow_amount or klass not in self.snow_amount_slopes:
+            return self
+        return replace(self, snow_per_log=self.snow_amount_slopes[klass])
 
     @classmethod
     def of(cls, config: PredictConfig) -> "AdjustSettings":
@@ -250,6 +260,11 @@ class AdjustSettings:
             snow_amount=_flag(block, "snow_amount"),
             snow_amount_high=number("snow_amount_high"),
             snow_amount_floor_ratio=number("snow_amount_floor_ratio"),
+            snow_amount_slopes={
+                str(klass): number(f"snow_amount_slope_{klass}")
+                for klass in classes
+                if klass != "cold"
+            },
         )
         if not found.snow_amount_high > max(high for _, high in found.bounds.values()):
             raise ValueError(
@@ -266,10 +281,15 @@ class AdjustSettings:
         ):
             raise ValueError("forecast_adjustment: timing_outside or snow_offset out of range")
         m, c = found.timing_min_snow, found.snow_offset
-        if found.timing_max < 0 or (m > 0 and (m + c) * found.timing_max > found.snow_per_log * m):
-            # The timing band's lower edge, (s + c) exp(-timing_max min(1, s / m) / a) - c,
-            # only rises with s while (m + c) timing_max <= a m (:func:`timed`).
-            raise ValueError("forecast_adjustment: timing_max is too wide for timing_min_snow")
+        for a in (found.snow_per_log, *found.snow_amount_slopes.values()):
+            if a <= 0 or found.timing_max < 0 or (m > 0 and (m + c) * found.timing_max > a * m):
+                # The timing band's lower edge, (s + c) exp(-timing_max min(1, s / m) / a) - c,
+                # only rises with s while (m + c) timing_max <= a m (:func:`timed`), for every
+                # class's slope (snow_amount_slope_<class>).
+                raise ValueError(
+                    "forecast_adjustment: timing_max is too wide for timing_min_snow"
+                    " (snow_per_log, snow_amount_slope)"
+                )
         return found
 
 
@@ -592,6 +612,10 @@ def floor_lift(
     return found
 
 
+_LEFT: Final = 1e-9
+"""What :func:`bounded`'s guard leaves alone: float rounding of a sum already at its target."""
+
+
 def bounded(
     values: Sequence[Floats | float],
     low: float,
@@ -607,14 +631,29 @@ def bounded(
     down = sum((np.minimum(term, 0.0) for term in terms), np.zeros(np.shape(terms[0])))
     total = up + down
     target = saturated(total, low, high, settings, most)
+    over, under = total > target, total < target
+    # Over the target the raising terms are scaled down, to none at the most; where that is
+    # not enough (the class order's cap under 0 and under the lowering terms' sum: SA-R2-S4)
+    # the lowering terms take the rest, so the sum is always the solve's total.
+    deep = over & (target < down)
     with np.errstate(divide="ignore", invalid="ignore"):
         up_scale = np.where(
-            (total > target) & (up > 0), (target - down) / np.where(up > 0, up, 1), 1
+            over & (up > 0),
+            np.clip((target - down) / np.where(up > 0, up, 1), 0.0, 1.0),
+            1,
         )
         down_scale = np.where(
-            (total < target) & (down < 0), (target - up) / np.where(down < 0, down, -1), 1
+            (under | deep) & (down < 0),
+            (target - np.where(deep, 0.0, up)) / np.where(down < 0, down, -1),
+            1,
         )
-    return [np.where(term > 0, term * up_scale, term * down_scale) for term in terms]
+    found = [np.where(term > 0, term * up_scale, term * down_scale) for term in terms]
+    # The runtime guard: whatever is left (no term on the side to scale: a total of 0 under a
+    # cap under 0) goes to the first term (the snow's), so serving's sum and the solve's
+    # :func:`saturated` total never differ.
+    rest = target - sum(found, np.zeros(np.shape(terms[0])))
+    found[0] = found[0] + np.where(np.abs(rest) > _LEFT, rest, 0.0)
+    return found
 
 
 def timed(s: Floats | float, weighted: Floats | float, settings: AdjustSettings) -> Floats:
@@ -652,7 +691,10 @@ def climate_terms(  # noqa: PLR0913, PLR0917 - the places, the class and the set
     window's even weight is under the cap, as in the lower 48), so a zone whose even snow has a
     timing term (PHYS-R2-S2) still averages its class level. ``alone``: each place's snow
     alone's usual (:func:`floor_lift`; ``None``: no floor). ``most``: the most each code's and
-    morning's terms may add (places, 13, 5; the class order, :func:`order_cap`)."""
+    morning's terms may add (places, 13, 5; the class order, :func:`order_cap`). With
+    ``snow_amount`` on, the class's own slope (:meth:`AdjustSettings.for_class`), as
+    :func:`term_parts` serves it."""
+    settings = settings.for_class(klass)
     low, high = settings.bounds[klass]
     snow_in = np.array(SNOW_CODE)[None, :] * scale[:, None]
     ice_in = np.array(ICE_CODE)[None, :] * scale[:, None]
@@ -959,6 +1001,8 @@ def term_parts(  # noqa: PLR0913, PLR0917 - the forecast, the place, the day and
         return None
     if forecast.code == ndfd.Bucket.UNKNOWN or forecast.snow is None:
         return None
+    # With ``snow_amount`` on, the class's own slope, as the solve has it (:func:`climate_terms`).
+    settings = settings.for_class(klass)
     s = max(float(forecast.snow), 0.0)
     parts = tuple(part for part in forecast.snow_parts if part.end > part.start)
     even = None

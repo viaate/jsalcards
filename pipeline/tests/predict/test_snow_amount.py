@@ -1,10 +1,11 @@
-"""The snow amount term (predict-next SNOW-AMOUNT): with ``snow_amount`` on, the day's total
-is never under the snow alone's floor and over the class's upper bound it bends toward its
-asymptote instead of stopping; it only rises with snow for every usual, ice, timing and cold,
-serving holds the total exactly as the solve does, keeps the class order, each district's days
-still average its class level, no usual is solved at the range's end, G6 holds and the
-published chance stays in the floor and ceiling. Off (as registered), the forecast adjustment
-is L5's exactly."""
+"""The snow amount term (predict-next SNOW-AMOUNT, registered on by SNOW-AMOUNT-2): with
+``snow_amount`` on, each class has its own slope, the day's total is never under the snow
+alone's floor and over the class's upper bound it bends toward its asymptote instead of
+stopping; it only rises with snow for every usual, ice, timing, cold and class order cap,
+serving holds the total exactly as the solve does (also with a cap under 0: SA-R2-S4), keeps
+the class order, each district's days still average its class level, no usual is solved at
+the range's end, G6 holds and the published chance stays in the floor and ceiling. Off, the
+forecast adjustment is L5's exactly."""
 
 import itertools
 import math
@@ -25,8 +26,10 @@ from snowlight.predict.geography import REGION_OF
 from snowlight.predict.serve import SITUATION_POSITION
 from snowlight.predict.situations import SITUATIONS
 
-OFF = base.SETTINGS
-ON = replace(OFF, snow_amount=True)
+ON = fa.AdjustSettings.of(base.CONFIG)
+"""As registered (SNOW-AMOUNT-2: on)."""
+OFF = replace(ON, snow_amount=False)
+"""L5 as served before SNOW-AMOUNT-2."""
 DAY, EAST = base.DAY, base.EAST
 AMOUNTS = (0.0, 0.1, 0.3, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 9.0, 12.0, 18.0, 24.0, 30.0)
 
@@ -43,11 +46,18 @@ def raw(  # noqa: PLR0913, PLR0917 - the day and the place
     return fa.raw_chance(p0, klass, usual, found, DAY, EAST, settings, alone)
 
 
-def test_registered_off_and_off_is_l5_exactly() -> None:
+def test_registered_on_and_off_is_l5_exactly() -> None:
     block = base.CONFIG.live_score["forecast_adjustment"]
-    assert block["snow_amount"] is False
+    assert block["snow_amount"] is True
     assert block["snow_amount_high"] == pytest.approx(3.0)
     assert block["snow_amount_floor_ratio"] == pytest.approx(3.0)
+    assert block["snow_amount_slope_advisory"] == pytest.approx(1.65)
+    assert block["snow_amount_slope_warning"] == pytest.approx(3.0)
+    assert block["snow_per_log"] == pytest.approx(1.0)
+    assert ON.snow_amount
+    assert ON.for_class("advisory").snow_per_log == pytest.approx(1.65)
+    assert ON.for_class("warning").snow_per_log == pytest.approx(3.0)
+    assert OFF.for_class("warning") is OFF
     assert not OFF.snow_amount
     totals = np.linspace(-3, 6, 91)
     for low, high in OFF.bounds.values():
@@ -71,13 +81,18 @@ def test_a_bad_snow_amount_block_is_refused() -> None:
         ("snow_amount_high", 0.0),
         ("snow_amount_high", 1.9),  # under the advisory's upper bound
         ("snow_amount_floor_ratio", 0.5),
+        ("snow_amount_slope_warning", "steep"),
+        ("snow_amount_slope_advisory", 0.5),  # the timing band would fall with more snow
+        ("snow_amount_slope_warning", -1.0),
     ):
         block = dict(base.CONFIG.live_score["forecast_adjustment"])
         block[key] = value
         bad = base.CONFIG.model_copy(
             update={"live_score": {**base.CONFIG.live_score, "forecast_adjustment": block}}
         )
-        with pytest.raises(ValueError, match=key):
+        with pytest.raises(
+            ValueError, match=key.removesuffix("_advisory").removesuffix("_warning")
+        ):
             fa.AdjustSettings.of(bad)
 
 
@@ -113,7 +128,8 @@ def test_on_more_snow_ice_or_cold_never_lowers_the_chance_over_a_grid(klass: str
 def test_on_big_snow_never_reaches_a_flat_cap() -> None:
     # L5 stops at its upper bound (a typical warning district, usual 3.19 in: 20 and 30 inches
     # read the same); over it the total bends toward snow_amount_high, never at it, and up to
-    # it the chance is L5's exactly (SA-R1-S1: no mid-range loss from the bend).
+    # it the chance is L5's shape at the class's slope exactly (SA-R1-S1: no mid-range loss
+    # from the bend).
     for usual, klass, p0 in ((3.19, "warning", 0.45), (1.45, "advisory", 0.12)):
         off = [raw(OFF, base.forecast(s), usual, None, klass, p0) for s in (20.0, 30.0)]
         on = [raw(ON, base.forecast(s), usual, None, klass, p0) for s in (18.0, 24.0, 30.0, 60.0)]
@@ -123,11 +139,12 @@ def test_on_big_snow_never_reaches_a_flat_cap() -> None:
         top = 1 / (1 + math.exp(-(math.log(p0 / (1 - p0)) + ON.snow_amount_high)))
         assert on[-1] < top
         high = ON.bounds[klass][1]
+        sloped = replace(OFF, snow_per_log=ON.snow_amount_slopes[klass])
         for s in AMOUNTS:
-            parts = fa.term_parts(base.forecast(s), usual, klass, DAY, EAST, OFF)
+            parts = fa.term_parts(base.forecast(s), usual, klass, DAY, EAST, sloped)
             if parts is not None and sum(parts.raw) <= high:
                 assert raw(ON, base.forecast(s), usual, None, klass, p0) == pytest.approx(
-                    raw(OFF, base.forecast(s), usual, None, klass, p0), abs=1e-12
+                    raw(sloped, base.forecast(s), usual, None, klass, p0), abs=1e-12
                 )
 
 
@@ -139,11 +156,13 @@ def test_serving_holds_each_code_s_total_exactly_as_the_solve_does(
     # SA-R1-B1: the usual is solved on climate_terms; serving adds term_parts' bounded terms.
     # For every code, cold morning, usual, snow alone's usual and class order cap the two
     # totals are one, with the term off and on, so the solve's re-centring is what serves.
-    # The cap is never under 0: every deployed warning level at its lower bound is over the
-    # advisory level (docs/predict.md, "Class order": the least gap 0.56 log-odds).
+    # A deployed cap is never under 0 (every deployed warning level at its lower bound is over
+    # the advisory level: docs/predict.md, "Class order", the least gap 0.56 log-odds), but
+    # SA-R2-S4: under 0, with every term lowering (or none), the two still agree (the guard in
+    # :func:`fa.bounded`).
     feels = [25, *(int(f) for f in fa.COLD_FEELS[1:])]
     for usual, share, most in itertools.product(
-        (0.3, 1.0, 3.19, 6.0), (1.0, 0.4, 0.05), (None, 0.0, 0.3, 1.2, 1.8)
+        (0.3, 1.0, 3.19, 6.0), (1.0, 0.4, 0.05), (None, -0.6, -0.3, 0.0, 0.3, 1.2, 1.8)
     ):
         alone = usual * share
         cap = None if most is None else np.full((1, fa.CODES - 1, len(fa.COLD_FEELS)), most)
@@ -161,6 +180,28 @@ def test_serving_holds_each_code_s_total_exactly_as_the_solve_does(
             )  # fmt: skip
 
 
+@pytest.mark.parametrize("settings", [OFF, ON], ids=["off", "on"])
+def test_the_bounded_terms_always_add_up_to_the_held_total(settings: fa.AdjustSettings) -> None:
+    # SA-R2-S4: a class order cap under 0 with every term lowering (or every term 0) has no
+    # raising term to scale; the lowering terms (or the snow's) take it, so serving's sum is
+    # the solve's total. Every other case scales as before: a side's terms keep their signs.
+    rng = np.random.default_rng(3)
+    for _ in range(3000):
+        values = list(rng.choice([0.0, 1.0], 4) * rng.normal(0, 1.2, 4))
+        values[3] = abs(values[3])  # the cold only adds
+        most = None if rng.random() < 0.2 else float(rng.uniform(-1.5, 2.5))
+        for low, high in settings.bounds.values():
+            found = fa.bounded(values, low, high, settings, most)
+            target = float(fa.saturated(sum(values), low, high, settings, most))
+            assert float(sum(found)) == pytest.approx(target, abs=1e-12), (values, most)
+            for value, term in zip(values[1:], found[1:], strict=True):
+                assert value * float(term) >= 0, (values, most)
+    # The case the critic found: every term lowering, the cap under their sum.
+    found = fa.bounded([-0.1, -0.05, 0.0, 0.0], -0.7, 2.0, settings, -0.4)
+    assert float(sum(found)) == pytest.approx(-0.4, abs=1e-12)
+    assert all(float(term) <= 0 for term in found)
+
+
 def test_on_snow_over_the_snow_alone_s_usual_never_lowers_an_icy_place_s_day() -> None:
     # PHYS-R3-S1 (i): an icy place's usual counts its ice days (Memphis-Shelby's warning: 3.55
     # in, 1.50 alone); off, 2 inches with no ice lower its day; on, snow from its snow alone's
@@ -170,9 +211,10 @@ def test_on_snow_over_the_snow_alone_s_usual_never_lowers_an_icy_place_s_day() -
     for s in (1.5, 2.0, 3.0, 3.5):
         assert raw(ON, base.forecast(s), usual, alone, "warning", 0.45) >= 0.45 - 1e-12
     assert raw(ON, base.forecast(0.0), usual, alone, "warning", 0.45) < 0.45
-    # Late snow still lowers on the timing term, under the floor's even snow.
-    late = base.forecast(1.0, split=(0.0, 0.0, 1.0))
-    even = base.forecast(1.0)
+    # Late snow still lowers on the timing term, under the floor's even snow (1.4 in: under the
+    # snow alone's usual, over the lower bound with the warning's slope).
+    late = base.forecast(1.4, split=(0.0, 0.0, 1.0))
+    even = base.forecast(1.4)
     assert raw(ON, late, usual, alone, "warning", 0.45) < raw(
         ON, even, usual, alone, "warning", 0.45
     )
