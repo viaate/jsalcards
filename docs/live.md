@@ -804,6 +804,51 @@ Private output (`out/internal/live/`):
 - `health.json`: counts only. A check between passes, or while a pass reads, that raised the alert or published a blank adds `check` (its time, the verdict, `alert` and the blank's report) beside the last pass's health. `withheld.source_unknown` counts statuses held back because a source's say was unknown. `gate.counts.redacted` counts statuses the hold darkened that only gone rows light. A failed write of this file is logged and leaves the pass's exit as it was.
 - `provenance.jsonl`: the last publish's sources, row keys and times.
 
+### Admin sources
+
+The admin view's **Lists** tab (docs/accounts.md) shows where each lit status came from.
+In the idle time after the morning record's shipment (every :00 and :30 UTC, after a good
+state push), the reader reads `provenance.jsonl` and ships, for each local day of that
+publish (the far west's today to the far east's tomorrow), one summary per status: its NCES
+id, status, reason and level, the winning list's id and type, the list's page link from the
+registry, the row's `lo`, `hi` and `row_stamp`, `present`, the list whose time shows as
+"Posted", and each contributing list's id and type. No row key and no list text.
+
+Each day's head also carries the publisher's mode (`on`, or `shadow`, which the page labels
+as not on the public map; with publishing `off` nothing ships) and `latest_at`: the
+publisher's last publish, or the start of the last hold it recorded, from its memory, when
+that is later than the publish the summary is from (the `generated_at` its lines carry, which
+is the time the page shows for the day). A blank publish (a hold, the breaker, the clock
+check), a hold set by `live blank` (another process, which leaves the reader's last publish as
+it was: the reader records the hold's start on its first held pass) and an upload that failed
+after the closings file do not rewrite `provenance.jsonl`, so the page then says the map was
+published again at that time and that the list is the earlier publish's. A summary with no
+status is judged by the file's time, so a later publish (a first lit one whose upload failed
+after the closings file) is still named. A run whose first publish
+was blank (no `provenance.jsonl` yet) sets it on the heads already stored. A day too big for
+16 parts keeps its last shipped summary and its time, and gets the later publish's time as
+`latest_at`, so the page says the map was published again. A day whose shipment failed
+partway (some parts written, not its head) shows as being written until the next shipment,
+which writes it whole again even if its content went back to the stored one. The shipment
+takes at most 20 s of the idle time, so the evidence check after it keeps its time.
+
+It goes to the accounts database (`snowlight-accounts`, found by its exact name and never
+created), which the API Worker already reads, so no Worker is bound to the state database
+and no new binding is needed: `lit_sources_head` (a day's sha256, part count, status count,
+the publish's time and the write's), `lit_sources` (the summary as gzip, 64 KiB parts,
+base64, at most 16) and `lit_sources_budget` (rows written each UTC day). A changed day's
+parts go first, then its head and the trim (until the head names the new parts the admin
+page finds they fail its sha256 and says the day is being written); an unchanged day only has
+its head's times updated;
+an unchanged file asks nothing. Days before the publish's first day are kept as last shipped
+(yesterday), and older ones are deleted. Writes are capped at 5,000 rows a UTC day (a usual
+day writes a few hundred: about 5 rows a shipment, 48 shipments; a 20,000-status storm day
+about 25 a changed day), 5% of the account's free 100,000; past the cap nothing ships and the day keeps its last version with its time. The rows a shipment wrote are billed even when it ran out of time or a request's answer was lost (one last request, given 5 s past the deadline, inside the 30-s push margin; a bill that fails is sent with the next shipment). Only a
+`live-read` run ships. The one log line holds counts only (`sources shipped: shipped, 3 days,
+1 changed, 412 statuses, 1 parts, 9 rows, 0 too big, 210 ms`, printed when something
+changed); a failure is one line (`sources ship: failed: <type>`) and never touches the pass
+or the push.
+
 No raw listing text is written anywhere. Log lines go to stderr as `time level logger: message`. An error shows only its type, never its message or a traceback, because a page's words could be in either.
 
 ## Manual statuses (the admin)

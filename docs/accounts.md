@@ -89,7 +89,7 @@ right. If the API is ever down, the site simply hides the account controls.
 4. Press your name > **Admin**. Or open the site with `?admin` at the end of
    the address, for example `https://snowlightmap.com/?admin`.
 
-The admin view has five parts:
+The admin view has six parts:
 
 - **Overview**: how many accounts there are and how many are new, the latest
   chances file (when it was made, how old it is, how many districts are at 50%
@@ -113,6 +113,23 @@ The admin view has five parts:
   school status of its own that day shows **Each school has its own status**.
   **Clear** removes one. A note you add is seen only by admins. On the
   map, a status you set says "Confirmed by our team" in the school's panel.
+- **Lists**: where each lit closing came from, for each local day the live reader's
+  last publish covers and the day before (today and yesterday): the school's NCES id
+  and whether the list named it or its district, the status and reason, the list
+  that won (its id, its type and a link to its page from the station registry;
+  the admin's own statuses have no link), when the row was posted and when it
+  was last read, whether the row is still on that list, the list whose time
+  shows as "Posted", and every list that said the same. Each day shows the time
+  of the publish it is from. A shadow publish (`LIVE_PUBLISH` shadow, the
+  default) says so: those statuses are not on the public map. When the map was
+  published again without these sources being rewritten (a blank publish after
+  a hold, `live blank` or the breaker, an upload that failed partway, or a day
+  too big to ship), the day says when, and that the list is from the earlier
+  publish. A day the reader is writing as
+  you look says so (its parts are checked against their sha256, so a
+  half-written day never shows); a day that cannot be read at all says that. Ids, links and times only: never a list's words. Only the admin can
+  read it (`GET /v1/admin/sources`: 401 without a sign-in, 403 for anyone
+  else), and no public file carries it (docs/live.md, Admin sources).
 - **Users**: find people by name, username or email; see their username and
   join number, when they joined and last logged in and how many schools they
   saved; rename them (see below); reset a password (the page makes a
@@ -254,6 +271,9 @@ The admin name is public, so anyone can use up its 10 tries. When that happens:
 - `GET /v1/overrides` is the public list of active manual statuses (no notes,
   no names). `live-ingest.yml` reads it and publishes them into
   `live/closings.json`, so the map shows them within about 10 minutes.
+- `0005_lit_sources.sql` adds the admin's Lists tab tables, which the live reader
+  writes over the Cloudflare API and the Worker passes to the admin unparsed (the
+  browser unzips them), so the request stays a couple of D1 reads.
 - Notifications (docs/notify.md): `0004_notify.sql` adds push subscriptions,
   notification settings and the sent log, tied to `users.id`; deleting an
   account removes them. Each subscription keeps the session it was turned on
