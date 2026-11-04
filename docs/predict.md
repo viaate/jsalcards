@@ -447,10 +447,13 @@ physical reason. It is our own method; nothing in it reads a closure share.
   snow to half an inch (0.4 x min(1, s / 0.5)). In every zone the overnight period raises it
   (Eastern 1 to 7 AM +0.15, Central midnight to 6 AM +0.13, Mountain 11 PM to 5 AM +0.10,
   Pacific 10 PM to 4 AM +0.09, for 4 inches over a usual 3) and snow ending by evening or
-  falling after 9 AM lowers it. This is L5's timing, served until Nov 3, 2026; since then the
-  bus hour timing term serves in its place (`timing_bus`: snow before 7 AM against snow after
-  it, measured on past winters; "The bus hour timing term" below), and with it off the timing
-  is this one exactly.
+  falling after 9 AM lowers it. This is L5's timing, served until Nov 3, 2026; then the bus
+  hour timing term served in its place (`timing_bus`: snow before 7 AM against snow after it,
+  measured on past winters; "The bus hour timing term" below), and with it off the timing is
+  this one exactly. Since Nov 4, 2026 (predict-next TIMING-AUTO) no timing serves:
+  `timing_after_bus` is 1.0, so the timing part is 0 everywhere and no timing line shows; the
+  bus term at its fit 0.95 is the live switch's on arm, served only once it is consistently
+  better on live storm mornings ("The live switch" below).
 - **Ice** (adds only): an inch of the window's ice counts as 25 inches of snow on top of the
   day's snow (a tenth of an inch as 2.5 inches): `ln((s F + 25 i + 0.5) / (s F + 0.5))`. A
   trace of ice adds a little to a dusting's term (Buffalo's advisory: 1% with no ice, 2% with
@@ -592,7 +595,9 @@ Alaska and Hawaii more), so those zones' days still average their level (PHYS-R2
 left it out, about +0.01 log-odds in Pacific time and +0.05 in Alaska on the class level). With
 the bus hour timing term on (below), even snow has no timing term in any lower-48 zone, so
 their factor is exactly 1 (Pacific's too), and Alaska's and Hawaii's are 1.0013 and 1.0055 (L5:
-1.0570 and 1.0606); no district of the committed climate is in Alaska or Hawaii time. A
+1.0570 and 1.0606); no district of the committed climate is in Alaska or Hawaii time. No timing
+(`timing_after_bus` 1.0, served since TIMING-AUTO) makes every zone's factor exactly 1, Alaska's
+and Hawaii's too. A
 district with few days of a class takes 10 days' worth of its county's mix (its region's where
 the county has under 30). A place with no region of its own in the climate (it holds no Alaska
 or Hawaii rows) never borrows the nation's: its days keep their class level (S-R2-1; on the
@@ -774,7 +779,10 @@ total bends toward 3.0 over the upper bounds instead of stopping, and the snow a
 holds (below); the description above is the term off. Revised Nov 3, 2026 (predict-next
 BUS-TIMING, below), for rows after it: `timing_bus` true, `timing_after_bus` (0.95) and
 `timing_bus_share_max` (0.8) added, `LIVE_SCORE_SHA256` 78861639...: the timing weighs snow
-before the bus hour (7 AM) against snow after it in place of 10 PM to 9 AM.
+before the bus hour (7 AM) against snow after it in place of 10 PM to 9 AM. Revised Nov 4, 2026
+(predict-next TIMING-AUTO, "The live switch" below), for rows after it: `timing_after_bus` 1.0 (no
+timing) and `switch_bus_timing` added, `LIVE_SCORE_SHA256` ce2a224e...: the bus term's 0.95 is
+the live switch's on arm, served only once it is consistently better on live storm mornings.
 Turning it off (`serve.forecast_adjust: "off"`) serves the class levels alone, as L3 did, with
 no previous chance on a day the forecast had moved.
 
@@ -1006,7 +1014,14 @@ to 2.39) and some fall (the typical warning district's 3.37 to 3.05), and amount
 that rose read a little lower (Buffalo's warning 34% at 6 inches, L5 39%; Atlanta's warning 49% at
 2 inches, L5 53%). From about 12 inches a warning day nears the asymptote (above).
 
-## The bus hour timing term (predict-next BUS-TIMING: on)
+## The bus hour timing term (predict-next BUS-TIMING; off since TIMING-AUTO: the live switch's on arm)
+
+**Since Nov 4, 2026 no timing serves** (predict-next TIMING-AUTO, the owner's ruling: no timing
+scored best): `timing_after_bus` is 1.0 with `timing_bus` on, so `W = s`, the timing part is 0 and
+no period is named. The bus term at `o` 0.95, as measured below, is the live switch's on arm: it
+serves again only once it is consistently better than no timing on live storm mornings, and goes
+back off when it falls behind ("The live switch" below). Everything below is the term as measured
+and as it served from Nov 3 to Nov 4.
 
 The owner asked (Nov 2) that snow down by the time the buses go out raise the chance. L5's
 timing (above) was set by hand: snow from 10 PM to 9 AM weighs 1, snow outside it 0.5, held to
@@ -1109,7 +1124,9 @@ measured and refittable. The band stays registered and holds the bus term too; o
 changed, and at `o` 0.95 the term's largest value on the archive rows is 0.091 log-odds, so the band
 rarely binds. The measured `o` is the grid's top, not an interior optimum; `o` 1.0 (the term 0
 everywhere, every factor 1) is the registered way to drop timing, and that is the owner's call, not
-the fit's. Serving the blend's hours is a later piece: it must first be calibrated against NDFD
+the fit's. The owner made it on Nov 3 (TIMING-AUTO): no timing serves from Nov 4, since (n) less
+(b) above passes the switching rule, and the bus term switches on by itself only once live storm
+mornings show it consistently better ("The live switch"). Serving the blend's hours is a later piece: it must first be calibrated against NDFD
 (their amounts differ), its reader splits the CONUS and Alaska files, and on this record it would
 not pass against no timing either.
 
@@ -1122,6 +1139,22 @@ warning 2.642 to 2.603 in); for every 7th district in its own zone, over 0 to 24
 and in each single period, no chance falls (0 falls). The replay's reader `snow_bus` equals the
 probe's school-by-school value (to its 4-place rounding) on all 1,436 rows, and the served
 path's total equals the test's bus arm (largest difference 4e-16) at every `o`.
+On the live host with the term on (predict run 41718729677, Nov 4): `forecast adjustment
+plausibility: advisory mean 0.311 p99 0.889, advisory and warning mean 0.973, most 5.59; 0
+districts at their class levels for the most`, and the anchor's `advisory mean 0.31 p99 0.87,
+advisory and warning mean 0.97, most 5.51; pulled 0, capped 0, shrunk 0`, with 0 product
+warnings. They equal the snow amount term's term-on figures, since no snow fell in school hours
+that night.
+Under no timing (`o` 1.0, TIMING-AUTO) every zone holding a solved district has even factor 1 at
+both `o` 0.95 and 1.0, and the solve and G6 see the arm only through that factor, so the usual,
+the snow-alone usual and G6 (failing clauses, capped count, summary) are bit-equal under both
+arms: a no-timing run logs the same G6 figures as a term-on run on the same directory and anchor.
+Measured at the TIMING-AUTO head on every district of the committed climate (13,404, in five
+lower-48 zones; four mixes of class levels), as serving solves them: with no timing and with the
+on arm alike, G6 holds (no check failing), no advisory, snow warning, lake effect or ice storm
+usual is unsolved or at the 30-inch end, the usual is bit-equal between the two arms, and over 0
+to 24 inches even and in each single period no chance falls (0 falls, every 7th district in its
+own zone).
 
 Tests (`tests/predict/test_bus_timing.py`): `snow_bus` is each school's own, never over `s`, grows
 with any school's snow in any period, and is unread where a school is; the 7 AM split of each zone's
@@ -1151,16 +1184,22 @@ keeps the district's warning level; typical: the median usual at the national le
 |---|---|---|---|---|---|---|
 | typical warning district, warning (level 46%, usual 3.94 in), L5 | 57% | 47% | 38% | 89% | 85% | 80% |
 | typical warning district, warning, bus term | 48% | 47% | 45% | 86% | 85% | 84% |
+| typical warning district, warning, no timing (served since TIMING-AUTO) | 47% | 47% | 47% | 85% | 85% | 85% |
 | typical advisory district, advisory (level 12%, usual 1.70 in), L5 | 34% | 30% | 26% | 46% | 46% | 46% |
 | typical advisory district, advisory, bus term | 30% | 30% | 29% | 46% | 46% | 46% |
+| typical advisory district, advisory, no timing | 30% | 30% | 30% | 46% | 46% | 46% |
 | low usual (Atlanta), warning (level 49%, usual 2.39 in), L5 | 84% | 78% | 71% | 94% | 94% | 93% |
 | low usual (Atlanta), warning, bus term | 79% | 78% | 77% | 94% | 94% | 93% |
+| low usual (Atlanta), warning, no timing | 78% | 78% | 78% | 94% | 94% | 94% |
 | low usual (Atlanta), advisory (level 16%, usual 0.87 in), L5 | 49% | 49% | 49% | 49% | 49% | 49% |
 | low usual (Atlanta), advisory, bus term | 49% | 49% | 49% | 49% | 49% | 49% |
+| low usual (Atlanta), advisory, no timing | 49% | 49% | 49% | 49% | 49% | 49% |
 | snow belt (Buffalo), warning (level 38%, usual 6.39 in), L5 | 29% | 29% | 29% | 63% | 53% | 44% |
 | snow belt (Buffalo), warning, bus term | 29% | 29% | 29% | 55% | 53% | 51% |
+| snow belt (Buffalo), warning, no timing | 29% | 29% | 29% | 53% | 53% | 53% |
 | snow belt (Buffalo), advisory (level 6%, usual 2.21 in), L5 | 16% | 13% | 9% | 35% | 30% | 23% |
 | snow belt (Buffalo), advisory, bus term | 13% | 13% | 12% | 30% | 30% | 29% |
+| snow belt (Buffalo), advisory, no timing | 13% | 13% | 13% | 30% | 30% | 30% |
 
 Even snow reads the same under both (each district here is in Eastern or Central time, factor
 1). The class order holds an advisory day at the district's warning level: Atlanta's advisory
@@ -1168,7 +1207,9 @@ reads 49%, its warning level, in every cell, and the typical advisory district 4
 inches, under both, so the bus term cannot move those cells. Elsewhere, snow all before 7 AM
 now raises a day 0 to 2 points over even snow (L5: 0 to 10), and snow after it (all of it in
 Eastern time, five sixths of it in Central) lowers a day 0 to 2 points (L5: 0 to 9): on this
-record the timing is a small tilt, not the large swing L5 gave it.
+record the timing is a small tilt, not the large swing L5 gave it. The no-timing rows (TIMING-AUTO,
+rebuilt through `serve._order_cap` with the committed settings, not assumed) read every cell at
+its even column: where the snow falls no longer moves the chance.
 
 **Limits.** One `o` for both classes (15 informative date-classes cannot fit two); the bus hour is 7
 AM everywhere; the archive's dates were picked for storms, so the absolute log loss is not a measure
@@ -1267,10 +1308,43 @@ of the 18 archive markets with any, 12 held 10 calls from 3 districts on their f
 of 39 date-market pairs lit 10 or more). So a market's pool can qualify on its first storm morning,
 while a district's own u takes about three closings: the first season is pool-driven.
 
-**Switching on (CALL-TIME-2).** The switch will be automatic in the learn step, as the owner asked
-for the bus hour timing term: on only when the registered rule below holds on live mornings,
-checked again on every learn run with several passing evaluations in a row, and back off if it
-later fails, each switch logged with its numbers. Until LIVE-READS lands (the per-pass proof from
+**Switching on (CALL-TIME-2).** The switch will be automatic, as the owner asked for the bus hour
+timing term: the shared live switch ("The live switch" below), which runs at the end of `predict
+read-labels` (not in the learn step: L1's labels it judges by are restored after `predict learn`),
+on only when the registered rule below holds on live mornings, with several passing evaluations in
+a row, and back off if it later fails, each switch logged with its numbers. CALL-TIME-2 plugs in
+its own block (`live_score.switch_call_time`: `arm_block` call_time, `arm_key` serve, the arms
+the names `off` and `on`, no `frozen_key`, so it freezes no variant) and its code in
+`live_switch.TERMS`: a group builder, its extra checks and its config checks. The group builder
+reads D's frozen rows, D's labels, the config and L1's record folder, from which it reads only
+D's inputs cut at each time (the folder holds every date's labels too, so the term's own code
+keeps it from reading a label there, and its review checks that). It fits (m, tau) only on the
+dates before D, from its own likelihood sums over F's 75 points kept once in each earlier
+date's entry (in one of its groups, not in every one: in all 30 groups a date the state grows
+by about 5.2 MB a winter, once a date by about 0.7 MB, on synthetic dates of its shape), handed
+it as the ledger (those dates' frozen rows are released once counted), and their labels
+through the switch's reader, which refuses D and every later date. In the switch every date is
+judged once, from fits on earlier dates only (earlier seasons and the season's own earlier
+dates), and is never judged again: the held-out season of the rule below is the archive test's,
+not the switch's. Its extra checks
+(its stratum lower bounds, its dropped-closing check, its calibration interval, its own supply of
+200 at-risk district-times with Delta < 0, the LIVE-READS-landed gate) see every group it built,
+informative or not (a band where every district at risk stayed open is part of the calibration),
+and read its registered numbers from `live_score.call_time`, which they are handed with the
+rule. Its rule maps onto the switch's: `on_lower` -0.005 with `tolerance` 0.005 (its lower bound
+at least -0.005 holds as over -0.005, and its gain at least 0 as over 0: they differ only on an
+exact tie, which goes to off), no `new_date_min` (it has no clause on the new date), its 8 dates
+and 3 states as the switch's supply, `supply.date_classes` and `supply.rows` 1 and
+`max_date_share` 1.0 (its 200 rows are its own check), and `class_min` rows 1 and date_classes
+1, so every class with a row binds and its clause (2), no class under -0.005, holds for each
+(the bus term's 100 rows over 3 date-classes would let a small class under it pass).
+CALL-TIME-2's review measures its state's size and replay time on a winter of its shape. Its arm reaches
+its per-pass decline through `live_switch.served_value` (the run's served arms, on each pass),
+since its value is read outside the anchor, which alone is built from the served config. The
+ledger, evaluation, truth table, replay, state and lines are the switch's, unchanged; a test
+plugs in a term of that shape (name arms, strata, sums, a fitted arm, an extra check over every
+group with a registered number) and checks the frozen record and serving with it. Until
+LIVE-READS lands (the per-pass proof from
 the live reader, with a test that it equals `call_time.proof` on the same record cut),
 `live_score.call_time.serve` is `off` and config refuses any other value. The rule, registered now
 with every number (`live_score.call_time`, under `LIVE_SCORE_SHA256` and its test): rows are each
@@ -1322,6 +1396,248 @@ class, so a call is never gated by its day's reads.
 **After it lands** (POSTLAND): the first live-read run's export logs the census (the standing
 against the re-cold rows), and the first `predict read-labels` after a class day logs the counts
 line.
+
+## The live switch (predict-next TIMING-AUTO: the bus term registered, served off)
+
+The owner (Nov 3): serve no timing "until the bus one gets consistantly better in which case it
+autoswitches on". The live switch (`pipeline/snowlight/predict/live_switch.py`) turns a registered
+live-measured term on by itself only when it is consistently better on live storm mornings, back
+off when it falls behind, and logs every evaluation and every switch with its numbers. The bus term
+is its first term; CALL-TIME-2 plugs in later with its own block and code ("Switching on
+(CALL-TIME-2)" above), not a change to the switch.
+
+- **The registry.** One `live_score` block per term, `switch_<name>`, under `LIVE_SCORE_SHA256`:
+  `switch_bus_timing` names its two arms (`arm_off` 1.0, no timing; `arm_on` 0.95, the bus term),
+  the value they set (`forecast_adjustment.timing_after_bus`), the default arm (`off`, which the
+  committed config must hold), its frozen variant (`bt` at `d0_0507`), its classes (advisory,
+  warning) and every number of the rule below. Config refuses a committed value that is not the
+  default arm's, `timing_bus` false while the block exists, an unknown arm or term, any number
+  out of range, and a default of `on` (the truth table's ties, its evidence and its new-date
+  clause all go toward off, so it is written for a term off by default). A term with no clause
+  on the new date leaves `new_date_min` out. An arm is a name or a number, compared as stored
+  (both arms and the committed value of one kind). `live_switch.TERMS` maps a name to its code:
+  its group builder, its extra checks (handed the config, the rule and the ledger), its config
+  checks and, for a term like the bus term, its shadow (the forecast
+  adjustment's settings under each arm, whose chances each row carries as `v.<frozen_key>`; a
+  term with no shadow takes no `frozen_key` and its rows carry no variant). Every frozen header
+  names every term's served arm and key.
+- **Arms only.** The state names `off` or `on`, never a value. Each run reads it once
+  (`make_pass`, so the passes, the outlook and `predict learn` alike) and builds only the serving
+  anchor from a copy of the config with the arm's registered value in it; the committed config,
+  and so every frozen header's and `predict learn`'s `live_score` sha256, is the registered one
+  whichever arm serves. The headers record which arm served (`switch`).
+- **The key.** A term's state is made over its term sha256 (its switch block and its scope blocks,
+  here `forecast_adjustment`) and the committed model artifact's sha256. A deploy that changes
+  either restarts the term: an empty ledger, counting from the newest labeled date, the default
+  arm, one line. Rows frozen under another key never count.
+- **Rows.** Per L1-labeled date D and class, the served `d0_0507` rows with `v.bt` under the term's
+  key that L1 labeled (`no_school` closed; `unnamed` or `delayed` open; tier A or B), where L1's
+  class of the day is the row's. `v.bt` is the model's own chance under each arm at the `d0_0507`
+  freeze, chosen and valued without any outcome (lit and said-open rows included; a freeze past
+  by over 90 minutes is written missed); neither arm is fitted on live data, and the class levels
+  both share were fitted on labels through D-1 at most, so nothing a date is judged by saw its
+  outcome. A term with a fitted arm fits only on the dates before D: their labels through the
+  switch's reader (it refuses D and every later date) and its own sums of them in the ledger
+  (their frozen rows are released once counted). A term is also handed L1's record folder, for
+  D's inputs cut at a time; that folder holds D's labels too, so this part of the guard is the
+  term's own code, which never reads a label there, and its review checks it. The bus term
+  reads neither.
+- **Score.** Per arm, the exact conditional log-likelihood of which districts closed given how
+  many (the snow amount term's within-date test), summed per group; per district-day, the sum over
+  the rows. A group is informative with some closed and some open, moved where the arms' frozen
+  values differ on a row. Only informative groups are scored and counted as evidence; a term's
+  own checks see every group it built. Concordance (closed over open pairs, ties half) is
+  reported only.
+- **The ledger.** Every labeled date with a group enters once, in date order, with every group
+  its term built (one where every district stayed open, or every one closed, included), and is
+  frozen once counted (`through` advances over dates with none too). An evaluation is made once
+  per ledger date holding a moved informative group, on the ledger through that date and over its
+  informative groups: P the overall on less off a district-day; L and U the 5th and 95th
+  percentiles of 2,000 date-block resamples (a block per date with an informative group) from
+  numpy's `default_rng(23)`, so the same ledger always gives the same numbers; each class's own
+  (a class binds once it holds 100 rows over 3 moved date-classes); N the new date's own. A
+  date-class is a distinct date and class, however many strata a term splits it into.
+- **Evidence** (switching on only): 8 moved dates, 10 moved date-classes, 3 states, 300 rows, no
+  date over 40% of the rows.
+- **The truth table** (ties go to the default, which is off for every term; N only where the
+  term registers `new_date_min`):
+
+  | served | verdict | when | then |
+  |---|---|---|---|
+  | off | confident | evidence, P > 0, L > 0, L >= -0.005, every binding class >= -0.005, N > 0, no failing extra | ON streak + 1; at 3: on, both streaks 0 |
+  | off | not confident | anything else (each failing clause named) | ON streak 0 |
+  | on | clear | P < -0.005, L < -0.010, or a binding class < -0.010 | off at once, both streaks 0 |
+  | on | holding | not clear, and P > 0, L >= -0.005, every binding class >= -0.005, no failing extra | OFF streak 0 |
+  | on | behind | anything else | OFF streak + 1; at 2: off, both streaks 0 |
+
+- **What it means.** On the archive no timing beat the bus term within date, so the switch starts
+  off. On synthetic winters drawn from the archive's informative dates (26 a winter): when the two
+  are truly equal it turns on in about 1 winter in 14 (6.9%), and then serving it costs nothing on
+  average, and it goes back off after a median 8 dates; when no timing is truly better, as on the
+  archive, it never turned on in 1,000 winters; when the bus term is better by the archive's
+  margin, it turns on in 92.8% of winters, at a median 12 moved dates. The live record supplies
+  about 25 informative dates a winter, so the evidence is met between mid December and early
+  February, and a quiet November cannot flip it: it adds no informative date.
+- **The replay.** The served arm, both streaks and the evaluations are always the replay of the
+  ledger with the committed rule (`switches` is the term's history, kept over restarts and
+  exclusions; it is never served or said). A date later added to `learn.excluded_days` is
+  dropped and the rest replayed in the next `predict read-labels`, as if it had never been
+  counted (for a term with a fitted arm, the later dates keep the fits made with it, so the
+  remedy that removes it fully is a restart: a revision bump); serving takes the default while
+  the ledger holds it, and, with a warning, whenever the stored arm, a streak or an evaluation is
+  not the replay (a hand edit, a bug, a numpy change in the draws), so the serving line never
+  says a number the ledger does not give, and whenever `through` is after the run's UTC date
+  (it only ever advances to a labeled date). The next step writes the replay, and repairs such a
+  `through` to its ledger's last date (the dates after it are counted again, each entering the
+  ledger once) or, with an empty ledger, to the newest labeled date; a ledger holding a date
+  after the run's date is restarted over. Neither is counted past, and the frozen marker never
+  passes the run's date. The step replays the stored ledger once and goes on from it over the
+  dates it counts (the same numbers to the bit); serving replays it once a run. A replay costs
+  about the square of the moved dates: 0.9 s of CPU at 250 (about 8 bus winters), and a test
+  bounds it.
+- **Where and when.** At the end of `predict read-labels`, after its audit and summary and before
+  the call time counts lines, since the switch decides what that run's passes serve (the next
+  read-labels is about 5.5 hours later). The step's process first builds its model (about 20 s;
+  it reads no switch state and says no serving line, since it serves nothing) and labels the new
+  days (7 s on Nov 2's labeled run), so the switch starts only before 45 s of the step. It starts
+  no new date past 55 s, nor one that the longest date of the run so far would take past 55 s (it
+  writes the dates it counted, `through` advancing only that far, and the next run counts the
+  rest, so a backlog is never retried whole). It writes only before 65 s, unless a date it counted
+  ran past 55 s: that write goes through with every date counted, so a slow date never stops a
+  backlog. A host write and its read-back take a few seconds, at most about 20 s each, so the
+  step's 2-minute limit can cut off only a worst-case or late one. That is safe: the write is one
+  commit and the frozen marker is rewritten only after a read-back, so the days are kept (the
+  lines of a write cut off after its commit are lost, since no counted date is evaluated again;
+  a date that ran past 55 s is said at once, before the write, so a step cut off still says
+  it).
+  A storm date costs about 4 s to count (its frozen day 2.5 s, its groups 1.6 s); a quiet run
+  needs under a second. The state is
+  `predictions/switch.json` on the live host beside `learn.json`: counts, sums and state FIPS
+  codes, no LEAIDs; written by a compare and swap (`guarded_write`: refused unless the host's
+  bytes are the ones this run read, in the same commit on GitHub) and read back. A write whose
+  answer is lost (a timeout after the commit) is read once: the lines are said as written where
+  the host holds the new bytes, `nothing written` where it holds the old, and otherwise the
+  outcome is unknown, nothing is said as written and the marker stays. The passes read it in a
+  new process soon after; one behind the frozen marker (a host replica that has not caught up)
+  is read once more, and one still behind is served as read with a warning. After each
+  read-back the frozen folder's marker (`frozen/switch.json`, `through`) is rewritten, and the
+  folder keeps each finished day until the switch counted it ("The frozen record").
+- **Lines** (counts and numbers only). Each run, per term: `predict read-labels: switch
+  bus_timing (served off): through 2026-11-05; 0 of 8 moved dates, 0 of 10 date-classes, 0 of 3
+  states, 0 of 300 rows; ON streak 0 of 3; 1 new labeled date (0 informative, 0 moved, 0 with no
+  frozen rows)`. Each evaluation: `switch bus_timing: 2027-01-12 evaluation 9 (served off): 9 moved
+  dates, 12 date-classes, 4 states, 412 rows, largest date 31%; on - off +0.0004 a district-day
+  (90% +0.0001 to +0.0008); advisory +0.0006 (130 rows), warning +0.0002 (282 rows); this date
+  +0.0011; concordance on 0.671 off 0.668; confident, ON streak 2 of 3` (an unbound class reads
+  `(62 rows, not binding)`; a verdict names each clause that failed, `not confident: short of
+  evidence (7 of 8 moved dates), this date at or under 0; ON streak 0 of 3`). Each switch:
+  `SWITCHED on after 3 confident evaluations (...): timing_after_bus 0.95 serves from this run's
+  passes`, `SWITCHED off: behind 2 in a row (...)`, `SWITCHED off at once: clear (lower bound
+  -0.0121)` or `SWITCHED off: <date> excluded (learn.excluded_days); the ledger without it ends
+  off`. An exclusion that leaves the arm as it was: `switch bus_timing: 2027-01-14 excluded
+  (learn.excluded_days): dropped from the ledger; served off, ON streak 2 to 1` (or `ON streak 2
+  unchanged`). The counts line ends, where dates were not counted, `; 3 labeled dates waiting
+  for the frozen day of 2027-01-11`, `; 4 labeled dates from 2027-01-12 left for the next run
+  (past 55 s)` or `; 2 labeled dates held at 2027-01-12, which does not read`. These lines are
+  said only once the state they report is written; where it is not, each ends `(not written)`
+  and a switch line says `would serve (not written)`. So are the two warnings of what a write
+  will do: `::warning::... the stored arm, streaks or evaluations are not the replay of its
+  ledger: the replay's (off, 9 evaluations) is written` (where no exclusion explains it),
+  `::warning::... through 2030-01-01 is after the run's date: repaired to 2027-01-12 (its
+  ledger's last date)` (or `(the newest labeled date)`, or `..., and so is its ledger's
+  2030-01-01: restarted over it`) and `::warning::... switch.json does not read (<TypeName>):
+  every term restarted over it`, which read `would be written (not written)`, `would repair to
+  ... (not written)` and `would restart over it (not written)` when nothing is. Said at once:
+  `::warning::... switch bus_timing: through 2027-01-14 is after L1's newest labeled date,
+  2027-01-12` and `switch bus_timing: 2027-01-12 ran to 78 s of the step, past 55 s: kept`. Also `switch: skipped past
+  45 s of the step`, `switch: skipped past 65 s of the step: nothing written`, `switch: a date
+  counted ran to 78 s, past 55 s: written through every date counted`, `switch: wrote
+  predictions/switch.json (5,812 B), read back` (or, written but not read back, a warning
+  `wrote ... read back failed (<TypeName>)`; a lost answer read back as written, `::warning::...
+  the write's answer was lost: predictions/switch.json (5,812 B) read back as written`; one not,
+  `::warning::... <TypeName>: the write's outcome is unknown (the host holds other bytes):
+  nothing is said as written and the frozen days are kept`), `::warning::... switch.json is
+  2,104,000 B, over 2,000,000 B`, `switch bus_timing: started (no state; term sha
+  1a2b3c4d, model sha 9f8e7d6c)` on the first run, `switch bus_timing: restarted (term sha
+  1a2b3c4d to term sha 5e6f7a8b)` and
+  `::warning::predict read-labels: switch: <TypeName>: nothing written`. Serving (every pass
+  run and `predict learn`): `predict: switch: bus_timing served off (switch.json through
+  2026-11-05, 0 evaluations)` or `... served off, the committed default (<why>)`, and for a state
+  behind the frozen marker after a second read `::warning::switch: predictions/switch.json is
+  behind the step's read-back (through 2027-01-12, the frozen marker 2027-01-14): served as
+  read`. The freeze:
+  the `d0_0507` `predict frozen:` line ends `, bt on 6,410 rows` or `, bt none (even factors
+  differ by arm)`.
+- **Edge cases.** A restart mid-step changes nothing on the host before its one-commit write; a
+  kill after it leaves a valid state and an unwritten marker, so days are kept, and the next run
+  rewrites the marker from the host. Two writers: the second's compare and swap is refused, it
+  writes nothing, and the next run re-reads. A counted date whose L1 file changed (L1 never
+  relabels) keeps its counted numbers and warns once for each new file; the remedy for a wrong
+  day is `learn.excluded_days`. A labeled date whose frozen day the folder neither holds nor lists
+  as released waits up to 7 days for the evidence step's restore (with every later date, counted
+  in the line), then is passed as absent; the folder keeps a finished day 9 days, so the days
+  after it are still there when it passes. A failed or refused host write changes nothing, its
+  lines say `(not written)`, and the next run evaluates the same dates to the same numbers; one
+  whose answer is lost is read back once, as above. A host
+  state that does not read serves the default in every run until it is mended, and the next
+  `predict read-labels` restarts every term over it (one warning; the old bytes stay in the
+  host's history); one of a later schema is never written over. An L1 file of a date that does
+  not read stops the count before that date in every run, with a warning, while the dates before
+  it are written: the remedy is to add the date to `learn.excluded_days`. A frozen day that does
+  not read does the same until the folder releases it (9 days), when it passes as absent. A date
+  taken out of `learn.excluded_days` after `through` passed it is never counted, and the counts
+  line does not name it: the ledger takes dates once, in order. A group a term builds that is not
+  counts and short names (a state that is not a two-digit FIPS code, a stratum or count or sum
+  key that is not a short name, a run of five digits) stops the count before its date with a
+  warning, and a failing clause that is not short plain text writes nothing, so no LEAID or list
+  text reaches the state or a line.
+- **Limits.** Every run reads, parses and replays the state, which no run prunes under one key:
+  the bus term's is about 0.05 MB a winter with its evaluations (0.18 MB after 4), and a state
+  over 2,000,000 B is written with a warning, so a term that keeps more a date says how it
+  stays under it (or restarts each winter). The synthetic winters resample only the archive's
+  13 informative dates, so the rates are indicative; the supply figure models archive-audience districts read at Nov 2's share. The
+  N clause and `on_lower` 0 are stricter than a floor at -0.005 alone: with the floor alone,
+  truly equal arms would switch on in 36% of winters, since the bus term moves only about 0.0003 a
+  district-day, far inside 0.005.
+
+Tests (`tests/predict/test_switch.py`): the registry and each refusal; the key; the served config
+changes one value and the committed sha stays; the exact likelihood equals brute force; every
+cell of the truth table (each clause failing alone, ties, an unbound class, 3 confident, holding
+with L under 0, each behind and clear clause); a 3-date backlog is 3 evaluations, no new date
+writes nothing, the replay is the live sequence; an ON reached on a day later excluded replays off
+with a switch line, a robust ON stays on, serving takes the default meanwhile; a sha or model
+change restarts; a relabel said once a file; failed, refused and racing writes (their lines `not
+written`), a read-back that fails after a write, an unreadable state restarted over and a later
+schema left alone; a hand-edited arm, a state that overflows or nests too deep and a replay that
+fails all serve the default; the 45 s, 55 s and 65 s limits, a backlog counted over two runs,
+slow dates of 14 s counted 3 a run with every run written, a date past both limits (and a run's
+first) still written, a late write with no slow date refused, and a date that does not read; a
+waiting date in the line; the keep window against the wait; a second term with name arms, no
+shadow, strata, sums, a fitted arm that cannot read D's labels through the reader and an extra
+check plugs in beside the bus term (served config, `served_value`, serving, the frozen headers
+and shadows, and `tests/predict/test_frozen.py` freezes no variant for it); a term's check sees
+every group it built and its registered number (a band where none closed turns its verdict) and
+a date with only such a band enters the ledger with no evaluation; a stratified ledger counts as
+the same unstratified one; an exclusion that moves only a streak, or nothing, says so with no
+warning, and a fault warning waits for the write; a group or clause with a LEAID or list text is
+refused; a rule with no new-date clause, and a default of on refused; a `through` after the
+run's date served as the default and repaired by the step (to the ledger's last date, to the
+newest labeled date, or restarted over a ledger date after it), with the marker never past the
+run's date and a date L1 labeled after it never counted; hand-cut, dropped or edited
+evaluations served as the default and rewritten; a lost write's answer read back as written,
+as other bytes and as a failed read; a state behind the frozen marker read once more and,
+still behind, served with a warning; the step's replay going on from the stored one (one
+evaluation a new date, the same to the bit) and a 250-date ledger replayed under 8 s of CPU; a
+slow date said at once and a large state warned of; every line; and read-labels' labels,
+audit, `added` and exit are the same with the switch on or off.
+
+**After it lands** (POSTLAND): the first predict run logs `switch: bus_timing served off`, the
+plausibility line at `o` 1.0 and the `d0_0507` `bt on` counts; the first read-labels logs the
+`started (no state; ...)` line, the counts line (`0 of 8 moved dates`), `wrote
+predictions/switch.json (... B), read back`, `frozen/switch.json` written, and its step wall time;
+on the first labeled storm day, how long after the step began the switch started (no `skipped
+past 45 s` line) and the step's wall time, under 100 s; the first heavy-storm `d0_0507` freeze's
+`predict frozen: recorded in ... s`.
 
 ## Heights in alerts (addendum e, E1)
 
@@ -2323,8 +2639,18 @@ frozen this pass`) while the pass publishes as before. It is never a reason for 
   of log odds) before the class's bounds, the bounds, and, only where the bounds clamped a
   term, the terms after them; the span of the
   class's alerts and whether one names heights; the strongest watch in the active feed
-  reaching the district that day; and an empty `variants` map, where later pieces score
-  shadow candidates on the same row. A district with no chance in the file still has a line
+  reaching the district that day; and a `variants` map, where shadow candidates are scored on
+  the same row. Since TIMING-AUTO each header also names each live switch term's served arm and
+  key (`switch: {bus_timing: {arm, sha256, model_sha256}}`), and each served `d0_0507` row of an
+  advisory or warning model chance holds `v.bt = [off, on]`: the model's own chance before
+  rounding under each arm of the bus term, through the served path (the class order cap, the
+  usual and G6 as served), 6 decimals; lit and said-open rows included, since the row set is
+  chosen before any outcome. It is `null` where the pass read no forecast (`fr` before, none or
+  kept), and on every row of a model build where the arms' even factors differ in a zone holding
+  a solved district (then the shared usual would not be the shadow arm's), or where the model's
+  settings are not the served arm's; the freeze's line says which (`bt on 6,410 rows`, `bt none
+  (even factors differ by arm)`). Rows frozen before it read as before, with no `switch` and
+  empty `variants`. A district with no chance in the file still has a line
   (`s` 0 and why), so coverage is measurable. The keys are listed in `frozen.ROW_KEYS`. The
   adjustment's read and terms are written only where the file applied the adjustment: not
   under a file cut to no reasons by the size budget, nor with the reasons' terms on. A file
@@ -2336,7 +2662,13 @@ frozen this pass`) while the pass publishes as before. It is never a reason for 
   then is written missed. `predict evidence` then keeps the finished day in both evidence
   databases (kind `frozen`, key D, xz compressed, append-only), and the day leaves the folder
   only once both hold it byte for byte (the snapshots' keep-until-held rule, docs/live.md "The
-  evidence"). `predict evidence --check` fails, and the workflow opens "The live evidence is
+  evidence") and, since TIMING-AUTO, the live switch counted it (the day is on or before the
+  marker `frozen/switch.json`'s `through`, which `predict read-labels` rewrites from the host's
+  state after each read-back) or it finished more than 9 days ago (two past the 7 a labeled date
+  waits for its frozen day). A day both databases hold is not offered again while it is kept. So
+  a day stays about 18 hours longer than before (from the run it finishes in to the run that
+  labels it), at most 9 days, and CALL-TIME's counts line
+  finds its served `d0_0630` rows. `predict evidence --check` fails, and the workflow opens "The live evidence is
   not kept", when a finished frozen day has waited 2 days for both. If the Actions cache is
   lost, the passes begin a fresh folder (a freeze already past by over 90 minutes is written
   missed; a day first seen after it finished is not taken up), and the next `predict evidence`
@@ -2373,7 +2705,19 @@ frozen this pass`) while the pass publishes as before. It is never a reason for 
   (two runs: 1.46 s and 1.60 s; most such passes 0.6 to 0.8 s), 1.25 s at 70%, 0.93 s at
   37% and 0.61 s on a quiet day, under the 2 s; a pass with no freeze due takes 0.006 s. It
   takes each adjusted day's terms from the ones the file applied, never working them out
-  twice, and works out the exposure offsets once per model. Its own time is logged
+  twice, and works out the exposure offsets once per model. The live switch's shadow
+  (TIMING-AUTO, `v.bt`) adds to a `d0_0507` freeze only. It takes the served arm's chance from
+  the row's own terms and works out the other arm's for all the freeze's rows at once over
+  arrays (`serve.arm_chances`, each class order cap's warning chances first), the same numbers
+  as the served path to the bit (a test holds them equal over every situation, four zones, ice,
+  cold, an unknown code and no forecast). Measured on the storm days above (the bus term's snow
+  before 7 AM drawn per district), each the least of three runs with and without it (CPU time):
+  with every district in a class, the worst day, +0.12 s on the Eastern zone's freeze (7,191
+  rows, 6,853 with `v.bt`), +0.14 s Central (6,110), +0.08 s Mountain (1,876) and +0.06 s
+  Pacific (2,497); at 70%, +0.14, +0.13, +0.03 and +0.05 s; at 37%, +0.07, +0.03, +0.02 and +0.02
+  s: under the +1.0 s allowed, and the worst pass stays under 2 s (1.60 s without it, about
+  1.74 s with it). Its own
+  time is logged
   (`predict frozen: recorded in ... s`) on every pass that took a freeze. In D1 a finished day
   is one item row and one row per 64 KiB part (2 statements of part writes, 1 read back and
   the item row on the largest day), against the free plan's 100,000 rows written a day. Stored, a winter of
