@@ -8,6 +8,7 @@
   import Audit from './Audit.svelte';
   import Moderation from './Moderation.svelte';
   import Overview from './Overview.svelte';
+  import Sources from './Sources.svelte';
   import Statuses from './Statuses.svelte';
   import Users from './Users.svelte';
 
@@ -19,8 +20,8 @@
 
   let { store, services, onclose }: Props = $props();
 
-  type Tab = 'overview' | 'statuses' | 'users' | 'moderation' | 'audit';
-  const TABS: readonly Tab[] = ['overview', 'statuses', 'users', 'moderation', 'audit'];
+  type Tab = 'overview' | 'statuses' | 'sources' | 'users' | 'moderation' | 'audit';
+  const TABS: readonly Tab[] = ['overview', 'statuses', 'sources', 'users', 'moderation', 'audit'];
 
   let tab = $state<Tab>('overview');
   let app = $state<Services | null>(null);
@@ -76,6 +77,8 @@
       <Overview {call} {app} />
     {:else if tab === 'statuses'}
       <Statuses {call} {app} />
+    {:else if tab === 'sources'}
+      <Sources {call} />
     {:else if tab === 'users'}
       <Users {call} />
     {:else if tab === 'moderation'}

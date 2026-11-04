@@ -377,3 +377,46 @@ export async function auditLog(env: Env, request: Request, now: number): Promise
     page_size: PAGE_SIZE,
   });
 }
+
+const SOURCE_DAYS = 4;
+
+/**
+ * Where each lit closing came from, for the admin only (docs/live.md, Admin sources): the live
+ * reader's summaries by local day as it stored them (gzip parts, base64), with their sha256,
+ * times, the publisher's mode ('on', or 'shadow': not on the public map) and latest_at (a later
+ * publish that did not rewrite the sources, such as a blank one; null otherwise). The Worker
+ * passes the parts on unparsed (no large parsing here); the admin page decodes and checks them.
+ */
+export async function liveSources(env: Env, request: Request, now: number): Promise<Response> {
+  await requireAdmin(env, request, now);
+  const [heads, parts] = await env.DB.batch<Record<string, string | number | null>>([
+    env.DB.prepare(
+      `SELECT day, sha256, parts, closings, published_at, written_at, mode, latest_at
+        FROM lit_sources_head ORDER BY day DESC LIMIT ?1`,
+    ).bind(SOURCE_DAYS),
+    env.DB.prepare(
+      `SELECT day, n, data FROM lit_sources WHERE day IN
+        (SELECT day FROM lit_sources_head ORDER BY day DESC LIMIT ?1) ORDER BY day, n`,
+    ).bind(SOURCE_DAYS),
+  ]);
+  const byDay = new Map<string, string[]>();
+  for (const row of parts!.results) {
+    const day = String(row.day);
+    const list = byDay.get(day) ?? [];
+    list[Number(row.n)] = String(row.data);
+    byDay.set(day, list);
+  }
+  return json(200, {
+    days: heads!.results.map((h) => ({
+      day: String(h.day),
+      sha256: String(h.sha256),
+      closings: Number(h.closings),
+      published_at: String(h.published_at),
+      written_at: String(h.written_at),
+      mode: String(h.mode),
+      latest_at: h.latest_at === null || h.latest_at === undefined ? null : String(h.latest_at),
+      parts: (byDay.get(String(h.day)) ?? []).slice(0, Number(h.parts)),
+    })),
+    generated_at: isoSeconds(now),
+  });
+}

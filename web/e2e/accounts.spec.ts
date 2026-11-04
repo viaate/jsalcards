@@ -2,6 +2,7 @@ import { createHash, webcrypto } from 'node:crypto';
 import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
+import { gzipSync } from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -87,6 +88,8 @@ class StubApi {
   bodies: string[] = [];
   /** Every admin rename's body. */
   renames: Record<string, unknown>[] = [];
+  /** GET /v1/admin/sources's stored days (the live reader's lit-closing sources). */
+  sources: Record<string, unknown>[] = [];
   /** How many devices the account gets notifications on. */
   devices = 0;
   /** The account's notification settings (src/account/notify.ts), as the Worker keeps them. */
@@ -302,6 +305,7 @@ class StubApi {
       return reply(200, { matches, scanned: this.users.length - 1, next: null });
     }
     if (path === '/v1/admin/audit') return reply(200, { entries: [], page: 1, page_size: 50 });
+    if (path === '/v1/admin/sources') return reply(200, { days: this.sources });
     if (path === '/v1/admin/overrides' && request.method() === 'PUT') {
       const key = `${String(body.scope)}:${String(body.id)}`;
       this.overrides = [
@@ -646,6 +650,58 @@ test.describe('accounts', () => {
     await sheet.getByRole('button', { name: 'Save username' }).click();
     await expect(sheet).toHaveCount(0);
     expect(api.bodies.some((body) => body.includes(PASSWORD))).toBe(false);
+  });
+
+  test('the admin sees where each lit closing came from, with the list’s link', async ({
+    page,
+  }) => {
+    test.skip(test.info().project.name !== 'desktop', 'one screen is enough for the admin view');
+    const api = new StubApi();
+    api.users.push(await adminUser());
+    // SYNTHETIC: one stored day as the live reader writes it (gzip, base64, sha256 of the JSON).
+    const summary = JSON.stringify({
+      v: 1,
+      closings: [
+        {
+          nces: 'SYN0000001',
+          status: 0,
+          reason: 0,
+          level: 'district',
+          source: 'synthetic-station-a',
+          type: 'broadcaster_list',
+          lo: null,
+          hi: '2026-11-17T17:55:00+00:00',
+          row_stamp: '2026-11-17T17:50:00+00:00',
+          present: true,
+          posted_by: 'synthetic-station-a',
+          contributing: [['synthetic-station-a', 'broadcaster_list']],
+        },
+      ],
+      links: { 'synthetic-station-a': 'https://example.test/closings' },
+    });
+    api.sources = [
+      {
+        day: '2026-11-17',
+        sha256: createHash('sha256').update(summary).digest('hex'),
+        closings: 1,
+        published_at: '2026-11-17T18:00:05+00:00',
+        written_at: '2026-11-17T18:00:30+00:00',
+        mode: 'shadow',
+        latest_at: '2026-11-17T18:30:00+00:00',
+        parts: [Buffer.from(gzipSync(Buffer.from(summary))).toString('base64')],
+      },
+    ];
+    await openPage(page, api, '/?admin');
+    await logIn(page, 'Olivia');
+    await expect(page.getByRole('heading', { name: 'Admin' })).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('tab', { name: 'Lists' }).click();
+    await expect(page.getByRole('cell', { name: /SYN0000001/ })).toBeVisible();
+    const link = page.getByRole('link', { name: 'synthetic-station-a' }).first();
+    await expect(link).toHaveAttribute('href', 'https://example.test/closings');
+    await expect(page.getByText('From the publish at')).toBeVisible();
+    // a shadow publish, and a later publish that left these sources, are both said
+    await expect(page.getByText(/^Shadow publish\./)).toBeVisible();
+    await expect(page.getByText(/^The map was published again at/)).toBeVisible();
   });
 
   test('the admin adds a blocked word, sees who it catches and renames them', async ({ page }) => {

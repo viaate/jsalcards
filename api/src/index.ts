@@ -61,6 +61,7 @@ const routes: [method: string, pattern: RegExp, handler: Handler][] = [
   ['PUT', /^\/v1\/admin\/overrides$/, admin.putOverride],
   ['DELETE', /^\/v1\/admin\/overrides\/([^/]+)$/, admin.deleteOverride],
   ['GET', /^\/v1\/admin\/audit$/, admin.auditLog],
+  ['GET', /^\/v1\/admin\/sources$/, admin.liveSources],
 ];
 
 function withCors(response: Response, cors: Record<string, string>): Response {
