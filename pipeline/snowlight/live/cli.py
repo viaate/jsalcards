@@ -140,6 +140,7 @@ from snowlight.live.publishers import (
     host_refused_until,
 )
 from snowlight.live.resolve import LiveDirectory
+from snowlight.live.sources import SourcesShipper, station_links
 from snowlight.live.state import (
     ALERT_BYTES,
     ARCHIVE,
@@ -961,6 +962,9 @@ EVIDENCE_EVERY: Final = timedelta(hours=1)
 """How often the loop asks the evidence store what it holds."""
 EVIDENCE_CHECK_FOR: Final = timedelta(seconds=20)
 """The longest such a check may take (its requests' deadline)."""
+SOURCES_SHIP_FOR: Final = timedelta(seconds=20)
+"""The most the admin-sources shipment may take of the idle time (the evidence check and the
+timer check after it keep theirs on a slow-API day)."""
 
 
 def check_evidence(store: Any, state: Path, now: datetime, *, seconds: float) -> Any:
@@ -1107,6 +1111,8 @@ class Runner:
     shipper: MorningShipper | None = field(default=None, init=False)
     """Ships the morning record to the predict job in idle time (``None``: never: no D1
     store, an overrides-only run or the box)."""
+    sources: SourcesShipper | None = field(default=None, init=False)
+    """Ships the lit statuses' sources to the admin page in idle time (``None``: never)."""
 
     @property
     def ingest(self) -> Ingest:
@@ -1416,6 +1422,7 @@ class Runner:
             # failed push: the next mark ships)
             if pushed:
                 self.ship(self.loaders.clock())
+                self.ship_sources(self.loaders.clock())
             else:
                 state.next_ship = next_grid(now, SHIP_EVERY)
                 _say("morning ship: skipped (the state push failed)")
@@ -1515,6 +1522,27 @@ class Runner:
                 f"{found.requests} requests, {found.seconds * 1000:.0f} ms"
             )
 
+    def ship_sources(self, now: datetime) -> None:
+        """Ship the lit statuses' sources for the admin page (:mod:`snowlight.live.sources`)
+        after the morning record, ending inside the push margin and given at most
+        :data:`SOURCES_SHIP_FOR`. One line of counts; a failure is one line and never
+        raises."""
+        if self.sources is None:
+            return
+        room = self.state.due - PUSH_MARGIN
+        if room - now < MIN_PUSH_TIME:
+            _say("sources ship: skipped (too close to the next pass)")
+            return
+        try:
+            self.pulse()
+            deadline = min(room, now + SOURCES_SHIP_FOR)
+            found = self.sources.ship(self.args.internal / "provenance.jsonl", deadline=deadline)
+        except Exception as error:  # the admin's view never touches the pass or the push
+            _say(f"sources ship: failed: {describe(error)}")
+            return
+        if found.outcome != "same" or found.too_big:
+            _say(found.line())
+
     def push(self, now: datetime, *, reason: str) -> bool:
         """One push in the idle time; a failed one is tried again at the next slot only.
         ``False``: it was tried and failed (or the state is lost); ``True`` otherwise."""
@@ -1589,6 +1617,22 @@ def _iso(moment: datetime) -> str:
     return moment.astimezone(UTC).isoformat()
 
 
+def sources_shipper(store: D1StateStore, ingest: Ingest) -> SourcesShipper:
+    """The admin-sources shipper: the registry's page links, and the publisher's mode and last
+    publish (its memory, read at each shipment): its last publish, or the start of the last
+    hold it recorded when that is later (a ``live blank`` in another process blanks the map
+    without moving this process's last publish)."""
+    publisher = ingest.publisher
+
+    def publish() -> tuple[str, datetime | None]:
+        memory = publisher.memory
+        moments = [m for m in (memory.last_published, memory.hold_seen) if m is not None]
+        return publisher.mode.value, max(moments, default=None)
+
+    links = station_links(getattr(ingest, "stations", {}))
+    return SourcesShipper(store.api, store.env, links, publish, clock=store.clock)
+
+
 def run_loop(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
     """Passes on the 5-minute grid all day until ``--until`` (S8-E section 1):
 
@@ -1635,6 +1679,7 @@ def run_loop(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
     runner.holds = sink
     if isinstance(store, D1StateStore) and not args.overrides_only:
         runner.shipper = MorningShipper(store)
+        runner.sources = sources_shipper(store, parts.ingest)
     if store is not None and not args.overrides_only:
         try:
             runner.evidence = loaders.evidence(config, env, loaders.client())

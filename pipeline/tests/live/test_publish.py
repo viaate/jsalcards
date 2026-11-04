@@ -562,6 +562,20 @@ def test_provenance_of_the_last_publish_is_kept_privately(rig: Rig) -> None:
     assert datetime.fromisoformat(lines[0]["generated_at"]) == now.astimezone(UTC)
 
 
+def test_no_public_file_names_a_source(rig: Rig) -> None:
+    """ADMIN-SOURCES: where a status came from is the admin's alone; no uploaded file names it."""
+    now = at("2026-11-17 11:05")
+    rig.publisher.publish(storm(rig.world), now=now, healthy_share=1.0, edition=equal(now))
+    files = [path for path in rig.host.root.rglob("*") if path.is_file()]
+    assert files
+    words = (b"gray-synthetic", b"source_id", b"source_type", b"contributing", b"row_stamp")
+    for path in files:
+        body = path.read_bytes()
+        for word in words:
+            assert word not in body, path.name
+    assert (rig.internal / "provenance.jsonl").read_bytes().count(b"gray-synthetic") > 0
+
+
 def test_publishing_modules_leave_stored_derivations_valid() -> None:
     names = {path.name for path in live_files() if path.parent == PACKAGE / "live"}
     assert {"ledger.py", "resolve.py", "merge.py", "guards.py", "provenance.py"} <= names

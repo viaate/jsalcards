@@ -32,9 +32,11 @@ from snowlight.live import cli as live_cli
 from snowlight.live.cadence import Cadence
 from snowlight.live.d1 import D1Error, D1StateStore
 from snowlight.live.history import seed_changes
+from snowlight.live.ingest import Ingest
 from snowlight.live.merge import AdminStatus
 from snowlight.live.pool import MAX_ABANDONED
 from snowlight.live.publish import day_path
+from snowlight.live.sources import SourcesShipper
 from snowlight.live.state import ARCHIVE, check_export
 from snowlight.schemas.live import ClosingsFile, DayTimeline
 from snowlight.schemas.vocab import Status
@@ -577,3 +579,35 @@ def test_an_overrides_only_stretch_stays_dark_in_the_day_timeline_after_its_succ
     again = ["live", "once", *common[:2], "--state", str(third), *common[4:]]
     assert _run(again, _loaders(rig, clock), monkeypatch) == 0
     assert [event for event, _ in _timeline(server, alpha, rig)] == ["lit", "dark", "lit"]
+
+
+def test_the_loop_gives_its_runner_a_sources_shipper_with_the_registry_links(  # noqa: PLR0913, PLR0917 - fixtures
+    tmp_path: Path,
+    server: Server,
+    clock: Clock,
+    rig: Rig,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """ADMIN-SOURCES S4: with a D1 store, ``run_loop`` builds the shipper from the run's own
+    registry stations (their page links) and publisher (its mode)."""
+    base = _loaders(rig, clock)
+    env = {**base.env(), "GITHUB_WORKFLOW": "live-read", "GITHUB_RUN_ID": "77"}
+    api = FakeD1()
+    monkeypatch.setattr(live_cli, "make_store", lambda _c, _e, _h: D1StateStore(api, env, clock))
+    made: list[SourcesShipper] = []
+    real = live_cli.sources_shipper
+
+    def recorded(store: D1StateStore, ingest: Ingest) -> SourcesShipper:
+        shipper = real(store, ingest)
+        made.append(shipper)
+        return shipper
+
+    monkeypatch.setattr(live_cli, "sources_shipper", recorded)
+    loaders = replace(base, env=lambda: env)
+    argv = ["live", "run", "--until", "+5m", "--push-every", "30", *_common(tmp_path, server)]
+    assert _run(argv, loaders, monkeypatch) in {0, 3}
+    capsys.readouterr()
+    assert len(made) == 1
+    assert made[0].links == {"gray-synthetic": "https://example.invalid/closings"}
+    assert made[0].publish()[0] == "shadow"
