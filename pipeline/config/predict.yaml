@@ -295,7 +295,7 @@ live_score:
     timing_min_snow: 0.5          # inches: the timing term phases in from no snow to this
     timing_even_max: 0.9          # the window's even weight is taken at most this: snow at least 80% in the commute hours never lowers
     timing_bus: true              # predict-next BUS-TIMING (Nov 3): the timing weighs snow before the bus hour (07:00 on the school's clock) against snow after it, in place of 10 PM to 9 AM (off: L5's timing exactly); on: the within-date test with a season held out found it no worse than L5 (docs/predict.md, "The bus hour timing term")
-    timing_after_bus: 0.95        # o: what snow after the bus hour weighs against snow before it (1: no timing); fit within date with each season held out over 0.0-0.9 by 0.1 and 0.95, ties to the largest (docs/predict.md, "The bus hour timing term")
+    timing_after_bus: 1.0         # o: what snow after the bus hour weighs against snow before it (1: no timing). predict-next TIMING-AUTO (Nov 4): no timing serves (the owner's ruling: no timing scored best within date against the bus term's 0.95); the live switch below (switch_bus_timing) serves 0.95 only once it is consistently better on live storm mornings (docs/predict.md, "The live switch")
     timing_bus_share_max: 0.8     # F: the window's before-bus share is taken at most this in its even weight: snow at least 80% before the bus hour never lowers
     shrink_days: 10               # u: the district's own 9 PM codes on its class days plus this many of its county's (region's) mix
     county_min_days: 30           # a county with fewer class days lends its region's mix instead
@@ -359,8 +359,30 @@ live_score:
   accuracy:
     brier_vs_live_rate: 0.005
   hand_audit: {rows: 50, false_open_max: 0.05}
+  switch_bus_timing:              # predict-next TIMING-AUTO (Nov 4; docs/predict.md, "The live switch"): serves the bus term's o (arm_on) only once it is consistently better than no timing (arm_off) on live storm mornings, at the end of predict read-labels; the served arm is always the replay of the counted ledger
+    default: "off"                # the arm served with no state (and the committed arm_block.arm_key is this arm's value)
+    arm_block: forecast_adjustment
+    arm_key: timing_after_bus
+    arm_off: 1.0                  # no timing
+    arm_on: 0.95                  # the bus term as BUS-TIMING fit it
+    scope: [forecast_adjustment]  # the term's key: this block and these blocks (sha256), with the committed model's sha256
+    revision: 1
+    frozen_key: bt                # each d0_0507 row's v.bt = [off, on]: the model's own chance under each arm
+    freeze: d0_0507
+    classes: [advisory, warning]
+    bootstrap: 2000               # date-block resamples...
+    seed: 23                      # ...from numpy default_rng(23), the same ledger always giving the same bounds
+    bound: 0.90                   # L, U: the 5th and 95th percentiles
+    tolerance: 0.005              # per district-day: L and every binding class at least -tolerance
+    on_lower: 0.0                 # switching on also needs L over this...
+    new_date_min: 0.0             # ...and the new date's own on - off over this
+    on_after: 3                   # confident evaluations in a row to switch on
+    off_after: 2                  # behind evaluations in a row to switch off
+    clear: {point: -0.005, lower: -0.010, class: -0.010}  # on: off at once when P, L or a binding class is under these
+    supply: {dates: 8, date_classes: 10, states: 3, rows: 300, max_date_share: 0.40}  # evidence (switching on only): moved dates, moved date-classes, states, rows, the largest date's share
+    class_min: {rows: 100, date_classes: 3}  # a class binds once it holds these rows over these moved date-classes
   call_time:                      # predict-next CALL-TIME (Nov 3; docs/predict.md, "The usual call time"): each district's usual call time u and a decline past it, while every required list proves the district silent; the term off (CALL-TIME-1), nothing served changes
-    serve: "off"                  # off only: config refuses any other until LIVE-READS lands (the switch is CALL-TIME-2's, automatic in the learn step)
+    serve: "off"                  # off only: config refuses any other until LIVE-READS lands (CALL-TIME-2 plugs into the shared live switch at the end of predict read-labels with its own switch_call_time block, arms the names off and on and no frozen_key, and its code in live_switch.TERMS: groups fitted only on dates before D, its extra checks)
     classes: [advisory, warning, cold]  # a call is a map time on a day of these serving classes
     evening_from: "18:00"         # D-1 local: before it a call is ahead (no sample); from it to midnight, evening (kept apart, never in u)
     morning_until: "09:30"        # 00:00 to this local on D: a morning call (in u); later, late (never in u)

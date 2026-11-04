@@ -212,10 +212,15 @@ def test_on_snow_over_the_snow_alone_s_usual_never_lowers_an_icy_place_s_day() -
         assert raw(ON, base.forecast(s), usual, alone, "warning", 0.45) >= 0.45 - 1e-12
     assert raw(ON, base.forecast(0.0), usual, alone, "warning", 0.45) < 0.45
     # Late snow still lowers on the timing term, under the floor's even snow (1.4 in: under the
-    # snow alone's usual, over the lower bound with the warning's slope).
+    # snow alone's usual, over the lower bound with the warning's slope), with the live switch's
+    # on arm (the bus term at o 0.95; as committed no timing serves: TIMING-AUTO).
+    timed = replace(ON, timing_after_bus=0.95)
     late = base.forecast(1.4, split=(0.0, 0.0, 1.0))
     even = base.forecast(1.4)
-    assert raw(ON, late, usual, alone, "warning", 0.45) < raw(
+    assert raw(timed, late, usual, alone, "warning", 0.45) < raw(
+        timed, even, usual, alone, "warning", 0.45
+    )
+    assert raw(ON, late, usual, alone, "warning", 0.45) == raw(
         ON, even, usual, alone, "warning", 0.45
     )
 

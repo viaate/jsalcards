@@ -22,7 +22,7 @@ from predict import world
 from snowlight.predict import anchor as an
 from snowlight.predict import forecast_adjust as fa
 from snowlight.predict import forecast_history as history
-from snowlight.predict import forecast_live, ndfd, serve
+from snowlight.predict import forecast_live, live_switch, ndfd, serve
 from snowlight.predict.artifact import ARTIFACT_PATH, ModelArtifact
 from snowlight.predict.exposure import Exposure
 from snowlight.predict.forecast_values import (
@@ -36,8 +36,12 @@ from snowlight.predict.serve import SITUATION_POSITION
 from snowlight.predict.situations import SITUATIONS
 
 REGISTERED = fa.AdjustSettings.of(base.CONFIG)
-BUS = replace(REGISTERED, timing_bus=True)
-"""The bus hour term on, at the registered ``o`` and ``F``."""
+"""As committed (predict-next TIMING-AUTO): no timing, ``o`` 1.0."""
+SWITCH = live_switch.rules(base.CONFIG)["bus_timing"]
+ON_ARM = live_switch.arm_settings(base.CONFIG, SWITCH, "on")
+"""The live switch's on arm: the bus term at its fit ``o`` (0.95), as BUS-TIMING served it."""
+BUS = replace(ON_ARM, timing_bus=True)
+"""The bus hour term on, at the on arm's ``o`` and the registered ``F``."""
 OFF = replace(REGISTERED, timing_bus=False)
 """L5's timing, the snow amount term as registered."""
 STANDARD = date(2026, 1, 14)
@@ -426,6 +430,29 @@ def test_bus_settings_out_of_range_are_refused_and_o_1_is_no_timing() -> None:
             assert parts.weighted == found.snow
 
 
+@pytest.mark.parametrize("zone", ZONES)
+def test_as_committed_no_timing_serves_in_every_zone(zone: str) -> None:
+    # TIMING-AUTO decision 1: o 1.0 with the bus term's reader: even factor 1, the timing
+    # part 0 and no timing line, whatever the hours of the snow, in every zone and both classes.
+    assert REGISTERED.timing_bus is True
+    assert REGISTERED.timing_after_bus == 1.0
+    assert fa.even_factor(zone, REGISTERED) == 1.0
+    periods = len(window_ends(STANDARD, zone))
+    for where in range(periods):
+        for snow in (0.5, 2.0, 6.0):
+            found = window(zone, STANDARD, [snow if m == where else 0.0 for m in range(periods)])
+            for klass in ("advisory", "warning"):
+                parts = fa.term_parts(found, 2.0, klass, STANDARD, zone, REGISTERED)
+                assert parts is not None
+                assert parts.raw[1] == 0.0
+                assert parts.weighted == found.snow
+                moved = fa.adjusted(
+                    0.3, 0.1, klass, 2.0, found, STANDARD, zone, REGISTERED, 0.01, 0.99
+                )
+                kinds = set() if moved is None else {line.kind for line in moved.reasons}
+                assert "timing" not in kinds
+
+
 def window_ends(day: date, zone: str) -> list[datetime]:
     at = fa.snapshot(day, zone)
     return [end for end in ndfd.window_ends(day) if end > at]
@@ -517,9 +544,14 @@ def test_the_named_line_per_zone_at_the_split_period() -> None:
 def test_the_registered_block_holds_the_bus_settings() -> None:
     block = base.CONFIG.live_score["forecast_adjustment"]
     assert block["timing_bus"] is True  # BT-1: the within-date test passes at o 0.95
-    assert block["timing_after_bus"] == pytest.approx(0.95)
+    # TIMING-AUTO: no timing serves (o 1.0); the live switch's on arm is the bus term's 0.95
+    assert block["timing_after_bus"] == 1.0
     assert block["timing_bus_share_max"] == pytest.approx(0.8)
-    assert REGISTERED.timing_after_bus == pytest.approx(0.95)
+    assert REGISTERED.timing_after_bus == 1.0
+    assert (SWITCH.default, SWITCH.arm_off, SWITCH.arm_on) == ("off", 1.0, 0.95)
+    assert (SWITCH.arm_block, SWITCH.arm_key) == ("forecast_adjustment", "timing_after_bus")
+    assert ON_ARM.timing_after_bus == pytest.approx(0.95)
+    assert replace(ON_ARM, timing_after_bus=1.0) == REGISTERED
     assert world.utc("2026-01-14T12:00:00") == ndfd.bus_time(STANDARD, "America/New_York")
 
 
@@ -530,15 +562,18 @@ OWNER = {"1300120": (0.16, 0.49), "3605850": (0.06, 0.38), "2008310": (0.1158, 0
 and the typical advisory district (the median advisory usual at the national levels)."""
 
 
-def test_through_the_served_path_with_the_bus_term_an_advisory_day_is_held_by_the_class_order() -> (
-    None
-):
+@pytest.mark.parametrize("arm", ["off", "on"])
+def test_through_the_served_path_with_the_bus_term_an_advisory_day_is_held_by_the_class_order(
+    arm: str,
+) -> None:
     # BT1-R1-B1: the owner's table read an advisory day under its snow warning alone, but
     # serving caps it with serve._order_cap over every winter warning situation, and a blizzard
     # warning keeps its class's level (fa.SKIP): with the bus hour term as registered, through
     # serve._order_cap, an advisory day is never over the district's warning class level nor
     # over any warning situation's chance for the same forecast, more snow never lowers it,
     # and Atlanta's advisory reads its warning level in each of the table's cells.
+    # TIMING-AUTO: at both of the switch's arms (off: no timing, as committed; on: o 0.95).
+    settings = REGISTERED if arm == "off" else ON_ARM
     artifact = ModelArtifact.from_bytes(ARTIFACT_PATH.read_bytes())
     climate = fa.load()
     leaids = sorted(OWNER)
@@ -552,7 +587,7 @@ def test_through_the_served_path_with_the_bus_term_an_advisory_day_is_held_by_th
             an.AnchorSettings.of(base.CONFIG), Exposure((), {}, {}, {}, {}, {}), an.NO_LABELS, {}
         ),
         climate=climate,
-        adjust=REGISTERED,
+        adjust=settings,
     )
     assert anchor.class_of("blizzard") == "warning"
     assert "blizzard" in serve.ORDERED
@@ -576,7 +611,7 @@ def test_through_the_served_path_with_the_bus_term_an_advisory_day_is_held_by_th
         assert klass is not None
         cap = serve._order_cap(model, anchor, i, klass, STANDARD, zones[i], found)
         moved = fa.adjusted(
-            p0, 0.1, klass, u, found, STANDARD, zones[i], REGISTERED, 0.01, 0.99,
+            p0, 0.1, klass, u, found, STANDARD, zones[i], settings, 0.01, 0.99,
             snow_usual=float(alone[i, k]), cap=cap,
         )  # fmt: skip
         return p0 if moved is None else moved.p_no_school

@@ -32,7 +32,7 @@ from snowlight.live.evidence import (
     item_of,
     unpack,
 )
-from snowlight.predict import cli, frozen
+from snowlight.predict import cli, frozen, live_switch, serve
 from snowlight.predict import forecast_adjust as fa
 from snowlight.predict.config import LIVE_SCORE_SHA256
 from snowlight.predict.forecast_values import Forecasts
@@ -503,6 +503,19 @@ def test_a_finished_day_is_kept_in_both_databases_then_leaves_the_folder(
     held = store.held((FROZEN,))
     assert frozen.note_held(folder, {PRIMARY: held[PRIMARY]}, now) == []
     assert frozen.day_path(folder, DAY.isoformat()).is_file()
+    # TIMING-AUTO: both hold it, but the live switch has not counted it (no marker): it stays,
+    # and is not offered again
+    cli.note_frozen(store, folder, now)
+    assert frozen.day_path(folder, DAY.isoformat()).is_file()
+    assert frozen.offers(folder) == []
+    assert cli.keep_evidence(store, {}, {}, now, frozen_folder=folder) == 0
+    assert "1 finished files offered" not in capsys.readouterr().out
+    # a marker before the day keeps it too; one on or after it releases it
+    frozen.write_marker(folder, DAY - timedelta(days=1))
+    cli.note_frozen(store, folder, now)
+    assert frozen.day_path(folder, DAY.isoformat()).is_file()
+    frozen.write_marker(folder, DAY)
+    assert frozen.read_marker(folder) == DAY
     cli.note_frozen(store, folder, now)
     assert not frozen.day_path(folder, DAY.isoformat()).exists()
     index = frozen.load_index(folder)
@@ -516,6 +529,27 @@ def test_a_finished_day_is_kept_in_both_databases_then_leaves_the_folder(
     # and the reader gets it from the store
     found = frozen.rows(DAY, DAY, folder, store)
     assert found[DAY] == frozen.parse_day(data)
+
+
+def test_a_day_the_switch_never_counted_leaves_the_folder_after_the_keep_window(
+    tmp_path: Path,
+) -> None:
+    folder = tmp_path / "frozen"
+    _finished_day(folder)
+    api = FakeD1()
+    now = world.utc("2026-01-07T19:00:00")
+    store = EvidenceStore(api, PREDICT, lambda: now)
+    assert cli.keep_evidence(store, {}, {}, now, frozen_folder=folder) == 0
+    closed = frozen.load_index(folder).days[DAY.isoformat()].closed
+    assert closed is not None
+    finished = datetime.fromisoformat(closed)
+    for when, kept in (
+        (finished + timedelta(days=frozen.KEEP_DAYS), True),
+        (finished + timedelta(days=frozen.KEEP_DAYS, seconds=1), False),
+    ):
+        cli.note_frozen(store, folder, when)
+        assert frozen.day_path(folder, DAY.isoformat()).is_file() is kept
+    assert frozen.read_marker(folder) is None
 
 
 def test_the_check_fails_when_a_finished_day_waits_two_days_for_both_databases(
@@ -570,6 +604,11 @@ def test_the_restore_drill_deletes_the_folder_and_takes_the_days_back(tmp_path: 
     assert not index.fresh
     assert index.days[DAY.isoformat()].closed is not None
     assert cli.keep_evidence(store, {}, {}, now, frozen_folder=folder) == 0
+    cli.note_frozen(store, folder, now)
+    # the lost folder lost the live switch's marker too: the day stays until the next
+    # read-labels rewrites it from the host's state
+    assert frozen.day_path(folder, DAY.isoformat()).is_file()
+    frozen.write_marker(folder, DAY)
     cli.note_frozen(store, folder, now)
     assert not frozen.day_path(folder, DAY.isoformat()).exists()
     assert frozen.restore(folder, store, now) == []  # only once, after a loss
@@ -786,6 +825,225 @@ def test_an_outlook_file_s_rows_hold_what_it_published_not_the_model_s_inputs(
     for row in rows:
         assert not {"lv", "o", "pr", "qr", "fr", "f", "t"} & set(row)
         assert {"p", "q", "sit", "c"} <= set(row)
+
+
+# --- the live switch's shadow (predict-next TIMING-AUTO) ----------------------------------------
+
+SWITCH_MODEL = "m" * 64
+MORNING = "2026-01-14T11:15:00"  # 05:15 CST Jan 14: past Missouri's and Kansas's 05:07 freeze
+
+
+def switching_pass(folder: Path | None, clock: Clock, host: MemoryHost) -> cli.Pass:
+    """:func:`adjusting_pass` serving the committed adjustment (no timing) with the live
+    switch read (no state: the default arm), so the d0_0507 rows hold both arms' chances."""
+    run = adjusting_pass(folder, clock, host)
+    assert run.anchor is not None
+    run.anchor = replace(run.anchor, adjust=fa.AdjustSettings.of(world.CONFIG))
+    run.switch = live_switch.served_arms(world.CONFIG, None, SWITCH_MODEL, today=date(2026, 11, 4))
+    return run
+
+
+def test_the_0507_rows_hold_both_arms_chances_and_the_served_one_is_their_own(
+    tmp_path: Path, capsys: Any
+) -> None:
+    clock = Clock(MORNING)
+    assert cli.one_pass(switching_pass(tmp_path, clock, MemoryHost())) == 0
+    out = capsys.readouterr().out
+    day = frozen.parse_day(frozen.day_path(tmp_path, fa_test.DAY.isoformat()).read_bytes())
+    rule = live_switch.rules(world.CONFIG)["bus_timing"]
+    key = live_switch.key_of(world.CONFIG, rule, SWITCH_MODEL)
+    heads = headers(tmp_path, fa_test.DAY)
+    for (zone, name), head in heads.items():
+        if head["k"] == "freeze":
+            assert head["switch"] == {
+                "bus_timing": {
+                    "arm": "off", "sha256": key.term_sha256, "model_sha256": SWITCH_MODEL,
+                }
+            }, (zone, name)  # fmt: skip
+            assert head["live_score_sha256"] == LIVE_SCORE_SHA256
+    morning = {row.leaid: row for row in day.rows if row.freeze == "d0_0507"}
+    assert morning
+    heavy, light, unread = morning["2900001"], morning["2900002"], morning["2900003"]
+    assert all(live_switch.keyed(row, rule, key) for row in morning.values())
+    for row in (heavy, light):
+        assert row.forecast_read == "read"
+        pair = row.variants["bt"]
+        assert len(pair) == 2
+        assert pair[0] == row.p_raw  # the served arm's is the model's own chance
+    # the heavy day's snow is 2/3 before the bus hour, less than its window's hours: the on
+    # arm's timing lowers it a little (no timing serves: the off arm is the published one)
+    assert heavy.variants["bt"][1] < heavy.variants["bt"][0]
+    assert unread.forecast_read == "none"
+    assert unread.variants == {"bt": None}
+    # no variant at any other freeze, nor on a row of no class it scores
+    assert all("bt" not in row.variants for row in day.rows if row.freeze != "d0_0507")
+    found = [line for line in out.splitlines() if " d0_0507: " in line]
+    assert found
+    assert found[0].endswith(", bt on 2 rows")
+
+
+def test_a_second_term_with_no_shadow_is_in_every_header_and_freezes_no_variant(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # B1 (critic r1): a term whose code freezes no shadow (CALL-TIME-2's shape: name arms,
+    # no frozen_key) is named with its arm and key in every header, and no row carries a
+    # variant for it; the bus term's rows are as before.
+    from predict import test_switch  # noqa: PLC0415
+
+    monkeypatch.setitem(live_switch.TERMS, "fake", live_switch.Term(groups=lambda _inputs: []))
+    config = test_switch.plugged(world.CONFIG)
+    run = switching_pass(tmp_path, Clock(MORNING), MemoryHost())
+    run.config = config
+    run.switch = live_switch.served_arms(config, None, SWITCH_MODEL, today=date(2026, 11, 4))
+    assert cli.one_pass(run) == 0
+    day = frozen.parse_day(frozen.day_path(tmp_path, fa_test.DAY.isoformat()).read_bytes())
+    fake = live_switch.key_of(config, live_switch.rules(config)["fake"], SWITCH_MODEL)
+    for head in headers(tmp_path, fa_test.DAY).values():
+        if head["k"] == "freeze":
+            assert set(head["switch"]) == {"bus_timing", "fake"}
+            assert head["switch"]["fake"] == {
+                "arm": "off", "sha256": fake.term_sha256, "model_sha256": SWITCH_MODEL,
+            }  # fmt: skip
+    assert {key for row in day.rows for key in row.variants} == {"bt"}
+    assert all(not row.variants for row in day.rows if row.freeze != "d0_0507")
+    held = [row for row in day.rows if row.variants.get("bt") is not None]
+    assert len(held) == 2
+    assert all(row.variants["bt"][0] == row.p_raw for row in held)
+
+
+def test_the_served_arm_s_chance_worked_out_again_is_the_one_the_file_applied(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The served arm's value is taken from the row's own detail; worked out again through
+    # serve.arm_chance under the served arm's settings it is the same number.
+    kept = frozen._arm_values
+
+    def again(*args: Any) -> list[float | None]:
+        inputs, shadow, models, _detail, cell, *_other = args
+        return kept(inputs, shadow, models, None, cell)  # both arms through arm_chance
+
+    monkeypatch.setattr(frozen, "_arm_values", again)
+    frozen._SHADOW_FOR.clear()
+    assert cli.one_pass(switching_pass(tmp_path, Clock(MORNING), MemoryHost())) == 0
+    day = frozen.parse_day(frozen.day_path(tmp_path, fa_test.DAY.isoformat()).read_bytes())
+    held = [
+        row for row in day.rows if row.freeze == "d0_0507" and row.variants.get("bt") is not None
+    ]
+    assert len(held) == 2
+    assert all(row.variants["bt"][0] == row.p_raw for row in held)
+
+
+def test_the_variant_is_none_on_every_row_when_the_arms_even_factors_differ(
+    tmp_path: Path, capsys: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(frozen, "arms_agree", lambda *_a: False)
+    frozen._SHADOW_FOR.clear()
+    assert cli.one_pass(switching_pass(tmp_path, Clock(MORNING), MemoryHost())) == 0
+    day = frozen.parse_day(frozen.day_path(tmp_path, fa_test.DAY.isoformat()).read_bytes())
+    morning = [row for row in day.rows if row.freeze == "d0_0507" and row.leaid.startswith("29")]
+    assert morning
+    assert all(row.variants == {"bt": None} for row in morning)
+    out = capsys.readouterr().out
+    assert ", bt none (even factors differ by arm)" in out
+    frozen._SHADOW_FOR.clear()
+
+
+def test_the_variant_is_none_when_the_model_does_not_serve_the_served_arm(
+    tmp_path: Path, capsys: Any
+) -> None:
+    frozen._SHADOW_FOR.clear()
+    run = adjusting_pass(tmp_path, Clock(MORNING), MemoryHost())  # L5's timing: no arm's
+    run.switch = live_switch.served_arms(world.CONFIG, None, SWITCH_MODEL, today=date(2026, 11, 4))
+    assert cli.one_pass(run) == 0
+    assert f", bt none ({frozen.NOT_AN_ARM})" in capsys.readouterr().out
+
+
+def test_the_arms_agree_where_every_solved_zone_s_even_factor_is_the_same() -> None:
+    model, _anchor = fa_test.adjusting_model(fa_test.NATION)
+    rule = live_switch.rules(world.CONFIG)["bus_timing"]
+    off = live_switch.arm_settings(world.CONFIG, rule, "off")
+    on = live_switch.arm_settings(world.CONFIG, rule, "on")
+    assert serve.arms_agree(model, off, on)
+    west = replace(model, time_zone=("America/Los_Angeles",) * len(model.time_zone))
+    assert serve.arms_agree(west, off, on)  # the bus term's factor is 1 in every lower-48 zone
+    assert not serve.arms_agree(west, off, replace(on, timing_bus=False))  # L5's is not
+    alaska = replace(model, time_zone=("America/Anchorage",) * len(model.time_zone))
+    assert not serve.arms_agree(alaska, off, on)
+
+
+@pytest.mark.parametrize("arm", ["off", "on"])
+def test_the_shadow_arm_worked_out_at_once_is_arm_chance_s_number_to_the_bit(arm: str) -> None:
+    # B2 (critic r1): the freeze's rows of the arm not served are worked out over arrays
+    # (serve.arm_chances); every one is the served path's number (serve.arm_chance) exactly,
+    # over every situation, four zones, snow before and after the bus hour, ice, cold, an
+    # unknown code, no forecast, the class order's cap and a pass before the class snapshot.
+    rule = live_switch.rules(world.CONFIG)["bus_timing"]
+    settings = live_switch.arm_settings(world.CONFIG, rule, "on" if arm == "on" else "off")
+    built, _anchor = fa_test.adjusting_model(fa_test.NATION)
+    assert built.anchor is not None
+    model = replace(built, anchor=replace(built.anchor, adjust=settings))
+    count = len(model.time_zone)
+    rng = np.random.default_rng(5)
+    cells = [(i, k) for i in range(count) for k in range(len(serve.SITUATION_POSITION))]
+    checked = moved = 0
+    for draw in range(60):
+        zones = tuple(fa_test.ZONES[(draw + i) % len(fa_test.ZONES)] for i in range(count))
+        zoned = replace(model, time_zone=zones)
+        found: dict[int, Any] = {}
+        for i in range(count):
+            if draw % 13 == 7 and i == 0:
+                continue  # no forecast this pass
+            amounts = [round(float(x), 1) for x in rng.gamma(0.8, 2.5, size=3)]
+            one = fa_test.zoned(
+                zones[i], amounts, ice=float(rng.choice([0.0, 0.0, 0.04, 0.2])),
+                feels=int(rng.integers(-20, 35)),
+            )  # fmt: skip
+            if draw % 11 == 3 and i == 1:
+                one = replace(one, code=0, snow=None)
+            found[i] = one
+        forecasts = Forecasts({fa_test.DAY: found})
+        for at in ("2026-01-14T06:00:00", "2026-01-14T01:30:00"):
+            generated = world.utc(at)
+            batch = serve.arm_chances(zoned, cells, fa_test.DAY, forecasts, generated)
+            for (i, k), value in zip(cells, batch, strict=True):
+                one_by_one = serve.arm_chance(zoned, i, k, fa_test.DAY, forecasts, generated)
+                assert value == one_by_one, (draw, at, i, k)
+                checked += value is not None
+                moved += value is not None and value != float(zoned.p[i, k])
+    assert checked > 1000
+    assert moved > 500
+
+
+def test_every_public_file_is_the_same_byte_for_byte_with_the_shadow_on_or_off(
+    tmp_path: Path,
+) -> None:
+    def plain(folder: Path | None, clock: Clock, host: MemoryHost) -> cli.Pass:
+        run = switching_pass(folder, clock, host)
+        run.switch = None
+        return run
+
+    on = _passes(switching_pass, tmp_path / "on")
+    off = _passes(plain, tmp_path / "off")
+    assert on == off
+
+
+def test_a_row_frozen_before_the_switch_still_reads(tmp_path: Path) -> None:
+    clock = Clock(MORNING)
+    assert cli.one_pass(switching_pass(tmp_path, clock, MemoryHost())) == 0
+    path = frozen.day_path(tmp_path, fa_test.DAY.isoformat())
+    old_lines = []
+    for line in path.read_bytes().splitlines():
+        value = json.loads(line)
+        value.pop("switch", None)
+        if isinstance(value.get("v"), dict):
+            value["v"] = {}
+        old_lines.append(json.dumps(value).encode())
+    old = frozen.parse_day(b"\n".join(old_lines))
+    assert old.rows
+    assert all(row.switch == {} and row.variants == {} for row in old.rows)
+    rule = live_switch.rules(world.CONFIG)["bus_timing"]
+    key = live_switch.key_of(world.CONFIG, rule, SWITCH_MODEL)
+    assert not any(live_switch.keyed(row, rule, key) for row in old.rows)
 
 
 def test_a_row_keeps_bounded_terms_only_where_one_was_clamped() -> None:

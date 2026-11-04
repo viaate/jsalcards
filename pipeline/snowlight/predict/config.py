@@ -194,7 +194,7 @@ class LearnSettings(_Settings):
     out, and a learned file that counted one is no longer served."""
 
 
-LIVE_SCORE_SHA256: Final = "6484a3c3f0f487f817b8f0e7b1d6d156967975375b9b87f4fc15d7eb4937acff"
+LIVE_SCORE_SHA256: Final = "ce2a224eb22eba39d5d8c8b331d916417f866f1211ffa41fe22fac756af45e02"
 """The sha256 of the pre-registered scoring rules (:func:`live_score_sha256`: the
 ``live_score`` block, the ``labels`` and ``weather`` blocks and ``learn.snapshot_slack_minutes``),
 as S7 addendum h records it (and addendum i, for the forecast adjustment of advisory-sane L5;
@@ -205,7 +205,10 @@ by predict-next SNOW-AMOUNT-2: the term on, ``snow_amount_slope_advisory`` and
 REASONS: ``labels.reason_rule`` 2 added, no served value changed; revised Nov 3, 2026 by
 predict-next BUS-TIMING: ``timing_bus`` on, ``timing_after_bus`` and ``timing_bus_share_max``
 added, for rows after it; revised Nov 3, 2026 by predict-next CALL-TIME: values registered, the
-term off, no served value changed: ``call_time`` added).
+term off, no served value changed: ``call_time`` added; revised Nov 4, 2026 by predict-next
+TIMING-AUTO: ``timing_after_bus`` 1.0, no timing served, for rows after it, and
+``switch_bus_timing``, the live switch that serves the bus term's 0.95 only once it is
+consistently better on live storm mornings, added).
 A test holds the two equal, so none of them changes without this."""
 
 
@@ -230,6 +233,15 @@ class PredictConfig(_Settings):
         found = self.live_score.get("call_time", {}).get("serve", "off")
         if found != "off":
             raise ValueError(f"live_score.call_time.serve is off only, not {found!r}")
+        return self
+
+    @model_validator(mode="after")
+    def _check_switch(self) -> "PredictConfig":
+        # predict-next TIMING-AUTO: each live switch's registry (live_score.switch_<name>):
+        # registered arms only, the committed value the default arm's, numbers in range.
+        from snowlight.predict.live_switch import check_config  # noqa: PLC0415
+
+        check_config(self)
         return self
 
     @classmethod

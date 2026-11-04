@@ -65,6 +65,7 @@ from snowlight.predict import (
     frozen,
     inputs,
     learn,
+    live_switch,
     nbm,
     ndfd,
     night_replay,
@@ -1072,6 +1073,10 @@ class Pass:
     """The frozen record's folder (:mod:`snowlight.predict.frozen`): each pass that publishes
     (or finds its file unchanged) freezes what it served there at the night's four freezes;
     ``None``: nothing is frozen. Nothing served reads it."""
+    switch: live_switch.Served | None = None
+    """The live switch's arms this run serves (read once a run, :func:`live_switch.
+    served_arms`; the anchor is built with them), their keys for the frozen record's headers
+    and shadow variants; ``None``: none (tests, and the committed defaults)."""
     _products_retry: datetime | None = None
     """After the record step's product log rebuild failed: no new try before this time."""
     _built: tuple[object, ServeModel] | None = None
@@ -1485,6 +1490,8 @@ def _record_frozen(  # noqa: PLR0913, PLR0917 - the pass, what it served and mad
             live_score_sha256=live_score_sha256(run.config),
             adjusted=built.adjusted,
             maker=built.maker,
+            shadows=frozen_shadows(run.config, run.switch),
+            heads=frozen_heads(run.config, run.switch),
         )
         started = time.monotonic()
         taken = frozen.record(inputs, run.frozen)
@@ -1494,6 +1501,63 @@ def _record_frozen(  # noqa: PLR0913, PLR0917 - the pass, what it served and mad
             _out(f"predict frozen: recorded in {time.monotonic() - started:.2f} s")
     except Exception as error:  # the record never touches the pass
         _warn(f"predict: frozen record: {type(error).__name__}: nothing frozen this pass")
+
+
+_SHADOWS: list[tuple[PredictConfig, live_switch.Served, tuple[frozen.Shadow, ...]]] = []
+"""The last run's shadows, made once per config and served arms (each settings parse is
+cheap, but a pass need not repeat it)."""
+
+
+def frozen_shadows(
+    config: PredictConfig, switch: live_switch.Served | None
+) -> tuple[frozen.Shadow, ...]:
+    """The shadow of each live switch term whose code freezes one
+    (:attr:`live_switch.Term.shadow`): its arm served and both arms' settings, for the frozen
+    record (predict-next TIMING-AUTO); none with no switch read. A term with no shadow freezes
+    no variant."""
+    if switch is None:
+        return ()
+    for known, served, found in _SHADOWS:
+        if known is config and served is switch:
+            return found
+    made: list[frozen.Shadow] = []
+    for name, rule in live_switch.rules(config).items():
+        term = live_switch.TERMS.get(name)
+        if name not in switch.keys or term is None or term.shadow is None:
+            continue
+        if rule.frozen_key is None:
+            continue
+        made.append(
+            frozen.Shadow(
+                name=name,
+                key=rule.frozen_key,
+                freeze=rule.freeze,
+                classes=frozenset(rule.classes),
+                arm=switch.arms.get(name, rule.default),
+                settings=term.shadow(config, rule),
+            )
+        )
+    _SHADOWS[:] = [(config, switch, tuple(made))]
+    return tuple(made)
+
+
+def frozen_heads(
+    config: PredictConfig, switch: live_switch.Served | None
+) -> tuple[frozen.Head, ...]:
+    """Every live switch term's arm served and key, for each frozen header's ``switch``; none
+    with no switch read."""
+    if switch is None:
+        return ()
+    return tuple(
+        frozen.Head(
+            name=name,
+            arm=switch.arms.get(name, rule.default),
+            sha256=switch.keys[name].term_sha256,
+            model_sha256=switch.keys[name].model_sha256,
+        )
+        for name, rule in live_switch.rules(config).items()
+        if name in switch.keys
+    )
 
 
 def _shown(run: Pass, built: _Made) -> str | None:
@@ -2455,8 +2519,12 @@ def _last_file(run: Pass) -> PredictionsFile | None:
         return None
 
 
-def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # pragma: no cover
-    """A pass against the real world."""
+def make_pass(  # pragma: no cover
+    args: argparse.Namespace, env: Mapping[str, str], *, serving: bool = True
+) -> Pass:
+    """A pass against the real world; ``serving`` false (``predict read-labels``, which serves
+    nothing): the live switch's state is not read and no serving line is said, and the anchor
+    is the committed config's."""
     from snowlight.predict.inputs import (  # noqa: PLC0415
         AlertsHistory,
         AlertsReader,
@@ -2480,7 +2548,15 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
     committed = artifact_module.ModelArtifact.from_bytes(model_bytes)
     terms = terms_file.load(Path(args.terms)) if config.serve.reasons else None
     learned = served_learned(host, mode, artifact_module.sha256_of(model_bytes))
-    anchor = serving_anchor(config, committed, warn=_warn)
+    switch = (
+        served_switch(config, host, mode, artifact_module.sha256_of(model_bytes))
+        if serving
+        else None
+    )
+    # Only the anchor is built from the served arms: the committed config (and its live_score
+    # sha256) is the run's everywhere else (predict-next TIMING-AUTO).
+    arms = switch.arms if switch is not None else {}
+    anchor = serving_anchor(live_switch.served_config(config, arms), committed, warn=_warn)
     if anchor is not None:
         _out(f"predict: {anchor_line(anchor)}")
         try:
@@ -2543,6 +2619,7 @@ def make_pass(args: argparse.Namespace, env: Mapping[str, str]) -> Pass:  # prag
         else None,
         night=_live_night(config) if config.serve.chart != "off" else None,
         frozen=frozen.FOLDER,
+        switch=switch,
         **outlook,
     )
 
@@ -2924,6 +3001,56 @@ def served_learned(
     found, why = learn.read_learned(data, archive_sha256)
     if why is not None:
         _warn(f"{why}; serving the committed model")
+    return found
+
+
+def served_switch(  # noqa: PLR0913 - the config, the host, the mode, the key, the date, the folder
+    config: PredictConfig,
+    host: Host | None,
+    mode: Mode,
+    model_sha256: str,
+    *,
+    today: date | None = None,
+    folder: Path = frozen.FOLDER,
+) -> live_switch.Served:
+    """The live switch's arms this run serves, read from the host's ``switch.json``
+    (:func:`live_switch.served_arms`): the committed default for each term on any doubt, one
+    line each (a warning where the state is unreadable, invalid or not its replay).
+
+    ``today``: the run's UTC date (now's by default). A state behind the frozen record's
+    marker in ``folder`` (the step's last read-back: a host replica that has not caught up)
+    is read once more; one still behind is served as read, with one warning."""
+    key = mode.key
+    data: bytes | None = None
+    why: str | None = None
+    late: date | None = None
+    marker = frozen.read_marker(folder)
+    if host is None or key is None:
+        why = "publishing is off"
+    else:
+        path = f"{key.split('/', 1)[0]}/{live_switch.SWITCH_PATH}"
+        try:
+            data = host.read(path)
+            if live_switch.behind(config, data, marker) is not None:
+                data = host.read(path)
+                late = live_switch.behind(config, data, marker)
+        except PublishError as error:
+            why = f"::warning::{live_switch.SWITCH_PATH} unreadable ({type(error).__name__})"
+    found = live_switch.served_arms(
+        config, data, model_sha256, today=today or datetime.now(UTC).date(), why=why
+    )
+    lines = list(found.lines)
+    if why is None and late is not None and marker is not None:
+        was = "none" if late == date.min else late.isoformat()
+        lines.append(
+            f"::warning::switch: {live_switch.SWITCH_PATH} is behind the step's read-back "
+            f"(through {was}, the frozen marker {marker.isoformat()}): served as read"
+        )
+    for line in lines:
+        if line.startswith("::warning::"):
+            _warn(line.removeprefix("::warning::"))
+        else:
+            _out(f"predict: {line}")
     return found
 
 

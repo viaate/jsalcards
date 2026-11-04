@@ -98,6 +98,16 @@ def _rows(day: date, body: object) -> list[LiveRow]:
     return found
 
 
+def day_rows(day: date, body: object) -> list[LiveRow]:
+    """One day's labeled rows (``no_school``, ``delayed`` or ``unnamed``, tier A or B) from
+    its ``rows/<day>.json`` body, as the anchor reads them (the live switch's labels too).
+
+    Raises:
+        ValueError: the day's file is not one L1 writes.
+    """
+    return _rows(day, body)
+
+
 def _trials(
     path: Path, day: date, tally: dict[str, list[int]], dates: dict[str, set[date]]
 ) -> None:

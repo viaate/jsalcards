@@ -1774,6 +1774,134 @@ def adjust_detail(  # noqa: PLR0913, PLR0917 - the model, the cell, the day and 
     return AdjustDetail(klass, p0, snapshot, found, parts, raw)
 
 
+def arm_chance(  # noqa: PLR0913, PLR0917 - the model, the cell, the day and its forecast
+    model: ServeModel,
+    index: int,
+    k: int,
+    day: date,
+    forecasts: Forecasts,
+    generated: datetime,
+) -> float | None:
+    """The model's own chance of no school for a district-day before publishing rounds it,
+    through the served path (:func:`adjust_detail`, worked out from ``model``'s anchor and
+    its settings: the class order cap as served), for the live switch's shadow arm
+    (predict-next TIMING-AUTO); ``None`` where the forecast adjustment read no forecast (not
+    an adjusted day, before its class snapshot, or no forecast this pass). Where no term moves
+    the day, the class level before rounding. Nothing served reads it."""
+    detail = adjust_detail(model, index, k, day, forecasts, generated)
+    if detail is None or detail.forecast is None:
+        return None
+    if detail.raw is not None:
+        return detail.raw
+    return float(model.p_rate[index, k]) if model.p_rate.size else detail.level
+
+
+def arm_chances(
+    model: ServeModel,
+    cells: Sequence[tuple[int, int]],
+    day: date,
+    forecasts: Forecasts,
+    generated: datetime,
+) -> list[float | None]:
+    """:func:`arm_chance` of many district-days of ``day`` at once (each cell a district's
+    index and its situation's position): the same steps, with every term (the class order
+    caps' first) worked out over arrays (:func:`snowlight.predict.forecast_adjust.chances`),
+    so the frozen record's shadow arm costs a few array operations a freeze, not one served
+    path a row (a test holds the numbers equal to :func:`arm_chance`'s). Nothing served reads
+    it."""
+    found: list[float | None] = [None] * len(cells)
+    anchor = model.anchor
+    if anchor is None or anchor.adjust is None or not model.usual_snow.size:
+        return found
+    settings = anchor.adjust
+    snapshots: dict[str, datetime] = {}
+    rows: list[tuple[int, int, int, str, forecast_values.DistrictForecast]] = []
+    caps: list[forecast_adjust.Job] = []
+    owned: dict[int, tuple[list[float], list[int]]] = {}
+    for j, (index, k) in enumerate(cells):
+        klass = anchor.class_of(SITUATIONS[k].key)
+        if klass is None or not math.isfinite(float(model.usual_snow[index, k])):
+            continue
+        zone = model.time_zone[index]
+        if zone not in snapshots:
+            snapshots[zone] = forecast_adjust.snapshot(day, zone)
+        forecast = forecasts.get(day, index) if generated >= snapshots[zone] else None
+        if forecast is None:
+            continue
+        rows.append((j, index, k, klass, forecast))
+        if klass == "advisory" and "warning" in settings.classes:
+            owned[j] = _cap_jobs(model, anchor, index, forecast, caps)
+    capped = forecast_adjust.chances(caps, day, settings)
+    jobs: list[forecast_adjust.Job] = []
+    for j, index, k, klass, forecast in rows:
+        cap: float | None = None
+        if j in owned:
+            levels, picks = owned[j]
+            worked = [caps[at].p0 if capped[at] is None else capped[at] for at in picks]
+            lowest = [*levels, *(value for value in worked if value is not None)]
+            cap = min(lowest) if lowest else None
+        p0, usual = float(model.p[index, k]), float(model.usual_snow[index, k])
+        alone, zone = _alone(model, index, k), model.time_zone[index]
+        jobs.append(forecast_adjust.Job(p0, klass, usual, forecast, zone, alone, cap))
+    worked_out = forecast_adjust.chances(jobs, day, settings)
+    for (j, index, k, _klass, _forecast), raw in zip(rows, worked_out, strict=True):
+        if raw is not None:
+            found[j] = raw
+        elif model.p_rate.size:
+            found[j] = float(model.p_rate[index, k])
+        else:
+            found[j] = float(model.p[index, k])
+    return found
+
+
+def _cap_jobs(
+    model: ServeModel,
+    anchor: Anchor,
+    index: int,
+    forecast: forecast_values.DistrictForecast,
+    caps: list[forecast_adjust.Job],
+) -> tuple[list[float], list[int]]:
+    """An advisory day's warning situations, as :func:`_order_cap` takes them: the levels kept
+    as they are, and the positions in ``caps`` of the chances to work out (added to it)."""
+    levels: list[float] = []
+    picks: list[int] = []
+    known: dict[tuple[float, float, float | None], int] = {}
+    zone = model.time_zone[index]
+    for w, situation in enumerate(SITUATIONS):
+        if anchor.class_of(situation.key) != "warning" or situation.key not in ORDERED:
+            continue
+        p0 = float(model.p[index, w])
+        usual = float(model.usual_snow[index, w])
+        if situation.key in forecast_adjust.SKIP or not math.isfinite(usual):
+            levels.append(p0)
+            continue
+        alone = _alone(model, index, w)
+        key = (p0, usual, alone)
+        if key not in known:
+            known[key] = len(caps)
+            caps.append(forecast_adjust.Job(p0, "warning", usual, forecast, zone, alone))
+        picks.append(known[key])
+    return levels, picks
+
+
+def arms_agree(
+    model: ServeModel,
+    first: forecast_adjust.AdjustSettings,
+    second: forecast_adjust.AdjustSettings,
+) -> bool:
+    """Whether two arms of the forecast adjustment share ``model``'s usual and snow-alone usual
+    and its G6 check: every zone holding a solved district has the same even factor under
+    both (the solve and G6 see the arm only through it, :func:`_usual_snow`)."""
+    if not model.usual_snow.size:
+        return True
+    solved = np.isfinite(model.usual_snow).any(axis=1)
+    zones = {model.time_zone[i] for i in np.flatnonzero(solved).tolist()}
+    return all(
+        forecast_adjust.even_factor(zone, first) == forecast_adjust.even_factor(zone, second)
+        for zone in sorted(zones)
+    )
+
+
 def exposure_offsets(model: ServeModel) -> npt.NDArray[np.float64]:
     """Each deployed district's offset per serving class (:data:`CLASSES` order) from its
     exposure and region (:meth:`snowlight.predict.anchor.Anchor.offsets`), as the class
@@ -1815,6 +1943,9 @@ def _order_cap(  # noqa: PLR0913, PLR0917 - the model, the district, its day and
     if klass != "advisory" or settings is None or "warning" not in settings.classes:
         return None
     found_any: list[float] = []
+    # The warning situations of a district share their level and usual today (each is solved
+    # at its own, PHYS-S4): a chance already worked out for the same inputs is the same.
+    known: dict[tuple[float, float, float | None], float] = {}
     for k, situation in enumerate(SITUATIONS):
         if anchor.class_of(situation.key) != "warning" or situation.key not in ORDERED:
             continue
@@ -1823,11 +1954,13 @@ def _order_cap(  # noqa: PLR0913, PLR0917 - the model, the district, its day and
         if situation.key in forecast_adjust.SKIP or not math.isfinite(usual):
             found_any.append(p0)
             continue
-        found_any.append(
-            forecast_adjust.raw_chance(
-                p0, "warning", usual, found, day, zone, settings, _alone(model, index, k)
+        alone = _alone(model, index, k)
+        key = (p0, usual, alone)
+        if key not in known:
+            known[key] = forecast_adjust.raw_chance(
+                p0, "warning", usual, found, day, zone, settings, alone
             )
-        )
+        found_any.append(known[key])
     return min(found_any) if found_any else None
 
 

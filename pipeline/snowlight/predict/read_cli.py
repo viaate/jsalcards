@@ -137,6 +137,13 @@ class ReadLabelsRun:
     started: float | None = None
     """When the step's process began (``time.monotonic``; the CLI's :data:`STARTED`), which the
     call time counts line's limit counts from; ``None``: when :func:`read_once` began."""
+    model_sha256: str | None = None
+    """The committed model artifact's sha256, half of each live switch term's key
+    (:mod:`snowlight.predict.live_switch`); ``None``: the switch writes nothing."""
+    switch: bool = True
+    """Whether the live switch runs at the end of the step (predict-next TIMING-AUTO)."""
+    clock: Callable[[], float] | None = None
+    """The step's clock for the live switch's limits (``time.monotonic`` when ``None``)."""
 
 
 COVERAGE_ABSENT: Final = "the coverage files are absent ({}): nothing is labeled or frozen"
@@ -234,6 +241,11 @@ def read_once(run: ReadLabelsRun) -> int:
     for line in summary(audit, run.folder, report):
         _out(f"predict read-labels: {line}")
     step = began if run.started is None else min(run.started, began)
+    # The live switch decides what this run's passes serve, so it runs before the call time
+    # counts lines (its own limits: it starts before 45 s, starts no date past 55 s and writes
+    # before 65 s unless a date it counted ran late).
+    if run.switch:
+        switch_lines(run, step)
     call_time_lines(run, done, step, coverage)
     _out(f"predict read-labels: {time.monotonic() - began:.1f} s")
     return 0
@@ -282,6 +294,31 @@ def call_time_lines(
         _out("predict read-labels: " + SKIPPED.format(CALL_TIME_SECONDS))
     except Exception as error:  # a counts line never changes what the step did
         _out(f"::warning::predict read-labels: call time counts: {type(error).__name__}")
+
+
+def switch_lines(run: ReadLabelsRun, began: float) -> None:
+    """The live switch's step (:func:`snowlight.predict.live_switch.run`): its counts,
+    evaluation and switch lines; any failure is one warning and writes nothing, and it never
+    changes a label, the audit, ``added`` or the exit."""
+    from snowlight.predict import live_switch  # noqa: PLC0415
+
+    try:
+        live_switch.run(
+            live_switch.StepInputs(
+                config=run.config,
+                host=run.host,
+                prefix=run.prefix,
+                reads=run.folder,
+                frozen=run.frozen,
+                model_sha256=run.model_sha256,
+                now=run.now,
+                started=began,
+                clock=run.clock or time.monotonic,
+            ),
+            _out,
+        )
+    except Exception as error:  # the switch never changes what the step did
+        _out(f"::warning::predict read-labels: switch: {type(error).__name__}: nothing written")
 
 
 def _outcomes(source: Any) -> Mapping[str, str] | None:
@@ -670,7 +707,7 @@ def _run_read_labels(args: argparse.Namespace, scratch: Path) -> int:  # pragma:
     env = dict(os.environ)
     (args.reads / "rows").mkdir(parents=True, exist_ok=True)  # the cache step saves the folder
     try:
-        run = make_pass(args, env)
+        run = make_pass(args, env, serving=False)  # the switch's state: read by its step
         directory = run.directory()
         committed = run.model()
         model = build_model(directory, committed, run.config, run.zone_fallback)
@@ -731,6 +768,7 @@ def _run_read_labels(args: argparse.Namespace, scratch: Path) -> int:  # pragma:
             outputs=Path(env["GITHUB_OUTPUT"]) if env.get("GITHUB_OUTPUT") else None,
             frozen=frozen.FOLDER,
             started=STARTED,
+            model_sha256=run.model_sha256,
         )
     )
 

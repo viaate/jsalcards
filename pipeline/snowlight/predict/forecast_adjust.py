@@ -655,7 +655,7 @@ def bounded(
     low: float,
     high: float,
     settings: AdjustSettings | None = None,
-    most: float | None = None,
+    most: Floats | float | None = None,
 ) -> list[Floats]:
     """The terms scaled down on the side that passes a bound, so their sum is the total held
     to the bounds (:func:`saturated`: clipped, or with ``snow_amount`` on bending toward its
@@ -1301,6 +1301,95 @@ def chance_of(p0: float, parts: TermParts) -> float:
     # :func:`day_terms`'s values add up to the bounded terms, in the same order (the timing
     # term is added to the snow term's either way; an ice or cold term of 0 adds nothing)
     return 1.0 / (1.0 + math.exp(-(_logit(p0) + sum(parts.bounded))))
+
+
+@dataclass(frozen=True, slots=True)
+class Job:
+    """One district-day's inputs to :func:`chances`, as :func:`terms_detail` takes them
+    (``cap``: the class order's cap, a chance; ``None``: none)."""
+
+    p0: float
+    klass: str
+    usual: float
+    forecast: DistrictForecast
+    zone: str
+    alone: float | None
+    cap: float | None = None
+
+
+def chances(jobs: Sequence[Job], day: date, settings: AdjustSettings) -> list[float | None]:
+    """:func:`chance_of` of each job's :func:`term_parts` (``None`` where that is ``None``),
+    worked out over arrays: the same steps in the same order, one array operation for all the
+    jobs of a class where :func:`term_parts` runs one per district-day (the frozen record's
+    shadow arm, predict-next TIMING-AUTO; a test holds the numbers equal). Nothing served
+    reads it."""
+    found: list[float | None] = [None] * len(jobs)
+    by_class: dict[str, list[int]] = {}
+    for j, job in enumerate(jobs):
+        code, amount = job.forecast.code, job.forecast.snow
+        if job.klass not in settings.classes or not math.isfinite(job.usual):
+            continue
+        if code == ndfd.Bucket.UNKNOWN or amount is None:
+            continue
+        by_class.setdefault(job.klass, []).append(j)
+    for klass, picks in by_class.items():
+        mine = settings.for_class(klass)
+        evens: dict[tuple[str, tuple[tuple[datetime, datetime], ...]], float] = {}
+        snow: list[float] = []
+        weighed_in: list[float] = []
+        ice: list[float] = []
+        cold: list[float] = []
+        for j in picks:
+            job = jobs[j]
+            forecast = job.forecast
+            s = max(float(forecast.snow), 0.0) if forecast.snow is not None else 0.0
+            parts = tuple(part for part in forecast.snow_parts if part.end > part.start)
+            weighted = s
+            timing = forecast.snow_bus if mine.timing_bus else forecast.snow_commute
+            if parts and timing is not None and s > 0:
+                spans = tuple((part.start, part.end) for part in parts)
+                even = evens.get((job.zone, spans))
+                if even is None:
+                    _, even = window_even(spans, day, job.zone, mine)
+                    evens[job.zone, spans] = even
+                weighted = weighed(s, float(timing), even, mine)
+            snow.append(s)
+            weighed_in.append(weighted)
+            ice.append(max(float(forecast.ice), 0.0) if forecast.ice is not None else 0.0)
+            cold.append(0.0 if forecast.feels is None else chill_value(float(forecast.feels), mine))
+        s_ = np.array(snow, dtype=np.float64)
+        w_ = np.asarray(timed(s_, np.array(weighed_in, dtype=np.float64), mine), dtype=np.float64)
+        usual = np.array([jobs[j].usual for j in picks], dtype=np.float64)
+        snow_term, timing_term, ice_term = amount_terms(
+            s_, w_, np.array(ice, dtype=np.float64), usual, mine
+        )
+        cold_ = np.array(cold, dtype=np.float64)
+        alone = [jobs[j].alone for j in picks]
+        known = np.array([value is not None for value in alone], dtype=np.bool_)
+        if known.any():
+            lift = floor_lift(
+                snow_term + timing_term + ice_term + cold_,
+                w_,
+                usual,
+                np.array([np.nan if v is None else v for v in alone], dtype=np.float64),
+                mine,
+            )
+            snow_term = snow_term + np.where(known, lift, 0.0)
+        low, high = mine.bounds[klass]
+        caps = [jobs[j].cap for j in picks]
+        most = np.array(
+            [
+                math.inf if cap is None else _logit(cap) - _logit(jobs[j].p0)
+                for cap, j in zip(caps, picks, strict=True)
+            ],
+            dtype=np.float64,
+        )
+        after = bounded([snow_term, timing_term, ice_term, cold_], low, high, mine, most)
+        columns: list[list[float]] = [np.asarray(term, dtype=np.float64).tolist() for term in after]
+        for at, j in enumerate(picks):
+            total = sum((columns[0][at], columns[1][at], columns[2][at], columns[3][at]))
+            found[j] = 1.0 / (1.0 + math.exp(-(_logit(jobs[j].p0) + total)))
+    return found
 
 
 def adjusted(  # noqa: PLR0913, PLR0917 - the class level, the day and the settings

@@ -695,6 +695,22 @@ def test_the_frozen_rows_served_are_the_ones_with_a_model_chance(tmp_path: Path)
         if r.freeze == "d0_0630" and r.served and r.p_raw is not None and not r.said_open
     }  # fmt: skip
     assert read_cli._served(tmp_path, fa_test.DAY) == expect
+    # TIMING-AUTO's keep rule: once both databases hold the finished day, it stays in the
+    # folder until the live switch counted it, so the call time line still finds its rows
+    from predict.test_frozen import PREDICT, FakeD1  # noqa: PLC0415
+    from snowlight.live.evidence import EvidenceStore  # noqa: PLC0415
+    from snowlight.predict import cli  # noqa: PLC0415
+
+    now = world.utc("2026-01-14T19:00:00")
+    store = EvidenceStore(FakeD1(), PREDICT, lambda: now)
+    assert cli.keep_evidence(store, {}, {}, now, frozen_folder=tmp_path) == 0
+    cli.note_frozen(store, tmp_path, now)
+    assert frozen.offers(tmp_path) == []  # both hold it: not offered again
+    assert expect
+    assert read_cli._served(tmp_path, fa_test.DAY) == expect
+    frozen.write_marker(tmp_path, fa_test.DAY)  # counted: it leaves the folder
+    cli.note_frozen(store, tmp_path, now)
+    assert read_cli._served(tmp_path, fa_test.DAY) == frozenset()
 
 
 def test_the_counts_line_counts_dark_districts_by_cause_and_proven_ones_by_time() -> None:

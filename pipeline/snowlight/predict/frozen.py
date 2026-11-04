@@ -31,7 +31,7 @@ import hashlib
 import json
 import math
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any, Final, Protocol
@@ -45,6 +45,7 @@ from snowlight.predict.alerts_live import LiveEvent
 from snowlight.predict.calendar import is_school_day
 from snowlight.predict.config import PIPELINE_ROOT
 from snowlight.predict.exposure import CLASS_OF_WEATHER, CLASSES
+from snowlight.predict.forecast_adjust import AdjustSettings
 from snowlight.predict.forecast_values import Forecasts
 from snowlight.predict.serve import (
     ADJUST_KINDS,
@@ -53,6 +54,9 @@ from snowlight.predict.serve import (
     Noted,
     ServeModel,
     adjust_detail,
+    arm_chance,
+    arm_chances,
+    arms_agree,
     exposure_offsets,
 )
 from snowlight.predict.situations import Situation, WeatherClass, Window, counts
@@ -124,8 +128,20 @@ ROW_KEYS: Final[Mapping[str, str]] = {
     "ae": "the class's alert ends (absent: until further notice)",
     "h": "1 when the class's alert names heights",
     "wa": "the strongest watch in the active feed reaching the district that day",
-    "v": "shadow variants scored on the same row (later pieces)",
+    "v": "shadow variants scored on the same row: bt (predict-next TIMING-AUTO, d0_0507, a served "
+    "advisory or warning row of the model's own chance) [off, on], the model's own chance "
+    "before rounding under each arm of the live switch's bus term (6 decimals), null where "
+    "the pass read no forecast or the arms' even factors differ",
 }
+KEEP_DAYS: Final = 9
+"""A finished day both databases hold leaves the folder once the live switch counted it (the
+marker's ``through``) or once it finished this many days ago (predict-next TIMING-AUTO): two
+days past the most a labeled date waits for its frozen day
+(:data:`snowlight.predict.live_switch.WAIT_DAYS`, 7), so the days after one that never came
+are still held when the switch passes it as absent (a test holds them so)."""
+MARKER: Final = "switch.json"
+"""The live switch's marker in the folder: ``through``, the last labeled date every term
+counted, rewritten from the host's state after each read-back."""
 
 
 def freeze_at(day: date, zone: str, name: str) -> datetime:
@@ -373,6 +389,36 @@ class PassInputs:
     noted: Mapping[tuple[int, date], Noted] | None = None
     """The class order cap and terms of each adjusted district-day as the file applied them
     (``None``, or a day it lacks: worked out again)."""
+    shadows: Sequence["Shadow"] = ()
+    """The shadow variants of the live switch's terms that freeze one, each at its freeze
+    (predict-next TIMING-AUTO)."""
+    heads: Sequence["Head"] = ()
+    """Every live switch term: the arm it serves and its key (every header's ``switch``)."""
+
+
+@dataclass(frozen=True, slots=True)
+class Head:
+    """One live switch term at the pass, as each header names it: the arm served and the key
+    its rows count under."""
+
+    name: str
+    arm: str
+    sha256: str
+    model_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
+class Shadow:
+    """One live switch term's shadow at the pass (:attr:`snowlight.predict.live_switch.Term.
+    shadow`): the arm served and the forecast adjustment's settings under each arm (``off``,
+    ``on``) for the variant ``key`` of each served row of ``classes`` at ``freeze``."""
+
+    name: str
+    key: str
+    freeze: str
+    classes: frozenset[str]
+    arm: str
+    settings: tuple[AdjustSettings, AdjustSettings]
 
 
 @dataclass(frozen=True, slots=True)
@@ -387,6 +433,9 @@ class Taken:
     late_s: int
     missed: int
     served: int
+    shadow: tuple[tuple[str, int | str], ...] = ()
+    """Each shadow variant written at the freeze: its key and the rows holding one, or why
+    every row's is ``None``."""
 
 
 def _r(value: float | None, digits: int = ROUND) -> float | None:
@@ -559,7 +608,7 @@ def _terms_read(value: object) -> Mapping[str, Any] | None:
     }
 
 
-def _row(  # noqa: PLR0913, PLR0917 - one district's fields, each where it applies
+def _row(  # noqa: PLR0912, PLR0913, PLR0917 - one district's fields, each where it applies
     inputs: PassInputs,
     i: int,
     d: int,
@@ -568,6 +617,7 @@ def _row(  # noqa: PLR0913, PLR0917 - one district's fields, each where it appli
     spans: Mapping[int, _Alerts],
     watches: Mapping[int, str],
     hidden: str | None,
+    arms: Sequence[tuple["Shadow", "ArmModels | None", Mapping[int, float | None]]] = (),
 ) -> dict[str, object]:
     model, made = inputs.model, inputs.made
     row: dict[str, object] = {"l": model.directory.district_ids[i]}
@@ -609,8 +659,127 @@ def _row(  # noqa: PLR0913, PLR0917 - one district's fields, each where it appli
         row.update(ab=_iso(span.begin), ae=_iso(span.end), h=int(span.heights))
     if i in watches:
         row["wa"] = watches[i]
-    row["v"] = {}
+    variants: dict[str, object] = {}
+    if regular and hidden is None and inputs.adjusted:
+        for shadow, models, other in arms:
+            if klass not in shadow.classes:
+                continue
+            values = (
+                None
+                if models is None
+                else _arm_values(inputs, shadow, models, detail, (i, k, day), other)
+            )
+            variants[shadow.key] = (
+                [_r(v) for v in values] if values is not None and None not in values else None
+            )
+    row["v"] = variants
     return {key: value for key, value in row.items() if value is not None}
+
+
+type ArmModels = tuple[ServeModel, ServeModel]
+
+
+def _arm_values(  # noqa: PLR0913, PLR0917 - the pass, the shadow, the row and its cell
+    inputs: PassInputs,
+    shadow: Shadow,
+    models: ArmModels,
+    detail: AdjustDetail | None,
+    cell: tuple[int, int, date],
+    other: Mapping[int, float | None] | None = None,
+) -> list[float | None]:
+    """Each arm's chance of a row (:func:`snowlight.predict.serve.arm_chance`): the served
+    arm's from the row's own detail where it has one (the terms the file applied: the same
+    numbers :func:`~snowlight.predict.serve.arm_chance` works out again), the other from
+    ``other`` (the freeze's rows worked out at once under its settings,
+    :func:`~snowlight.predict.serve.arm_chances`) where it holds the row, else worked out
+    here."""
+    i, k, day = cell
+    found: list[float | None] = []
+    for arm, model in zip(("off", "on"), models, strict=True):
+        if arm != shadow.arm and other is not None and i in other:
+            found.append(other[i])
+        elif arm != shadow.arm or detail is None:
+            found.append(arm_chance(model, i, k, day, inputs.forecasts, inputs.made.generated_at))
+        elif detail.forecast is None:
+            found.append(None)
+        elif detail.raw is not None:
+            found.append(detail.raw)
+        else:
+            found.append(float(model.p_rate[i, k]) if model.p_rate.size else detail.level)
+    return found
+
+
+def _other_arm(  # noqa: PLR0913, PLR0917 - the pass, the shadow and the freeze's rows
+    inputs: PassInputs,
+    shadow: Shadow,
+    models: ArmModels,
+    d: int,
+    day: date,
+    zone_rows: Mapping[str, list[int]],
+) -> dict[int, float | None]:
+    """The arm not served of every row of the freeze of a class the shadow scores, worked out
+    at once (:func:`snowlight.predict.serve.arm_chances`), by district index."""
+    model = models[1] if shadow.arm == "off" else models[0]
+    made, after = inputs.made, inputs.after.get(day, frozenset())
+    picked: list[int] = []
+    cells: list[tuple[int, int]] = []
+    for indexes in zone_rows.values():
+        for i in indexes:
+            item = made.districts[i].days[d] if i < len(made.districts) else None
+            weather = WeatherClass(int(inputs.classes[i, d]))
+            if not isinstance(item, Forecast):
+                continue
+            if CLASS_OF_WEATHER.get(int(weather), "none") not in shadow.classes:
+                continue
+            picked.append(i)
+            cells.append((i, SITUATION_POSITION[Situation.of(weather, i in after).key]))
+    values = arm_chances(model, cells, day, inputs.forecasts, made.generated_at)
+    return dict(zip(picked, values, strict=True))
+
+
+_SHADOW_FOR: list[tuple[ServeModel, str, ArmModels | None, str | None]] = []
+"""Each shadow's two arm models of the last model, built (and parity checked) once per model,
+or why there are none."""
+DIFFER: Final = "even factors differ by arm"
+NOT_AN_ARM: Final = "the served settings are not the served arm's"
+
+
+def _held(rows: Sequence[Mapping[str, object]], key: str) -> int:
+    """The rows holding a shadow variant ``key`` with both arms' chances."""
+    found = 0
+    for row in rows:
+        variants = row.get("v")
+        if isinstance(variants, dict) and isinstance(variants.get(key), list):
+            found += 1
+    return found
+
+
+def _arm_models(model: ServeModel, shadow: Shadow) -> tuple[ArmModels | None, str | None]:
+    """The pass's model with each arm's settings in its anchor (its usual and G6 shared), or
+    ``None`` and why: the arms' even factors differ in a zone holding a solved district (the
+    shared usual would not be the shadow arm's: :func:`snowlight.predict.serve.arms_agree`),
+    or the model's settings are not the served arm's (so ``v[served]`` would not be its own
+    chance); ``None`` and no reason where the model adjusts nothing."""
+    for known, name, models, reason in _SHADOW_FOR:
+        if known is model and name == shadow.name:
+            return models, reason
+    anchor = model.anchor
+    found: ArmModels | None = None
+    why: str | None = None
+    if anchor is not None and anchor.adjust is not None:
+        off, on = shadow.settings
+        if anchor.adjust != (on if shadow.arm == "on" else off):
+            why = NOT_AN_ARM
+        elif not arms_agree(model, off, on):
+            why = DIFFER
+        else:
+            found = (
+                replace(model, anchor=replace(anchor, adjust=off)),
+                replace(model, anchor=replace(anchor, adjust=on)),
+            )
+    kept = [item for item in _SHADOW_FOR if item[0] is model and item[1] != shadow.name]
+    _SHADOW_FOR[:] = [*kept, (model, shadow.name, found, why)]
+    return found, why
 
 
 _MADE_FOR: list[tuple[ServeModel, npt.NDArray[np.float64], npt.NDArray[np.int64]]] = []
@@ -639,7 +808,11 @@ def _read_fields(
 
 
 def _lines(
-    inputs: PassInputs, day: date, zone_rows: Mapping[str, list[int]], hidden: str | None
+    inputs: PassInputs,
+    day: date,
+    zone_rows: Mapping[str, list[int]],
+    hidden: str | None,
+    name: str = "",
 ) -> dict[str, list[dict[str, object]]]:
     made = inputs.made
     d = made.days.index(day)
@@ -649,8 +822,17 @@ def _lines(
     offsets, owner = _of_model(inputs.model)
     spans = _alert_spans(inputs, d, day, wanted, owner)
     watches = _watches(inputs, day, wanted, owner)
+    arms: list[tuple[Shadow, ArmModels | None, Mapping[int, float | None]]] = []
+    for shadow in inputs.shadows:
+        if shadow.freeze != name or inputs.maker != "model":
+            continue
+        models = _arm_models(inputs.model, shadow)[0]
+        other: Mapping[int, float | None] = {}
+        if models is not None and hidden is None and inputs.adjusted:
+            other = _other_arm(inputs, shadow, models, d, day, zone_rows)
+        arms.append((shadow, models, other))
     return {
-        zone: [_row(inputs, i, d, day, offsets, spans, watches, hidden) for i in indexes]
+        zone: [_row(inputs, i, d, day, offsets, spans, watches, hidden, arms) for i in indexes]
         for zone, indexes in zone_rows.items()
     }
 
@@ -683,6 +865,7 @@ def record(inputs: PassInputs, folder: Path = FOLDER) -> list[Taken]:  # noqa: P
         entry = index.days.setdefault(key, DayEntry())
         entry.zones = sorted(set(entry.zones) | set(by_zone))
     written: dict[tuple[str, str], list[int]] = {}
+    variants: dict[tuple[str, str], dict[str, int | str]] = {}
     shown: list[str | None] = []
 
     def hidden() -> str | None:
@@ -716,7 +899,7 @@ def record(inputs: PassInputs, folder: Path = FOLDER) -> list[Taken]:  # noqa: P
                 take.setdefault(name, []).append((zone, at))
         for name, zones in take.items():
             why = hidden()
-            lines = _lines(inputs, day, {zone: by_zone[zone] for zone, _ in zones}, why)
+            lines = _lines(inputs, day, {zone: by_zone[zone] for zone, _ in zones}, why, name)
             count = written.setdefault((key, name), [0, 0, 0, 0, 0])
             for zone, at in zones:
                 rows = lines[zone]
@@ -729,6 +912,16 @@ def record(inputs: PassInputs, folder: Path = FOLDER) -> list[Taken]:  # noqa: P
                 count[1] += len(rows)
                 count[2] = max(count[2], late)
                 count[4] += sum(1 for row in rows if row.get("s") == 1)
+                for shadow in inputs.shadows:
+                    if shadow.freeze == name and inputs.maker == "model":
+                        tally = variants.setdefault((key, name), {})
+                        why = _arm_models(inputs.model, shadow)[1]
+                        had = tally.get(shadow.key, 0)
+                        tally[shadow.key] = (
+                            why
+                            if why is not None
+                            else (had if isinstance(had, int) else 0) + _held(rows, shadow.key)
+                        )
         if now >= finished_at(day, entry.zones):
             for zone in entry.zones:
                 for name in NAMES:
@@ -746,8 +939,12 @@ def record(inputs: PassInputs, folder: Path = FOLDER) -> list[Taken]:  # noqa: P
             entry.bytes += len(data)
     save_index(folder, index)
     return [
-        Taken(day, name, c[0], c[1], c[2], c[3], c[4]) for (day, name), c in sorted(written.items())
-    ]
+        Taken(
+            day, name, c[0], c[1], c[2], c[3], c[4],
+            tuple(sorted(variants.get((day, name), {}).items())),
+        )
+        for (day, name), c in sorted(written.items())
+    ]  # fmt: skip
 
 
 def _header(  # noqa: PLR0913, PLR0917 - the pass, the freeze and its counts
@@ -775,6 +972,11 @@ def _header(  # noqa: PLR0913, PLR0917 - the pass, the freeze and its counts
         "why": hidden,
         "maker": None if inputs.maker == "model" else inputs.maker,
         "rows": rows,
+        "switch": {
+            head.name: {"arm": head.arm, "sha256": head.sha256, "model_sha256": head.model_sha256}
+            for head in inputs.heads
+        }
+        or None,
     }
     return {key: value for key, value in found.items() if value is not None}
 
@@ -806,7 +1008,11 @@ def said(taken: Sequence[Taken]) -> list[str]:
             if item.zones
             else "no zone taken"
         )
-        found.append(f"predict frozen: {item.day} {item.freeze}: {rows}{missed}")
+        shadow = "".join(
+            f", {key} none ({count})" if isinstance(count, str) else f", {key} on {count:,} rows"
+            for key, count in item.shadow
+        )
+        found.append(f"predict frozen: {item.day} {item.freeze}: {rows}{missed}{shadow}")
     return found
 
 
@@ -814,17 +1020,64 @@ def said(taken: Sequence[Taken]) -> list[str]:
 
 
 def offers(folder: Path = FOLDER) -> list[tuple[str, bytes]]:
-    """The finished days of the folder (key, bytes) not yet in both databases."""
+    """The finished days of the folder (key, bytes) not yet in both databases: a day kept for
+    the live switch whose current bytes every database holds is not offered again."""
+    from snowlight.live.evidence import DATABASES  # noqa: PLC0415
+
     index = load_index(folder)
     found: list[tuple[str, bytes]] = []
     for key, entry in sorted(index.days.items()):
         if entry.closed is None:
             continue
         try:
-            found.append((key, day_path(folder, key).read_bytes()[: entry.bytes]))
+            data = day_path(folder, key).read_bytes()[: entry.bytes]
         except OSError:
             continue
+        digest = hashlib.sha256(data).hexdigest()
+        if all(entry.held.get(name) == digest for name in DATABASES):
+            continue
+        found.append((key, data))
     return found
+
+
+def read_marker(folder: Path) -> date | None:
+    """The live switch's marker's ``through`` (``None``: no marker, or none counted)."""
+    try:
+        body = json.loads((folder / MARKER).read_bytes())
+        through = body.get("through") if isinstance(body, dict) else None
+        return None if through is None else date.fromisoformat(str(through))
+    except (OSError, ValueError):
+        return None
+
+
+def write_marker(folder: Path, through: date | None) -> None:
+    """Rewrite the marker from the host's state (after its read-back)."""
+    folder.mkdir(parents=True, exist_ok=True)
+    value = {"through": None if through is None else through.isoformat()}
+    write_bytes_atomic(folder / MARKER, _dumps(value))
+
+
+def switch_day(folder: Path, day: date, freeze: str) -> tuple[str, "FrozenDay | None"]:
+    """A labeled day's frozen record for the live switch: ``ready`` with the day (every zone's
+    ``freeze`` taken or missed), ``wait`` (the folder holds it, a zone's freeze still to come),
+    ``released`` (the folder released it: never counted) or ``missing`` (the folder neither
+    holds nor lists it: the evidence step may restore it).
+
+    Raises:
+        ValueError: the day does not read.
+    """
+    index = load_index(folder)
+    key = day.isoformat()
+    entry = index.days.get(key)
+    if entry is None:
+        return ("released" if key in index.done else "missing"), None
+    if entry.closed is None and not all(f"{zone}|{freeze}" in entry.groups for zone in entry.zones):
+        return "wait", None
+    try:
+        data = day_path(folder, key).read_bytes()[: entry.bytes]
+    except OSError:
+        return "missing", None
+    return "ready", parse_day(data)
 
 
 def note_held(
@@ -835,10 +1088,13 @@ def note_held(
     """Note which databases hold each finished day byte for byte (``held``: per database that
     answered, ``(kind, key)`` to the sha256s it holds, :meth:`snowlight.live.evidence.
     EvidenceStore.held`); a day both of ``databases`` hold leaves the folder (it is remembered
-    :data:`DONE_DAYS` days). The days released."""
+    :data:`DONE_DAYS` days) once the live switch counted it (on or before the marker's
+    ``through``, :data:`MARKER`) or once it finished over :data:`KEEP_DAYS` days ago. The days
+    released."""
     from snowlight.live.evidence import DATABASES, FROZEN  # noqa: PLC0415
 
     index = load_index(folder)
+    through = read_marker(folder)
     released: list[str] = []
     for key, entry in sorted(index.days.items()):
         if entry.closed is None:
@@ -851,7 +1107,9 @@ def note_held(
         for database, versions in held.items():
             if digest in versions.get((FROZEN, key), frozenset()):
                 entry.held[database] = digest
-        if all(entry.held.get(name) == digest for name in DATABASES):
+        counted = through is not None and key <= through.isoformat()
+        old = now - datetime.fromisoformat(entry.closed) > timedelta(days=KEEP_DAYS)
+        if all(entry.held.get(name) == digest for name in DATABASES) and (counted or old):
             index.done[key] = digest
             released.append(key)
     for key in released:
@@ -987,6 +1245,9 @@ class FrozenRow:
     heights: bool
     watch: str | None
     variants: Mapping[str, Any]
+    switch: Mapping[str, Any] = field(default_factory=dict)
+    """The freeze header's live switch terms (``arm``, ``sha256``, ``model_sha256`` each; empty
+    in rows frozen before predict-next TIMING-AUTO)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1055,6 +1316,7 @@ def _make_row(header: Mapping[str, Any], row: Mapping[str, Any]) -> FrozenRow:
         heights=row.get("h") == 1,
         watch=row.get("wa"),
         variants=dict(row.get("v") or {}),
+        switch=dict(header.get("switch") or {}),
     )
 
 
