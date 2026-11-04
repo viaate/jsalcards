@@ -1378,11 +1378,143 @@ whose ledger is schema only (no rows, no outcomes), so there every dark district
 read (the box, a dry run). Counting them by cause in the predict job needs codes-only outcomes in
 the export, a privacy decision for the lead. Only the timelines of final days whose class
 snapshot the state holds with a district of an advisory, warning or cold class are read from the
-host, each once a run. The line stops 90 s after the step's process began (its limit is 2
-minutes): the clock is checked before each day, each timeline read, the morning record's parse and
-each district, so at most one host read (20 s a phase) runs past it, and then one `skipped past 90
-s` line is printed instead. An error there is one warning: it never changes a label, the audit,
-`added` or the exit.
+host, each once a run. The line stops 80 s after the step began: the workflow sets
+`READ_LABELS_STARTED` (`date +%s`) before `uv run`, and every limit of the step (the live switch's
+45/55/65 s, this line's) counts from it, the time `uv` takes to start included (else from the
+module's import). The clock is checked before each day, each timeline read, the morning record's
+parse and each district, so no host read or new day starts past 80 s and a stalled read (20 s a
+phase) ends by 100 s, inside the step's 2 minutes; then one `skipped past 80 s` line is printed
+instead. Only that limit is a skip (a private signal): any other timeout, a socket's or a
+library's, is the one warning any error is: it never changes a label, the audit, `added` or the
+exit. F itself is held to the registered block: a settings object whose grids, first-slot bound
+or step differ from `config/predict.yaml`'s is refused, however it was made. Beside each counts
+line, `call time digests <day>:` gives the live parity population's size (every district of a
+term's class at D's snapshot whose R is not empty), a context digest and the proof digests at
+06:30, 07:30, 08:30 and 09:30 local (below).
+
+**The live proof (LIVE-READS: shadow).** A serving pass could not tell which lists were read this
+morning: the predict job held the live record only as the export, written at the end of each
+320-minute live-read run. Now the live reader ships each changed morning day file at every :00
+and :30 UTC mark to two private tables of its state database (`docs/live.md`, "The state"), and
+after each serving pass (published or dark, so the reads never hold a file back) the view
+(`predict/live_reads.py`) reads them with SELECTs only:
+
+- s is the latest :00 or :30 UTC mark at or before now less 15 minutes (the version shipped in
+  that mark's idle time holds the slot before s). One request reads D's and D-1's heads; a new
+  version brings its parts (16 a request), checked (count, sha256, gzip, the day file), and every
+  district's proof is made from scratch by `call_time.proofs_for`, the one implementation the
+  counts line uses, so a view and `call_time.proof` on the same record cut agree by construction
+  (the parity tests drive SYNTHETIC mornings pass by pass through the live record and its
+  shipper and find zero differences at every slot end). Each district takes the proof at its
+  latest local slot end at or before s (the 10:00 row held).
+- The context, once a run per class morning: read-labels' own proof inputs
+  (`read_cli.proof_inputs`: the list stats, the lists read with no second list, the record's
+  whole reads, D-1's `*` namings) from the export, L1's coverage, the registry, the directory
+  and the run's class snapshots, with day timelines from the live host's Pages copy (no API call).
+  Nothing of it is read before it is needed: `make_pass` only wires the view (any failure there
+  is one warning and no view, the passes run as before), and the registry, the coverage and the
+  export (unpacked into a scratch folder, removed at the run's end) are read once a run, when
+  the first class morning's context is built. A day with no district of a term's class at its
+  snapshot is asked again at the next mark, and nothing is unpacked or read for it. A class
+  morning whose export gives no context (no live state, `none (no live state)`, or an empty
+  population, `none (no population)`: its districts have no covered list) is built once and is
+  a final no that run, counted among the summary's builds.
+- The build is bounded: it runs on a worker thread the view joins after 90 s (past that: no
+  context that run, coded `none (TimeoutError)`, and the pass goes on), its own bound (a later
+  build never moves it) is asked between its phases and before each Pages read, and each Pages
+  read has 10 s (connect 5 s), so a stalled read ends the build by 100 s at the latest. A
+  build that fails (a damaged archive, a registry that does not read, any error, a
+  `SystemExit` on its thread included) is coded `none (<type>)` and not tried again that run;
+  it never raises into a pass. At the run's end a build still running is told to stop (its
+  next check raises) and waited for 5 s before the scratch folder goes; one still running
+  after that removes the folder itself when it ends, so nothing it writes outlives the run. Measured on a SYNTHETIC 45-day export with a storm day in
+  five (this 4-CPU machine, under the heavy lock, timelines not read): 2,000 districts and 500
+  lists (16.2 MB raw), p50 12.4 s, p99 14.2 s over 7 builds; 4,000 and 1,000 (28.1 MB), p50
+  24.6 s, p99 25.9 s over 5. Each Pages read of a storm day's timeline adds its latency, which
+  is not measurable here. The unpack inside it: 2.2 MB gzip p50 0.21 s, p99 0.22 s; 4.1 MB p50
+  0.36 s, p99 0.37 s. The build holds the pass after which it runs by that long, once a run.
+- No proof is the safe side, coded, one line a run per code: `none` (no class morning or
+  context, with the reason or the error's type), `missing` (no head of D, or no D-1 record
+  shipped or exported), `stale` (`through` before s, or no slot before s: the reader did not
+  run; or `stale (d-1 not final)`, below), `unreadable` (parts missing or failing their checks,
+  after the previous version's, which a reader racing the shipper's delete reads; D-1's head
+  too, when it is the newer D-1),
+  `mismatched` (another day, schema or directory, or `through` more than 2 minutes ahead of
+  now), `d1` (no answer; 5 s a request, or no secrets) and `late` (past 10 s a pass, counted
+  from after the context). A view never raises. A version read from the head's previous parts
+  is kept under its own sha256, never the head's: its line names that version and its
+  `through`, and the next pass asks for the head's parts again.
+- One line per new (version, s): `live reads (off) <day> <s>Z: version <12 hex> (through
+  <HH:MM>Z), <n> districts: proven, unproven, named, void, before first slot, history changed;
+  context <12 hex>`, then the proof digest at each of 06:30, 07:30, 08:30 and 09:30 local once s
+  has passed it in every zone. `history changed` counts the districts whose proof at a slot end
+  the line before had already reached differs in this version (a slot rewritten after shipping).
+  The context digest covers every input of a proof but D's record: the population with each R,
+  the lists read with no second list, the districts D-1 named for D (with the kinds) and for every
+  day, the lists' counted captures, and L1's station stats (each source's populated reads, median
+  rows and placed share, which L1's stale rule reads). A digest equal to read-labels' says the
+  view saw what the final record shows; a different one with an equal context digest names a slot
+  changed after shipping; a different context digest names the inputs (read-labels' station
+  stats span the whole folder, days after D included, and its D-1 is the export's). The run ends
+  with `live reads (off): <views> views, <lines> lines; no proof <code> <count>, ...; history
+  changed <n>; slowest <s> s; context <s, each build> s`.
+- D-1's rules (the districts D-1's record named for D, and for every day) are one implementation,
+  `live_labels.named_for` and `live_labels.named_every_day`, which the learning step's source,
+  read-labels' proof inputs, the counts line and the view all call. D-1's record is chosen by
+  its `through`: the shipped head when it is at least as new as the export's D-1, else the
+  export's. D-1's evening namings (its `named` rows are kept after 21:00 UTC, its reads are
+  not) reach the channel only through the final ship after 00:00 UTC, so a D-1 proves only
+  when a record known final stands behind the choice: the head's own version shipped after
+  00:00 UTC of D, or an export that records a pass of D (its run went past midnight). Else
+  every pass is `stale (d-1 not final)`. A shipped head at least as new as the export's that
+  does not read gives its own code (`unreadable`, `d1`, `late`), never the older export. The
+  parity tests cover D-1 naming D, D-1 naming every day (both end proof as `named`), a shipped
+  D-1 other than the export's (the newer is read), a shipped 21:00Z D-1 against a final export
+  that names D (`named`; with an export not final either, no proof), a newer shipped D-1 that
+  does not read (`unreadable`), and no D-1 at all (`missing`).
+- Shadow only: `serve.live_reads: true` sits outside `live_score` (its sha256 is unchanged); the
+  view reaches no served value and no frozen key (a test runs the frozen passes with a view of
+  proofs and finds every public and frozen byte equal), and `call_time.serve` stays off only.
+- Measured on SYNTHETIC mornings (in-memory D1, this 4-CPU machine, under the heavy lock): a new
+  version's view, 2,000 districts and 500 lists, p50 2.10 s, p99 2.48 s over 7; 4,000 and 1,000,
+  p50 6.21 s, p99 6.82 s over 5 (almost all of it `call_time.proven`, as in read-labels); the
+  same version at a later pass, p50 0.023 s, p99 0.036 s (2,000) and p50 0.072 s, p99 0.103 s
+  (4,000). A view past 10 s is `late`, never a lowered chance. Up to 25 versions a day reach a
+  run.
+- Read-labels' digest line shares the counts line's record cuts and is printed after it, so a
+  limit reached in the digest's proofs loses only the digest line. Its added proofs, measured as
+  above: p50 0.34 s, p99 0.71 s (2,000 districts) and p50 0.79 s, p99 0.86 s (4,000), against
+  p50 2.09 s and 5.56 s with a second set of cuts.
+- Rare edge cases. **A shipment dies mid-write**: its parts went first, so the head still names
+  the last whole version and the view reads that one (`stale` once s passes its `through`). **A
+  reader races the shipper's delete**: it reads the previous version's parts, else one
+  `unreadable`. **A restart**: the successor pulls the record of the last push (up to 30 minutes
+  behind the head, more once the push is hourly), its shipments are refused until its `through`
+  reaches the head's, the view codes the head `stale` once s passes it, and P holds over the gap;
+  slots the successor writes again count in `history changed`. The successor's record can lack
+  the slots the head held after the last push (up to 30 minutes, an hour once the push is
+  hourly), and the proof recomputed on it can hold where a lost slot had ended it; that is
+  counted in `history changed`, and read-labels sees the same record. **D-1's age**: a shipped
+  D-1 that is not final (its 21:00Z version, the final ship after midnight lost to a D1 outage
+  or failed pushes) gives way to a newer export's D-1, and with no final record behind either
+  every pass is `stale (d-1 not final)`; a newer shipped D-1 that does not read is `unreadable`,
+  never the older export; an export's D-1 cut before D-1's evening ended (its run ended before
+  midnight) is not final. **Two passes race**: one loop runs
+  at a time (the job's concurrency), and an old epoch's head write is refused. **A clock goes
+  back**: a pass writes into a shipped slot, the next version recomputes every proof from scratch
+  and the changed districts count in `history changed` (CALL-TIME-2 caps the served x step); a
+  clock forward makes `through` ahead, `mismatched`. **A deploy mid-morning**: predict's next run
+  rebuilds the context and every proof (the context digest moves); a record schema the running
+  reader cannot parse is `mismatched` or `unreadable` until predict deploys. **The required set
+  changes mid-morning**: R is fixed per run (its registry and coverage); the next run rebuilds it,
+  and a list that joins has no mark until it qualifies, so proof ends early (a rise), never late.
+  **A damaged export**: any decoding error (a broken gzip stream raises `zlib.error`, which is no
+  `OSError`) is a `StateError` at the unpack and `none` at the view.
+- POSTLAND: the first live-read run logs `morning shipped:` at each mark (its real D1 latency:
+  p50/p99 from those lines), `read causes:` at its export with counts only, and no `ALERT state
+  push failed` on a mark where a ship ran; the first class morning's serving lines show versions,
+  no `unreadable` or `mismatched`, `stale` under 5% of passes, digests equal to read-labels' or a
+  named cause, and the summary line gives the slowest view and each context build's time.
 
 **Limits.** The term never fixes the standing cold rows (the live lane's; `docs/live.md`, "What
 `unknown_start` counts"). Their cost to the samples is a late or missing call, never an early one

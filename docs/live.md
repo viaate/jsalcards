@@ -329,6 +329,44 @@ database exactly `snowlight-live-state`), on the free plan with no card.
 - **Repair.** To start the state over, delete the database in the Cloudflare dashboard (D1 >
   snowlight-live-state > Delete); the next run makes a new one and starts cold. Only a
   live-read run takes an epoch or pushes (`GITHUB_WORKFLOW` must be `live-read`).
+- **The morning tables** (predict-next LIVE-READS): the predict job's serving passes read the
+  morning record as it stood minutes before, not the export (written only at a run's end, so up
+  to 640 minutes old). Two tables beside the state's own: `morning_head(day, sha256, parts,
+  bytes, through, epoch, run_id, shipped_at, prev_sha256)` and `morning_parts(sha256, n, data)`.
+  In the idle time after the pass of each :00 and :30 UTC mark, after the state push (which keeps
+  the whole idle time it had: the shipment starts on a fresh clock, ends inside the push's 30 s
+  margin and is skipped with less than 20 s left, so a slow D1 can never starve the push into a
+  false `state` alert) and never after a failed push (the shipped record is never ahead of the
+  saved one; the next mark ships), the loop ships each changed `morning/<day>.json`: the day itself from 09:00 to
+  21:00 UTC, and before 09:00 the day before (its final file, after midnight). The file's bytes,
+  gzip (level 6, mtime 0) in 64 KiB parts, base64, keyed by the raw file's sha256: the parts
+  first, then the head, which takes only an epoch at least the one it holds and a `through` at
+  least its own (a cancelled run's end, or a successor whose pulled record is behind, is
+  refused until it passes), then the heads before D-1 and every part no head names as current
+  or previous are deleted. Each shipment is one line, `morning shipped: <day> <outcome>, <raw>
+  B raw, <gzip> B gzip, <parts> parts, <rows> rows, <requests> requests, <ms> ms`; a failure is
+  one line (`morning ship: <day> failed: <type>`) and never touches the pass or the push; a
+  file that failed is shipped at the next mark. Billed in `budget` under the day and under
+  `<day>/morning`, which has its own 1,000 rows a day past the 30,000. The rows count in the
+  day's own row too, which the state push compares with its hourly switch (20,000 rows) and
+  its cap (30,000), so the shipments (about 75 rows a quiet day, at most about 925) bring both
+  that much closer, as the holds do. Once the push is hourly, the shipment at the :30 mark
+  between two pushes is up to 30 minutes ahead of the saved record; a successor that pulls
+  the saved one ships again only when its `through` reaches the head's; a serving pass
+  reads the head until s passes its `through`, then codes it `stale`, never a proof. Only the epoch holder
+  of a live-read run ships (never an overrides-only run or the box). Measured on SYNTHETIC
+  days with the in-memory D1 stand-in: 0.07 MB raw, 1 part, 10 ms; 0.73 MB, 2 parts, 100 ms;
+  3.26 MB, 6 parts, 66 ms (gzip level 6); 4 requests a shipment (the latency of the real API
+  is not measurable here: the first runs' lines give it). Nothing ships inside a pass. D-1's
+  `named` rows after 21:00 UTC (the evening's calls for D) reach the predict job only through
+  that final ship after midnight: a serving pass reads D-1's head only when it is at least as
+  new as the export's D-1, and proves from D-1 only when a final record stands behind it (the
+  head's own version shipped after 00:00 UTC, or an export of a run that went past midnight),
+  else `stale (d-1 not final)` (`docs/predict.md`, "The live proof").
+- **What predict may read of it:** the two morning tables only, with two SELECTs
+  (`MORNING_READS` in `live/d1.py`, `MorningReader`: it finds the database by its exact name,
+  never creates it, and sends nothing else; a test holds it); never `chunks`, `head`, `budget`
+  or `holds`, whose packed state holds the ledger's secret.
 - **predict learn** reads only the export: at the end of each run `live state export` writes
   `out/internal/live/store/live-state.tar.gz` with `morning/`, `changes/` and a schema-only
   `ledger.sqlite` (no secret, no rows); a step requires the archive, lists it and refuses the
@@ -508,8 +546,9 @@ row with no row stamp near its first sighting whose `lo` is unknown from a cold 
 the read that first held it (a first read, or a reader gap); it came back after 3 hours or more
 on a later day; or it is a successor whose predecessor ties with another (the ledger's rules,
 `live/ledger.py`). The count is of rows, not of districts, and a row stays withheld as long as it
-stands, so the same rows are counted pass after pass: 115 to 117 rows on each morning from Oct 27
-to Nov 2. Which of
+stands, so the same rows are counted pass after pass. From Oct 27 to Nov 2 the `cold` alert's
+`unknown_start` field read 116, then 115 on 5 mornings, then 117, of a `candidates` field of 115
+to 161 (CALL-TIME-1's measure). Which of
 the three made them is inferred, not measured, until the census: `live state export` (the end of
 every live-read run) prints one counts-only line, `ledger cold census:` (read only, never
 raising, no ids). It counts the standing rows the resolver withholds as `unknown_start` when it
@@ -519,7 +558,16 @@ first seen with no good read of their list in the 36 hours before, those with on
 hours, or a tied successor) and those older than the 14 days of good reads the ledger keeps, with
 the rows by UTC first-seen day and how many lists hold them. The ledger keeps only the first good
 read of each UTC hour, so a row first seen within an hour of the 36-hour edge can count as having
-no good read when a later read in that hour was good. With status words such a row names its districts `*` (every day) in
+no good read when a later read in that hour was good. Beside it the export prints `read causes:`
+(predict-next LIVE-READS, `live/causes.py`; read only, never raising, no ids): per tier (`A`: a
+list with an archive audience, `audiences.json.gz`; `B`: a county-proven list with none,
+`read-sources.json.gz`; `other`: every other source the state holds), the count of lists by the
+cause of their last read (`ok`, `empty`, `stale`, `refused_401`, `refused_403`, `refused_429`,
+`http_4xx`, `http_5xx`, `no_answer`, `timeout` for the pass deadline, `deferred`, `partial`,
+`error`), those `never read` (no cause kept and no ledger row) and those `dark` (no good read in
+45 days, the ledger's `last_good_at`). The cause is kept per source in `cadence.json` from each
+pass's pool result and its last health record, since the ledger keeps only the outcome (a 401
+and a 403 are both `blocked` there). With status words such a row names its districts `*` (every day) in
 the morning record each slot, so the prediction's call time never counts a district it names as
 proven silent (docs/predict.md, "The usual call time").
 
@@ -741,11 +789,13 @@ Private state (`out/internal/live/state/`, kept by the state store, [The state](
 - `pacer.json`: each pace key's last request start, so a host's Crawl-delay holds across a handoff.
 - `exits.json`: the last runs' exits (the `chain` alert).
 - `d1.json` (never packed): this run's epoch and its last push's counts. `pulse` (never packed): the watcher's heartbeat.
-- `cadence.json`: per source, the start of the pass that last read it, its outcome, and the earliest next read of a deferred or blocked source.
+- `cadence.json`: per source, the start of the pass that last read it, its outcome, the cause of that outcome (`live/causes.py`: a 401 apart from a 403, a 429, a timeout; counted in the export's `read causes:` line), and the earliest next read of a deferred or blocked source.
 - `morning/<UTC day>.json`: the morning record the prediction model learns from (docs/predict.md, "The model learns on its own"). Per 30-minute UTC slot: the prefixes a pass was shown under, each whole read of a shown pass between 09:00 and 21:00 UTC (rows, rows placed, rows read as no status), the states a pass withheld whole, and the districts its rows named with the days and the status kinds (`?` when a dissenting, unsure or unread row named it); for the outcome-blind read labels (docs/predict.md, "The read labels"), the lowest healthy share of the slot's shown band passes in thousandths (`health`) and the sources whose whole read was an empty judged from old rows, a list typed by hand not changed for 36 hours, old posts, undated page text or a list last written before the last winter, and the populated lists whose present dated rows all name days before the day before (`old_lists`: a list still holding an earlier storm's rows, judged from the rows' own dates, a row with no date of its own dated by when the list first posted it, never from what closed) (`stale`; a page that says it holds nothing now is not one). The read labels never count a stale read whole, nor count it toward a list's captures, size reference or recent days (lead ruling C2). A worst case of 400 stale ids (about 20 characters each) in each of 24 band slots adds about 196 KB raw and 2.5 KB gzip to a day (measured on synthetic ids). Per UTC day, `by`: each source read whole with the districts its own rows named for that day or every day, stored once a day per source as a run of `[slot, added, removed]` entries written only where its set changes, so a list naming the same districts all morning costs them once, not once a slot. Counts, ids and codes only. Rewritten whole and atomically by every pass; kept 45 days in the state, and every finished day kept for good in the evidence databases ([The evidence](#the-evidence)). A day leaves the state only once a database holds its exact bytes (`kept.json`): when it is over 45 days old, or (never the last 10) while the folder holds more than 16 MB; past 32 MB the oldest go even unkept, loudly. `live state export` and `predict learn` log `morning record: <days> days, <bytes> B (<first day> to <last day>)`. A file that does not read is marked damaged and no day of it is learned from.
 - `kept.json`: what the evidence databases were last found to hold, per morning-record and change-log day: the sha256 of the file and the databases holding exactly it; when the first check was, and days the size valve dropped unkept ([The evidence](#the-evidence)).
 - `unmatched.json`: names the matcher did not place. Only ever in a private store, never in the Actions cache.
 - `good_reads` in the ledger keeps each source's first good read of every UTC hour for 14 days: all the resolver asks of it.
+
+The morning record's changed day files also go, in the loop's idle time each :00 and :30 UTC mark, to the private state database's two morning tables, for the predict job's serving passes ([The state](#the-state)).
 
 live-read.yml saves only the export (`pipeline/out/internal/live/store`, holding `live-state.tar.gz`) under a key starting `live-state-` (`CACHE_KEY_PREFIX` in `snowlight/live/state.py`): the predict workflow's learning step restores the newest such key, read only.
 
