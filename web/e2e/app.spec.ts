@@ -2519,16 +2519,47 @@ test.describe('with data staged', () => {
       const moved = (): Promise<string[]> =>
         page.evaluate(() => (window as unknown as { moved: string[] }).moved);
       const before = await moved();
-      const engine = (id: string | null): Promise<boolean | undefined> =>
-        page.evaluate(
-          (next) =>
-            (
-              window as unknown as {
-                snowlightTheme?: { useTheme(id: string | null): Promise<boolean> };
-              }
-            ).snowlightTheme?.useTheme(next),
-          id,
-        );
+      interface ThemeWindow {
+        snowlightTheme: { useTheme(id: string | null): Promise<boolean> };
+        __themeDone: { ok: true; v: boolean } | { ok: false; error: string } | undefined;
+      }
+      // Chromium 141's inspector holds an evaluate's awaited promise weakly ("Promise was
+      // collected"), so an evaluate must not await app work that queues microtasks.
+      const engine = async (id: string | null): Promise<boolean | undefined> => {
+        await page.evaluate((next) => {
+          const w = window as unknown as ThemeWindow;
+          w.__themeDone = undefined;
+          setTimeout(() => {
+            Promise.resolve()
+              .then(() => w.snowlightTheme.useTheme(next))
+              .then(
+                (v) => {
+                  w.__themeDone = { ok: true, v };
+                },
+                (e: unknown) => {
+                  w.__themeDone = {
+                    ok: false,
+                    error: String((e as Error | undefined)?.message ?? e),
+                  };
+                },
+              );
+          }, 0);
+        }, id);
+        const answer: { done?: ThemeWindow['__themeDone'] } = {};
+        await expect
+          .poll(
+            async () => {
+              answer.done = await page.evaluate(
+                () => (window as unknown as ThemeWindow).__themeDone,
+              );
+              return answer.done;
+            },
+            { timeout: 15_000 },
+          )
+          .toBeDefined();
+        if (answer.done?.ok === false) throw new Error(answer.done.error);
+        return answer.done?.v;
+      };
       // A theme in the same face changes colors alone: the same line stays, not one drawn anew.
       await page.evaluate(() => {
         document.querySelector('p.updated')?.setAttribute('data-first', '');
