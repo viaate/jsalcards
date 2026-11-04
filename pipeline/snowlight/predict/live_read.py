@@ -2507,6 +2507,26 @@ def _after(  # noqa: PLR0913 - the day before and how to read it
     return lit_no_school(lit_of(timeline), directory, classes, settings)
 
 
+def closing_of(  # noqa: PLR0913 - the rule and the day's inputs
+    rule: ReadRule,
+    coverage: Coverage,
+    snapshots: Mapping[str, object],
+    directory: Directory,
+    *,
+    window: Window,
+    slack: timedelta,
+    timeline: Callable[[date], DayTimeline | None],
+) -> Closing:
+    """What decides the counted days (:class:`Closing`): the closing districts of each day
+    from its class snapshot and its timeline (``timeline``, the map's statuses)."""
+    return Closing(
+        rule,
+        coverage,
+        _Storms(snapshots, directory, window, slack, settings=rule.labels, timeline=timeline),
+        zones=dict(zip(directory.districts, directory.zones, strict=True)),
+    )
+
+
 def read_new_days(  # noqa: PLR0912, PLR0913, PLR0915 - the record, the inputs and when
     folder: Path,
     source: ReadSource,
@@ -2541,13 +2561,9 @@ def read_new_days(  # noqa: PLR0912, PLR0913, PLR0915 - the record, the inputs a
     frozen = set(published) - labeled
     index: DayIndex | None = None
     index_read = False
-    closing = Closing(
-        rule,
-        coverage,
-        _Storms(
-            snapshots, directory, window, slack, settings=rule.labels, timeline=source.timeline,
-        ),
-        zones=dict(zip(directory.districts, directory.zones, strict=True)),
+    closing = closing_of(
+        rule, coverage, snapshots, directory, window=window, slack=slack,
+        timeline=source.timeline,
     )  # fmt: skip
     done.closing_rule = closing
     day = today - timedelta(days=config.learn.morning_reads_days)

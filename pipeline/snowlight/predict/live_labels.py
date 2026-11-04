@@ -290,6 +290,27 @@ def station_stats(days: Iterable[MorningDay]) -> StationStats:
     )
 
 
+def named_for(before: MorningDay | None, day: date) -> dict[str, frozenset[str]]:
+    """The districts a row of D-1's record (``before``; ``None``: none) named for ``day``,
+    with the kinds: :attr:`Morning.named_before`. The one implementation the learning step's
+    source, read-labels and the serving pass's live view share."""
+    found: dict[str, set[str]] = {}
+    for slot in before.slots.values() if before is not None else ():
+        for leaid, days in slot.named.items():
+            if day.isoformat() in days:
+                found.setdefault(leaid, set()).update(days[day.isoformat()])
+    return {leaid: frozenset(kinds) for leaid, kinds in found.items()}
+
+
+def named_every_day(slots: Iterable[Slot]) -> frozenset[str]:
+    """The districts a row of these record slots named for every day (``*``): with D-1's
+    slots, the night-before call that ends D's proof as ``named``. Shared as
+    :func:`named_for` is."""
+    return frozenset(
+        leaid for slot in slots for leaid, named in slot.named.items() if EVERY_DAY in named
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class Morning:
     """What the live pipeline read on one day, from its morning record
@@ -538,11 +559,6 @@ class StateSource:
                 found for when in log.days() if (found := log.day(when)) is not None
             )
         before = log.day(day - timedelta(days=1))
-        named_before: dict[str, set[str]] = {}
-        for slot in before.slots.values() if before is not None else ():
-            for leaid, days in slot.named.items():
-                if day.isoformat() in days:
-                    named_before.setdefault(leaid, set()).update(days[day.isoformat()])
         changes = ChangeLog(self.folder / "changes")
         return Morning(
             day=day,
@@ -551,7 +567,7 @@ class StateSource:
             market_of=self.market_of,
             stats=self._stats,
             prefix=self.prefix,
-            named_before={leaid: frozenset(kinds) for leaid, kinds in named_before.items()},
+            named_before=named_for(before, day),
             held=held_on(changes, day),
         )
 

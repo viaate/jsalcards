@@ -171,12 +171,14 @@ jobs:
       # added. It never touches what the learning step did, and may fail or time out alone
       # (after 2 minutes: the chain's first pass waits for it). It labels nothing while a
       # coverage file (pipeline/data/predict/read-sources.json.gz, audiences.json.gz) is absent.
+      # READ_LABELS_STARTED is the step's start: every limit inside it (the live switch's, the
+      # call time counts lines') counts from it, the time uv takes to start included.
       - if: steps.token.outputs.ready == 'true'
         id: read_labels
         name: Label the live mornings by what was read
         continue-on-error: true
         timeout-minutes: 2
-        run: uv run snowlight predict read-labels
+        run: READ_LABELS_STARTED="$(date +%s)" uv run snowlight predict read-labels
 
       # Saved right after it, before the passes, and only when a day was added (the step
       # sets added as it writes each day, so a step its time limit cut off still saves the

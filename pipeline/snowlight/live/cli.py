@@ -46,6 +46,7 @@ traceback (an adapter's or a validator's message may quote a page's words).
 
 import argparse
 import contextlib
+import hashlib
 import json
 import logging
 import os
@@ -78,7 +79,9 @@ from snowlight.live.alerts import (
 )
 from snowlight.live.cadence import active_holds, merge_holds
 from snowlight.live.d1 import (
+    D1StateStore,
     LostStateError,
+    MorningShipper,
     PushResult,
     UnreadableStateError,
     WorkflowError,
@@ -95,7 +98,7 @@ from snowlight.live.edition import (
 from snowlight.live.guards import Refusal, Rules
 from snowlight.live.ingest import Ingest, SourceRead
 from snowlight.live.merge import AdminStatus, with_overrides
-from snowlight.live.morning import MorningLog
+from snowlight.live.morning import READ_BAND, MorningDay, MorningLog
 from snowlight.live.overrides import (
     EMPTY,
     ApiRoot,
@@ -1002,6 +1005,9 @@ HOST_NOTICES: Final = 2
 PUSH_MARGIN: Final = timedelta(seconds=30)
 """A push in the loop's idle time ends this long before the next grid mark."""
 MIN_PUSH_TIME: Final = timedelta(seconds=20)
+SHIP_EVERY: Final = timedelta(minutes=30)
+"""The morning record's shipments to the predict job run in the idle time after the pass of
+each :00 and :30 UTC mark (LIVE-READS), after the state push."""
 TIMER_EVERY: Final = timedelta(minutes=5)
 PULSE: Final = "pulse"
 PULSE_MAX_AGE: Final = timedelta(seconds=210)
@@ -1068,6 +1074,10 @@ class _Loop:
     host_notices: int = 0
     blank_refused: bool = False
     """The edition blank last failed because the live host refused for a rate limit."""
+    next_ship: datetime | None = None
+    """When the idle time next ships the morning record (``None``: never: no D1 store)."""
+    shipped: dict[date, str] = field(default_factory=dict)
+    """Each UTC day's file sha256 this process shipped (or found shipped) last."""
 
     def fail(self, cause: str) -> Exit:
         self.causes.append(cause)
@@ -1094,6 +1104,9 @@ class Runner:
     """The reads' holds sink (its pending holds are tried again in idle time)."""
     evidence: Any = field(default=None, init=False)
     """The evidence store, asked in idle time which finished days it holds (``None``: never)."""
+    shipper: MorningShipper | None = field(default=None, init=False)
+    """Ships the morning record to the predict job in idle time (``None``: never: no D1
+    store, an overrides-only run or the box)."""
 
     @property
     def ingest(self) -> Ingest:
@@ -1163,6 +1176,7 @@ class Runner:
             self.state.next_push = next_grid(start, every)
         if self.evidence is not None or self.alerts is not None:
             self.state.next_evidence = start
+        self.state.next_ship = start if self.shipper is not None else None
         self.state.next_timer = start
         self.pulse()
         while self.state.stop is None:
@@ -1387,13 +1401,24 @@ class Runner:
 
     def idle(self, now: datetime) -> None:
         """Between passes: the state push on its slot (ending before the next grid mark),
-        the evidence check (:meth:`check_evidence`, never after the run's last pass) and the
-        owner's timer check."""
+        then the morning record's shipment (:meth:`ship`), the evidence check
+        (:meth:`check_evidence`, never after the run's last pass) and the owner's timer
+        check."""
         state = self.state
         if self.holds is not None and self.holds.pending:
             self.holds.retry()
+        pushed = True
         if state.next_push is not None and now >= state.next_push and now < state.due:
-            self.push(now, reason="slot")
+            pushed = self.push(now, reason="slot")
+        if state.next_ship is not None and now >= state.next_ship and now < state.due:
+            # after the push, on a fresh clock: the push keeps the whole idle time, and the
+            # shipped record is never ahead of the one the push saved (no ship after a
+            # failed push: the next mark ships)
+            if pushed:
+                self.ship(self.loaders.clock())
+            else:
+                state.next_ship = next_grid(now, SHIP_EVERY)
+                _say("morning ship: skipped (the state push failed)")
         ending = state.until is not None and state.due >= state.until
         if state.next_evidence is not None and now >= state.next_evidence and not ending:
             # after the run's last pass the check is left to the successor's start
@@ -1449,17 +1474,59 @@ class Runner:
         except Exception as error:
             _say(f"evidence check: {describe(error)}")
 
-    def push(self, now: datetime, *, reason: str) -> None:
-        """One push in the idle time; a failed one is tried again at the next slot only."""
+    def ship(self, now: datetime) -> None:
+        """Ship the morning record's day files that changed (:func:`ship_days`) to the predict
+        job's channel (:class:`~snowlight.live.d1.MorningShipper`), in the idle time of each
+        :00 and :30 UTC mark after the state push (``now``: a fresh clock, so the time the push
+        took counts), ending inside the push margin. One line a day file; a failure is one
+        line and never raises (the pass goes on); a file that fails is tried again at the next
+        mark."""
+        state = self.state
+        state.next_ship = next_grid(now, SHIP_EVERY)
+        if self.shipper is None:
+            return
+        deadline = state.due - PUSH_MARGIN
+        if deadline - now < MIN_PUSH_TIME:
+            _say("morning ship: skipped (too close to the next pass)")
+            return
+        log = MorningLog(self.args.state / "morning")
+        for day in ship_days(now):
+            try:
+                path = log.path(day)
+                if not path.is_file():
+                    continue
+                data = path.read_bytes()
+                sha = hashlib.sha256(data).hexdigest()
+                if state.shipped.get(day) == sha:
+                    continue
+                through = MorningDay.from_bytes(data).through
+                if through is None:
+                    continue
+                self.pulse()  # a shipment is silent until its deadline
+                found = self.shipper.ship(self.args.state, day, data, through, deadline=deadline)
+            except Exception as error:  # a shipment never touches the pass or the push
+                _say(f"morning ship: {day.isoformat()} failed: {describe(error)}")
+                return
+            if found.outcome in ("shipped", "same"):
+                state.shipped[day] = sha
+            _say(
+                f"morning shipped: {day.isoformat()} {found.outcome}, {found.raw} B raw, "
+                f"{found.packed} B gzip, {found.parts} parts, {found.rows} rows, "
+                f"{found.requests} requests, {found.seconds * 1000:.0f} ms"
+            )
+
+    def push(self, now: datetime, *, reason: str) -> bool:
+        """One push in the idle time; a failed one is tried again at the next slot only.
+        ``False``: it was tried and failed (or the state is lost); ``True`` otherwise."""
         state = self.state
         if self.store is None:
-            return
+            return True
         deadline = state.due - PUSH_MARGIN
         if deadline - now < MIN_PUSH_TIME:
             # too close to the next grid mark: a slot push waits for the next slot, a push
             # after a blank for the idle time after the next pass (never a false alert)
             state.next_push = now if reason == "blank" else next_grid(now, state.push_every)
-            return
+            return True
         state.next_push = next_grid(now, state.push_every)
         book = self.alerts.book if self.alerts is not None else None
         self.pulse()  # a push is silent until its deadline: it starts on a fresh pulse
@@ -1470,17 +1537,17 @@ class Runner:
             if book is not None:
                 book.set(Kind.STATE, True, now, {"why": "lost"})
             state.fail("state")
-            return
+            return False
         except WriteCapError:
             _say("ALERT state: the day's D1 write cap is reached; the loop runs on in memory")
             if book is not None:
                 book.set(Kind.STATE, True, now, {"why": "write_cap"})
-            return
+            return False
         except Exception as error:
             _say(f"ALERT state push failed: {describe(error)}")
             if book is not None:
                 book.set(Kind.STATE, True, now, {"why": "push"})
-            return
+            return False
         self.ingest.state_bytes = int(result.bytes)
         _say(
             f"state pushed: {result.bytes} bytes, {result.parts} parts, {result.rows_written} rows"
@@ -1494,6 +1561,20 @@ class Runner:
             book.set(
                 Kind.STATE, heavy, now, {"why": "size" if result.bytes > ALERT_BYTES else "plan"}
             )
+        return True
+
+
+def ship_days(now: datetime) -> list[date]:
+    """The UTC days a mark at ``now`` ships: the day itself from 09:00 to 21:00 UTC (the
+    record's read band, :data:`~snowlight.live.morning.READ_BAND`), and before 09:00 the day
+    before (its final file, after midnight)."""
+    moment = now.astimezone(UTC)
+    start, end = READ_BAND
+    if moment.time() < start:
+        return [moment.date() - timedelta(days=1)]
+    if moment.time() <= end:
+        return [moment.date()]
+    return []
 
 
 def _read_health(internal: Path) -> dict[str, Any]:
@@ -1552,6 +1633,8 @@ def run_loop(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
     keeper = store if hasattr(store, "keep") else None if store is None else _LocalKeep(store)
     runner = runner_type(args, config, env, parts, loaders, keeper, alerts)
     runner.holds = sink
+    if isinstance(store, D1StateStore) and not args.overrides_only:
+        runner.shipper = MorningShipper(store)
     if store is not None and not args.overrides_only:
         try:
             runner.evidence = loaders.evidence(config, env, loaders.client())
@@ -1999,6 +2082,7 @@ def run_state(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
         _say(f"state exported: {len(names)} files, {len(data)} bytes")
         _say(morning_line(args.state / "morning"))  # it never raises
         _say(census_line(args.state))  # it never raises
+        _say(read_causes_line(args.state, loaders.clock()))  # it never raises
         return int(Exit.OK)
     try:
         config = LiveConfig.load(args.config)
@@ -2067,6 +2151,19 @@ def census_line(state: Path) -> str:
         return cold_census(state / "ledger.sqlite", stamp_window=LIVE_MERGE_RULES.stamp_window)
     except Exception as error:  # the census is a log line, never a step's outcome
         return f"ledger cold census: unreadable ({type(error).__name__})"
+
+
+def read_causes_line(state: Path, now: datetime) -> str:
+    """``read causes:`` (:func:`snowlight.live.causes.causes_line`): each tier's lists by the
+    cause of their last read, never read and dark, counts only, on the committed coverage
+    files. It never raises, so the export it follows is never changed by it."""
+    try:
+        from snowlight.live.causes import causes_line  # noqa: PLC0415
+        from snowlight.predict.live_read import AUDIENCES_PATH, READ_SOURCES_PATH  # noqa: PLC0415
+
+        return causes_line(state, now, read_sources=READ_SOURCES_PATH, audiences=AUDIENCES_PATH)
+    except Exception as error:  # the line is a log line, never a step's outcome
+        return f"read causes: unreadable ({type(error).__name__})"
 
 
 EVIDENCE_SECONDS: Final = 240.0

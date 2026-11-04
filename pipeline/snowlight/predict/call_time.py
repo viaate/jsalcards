@@ -44,6 +44,8 @@ model's own chance's log-odds after L5, the class order cap and the G6 pull
 Everything here is codes, ids, minutes and counts: no names, no list text.
 """
 
+import functools
+import hashlib
 import math
 from collections import Counter, defaultdict
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
@@ -58,9 +60,15 @@ from snowlight.live.merge import day_start
 from snowlight.live.morning import EVERY_DAY, SLOT_MINUTES, Slot
 from snowlight.predict.calendar import likely_break
 from snowlight.predict.calendar import season_of as season_of_day
-from snowlight.predict.config import PredictConfig
+from snowlight.predict.config import CONFIG_PATH, PredictConfig
 from snowlight.predict.labels import LitStatus, Outcome, outcome_of, shares
-from snowlight.predict.live_labels import Directory, Morning, district_state
+from snowlight.predict.live_labels import (
+    Directory,
+    Morning,
+    StationStats,
+    district_state,
+    named_every_day,
+)
 from snowlight.predict.live_read import (
     WARNING_CLASSES,
     Coverage,
@@ -204,21 +212,24 @@ class CallSettings:
     def in_domain(self, m: float, tau: float) -> bool:
         """Whether (m, tau) is a point of F: on the grids, and Delta(30) at least
         -``first_slot_max``."""
-        if not (math.isfinite(m) and math.isfinite(tau)):
-            return False
-        on_m = any(abs(m - point) < EPSILON for point in self.m_grid)
-        on_tau = any(abs(tau - point) < EPSILON for point in self.tau_grid)
-        return on_m and on_tau and delta(self.step, m, tau) >= -self.first_slot_max - EPSILON
+        return _in_f(m, tau, (self.m_grid, self.tau_grid, self.first_slot_max, self.step))
 
     def check(self) -> None:
         """Refuse a settings object whose (m, tau) is outside F, however it was made
         (:meth:`of`, ``dataclasses.replace`` or direct construction): what serves is what
-        was tested, never clamped.
+        was tested, never clamped. F comes from the registered block (``config/predict.yaml``,
+        :func:`registered_f`), never from the object, so an object whose grids, first-slot
+        bound or step were swapped is refused too (CALL-TIME-1 S1).
 
         Raises:
-            ValueError: (m, tau) is not a point of F.
+            ValueError: (m, tau) is not a point of the registered F, or the object's F is
+                not the registered one.
         """
-        if not self.in_domain(self.m, self.tau):
+        registered = registered_f()
+        mine = (self.m_grid, self.tau_grid, self.first_slot_max, self.step)
+        if not _same_f(mine, registered):
+            raise ValueError("the settings' F is not the registered F")
+        if not _in_f(self.m, self.tau, registered):
             raise ValueError(f"(m, tau) = ({self.m}, {self.tau}) is outside the registered F")
 
     def domain(self) -> list[tuple[float, float]]:
@@ -229,6 +240,53 @@ class CallSettings:
         """The slot ends scored (local minutes), then the held row."""
         found = tuple(range(self.slot_from, self.slot_until + 1, self.step))
         return (*found, self.held_row)
+
+
+type Domain = tuple[tuple[float, ...], tuple[float, ...], float, int]
+"""F as registered: the m grid, the tau grid, the first slot's largest fall and the step."""
+
+
+@functools.cache
+def registered_f() -> Domain:
+    """F from the registered block (``config/predict.yaml``'s ``live_score.call_time``), read
+    once a process: what :meth:`CallSettings.check` holds every settings object to.
+
+    Raises:
+        ValueError: the registered block lacks F or holds the wrong kind.
+    """
+    block = PredictConfig.load(CONFIG_PATH).live_score.get("call_time")
+    if block is None:
+        raise ValueError("live_score.call_time is not registered")
+    try:
+        return (
+            _grid(block["m_grid"]),
+            _grid(block["tau_grid"]),
+            _num(block["first_slot_max"]),
+            int(_num(block["step_minutes"])),
+        )
+    except (KeyError, TypeError) as error:
+        raise ValueError(f"live_score.call_time: {type(error).__name__}") from error
+
+
+def _in_f(m: float, tau: float, f: Domain) -> bool:
+    m_grid, tau_grid, first_slot_max, step = f
+    if not (math.isfinite(m) and math.isfinite(tau)):
+        return False
+    on_m = any(abs(m - point) < EPSILON for point in m_grid)
+    on_tau = any(abs(tau - point) < EPSILON for point in tau_grid)
+    return on_m and on_tau and delta(step, m, tau) >= -first_slot_max - EPSILON
+
+
+def _same_f(mine: Domain, registered: Domain) -> bool:
+    def close(a: Sequence[float], b: Sequence[float]) -> bool:
+        return len(a) == len(b) and all(abs(x - y) < EPSILON for x, y in zip(a, b, strict=True))
+
+    return (
+        close(mine[0], registered[0])
+        and close(mine[1], registered[1])
+        and abs(mine[2] - registered[2]) < EPSILON
+        and mine[3] == registered[3]
+    )
 
 
 def _pair(value: object) -> tuple[object, object]:
@@ -725,6 +783,125 @@ def proven(  # noqa: PLR0913 - the record, the district and its lists
 
 
 @dataclass(frozen=True, slots=True)
+class Case:
+    """One district a proof is asked of: its id, zone, required lists and whether its class at
+    D's snapshot is a warning or above (L1's check 3)."""
+
+    leaid: str
+    zone: str
+    needed: Required
+    warning: bool
+
+
+def proofs_for(
+    cuts: Cuts,
+    cases: Iterable[Case],
+    *,
+    recent: Mapping[str, int],
+    every_before: AbstractSet[str],
+    late: Callable[[], bool] | None = None,
+) -> dict[str, list[SlotProof]]:
+    """Each case's proof at every slot end (:func:`proven`), on one record cut: the one
+    implementation the counts line (:func:`day_counts`) and the serving pass's live view
+    (:mod:`snowlight.predict.live_reads`) share, so their proofs agree by construction.
+
+    Raises:
+        TimeoutError: ``late()`` turned true between districts (the caller's limit).
+    """
+    found: dict[str, list[SlotProof]] = {}
+    for case in cases:
+        if late is not None and late():
+            raise TimeoutError("past the caller's limit")
+        found[case.leaid] = proven(
+            cuts, case.leaid, case.needed, zone=case.zone, storm=True, warning=case.warning,
+            recent=recent, every_before=every_before,
+        )  # fmt: skip
+    return found
+
+
+def cases_of(  # noqa: PLR0913 - the day, its districts and the record
+    day: date,
+    directory: Directory,
+    classes: Sequence[WeatherClass | None],
+    *,
+    record: WholeReads,
+    coverage: Coverage,
+    stats: ListStats,
+    audience: Mapping[str, Mapping[str, date]],
+    registry: Collection[str],
+    settings: CallSettings,
+) -> list[Case]:
+    """The live parity population of D: every district of a term's class at D's snapshot
+    whose R is not empty, in directory order (the serving pass's view and read-labels' digest
+    line both prove these, LIVE-READS decision 8)."""
+    found: list[Case] = []
+    for index, leaid in enumerate(directory.districts):
+        klass = classes[index]
+        if not serves(klass, settings):
+            continue
+        needed = required(
+            leaid, day, record, coverage, stats, audience=audience, registry=registry,
+            settings=settings,
+        )  # fmt: skip
+        if needed.sources:
+            found.append(Case(leaid, directory.zones[index], needed, klass in WARNING_CLASSES))
+    return found
+
+
+DIGEST_AT: Final = (390, 450, 510, 570)
+"""06:30, 07:30, 08:30 and 09:30 local: the slot ends the parity digests are taken at."""
+DIGEST_HEX: Final = 12
+
+
+def _hex(lines: Iterable[str]) -> str:
+    text = "\n".join(sorted(lines)).encode()
+    return hashlib.sha256(text).hexdigest()[:DIGEST_HEX]
+
+
+def digest_at(proofs: Mapping[str, Sequence[SlotProof]], end: int) -> str:
+    """The parity digest at the local slot end ``end``: the sha256 of the sorted
+    ``leaid:p_star:ended`` of every district's proof there, 12 hex (ids never printed)."""
+    lines = []
+    for leaid, steps in proofs.items():
+        item = next((step for step in steps if step.end == end), None)
+        p_star = "-" if item is None or item.p_star is None else str(item.p_star)
+        ended = "-" if item is None or item.ended is None else item.ended
+        lines.append(f"{leaid}:{p_star}:{ended}")
+    return _hex(lines)
+
+
+def context_digest(  # noqa: PLR0913 - every input of a proof but D's record
+    cases: Iterable[Case],
+    *,
+    recent: Mapping[str, int],
+    every_before: AbstractSet[str],
+    stats: ListStats,
+    station_stats: StationStats,
+    named_before: Mapping[str, AbstractSet[str]],
+) -> str:
+    """What a proof was made from besides D's record, 12 hex: the population with each R,
+    the lists read with no second list, the districts D-1 named for D (with the kinds) and
+    for every day, the lists' counted captures, and L1's station stats (each source's
+    populated reads, median rows and placed share, which L1's stale rule reads). Two lines
+    whose proof digests differ with equal context digests differ by D's record (a slot
+    changed after shipping), never by their inputs."""
+    lines = [
+        f"case:{c.leaid}:{c.zone}:{','.join(c.needed.sources)}:{int(c.warning)}" for c in cases
+    ]
+    lines += [f"recent:{source}:{count}" for source, count in recent.items()]
+    lines += [f"every:{leaid}" for leaid in every_before]
+    lines += [f"named:{leaid}:{','.join(sorted(kinds))}" for leaid, kinds in named_before.items()]
+    lines += [f"closing:{source}:{count}" for source, count in stats.closing.items()]
+    lines += [f"captures:{source}:{count}" for source, count in stats.captures.items()]
+    lines += [
+        f"station:{source}:{count}:{station_stats.median_rows.get(source)!r}"
+        f":{station_stats.placed.get(source)!r}"
+        for source, count in station_stats.captures.items()
+    ]
+    return _hex(lines)
+
+
+@dataclass(frozen=True, slots=True)
 class Decline:
     """One slot end's decline: x (minutes past u + g, grown at most a step a slot) and
     Delta (log odds, 0 or below)."""
@@ -899,11 +1076,13 @@ def day_counts(
     rule: ReadRule,
     *,
     late: Callable[[], bool] | None = None,
+    cuts: Cuts | None = None,
 ) -> dict[str, int]:
     """One day's counts (no ids): calls by kind and lit after a gap; read-set districts of a
     class day by u kind; standing ``*`` districts and of them read; at risk at 07:30 (from
     the ``d0_0630`` rows ``served`` holds), named by then, dropped later; proven by 06:30,
-    07:30, 08:30 and 09:30; voided; unproven by cause.
+    07:30, 08:30 and 09:30; voided; unproven by cause. ``cuts``: D's record cuts to share
+    with the caller's other proofs of the day (made here when ``None``).
 
     Raises:
         TimeoutError: ``late()`` turned true between districts (the caller's limit).
@@ -942,19 +1121,14 @@ def day_counts(
         u = usual.get(leaid)
         kind = "none" if u is None else "own" if u.own >= settings.own_min_calls else u.pool.value
         found[f"u {kind}"] += 1
-    standing = {
-        leaid
-        for slot in inputs.morning.slots.values()
-        for leaid, days in slot.named.items()
-        if EVERY_DAY in days
-    } | set(inputs.every_before)
+    standing = named_every_day(inputs.morning.slots.values()) | inputs.every_before
     found["standing *"] = len(standing)
     found["standing * read"] = len(standing & set(inputs.read))
     called = {c.leaid: c.minute for c in inputs.calls if c.day == day}
-    cuts = Cuts(inputs.morning, rule, inputs.stats, inputs.coverage.district_sites, settings)
+    if cuts is None:
+        cuts = Cuts(inputs.morning, rule, inputs.stats, inputs.coverage.district_sites, settings)
+    cases: list[Case] = []
     for i in positions:
-        if late is not None and late():
-            raise TimeoutError("past the counts line's limit")
         leaid = directory.districts[i]
         zone = directory.zones[i]
         named = first_named(inputs.morning, leaid, zone, inputs.every_before)
@@ -968,12 +1142,13 @@ def day_counts(
             leaid, day, record, inputs.coverage, inputs.stats, audience=audience,
             registry=market_of, settings=settings,
         )  # fmt: skip
-        steps = proven(
-            cuts, leaid, needed, zone=zone, storm=True,
-            warning=inputs.classes[i] in WARNING_CLASSES, recent=inputs.recent,
-            every_before=inputs.every_before,
-        )  # fmt: skip
-        by_end = {item.end: item for item in steps}
+        cases.append(Case(leaid, zone, needed, inputs.classes[i] in WARNING_CLASSES))
+    proofs = proofs_for(
+        cuts, cases, recent=inputs.recent, every_before=inputs.every_before, late=late
+    )
+    for case in cases:
+        needed = case.needed
+        by_end = {item.end: item for item in proofs[case.leaid]}
         for end in PROVEN_BY:
             item = by_end.get(end)
             if item is not None and item.ended is None and item.p_star is not None:
@@ -1015,6 +1190,7 @@ __all__ = [
     "Call",
     "CallKind",
     "CallSettings",
+    "Case",
     "Cuts",
     "DarkCause",
     "DayInputs",
@@ -1028,13 +1204,17 @@ __all__ = [
     "applies",
     "at_risk",
     "called_minutes",
+    "cases_of",
+    "context_digest",
     "counts_line",
     "dark_cause",
     "day_counts",
     "decline",
     "delta",
+    "digest_at",
     "market_on",
     "proof",
+    "proofs_for",
     "proven",
     "required",
     "serves",

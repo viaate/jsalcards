@@ -28,9 +28,11 @@ import logging
 import math
 import os
 import re
+import shutil
 import sqlite3
 import sys
 import tempfile
+import threading
 import time
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field, replace
@@ -115,6 +117,7 @@ from snowlight.predict.heights import (
 )
 from snowlight.predict.labels import Outcome
 from snowlight.predict.live_labels import pending_tables, record_snapshots
+from snowlight.predict.live_reads import LiveReads
 from snowlight.predict.night_serve import (
     NO_NIGHTS,
     Nights,
@@ -283,14 +286,7 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
     labels_rule_options(check)
     check.set_defaults(handler=run_backtest)
 
-    once = actions.add_parser("once", help="one serving pass")
-    _serve_inputs(once)
-    once.set_defaults(handler=run_once)
-
-    loop = actions.add_parser("run", help="passes until a time, on the grid and on changes")
-    _serve_inputs(loop)
-    loop.add_argument("--until", required=True, help="+330m, or an ISO 8601 moment")
-    loop.set_defaults(handler=run_loop)
+    _register_serving(actions)
 
     blank = actions.add_parser("blank", help="hold every chance dark at once")
     _serve_inputs(blank)
@@ -432,6 +428,32 @@ def _serve_inputs(parser: argparse.ArgumentParser) -> None:
         default=PIPELINE_ROOT / ".cache" / "elevation",
         help="where the pinned elevation table is kept once read",
     )
+
+
+def _register_serving(actions: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
+    """``predict once`` and ``predict run``."""
+    once = actions.add_parser("once", help="one serving pass")
+    _serve_inputs(once)
+    _live_reads_inputs(once)
+    once.set_defaults(handler=run_once)
+
+    loop = actions.add_parser("run", help="passes until a time, on the grid and on changes")
+    _serve_inputs(loop)
+    _live_reads_inputs(loop)
+    loop.add_argument("--until", required=True, help="+330m, or an ISO 8601 moment")
+    loop.set_defaults(handler=run_loop)
+
+
+def _live_reads_inputs(parser: argparse.ArgumentParser) -> None:
+    """The live view's inputs (``serve.live_reads``): the live state export and L1's coverage."""
+    from snowlight.predict import live_read  # noqa: PLC0415
+
+    parser.add_argument("--live-state", type=Path, default=LIVE_INTERNAL / "state")
+    parser.add_argument("--live-store", type=Path, default=LIVE_INTERNAL / "store")
+    parser.add_argument("--registry", type=Path, default=train.TrainPaths().registry)
+    parser.add_argument("--read-sources", type=Path, default=live_read.READ_SOURCES_PATH)
+    parser.add_argument("--audiences", type=Path, default=live_read.AUDIENCES_PATH)
+    parser.set_defaults(live_view=True)  # only the serving commands take the view
 
 
 # --- the heads-up history -----------------------------------------------------------------------
@@ -1077,6 +1099,10 @@ class Pass:
     """The live switch's arms this run serves (read once a run, :func:`live_switch.
     served_arms`; the anchor is built with them), their keys for the frozen record's headers
     and shadow variants; ``None``: none (tests, and the committed defaults)."""
+    live_reads: LiveReads | None = None
+    """The live view of the shipped morning record (predict-next LIVE-READS, shadow:
+    :mod:`snowlight.predict.live_reads`), taken after each pass; nothing served reads it.
+    ``None``: no view (``serve.live_reads`` off, tests)."""
     _products_retry: datetime | None = None
     """After the record step's product log rebuild failed: no new try before this time."""
     _built: tuple[object, ServeModel] | None = None
@@ -1379,6 +1405,10 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
     """One serving pass: 0 published or unchanged, 3 dark. ``grid``: a pass on the grid (the
     heartbeat uploads an unchanged file only then, see :func:`~snowlight.predict.publish.due`).
 
+    After it, published or dark, the live view (:func:`live_view`) takes the shipped morning
+    record's proofs: after the file is out, so its reads never hold a file back, and nothing
+    served or frozen reads them.
+
     The alerts it was made from count as handled (``state.alerts_digest``) only when it
     published or found nothing to change: a dark pass leaves them, so the loop tries again.
 
@@ -1386,6 +1416,26 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
     on, a pass that published (or found nothing to change) then takes the outlook's private
     record (:func:`_outlook_after`), which can never change the file or darken the pass.
     """
+    code = _serve_pass(run, grid=grid)
+    live_view(run)
+    return code
+
+
+def live_view(run: Pass) -> dict[str, Any] | None:
+    """The pass's live view (:meth:`snowlight.predict.live_reads.LiveReads.step`), shadow
+    only: its proofs reach no served value and no frozen key. It never raises."""
+    if run.live_reads is None:
+        return None
+    try:
+        built = run._built
+        content = learn.content_key(built[1].directory) if built is not None else None
+        return run.live_reads.step(run.now(), content)
+    except Exception as error:  # the view never touches a pass
+        _warn(f"predict: live reads: {type(error).__name__}")
+        return None
+
+
+def _serve_pass(run: Pass, *, grid: bool) -> int:
     config = run.config
     now = run.now()
     weather = config.weather
@@ -2593,7 +2643,7 @@ def make_pass(  # pragma: no cover
     outlook = _outlook_parts(
         config, Path(args.outlook_model), host, mode, outlook_mode, history.read
     )
-    return Pass(
+    run = Pass(
         config=config,
         mode=mode,
         host=host,
@@ -2621,6 +2671,116 @@ def make_pass(  # pragma: no cover
         frozen=frozen.FOLDER,
         switch=switch,
         **outlook,
+    )
+    if serving and config.serve.live_reads and getattr(args, "live_view", False):
+        run.live_reads = _make_live_reads(args, env, run, committed)
+    return run
+
+
+def _make_live_reads(
+    args: argparse.Namespace,
+    env: Mapping[str, str],
+    run: Pass,
+    committed: artifact_module.ModelArtifact,
+    *,
+    client: Callable[[], httpx.Client] | None = None,
+) -> LiveReads | None:
+    """The live view (:mod:`snowlight.predict.live_reads`) over the run's state export, L1's
+    coverage, the registry, the live host's Pages copy for day timelines and the private
+    state database's morning tables (SELECTs only). Nothing is read here: the registry, the
+    coverage and the export are read (and the export unpacked) when the run's first
+    class-morning context is built, on the view's bounded thread, and a failure there is
+    coded ``none``; the unpacked folder is removed at the run's end
+    (:meth:`~snowlight.predict.live_reads.LiveReads.close`). It never raises: any failure
+    here is one warning and ``None`` (the passes run as before)."""
+    try:
+        return _live_reads_of(args, env, run, committed, client or inputs.client)
+    except Exception as error:  # the view never holds the passes back
+        _warn(f"predict: live reads: no view ({type(error).__name__})")
+        return None
+
+
+LIVE_READS_TIMEOUT: Final = httpx.Timeout(10.0, connect=5.0)
+"""Each Pages read of a context build (a day timeline): the build's 90 s bound is asked
+before each one, so a stalled read ends the build by 100 s at the latest."""
+
+
+def _live_reads_of(
+    args: argparse.Namespace,
+    env: Mapping[str, str],
+    run: Pass,
+    committed: artifact_module.ModelArtifact,
+    client: Callable[[], httpx.Client],
+) -> LiveReads:
+    from snowlight.live.d1 import CloudflareD1, D1Error, MorningReader, Secrets  # noqa: PLC0415
+    from snowlight.predict import live_read  # noqa: PLC0415
+    from snowlight.predict import live_reads as view  # noqa: PLC0415
+    from snowlight.predict.live_labels import StateSource, markets_of  # noqa: PLC0415
+    from snowlight.sources.stations.registry import load_registry  # noqa: PLC0415
+
+    config = run.config
+    prefix = run.mode.key.split("/", 1)[0] if run.mode.key is not None else "v1"
+    stop = threading.Event()
+    cleanup: list[Callable[[], None]] = []
+    pages: list[httpx.Client] = []
+
+    def read_file(path: str) -> bytes | None:
+        view.check_bound()  # no host read starts past its build's own bound
+        if not pages:
+            pages.append(client())
+        answer = pages[0].get(f"{LIVE_ROOT}{prefix}/{path}", timeout=LIVE_READS_TIMEOUT)
+        if answer.status_code == httpx.codes.NOT_FOUND:
+            return None
+        answer.raise_for_status()
+        return answer.content
+
+    def load() -> view.Loaded:
+        stations = list(load_registry(args.registry).stations.values())
+        coverage = read_cli.current_coverage(
+            read_cli.coverage_of(
+                config, committed, stations, read_sources=args.read_sources,
+                audiences=args.audiences,
+            ),
+            datetime.now(UTC).date(),
+        )  # fmt: skip
+        scratch = Path(tempfile.mkdtemp(prefix="snowlight-live-reads-"))
+        cleanup.append(lambda: shutil.rmtree(scratch, ignore_errors=True))
+        folder = live_state_folder(args.live_state, args.live_store, scratch)
+        _out(f"predict: live reads (off): {'a' if folder is not None else 'no'} state export")
+        if folder is None:
+            return view.Loaded(None, coverage)
+        source = live_read.StateReadSource(
+            StateSource(
+                folder=folder, market_of=markets_of((s.id, s.market) for s in stations),
+                zone_of={}, settings=config.labels, prefix=prefix, read_file=read_file,
+            )
+        )  # fmt: skip
+        return view.Loaded(source, coverage)
+
+    def directory() -> Any:
+        built = run._built
+        return learn.directory_of(built[1]) if built is not None else None
+
+    setup = view.Setup(
+        config=config, load=view.Once(load), directory=directory,
+        snapshots=lambda: run.state.snapshots, stop=stop,
+    )  # fmt: skip
+    channel: MorningReader | None = None
+    try:
+        secrets = Secrets.from_env(env)
+    except D1Error:
+        channel = None
+    else:
+        channel = MorningReader(CloudflareD1(client(), secrets), seconds=view.REQUEST_SECONDS)
+    _out(f"predict: live reads (off): {'a' if channel is not None else 'no'} channel")
+
+    def close_pages() -> None:
+        for page in pages:
+            page.close()
+
+    cleanup.append(close_pages)
+    return view.LiveReads(
+        channel, lambda day: view.build_context(setup, day), _out, cleanup=cleanup, stop=stop
     )
 
 
@@ -3064,8 +3224,12 @@ def run_once(
     except (ConfigError, ValueError, OSError) as error:
         _err(f"predict once: error: {error}")
         return 1
-    code = safe_pass(run, grid=True)
-    save_state(args.state, run.state)
+    try:
+        code = safe_pass(run, grid=True)
+        save_state(args.state, run.state)
+    finally:
+        if run.live_reads is not None:
+            run.live_reads.close()
     return code
 
 
@@ -3211,7 +3375,12 @@ def run_loop(args: argparse.Namespace) -> int:  # pragma: no cover - the real wo
     except (ConfigError, ValueError, OSError) as error:
         _err(f"predict run: error: {error}")
         return 1
-    dark = loop(run, until, Loop(), lambda state: save_state(args.state, state))
+    try:
+        dark = loop(run, until, Loop(), lambda state: save_state(args.state, state))
+    finally:
+        if run.live_reads is not None:
+            _out(run.live_reads.summary())
+            run.live_reads.close()
     _out(f"predict run: done, {dark} dark passes")
     return 0
 

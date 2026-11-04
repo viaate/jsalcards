@@ -108,6 +108,10 @@ serve:
   announces: false            # a district's usual posting time is its forecasts' announces_at
   reasons_gate_override: ""   # names the lead who signed off on serving terms whose backtest v2 gate failed; empty: refused
   neighbors_max_age_minutes: 60  # a closings file older than this says nothing of the districts next door
+  # predict-next LIVE-READS (docs/predict.md, "The live proof"): after each pass, the shipped
+  # morning record's proofs per district of a class morning, shadow only (one counts line per new
+  # version and mark; nothing served or frozen reads them). Off: no view, no request.
+  live_reads: true
   # Advisory-sane L5 (docs/predict.md, "The forecast adjustment"): with anchor on, the forecast at
   # the class snapshot moves each advisory and warning day within its class (live_score
   # forecast_adjustment), each district's days still averaging its class level. Off: the class

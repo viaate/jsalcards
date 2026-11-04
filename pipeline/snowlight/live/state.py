@@ -47,6 +47,7 @@ import re
 import sqlite3
 import tarfile
 import tempfile
+import zlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -214,7 +215,8 @@ def unpack(data: bytes, folder: Path, include: Callable[[str], bool] = _include_
                     raise StateError("the state archive holds an unreadable file")
                 write_bytes_atomic(folder / member.name, handle.read())
                 written.append(member.name)
-    except (tarfile.TarError, OSError, EOFError) as error:
+    except (tarfile.TarError, OSError, EOFError, zlib.error) as error:
+        # zlib.error: a damaged deflate stream past the first block (it is no OSError)
         raise StateError(f"the state archive does not read ({type(error).__name__})") from error
     return written
 
@@ -292,7 +294,7 @@ def check_export(data: bytes) -> list[str]:
             if handle is None:
                 raise StateError("the export holds no ledger")
             body = handle.read()
-    except (tarfile.TarError, OSError, EOFError) as error:
+    except (tarfile.TarError, OSError, EOFError, zlib.error) as error:
         raise StateError(f"the export does not read ({type(error).__name__})") from error
     with tempfile.TemporaryDirectory() as scratch:
         path = Path(scratch) / LEDGER

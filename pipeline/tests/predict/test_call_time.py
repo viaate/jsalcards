@@ -6,6 +6,7 @@ and minutes only, never a real list's rows.
 
 import ast
 import math
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from datetime import UTC, date, datetime, time, timedelta
@@ -155,6 +156,30 @@ def test_serving_the_term_is_refused_until_live_reads_lands() -> None:
     shipped = PredictConfig.load(PIPELINE_ROOT / "config" / "predict.yaml")
     assert shipped.live_score["call_time"]["serve"] == "off"
     assert CONFIG.live_score["call_time"] == shipped.live_score["call_time"]
+
+
+def test_a_settings_object_whose_f_was_swapped_is_refused() -> None:
+    # CALL-TIME-1 S1 (critic r2's three swaps): F is the registered block's, never the
+    # object's, so widening a grid, raising the first slot's bound or the step is refused
+    steps = [SlotProof(end, end) for end in SETTINGS.ends()]
+    u = UsualCall(300, 3, PoolKind.MARKET)
+    swaps = (
+        replace(SETTINGS, m_grid=(0.05,), m=0.05, tau=5.0, tau_grid=(5.0,), first_slot_max=9.0),
+        replace(SETTINGS, m=0.35, tau=20.0, first_slot_max=1.0),
+        replace(SETTINGS, step=120),
+    )
+    for swapped in swaps:
+        with pytest.raises(ValueError, match="registered F"):
+            decline(steps, u, swapped)
+        with pytest.raises(ValueError, match="registered F"):
+            with_decline(0.5, 0.1, -0.1, 0.01, 0.99, settings=swapped)
+    assert call_time.registered_f() == (
+        SETTINGS.m_grid,
+        SETTINGS.tau_grid,
+        SETTINGS.first_slot_max,
+        SETTINGS.step,
+    )
+    decline(steps, u, SETTINGS)  # the registered object itself passes
 
 
 def test_the_default_decline_table() -> None:
@@ -633,7 +658,7 @@ def test_at_risk_named_at_06_10_closed_at_07_00() -> None:
 # --- the counts line, the census and the imports ------------------------------------------------
 
 
-def test_only_read_cli_imports_call_time() -> None:
+def test_only_read_cli_and_the_live_view_import_call_time() -> None:
     importers = []
     for path in sorted((PIPELINE_ROOT / "snowlight").rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -645,7 +670,7 @@ def test_only_read_cli_imports_call_time() -> None:
                 names = [a.name for a in node.names]
             if "snowlight.predict.call_time" in names:
                 importers.append(path.name)
-    assert importers == ["read_cli.py"]
+    assert sorted(set(importers)) == ["live_reads.py", "read_cli.py"]
 
 
 def test_the_counts_line_prints_and_an_error_there_changes_nothing(
@@ -659,6 +684,16 @@ def test_the_counts_line_prints_and_an_error_there_changes_nothing(
     assert len(lines) == 2
     assert "::warning::" not in out
     assert "u none" in lines[0]
+    # the live parity line: one a day, counts and 12-hex digests only (no ids)
+    digests = [line for line in out.splitlines() if "call time digests" in line]
+    assert len(digests) == 2
+    for line in digests:
+        assert re.fullmatch(
+            r"predict read-labels: call time digests \d{4}-\d{2}-\d{2}: \d+ districts, "
+            r"context [0-9a-f]{12}, 06:30 [0-9a-f]{12}, 07:30 [0-9a-f]{12}, "
+            r"08:30 [0-9a-f]{12}, 09:30 [0-9a-f]{12}",
+            line,
+        )
 
     def broken(*_args: object, **_kwargs: object) -> dict[str, int]:
         raise RuntimeError("synthetic")
@@ -678,11 +713,80 @@ def test_the_counts_line_prints_and_an_error_there_changes_nothing(
         assert a == b
 
 
-def test_the_counts_line_is_skipped_past_90_seconds(capsys: Any, tmp_path: Path) -> None:
+def test_the_counts_line_is_kept_when_the_digest_reaches_the_limit_and_one_cut_serves_both(
+    tmp_path: Path, capsys: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The counts line is printed before the digest's work starts (a limit reached in the
+    digest's proofs loses only the digest line), and the day's counts and its digest share
+    one set of D's record cuts."""
+    made: list[object] = []
+    real = call_time.Cuts
+
+    def counted(*args: Any, **kwargs: Any) -> call_time.Cuts:
+        found = real(*args, **kwargs)
+        made.append(found)
+        return found
+
+    monkeypatch.setattr(call_time, "Cuts", counted)
+    now = world.utc("2026-01-08T06:00:00")
+    assert read_cli.read_once(read_run(Host(), tmp_path / "a", now)) == 0
+    out = capsys.readouterr().out
+    days = [line for line in out.splitlines() if "call time (off) 2026" in line]
+    assert len(days) == len(made) == 2  # one cut set a day, for the counts and the digest
+
+    def past(*_args: object, **_kwargs: object) -> list[Any]:
+        raise read_cli._PastLimit
+
+    monkeypatch.setattr(call_time, "cases_of", past)  # the digest's first step
+    assert read_cli.read_once(read_run(Host(), tmp_path / "b", now)) == 0
+    out = capsys.readouterr().out
+    counts = [line for line in out.splitlines() if "call time (off) 2026" in line]
+    assert len(counts) == 1
+    assert "u none" in counts[0]
+    assert "call time digests" not in out
+    assert "call time (off): skipped past 80 s of the step" in out
+
+
+def test_the_context_digest_names_station_stats_and_d_minus_1() -> None:
+    from snowlight.predict.live_labels import StationStats  # noqa: PLC0415
+
+    coverage = listed(
+        Coverage(county_sources={}, archive={s: {LEAID} for s in LISTS}, county_of={})
+    )
+    stats = ListStats.of(coverage, LiveCaptures(), RULE.labels.station_min_captures)
+    cases = [call_time.Case(LEAID, EAST, call_time.Required(LISTS), False)]
+    plain = stats_of(*LISTS)
+
+    def digest(station: StationStats, named: Mapping[str, frozenset[str]]) -> str:
+        return call_time.context_digest(
+            cases, recent={}, every_before=frozenset(), stats=stats, station_stats=station,
+            named_before=named,
+        )  # fmt: skip
+
+    base = digest(plain, {})
+    assert re.fullmatch(r"[0-9a-f]{12}", base)
+    assert digest(plain, {}) == base
+    fewer = StationStats(
+        captures={**plain.captures, LISTS[0]: plain.captures.get(LISTS[0], 0) + 1},
+        median_rows=plain.median_rows, placed=plain.placed,
+    )  # fmt: skip
+    assert digest(fewer, {}) != base
+    placed = StationStats(
+        captures=plain.captures, median_rows=plain.median_rows,
+        placed={**plain.placed, LISTS[0]: 0.5},
+    )  # fmt: skip
+    assert digest(placed, {}) != base
+    assert digest(plain, {LEAID: frozenset({"closed"})}) != base
+    assert digest(plain, {LEAID: frozenset({"closed"})}) != digest(
+        plain, {LEAID: frozenset({"delayed"})}
+    )
+
+
+def test_the_counts_line_is_skipped_past_80_seconds(capsys: Any, tmp_path: Path) -> None:
     run = read_run(Host(), tmp_path, world.utc("2026-01-08T06:00:00"))
     done = live_read.ReadRun(added=[date(2026, 1, 6)])
     read_cli.call_time_lines(run, done, began=-1e9)
-    assert "skipped past 90 s" in capsys.readouterr().out
+    assert "skipped past 80 s" in capsys.readouterr().out
 
 
 def test_the_frozen_rows_served_are_the_ones_with_a_model_chance(tmp_path: Path) -> None:
@@ -815,13 +919,13 @@ def test_the_counts_line_stops_inside_a_day_once_a_slow_host_passes_its_limit(
     tmp_path: Path, capsys: Any
 ) -> None:
     run, source, done = slow_run(tmp_path)
-    # each timeline read takes 60 s: the second ends past 90 s, so no third read starts,
+    # each timeline read takes 60 s: the second ends past 80 s, so no third read starts,
     # the day's line is not printed, and one skip line is
     read_cli.call_time_lines(run, done, 0.0, clock=lambda: source.clock)
     out = capsys.readouterr().out
     assert len(source.read) == 2
     assert source.clock == 120.0
-    assert out == "predict read-labels: call time (off): skipped past 90 s of the step\n"
+    assert out == "predict read-labels: call time (off): skipped past 80 s of the step\n"
 
 
 def test_the_counts_line_reads_each_class_days_timeline_once_and_no_other(
@@ -841,9 +945,52 @@ def test_the_counts_line_limit_counts_from_the_steps_start(tmp_path: Path, capsy
     run = replace(read_run(Host(), tmp_path, world.utc("2026-01-08T06:00:00")), started=-1e9)
     assert read_cli.read_once(run) == 0
     out = capsys.readouterr().out
-    assert "call time (off): skipped past 90 s of the step" in out
+    assert "call time (off): skipped past 80 s of the step" in out
     assert "call time (off) 2026-01-0" not in out
     assert "::warning::" not in out
+
+
+def test_the_steps_start_comes_from_the_workflow_and_a_20_s_read_ends_by_100_s(
+    tmp_path: Path, capsys: Any
+) -> None:
+    # CALL-TIME-1 S2: the workflow's start, read back on the monotonic clock
+    env = {read_cli.STARTED_ENV: "1000"}
+    assert read_cli.started_of(env, 500.0, 1012.0) == 488.0
+    for bad in ({}, {read_cli.STARTED_ENV: "x"}, {read_cli.STARTED_ENV: "2000"}):
+        assert read_cli.started_of(bad, 500.0, 1012.0) == 500.0
+    assert read_cli.started_of({read_cli.STARTED_ENV: "0"}, 500.0, 1e9) == 500.0
+    # a fake clock: every timeline read takes 20 s; no read starts past 80 s, so the last
+    # one ends by 100 s
+    run, source, done = slow_run(tmp_path)
+    starts: list[float] = []
+    real = source.timeline
+
+    def slow(day: date) -> DayTimeline | None:
+        starts.append(source.clock)
+        source.clock += 20.0 - 60.0  # the source adds 60 s; this read takes 20
+        return real(day)
+
+    source.timeline = slow  # type: ignore[method-assign]
+    read_cli.call_time_lines(run, done, 0.0, clock=lambda: source.clock)
+    out = capsys.readouterr().out
+    assert "skipped past 80 s of the step" in out or "call time (off) 2026-01-0" in out
+    assert all(start <= read_cli.CALL_TIME_SECONDS for start in starts)
+    assert source.clock <= 100.0
+
+
+def test_only_the_limit_is_a_skip_and_any_other_timeout_is_a_warning(
+    tmp_path: Path, capsys: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # CALL-TIME-1 S3: a TimeoutError from inside (a socket's) is not the limit
+    def timed_out(*_args: object, **_kwargs: object) -> dict[str, int]:
+        raise TimeoutError("synthetic")
+
+    monkeypatch.setattr(call_time, "day_counts", timed_out)
+    run = read_run(Host(), tmp_path, world.utc("2026-01-08T06:00:00"))
+    assert read_cli.read_once(run) == 0
+    out = capsys.readouterr().out
+    assert "skipped" not in out
+    assert "::warning::predict read-labels: call time counts: TimeoutError" in out
 
 
 def test_the_counts_line_reads_the_coverage_l1_read_with(

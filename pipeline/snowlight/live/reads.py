@@ -33,6 +33,7 @@ from typing import Final
 import httpx
 
 from snowlight.live.cadence import AlertWatch, Cadence, county_zones, next_mark
+from snowlight.live.causes import cause_of
 from snowlight.live.ingest import Ingest, SourceRead, station_zone
 from snowlight.live.ledger import Outcome, seen_row
 from snowlight.live.pool import (
@@ -345,9 +346,12 @@ def live_reads(  # pragma: no cover - builds the network pool for the real inges
 
 
 def keep_pass(cadence: Cadence, result: PassResult) -> None:
-    """Keep each source's outcome of the pass in the cadence, and save it."""
+    """Keep each source's outcome of the pass and its cause (:func:`snowlight.live.causes.
+    cause_of`) in the cadence, and save it."""
     cadence.record(
-        result.started, [(item.source_id, item.outcome, _wait(item)) for item in result.sources]
+        result.started,
+        [(item.source_id, item.outcome, _wait(item)) for item in result.sources],
+        {item.source_id: cause_of(item).value for item in result.sources},
     )
     try:
         cadence.save()

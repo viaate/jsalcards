@@ -199,7 +199,7 @@ def test_the_read_labels_run_after_learning_in_their_own_cache_and_never_stop_th
     ids = [step.get("id") for step in found]
     read = found[ids.index("read_labels")]
     assert ids.index("learn") < ids.index("read_labels") < ids.index("run")
-    assert read["run"] == "uv run snowlight predict read-labels"
+    assert read["run"] == 'READ_LABELS_STARTED="$(date +%s)" uv run snowlight predict read-labels'
     assert read["continue-on-error"] is True
     # The chain's first pass waits for it: 2 minutes at most.
     assert int(str(read["timeout-minutes"])) <= 2

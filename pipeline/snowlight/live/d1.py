@@ -53,14 +53,16 @@ The store takes an epoch or pushes only when ``GITHUB_WORKFLOW`` is ``live-read`
 """
 
 import base64
+import gzip
 import hashlib
 import json
 import logging
 import math
 import time
+import zlib
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Final, Protocol
 
@@ -105,6 +107,11 @@ DDL: Final = (
     "CREATE TABLE IF NOT EXISTS budget (day TEXT PRIMARY KEY, rows INTEGER NOT NULL)",
     "CREATE TABLE IF NOT EXISTS holds (source_id TEXT PRIMARY KEY, until TEXT NOT NULL,"
     " why TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS morning_head (day TEXT PRIMARY KEY, sha256 TEXT NOT NULL,"
+    " parts INTEGER NOT NULL, bytes INTEGER NOT NULL, through TEXT NOT NULL,"
+    " epoch INTEGER NOT NULL, run_id TEXT, shipped_at TEXT NOT NULL, prev_sha256 TEXT)",
+    "CREATE TABLE IF NOT EXISTS morning_parts (sha256 TEXT NOT NULL, n INTEGER NOT NULL,"
+    " data TEXT NOT NULL, PRIMARY KEY (sha256, n)) WITHOUT ROWID",
 )
 _HEAD: Final = (
     "SELECT epoch, slot, parts, sha256, prev_slot, prev_parts, prev_sha256, bytes,"
@@ -139,11 +146,48 @@ _HOLD: Final = (
     " ON CONFLICT (source_id) DO UPDATE SET until = excluded.until, why = excluded.why"
 )
 _EXPIRE: Final = "DELETE FROM holds WHERE until <= ?"
+_MORNING_HEADS: Final = (
+    "SELECT day, sha256, parts, bytes, through, epoch, shipped_at, prev_sha256"
+    " FROM morning_head WHERE day = ? OR day = ?"
+)
+_MORNING_CHUNKS: Final = (
+    "SELECT n, data FROM morning_parts WHERE sha256 = ? AND n >= ? AND n < ? ORDER BY n"
+)
+_MORNING_PART: Final = (
+    "INSERT INTO morning_parts (sha256, n, data) VALUES (?, ?, ?)"
+    " ON CONFLICT (sha256, n) DO NOTHING"
+)
+_MORNING_SHIP: Final = (
+    "INSERT INTO morning_head (day, sha256, parts, bytes, through, epoch, run_id, shipped_at,"
+    " prev_sha256) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL) ON CONFLICT (day) DO UPDATE SET"
+    " prev_sha256 = CASE WHEN morning_head.sha256 = excluded.sha256"
+    " THEN morning_head.prev_sha256 ELSE morning_head.sha256 END,"
+    " sha256 = excluded.sha256, parts = excluded.parts, bytes = excluded.bytes,"
+    " through = excluded.through, epoch = excluded.epoch, run_id = excluded.run_id,"
+    " shipped_at = excluded.shipped_at"
+    " WHERE excluded.epoch >= morning_head.epoch AND excluded.through >= morning_head.through"
+)
+_MORNING_DROP_HEADS: Final = "DELETE FROM morning_head WHERE day < ?"
+_MORNING_DROP_PARTS: Final = (
+    "DELETE FROM morning_parts WHERE sha256 NOT IN (SELECT sha256 FROM morning_head"
+    " UNION SELECT prev_sha256 FROM morning_head WHERE prev_sha256 IS NOT NULL)"
+)
+MORNING_READS: Final = frozenset({_MORNING_HEADS, _MORNING_CHUNKS})
+"""The only statements the predict job's live view sends (SELECTs of the two morning tables;
+:class:`MorningReader`)."""
 STATEMENTS: Final = frozenset(
     {*DDL, _HEAD, _CHUNKS, _TAKE, _FIRST, _UPSERT, _SWAP, _BUDGET, _SPEND, _CLEAN, _HOLDS}
     | {_HOLD, _EXPIRE, _STALE}
+    | {_MORNING_PART, _MORNING_SHIP, _MORNING_DROP_HEADS, _MORNING_DROP_PARTS}
+    | MORNING_READS
 )
 """Every statement the store sends; nothing else is ever sent."""
+MORNING_ROWS: Final = 1_000
+"""Rows a UTC day's morning shipments may write (counted under ``<day>/morning`` in
+``budget`` and in the day's own row): their own allowance past :data:`WRITE_CAP`."""
+MORNING_KEEP_DAYS: Final = 1
+"""Shipped days kept before the newest one shipped: D and D-1 (older heads and every part no
+head names as current or previous are deleted)."""
 
 type Value = str | int | float | None
 type Statement = tuple[str, tuple[Value, ...]]
@@ -856,6 +900,284 @@ class D1StateStore:
         )
         self._run([(_SPEND, (day, self._unbilled - before + 1))])
         self._unbilled = before
+
+
+# The morning record's channel to the predict job (LIVE-READS) ----------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class Shipped:
+    """What one shipment of a morning day did (sizes, counts and times only)."""
+
+    day: date
+    outcome: str
+    """``shipped``; ``same`` (the head names these bytes already); ``refused`` (the head's
+    guard: an older epoch or an earlier ``through``)."""
+    raw: int
+    packed: int
+    parts: int
+    rows: int
+    requests: int
+    seconds: float
+
+
+@dataclass(frozen=True, slots=True)
+class MorningHead:
+    """One row of ``morning_head``."""
+
+    day: date
+    sha256: str
+    parts: int
+    bytes: int
+    through: datetime
+    epoch: int
+    shipped_at: datetime | None
+    prev_sha256: str | None
+
+    @classmethod
+    def of(cls, row: Mapping[str, Any]) -> "MorningHead":
+        """Raises:
+        D1Error: the row does not read."""
+        try:
+            shipped = row.get("shipped_at")
+            prev = row.get("prev_sha256")
+            return cls(
+                day=date.fromisoformat(str(row["day"])),
+                sha256=str(row["sha256"]),
+                parts=int(row["parts"]),
+                bytes=int(row["bytes"]),
+                through=datetime.fromisoformat(str(row["through"])),
+                epoch=int(row["epoch"]),
+                shipped_at=None if shipped is None else datetime.fromisoformat(str(shipped)),
+                prev_sha256=None if prev is None else str(prev),
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            raise D1Error(f"morning_head: {type(error).__name__}") from error
+
+
+def pack_morning(data: bytes) -> list[str]:
+    """A day file's bytes as its parts: gzip (level 6, mtime 0: equal bytes give equal parts), cut
+    into :data:`CHUNK_BYTES` pieces, each base64."""
+    packed = gzip.compress(data, compresslevel=6, mtime=0)
+    pieces = [packed[at : at + CHUNK_BYTES] for at in range(0, len(packed), CHUNK_BYTES)]
+    return [base64.b64encode(piece).decode("ascii") for piece in pieces]
+
+
+def unpack_morning(texts: Sequence[str], sha: str) -> bytes | None:
+    """The day file's bytes from its parts when they decode and match ``sha`` (the raw
+    file's sha256), else ``None``."""
+    try:
+        packed = b"".join(base64.b64decode(text, validate=True) for text in texts)
+        data = gzip.decompress(packed)
+    except (ValueError, OSError, EOFError, zlib.error):  # zlib.error: a damaged deflate stream
+        return None
+    return data if hashlib.sha256(data).hexdigest() == sha else None
+
+
+def _bill_key(day: date) -> str:
+    return f"{day.isoformat()}/morning"
+
+
+@dataclass(slots=True)
+class MorningShipper:
+    """Ships the live reader's morning day files to the two morning tables (LIVE-READS
+    decision 3), over the state store's database, its guard and its write cap: parts first,
+    then ``morning_head`` (refused for an older epoch or an earlier ``through``), then the
+    heads before D-1 and every part no head names as current or previous are deleted;
+    billed to the day's ``budget`` and its own ``<day>/morning`` row, at most
+    :data:`MORNING_ROWS` a day."""
+
+    store: D1StateStore
+    monotonic: Callable[[], float] = time.monotonic
+
+    def ship(
+        self, folder: Path, day: date, data: bytes, through: datetime, *, deadline: datetime
+    ) -> Shipped:
+        """Ship ``data`` (the bytes of ``morning/<day>.json``), all of it by ``deadline``.
+
+        Raises:
+            WorkflowError: not a live-read run.
+            WriteCapError: the shipment would pass the day's morning allowance.
+            D1Error: no epoch was taken in this run, the database cannot be read or written,
+                or the shipment ran out of time (the head still names the last version).
+        """
+        store = self.store
+        began = self.monotonic()
+        api: Any = store.api
+        previous = getattr(api, "deadline", None)
+        if hasattr(api, "deadline") and hasattr(api, "monotonic"):
+            left = max(0.0, (deadline - store.clock()).total_seconds())
+            budget = api.monotonic() + left
+            api.deadline = budget if previous is None else min(previous, budget)
+        requests = [0]
+        try:
+            return self._ship(folder, day, data, through, deadline, began, requests)
+        finally:
+            if hasattr(api, "deadline"):
+                api.deadline = previous
+
+    def _ship(  # noqa: PLR0913, PLR0917 - the day, its bytes and the bounds
+        self,
+        folder: Path,
+        day: date,
+        data: bytes,
+        through: datetime,
+        deadline: datetime,
+        began: float,
+        requests: list[int],
+    ) -> Shipped:
+        store = self.store
+        store._guard()
+        epoch = int(store.epoch_of(folder)["epoch"])
+        sha = hashlib.sha256(data).hexdigest()
+        texts = pack_morning(data)
+        packed = sum(len(base64.b64decode(text)) for text in texts)
+        now = store.clock()
+        bill = now.astimezone(UTC).date()
+
+        def run(statements: Sequence[Statement]) -> list[Answer]:
+            if store.clock() >= deadline:
+                raise D1Error("the shipment ran out of time")
+            requests[0] += 1
+            return store._run(statements)
+
+        def done(outcome: str, rows: int) -> Shipped:
+            seconds = self.monotonic() - began
+            return Shipped(day, outcome, len(data), packed, len(texts), rows, requests[0], seconds)
+
+        store.database()
+        found = run(
+            [
+                (_BUDGET, (bill.isoformat(),)),
+                (_BUDGET, (_bill_key(bill),)),
+                (_MORNING_HEADS, (day.isoformat(), day.isoformat())),
+            ]
+        )
+        spent = int(found[0].rows[0].get("rows", 0)) if found[0].rows else 0
+        mine = int(found[1].rows[0].get("rows", 0)) if found[1].rows else 0
+        heads = [MorningHead.of(row) for row in found[2].rows]
+        if heads and heads[0].sha256 == sha:
+            return done("same", 0)
+        # its parts, as many retired with the version before, the head, a dropped head and
+        # the two bills
+        plan = 2 * UPSERT_ROWS * len(texts) + 5
+        if mine + plan > MORNING_ROWS or spent + plan > WRITE_CAP + MORNING_ROWS:
+            raise WriteCapError(f"the day's morning shipments would pass {MORNING_ROWS} rows")
+        before = store._unbilled
+        try:
+            for start in range(0, len(texts), WRITE_BATCH):
+                run(
+                    [
+                        (_MORNING_PART, (sha, start + index, text))
+                        for index, text in enumerate(texts[start : start + WRITE_BATCH])
+                    ]
+                )
+            moment = store.clock().astimezone(UTC).isoformat()
+            run_id = store.env.get("GITHUB_RUN_ID") or None
+            values = (
+                day.isoformat(), sha, len(texts), len(data),
+                through.astimezone(UTC).isoformat(), epoch, run_id, moment,
+            )  # fmt: skip
+            answer = run([(_MORNING_SHIP, values)])[0]
+            if answer.changes != 1:
+                return done("refused", store._unbilled - before)
+            keep = (day - timedelta(days=MORNING_KEEP_DAYS)).isoformat()
+            run([(_MORNING_DROP_HEADS, (keep,)), (_MORNING_DROP_PARTS, ())])
+            return done("shipped", store._unbilled - before)
+        finally:
+            written = store._unbilled - before
+            if written > 0:
+                try:
+                    store._run(
+                        [
+                            (_SPEND, (bill.isoformat(), written + 2)),
+                            (_SPEND, (_bill_key(bill), written + 2)),
+                        ]
+                    )
+                    store._unbilled = before
+                except D1Error as error:
+                    LOG.warning("d1: a morning shipment was not billed: %s", error)
+
+
+@dataclass(slots=True)
+class MorningReader:
+    """The predict job's read of the two morning tables (LIVE-READS decision 5): it finds the
+    database by its exact name and never creates it, runs only :data:`MORNING_READS` (its
+    two SELECTs), and gives each request ``seconds`` (cut to the caller's ``deadline``)."""
+
+    api: D1Api
+    seconds: float = 5.0
+    deadline: float | None = None
+    """When (``monotonic``) every request must be over, set by the caller each pass."""
+    monotonic: Callable[[], float] = time.monotonic
+    _database: str | None = None
+
+    def database(self) -> str | None:
+        """The database's id, ``None`` when the account lists none by the exact name.
+
+        Raises:
+            D1Error: the list did not answer, or names it more than once.
+        """
+        if self._database is None:
+            self._bound()
+            found = [uuid for name, uuid in self.api.databases(DATABASE) if name == DATABASE]
+            if len(found) > 1:
+                raise D1Error("the account lists the state database more than once")
+            self._database = found[0] if found else None
+        return self._database
+
+    def _bound(self) -> None:
+        api: Any = self.api
+        if hasattr(api, "deadline"):
+            cut = self.monotonic() + self.seconds
+            api.deadline = cut if self.deadline is None else min(cut, self.deadline)
+
+    def _run(self, statements: Sequence[Statement]) -> list[Answer]:
+        for sql, _ in statements:
+            if sql not in MORNING_READS:  # pragma: no cover - a programming error
+                raise D1Error("refused a statement the morning reader does not own")
+        database = self.database()
+        if database is None:
+            raise D1Error("no state database")
+        self._bound()
+        answers = self.api.run(database, statements)
+        if len(answers) != len(statements):
+            raise D1Error("the answer holds another number of results")
+        return answers
+
+    def heads(self, days: Sequence[date]) -> dict[date, MorningHead]:
+        """The heads of ``days`` (at most two) that exist.
+
+        Raises:
+            D1Error: the database cannot be read, or a head does not read.
+        """
+        first, second = (days[0], days[-1]) if days else (date.min, date.min)
+        rows = self._run([(_MORNING_HEADS, (first.isoformat(), second.isoformat()))])[0].rows
+        found = (MorningHead.of(row) for row in rows)
+        return {head.day: head for head in found if head.day in days}
+
+    def parts(self, sha: str, count: int | None) -> list[str] | None:
+        """The parts of version ``sha`` (``count`` of them; ``None``: as many as there are),
+        :data:`READ_BATCH` a request; ``None`` when some are missing.
+
+        Raises:
+            D1Error: the database cannot be read.
+        """
+        texts: list[str] = []
+        start = 0
+        while count is None or start < count:
+            stop = start + READ_BATCH if count is None else min(start + READ_BATCH, count)
+            rows = self._run([(_MORNING_CHUNKS, (sha, start, stop))])[0].rows
+            numbers = [int(row.get("n", -1)) for row in rows]
+            if numbers != list(range(start, start + len(numbers))):
+                return None
+            texts.extend(str(row.get("data", "")) for row in rows)
+            if count is not None and len(numbers) != stop - start:
+                return None
+            if count is None and len(numbers) < READ_BATCH:
+                break
+            start = stop
+        return texts or None
 
 
 def make_store(env: Mapping[str, str], client: httpx.Client) -> D1StateStore:

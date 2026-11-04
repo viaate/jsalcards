@@ -36,8 +36,9 @@
   (which the run before held under G13) are dark in the new process, never stale, until
   its next good read: at most its calm 30 minutes.
 
-:class:`Cadence` keeps each source's last pass, outcome and earliest next read in
-``cadence.json`` in the private state (ids, codes and times only).
+:class:`Cadence` keeps each source's last pass, outcome, its cause
+(:mod:`snowlight.live.causes`) and earliest next read in ``cadence.json`` in the private state
+(ids, codes and times only).
 """
 
 import contextlib
@@ -239,6 +240,9 @@ class SourceClock:
     outcome: Outcome
     not_before: datetime | None = None
     """Not due before this (deferred or blocked)."""
+    cause: str | None = None
+    """Why the last read went so (:class:`snowlight.live.causes.Cause`: a 401 apart from a
+    403, a 429, a timeout, ...); ``None``: not known (a clock kept before causes were)."""
 
 
 class Cadence:
@@ -348,18 +352,23 @@ class Cadence:
         )
 
     def record(
-        self, started: datetime, results: Iterable[tuple[str, Outcome, float | None]]
+        self,
+        started: datetime,
+        results: Iterable[tuple[str, Outcome, float | None]],
+        causes: Mapping[str, str] | None = None,
     ) -> None:
         """Keep each source's ``(id, outcome, wait)`` from the pass started at ``started``;
         ``wait`` is, for a deferred source, the seconds from ``started`` until the end of the
-        wait its server asked for (when it answered plus its ``Retry-After``)."""
+        wait its server asked for (when it answered plus its ``Retry-After``); ``causes``: each
+        source's cause (:func:`snowlight.live.causes.cause_of`)."""
         for source_id, outcome, wait in results:
             not_before = None
             if outcome is Outcome.BLOCKED:
                 not_before = started + BLOCKED_FOR
             elif outcome is Outcome.DEFERRED:
                 not_before = started + timedelta(seconds=wait or GRID.total_seconds())
-            self.clocks[source_id] = SourceClock(started, outcome, not_before)
+            cause = (causes or {}).get(source_id)
+            self.clocks[source_id] = SourceClock(started, outcome, not_before, cause)
 
     def passed_in_slot(self, now: datetime) -> bool:
         """Whether a pass (this process's or the run's before, from the saved clocks) read
@@ -406,10 +415,12 @@ class Cadence:
         for sid, value in (document.get("sources") or {}).items():
             try:
                 after = value.get("not_before")
+                cause = value.get("cause")
                 clocks[str(sid)] = SourceClock(
                     datetime.fromisoformat(value["last_pass"]),
                     Outcome(value["outcome"]),
                     datetime.fromisoformat(after) if after else None,
+                    cause if isinstance(cause, str) else None,
                 )
             except (AttributeError, KeyError, TypeError, ValueError):
                 continue
@@ -426,6 +437,7 @@ class Cadence:
                 "not_before": clock.not_before.astimezone(UTC).isoformat()
                 if clock.not_before is not None
                 else None,
+                **({"cause": clock.cause} if clock.cause is not None else {}),
             }
             for sid, clock in sorted(self.clocks.items())
         }

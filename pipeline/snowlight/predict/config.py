@@ -126,6 +126,10 @@ class ServeSettings(_Settings):
     while this names the lead who signed off on serving them anyway (for example "lead
     2026-11-02"); empty, the default: such terms are refused and the pass serves the base
     alone."""
+    live_reads: bool = False
+    """predict-next LIVE-READS: after each pass, the live view of the shipped morning record
+    (:mod:`snowlight.predict.live_reads`), shadow only: nothing served or frozen reads it. It
+    sits outside ``live_score``, so the scoring rules' sha256 does not move."""
     neighbors_max_age_minutes: int = Field(default=60, ge=1)
     """A closings file older than this says nothing of the districts next door."""
     forecast_stale: Literal["identity", "dark"] = "identity"

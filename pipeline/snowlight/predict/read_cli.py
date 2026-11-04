@@ -25,12 +25,14 @@ source's districts, no dates).
 """
 
 import argparse
+import math
+import os
 import sqlite3
 import sys
 import tempfile
 import time
 from collections import Counter
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -45,9 +47,31 @@ from snowlight.predict.publish import Host
 from snowlight.schemas.base import check_published_bytes
 from snowlight.schemas.stats import ReadAudit
 
-STARTED: Final = time.monotonic()
-"""When this module was first imported: the CLI imports it to register its commands, so this
-is about the start of the step's process (the call time counts line's limit counts from it)."""
+STARTED_ENV: Final = "READ_LABELS_STARTED"
+"""The step's start (whole seconds of the Unix epoch) the workflow sets before ``uv run``
+(CALL-TIME-1 S2): every limit of the step counts from it, so the time ``uv`` and the imports
+take is counted too."""
+STARTED_SLACK: Final = 3600.0
+"""A start further back than this (or ahead of now) is not this step's: the import time is."""
+
+
+def started_of(env: Mapping[str, str], monotonic: float, wall: float) -> float:
+    """The step's start on the ``time.monotonic`` clock: :data:`STARTED_ENV` when it reads as
+    a start up to :data:`STARTED_SLACK` before ``wall`` (now, ``time.time``), else
+    ``monotonic`` (now)."""
+    try:
+        ago = wall - float(env.get(STARTED_ENV, ""))
+    except ValueError:
+        return monotonic
+    if not math.isfinite(ago) or ago < 0 or ago > STARTED_SLACK:
+        return monotonic
+    return monotonic - ago
+
+
+STARTED: Final = started_of(os.environ, time.monotonic(), time.time())
+"""When the step began (:func:`started_of`): the workflow's :data:`STARTED_ENV`, else when this
+module was first imported (the CLI imports it to register its commands, so about the start of
+the step's process). The live switch's and the call time counts line's limits count from it."""
 INTERNAL: Final = PIPELINE_ROOT / "out" / "internal"
 COVERAGE: Final = INTERNAL / "stations" / "coverage.json"
 
@@ -251,10 +275,19 @@ def read_once(run: ReadLabelsRun) -> int:
     return 0
 
 
-CALL_TIME_SECONDS: Final = 90.0
-"""The call time counts lines stop once the step has run this long (its limit is 2 minutes):
-the clock is checked before each day, before each timeline read, before the morning record is
-parsed and between districts, so at most one host read (20 s a phase) runs past it."""
+CALL_TIME_SECONDS: Final = 80.0
+"""The call time counts lines stop once the step has run this long (its limit is 2 minutes,
+counted from :data:`STARTED`): the clock is checked before each day, before each timeline
+read, before the morning record is parsed and between districts, so no host read or new day
+starts past it and at most one host read (20 s a phase) runs past it: a stalled read ends by
+100 s (CALL-TIME-1 S2)."""
+
+
+class _PastLimit(Exception):  # noqa: N818 - a private signal, not an error
+    """The counts lines' own limit (:data:`CALL_TIME_SECONDS`) was reached; any other
+    ``TimeoutError`` (a socket's, a library's) is a warning, never a skip (CALL-TIME-1 S3)."""
+
+
 SKIPPED: Final = "call time (off): skipped past {:.0f} s of the step"
 GAP_MINUTES: Final = 60
 """A morning call is lit after a reader gap when the list that lit it had no whole read in the
@@ -278,19 +311,21 @@ def call_time_lines(
     now = clock or time.monotonic
 
     def late() -> bool:
-        return now() - began > CALL_TIME_SECONDS
+        if now() - began > CALL_TIME_SECONDS:
+            raise _PastLimit
+        return False
 
     try:
         calls: dict[date, list[Any]] = {}
         for day in done.added:
-            if late():
-                raise TimeoutError
-            line = _call_time_line(
+            late()
+            # each line is printed as soon as it is made: the counts line is never lost
+            # to the digest's work reaching the limit
+            for line in _call_time_line(
                 run, done, day, calls, coverage=coverage or run.coverage, late=late
-            )
-            if line is not None:
+            ):
                 _out(f"predict read-labels: {line}")
-    except TimeoutError:
+    except _PastLimit:
         _out("predict read-labels: " + SKIPPED.format(CALL_TIME_SECONDS))
     except Exception as error:  # a counts line never changes what the step did
         _out(f"::warning::predict read-labels: call time counts: {type(error).__name__}")
@@ -341,19 +376,19 @@ def _call_time_line(  # noqa: PLR0913 - the run, its day, the calls read and the
     *,
     coverage: live_read.Coverage,
     late: Callable[[], bool],
-) -> str | None:
-    """One day's counts line; ``known``: each final timeline's calls, read once a run. Only
-    a final day whose class snapshot the predict state still holds with a district of a
-    term's class is read from the host (any other day gives no call), and ``late()`` is
-    asked before each read.
+) -> Iterator[str]:
+    """One day's counts line, then its digest line (:func:`digest_line`), each yielded as
+    soon as it is made, over one set of D's record cuts; ``known``: each final
+    timeline's calls, read once a run. Only a final day whose class snapshot the predict
+    state still holds with a district of a term's class is read from the host (any other
+    day gives no call), and ``late()`` is asked before each read (it raises once past its
+    limit).
 
     Raises:
-        TimeoutError: ``late()`` turned true.
+        _PastLimit: ``late()`` found the counts lines' limit reached.
     """
-    from snowlight.live.morning import EVERY_DAY  # noqa: PLC0415
     from snowlight.predict import call_time  # noqa: PLC0415
-    from snowlight.predict.live_labels import Morning, snapshot_classes  # noqa: PLC0415
-    from snowlight.predict.situations import Window  # noqa: PLC0415
+    from snowlight.predict.live_labels import Morning  # noqa: PLC0415
 
     config = run.config
     settings = call_time.CallSettings.of(config)
@@ -362,24 +397,21 @@ def _call_time_line(  # noqa: PLR0913 - the run, its day, the calls read and the
     morning = source.morning(day)
     found = live_read.read_day(run.folder, day)
     if not isinstance(morning, Morning) or found is None:
-        return f"call time (off) {day.isoformat()}: no record"
-    weather = config.weather
-    window = Window(weather.window_from, weather.window_until, weather.snapshot_hour)
-    slack = timedelta(minutes=config.learn.snapshot_slack_minutes)
+        yield f"call time (off) {day.isoformat()}: no record"
+        return
     directory = run.directory
 
     def classes_of(when: date) -> list[Any]:
-        return snapshot_classes(
-            run.snapshots, when, content=directory.content, zones=directory.zones,
-            window=window, slack=slack,
-        )  # fmt: skip
+        return classes_on(config, run.snapshots, directory, when)
 
-    classes = classes_of(day)
-    closing = done.closing_rule
-    least = config.labels.station_min_captures
-    live = source.captures(day, live_read.CAPTURE_DAYS, closing)
-    stats = live_read.ListStats.of(coverage, live, least)
-    recent = source.captures(day, rule.recent_days, closing).days
+    late()
+    inputs = proof_inputs(
+        source, day, config=config, directory=directory, coverage=coverage,
+        snapshots=run.snapshots, closing=done.closing_rule, prefix=morning.prefix,
+        morning=morning,
+    )  # fmt: skip
+    classes, stats, recent = inputs.classes, inputs.stats, inputs.recent
+    days, record, every_before = inputs.days, inputs.record, inputs.every_before
     index = source.index()
     calls: list[call_time.Call] = []
     for entry in index.days if index is not None else ():
@@ -392,24 +424,14 @@ def _call_time_line(  # noqa: PLR0913 - the run, its day, the calls read and the
             if not any(call_time.serves(k, settings) for k in them):
                 known[entry.day] = []
             else:
-                if late():
-                    raise TimeoutError
+                late()
                 known[entry.day] = list(
                     call_time.called_minutes(
                         source.timeline(entry.day), directory, them, settings, rule
                     ).values()
                 )
         calls.extend(known[entry.day])
-    if late():
-        raise TimeoutError
-    days = _record_days(source, morning, day - timedelta(days=settings.required_days))
-    record = call_time.whole_reads(days, morning.prefix)
-    every_before = frozenset(
-        leaid
-        for slot in days.get(day - timedelta(days=1), {}).values()
-        for leaid, named in slot.named.items()
-        if EVERY_DAY in named
-    )
+    late()
     read = {r.district for r in found.rows if r.label is not live_read.Label.NOT_READ}
     unknown = {r.district for r in found.rows if r.label is live_read.Label.UNKNOWN}
     outcomes = _outcomes(source)
@@ -421,6 +443,7 @@ def _call_time_line(  # noqa: PLR0913 - the run, its day, the calls read and the
         if c.kind is call_time.CallKind.MORNING
         and _after_gap(lit_by.get(c.leaid, {}), days.get(day, {}))
     }
+    cuts = call_time.Cuts(morning, rule, stats, coverage.district_sites, settings)
     counts = call_time.day_counts(
         call_time.DayInputs(
             day=day, morning=morning, directory=directory, coverage=coverage, stats=stats,
@@ -431,19 +454,126 @@ def _call_time_line(  # noqa: PLR0913 - the run, its day, the calls read and the
         settings,
         rule,
         late=late,
+        cuts=cuts,
     )  # fmt: skip
     if run.frozen is None:
         counts["no frozen record read"] = 1
-    return call_time.counts_line(day, counts)
+    yield call_time.counts_line(day, counts)
+    cases = call_time.cases_of(
+        day, directory, classes, record=record, coverage=coverage, stats=stats,
+        audience=morning.audience, registry=morning.market_of, settings=settings,
+    )  # fmt: skip
+    proofs = call_time.proofs_for(cuts, cases, recent=recent, every_before=every_before, late=late)
+    yield digest_line(day, cases, proofs, inputs, morning)
 
 
-def _record_days(source: Any, morning: Any, first: date) -> dict[date, Mapping[datetime, Any]]:
-    """The morning record's slots of each UTC day from ``first`` to the morning's: from the live
-    state's folder when the source reads one (each day parsed once), else from the source."""
+DIGEST_LINE: Final = "call time digests {day}: {count} districts, context {context}, {at}"
+
+
+def digest_line(
+    day: date,
+    cases: Sequence[Any],
+    proofs: Mapping[str, Sequence[Any]],
+    inputs: "ProofInputs",
+    morning: Any,
+) -> str:
+    """The live parity line (LIVE-READS decision 8): the population's size, the context
+    digest (with ``morning``'s station stats and the districts D-1 named for D) and the
+    proof digest at 06:30, 07:30, 08:30 and 09:30 local (codes only), the same digests the
+    serving pass's live view prints."""
+    from snowlight.predict import call_time  # noqa: PLC0415
+
+    context = call_time.context_digest(
+        cases, recent=inputs.recent, every_before=inputs.every_before, stats=inputs.stats,
+        station_stats=morning.stats, named_before=morning.named_before,
+    )  # fmt: skip
+    at = ", ".join(
+        f"{end // 60:02d}:{end % 60:02d} {call_time.digest_at(proofs, end)}"
+        for end in call_time.DIGEST_AT
+    )
+    return DIGEST_LINE.format(day=day.isoformat(), count=len(cases), context=context, at=at)
+
+
+def classes_on(
+    config: PredictConfig, snapshots: Mapping[str, object], directory: Directory, day: date
+) -> list[Any]:
+    """Each district's class at ``day``'s snapshot (``None``: not known), by the label
+    rule's window and slack."""
+    from snowlight.predict.live_labels import snapshot_classes  # noqa: PLC0415
+    from snowlight.predict.situations import Window  # noqa: PLC0415
+
+    weather = config.weather
+    return snapshot_classes(
+        snapshots, day, content=directory.content, zones=directory.zones,
+        window=Window(weather.window_from, weather.window_until, weather.snapshot_hour),
+        slack=timedelta(minutes=config.learn.snapshot_slack_minutes),
+    )  # fmt: skip
+
+
+@dataclass(frozen=True, slots=True)
+class ProofInputs:
+    """What a class morning's proofs are made from besides D's own record (codes and counts
+    only): read-labels' call time line and the serving pass's live view
+    (:mod:`snowlight.predict.live_reads`) both take them from :func:`proof_inputs`."""
+
+    day: date
+    classes: list[Any]
+    """Each district's class at D's snapshot."""
+    stats: live_read.ListStats
+    recent: Mapping[str, int]
+    """The lists with a counted day in the rule's recent days before D (condition 4)."""
+    days: dict[date, Mapping[datetime, Any]]
+    """The morning record's slots of each UTC day from D - ``required_days`` to D."""
+    record: Mapping[date, frozenset[str]]
+    """Each of those days' lists read whole (:func:`snowlight.predict.call_time.whole_reads`)."""
+    every_before: frozenset[str]
+    """The districts a row of D-1's record named for every day."""
+
+
+def proof_inputs(  # noqa: PLR0913 - the record, its day and the rule's inputs
+    source: Any,
+    day: date,
+    *,
+    config: PredictConfig,
+    directory: Directory,
+    coverage: live_read.Coverage,
+    snapshots: Mapping[str, object],
+    closing: Any,
+    prefix: str,
+    morning: Any = None,
+) -> ProofInputs:
+    """D's proof inputs from ``source`` (:class:`snowlight.predict.live_read.ReadSource`):
+    the classes at D's snapshot, the list stats and recent lists by ``closing`` (the counted
+    days' rule), the record's days from D - ``required_days`` (``morning``: D's own, when the
+    source reads no state folder) and the districts D-1 named for every day."""
+    from snowlight.predict import call_time  # noqa: PLC0415
+    from snowlight.predict.live_labels import named_every_day  # noqa: PLC0415
+
+    settings = call_time.CallSettings.of(config)
+    rule = live_read.ReadRule.of(config)
+    least = config.labels.station_min_captures
+    live = source.captures(day, live_read.CAPTURE_DAYS, closing)
+    days = _record_days(source, day, day - timedelta(days=settings.required_days), morning)
+    return ProofInputs(
+        day=day,
+        classes=classes_on(config, snapshots, directory, day),
+        stats=live_read.ListStats.of(coverage, live, least),
+        recent=source.captures(day, rule.recent_days, closing).days,
+        days=days,
+        record=call_time.whole_reads(days, prefix),
+        every_before=named_every_day(days.get(day - timedelta(days=1), {}).values()),
+    )
+
+
+def _record_days(
+    source: Any, day: date, first: date, morning: Any = None
+) -> dict[date, Mapping[datetime, Any]]:
+    """The morning record's slots of each UTC day from ``first`` to ``day``: from the live
+    state's folder when the source reads one (each day parsed once), else from the source
+    (``morning``: ``day``'s own, when given)."""
     from snowlight.live.morning import MorningLog, slot_start  # noqa: PLC0415
     from snowlight.predict.live_labels import Morning  # noqa: PLC0415
 
-    day = morning.day
     days: dict[date, Mapping[datetime, Any]] = {}
     folder = getattr(getattr(source, "state", None), "folder", None)
     if isinstance(folder, Path):
@@ -454,7 +584,7 @@ def _record_days(source: Any, morning: Any, first: date) -> dict[date, Mapping[d
         return days
     when = first
     while when <= day:
-        other = morning if when == day else source.morning(when)
+        other = morning if when == day and morning is not None else source.morning(when)
         if isinstance(other, Morning):
             days[when] = other.slots
         when += timedelta(days=1)
@@ -678,6 +808,38 @@ def summary(
     return lines
 
 
+def coverage_of(
+    config: PredictConfig, committed: Any, stations: Sequence[Any], *, read_sources: Path,
+    audiences: Path,
+) -> live_read.Coverage:  # fmt: skip
+    """L1's coverage from the committed model's counties, the registry's stations and the two
+    coverage files (empty where absent).
+
+    Raises:
+        ValueError: a coverage file does not read.
+    """
+    proven = live_read.load_read_sources(read_sources)
+    return live_read.Coverage(
+        county_sources=proven.counties,
+        archive=live_read.load_audiences(audiences),
+        audience_season=live_read.load_audience_season(audiences),
+        county_of={k: v.county for k, v in committed.districts.items() if v.county},
+        district_sites=frozenset(s.id for s in stations if s.leaids),
+        captures=proven.captures,
+        min_captures=live_read.ReadRule.of(config).min_captures,
+        rows=proven.rows,
+    )
+
+
+def current_coverage(coverage: live_read.Coverage, today: date) -> live_read.Coverage:
+    """``coverage`` as L1 reads it ``today``: no archive audience once its season has passed
+    (:func:`snowlight.predict.live_read.audiences_current`)."""
+    season = coverage.audience_season
+    if season is not None and not live_read.audiences_current(season, today):
+        return replace(coverage, archive={})
+    return coverage
+
+
 def run_read_labels(args: argparse.Namespace) -> int:  # pragma: no cover - the real world
     """Run ``predict read-labels``."""
     with tempfile.TemporaryDirectory() as scratch:
@@ -719,17 +881,10 @@ def _run_read_labels(args: argparse.Namespace, scratch: Path) -> int:  # pragma:
             _out("predict read-labels: publishing is off: the audit stays in out/internal")
         stations = list(load_registry(args.registry).stations.values())
         missing = tuple(p.name for p in (args.read_sources, args.audiences) if not p.is_file())
-        proven = live_read.load_read_sources(args.read_sources)
-        coverage = live_read.Coverage(
-            county_sources=proven.counties,
-            archive=live_read.load_audiences(args.audiences),
-            audience_season=live_read.load_audience_season(args.audiences),
-            county_of={k: v.county for k, v in committed.districts.items() if v.county},
-            district_sites=frozenset(s.id for s in stations if s.leaids),
-            captures=proven.captures,
-            min_captures=live_read.ReadRule.of(run.config).min_captures,
-            rows=proven.rows,
-        )
+        coverage = coverage_of(
+            run.config, committed, stations, read_sources=args.read_sources,
+            audiences=args.audiences,
+        )  # fmt: skip
         _out(
             f"predict read-labels: {len(coverage.county_sources)} counties with proven lists, "
             f"{len(coverage.archive)} archive audiences"
