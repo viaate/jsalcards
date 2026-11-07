@@ -164,6 +164,9 @@ jobs:
     # The suite has grown to 15 to 25 minutes, and slow runners vary by about a
     # quarter: on Oct 27 two runs were cut at 25 minutes with no failure
     # (pytest at 1458 s and 1468 s). The limit leaves room for that spread.
+    # By Nov 7 the serial suite took 38 minutes and one run was cut at 40 with
+    # pytest at 99% and no failure, so pytest now spreads the tests over every
+    # runner CPU (pytest-xdist) and the limit stays a backstop, not a budget.
     timeout-minutes: 40
     defaults:
       run:
@@ -187,4 +190,12 @@ jobs:
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run mypy --strict snowlight tests
-      - run: uv run pytest
+      # Every test outside the two timing modules that -k picks by name
+      # (classify/test_classify_speed.py and match/test_match_perf.py), spread
+      # over every runner CPU.
+      - run: uv run pytest -n auto -k "not _perf and not _speed"
+      # Those two timing modules, alone and one at a time so no other test
+      # shares their CPU. The -k above is this one negated, so the two steps
+      # run the whole suite; coverage adds to the step above and the total is
+      # held to fail_under here.
+      - run: uv run pytest -k "_perf or _speed" --cov-append

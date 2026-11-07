@@ -132,7 +132,8 @@ def test_pipeline_job_runs_every_required_check(jobs: dict[str, Mapping]) -> Non
         "uv run ruff check",
         "uv run ruff format --check",
         "uv run mypy --strict snowlight tests",
-        "uv run pytest",
+        'uv run pytest -n auto -k "not _perf and not _speed"',
+        'uv run pytest -k "_perf or _speed" --cov-append',
     ]
     assert any(name == "pipeline" for name, _, _ in _steps_using(jobs, "astral-sh/setup-uv"))
 
