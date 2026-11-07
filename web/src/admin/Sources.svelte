@@ -1,19 +1,36 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
+  import type { Services } from '../app/boot';
   import { REASON_KEYS, STATUS_KEYS, copy } from '../copy';
   import { accountFormat, adminCopy } from '../copy-account';
+  import type { Directory } from '../data/directory';
   import type { AdminCall } from './call';
-  import { decodeDay, type SourcesDay, type StoredDay } from './sources';
+  import ListLink from './ListLink.svelte';
+  import { decodeDay, rowName, type SourcesDay, type StoredDay } from './sources';
 
   interface Props {
     call: AdminCall;
+    /** The page's services, for the public directory the rows are named from (null: loading). */
+    app: Services | null;
   }
 
-  let { call }: Props = $props();
+  let { call, app }: Props = $props();
 
   let days = $state<SourcesDay[] | null>(null);
   let failed = $state(false);
+  let directory = $state.raw<Directory | null>(null);
+
+  $effect(() => {
+    if (app === null || directory !== null) return;
+    void app.data
+      .directories()
+      .then((source) => source?.get())
+      .then((found) => {
+        directory = found ?? null;
+      })
+      .catch(() => undefined);
+  });
 
   function status(code: number | null): string {
     const key = code === null ? undefined : STATUS_KEYS[code];
@@ -85,33 +102,31 @@
             </thead>
             <tbody>
               {#each day.rows as row, index (index)}
+                {@const named = rowName(directory, row.nces)}
                 <tr>
-                  <td>{row.nces} <span class="muted">{row.level ?? ''}</span></td>
-                  <td>{status(row.status)} <span class="muted">{reason(row.reason)}</span></td>
                   <td>
-                    <a
-                      href={row.source === null ? undefined : day.links[row.source]}
-                      target="_blank"
-                      rel="noopener noreferrer">{row.source ?? ''}</a
-                    >
-                    <span class="muted">{row.type ?? ''}</span>
+                    {#if named !== null}
+                      <div>
+                        {named.name}
+                        <span class="muted"
+                          >{accountFormat.stateOf(named.district?.id ?? named.id)}</span
+                        >
+                      </div>
+                      {#if named.district !== null}<div class="muted">
+                          {named.district.name}
+                        </div>{/if}
+                    {/if}
+                    <div class="muted">{row.nces} {row.level ?? ''}</div>
                   </td>
+                  <td>{status(row.status)} <span class="muted">{reason(row.reason)}</span></td>
+                  <td><ListLink id={row.source} kind={row.type} links={day.links} /></td>
                   <td class="muted">{time(row.row_stamp)}</td>
                   <td class="muted">{time(row.hi)}</td>
                   <td>{row.present ? adminCopy.sources.yes : adminCopy.sources.no}</td>
-                  <td
-                    ><a
-                      href={row.posted_by === null ? undefined : day.links[row.posted_by]}
-                      target="_blank"
-                      rel="noopener noreferrer">{row.posted_by ?? ''}</a
-                    ></td
-                  >
+                  <td><ListLink id={row.posted_by} kind={null} links={day.links} /></td>
                   <td>
                     {#each row.contributing as [id, kind] (id)}
-                      <div>
-                        <a href={day.links[id]} target="_blank" rel="noopener noreferrer">{id}</a>
-                        <span class="muted">{kind}</span>
-                      </div>
+                      <div><ListLink {id} {kind} links={day.links} /></div>
                     {/each}
                   </td>
                 </tr>

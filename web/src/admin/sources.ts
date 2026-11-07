@@ -1,5 +1,8 @@
 /** The admin's Sources tab: the live reader's lit-closing sources (GET /v1/admin/sources), decoded. */
 
+import type { Directory } from '../data/directory';
+import { casedName } from '../text/names';
+
 /** One stored day as the API sends it: gzip parts, base64, with the raw JSON's sha256. */
 export interface StoredDay {
   readonly day: string;
@@ -87,4 +90,43 @@ export async function decodeDay(stored: StoredDay): Promise<SourcesDay> {
   } catch {
     return { ...empty, rows: null };
   }
+}
+
+/** A lit row's school or district as the admin reads it, from the public directory. */
+export interface RowName {
+  /** Its NCES id: the school's, or the district's for a district id (its state's code is the
+   * id's first digits; a private school's id does not say). */
+  readonly id: string;
+  /** The school's name (or the district's, for a district id), cased as the map shows it. */
+  readonly name: string;
+  /** The school's district: its id and name; null for a district id or a school in none. */
+  readonly district: { readonly id: string; readonly name: string } | null;
+}
+
+/**
+ * The name of the school (or district) a lit row's NCES id names, in `directory`; null without
+ * a directory, or for an id it does not have (the row then shows its id alone).
+ */
+export function rowName(directory: Directory | null, nces: string): RowName | null {
+  if (directory === null) return null;
+  const school = directory.schoolIndex(nces);
+  if (school >= 0) {
+    const raw = directory.meta.names[school];
+    if (raw === undefined) return null;
+    const at = directory.district[school] ?? -1;
+    const id = at >= 0 ? directory.meta.districts.ids[at] : undefined;
+    const name = at >= 0 ? directory.meta.districts.names[at] : undefined;
+    return {
+      id: nces,
+      name: casedName(raw),
+      district:
+        id === undefined || name === undefined
+          ? null
+          : { id, name: casedName(name, { district: true }) },
+    };
+  }
+  const district = directory.districtIndex(nces);
+  const raw = district >= 0 ? directory.meta.districts.names[district] : undefined;
+  if (raw === undefined) return null;
+  return { id: nces, name: casedName(raw, { district: true }), district: null };
 }

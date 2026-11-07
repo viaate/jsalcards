@@ -114,10 +114,12 @@ The admin view has six parts:
   **Clear** removes one. A note you add is seen only by admins. On the
   map, a status you set says "Confirmed by our team" in the school's panel.
 - **Lists**: where each lit closing came from, for each local day the live reader's
-  last publish covers and the day before (today and yesterday): the school's NCES id
+  last publish covers and the day before (today and yesterday): the school's or
+  district's name from the public directory, with its state and district, its NCES id
   and whether the list named it or its district, the status and reason, the list
-  that won (its id, its type and a link to its page from the station registry;
-  the admin's own statuses have no link), when the row was posted and when it
+  that won (its id, its type and a link from the station registry: its page, else
+  the list file the reader GETs; the admin's own statuses and a list with neither
+  show the id and type alone), when the row was posted and when it
   was last read, whether the row is still on that list, the list whose time
   shows as "Posted", and every list that said the same. Each day shows the time
   of the publish it is from. A shadow publish (`LIVE_PUBLISH` shadow, the

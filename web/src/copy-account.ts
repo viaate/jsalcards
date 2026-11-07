@@ -8,6 +8,7 @@
  */
 
 import { format } from './copy-format.ts';
+import { stateOfId } from './text/school-names.ts';
 
 /** Recursively freezes an object graph so no string can be changed at runtime. */
 function deepFreeze<T>(value: T): T {
@@ -275,7 +276,7 @@ export const adminCopy = /* @__PURE__ */ deepFreeze({
     laterNote: 'This list is from the earlier publish, not what the map shows now.',
     writing: 'This day is being written. Open the tab again in a minute.',
     unreadable: 'This day could not be read.',
-    school: 'School id',
+    school: 'School or district',
     status: 'Status',
     source: 'List',
     read: 'Row posted',
@@ -332,6 +333,11 @@ function manualStatus(status: string, minutes: number | null, at: string | null)
 /** "District 3904378", "School 390437801234": a manual status's target by id. */
 function target(scope: string, id: string): string {
   return `${scope === 'district' ? 'District' : 'School'} ${id}`;
+}
+
+/** The USPS code of the state a public school's or district's id names ("KS"); '' for a private school's. */
+function stateOf(id: string): string {
+  return stateOfId(id) ?? '';
 }
 
 /** "Page 2 of 5". */
@@ -440,6 +446,7 @@ export const accountFormat = /* @__PURE__ */ deepFreeze({
   removeSchool,
   manualStatus,
   target,
+  stateOf,
   page,
   age,
   confirmDelete,

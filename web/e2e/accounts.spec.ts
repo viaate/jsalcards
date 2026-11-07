@@ -1273,4 +1273,100 @@ test.describe('the admin view with a directory', () => {
     await expect(page.getByLabel(`Today (${thu ?? ''})`, { exact: true })).not.toBeChecked();
     expect(api.overrides).toHaveLength(1);
   });
+
+  test('the admin reads each lit closing by its name, with a link for every list that has one', async ({
+    page,
+  }) => {
+    test.skip(test.info().project.name !== 'desktop', 'one screen is enough for the admin view');
+    const api = new StubApi();
+    api.users.push(await adminUser());
+    const row = (
+      nces: string,
+      level: string,
+      source: string,
+      type: string,
+      contributing: [string, string][],
+    ): Record<string, unknown> => ({
+      nces,
+      status: 0,
+      reason: 0,
+      level,
+      source,
+      type,
+      lo: null,
+      hi: '2026-10-20T15:55:00+00:00',
+      row_stamp: null,
+      present: true,
+      posted_by: source,
+      contributing,
+    });
+    // SYNTHETIC: one stored day with a school row, a district row and an admin row (no page).
+    const summary = JSON.stringify({
+      v: 1,
+      closings: [
+        row('410000100001', 'school', 'synthetic-site-a', 'district_site', [
+          ['synthetic-site-a', 'district_site'],
+          ['synthetic-aggregator-a', 'aggregator_list'],
+        ]),
+        row('410000100002', 'district', 'synthetic-board-a', 'state_board', [
+          ['synthetic-board-a', 'state_board'],
+          ['synthetic-office-a', 'county_office'],
+          ['synthetic-station-a', 'broadcaster_list'],
+        ]),
+        row('410000199999', 'school', 'snowlight-admin', 'admin', [['snowlight-admin', 'admin']]),
+      ],
+      links: {
+        'synthetic-site-a': 'https://example.test/site',
+        'synthetic-aggregator-a': 'https://example.test/aggregator',
+        'synthetic-board-a': 'https://example.test/board',
+        'synthetic-office-a': 'https://example.test/office',
+        'synthetic-station-a': 'https://example.test/station',
+      },
+    });
+    api.sources = [
+      {
+        day: '2026-10-20',
+        sha256: createHash('sha256').update(summary).digest('hex'),
+        closings: 3,
+        published_at: '2026-10-20T16:00:05+00:00',
+        written_at: '2026-10-20T16:00:30+00:00',
+        mode: 'on',
+        latest_at: null,
+        parts: [Buffer.from(gzipSync(Buffer.from(summary))).toString('base64')],
+      },
+    ];
+    await api.attach(page);
+    await page.goto(`${site}?admin`);
+    await page.getByRole('button', { name: 'Sign up or log in' }).click();
+    const sheet = page.getByRole('dialog');
+    await sheet.getByLabel('Username or email').fill('Olivia');
+    await sheet.getByLabel('Password').fill(PASSWORD);
+    await sheet.getByRole('button', { name: 'Log in' }).click();
+    await expect(page.getByRole('heading', { name: 'Admin' })).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('tab', { name: 'Lists' }).click();
+
+    const rows = page.getByRole('row');
+    const school = rows.filter({ hasText: '410000100001' });
+    await expect(school.getByRole('cell').first()).toContainText('Made-up Elementary OR');
+    await expect(school.getByRole('cell').first()).toContainText('Made-up School District');
+    const district = rows.filter({ hasText: '410000100002' });
+    await expect(district.getByRole('cell').first()).toContainText('Made-up High OR');
+    await expect(district.getByRole('cell').first()).toContainText('Made-up School District');
+    for (const [id, href] of [
+      ['synthetic-site-a', 'https://example.test/site'],
+      ['synthetic-aggregator-a', 'https://example.test/aggregator'],
+      ['synthetic-board-a', 'https://example.test/board'],
+      ['synthetic-office-a', 'https://example.test/office'],
+      ['synthetic-station-a', 'https://example.test/station'],
+    ] as const) {
+      await expect(page.getByRole('link', { name: id }).first()).toHaveAttribute('href', href);
+    }
+    // A list with no public page shows its id and type, and no link; an id the directory does
+    // not have shows the id alone.
+    const admin = rows.filter({ hasText: '410000199999' });
+    await expect(admin).toContainText('snowlight-admin');
+    await expect(admin).toContainText('admin');
+    await expect(page.getByRole('link', { name: 'snowlight-admin' })).toHaveCount(0);
+    await expect(admin.getByRole('cell').first()).toHaveText('410000199999 school');
+  });
 });

@@ -78,7 +78,7 @@
     {:else if tab === 'statuses'}
       <Statuses {call} {app} />
     {:else if tab === 'sources'}
-      <Sources {call} />
+      <Sources {call} {app} />
     {:else if tab === 'users'}
       <Users {call} />
     {:else if tab === 'moderation'}

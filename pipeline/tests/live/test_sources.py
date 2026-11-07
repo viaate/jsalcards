@@ -534,8 +534,18 @@ def test_the_links_come_from_registry_stations_and_the_loop_shipper_gets_them() 
     the shipper reads the publisher's mode and memory at each shipment."""
     linked = station("gray-synthetic")
     bare = linked.model_copy(update={"id": "gray-bare", "page_url": None})
+    # SYNTHETIC: a station with only a list file the reader GETs links that file; a POST-only
+    # one does not.
+    data = linked.model_copy(
+        update={"id": "gray-data", "page_url": None, "data_url": "https://example.invalid/list"}
+    )
+    posted = data.model_copy(update={"id": "gray-post", "data_post": '{"q": 1}'})
+    stations = {"gray-synthetic": linked, "gray-bare": bare, "gray-data": data, "gray-post": posted}
+    assert sources.station_links(stations) == {
+        "gray-synthetic": "https://example.invalid/closings",
+        "gray-data": "https://example.invalid/list",
+    }
     stations = {"gray-synthetic": linked, "gray-bare": bare}
-    assert sources.station_links(stations) == {"gray-synthetic": "https://example.invalid/closings"}
     memory = Memory()
     publisher = SimpleNamespace(mode=Mode.SHADOW, memory=memory)
     ingest = SimpleNamespace(stations=stations, publisher=publisher)

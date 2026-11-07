@@ -5,11 +5,11 @@ reads the last publish's private ``provenance.jsonl`` and ships, for each local 
 publish covers (:func:`~snowlight.schemas.live.local_days`), a small summary of every lit
 status's sources to the accounts database (``snowlight-accounts``, which the API Worker
 already reads; found by its exact name and never created): the winning source's id and type,
-its page link from the registry, the row's times (``lo``, ``hi``, ``row_stamp``), whether it
-is still on its list (``present``), the source whose time shows as "Posted", and every
-contributing source's id and type. Codes, ids, links and times only: never a list's text, no
-row key. Nothing here reaches a public file; the API serves it to the admin alone
-(``GET /v1/admin/sources``).
+its public link from the registry (its page, else a list file it GETs), the row's times
+(``lo``, ``hi``, ``row_stamp``), whether it is still on its list (``present``), the source
+whose time shows as "Posted", and every contributing source's id and type. Codes, ids,
+links and times only: never a list's text, no row key. Nothing here reaches a public file;
+the API serves it to the admin alone (``GET /v1/admin/sources``).
 
 **Tables** (``api/migrations/0005_lit_sources.sql``): ``lit_sources(day, n, data)``, the
 day's summary as gzip, cut into :data:`~snowlight.live.d1.CHUNK_BYTES` pieces, each base64
@@ -234,7 +234,7 @@ class SourcesShipper:
     api: D1Api
     env: Mapping[str, str]
     links: Mapping[str, str]
-    """Each registry station's page link, by source id."""
+    """Each registry station's public link, by source id (:func:`station_links`)."""
     publish: Callable[[], tuple[str, datetime | None]]
     """The publisher's mode (``on``, ``shadow``, ``off``) and its last publish time from its
     memory (a blank one included; ``None``: none yet)."""
@@ -465,10 +465,14 @@ def _newest(by_day: Mapping[date, Sequence[Mapping[str, Any]]]) -> datetime | No
 
 
 def station_links(stations: Mapping[str, Any]) -> dict[str, str]:
-    """Each registry station's page link, by id (stations without one are left out)."""
+    """Each registry station's public link, by id, whatever its source type: its page, else
+    the list file the reader reads when that answers a plain GET (a station with only a
+    ``data_url``). Stations with neither, and POST-only endpoints, are left out."""
     links: dict[str, str] = {}
     for source, station in stations.items():
         url = getattr(station, "page_url", None)
+        if url is None and getattr(station, "data_post", None) is None:
+            url = getattr(station, "data_url", None)
         if url is not None:
             links[source] = str(url)
     return links

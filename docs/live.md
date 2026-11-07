@@ -857,8 +857,8 @@ The admin view's **Lists** tab (docs/accounts.md) shows where each lit status ca
 In the idle time after the morning record's shipment (every :00 and :30 UTC, after a good
 state push), the reader reads `provenance.jsonl` and ships, for each local day of that
 publish (the far west's today to the far east's tomorrow), one summary per status: its NCES
-id, status, reason and level, the winning list's id and type, the list's page link from the
-registry, the row's `lo`, `hi` and `row_stamp`, `present`, the list whose time shows as
+id, status, reason and level, the winning list's id and type, the list's public link from the
+registry (its page, else the list file the reader GETs; none for a POST-only endpoint), the row's `lo`, `hi` and `row_stamp`, `present`, the list whose time shows as
 "Posted", and each contributing list's id and type. No row key and no list text.
 
 Each day's head also carries the publisher's mode (`on`, or `shadow`, which the page labels
