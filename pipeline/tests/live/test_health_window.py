@@ -59,6 +59,7 @@ class Health:
         self.ingest.taken = set()
         self.ingest.due = frozenset()
         self.ingest.beat = lambda: None
+        self.ingest.carried = {}
         self.fetched: list[tuple[datetime, str, bool]] = []
 
     def old_share(self, reads: Sequence[SourceRead], after: datetime) -> float:

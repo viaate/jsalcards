@@ -10,7 +10,7 @@ import sys
 import threading
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, replace
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -30,6 +30,7 @@ from live.test_d1_store import FakeD1
 from snowlight import cli
 from snowlight.live import cli as live_cli
 from snowlight.live.cadence import Cadence
+from snowlight.live.carry import CARRY, Carried, write_carry
 from snowlight.live.d1 import D1Error, D1StateStore
 from snowlight.live.history import seed_changes
 from snowlight.live.ingest import Ingest
@@ -160,6 +161,29 @@ def test_the_chain_alert_counts_exits_across_runs_through_the_state_store(
     assert _finish(tmp_path, "0", state=third, run="103") == 0
     assert _codes(third) == [1, 124, 0]
     assert _alerts(tmp_path)["open"] == []
+
+
+def test_only_the_end_push_carries_a_final_handover_record(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # a loop push carries the record unmarked; live finish --record marks it, so the end
+    # push carries the run's last record final (snowlight.live.carry)
+    run, loop, end = (tmp_path / name for name in ("run", "loop", "end"))
+    assert _state(tmp_path, "pull", run) == 0
+    moment = datetime(2026, 11, 17, 11, 5, tzinfo=UTC)
+    write_carry(run / CARRY, key="k", now=moment, held={"gray-a": Carried(moment, moment)})
+    assert _state(tmp_path, "push", run) == 0
+    assert _state(tmp_path, "pull", loop) == 0
+    assert "final" not in json.loads((loop / CARRY).read_text())
+    capsys.readouterr()
+    assert _finish(tmp_path, "0", "--record", state=run, run="101") == 0
+    assert "carry final: 1 sources" in capsys.readouterr().out
+    assert _state(tmp_path, "push", run) == 0
+    assert _state(tmp_path, "pull", end) == 0
+    assert json.loads((end / CARRY).read_text())["final"] is True
+    # a run that wrote no record says so and marks nothing
+    assert _finish(tmp_path, "0", "--record", state=tmp_path / "empty", run="102") == 0
+    assert "carry final: none (missing)" in capsys.readouterr().out
 
 
 def _open(tmp_path: Path) -> list[str]:

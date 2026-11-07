@@ -29,26 +29,72 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   an unchanged upload only when it starts under 4 minutes after the last uploading pass. The
   next due mark is the first grid mark after a pass's start, so a pass that overran runs the
   missed mark at once.
-- **A successor's first reads.** A process holds a source's statuses only once it has read
-  the source itself, so a run first reads every source whose last good read held rows, as
+- **A successor's first reads.** A process reads a source's rows itself (they live in memory
+  only), so a run first reads every source whose last good read held rows, as
   soon as the politeness floor allows (another grid slot, 4 minutes on), whatever its
   cadence. The run's first pass is the next grid mark when its predecessor read one of them
   in the current slot, and also when there is none to read now and the predecessor passed in
   the current slot (most of the off-season: a pass then would find almost nothing due, count
   a share near 0 and be refused). A handoff is so one slot, as before: the last upload at
   about G+1 min, the successor ready at about G+2.5, its first pass at G+5 and its upload
-  about a minute later. The gap between uploads is unchanged by design (about 5-6 minutes);
-  what changed is that the successor's first pass is no longer refused and no status goes
-  dark at the handoff. A source a server's wait or block holds past the next mark is not
+  about a minute later. The gap between uploads is unchanged by design (about 5-6 minutes).
+  A source a server's wait or block holds past the next mark is not
   waited for, nor read early when it is free. A source whose last read failed (`error`,
   `partial`) is not read early either: it keeps its cadence, so a throttled host is never
-  asked more often than the owner's cadence allows, and its statuses, which the run before
-  still held under G13, are dark in the successor (never shown stale) until its next good
-  read, at most 30 minutes (5 in a window or an alert). So is a source whose first read in
-  the successor fails. A first read cut off (`late`) is due at the next pass. (Until Oct 30 a successor read a holding
-  source only on its own cadence, so a half-hourly source's statuses were dark for up to 25
-  minutes after a handoff, and its first pass at G+2 read nothing and was refused for
-  health.)
+  asked more often than the owner's cadence allows. A first read cut off (`late`) is due at
+  the next pass. (Until Oct 30 a successor read a holding source only on its own cadence, so
+  a half-hourly source's statuses were dark for up to 25 minutes after a handoff, and its
+  first pass at G+2 read nothing and was refused for health.)
+- **The handover carry.** A handover never changes what the file shows; only reads and the
+  ordinary aging rules do. Every pass writes `carry.json` to the state: the sources whose
+  statuses it held, each with the time of the good read holding them and the end of the hold
+  it applied (that read's time plus 45 minutes in a window or an alert, 90 otherwise, as the
+  pass saw the source), and a key of the resolver's `derived_version` (without the station
+  part) and the merge rules. The successor reads it at its start (one line, `carry: <n>
+  sources` or `carry: none (<code>)`) and, for each listed source it has not read itself,
+  takes the rows the ledger holds present for the rows of that read: their statuses stand
+  while both its own G13 bound, measured from that read's own time (never from the
+  handover), and the listed end allow, so a carried status never stands longer than in the
+  run before, even when the successor counts the source quiet because its first alerts read
+  failed (a new process has no alert set to keep yet); and only derivations stored under its
+  own version light (another version only darkens). Its own record keeps the earlier end for
+  the run after it. Its own first good read of the source replaces them, as any later read
+  does; a read that fails (`error`, `partial`, `late`, a wait or a block) leaves them as the
+  run before would have: held until G13 or the listed end stops them. So a source whose last
+  read failed, which is not read early, stays shown exactly as long as the run before would
+  have shown it, and goes dark at the same instant. Nothing is carried, today's rule (a source
+  not read in this process gives only its dissents), when the record is missing (`missing`),
+  does not parse (`unreadable`), has another schema (`version`) or key (`key`: new reader,
+  matcher, guards, directory edition or rules), is stamped more than a minute ahead of the
+  clock (`future`) or is older than the longest hold, 90 minutes (`old`); and a source whose
+  ledger read time is no longer the listed one (a good read the record does not know) is not
+  carried. The record and the ledger travel in the same pushed state, and only the run's
+  end may hand one over: every pass writes the record afresh, unmarked, and `live finish
+  --record` (the step after the reader has ended and before the end push, one line `carry
+  final: <n> sources` or `carry final: none (<code>)`) marks it final. A successor carries
+  nothing from a record without the mark (`not final`): a snapshot pushed while the run went
+  on, which a successor pulls when the run's end push failed (it is tried again only at the
+  next slot), the runner was lost or the job cut off (no end push), the pushes were hourly
+  or refused under the write cap, or the pull fell back to the previous slot. That snapshot's
+  pass may have held a closing the run then retracted and held dark while its uploads after
+  the snapshot failed or were refused (host writes failing, a refusal for health, an owner
+  hold, a rate limit): the host then still serves the snapshot's pass, and nothing on the
+  host tells the two apart, so carrying it would show the retracted closing as current. A
+  pass whose write fails removes the record, so an earlier pass's record is never marked
+  for the run's end. A final record and the ledger pushed with it are the run's last pass,
+  uploaded or not. Then, once the record passes the checks above, the successor reads back
+  the closings file the live host serves (one call to our own host's API per process start,
+  as the publisher's G12c reads it, never a list server; a refusal it meets, a rate limit
+  included, is kept by the host client for the rest of the process) and carries nothing
+  when the record's time is earlier than that file's `generated_at` (`behind`; whole
+  seconds, as published: another writer's later file, an overrides-only run or a blank),
+  when the host cannot be read (`host <error type>`, a timeout or a rate limit's
+  `HostRefusedError` included) or when it holds no file (`unpublished`). Stopping the carry
+  is always the safe side: today's behaviour. Carrying asks nothing of any list server.
+  Nov 5 showed the need: a calm source's 18:25Z read in the run before was not good, so the
+  successor (run 42084876453) did not read it early, held nothing of it, and the lit count
+  fell 3 to 1 from 18:35 to its calm read at 18:55. That run before recorded its exit and
+  then pushed its state at its end, so its record would have been final.
 - **The end.** A run ends right after its last grid pass that starts before +320 minutes,
   and before its job's start + 330 minutes (the 345-minute job timeout less 15 for that last
   pass at its 4.5-minute cut and its publish, the successor's dispatch, the end push at its
@@ -267,8 +313,8 @@ reaches it. It is created by the first run (only when the account's list answers
 database exactly `snowlight-live-state`), on the free plan with no card.
 
 - **What goes in:** the packed state folder: `ledger.sqlite`, `publish.json` and
-  `publish.<prefix>.json`, `robots.json`, `cadence.json`, `pacer.json`, `exits.json`,
-  `changes/`, `morning/`, `unmatched.json`. Never packed: `d1.json` (this run's epoch) and
+  `publish.<prefix>.json`, `robots.json`, `cadence.json`, `carry.json`, `pacer.json`,
+  `exits.json`, `changes/`, `morning/`, `unmatched.json`. Never packed: `d1.json` (this run's epoch) and
   `pulse`. Never off the runner: request bodies and validators (`.cache/stations/live`),
   `health.json`, `provenance.jsonl`.
 - **Pull** (at start, `live state pull --retry`: 3 tries 10 s apart, then every 60 s, for 6
@@ -760,7 +806,7 @@ A pass reads the sources due through a concurrent pool (`snowlight/live/pool.py`
 
 - **Politeness.** One request in flight per host and starts at least `max(5 s, Crawl-delay)` apart, across all 24 workers. Each of Gray's list files, path-style on `s3.amazonaws.com`, is paced under its own bucket (owner decision Q3), the same as its documented per-station address. robots.txt is read at most once per origin a day (kept in `robots.json`), and is still a record, never a gate. A robots.txt that fails, or that asks for a `Retry-After` the pass will not wait for, is kept as unreachable for the day; that wait holds every source on the origin as `deferred` until it ends, and a stopped source starts no further request. A request must answer by its source's deadline (plus a second): its connection, opened fresh for it, is shut then, so a server that trickles its headers or body holds the host no longer. A file several sources read (Cowles' five stations share one) is asked once a pass, and a `Retry-After` or a slow answer it gave is what every source reading it gets for that pass.
 - **Deadlines.** A source gets 60 s, attempts and follows included (two attempts); nothing starts after 240 s into the pass. A source cut off is `late` and due next pass. A server's `Retry-After` is honoured: the source is `deferred` until that wait has passed, and no other source waits for it. A 403 or 401 blocks the source for 24 hours. A refusal is never worked around.
-- **Cadence.** Every 5 minutes from 18:00 to 23:00 and from 04:00 to 09:00 in the station's own zone (the zone most of its counties are in; real zone rules, so the windows follow daylight saving time), and while an NWS alert of an allowlisted type covers one of its counties (the alerts are read every 5 minutes; a failed read keeps the last set for 2 hours). Otherwise every 30 minutes, or the registry's `poll_minutes` when longer. A source the pass did not get to (`late`) is due at the next pass; a failed read (`error`, such as a 429 or 5xx without `Retry-After`) keeps its cadence, so outside the windows and alerts it waits its calm interval, a successor's first read of it included. A source is never read again in the same 5-minute grid slot, nor less than 4 minutes after its last pass.
+- **Cadence.** Every 5 minutes from 18:00 to 23:00 and from 04:00 to 09:00 in the station's own zone (the zone most of its counties are in; real zone rules, so the windows follow daylight saving time), and while an NWS alert of an allowlisted type covers one of its counties (the alerts are read every 5 minutes; a failed read keeps the last set for 2 hours). Otherwise every 30 minutes, or the registry's `poll_minutes` when longer. A source the pass did not get to (`late`) is due at the next pass; a failed read (`error`, such as a 429 or 5xx without `Retry-After`) keeps its cadence, so outside the windows and alerts it waits its calm interval, a successor's first read of it included (the successor shows its carried statuses meanwhile). A source is never read again in the same 5-minute grid slot, nor less than 4 minutes after its last pass.
 - **Health share.** G12b counts the sources due in the passes of the last 15 minutes, and every source blocked now, each by its latest read in that time. Both windows are counted from the passes' starts: a read is kept under the start of the pass that picked its source, the moment the cadence counted that source due, and both are dropped by the same test on the same start, so a source due in the window always has its picking pass's read in it, and that read is its latest (only a pass that picks a source reads it). A pass that read 10 sources or more also counts its own reads alone, and the gate takes the lower share: an outage that starts at a pass is refused at that pass, not only once the window holds nothing but failing reads (up to two passes later after a half-hourly sweep). From Oct 25 to 29 each of the 1261 uploaded passes with 10 reads or more had 84% or more of them good. This makes the gate stricter in one case: a broad degradation that keeps a pass's own reads under 60% (late reads of our pool and deferred reads count as not good, as in the window, since neither gives a fresh say) now refuses every pass until reads recover. Before, good reads still in the window from a half-hourly sweep before the degradation began could carry passes through it. A refusal is exit 3 and the loop goes on; v1 keeps its last good pass, and the `stale` alert opens once the served file is over 15 minutes old. Watch the own share (the commit's good over due) on the first storm-day soak. (Until Oct 30 the reads were kept under their own fetch times and measured from the clock after the reads: each :10 and :40 pass, 15 minutes after a half-hourly sweep, counted the sweep's sources due without their reads, dipped to 37-53% and was refused, 48 times from Oct 25 to 29.)
 
 ## Where files go
@@ -787,6 +833,7 @@ Private state (`out/internal/live/state/`, kept by the state store, [The state](
   - A successor that lost its state takes each day it has no log for from the public day file under the current stamp (lines with `"by": "seed"`), but only when the file's `content_sha256` is its own directory content: two contents can share one stamp (risk R6), and a file built on the other one indexes other schools. Such a file is skipped with a warning in the log. The public timeline then goes on from where it was, rather than starting again at the successor's first publish. The private details of those changes (source and row key) are lost.
 - `robots.json`: robots.txt verdicts per origin (the parsed rules, the read time and the file's digest), kept 24 hours.
 - `pacer.json`: each pace key's last request start, so a host's Crawl-delay holds across a handoff.
+- `carry.json`: the sources the last pass held, each with the time of the good read holding them and the end of that hold, the pass's time and a key of the resolver's version and the merge rules, so a successor shows them as that pass would have until its own read ([The handover carry](#the-reader)). Rewritten whole and atomically by every pass, unmarked, and marked final by `live finish --record` before the end push (a successor uses only a final record); ids, codes and times only; never exported.
 - `exits.json`: the last runs' exits (the `chain` alert).
 - `d1.json` (never packed): this run's epoch and its last push's counts. `pulse` (never packed): the watcher's heartbeat.
 - `cadence.json`: per source, the start of the pass that last read it, its outcome, the cause of that outcome (`live/causes.py`: a 401 apart from a 403, a 429, a timeout; counted in the export's `read causes:` line), and the earliest next read of a deferred or blocked source.

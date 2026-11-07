@@ -546,6 +546,7 @@ def build_parts(  # pragma: no cover - loads the directory, the matcher and the 
     from snowlight.listed.cli import nws_counties  # noqa: PLC0415
     from snowlight.listed.located import Gazetteer  # noqa: PLC0415
     from snowlight.listed.matching import MatcherSpec  # noqa: PLC0415
+    from snowlight.live.carry import CARRY  # noqa: PLC0415
     from snowlight.live.edition import check_zones  # noqa: PLC0415
     from snowlight.live.ledger import Ledger  # noqa: PLC0415
     from snowlight.live.reads import due_sources, live_reads  # noqa: PLC0415
@@ -601,6 +602,7 @@ def build_parts(  # pragma: no cover - loads the directory, the matcher and the 
         overrides=reader_overrides(env, client, publisher, lambda: local_schools(args.site_data)),
         rules=LIVE_MERGE_RULES,
     )
+    ingest.start_carry(args.state / CARRY, datetime.now(UTC))
     reads.ingest = ingest
     return Parts(ingest, reads)
 
@@ -2411,9 +2413,11 @@ def _with_exit(
 def run_finish(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
     """``live finish --exit N``: the closing steps of live-read.yml.
 
-    With ``--record`` (the step before the end push): this run's exit goes into
-    ``exits.json`` in the state folder, so the end push carries it to the state database and
-    the next run pulls it; nothing else is printed or raised.
+    With ``--record`` (the step before the end push, once the reader has ended): this run's
+    exit goes into ``exits.json`` in the state folder, so the end push carries it to the state
+    database and the next run pulls it, and the handover record is marked final
+    (:func:`~snowlight.live.carry.finalize_carry`: a successor carries only a record so
+    marked); one line each, and nothing is raised.
 
     Without it (the step after the end push): one line for the exit and its cause (an
     ``::error::`` annotation for a persistent failure: exit 1, the watcher's 124, a failed end
@@ -2430,9 +2434,13 @@ def run_finish(args: argparse.Namespace, loaders: Loaders | None = None) -> int:
     path = args.state / EXITS
     run = str(loaders.env().get("GITHUB_RUN_ID", "") or "-")
     if args.record:
+        from snowlight.live.carry import CARRY, finalize_carry  # noqa: PLC0415
+
         if code is not None:
             _keep_exits(path, _with_exit(_exits(path), run, code))
         _say(f"live-read exit {code if code is not None else 'none'} recorded in the state")
+        # the reader has ended (the reap step): its last record is the one its successor uses
+        _say(finalize_carry(args.state / CARRY))
         return int(Exit.OK)
     if code in FAILED_EXITS:
         annotate("error", f"live-read exit {code}: {cause}")

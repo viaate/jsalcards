@@ -26,15 +26,15 @@
   and at least its cadence less a minute's grace has passed (grid jitter only). So a
   5-minute source is read at every pass of a window, while a second run inside the same
   slot (``live once``) or an off-grid start a minute or two later reads nothing again.
-* **A new process** holds a source's statuses only once it has read the source itself
-  (:mod:`snowlight.live.ingest`), so a source whose last good read held rows is read by a
-  successor as soon as :meth:`Cadence.may_read` allows (another slot, 4 minutes on),
-  whatever its cadence (:class:`~snowlight.live.reads.LiveReads`): one read more per such
-  source a run, and no status of it dark until its next calm read. A source whose last
-  read failed (``error``, ``partial``) is not read early: it keeps its cadence, as above, so
-  the owner's cadence still bounds how often a throttled host is asked, and its statuses
-  (which the run before held under G13) are dark in the new process, never stale, until
-  its next good read: at most its calm 30 minutes.
+* **A new process** reads a source's rows itself (they live in memory only), so a source
+  whose last good read held rows is read by a successor as soon as :meth:`Cadence.may_read`
+  allows (another slot, 4 minutes on), whatever its cadence
+  (:class:`~snowlight.live.reads.LiveReads`): one read more per such source a run. A source
+  whose last read failed (``error``, ``partial``) is not read early: it keeps its cadence, as
+  above, so the owner's cadence still bounds how often a throttled host is asked. Until its
+  own read, the successor shows what the run before held of a source (its last good read's
+  statuses, under the same G13 bound from that read's own time: :mod:`snowlight.live.carry`),
+  so a handover changes nothing shown and asks nothing more of any server.
 
 :class:`Cadence` keeps each source's last pass, outcome, its cause
 (:mod:`snowlight.live.causes`) and earliest next read in ``cadence.json`` in the private state

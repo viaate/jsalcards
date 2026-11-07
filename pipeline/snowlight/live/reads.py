@@ -204,9 +204,9 @@ class LiveReads:
     unread: set[str] | None = None
     """The sources whose last good read held rows and that this process has not read yet
     (``None`` until the first pass asks the ledger): each is read as soon as the cadence's
-    politeness floor allows, whatever its cadence, so a successor never shows a status of
-    it dark while its calm interval runs (the ingest holds a source's statuses only once
-    this process has read it)."""
+    politeness floor allows, whatever its cadence, so a successor's own read replaces what
+    it carried from the run before (:mod:`snowlight.live.carry`) at once rather than after
+    a calm interval."""
 
     def pending(self) -> list[Station]:
         """The sources still to be read first by this process (see :attr:`unread`)."""

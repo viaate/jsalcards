@@ -881,10 +881,24 @@ class Resolver:
 
     # --- per source ----------------------------------------------------------------------------
 
-    def resolve(self, station: Station, present: Sequence[SeenRow]) -> Resolved:
-        """Resolve every ledger row of ``station``; ``present`` are the rows of its last read."""
+    def resolve(
+        self, station: Station, present: Sequence[SeenRow], *, carried: bool = False
+    ) -> Resolved:
+        """Resolve every ledger row of ``station``; ``present`` are the rows of its last read.
+
+        ``carried`` (a source the run before held and this process has not read,
+        :mod:`snowlight.live.carry`): the rows the ledger holds present are the rows of its
+        last good read, with no text, so each gives only the derivation stored for it under
+        this resolver's version (another version gives its darkening part, as a vanished
+        row's does, and a row never derived nothing), and nothing is derived or queued."""
         by_key = {self.ledger.key(station.id, row): row for row in present}
         listed = {self.ledger.ident(station.id, row) for row in present}
+        if carried:
+            listed = {
+                entry.ident
+                for entry in self.ledger.rows(station.id, include_gone=False)
+                if entry.absent_since is None
+            }
         counts: Counter[str] = Counter()
         unmatched: list[Query] = []
         results: list[RowResult] = []
@@ -918,7 +932,8 @@ class Resolver:
                 query = Query(station_context(station), seen.name, seen.section)
                 if query not in unmatched:
                     unmatched.append(query)
-            superseded = seen is None and entry.ident in listed
+            here = seen is not None or (carried and entry.absent_since is None and not entry.gone)
+            superseded = not here and entry.ident in listed
             counts["reused" if reused else "derived"] += 1
             counts[f"withheld:{derived.withheld}" if derived.withheld else "kept"] += 1
             counts["superseded"] += superseded
@@ -928,7 +943,7 @@ class Resolver:
                 RowResult(
                     entry,
                     derived,
-                    present=seen is not None,
+                    present=here,
                     reused=reused,
                     superseded=superseded,
                     version=version,

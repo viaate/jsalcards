@@ -10,8 +10,14 @@
    registry is resolved as a station that is not active: it lights nothing, and what
    its rows last said still darkens (``TERMS``);
 3. holds a source's statuses (G13) only while its last good read is recent **and** it
-   was read in this process: a source not yet read since a start has no present rows,
-   so it gives only its dissents;
+   was read in this process, or the run before held it at its last pass and this process
+   has not read it yet (:mod:`snowlight.live.carry`: the rows the ledger holds present
+   stand for that read, under the same G13 bound from its own time and never past the end
+   of the hold the run before applied, and only the derivations stored under this version
+   light; a record not marked final at the run's end, or older than the file the host
+   serves, carries nothing). Any other source not yet read since a start has no present
+   rows, so it gives only its dissents. Each pass writes the sources it held for the run
+   after it (``carry.json``);
 4. withholds every status and open statement in the states of a source whose say is
    unknown this pass (``source_unknown``): one whose read could not be taken in or
    whose resolve failed (its dissents are missing), or one due for reading holding a
@@ -51,9 +57,10 @@ from pathlib import Path
 from typing import Final
 
 from snowlight.listed.matching import Query
+from snowlight.live.carry import Carried, carry_key, read_carry, write_carry
 from snowlight.live.edition import EditionState, EditionVerdict, EditionWatch
 from snowlight.live.guards import Refusal, Rules, held
-from snowlight.live.ledger import GOOD, LONGEST, Ledger, SeenRow
+from snowlight.live.ledger import GOOD, LONGEST, Ledger, SeenRow, SourceState
 from snowlight.live.ledger import Outcome as ReadOutcome
 from snowlight.live.merge import AdminStatus, Merged, merge, with_overrides
 from snowlight.live.morning import MorningLog, named_by, named_of, old_lists, pass_reads
@@ -236,6 +243,16 @@ class Ingest:
     last_outcomes: dict[str, tuple[bool, bool]] = field(default_factory=dict)
     """Each source read in the last pass: whether it erred, and whether it was in a reading
     window or an alert (the ``source`` alert's digest)."""
+    carried: dict[str, Carried] = field(default_factory=dict)
+    """The sources the run before held at its last pass and this process has not read (a
+    good read, or a read the ledger could not take, ends it), each with the ``last_good_at``
+    it held them under and the end of that hold (:func:`~snowlight.live.carry.read_carry`)."""
+    carry_path: Path | None = None
+    """Where each pass writes the sources it held for the run after it; ``None``: nowhere."""
+    carry_key: str = ""
+    """The key of the record (:func:`~snowlight.live.carry.carry_key`)."""
+    carry_bytes: int = 0
+    """The size of the last record written."""
     beat: Callable[[], None] = field(default=lambda: None)
     """Called per read folded into the ledger and per source resolved (the loop's pulse, so
     a pass's resolve shows progress to the watcher; a hang inside one stops it)."""
@@ -259,11 +276,13 @@ class Ingest:
                 outcomes["error"] += 1
                 self.failed.add(read.source_id)
                 self.present.pop(read.source_id, None)
+                self.carried.pop(read.source_id, None)
                 self.recent.append((at or read.fetched_at, read.source_id, False))
                 continue
             outcomes[observed.outcome.value] += 1
             if observed.outcome in GOOD:
                 self.taken.add(read.source_id)
+                self.carried.pop(read.source_id, None)
                 if read.stale and observed.outcome is ReadOutcome.EMPTY:
                     self.stale.add(read.source_id)
             confirmed = read.outcome is ReadOutcome.NOT_MODIFIED and not read.rows
@@ -314,25 +333,30 @@ class Ingest:
         return share
 
     def holding(self) -> frozenset[str]:
-        """The sources whose last good read held rows: their statuses stand only once this
-        process has read them again (:meth:`held`), so a new run reads them first."""
+        """The sources whose last good read held rows: a new run reads them first, so its
+        own read soon replaces what it carried (:meth:`held`)."""
         return frozenset(
             state.source_id
             for state in self.ledger.sources()
             if state.rows_last > 0 and state.last_good_at is not None
         )
 
-    def resolve(self) -> list[Resolved]:
-        """Every source the ledger knows, resolved against its present rows. A source whose
-        resolve raises is left out and named in :attr:`failed` (its id and the error's type
-        are logged, never its message)."""
-        known = {state.source_id for state in self.ledger.sources()}
+    def resolve(self, states: Sequence[SourceState] | None = None) -> list[Resolved]:
+        """Every source the ledger knows (``states``: the ledger's, as this pass read them),
+        resolved against its present rows. A source whose resolve raises is left out and
+        named in :attr:`failed` (its id and the error's type are logged, never its message)."""
+        states = self.ledger.sources() if states is None else states
+        carrying = self.carrying(states)
         resolved = []
-        for source_id in sorted(known):
+        for source_id in sorted(state.source_id for state in states):
             self.beat()
             station = self.stations.get(source_id) or orphan_station(source_id)
             try:
-                resolved.append(self.resolver.resolve(station, self.present.get(source_id, ())))
+                resolved.append(
+                    self.resolver.resolve(station, (), carried=True)
+                    if source_id in carrying
+                    else self.resolver.resolve(station, self.present.get(source_id, ()))
+                )
             except Exception as error:
                 LOG.error("resolve %s: %s", source_id, type(error).__name__)
                 self.failed.add(source_id)
@@ -445,19 +469,83 @@ class Ingest:
                 LOG.error("edition check failed: %s", type(error).__name__)
                 self.checked_at = now
 
-    def held(self, now: datetime) -> dict[str, bool]:
-        """G13 per source, and only for sources read in this process."""
-        found: dict[str, bool] = {}
-        for state in self.ledger.sources():
-            station = self.stations.get(state.source_id)
-            found[state.source_id] = (
+    def carrying(self, states: Iterable[SourceState]) -> frozenset[str]:
+        """The sources whose rows stand for the run before's read (:attr:`carried`): not read
+        in this process, and the ledger's last good read still the one the run before held
+        them under (one taken since, by a run that did not record it, ends the carry)."""
+        return frozenset(
+            state.source_id
+            for state in states
+            if state.source_id not in self.present
+            and state.last_good_at is not None
+            and (carried := self.carried.get(state.source_id)) is not None
+            and carried.good == state.last_good_at
+        )
+
+    def hold_until(
+        self, now: datetime, states: Sequence[SourceState] | None = None
+    ) -> dict[str, datetime | None]:
+        """G13 per source, for the sources read in this process and those carried: the end of
+        the hold that stands at ``now`` (its last good read's time plus the bound for the
+        source now), or ``None``. A carried source is held only while the end the run before
+        applied allows too, so its statuses never stand longer than they would have there
+        (this process's bound alone could be the longer quiet one: an alert set it has not
+        read yet)."""
+        found: dict[str, datetime | None] = {}
+        states = self.ledger.sources() if states is None else states
+        carrying = self.carrying(states)
+        for state in states:
+            sid, good = state.source_id, state.last_good_at
+            station = self.stations.get(sid)
+            until: datetime | None = None
+            if (
                 station is not None
-                and state.source_id in self.present
-                and held(
-                    state.last_good_at, now, boosted=self.boosted(station, now), rules=self.rules
-                )
-            )
+                and good is not None
+                and (sid in self.present or sid in carrying)
+            ):
+                boosted = self.boosted(station, now)
+                if held(good, now, boosted=boosted, rules=self.rules):
+                    until = good + (self.rules.hold_boosted if boosted else self.rules.hold_quiet)
+                    if sid in carrying:
+                        until = min(until, self.carried[sid].until)
+                        until = until if now <= until else None
+            found[sid] = until
         return found
+
+    def held(self, now: datetime, states: Sequence[SourceState] | None = None) -> dict[str, bool]:
+        """G13 per source (:meth:`hold_until`): whether its statuses stand at ``now``."""
+        return {sid: until is not None for sid, until in self.hold_until(now, states).items()}
+
+    def _served_at(self) -> datetime | None:
+        """The ``generated_at`` of the closings file the live host serves now (may raise)."""
+        remote = self.publisher.read_back()
+        return None if remote is None else remote.generated_at
+
+    def start_carry(self, path: Path, now: datetime) -> None:
+        """Take over what the run before held (``path``, :func:`~snowlight.live.carry.read_carry`:
+        never raises; a record not marked final by the run before's ``live finish --record``,
+        or older than the file the host serves, carries nothing) and write this run's own
+        record there, unmarked, after each pass."""
+        self.carry_key = carry_key(self.resolver.version, self.rules)
+        self.carried = read_carry(
+            path, key=self.carry_key, now=now, rules=self.rules, published=self._served_at
+        )
+        self.carry_path = path
+
+    def record_carry(
+        self, now: datetime, until: Mapping[str, datetime | None], states: Sequence[SourceState]
+    ) -> None:
+        """Write the sources this pass held (``until``: :meth:`hold_until`), each with its
+        last good read's time and the end of its hold, for the run after it
+        (:mod:`snowlight.live.carry`). A failed write is logged by its type."""
+        if self.carry_path is None:
+            return
+        held_at = {
+            state.source_id: Carried(state.last_good_at, end)
+            for state in states
+            if (end := until.get(state.source_id)) is not None and state.last_good_at is not None
+        }
+        self.carry_bytes = write_carry(self.carry_path, key=self.carry_key, now=now, held=held_at)
 
     def record_morning(
         self,
@@ -595,11 +683,14 @@ class Ingest:
         now = max([now, *(read.fetched_at for read in reads)])
         outcomes = self.observe(reads, at=started)
         self.last_outcomes = self.source_outcomes(reads, now)
-        resolved = self.resolve()
+        states = self.ledger.sources()  # once a pass: the reads are in, nothing below moves them
+        resolved = self.resolve(states)
         directory = self.resolver.directory
+        until = self.hold_until(now, states)
+        holds = {sid: end is not None for sid, end in until.items()}
         merged = merge(
             resolved,
-            held=self.held(now),
+            held=holds,
             directory=directory,
             generated_at=now,
             rules=self.rules,
@@ -630,6 +721,7 @@ class Ingest:
             alert=report.alert or self.unknown_streak >= UNKNOWN_TO_ALERT,
             counts={**report.counts, "failed": len(self.failed), "unknown_states": len(unknown)},
         )
+        self.record_carry(now, until, states)
         try:
             write_json(
                 self.internal_dir / "health.json",
