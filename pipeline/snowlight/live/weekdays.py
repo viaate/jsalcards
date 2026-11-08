@@ -125,7 +125,26 @@ read the same way: read Friday at 06:00, it may be last Friday night's post, and
 hold. A clock time past a run of marks is only ever a stamp's: by a weekday with a status word
 it is that day's time only when a start or a dismissal owns it ("Early dismissal Friday: 1:30
 PM"), and otherwise one with no day ("Closed Friday @ 9:14 PM", "Closed Friday \"9:14 PM\""),
-read as below.
+read as below. Words that own a clock time and are no status word ("begins", "in effect",
+"effective", a report or an arrival, and "dismiss", "starting", "started" or "opened" with no
+status word: :data:`_OWNS_ONE`, :data:`_OWNS_WITH`, :data:`_OWNS_CLOCK`) own only a single
+clock time in the weekday's own clause with no mark between the weekday, the word and the clock
+time, wherever the word stands and "at" or "@" after it or not, never a span of hours or one a
+mark parts from the weekday, a "~" too ("Closed Wednesday \u00b7 Thursday | begins
+(8:30-3:15)", "Closed Wednesday \u00b7 Thursday: staff report 9:14 PM", "Closed Wednesday
+\u00b7 in effect Thursday: 9:14 PM", "Closed Wednesday \u00b7 9:14 PM: Thursday begins",
+"Closed Wednesday \u00b7 Thursday = begin 9:14 PM", "Closed Wednesday \u00b7 Thursday | dismiss
+9:14 PM", "Closed Wednesday \u00b7 Thursday: started at 9:14 PM", "Closed Wednesday \u00b7
+Thursday begins ~ 9:14 PM" are stamps), save a dismissal at a single clock time the status
+reader reads a dismissal at (:func:`_dismissed_at`: "Thursday: dismiss at 1:30"). A bare number
+of one or two digits on either side of a weekday's run of marks, glued or spaced, with words
+after it or none, after the "." a weekday ends with too, with a mark glued before it before the
+marks, and with a line break in or by the marks (:data:`_MARK_LINES`, :data:`_BARE_NUMBER`:
+"10.Thursday", "9...Thursday", "Thursday: 9 | info", "Thursday.45", ":9 \u00b7 Thursday",
+"#12 :: Thursday"), is a stamp's number that cannot be read when no status word stands in the
+weekday's clause; a clock time, a date and a count with a delay's length unit
+are read as before ("Thursday: 2 hour delay"), and a spaced dash in a span of bare hours ends
+no clause ("Thursday: 2 - 3 hour delay").
 
 On the weekday path, a clock time that gives no day, in a stamp ("Updated 7 AM", "Posted this
 evening") or in a clause of its own with no other number and no word that makes it a time of
@@ -190,6 +209,7 @@ from typing import Final, NamedTuple
 from zoneinfo import ZoneInfo
 
 from snowlight.classify.dates import WEEKDAYS as READER_WEEKDAYS
+from snowlight.classify.text import clock_time as reader_clock
 from snowlight.replays.gates import MONTHS, STAMP_PHRASE
 
 SATURDAY: Final = 5
@@ -841,6 +861,10 @@ a stamp mark ("Friday: 9:14 PM", "Friday...9:14 PM", "Friday::9:14 PM", "Friday 
 PM - Friday"), read as a stamp's only when the weekday is one (:func:`_clocked`); a clock time
 may start right after it. Each mark and the spaces after it are read once (possessively), so a
 long run is read in time linear in its length."""
+_MARK_LINES: Final = rf"(?:{_MARK}++\s*+)+"
+"""A run of marks (:data:`_MARK_RUN`) with line breaks between too ("Thursday:\\n45", "45\\n\u00b7
+Thursday"): what parts a bare number or a span of hours from a weekday (:data:`_BY_MARKS`), as
+a line break parts a clock time from it past its marks (:func:`_past_marks`)."""
 _CLOCK_START: Final = (
     r"(?:(?<![\w:./$#,])|(?<=\D[:./,])|(?<=[^\w\s][$#])|(?<=[$#])(?=[^\W\d_])|(?<=_))"
 )
@@ -854,14 +878,16 @@ _HOUR_SPAN_TEXT: Final = (
     rf"(?:between[ \t]+{_HOUR}[ \t]+and[ \t]+{_HOUR}"
     rf"|{_HOUR}[ \t]*(?:-|\u2013|\u2014|to\b|until\b|till\b|thru\b|through\b)[ \t]*{_HOUR})"
     r"(?![^\W_]|[:.,]\d)"
-    r"(?![ \t]*(?:[\u00b0%\"\u2033\u201d]|(?:degrees?|deg|inch(?:es)?|in|feet|foot|ft|cm|mm|"
-    r"percent|mph|miles?|mi|students?|kids|children|people|grades?|years?|yrs|months?|weeks?|"
+    r"(?![ \t]*(?:[\u00b0%\"\u2033\u201d]|(?:degrees?|deg|inch(?:es)?|in(?![ \t]+effect)|feet|"
+    r"foot|ft|cm|mm|percent|mph|miles?|mi|students?(?![ \t]+(?:reports?|arriv\w*))|kids|children|"
+    r"people|grades?|years?|yrs|months?|weeks?|"
     r"days?|games?|points?|pts|wins?|losses?|goals?|runs?|record|below|above|wind)\b))"
 )
 _HOUR_SPAN: Final = re.compile(rf"{_CLOCK_START}{_HOUR_SPAN_TEXT}", re.IGNORECASE)
 """A span of bare hours in a weekday's clause ("9 to 3", "9 - 3", "between 9 and 3"), with no
 unit or count word after it that makes it a span of something else ("0-5 degrees", "2 to 4
-inches", "3-5 students", "4 to 6 days"): read
+inches", "3-5 students", "4 to 6 days"; "9 to 3 students report", "9 to 3 in effect" are
+hours): read
 there as a span of clock times (:func:`_inner_clock`), so a weekday it stands by with no status
 or event word is a posting stamp as one with "9 AM - 3 PM" is."""
 _CLIPPED: Final = r"\d{1,2}(?::\d{2})?[ \t]*[ap]\.?"
@@ -890,17 +916,44 @@ _CLOCK_AFTER: Final = re.compile(
 noon", "Friday at 9", "Friday around 9 PM", "Fri 2114", "Friday evening"), or after a run of
 marks (:data:`_MARK_RUN`: "Friday, 21:14", "Friday (9:14pm)", "Friday [9:14 PM]", "Friday
 \\"9:14 PM\\"", "Friday...9:14 PM")."""
+_MONTH_WORD: Final = rf"(?:{'|'.join(MONTHS)})"
+_A_LENGTH: Final = (
+    r"[ \t]*-?[ \t]*(?:(?:and[ \t]+a[ \t]+half|1/2|\u00bd)[ \t]*-?[ \t]*)?"
+    r"(?:hours?|hrs?|h|minutes?|mins?)\b"
+)
+_BARE_NUMBER: Final = (
+    rf"(?P<bare>\d{{1,2}})(?![^\W_]|[:.,/\-\u2013\u2014]\d|{_A_LENGTH}"
+    rf"|[ \t]*{_MONTH_WORD}\b)"
+)
+"""A bare number of one or two digits that is no part of a clock time, a date, a decimal or
+a count with a delay's length unit ("9", "9_", "9'", never "9:14", "11/5", "1.5", "5 Nov", "2
+hour delay", "2-hr. delay", "2 1/2 hour delay", "90 minute late start", "2 hours behind"): by a
+weekday's run of marks, on either side of it, a stamp's number that cannot be read."""
 _SPAN_AFTER_MARKS: Final = re.compile(
-    rf"[ \t]*(?P<mark>{_MARK_RUN})"
-    rf"(?P<clock>{_HOUR_SPAN_TEXT}|{_OTHER_SPAN_TEXT}|(?P<bare>\d{{1,2}})(?=[^\w]*\Z))",
+    rf"\s*(?P<mark>{_MARK_LINES})"
+    rf"(?P<clock>{_HOUR_SPAN_TEXT}|{_OTHER_SPAN_TEXT}|{_BARE_NUMBER})",
     re.IGNORECASE,
 )
 """A span of hours (:data:`_HOUR_SPAN`, :data:`_OTHER_SPAN`) right past a run of marks right
-after a weekday, glued to it too ("Friday#9 to 3", "Thursday:9 to 3"), or a bare number of one or
-two digits there with nothing after it but marks ("Thursday...9", "Thursday ... 9"): hours, or a
-stamp's number that cannot be read, so a weekday with no status word in its clause is a stamp
-that :func:`stamp_dates` reads as unreadable; with a status word it is read as it was before
-("Closed Thursday: 9", "Closed Thursday:9 to 3")."""
+after a weekday, glued to it too ("Friday#9 to 3", "Thursday:9 to 3"), or a bare number
+(:data:`_BARE_NUMBER`) there, with words after it or none ("Thursday...9", "Thursday ... 9",
+"Thursday: 9 | info"): hours, or a stamp's number that cannot be read, so a weekday with no
+status word in its clause is a stamp that :func:`stamp_dates` reads as unreadable; with a status
+word it is read as it was before ("Closed Thursday: 9", "Closed Thursday:9 to 3"), and a delay's
+length is read as before ("Thursday: 2 hour delay")."""
+_BARE_BEFORE_MARKS: Final = re.compile(
+    rf"(?<![\w\u00bd])(?<!\d[:./,])(?P<clock>{_BARE_NUMBER})\s*(?P<mark>{_MARK_LINES})"
+    rf"(?:(?:on|at)\s+(?P<open>{_MARK_LINES})?)?\Z",
+    re.IGNORECASE,
+)
+"""A bare number (:data:`_BARE_NUMBER`) right before a run of marks right before a weekday,
+glued or spaced ("10.Thursday", "9...Thursday", "9:: Thursday"), with a mark glued before it
+too ("#12 :: Thursday", ":9 \u00b7 Thursday", "$9 \u00b7 Thursday"), as :data:`_SPAN_AFTER_MARKS`
+reads one after: a stamp's number that cannot be read when no status word is in the weekday's
+clause, and read as before with one; never the end of a clock time, a date or a decimal ("10:30",
+"11/5", "1.5", "1,5": a digit before its mark), and never a month's day number ("Nov. 5 \u00b7
+Thursday", :data:`_MONTH_BEFORE`)."""
+_MONTH_BEFORE: Final = re.compile(rf"\b{_MONTH_WORD}\.?[ \t]*\Z", re.IGNORECASE)
 _CLOCK_BEFORE: Final = re.compile(
     rf"(?P<clock>(?<![\w:./])(?:{_CLOCK_TEXT}|{_HHMM}|0[1-9][0-5]\d(?=[ \t]*{_MARK}))"
     rf"|(?:\bat|@|{_ABOUT_WORD})[ \t]*(?:{_ABOUT})?(?<![\w:./])\d{{1,2}}(?![\w:]))"
@@ -911,17 +964,32 @@ _CLOCK_BEFORE: Final = re.compile(
 (:data:`_MARK_RUN`), "on" or "at" between ("9:14 PM Fri", "21:14 Fri", "9:14 PM, Friday", "at
 9:14 PM Friday", "(9:14 PM) Friday", "9:14 PM-- Friday"), and a 24-hour one with a leading zero
 before a run of marks ("0900: } Friday", as :data:`_ZERO_HHMM` after one)."""
+_BY_MARKS: Final = (_SPAN_AFTER_MARKS, _BARE_BEFORE_MARKS)
+"""What a weekday's run of marks parts from a span of hours or a bare number by it: a stamp's
+hours or number when no status word is in its clause, and with one read as before."""
 _CLOCK_BEFORE_WINDOW: Final = 40
 """How far before a weekday a clock time right before it is read."""
 _OWNS_CLOCK: Final = re.compile(
-    r"\b(?:(?:delay\w*|late|early|dismiss\w*|start\w*|release\w*|open\w*|begin\w*|effect\w*)\b"
+    r"\b(?:(?:delay\w*|late|early|dismiss\w*|start\w*|release\w*|open\w*)\b"
     r"|clos(?:e|es|ing)\s+(?:early\s+)?(?:at|by)\b|clos(?:e|es|ing)\s*@)",
     re.IGNORECASE,
 )
 """Words in a weekday's clause that make its clock time when the school starts, opens, closes
-or lets out, or a notice takes effect, on that day ("Early dismissal Thursday 1:30 PM",
-"Thursday 10 AM start", "Opening at 10 AM Thursday", "Closing at 3 p.m. Friday", "In effect
-at 5 p.m. Saturday"): the weekday is no posting stamp."""
+or lets out on that day ("Early dismissal Thursday 1:30 PM", "Thursday 10 AM start", "Opening
+at 10 AM Thursday", "Closing at 3 p.m. Friday", "Thursday: dismiss at 1:30"). With a status or
+an event word in the clause they own any clock time or span; otherwise, as words the status
+reader reads no status from ("dismiss", "starting", "started", "opened", "releasing"), only a
+single clock time in the weekday's own clause with no mark between, "at" or "@" between them
+or not ("Closed Wednesday \u00b7 Thursday | dismiss 9:14 PM", "Closed Wednesday \u00b7
+Thursday | starting (8:30-3:15)", "Closed Wednesday \u00b7 Thursday: started at 9:14 PM",
+"Closed Wednesday \u00b7 Thursday opened at 9 to 3" are stamps), save a dismissal at a time
+the reader reads as one (:func:`_dismissed_at`: "Thursday: dismiss at 1:30")."""
+_OWNS_ONE: Final = re.compile(r"\b(?:begin\w*|effect\w*)\b", re.IGNORECASE)
+"""Words in a weekday's clause that make its clock time when a notice begins or takes effect
+on that day ("In effect at 5 p.m. Saturday", "Thursday begins 5 a.m."): no status word, so they
+own only a single clock time in the weekday's own clause, never a span of hours or one past its
+marks ("Closed Wednesday \u00b7 Thursday | begins (8:30-3:15)", "Closed Wednesday \u00b7 Thursday
+in effect 9 to 3" are stamps), as :data:`_OWNS_WITH` does."""
 _OWNS_WITH: Final = re.compile(
     r"\b(?P<who>(?:staff|students?|teachers?|employees?|faculty|everyone)[ \t]+)?"
     r"(?:reports?|arriv\w*)\b",
@@ -935,14 +1003,117 @@ Wednesday \u00b7 Thursday report 5:14 AM", "Closed Wednesday \u00b7 Thursday arr
 AM")."""
 
 
-def _owned_by_words(clause: str) -> bool:
-    """Whether a word in a weekday's ``clause`` owns its clock time (:data:`_OWNS_CLOCK`, or
-    :data:`_OWNS_WITH` with who it is for or with a status or an event word there)."""
-    clause = _HOURS_OF.sub(" ", clause)
-    if _OWNS_CLOCK.search(clause) is not None:
+def _owned_by_words(clause: str, tight: str | None, *, dismissed: bool) -> bool:
+    """Whether a word owns a weekday's clock time: in its ``clause``, a start, opening, closing
+    or dismissal word (:data:`_OWNS_CLOCK`) or a report or an arrival (:data:`_OWNS_WITH`) with
+    a status or an event word there (:func:`_a_status_or_event`), or a dismissal at the single
+    clock time the reader reads as one (``dismissed``, :func:`_dismissed_at`: "Thursday:
+    dismiss at 1:30"); and, only when the clock time is a single one in the weekday's own
+    clause with no mark between them (``tight``, the words between and around both up to the
+    first mark each way, else ``None``: :func:`_tight`), any of :data:`_OWNS_CLOCK`,
+    :data:`_OWNS_ONE` or :data:`_OWNS_WITH` with who it is for there ("Thursday begins 5
+    a.m.", "Staff report Thursday 9 AM"). An owner word that is no status word owns no span of
+    hours and no clock time past a mark, wherever it stands and "at" or "@" after it or not
+    ("Closed Wednesday \u00b7 Thursday | begins (8:30-3:15)", "Closed Wednesday \u00b7 in
+    effect Thursday: 9:14 PM", "Closed Wednesday \u00b7 9:14 PM: Thursday begins", "Closed
+    Wednesday \u00b7 Thursday | dismiss 9:14 PM", "Closed Wednesday \u00b7 Thursday = begin
+    9:14 PM", "Closed Wednesday \u00b7 Thursday: started at 9:14 PM" are stamps)."""
+    if dismissed:
         return True
-    found = _OWNS_WITH.search(clause)
-    return found is not None and (bool(found.group("who")) or _a_status_or_event(clause))
+    clause = _HOURS_OF.sub(" ", clause)
+    if (
+        _OWNS_CLOCK.search(clause) is not None or _OWNS_WITH.search(clause) is not None
+    ) and _a_status_or_event(clause):
+        return True
+    if tight is None:
+        return False
+    tight = _HOURS_OF.sub(" ", tight)
+    return (
+        _OWNS_CLOCK.search(tight) is not None
+        or _OWNS_ONE.search(tight) is not None
+        or any(found.group("who") for found in _OWNS_WITH.finditer(tight))
+    )
+
+
+_OWNS_AT: Final = re.compile(r"\bdismiss\w*(?:[ \t]+at\b|[ \t]*@)[ \t]*\Z", re.IGNORECASE)
+"""A dismissal word with "at" or "@" right before a clock time ("dismiss at 1:30", "dismisses
+@ 12:30"): the one owner word that is no status word (:data:`_STATUS_WORDS`) the status reader
+reads a status from with a time (:func:`_dismissed_at`)."""
+_AT_CLOCK: Final = re.compile(
+    rf"(?:(?:at|@)[ \t]*)?(?:{_ABOUT})?(?P<clock>\d{{1,2}}(?::\d{{2}})?(?:[ \t]*[ap]\.?[ \t]?m\.?)?"
+    r"|noon)(?:[ \t]*\(?(?:[ecmp][sd]?t|ak[sd]?t|h[sd]?t|gmt|utc)\b\)?)?",
+    re.IGNORECASE,
+)
+"""A single clock time as :data:`_CLOCK_AFTER` or :data:`_INNER_CLOCK` finds it, "at" and an
+approximation word before it and its zone after it set apart (:func:`_dismissed_at`)."""
+_DISMISSED_FROM: Final = time(8)
+_DISMISSED_UNTIL: Final = time(13, 30)
+"""The clock times a dismissal word at one is an early dismissal at for the status reader
+(:mod:`snowlight.classify.mentions`: from 8 a.m., the earliest dismissal, up to 1:30 p.m., the
+latest plain one; "dismiss at 3:00" is an ordinary afternoon and "dismiss at 9:14 PM" none)."""
+
+
+def _dismissed_at(lead: str, text: str) -> bool:
+    """Whether a dismissal word with "at" or "@" right before a single clock time ``text``
+    (``lead`` the words right before it, :data:`_OWNS_AT`) is a dismissal on the weekday at a
+    time the status reader reads as one (:data:`_DISMISSED_FROM` to :data:`_DISMISSED_UNTIL`,
+    read as the reader reads a clock time, :func:`snowlight.classify.text.clock_time`: "1:30"
+    is 1:30 p.m.): then it owns the clock time past the weekday's marks too ("Thursday: dismiss
+    at 1:30", "Thursday | dismiss @ 1:30"); at any other time it owns only one in the weekday's
+    own clause (:func:`_tight`: "Closed Wednesday \u00b7 Thursday | dismiss at 9:14 PM" is a
+    stamp)."""
+    text = text.strip()
+    found = _AT_CLOCK.fullmatch(text)
+    # "dismiss at 11 Thursday": the "at" may be the clock time's own
+    if found is None or _OWNS_AT.search(f"{lead}{text[: found.start('clock')]}") is None:
+        return False
+    value = reader_clock(found.group("clock").casefold().replace(".", "").replace(" ", ""))
+    return value is not None and _DISMISSED_FROM <= value <= _DISMISSED_UNTIL
+
+
+_TIGHT_MARK: Final = re.compile(r"(?!['\u2019]s\b)(?:[^\w\s]|_)")
+"""A mark (:data:`_MARK`) that parts an owner word, a weekday and its clock time, any of them,
+other than a possessive's ("Thursday's staff report 9 AM")."""
+_ABOUT_END: Final = re.compile(
+    r"\b(?:around|about|approx(?:imately|\.)?|circa|ca\.)[ \t]*\Z", re.IGNORECASE
+)
+"""An approximation word right before a clock time ("around 9 AM", "approx. 9 AM"): part of
+it. A "~" is a mark there as anywhere by a weekday (:data:`_MARK_RUN`: "Closed Wednesday
+\u00b7 Thursday begins ~ 9:14 PM", "... Thursday begins ~9:14 PM" are stamps, as "Thursday ~
+9:14 PM" is)."""
+
+
+def _tight(
+    words: str, weekday: re.Match[str], clock: tuple[int, int], clause: tuple[int, int]
+) -> str | None:
+    """The words in ``words`` between ``weekday`` and its clock time at ``clock`` and those
+    that stand by them with no mark between any of them (:data:`_TIGHT_MARK`), in the weekday's
+    clause from ``clause[0]`` to ``clause[1]``: those an owner word that is no status word owns
+    a single clock time in (:func:`_owned_by_words`); ``None`` when a mark, or the "." a full
+    weekday name ends with, parts the weekday from its clock time ("Thursday: 9:14 PM begins",
+    "9:14 PM = Thursday begins", "Thursday # staff report 9:14 PM")."""
+    at, end = clock
+    about = _ABOUT_END.search(words, max(0, at - _BEFORE_WINDOW), at)
+    at = at if about is None else about.start()
+    ended = weekday.group(0).endswith(".") and len(weekday.group(0)) > _FULL_NAME
+    if at >= weekday.end():
+        if ended or _TIGHT_MARK.search(words, weekday.end(), at) is not None:
+            return None
+        low, high = weekday.start(), end
+    else:
+        if _TIGHT_MARK.search(words, end, weekday.start()) is not None:
+            return None
+        low, high = at, weekday.end()
+    marks = list(_TIGHT_MARK.finditer(words, clause[0], low))
+    first = clause[0] if not marks else marks[-1].end()
+    last = high if ended else max(high, clause[1])
+    mark = _TIGHT_MARK.search(words, high, last)
+    last = last if mark is None else mark.start()
+    # the weekday and the clock time are not their own owner words ("Friday late evening")
+    cuts = sorted(((weekday.start(), weekday.end()), (at, end)))
+    return " ".join(
+        (words[first : cuts[0][0]], words[cuts[0][1] : cuts[1][0]], words[cuts[1][1] : last])
+    )
 
 
 _OPEN_UNTIL: Final = re.compile(r"\b(?:until|till|operat\w*|available)\b", re.IGNORECASE)
@@ -998,6 +1169,11 @@ _STAMP_CLAUSE_WINDOW: Final = 80
 """How far before and after a weekday with a clock time its clause is read for a status word:
 a status word further away makes it no day the row is for (it stays a stamp, which only
 holds)."""
+_PAST_MARKS_REACH: Final = 400
+"""How far past the run of marks that ends a weekday's clause after it the clauses on to the
+next weekday, or to the first with a status or an event word, are read for a clock time or a
+span of hours (:func:`_past_marks`): far enough for any clause of words with no status word
+there, and a bound that keeps each row read in time linear in its length."""
 _FULL_NAME: Final = 6
 """Letters in the shortest full weekday name ("Monday"): a "." after one ends a sentence
 ("Closed Sunday. Online service 10:15 AM"), where one after "Sun." may not."""
@@ -1083,7 +1259,10 @@ class _Clocks(NamedTuple):
         each way, and the longest clock time past that), never over the rest of the words."""
         reach = 2 * _STAMP_CLAUSE_WINDOW + _LONGEST_CLOCK
         windows = _merged(
-            (max(0, weekday.start() - reach), min(len(words), weekday.end() + reach))
+            (
+                max(0, weekday.start() - reach),
+                min(len(words), weekday.end() + reach + _PAST_MARKS_REACH),
+            )
             for weekday in weekdays
         )
         found = sorted(
@@ -1232,7 +1411,7 @@ def _past_marks(
     if run is not None:
         start = run.end()
         stop = found[index + 1].start() if index + 1 < len(found) else len(words)
-        stop = min(stop, start + _STAMP_CLAUSE_WINDOW)
+        stop = min(stop, start + _PAST_MARKS_REACH)
         for at, end in _pieces(masked, start, stop):
             for inner in _clocks_in(scan, at, end):
                 if not _taken(claimed, inner.start()):
@@ -1291,9 +1470,9 @@ def _near(words: str, weekday: re.Match[str]) -> tuple[re.Match[str], re.Match[s
     """``weekday`` in ``words``, the clock time right after it (:data:`_CLOCK_AFTER`) or else
     right before it (:data:`_CLOCK_BEFORE`), or ``None``, and whether that clock time follows
     it."""
-    clock = _CLOCK_AFTER.match(words, weekday.end()) or _SPAN_AFTER_MARKS.match(
-        words, weekday.end()
-    )
+    # the "." a weekday ends with starts its run of marks too ("Thursday.45", "Thu. 50 info")
+    stop = weekday.end() - 1 if weekday.group(0).endswith(".") else weekday.end()
+    clock = _CLOCK_AFTER.match(words, weekday.end()) or _SPAN_AFTER_MARKS.match(words, stop)
     if (
         clock is not None
         and clock.re is _CLOCK_AFTER
@@ -1303,9 +1482,14 @@ def _near(words: str, weekday: re.Match[str]) -> tuple[re.Match[str], re.Match[s
         clock = None  # "Thursday Afternoon: Closed": a part of the day as a heading
     if clock is not None:
         return weekday, clock, True  # a part of the day with a status word is dropped later
-    before = _CLOCK_BEFORE.search(
-        words, max(0, weekday.start() - _CLOCK_BEFORE_WINDOW), weekday.start()
-    )
+    start = max(0, weekday.start() - _CLOCK_BEFORE_WINDOW)
+    before = _CLOCK_BEFORE.search(words, start, weekday.start())
+    if before is None:
+        before = _BARE_BEFORE_MARKS.search(words, start, weekday.start())
+        if before is not None and _MONTH_BEFORE.search(
+            words, max(0, before.start() - _BEFORE_WINDOW), before.start()
+        ):
+            before = None  # "Closed Nov. 5 \u00b7 Thursday": a date's day number
     return weekday, before, False
 
 
@@ -1333,22 +1517,18 @@ def _clocked(words: str) -> tuple[_Clocked, ...]:
     if _ANY_CLOCK.search(words) is None:
         return ()
     found = list(_WEEKDAY.finditer(words))
-    masked = _mask_clocks(words)
     near = [_near(words, weekday) for weekday in found]
     claimed = _merged(
         clock.span("clock") for _, clock, _ in near if clock is not None and not _marked(clock)
     )
     clocked: list[_Clocked] = []
-    scan = _Scan(words, masked, found, claimed, _Clocks.of(words, found))
+    clocks = _Clocks.of(words, found)
+    scan = _Scan(words, _unbroken(_mask_clocks(words), clocks), found, claimed, clocks)
     for index, (_, first, follows) in enumerate(near):
         near_clock = first
         one = _clocked_one(scan, index, near_clock, follows=follows)
-        if (
-            near_clock is not None
-            and near_clock.re is _SPAN_AFTER_MARKS
-            and not (one and one.stamp)
-        ):
-            near_clock = None  # "Closed Thursday: 9": a number, read as before
+        if near_clock is not None and near_clock.re in _BY_MARKS and not (one and one.stamp):
+            near_clock = None  # "Closed Thursday: 9", "Closed 9...Thursday": a number, as before
             one = _clocked_one(scan, index, None, follows=follows)
         if _marked(near_clock) and (one is None or not (one.stamp or one.owned)):
             # "Closed Friday: 9:14 PM": past a run of marks, a clock time is a stamp's, never
@@ -1361,6 +1541,23 @@ def _clocked(words: str) -> tuple[_Clocked, ...]:
     kept = {clock.span for clock in clocked if not clock.lone}
     # "Closed Thursday \u00b7 9:14 PM Wed": a clock time another weekday has is that one's
     return tuple(clock for clock in clocked if not (clock.lone and clock.span in kept))
+
+
+_DASH: Final = re.compile(r"[-\u2013\u2014]")
+
+
+def _unbroken(masked: str, clocks: _Clocks) -> str:
+    """``masked`` with the dashes in each span of hours in ``clocks`` (:data:`_HOUR_SPAN`,
+    :data:`_OTHER_SPAN`) blanked, so a spaced one ends no clause ("Thursday 2 - 3 hour delay",
+    "Thursday: grades 9 - 12 closed" keep their status words in the weekday's clause)."""
+    chars: list[str] | None = None
+    for match in clocks.found:
+        if match.re is _HOUR_SPAN or match.re is _OTHER_SPAN:
+            for dash in _DASH.finditer(masked, match.start(), match.end()):
+                if chars is None:
+                    chars = list(masked)
+                chars[dash.start()] = " "
+    return masked if chars is None else "".join(chars)
 
 
 class _Scan(NamedTuple):
@@ -1415,10 +1612,26 @@ def _clocked_one(
         spanned is not None
         or _HOUR_SPAN.fullmatch(text) is not None  # "9 until 3"
         or _OTHER_SPAN.fullmatch(text) is not None  # "9a-3p"
-        or (clock is not None and clock.re is _SPAN_AFTER_MARKS)  # "Thursday...9", "Friday#9-3"
+        # "Thursday...9", "Friday#9-3", "9...Friday"
+        or (clock is not None and clock.re in _BY_MARKS)
+    )
+    tight = (
+        None
+        if hours or marked_only or _marked(clock)  # "Thursday ~ 9:14 PM begins"
+        else _tight(words, weekday, (at, end), (left - len(before), right + len(after)))
     )
     owned = (
-        _owned_by_words(clause)
+        # owner words that are no status word own only a single clock time in the weekday's
+        # own clause with no mark between ("Closed Wednesday \u00b7 Thursday | begins
+        # (8:30-3:15)", "Closed Wednesday \u00b7 Thursday: staff report 9:14 PM", "Closed
+        # Wednesday \u00b7 9:14 PM: Thursday begins" are stamps)
+        _owned_by_words(
+            clause,
+            tight,
+            # a dismissal at a single clock time only, never a span ("Closed Wednesday \u00b7
+            # Thursday started at 9 AM - 3 PM" is a stamp)
+            dismissed=not hours and _dismissed_at(words[max(0, at - _BEFORE_WINDOW) : at], text),
+        )
         or _owns(words, text, (at, end), (left, right), spans=False)
         # a span of hours is a status's on its weekday only when a status or an event word
         # is in its clause or around the span ("Friday closed 9 AM - 3 PM", "Closed 6 a.m. to
