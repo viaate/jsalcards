@@ -56,6 +56,16 @@ describe('points.bin', () => {
     expect([...found.district]).toEqual([0, 0, 1, -1]);
   });
 
+  it('keeps each place in millionths of a degree too, as the file has it, which the degrees are read from', () => {
+    const found = directory();
+    expect([...found.e6.slice(6)]).toEqual([-94593001, 39036060]);
+    for (let i = 0; i < found.e6.length; i++)
+      expect(found.lngLat[i]).toBe((found.e6[i] ?? 0) * 1e-6);
+    // A directory made without points.bin (a test's own) works them out from its degrees.
+    const points = { lngLat: found.lngLat, district: found.district, kind: found.kind };
+    expect([...createDirectory(found.meta, points).e6]).toEqual([...found.e6]);
+  });
+
   it("keeps each school's kind flags: the last one here is private", () => {
     expect([...directory().kind]).toEqual([0, 0, 0, 1]);
   });

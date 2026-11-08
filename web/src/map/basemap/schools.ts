@@ -30,7 +30,8 @@
  * A dot or a name says only where a school is. What a school is doing today
  * is the glow's to show, in its colors: the dots and their light are white,
  * and a school the glow lights has neither (SCHOOL_LIT_STATE), so no white
- * shows through its light, the hole of its ring or the open half of its dot.
+ * shows through its light, the hole of its ring or the open half of its dot;
+ * nor has a school at the very place of one it lights (SCHOOL_COVERED_STATE).
  * The school whose panel is open has a ring around its dot, a faint disc
  * edged in white, under the dot, so the one the panel is about is found at a
  * glance.
@@ -54,7 +55,13 @@ import {
   dotAt,
 } from './dots';
 import { MAP_FONTS } from './fonts';
-import { BASEMAP_IDS, SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE, SCHOOL_TILES_PROTOCOL } from './ids';
+import {
+  BASEMAP_IDS,
+  SCHOOLS_TILE_LAYER,
+  SCHOOL_COVERED_STATE,
+  SCHOOL_LIT_STATE,
+  SCHOOL_TILES_PROTOCOL,
+} from './ids';
 
 export { SCHOOL_DOTS_FROM } from './dots';
 
@@ -160,19 +167,44 @@ function fromTiles(stops: DotStops): DotStops {
   return [[from, dotAt(stops, from)], ...stops.filter(([zoom]) => zoom > from)];
 }
 
-/** Whether the glow lights this school today (glow-mount.ts). */
-const LIT: ExpressionSpecification = ['boolean', ['feature-state', SCHOOL_LIT_STATE], false];
+/**
+ * Whether the glow lights another school at this one's place, and not this
+ * one (glow-mount.ts): the other's light shows there, and nothing of this one.
+ */
+const COVERED: ExpressionSpecification = [
+  'boolean',
+  ['feature-state', SCHOOL_COVERED_STATE],
+  false,
+];
 
-/** An opacity by zoom, as [zoom, opacity] stops, and none for a school the glow lights. */
-function unlessLit(
+/**
+ * Whether the glow lights this school today, or another at its place: either
+ * way its light shows there, and no dot of this one.
+ */
+const LIT: ExpressionSpecification = [
+  'any',
+  ['boolean', ['feature-state', SCHOOL_LIT_STATE], false],
+  COVERED,
+];
+
+/** An opacity by zoom, as [zoom, opacity] stops, and none where `when` holds. */
+function unless(
+  when: ExpressionSpecification,
   ...stops: readonly (readonly [zoom: number, opacity: number])[]
 ): ExpressionSpecification {
   return [
     'interpolate',
     ['linear'],
     ['zoom'],
-    ...stops.flatMap(([zoom, opacity]) => [zoom, ['case', LIT, 0, opacity]]),
+    ...stops.flatMap(([zoom, opacity]) => [zoom, ['case', when, 0, opacity]]),
   ] as unknown as ExpressionSpecification;
+}
+
+/** An opacity by zoom, and none for a school the glow lights or one at its place. */
+function unlessLit(
+  ...stops: readonly (readonly [zoom: number, opacity: number])[]
+): ExpressionSpecification {
+  return unless(LIT, ...stops);
 }
 
 /**
@@ -411,7 +443,11 @@ export function schoolNameAnchors(): VariableAnchorOffsetCollectionSpecification
   ];
 }
 
-/** Each school's name beside its dot, on whichever side has room. */
+/**
+ * Each school's name beside its dot, on whichever side has room. A school at
+ * the place of one the glow lights shows no name: beside the lit school's
+ * light, its name would say the light is its own.
+ */
 export function schoolNameLayer(colors: SchoolColors): SymbolLayerSpecification {
   return {
     id: BASEMAP_IDS.schoolNames,
@@ -438,7 +474,7 @@ export function schoolNameLayer(colors: SchoolColors): SymbolLayerSpecification 
     },
     paint: {
       'text-color': colors.name,
-      'text-opacity': byZoom(...NAME_OPACITY.flat()),
+      'text-opacity': unless(COVERED, ...NAME_OPACITY),
       'text-halo-color': colors.ground,
       'text-halo-width': 1.5,
       'text-halo-blur': 0.5,

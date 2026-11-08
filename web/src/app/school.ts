@@ -453,7 +453,7 @@ function nearbyOf(
       return {
         id: near.id,
         name: shownName(near.id, near.name),
-        distance: format.miles(near.metres),
+        distance: format.apart(near.metres),
         tone: found === null ? null : statusKey(found.status),
         lon: near.lon,
         lat: near.lat,
@@ -469,7 +469,7 @@ function nearbyOf(
     return {
       id: near.id,
       name: shownName(near.id, near.name),
-      distance: format.miles(near.metres),
+      distance: format.apart(near.metres),
       tone: today === null || today === 'open' ? null : statusKey(today.status),
       lon: near.lon,
       lat: near.lat,

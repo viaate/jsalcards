@@ -391,6 +391,17 @@ function miles(metres: number): string {
   return `${number(Math.round(metres / METRES_PER_MILE))}${NBSP}mi`;
 }
 
+/** A nearby school this near, in metres, is at the same place: the details give whole metres. */
+const SAME_PLACE_METRES = 2;
+
+/**
+ * How far a nearby school is from the one open: "Same place" where both
+ * stand at one place (one building, one campus), else in miles ("0.4 mi").
+ */
+function apart(metres: number): string {
+  return metres >= 0 && metres < SAME_PLACE_METRES ? 'Same place' : miles(metres);
+}
+
 /** A weather alert: "Winter weather warning". */
 function alertName(hazard: HazardKey, level: AlertLevelKey): string {
   const name = copy.hazard[checkKey(copy.hazard, hazard, 'hazard')];
@@ -447,6 +458,7 @@ export const format = /* @__PURE__ */ Object.freeze({
   grades,
   phone,
   miles,
+  apart,
   percentRange,
   outOf,
   lead,

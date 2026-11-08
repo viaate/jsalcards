@@ -20,7 +20,9 @@
  * as far as keeps them all in it, to DRILL_ZOOM at most and by DRILL_STEP
  * levels at least, so tap by tap it comes down to one school under the
  * finger. Schools no zoom tells apart (one campus, one place) open the
- * nearest.
+ * nearest: of marks as near, the one drawn on top (a light over a dot, and of
+ * lights the one the glow draws last, glow/pack.ts drawRank), so a tap on a
+ * lit school's light opens that school, never a school under it.
  *
  * Only a click acts: MapLibre fires none for a drag or a pinch. A press
  * where a tap would open a school, its light included, says so at once
@@ -61,7 +63,7 @@ import {
   schoolNameOpacity,
 } from './basemap';
 import type { MapView } from './basemap';
-import { BASEMAP_IDS, SCHOOL_LIT_STATE } from './basemap/ids';
+import { BASEMAP_IDS, SCHOOL_COVERED_STATE, SCHOOL_LIT_STATE } from './basemap/ids';
 import { litRadius } from './glow-mount';
 import type { DustSpots } from './glow-mount';
 import type { HeardClick } from './kept-clicks';
@@ -71,6 +73,7 @@ import {
   mercatorXFromLng,
   mercatorYFromLat,
 } from './glow/mercator';
+import { drawRank } from './glow/pack';
 
 /** How far from a mark's edge the pointer may be and still reach it, in CSS pixels. */
 export const HIT_RADIUS = Object.freeze({ mouse: 6, touch: 16 });
@@ -127,6 +130,11 @@ export interface MarkHit {
   readonly dy: number;
   /** How far the pointer is from the mark's edge, in CSS pixels: 0 with the mark under it. */
   readonly distance: number;
+  /**
+   * Where the mark is drawn among marks at one place: a light's rank among
+   * the glow's (glow/pack.ts drawRank), over every dot, speck and name (-1).
+   */
+  readonly drawn: number;
   /** Its name as the map shows it, worked out for the school a tap opens. */
   name(): string;
 }
@@ -145,7 +153,10 @@ export type TapAction =
   | { readonly kind: 'zoom'; readonly view: MapView };
 
 /** The glow's lit schools, as far as finding them goes. */
-export type LitSpots = Pick<LitSchools, 'lngLat' | 'ids' | 'names'>;
+export type LitSpots = Pick<LitSchools, 'lngLat' | 'ids' | 'names' | 'status'>;
+
+/** Where a dot, a speck or a name is drawn among marks at one place: under every light. */
+const UNDER_LIGHTS = -1;
 
 /** The dust, as far as finding its schools goes (glow-mount.ts). */
 export type { DustSpots } from './glow-mount';
@@ -211,6 +222,7 @@ export function litInReach(
       dx,
       dy,
       distance,
+      drawn: drawRank(lit.status[i] ?? -1),
       name: () => shownName(id, written),
     });
   }
@@ -239,7 +251,16 @@ export function dustInReach(
     const id = dust.ids[school];
     if (id === undefined || !(distance <= radius)) continue;
     const written = dust.names[school] ?? '';
-    hits.push({ id, lon, lat, dx, dy, distance, name: () => shownName(id, written) });
+    hits.push({
+      id,
+      lon,
+      lat,
+      dx,
+      dy,
+      distance,
+      drawn: UNDER_LIGHTS,
+      name: () => shownName(id, written),
+    });
   }
   return hits;
 }
@@ -259,9 +280,9 @@ function featureSchool(feature: {
 
 /**
  * Every school with a mark in reach of the pointer at `point` (CSS pixels on
- * the map), each once, by its nearest mark: its dot and its name as the map
- * draws them now, its speck where the glow draws dust, and its light when the
- * glow lights it.
+ * the map), each once, by its nearest mark (of marks as near, the one drawn
+ * on top): its dot and its name as the map draws them now, its speck where
+ * the glow draws dust, and its light when the glow lights it.
  */
 export function schoolsInReach(
   map: MapLibreMap,
@@ -274,7 +295,13 @@ export function schoolsInReach(
   const found = new Map<SchoolId, MarkHit>();
   const add = (hit: MarkHit): void => {
     const known = found.get(hit.id);
-    if (known === undefined || hit.distance < known.distance) found.set(hit.id, hit);
+    if (
+      known === undefined ||
+      hit.distance < known.distance ||
+      (hit.distance === known.distance && hit.drawn > known.drawn)
+    ) {
+      found.set(hit.id, hit);
+    }
   };
   const { schoolDots, schoolNames } = BASEMAP_IDS;
   const drawn = (id: string, opacity: number): boolean =>
@@ -287,21 +314,27 @@ export function schoolsInReach(
       [point.x + radius + mark, point.y + radius + mark],
     ];
     for (const feature of map.queryRenderedFeatures(box, { layers: [schoolDots] })) {
-      // A school the glow lights shows its light, not its dot.
-      if (feature.state[SCHOOL_LIT_STATE] === true) continue;
+      // A school the glow lights shows its light, not its dot, and a school at its very place
+      // shows neither (glow-mount.ts).
+      if (feature.state[SCHOOL_LIT_STATE] === true || feature.state[SCHOOL_COVERED_STATE] === true)
+        continue;
       const school = featureSchool(feature);
       if (school === null) continue;
       const at = map.project([school.lon, school.lat]);
       const dx = at.x - point.x;
       const dy = at.y - point.y;
       const distance = Math.max(0, Math.hypot(dx, dy) - mark);
-      if (distance <= radius) add({ ...school, dx, dy, distance, name: () => school.name });
+      if (distance <= radius) {
+        add({ ...school, dx, dy, distance, drawn: UNDER_LIGHTS, name: () => school.name });
+      }
     }
   }
   if (drawn(schoolNames, schoolNameOpacity(zoom))) {
     for (const feature of map.queryRenderedFeatures([point.x, point.y], {
       layers: [schoolNames],
     })) {
+      // A school at the very place of a lit one shows no name (basemap/schools.ts).
+      if (feature.state[SCHOOL_COVERED_STATE] === true) continue;
       const school = featureSchool(feature);
       if (school === null) continue;
       const at = map.project([school.lon, school.lat]);
@@ -310,6 +343,7 @@ export function schoolsInReach(
         dx: at.x - point.x,
         dy: at.y - point.y,
         distance: 0,
+        drawn: UNDER_LIGHTS,
         name: () => school.name,
       });
     }
@@ -418,14 +452,16 @@ export function tapAction(
   if (one !== null) return opens(one);
   const view = drillView(map, point, pool, area);
   if (view !== null) return { kind: 'zoom', view };
-  // Nothing tells them apart: the nearest, the nearest center among marks under the pointer.
-  const nearest = pool.reduce((best, mark) =>
-    mark.distance < best.distance ||
-    (mark.distance === best.distance && Math.hypot(mark.dx, mark.dy) < Math.hypot(best.dx, best.dy))
-      ? mark
-      : best,
-  );
-  return opens(nearest);
+  // Nothing tells them apart: the nearest; of marks as near (all under the pointer, at one
+  // place), the one drawn on top; then the nearest center; then the first found.
+  return opens(pool.reduce((best, mark) => (nearer(mark, best) ? mark : best)));
+}
+
+/** Whether a tap that nothing else decides means `mark` before `best`. */
+function nearer(mark: MarkHit, best: MarkHit): boolean {
+  if (mark.distance !== best.distance) return mark.distance < best.distance;
+  if (mark.drawn !== best.drawn) return mark.drawn > best.drawn;
+  return Math.hypot(mark.dx, mark.dy) < Math.hypot(best.dx, best.dy);
 }
 
 export interface SchoolTapOptions {

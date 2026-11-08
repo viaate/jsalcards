@@ -64,6 +64,26 @@ const RANK: readonly number[] = [
   4, // open, drawn separately and never glowing
 ];
 
+/**
+ * Where an open school's light is drawn among the others: first, under every
+ * glowing light (GlowLayer drawGlyphs draws the open ones before the rest),
+ * though RANK packs it last; and over the dots, specks and names (-1).
+ */
+const OPEN_DRAW_RANK = -0.5;
+
+/**
+ * Where a light of this status code is drawn among the others: a higher rank
+ * is drawn later, over a lower one at the same place; -1 for a code the layer
+ * draws nothing for. A tap at a place several schools share opens the one
+ * drawn on top by it (school-taps.ts), so the tap and the GPU keep one order:
+ * RANK's, with the open ones, drawn on their own before it, under it.
+ */
+export function drawRank(code: number): number {
+  const rank = RANK[code];
+  if (rank === undefined) return -1;
+  return code === GlowStatus.Open ? OPEN_DRAW_RANK : rank;
+}
+
 export interface PackedPoints {
   /** Interleaved records, `count * STRIDE_BYTES` long. A view into the scratch buffer. */
   readonly bytes: Uint8Array;

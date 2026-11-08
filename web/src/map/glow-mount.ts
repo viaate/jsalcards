@@ -12,7 +12,12 @@
  * it holds no points, draws nothing and compiles nothing on the GPU.
  *
  * Each school it lights loses its quiet white dot (basemap/schools.ts), so
- * its light shows in its status's color alone.
+ * its light shows in its status's color alone. So does each school at the
+ * place of one it lights (under 2 m apart, as the panel's "Same place";
+ * same-places.ts), which would show white through the lit school's light, the
+ * hole of its ring or the open half of its dot: what that school is doing is
+ * in its own panel, which the lit school's lists as at the same place, and a
+ * tap there opens the lit school (school-taps.ts).
  *
  * Further out than the school tiles reach, the layer draws every school as
  * dust, the same dot dimmed and shrunk (basemap/dots.ts), from the directory:
@@ -36,8 +41,15 @@ import {
   SCHOOL_DUST_FROM,
   SCHOOL_DUST_UNTIL,
 } from './basemap/dots';
-import { BASEMAP_IDS, SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE } from './basemap/ids';
+import {
+  BASEMAP_IDS,
+  SCHOOLS_TILE_LAYER,
+  SCHOOL_COVERED_STATE,
+  SCHOOL_LIT_STATE,
+} from './basemap/ids';
 import { GlowLayer } from './glow';
+import { SamePlaceCovers } from './same-places';
+import type { Builders, CoverMarks } from './same-places';
 import { GLOW_LOOK } from './glow/GlowLayer';
 import type { GlowLook } from './glow/GlowLayer';
 import { STATUS_HEX } from './glow/color';
@@ -173,35 +185,83 @@ export interface Glow {
   remove(): void;
 }
 
-/** The lit schools' dots, marked by their feature ids: each school's place in the directory. */
-interface LitDots {
-  /** Marks these schools, and no others. */
-  mark(schools: ReadonlySet<number>): void;
-  /** Marks them once the style is in, where it was not before. */
+/**
+ * The dots of the lit schools, and of the schools at their very places, marked
+ * by their feature ids: each school's place in the directory.
+ */
+export interface LitDots {
+  /** Marks these schools lit, and no others. */
+  mark(lit: ReadonlySet<number>): void;
+  /** Marks this school's dot covered, or takes the mark off. */
+  cover(school: number, on: boolean): void;
+  /** Whether the map has its school tiles to mark, so a cover is put on at once. */
+  ready(): boolean;
+  /** Marks the lit ones once the style is in, where it was not before. */
   update(): void;
 }
 
-function markLitDots(map: MapLibreMap): LitDots {
+/** The lit and covered schools' dots on `map`'s school tiles (exported for the bench). */
+export function markLitDots(map: MapLibreMap): LitDots {
   let marked: ReadonlySet<number> = new Set();
   let wanted: ReadonlySet<number> = marked;
+  const source = BASEMAP_IDS.schoolsSource;
+  const sourceLayer = SCHOOLS_TILE_LAYER;
+  // A build without the school tiles draws no dots, and a map with no style yet none so far.
+  const ready = (): boolean => map.getSource(source) !== undefined;
+  // One state object for every school: MapLibre copies it (source_state.ts updateState).
+  const lit = { [SCHOOL_LIT_STATE]: true };
+  const covered = { [SCHOOL_COVERED_STATE]: true };
   const update = (): void => {
-    // A build without the school tiles draws no dots, and a map with no style yet none so far.
-    if (wanted === marked || map.getSource(BASEMAP_IDS.schoolsSource) === undefined) return;
-    const source = { source: BASEMAP_IDS.schoolsSource, sourceLayer: SCHOOLS_TILE_LAYER };
+    if (wanted === marked || !ready()) return;
     for (const id of marked) {
-      if (!wanted.has(id)) map.removeFeatureState({ ...source, id }, SCHOOL_LIT_STATE);
+      if (!wanted.has(id)) map.removeFeatureState({ source, sourceLayer, id }, SCHOOL_LIT_STATE);
     }
-    for (const id of wanted) {
-      if (!marked.has(id)) map.setFeatureState({ ...source, id }, { [SCHOOL_LIT_STATE]: true });
-    }
+    for (const id of wanted)
+      if (!marked.has(id)) map.setFeatureState({ source, sourceLayer, id }, lit);
     marked = wanted;
+  };
+  // One target for every cover, its id set each time: MapLibre reads it and keeps none of it
+  // (style.ts setFeatureState), so a light's many covers make no garbage of their own.
+  const target: { source: string; sourceLayer: string; id: number } = {
+    source,
+    sourceLayer,
+    id: 0,
   };
   return {
     mark(schools) {
       wanted = schools;
       update();
     },
+    cover(id, on) {
+      if (!ready()) return;
+      target.id = id;
+      if (on) map.setFeatureState(target, covered);
+      else map.removeFeatureState(target, SCHOOL_COVERED_STATE);
+    },
+    ready,
     update,
+  };
+}
+
+/**
+ * What a light's covered schools are marked on (same-places.ts
+ * SamePlaceCovers): their dots, once the map has its school tiles, and their
+ * dust, drawn again once a light's are all marked rather than each frame
+ * while they are (GlowLayer showCoveredDust).
+ */
+export function coverMarks(
+  dots: LitDots,
+  layer: Pick<GlowLayer, 'coverDust' | 'showCoveredDust'>,
+): CoverMarks {
+  return {
+    ready: () => dots.ready(),
+    cover(school, on) {
+      dots.cover(school, on);
+      layer.coverDust(school, on);
+    },
+    settled() {
+      layer.showCoveredDust();
+    },
   };
 }
 
@@ -238,13 +298,20 @@ export function stateLineGray(map: MapLibreMap): number | null {
   return channels === null ? null : Math.max(...channels);
 }
 
-export function mountGlow(map: MapLibreMap): Glow {
+/** How the glow covers the schools at a lit one's place (same-places.ts; tests give their own). */
+export interface GlowOptions {
+  readonly covers?: Builders;
+}
+
+export function mountGlow(map: MapLibreMap, options: GlowOptions = {}): Glow {
   const layer = new GlowLayer({
     id: GLOW_LAYER_ID,
     dust: dustStyle(),
     lineGray: () => stateLineGray(map),
   });
   const dots = markLitDots(map);
+  // No worker made, nor anything built, until a light has schools lit (same-places.ts).
+  const covers = new SamePlaceCovers(coverMarks(dots, layer), options.covers);
   /** The page's theme, now and each time the theme engine puts another on (theme/engine.ts). */
   const takeLook = (): void => {
     shownLook = glowLook();
@@ -307,6 +374,7 @@ export function mountGlow(map: MapLibreMap): Glow {
   };
   const add = (): void => {
     dots.update();
+    covers.resume();
     if (map.getLayer(GLOW_LAYER_ID) !== undefined) return;
     // Right over its slot, whichever layers the map has on so far (index.ts adds them in turn).
     place();
@@ -317,6 +385,11 @@ export function mountGlow(map: MapLibreMap): Glow {
   return {
     light(lit) {
       shown = lit;
+      // The schools at a lit school's place give way to its light, as it does: dots and dust,
+      // in tasks after this one. Their index is the directory's, built once, in its worker
+      // after the first light: until it is in, a few tens of milliseconds on, none is. Asked
+      // first, so that worker starts on its own thread while this lights the glow and the dots.
+      covers.light(lit.places, lit.schools);
       layer.setData(
         lit.bornAt === undefined
           ? { lngLat: lit.lngLat, status: lit.status }
@@ -352,6 +425,7 @@ export function mountGlow(map: MapLibreMap): Glow {
     remove() {
       removed = true;
       pending = null;
+      covers.close();
       page?.removeEventListener(THEME_EVENT, takeLook);
       map.off('style.load', add);
       map.off('zoom', watchZoom);

@@ -6,7 +6,7 @@ import type { DetailsSource, SchoolRecord } from '../../data/details';
 import { createDataFiles, withLiveRoot } from '../../data/files';
 import { LIVE_POLL_MS, LIVE_SIDE_POLL_MS, closingsReader, startLive } from '../../data/live';
 import { WAKE_CHECK_MS } from '../../state/wake';
-import { NO_STATUS } from '../../data/school-day';
+import { NO_STATUS, schoolStatus } from '../../data/school-day';
 import type { DayOutlook, SchoolStatus, StatusRow } from '../../data/school-day';
 import { createDirectory, parsePoints } from '../../data/directory';
 import {
@@ -141,6 +141,48 @@ describe('schoolView', () => {
       input({ record: { ...PRIVATE, directory: closings.directory }, closings }),
     );
     expect(view?.nearby.map((near) => near.tone)).toEqual([null, 'remote']);
+  });
+
+  it('says a nearby school at the very same place is at the same place, with its own status', () => {
+    // School 0 closed, at the very place of the school open (2), which the live file leaves dark.
+    const meta = testMeta([
+      { id: 'ZZ000003', name: 'A', lon: -94.593001, lat: 39.03606, district: -1 },
+      { id: 'ZZ000004', name: 'B', lon: -94.59, lat: 39.03, district: -1 },
+      { id: 'ZZ000001', name: 'C', lon: -94.593001, lat: 39.03606, district: -1 },
+    ]);
+    const closings = testClosings('2026-01-12T17:40:00Z', meta, [testDay('2026-01-12', [[0, 0]])]);
+    const first = PRIVATE.nearby[0];
+    const second = PRIVATE.nearby[1];
+    if (first === undefined || second === undefined) throw new Error('no nearby schools');
+    const record: SchoolRecord = {
+      ...PRIVATE,
+      nearby: [
+        { ...first, metres: 0, lon: -94.593001, lat: 39.03606 },
+        { ...second, metres: 643 },
+      ],
+      directory: closings.directory,
+    };
+    // The school open has no row of its own: no status, though the one drawn over it is closed.
+    const own = schoolStatus({
+      school: record.index,
+      directory: closings.directory,
+      closings,
+      covered: null,
+      now: NOON,
+    });
+    expect(own.today).toBeNull();
+    const view = schoolView(input({ record, closings, status: own }));
+    expect(view?.status).toEqual([]);
+    expect(view?.nearby.map(({ distance, tone }) => [distance, tone])).toEqual([
+      ['Same place', 'closed'],
+      [`0.4${NBSP}mi`, null],
+    ]);
+    // One metre off is the same place too (the details give whole metres); two is not.
+    const near = (metres: number): string | undefined =>
+      schoolView(input({ record: { ...record, nearby: [{ ...first, metres }] }, closings }))
+        ?.nearby[0]?.distance;
+    expect(near(1)).toBe('Same place');
+    expect(near(2)).toBe(`0.1${NBSP}mi`);
   });
 
   it('gives a public school its district, and leaves out what NCES does not give', () => {

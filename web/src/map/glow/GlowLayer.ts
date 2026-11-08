@@ -37,9 +37,9 @@
  * With a dust style, the layer also draws every school it is given with
  * setDust as a faint speck (dust.ts), in render before the composite, so the
  * glow's light is screened over it; a school flagged with hideDust (one the
- * glow lights) gives way to its light, and filterDust leaves out the kinds of
- * school the page hides, all but the one keepDust names (the school whose
- * panel is open). dustNear finds the specks drawn near a point, for a tap on
+ * glow lights) or coverDust (one at its place) gives way to its light, and
+ * filterDust leaves out the kinds of school the page hides, all but the one
+ * keepDust names (the school whose panel is open). dustNear finds the specks drawn near a point, for a tap on
  * one, and none while the layer is off the map. The dust has its own small
  * program, compiled the first time it is drawn, and draws nothing outside
  * its zooms.
@@ -455,6 +455,12 @@ export class GlowLayer implements CustomLayerInterface {
   /** One flag per school in the grid's order: 1 for a school the glow lights. */
   private dustLit: Uint8Array | null = null;
   private dustLitSet: ReadonlySet<number> = new Set();
+  /**
+   * And those at a lit school's place (glow-mount.ts), hidden as the lit ones are: one flag
+   * per school in the grid's order, and the schools by their places in setDust's list.
+   */
+  private dustCovered: Uint8Array | null = null;
+  private readonly dustCoveredSet = new Set<number>();
   /** Which kinds of school show as dust, by their kind flags. */
   private dustShows: (kind: number) => boolean = () => true;
   /** The school shown as dust whatever its kind (keepDust), and its slot in the grid. */
@@ -466,8 +472,9 @@ export class GlowLayer implements CustomLayerInterface {
   private dustRes: DustResources | null = null;
   /** Set when the GPU could not run the dust: the lights go on without it. */
   private dustFailed = false;
-  /** Whether dustDrawnAt changed since it was last uploaded. */
+  /** Whether dustDrawnAt changed since it was last uploaded, and by covers alone (coverDust). */
   private dustStale = false;
+  private dustCoverChanged = false;
   private dustDrawn = false;
   private dustInView = 0;
 
@@ -529,18 +536,24 @@ export class GlowLayer implements CustomLayerInterface {
     this.dust = grid;
     this.dustKinds = null;
     this.dustLit = null;
+    this.dustCovered = null;
     this.dustDrawnAt = null;
     this.dustLeftOut = 0;
     if (grid !== null) {
       const count = grid.order.length;
       this.dustKinds = new Uint8Array(count);
       this.dustLit = new Uint8Array(count);
+      this.dustCovered = new Uint8Array(count);
       for (let slot = 0; slot < count; slot++) {
         this.dustKinds[slot] = kinds?.[grid.order[slot] ?? 0] ?? 0;
       }
       for (const school of this.dustLitSet) {
         const slot = grid.slotOf[school];
         if (slot !== undefined) this.dustLit[slot] = 1;
+      }
+      for (const school of this.dustCoveredSet) {
+        const slot = grid.slotOf[school];
+        if (slot !== undefined) this.dustCovered[slot] = 1;
       }
       this.dustKept = this.slotOf(this.dustKeptSchool);
       this.dustDrawnAt = grid.positions.slice();
@@ -550,13 +563,16 @@ export class GlowLayer implements CustomLayerInterface {
     this.map?.triggerRepaint();
   }
 
-  /** Leaves these schools (places in setDust's list) out of the dust, and no others. */
+  /**
+   * Leaves these schools (places in setDust's list) out of the dust, and no
+   * others but those coverDust covers.
+   */
   hideDust(schools: ReadonlySet<number>): void {
     const before = this.dustLitSet;
     this.dustLitSet = schools;
     const grid = this.dust;
     const lit = this.dustLit;
-    if (grid === null || lit === null) return;
+    if (grid === null || lit === null || before === schools) return;
     const mark = (school: number, flag: 0 | 1): void => {
       const slot = grid.slotOf[school];
       if (slot === undefined || lit[slot] === flag) return;
@@ -565,6 +581,37 @@ export class GlowLayer implements CustomLayerInterface {
     };
     for (const school of before) if (!schools.has(school)) mark(school, 0);
     for (const school of schools) mark(school, 1);
+    this.map?.triggerRepaint();
+  }
+
+  /**
+   * Leaves this school (a place in setDust's list) out of the dust too, or
+   * takes it back in with `covered` false: one at the place of a school the
+   * glow lights (glow-mount.ts), whose light it gives way to, one at a time so
+   * a light's many are covered over as many tasks as it takes.
+   */
+  coverDust(school: number, covered: boolean): void {
+    if (covered === this.dustCoveredSet.has(school)) return;
+    if (covered) this.dustCoveredSet.add(school);
+    else this.dustCoveredSet.delete(school);
+    const slot = this.dust?.slotOf[school];
+    const flags = this.dustCovered;
+    if (slot === undefined || flags === null) return;
+    flags[slot] = covered ? 1 : 0;
+    // Drawn so once the light's are all marked (showCoveredDust), not each frame while they are:
+    // the GPU takes the dust's places whole, and a light's covers span a few frames.
+    if (this.placeDust(slot, false)) this.dustCoverChanged = true;
+  }
+
+  /**
+   * Draws the dust as coverDust left it: told once the covers of a light are all marked
+   * (glow-mount.ts), so its places go to the GPU once a light, not once a frame. Anything else
+   * that changes the dust draws them with its own change.
+   */
+  showCoveredDust(): void {
+    if (!this.dustCoverChanged) return;
+    this.dustCoverChanged = false;
+    this.dustStale = true;
     this.map?.triggerRepaint();
   }
 
@@ -608,12 +655,15 @@ export class GlowLayer implements CustomLayerInterface {
   }
 
   private dustShown(slot: number): boolean {
-    if (this.dustLit?.[slot] === 1) return false;
+    if (this.dustLit?.[slot] === 1 || this.dustCovered?.[slot] === 1) return false;
     return slot === this.dustKept || this.dustShows(this.dustKinds?.[slot] ?? 0);
   }
 
-  /** Draws this slot's speck where it is, or off the world if it is left out; true if that changed. */
-  private placeDust(slot: number): boolean {
+  /**
+   * Draws this slot's speck where it is, or off the world if it is left out; true if that changed.
+   * With `upload` false the change waits for showCoveredDust, or the next change that uploads.
+   */
+  private placeDust(slot: number, upload = true): boolean {
     const grid = this.dust;
     const drawnAt = this.dustDrawnAt;
     if (grid === null || drawnAt === null) return false;
@@ -622,7 +672,7 @@ export class GlowLayer implements CustomLayerInterface {
     if (was === y) return false;
     drawnAt[slot * 2 + 1] = y;
     this.dustLeftOut += y === DUST_HIDDEN_Y ? 1 : was === DUST_HIDDEN_Y ? -1 : 0;
-    this.dustStale = true;
+    if (upload) this.dustStale = true;
     return true;
   }
 
@@ -1417,6 +1467,7 @@ export class GlowLayer implements CustomLayerInterface {
       gl.bindBuffer(gl.ARRAY_BUFFER, null);
       res.count = positions.length / 2;
       this.dustStale = false;
+      this.dustCoverChanged = false;
     }
     return res;
   }

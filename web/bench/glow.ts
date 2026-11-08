@@ -14,13 +14,26 @@ import * as maplibregl from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
 import { GlowLayer } from '../src/map/glow';
+import { BASEMAP_IDS } from '../src/map/basemap/ids';
+import { coverMarks, markLitDots } from '../src/map/glow-mount';
+import {
+  COVER_MS,
+  SamePlaceCovers,
+  coveredBy,
+  samePlacesNow,
+  taskLoop,
+} from '../src/map/same-places';
+import type { Tasks } from '../src/map/same-places';
 import type {
   ContextLossReport,
+  CoverTask,
+  CoverTasks,
   SyncFrameCost,
   FrameSample,
   GlObjectCounts,
   GlowBenchApi,
   Recording,
+  SamePlacesCost,
 } from './api';
 import { benchStyle, conusGeometry } from './basemap';
 import { LandMask, generateSyntheticPoints, type SyntheticPoints } from './synthetic';
@@ -102,6 +115,16 @@ const map = new maplibregl.Map({
 });
 
 const nextFrame = (): Promise<number> => new Promise((resolve) => requestAnimationFrame(resolve));
+/** Resolves in a task of its own, a message to a port, as soon as the page is free. */
+const nextTask = (): Promise<void> =>
+  new Promise((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => {
+      channel.port1.close();
+      resolve();
+    };
+    channel.port2.postMessage(null);
+  });
 
 async function settle(): Promise<void> {
   await new Promise<void>((resolve) => {
@@ -191,6 +214,206 @@ const api: GlowBenchApi = {
     const t1 = performance.now();
     layer.setData({ lngLat: points.lngLat, status: points.status });
     return { generateMs: t1 - t0, setDataMs: performance.now() - t1 };
+  },
+
+  async samePlaces(count, every, runs, how, named = false): Promise<SamePlacesCost> {
+    if (!map.isStyleLoaded()) await new Promise((resolve) => map.once('load', resolve));
+    const synthetic = synthesize(count).lngLat;
+    // In millionths of a degree, as points.bin keeps them and the page reads them.
+    const places = new Int32Array(count * 2);
+    for (let i = 0; i < count * 2; i++) places[i] = Math.round((synthetic[i] ?? 0) * 1e6);
+    // One school in sixteen at the place of the one before it: one in eight at a place it
+    // shares, as 12.6% of the directory's are; and one in 1,024 nine millionths of a degree
+    // (a metre) north of it, as about a hundred are.
+    for (let i = 1; i < count; i += 16) {
+      places[i * 2] = places[i * 2 - 2] ?? 0;
+      places[i * 2 + 1] = (places[i * 2 - 1] ?? 0) + (i % 1024 === 1 ? 9 : 0);
+    }
+    // As data/closings.ts lights them: each lit row at its school's place in the directory,
+    // one in `every`, from `offset` on.
+    const litFrom = (offset: number): Set<number> => {
+      const schools = new Set<number>();
+      for (let i = offset; i < count; i += every) schools.add(i);
+      return schools;
+    };
+    // The dots of a school tiles source that holds no tile here, so a feature state costs what
+    // the call does (the tiles' own share is MapLibre's, the same for every lit school).
+    if (map.getSource(BASEMAP_IDS.schoolsSource) === undefined) {
+      map.addSource(BASEMAP_IDS.schoolsSource, {
+        type: 'vector',
+        tiles: ['https://bench.invalid/{z}/{x}/{y}.pbf'],
+        minzoom: 22,
+        maxzoom: 22,
+        bounds: [0, 0, 0.0001, 0.0001],
+      });
+    }
+    const dots = markLitDots(map);
+    layer.setDust(Float64Array.from(places, (e6) => e6 * 1e-6));
+    await nextFrame();
+    // The page's own path (map/glow-mount.ts): each light's schools marked lit and its covers
+    // asked for (the worker made at the first, in the task after it), every task the page runs
+    // for them timed, the events of the worker's answers among them, until they are all marked;
+    // each labelled with the step it began with (Builders.steps).
+    let log: CoverTask[] = [];
+    let seq = 0;
+    // The step the task now running began with, if it began one.
+    const began: { kind: string | null } = { kind: null };
+    let done: (() => void) | null = null;
+    let settledAt = 0;
+    const loop = taskLoop();
+    // Every one named on a traced pass, for the spec's trace to find the thread time its task
+    // took beside its wall time: kept, and measured once the page's lights are done, so the
+    // measures' own cost (a few tenths of a millisecond each, more while traced) is in no task
+    // of theirs and in no frame (a measure's trace events carry the times it is given).
+    const names: [string, number, number][] = [];
+    const name = (at: number, start: number, end: number): void => {
+      if (named) names.push([`same-place-task ${String(at)}`, start, end]);
+    };
+    const time = (task: () => void, otherwise: string): void => {
+      const start = performance.now();
+      task();
+      const end = performance.now();
+      const at = seq++;
+      log.push({ kind: began.kind ?? otherwise, ms: end - start, seq: at });
+      began.kind = null;
+      name(at, start, end);
+    };
+    const timed: Tasks = {
+      post(task) {
+        loop.post(() => {
+          time(task, how === 'slices' ? 'slice' : 'other');
+        });
+      },
+      run(task) {
+        time(task, 'answer');
+      },
+      close() {
+        loop.close();
+      },
+    };
+    const covers = new SamePlaceCovers(coverMarks(dots, layer), {
+      tasks: timed,
+      ...(how === 'slices' ? { worker: () => null } : {}),
+      steps(kind) {
+        began.kind ??= kind;
+      },
+      covered: () => {
+        settledAt = performance.now();
+        // Told in a task after this one, so the bench's own work after a light (the next light,
+        // the check at the end) is in no task of theirs.
+        void nextTask().then(() => done?.());
+      },
+    });
+    // The frames MapLibre draws, named on a traced pass, for each one's thread time.
+    const frameAt: number[] = [];
+    const drawn = (): void => {
+      if (!named) return;
+      const at = performance.now();
+      names.push([`same-place-frame ${String(frameAt.length)}`, at, at]);
+      frameAt.push(at);
+    };
+    map.on('render', drawn);
+    // The machine's own share: a plain wait as long as a cover task, each in a frame's task, so
+    // a task's time beyond it is told from the machine's.
+    const spins: number[] = [];
+    for (let n = 0; n < 64; n++) {
+      await nextFrame();
+      const start = performance.now();
+      while (performance.now() < start + COVER_MS) {
+        // Waiting.
+      }
+      spins.push(performance.now() - start);
+    }
+    // A quiet stretch, the map drawn each frame and nothing covered: the frames' own thread time.
+    for (let n = 0; n < 24; n++) {
+      map.triggerRepaint();
+      await nextFrame();
+    }
+    const quietFrames = frameAt.length;
+    // And a control: the first light's schools lit and then unlit, its dots and dust, with no
+    // covers asked for, the frames it draws (what a light costs a frame without this feature).
+    for (const lit of [litFrom(0), new Set<number>()]) {
+      await nextFrame();
+      await nextTask();
+      dots.mark(lit);
+      layer.hideDust(lit);
+      for (let n = 0; n < 6; n++) await nextFrame();
+    }
+    const litOnly: [number, number] = [quietFrames, frameAt.length];
+    const windows: [number, number][] = [];
+    const show = async (schools: Set<number>): Promise<CoverTasks> => {
+      // Lit after a frame, in a task of its own as the page lights its schools (the live file's,
+      // not a frame's); the call in a task of its own after that, so a trace tells its thread
+      // time from the lighting's and from the frames'.
+      await nextFrame();
+      await nextTask();
+      dots.mark(schools);
+      layer.hideDust(schools);
+      await nextTask();
+      log = [];
+      const finished = new Promise<void>((resolve) => {
+        done = resolve;
+      });
+      const start = performance.now();
+      covers.light(places, schools);
+      const end = performance.now();
+      const askSeq = seq++;
+      name(askSeq, start, end);
+      const askMs = end - start;
+      await finished;
+      const coveredAfterMs = settledAt - start;
+      windows.push([start, start + coveredAfterMs]);
+      done = null;
+      const sorted = log.map(({ ms }) => ms).sort((a, b) => a - b);
+      return {
+        askMs,
+        askSeq,
+        list: log,
+        tasks: log.length,
+        busyMs: sorted.reduce((sum, ms) => sum + ms, 0),
+        longestTaskMs: sorted.at(-1) ?? 0,
+        medianTaskMs: sorted[Math.floor(sorted.length / 2)] ?? Number.NaN,
+        longTasks: log.flatMap(({ kind, ms }, at) =>
+          ms > 2 ? [`${String(at)} ${kind}: ${ms.toFixed(2)}`] : [],
+        ),
+        coveredAfterMs,
+      };
+    };
+    const firstLit = litFrom(0);
+    const firstLight = await show(firstLit);
+    const laterLights: CoverTasks[] = [];
+    let last = firstLit;
+    for (let run = 1; run <= runs; run++) {
+      // The lit ones moved by a few each time: as many lit, others covered.
+      last = litFrom((run * 16) % every);
+      laterLights.push(await show(last));
+    }
+    // Worked out after, untimed: the schools covered are the index's for the last light.
+    const index = samePlacesNow(places);
+    const want = [...coveredBy(index, Int32Array.from(last))].sort((a, b) => a - b);
+    const have = [...covers.covered].sort((a, b) => a - b);
+    const matches = want.length === have.length && want.every((school, i) => school === have[i]);
+    // And last a light with none lit: every one uncovered.
+    laterLights.push(await show(new Set()));
+    const uncovered = covers.covered.length === 0;
+    covers.close();
+    map.off('render', drawn);
+    for (const [label, start, end] of names) performance.measure(label, { start, end });
+    dots.mark(new Set());
+    layer.hideDust(new Set());
+    layer.setDust(null);
+    return {
+      schools: count,
+      lit: firstLit.size,
+      covered: have.length,
+      shared: index.shared,
+      matches: matches && uncovered,
+      how,
+      firstLight,
+      laterLights,
+      longestSpinMs: Math.max(...spins),
+      ...(named ? { frames: { at: frameAt, quietFrames, litOnly, windows } } : {}),
+    };
   },
 
   pulse(share, clock = 'layer') {

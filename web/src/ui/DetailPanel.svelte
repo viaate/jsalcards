@@ -442,8 +442,15 @@
     box-shadow: inset 0 0 0 1px var(--text-3);
   }
 
+  /*
+    How far: within the label column, as every row's label is. A distance in
+    miles never breaks (copy-format.ts joins it with a no-break space); words
+    wider than the column ("Same place") wrap at their space, never into the
+    name beside them.
+  */
   .near-distance {
-    white-space: nowrap;
+    min-width: 0;
+    overflow-wrap: normal;
   }
 
   .near-text {

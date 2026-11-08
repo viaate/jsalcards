@@ -565,6 +565,20 @@ describe('format', () => {
       }
     });
 
+    it('writes a nearby school at the same place as such, and one further off in miles', () => {
+      expect(format.apart(0)).toBe('Same place');
+      expect(format.apart(1)).toBe('Same place');
+      expect(format.apart(1.99)).toBe('Same place');
+      expect(format.apart(2)).toBe(format.miles(2));
+      expect(format.apart(643)).toBe(`0.4${NBSP}mi`);
+      expect(problems(format.apart(0))).toEqual([]);
+      // The panel's label column wraps a label only at a plain space: a distance never breaks.
+      for (const metres of [2, 643, 16_093, 80_467]) expect(format.apart(metres)).not.toMatch(/ /);
+      for (const bad of [-1, Number.NaN, Infinity]) {
+        expect(() => format.apart(bad)).toThrow(RangeError);
+      }
+    });
+
     it('writes a distance in miles, to a tenth under ten miles', () => {
       expect(format.miles(0)).toBe(`0.1${NBSP}mi`);
       expect(format.miles(643)).toBe(`0.4${NBSP}mi`);

@@ -131,6 +131,15 @@ export const SCHOOLS_TILE_LAYER = 'schools';
 export const SCHOOL_LIT_STATE = 'lit';
 
 /**
+ * The feature state of a school the glow does not light, at the very place
+ * of one it does (glow-mount.ts sets it): its dot and the light around it
+ * give way too, so no white shows through the lit school's light, the hole of
+ * its ring or the open half of its dot (schools.ts). It is found from the
+ * panel of the school drawn over it, which lists it as at the same place.
+ */
+export const SCHOOL_COVERED_STATE = 'covered';
+
+/**
  * The scheme of the school tiles' URLs, which MapLibre's workers serve from
  * the archive (school-tiles.ts): "snowlight-schools://<archive URL>/{z}/{x}/{y}".
  */

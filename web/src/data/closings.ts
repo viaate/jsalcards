@@ -175,6 +175,13 @@ export interface LitSchools {
   /** Each school's id, and its name as the directory writes it. */
   readonly ids: readonly SchoolId[];
   readonly names: readonly string[];
+  /**
+   * Where every school of the directory `schools` point into is, in
+   * millionths of a degree (its own e6, not a copy: `lngLat` is read from
+   * it), so the glow finds the schools at a lit school's place
+   * (map/same-places.ts). Absent with nothing lit.
+   */
+  readonly places?: Int32Array;
 }
 
 export const NOTHING_LIT: LitSchools = Object.freeze({
@@ -248,9 +255,10 @@ export function litRows(
       bornAt[i] = previous?.has(school) === true ? Number.NaN : bornMs;
     }
   }
+  const places = directory.e6;
   return bornAt === undefined
-    ? { lngLat, status: statuses, kinds, schools, ids, names }
-    : { lngLat, status: statuses, kinds, bornAt, schools, ids, names };
+    ? { lngLat, status: statuses, kinds, schools, ids, names, places }
+    : { lngLat, status: statuses, kinds, bornAt, schools, ids, names, places };
 }
 
 /**
@@ -287,9 +295,10 @@ export function filterLit(lit: LitSchools, filter: MapFilter, pulse: boolean): L
     ids.push(lit.ids[row] ?? '');
     names.push(lit.names[row] ?? '');
   });
+  const places = lit.places === undefined ? {} : { places: lit.places };
   return born === undefined
-    ? { lngLat, status, kinds, schools, ids, names }
-    : { lngLat, status, kinds, bornAt: born, schools, ids, names };
+    ? { lngLat, status, kinds, schools, ids, names, ...places }
+    : { lngLat, status, kinds, bornAt: born, schools, ids, names, ...places };
 }
 
 /** How many schools the map lights in each status, by status code (closed … early dismissal). */

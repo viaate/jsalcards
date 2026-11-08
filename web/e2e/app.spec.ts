@@ -648,7 +648,8 @@ const SEARCH_RECORDS = [
 
 /**
  * Those two schools as the pipeline's directory has them (schools/meta.json, points.bin),
- * and three near Kansas City for the chance section, in the directory's order (by id).
+ * three near Kansas City for the chance section, and two private schools the directory puts
+ * at one place (one building in Clinton, Iowa), in the directory's order (by id).
  */
 const DIRECTORY_SCHOOLS = [
   {
@@ -688,6 +689,22 @@ const DIRECTORY_SCHOOLS = [
     name: 'THE PEMBROKE HILL SCHOOL - WORNALL CAMPUS',
     lon: -94.593001,
     lat: 39.03606,
+    district: 0xffffffff,
+    kind: 1,
+  },
+  {
+    id: 'A2392105',
+    name: 'THE LIGHTHOUSE SCHOOLS',
+    lon: -90.198864,
+    lat: 41.851665,
+    district: 0xffffffff,
+    kind: 1,
+  },
+  {
+    id: 'A2400078',
+    name: 'DIAMOND STAR ACADEMY',
+    lon: -90.198864,
+    lat: 41.851665,
     district: 0xffffffff,
     kind: 1,
   },
@@ -774,6 +791,35 @@ function directoryDetails(): { index: string; shard: string } {
       [],
     ];
   };
+  /** One of the two schools at one place in Clinton, which lists the other (at `at`) as 0 m away. */
+  type Listed = (typeof DIRECTORY_SCHOOLS)[number];
+  const clinton = (
+    own: Listed,
+    other: Listed,
+    at: number,
+    low: string,
+    high: string,
+    enrollment: number,
+    phone: string,
+  ): unknown[] => [
+    own.id,
+    own.name,
+    own.kind,
+    null,
+    null,
+    null,
+    '400 N BLUFF BLVD',
+    'CLINTON',
+    'IA',
+    '52732',
+    'Clinton County',
+    low,
+    high,
+    enrollment,
+    phone,
+    [[at, other.id, other.name, 0, other.lon, other.lat]],
+  ];
+  const [lighthouse, diamond] = [DIRECTORY_SCHOOLS[5], DIRECTORY_SCHOOLS[6]];
   const rows = [
     kansas(
       '201014000137',
@@ -841,6 +887,8 @@ function directoryDetails(): { index: string; shard: string } {
       '8169361230',
       [[3, '291640000557', 'BORDER STAR MONTESSORI', 2530, -94.592692, 39.013304]],
     ],
+    clinton(lighthouse, diamond, 6, '06', '12', 30, '5632494566'),
+    clinton(diamond, lighthouse, 5, 'KG', '08', 222, '5632499086'),
   ];
   return {
     index: JSON.stringify({
@@ -871,6 +919,74 @@ function syntheticClosings(): string {
         reasons: [0, 1],
         shifts: [120],
         clocks: [null],
+      },
+    ],
+  });
+}
+
+/**
+ * Two schools the staged directory puts at one place, picked from it: the first two found at
+ * exactly the same longitude and latitude, in its order.
+ */
+function samePlacePair(): readonly [number, number] {
+  for (let a = 0; a < DIRECTORY_SCHOOLS.length; a++) {
+    for (let b = a + 1; b < DIRECTORY_SCHOOLS.length; b++) {
+      const [one, two] = [DIRECTORY_SCHOOLS[a], DIRECTORY_SCHOOLS[b]];
+      if (one?.lon === two?.lon && one?.lat === two?.lat) return [a, b];
+    }
+  }
+  throw new Error('the staged directory has no two schools at one place');
+}
+
+/**
+ * Where a Nearby row lays its words out, in CSS pixels: the right edge of its distance's ink
+ * (the text's own boxes, line by line) and of the label column the distance stands in, the left
+ * edge of the name's ink, and the gutter the rows keep between their columns.
+ */
+async function nearbyLayout(
+  row: Locator,
+): Promise<{ ink: number; column: number; name: number; gutter: number }> {
+  return row.evaluate((element) => {
+    const label = element.querySelector('.near-distance');
+    const name = element.querySelector('.near-name');
+    if (label === null || name === null) throw new Error('a Nearby row without its two columns');
+    const ink = (node: Element): DOMRect => {
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      return range.getBoundingClientRect();
+    };
+    return {
+      ink: ink(label).right,
+      column: label.getBoundingClientRect().right,
+      name: ink(name).left,
+      gutter: Number.parseFloat(getComputedStyle(element).columnGap),
+    };
+  });
+}
+
+/** That a Nearby row's distance stays in its column, the gutter clear before the name. */
+async function expectNearbyInColumns(row: Locator): Promise<void> {
+  const { ink, column, name, gutter } = await nearbyLayout(row);
+  expect(gutter).toBeGreaterThan(0);
+  expect(ink).toBeLessThanOrEqual(column + 0.5);
+  expect(name - ink).toBeGreaterThanOrEqual(gutter - 0.5);
+}
+
+/** SYNTHETIC: a made-up day with one school closed, at the place of `school`, for this test only. */
+function syntheticClosedAt(school: number): string {
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: '2026-01-12T12:42:00Z',
+    directory: STAMP,
+    days: [
+      {
+        day: SYNTHETIC_DAY,
+        gaps: [school],
+        statuses: [0],
+        announced: [98],
+        reasons: [0],
+        shifts: [],
+        clocks: [],
       },
     ],
   });
@@ -2382,13 +2498,14 @@ test.describe('with data staged', () => {
     expect(record.ends).toEqual(list.ends);
     await back.click();
 
-    // About: what the site is, then what the map holds: the directory's five schools (Border Star
-    // and Pembroke Hill, and the three the chance section needs) in four districts.
+    // About: what the site is, then what the map holds: the directory's seven schools (Border
+    // Star and Pembroke Hill, the three the chance section needs and the two at one place in
+    // Clinton) in four districts.
     await menu.getByRole('button', { name: copy.nav.about }).click();
     await expect(menu.locator('.lead')).toHaveText(copy.about.what);
     await expect(menu.locator('.note')).toHaveText([copy.menu.onMap]);
     expect(await rows()).toEqual([
-      [copy.menu.schools, '5'],
+      [copy.menu.schools, '7'],
       [copy.menu.districts, '4'],
     ]);
     const about = await menuGrid(menu);
@@ -4463,6 +4580,107 @@ test.describe('with data staged', () => {
     );
     expect(problems).toEqual([]);
     await context.close();
+  });
+
+  test('a click where two schools share one place opens the lit one, which lists the other as at the same place', async ({
+    browser,
+  }) => {
+    // A first flight into streets (FIRST_FLIGHT_MS), and the other school's.
+    test.setTimeout(240_000);
+    const [lit, dark] = samePlacePair();
+    const [open, other] = [DIRECTORY_SCHOOLS[lit], DIRECTORY_SCHOOLS[dark]];
+    if (open === undefined || other === undefined) throw new Error('no pair');
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      timezoneId: 'America/Chicago',
+      // The day's live file comes from the route below, not a worker's cache.
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await fixDate(page, SYNTHETIC_NOW);
+    const { problems, requests } = watch(page);
+    const indexWorkerDone = new Promise<void>((resolve) => {
+      page.on('worker', (worker) => {
+        if (/\/assets\/same-places-worker-[\w-]+\.js$/.test(worker.url())) {
+          worker.on('close', () => {
+            resolve();
+          });
+        }
+      });
+    });
+    // SYNTHETIC: one of the two closed today, the other with no word.
+    await page.route('**/data/live/closings.json*', (route) =>
+      route.fulfill({ contentType: 'application/json', body: syntheticClosedAt(lit) }),
+    );
+    const panel = page.locator('aside.detail');
+    await page.goto(`${site}?at=${String(open.lat)},${String(open.lon)},14`);
+    await waitForMap(page);
+    await expect.poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 }).toBe(1);
+    // The directory's same-place index comes from its own worker, off the page's thread, a
+    // moment after the light, not seconds on: the worker answers and is let go.
+    let wait: ReturnType<typeof setTimeout> | undefined;
+    const answered = await Promise.race([
+      indexWorkerDone.then(() => true),
+      new Promise<false>((resolve) => {
+        wait = setTimeout(() => {
+          resolve(false);
+        }, 2_000);
+      }),
+    ]);
+    clearTimeout(wait);
+    expect(answered, 'the same-place worker answers within 2 s of the light').toBe(true);
+    expect(
+      requests.filter((url) => /\/assets\/same-places-worker-[\w-]+\.js$/.test(url)),
+    ).toHaveLength(1);
+    await settleMap(page);
+    // A click on the middle of the light, where both schools are: the lit one, with its status.
+    const light = await onScreen(page, open);
+    await page.mouse.click(Math.round(light.x), Math.round(light.y));
+    await expect(panel.locator('h2')).toHaveText('The Lighthouse Schools', { timeout: 30_000 });
+    expect(new URL(page.url()).searchParams.get('school')).toBe(open.id);
+    await expect(panel.locator('.status .headline')).toHaveText([copy.statusLine.closed.today]);
+    // The other first under Nearby, at the same place, with no status of its own to key.
+    const first = panel.locator('.near').first();
+    await expect(first.locator('.near-name')).toHaveText('Diamond Star Academy');
+    await expect(first.locator('.near-distance')).toHaveText(format.apart(0));
+    await expect(first.locator('.near-distance')).toHaveText('Same place');
+    await expect(first.locator('.glyph')).toHaveCount(0);
+    // Wider than the label column, it wraps within it, clear of the name.
+    await expectNearbyInColumns(first);
+    // Opened from there, the other school's panel says nothing of the closed one's day.
+    await first.click();
+    await expect(panel.locator('h2')).toHaveText('Diamond Star Academy');
+    await expect.poll(() => new URL(page.url()).searchParams.get('school')).toBe(other.id);
+    await expect(panel.locator('.status .headline')).toHaveCount(0);
+    await expect(panel.locator('.status .glyph')).toHaveCount(0);
+    const back = panel.locator('.near').first();
+    await expect(back.locator('.near-name')).toHaveText('The Lighthouse Schools');
+    await expect(back.locator('.near-distance')).toHaveText('Same place');
+    await expect(back.locator('.glyph.is-closed')).toHaveCount(1);
+    await expectNearbyInColumns(back);
+    expect(problems).toEqual([]);
+    await context.close();
+
+    // On a phone too, in the sheet.
+    const phone = await browser.newContext({
+      ...devices['Pixel 7'],
+      timezoneId: 'America/Chicago',
+      serviceWorkers: 'block',
+    });
+    const small = await phone.newPage();
+    await fixDate(small, SYNTHETIC_NOW);
+    const watched = watch(small);
+    await small.route('**/data/live/closings.json*', (route) =>
+      route.fulfill({ contentType: 'application/json', body: syntheticClosedAt(lit) }),
+    );
+    const sheet = small.locator('aside.detail');
+    await small.goto(`${site}?school=${open.id}`);
+    await expect(sheet.locator('h2')).toHaveText('The Lighthouse Schools', { timeout: 30_000 });
+    const row = sheet.locator('.near').first();
+    await expect(row.locator('.near-distance')).toHaveText('Same place');
+    await expectNearbyInColumns(row);
+    expect(watched.problems).toEqual([]);
+    await phone.close();
   });
 
   test('a click on two lights zooms them into the map right of a school’s panel, and the menu open gives way to the panel at the press', async ({

@@ -12,7 +12,12 @@ import {
   SCHOOL_DUST_FROM,
   SCHOOL_DUST_UNTIL,
 } from '../basemap/dots';
-import { BASEMAP_IDS, SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE } from '../basemap/ids';
+import {
+  BASEMAP_IDS,
+  SCHOOLS_TILE_LAYER,
+  SCHOOL_COVERED_STATE,
+  SCHOOL_LIT_STATE,
+} from '../basemap/ids';
 import type { GlowLayer } from '../glow';
 import {
   DOT_COLOR,
@@ -23,6 +28,10 @@ import {
   stateLineGray,
 } from '../glow-mount';
 import type { DustSource } from '../glow-mount';
+import { SamePlacesBuild, atOnePlace, coveredBy, samePlacesNow } from '../same-places';
+import type { SamePlaces } from '../same-places';
+import { metresBetween } from '../../data/details-format';
+import { format } from '../../copy-format';
 import { SHOW_ALL, showsSchool } from '../../state/filter';
 import { mercatorXFromLng, mercatorYFromLat } from '../glow/mercator';
 
@@ -126,11 +135,379 @@ function lit(...schools: number[]): LitSchools {
   };
 }
 
+/** Each mounted glow's wait for the schools its light covers to be marked. */
+const covering = new WeakMap<FakeMap, () => Promise<void>>();
+
+/**
+ * The glow on `map`, its covers worked out on the page (a test has no worker), and the wait
+ * for them kept for `covered`.
+ */
 function mount(map: FakeMap): ReturnType<typeof mountGlow> {
-  return mountGlow(map as unknown as MapLibreMap);
+  let busy = false;
+  let waiting: (() => void)[] = [];
+  const glow = mountGlow(map as unknown as MapLibreMap, {
+    covers: {
+      worker: () => null,
+      covered: () => {
+        busy = false;
+        for (const call of waiting.splice(0)) call();
+      },
+    },
+  });
+  const light = glow.light.bind(glow);
+  glow.light = (shown) => {
+    busy = true;
+    light(shown);
+  };
+  covering.set(map, () =>
+    busy
+      ? new Promise<void>((resolve) => {
+          waiting.push(resolve);
+        })
+      : Promise.resolve(),
+  );
+  // Removed: nothing more is waited for.
+  const remove = glow.remove.bind(glow);
+  glow.remove = () => {
+    busy = false;
+    waiting = [];
+    remove();
+  };
+  return glow;
 }
 
+/** The schools the last light on `map` covers, marked: in tasks after it, the index's first. */
+async function covered(map: FakeMap): Promise<void> {
+  await covering.get(map)?.();
+}
+
+/**
+ * A directory's places, as points.bin gives them in millionths of a degree:
+ * schools 0, 1 and 3 at one place, 2 and 4 at another, 5 a millionth east of
+ * the first (a tenth of a metre), 6 alone, 7 a metre north of 6 (rounds to 1:
+ * "Same place") and 8 two metres south of 6 (rounds to 2: not).
+ */
+function directoryPlaces(): Int32Array {
+  const e6 = [
+    [-94593001, 39036060],
+    [-94593001, 39036060],
+    [-71056000, 42358000],
+    [-94593001, 39036060],
+    [-71056000, 42358000],
+    [-94593000, 39036060],
+    [-100000000, 40000000],
+    [-100000000, 40000009],
+    [-100000000, 39999982],
+  ];
+  return Int32Array.from(e6.flat());
+}
+
+/** Schools lit at these places in a directory with these places, as data/closings.ts lights them. */
+function litIn(places: Int32Array, ...schools: number[]): LitSchools {
+  return {
+    ...lit(...schools),
+    lngLat: new Float64Array(
+      schools.flatMap((school) => [
+        (places[school * 2] ?? 0) * 1e-6,
+        (places[school * 2 + 1] ?? 0) * 1e-6,
+      ]),
+    ),
+    places,
+  };
+}
+
+/** A place's degrees, as the directory reads them from its millionths. */
+function degrees(places: Int32Array, school: number): [number, number] {
+  return [(places[school * 2] ?? 0) * 1e-6, (places[school * 2 + 1] ?? 0) * 1e-6];
+}
+
+/** Feature-state calls, in an order of their own: the order schools at one place come in is none. */
+function inAnyOrder(calls: readonly Call[]): string[] {
+  return calls.map((call) => JSON.stringify(call)).sort();
+}
+
+/** The others at each school's place, from an index, in order. */
+function listed(index: SamePlaces): number[][] {
+  return Array.from({ length: index.start.length - 1 }, (_, i) =>
+    [...index.near.subarray(index.start[i] ?? 0, index.start[i + 1] ?? 0)].sort((x, y) => x - y),
+  );
+}
+
+describe('the schools at one place', () => {
+  it('are those the panel calls at the same place: under 2 whole metres apart', () => {
+    const places = directoryPlaces();
+    expect(listed(samePlacesNow(places))).toEqual([
+      [1, 3, 5],
+      [0, 3, 5],
+      [4],
+      [0, 1, 5],
+      [2],
+      [0, 1, 3],
+      [7],
+      [6],
+      [],
+    ]);
+    expect(samePlacesNow(places).shared).toBe(8);
+    // As the panel rounds the details' metres (format.apart, scripts/stage-data.mjs).
+    const metres = (a: number, b: number): number =>
+      Math.round(metresBetween(...degrees(places, a), ...degrees(places, b)));
+    for (let a = 0; a < 9; a++) {
+      for (let b = 0; b < 9; b++) {
+        if (a === b) continue;
+        const said = format.apart(metres(a, b)) === 'Same place';
+        expect(listed(samePlacesNow(places))[a]?.includes(b), `${String(a)}, ${String(b)}`).toBe(
+          said,
+        );
+        expect(atOnePlace(...degrees(places, a), ...degrees(places, b))).toBe(said);
+      }
+    }
+  });
+
+  it('are judged by the metres the details give, to the same rounding, near the edge of it too', () => {
+    // Pairs 1.3 to 1.7 m apart every way, across the country's latitudes.
+    for (let n = 0; n < 2000; n++) {
+      const lat = 19 + (n % 53);
+      const lon = -160 + ((n * 7) % 93);
+      const bearing = (n * 0.37) % (2 * Math.PI);
+      const metres = 1.3 + ((n * 0.013) % 0.4);
+      const dLat = (metres * Math.cos(bearing)) / 111_195;
+      const dLon = (metres * Math.sin(bearing)) / (111_195 * Math.cos((lat * Math.PI) / 180));
+      const [a, b, c, d] = [lon, lat, lon + dLon, lat + dLat];
+      expect(atOnePlace(a, b, c, d)).toBe(Math.round(metresBetween(a, b, c, d)) < 2);
+    }
+  });
+
+  it('are found across the edges of the cells the index buckets places in, and only there', () => {
+    // A corner of the cells the index buckets places in (multiples of 2048 by 1024 millionths): schools
+    // under half a metre apart across each edge and both diagonals, and others 1.4, 1.6, 2.2
+    // and 2.6 m off, as Same place reads them (1, 2, 2 and 3 whole metres).
+    const [x, y] = [-90001408, 40000512];
+    const e6: [number, number][] = [
+      [x, y],
+      [x - 4, y],
+      [x, y - 4],
+      [x - 4, y - 4],
+      [x - 4, y + 4],
+      [x + 4, y - 4],
+      [x, y - 13],
+      [x, y - 14],
+      [x, y + 20],
+      [x - 30, y],
+    ];
+    const places = Int32Array.from(e6.flat());
+    const index = samePlacesNow(places);
+    expect(listed(index)[0]).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(listed(index)[4]).toContain(5);
+    const count = e6.length;
+    for (let a = 0; a < count; a++) {
+      for (let b = 0; b < count; b++) {
+        if (a === b) continue;
+        const one = atOnePlace(...degrees(places, a), ...degrees(places, b));
+        expect(listed(index)[a]?.includes(b), `${String(a)}, ${String(b)}`).toBe(one);
+      }
+    }
+  });
+
+  it('are built in slices that stop when told, to the same index', () => {
+    const places = new Int32Array(6000 * 2);
+    for (let i = 0; i < 6000; i++) {
+      const spot = Math.floor(i / 3);
+      places[i * 2] = -90000000 - spot * 37;
+      places[i * 2 + 1] = 40000000 + spot * 11;
+    }
+    const build = new SamePlacesBuild(places);
+    let slices = 0;
+    let index: SamePlaces | null = null;
+    while (index === null) {
+      slices++;
+      let looks = 0;
+      index = build.step(() => ++looks > 1);
+    }
+    expect(slices).toBeGreaterThan(3);
+    expect(listed(index)).toEqual(listed(samePlacesNow(places)));
+  });
+
+  it('that the glow does not light, beside one it lights, are covered; none where nothing is lit', () => {
+    const places = directoryPlaces();
+    const index = samePlacesNow(places);
+    const at = (...schools: number[]): number[] =>
+      [...coveredBy(index, Int32Array.from(schools))].sort((x, y) => x - y);
+    expect(at(0)).toEqual([1, 3, 5]);
+    expect(at(0, 1)).toEqual([3, 5]);
+    expect(at(0, 1, 3, 4)).toEqual([2, 5]);
+    expect(at(6)).toEqual([7]);
+    expect(at(8)).toEqual([]);
+    expect(at()).toEqual([]);
+    // The menu's filter hides a lit school: the schools at its place are no longer covered.
+    const today: LitSchools = { ...litIn(places, 0, 2), status: new Uint8Array([0, 1]) };
+    const coveredIn = (shown: LitSchools): number[] =>
+      [...coveredBy(index, Int32Array.from(shown.schools))].sort((x, y) => x - y);
+    expect(coveredIn(filterLit(today, SHOW_ALL, false))).toEqual([1, 3, 4, 5]);
+    expect(coveredIn(filterLit(today, { ...SHOW_ALL, status: 1 }, false))).toEqual([4]);
+  });
+
+  it('are covered however many share a place and however many are lit', () => {
+    // 2,000 places, three schools at each; the first of each lit.
+    const places = new Int32Array(6000 * 2);
+    for (let i = 0; i < 6000; i++) {
+      const spot = Math.floor(i / 3);
+      places[i * 2] = -90000000 - spot * 37;
+      places[i * 2 + 1] = 40000000 + spot * 11;
+    }
+    const lighted = Array.from({ length: 2000 }, (_, spot) => spot * 3);
+    const found = coveredBy(samePlacesNow(places), Int32Array.from(lighted));
+    expect(found.length).toBe(4000);
+    expect(new Set(found).size).toBe(4000);
+    expect([...found].every((school) => school % 3 !== 0)).toBe(true);
+  });
+});
+
 describe('the glow on the map', () => {
+  it('takes each school at the place of one it lights off the quiet dots too, once the index is in', async () => {
+    const map = new FakeMap();
+    map.load();
+    const glow = mount(map);
+    const places = directoryPlaces();
+    // The first light marks the lit school at once, and covers none until the directory's
+    // index is built, in tasks after the light.
+    glow.light(litIn(places, 0));
+    expect(map.calls).toEqual([['set', 0, { [SCHOOL_LIT_STATE]: true }]]);
+    map.calls = [];
+    await covered(map);
+    expect(inAnyOrder(map.calls)).toEqual(
+      inAnyOrder([
+        ['set', 1, { [SCHOOL_COVERED_STATE]: true }],
+        ['set', 3, { [SCHOOL_COVERED_STATE]: true }],
+        ['set', 5, { [SCHOOL_COVERED_STATE]: true }],
+      ]),
+    );
+    // Another school at that place lit instead, with the index in: each dot takes its own state,
+    // the lit ones at once, the covered in a task after it.
+    map.calls = [];
+    glow.light(litIn(places, 1));
+    expect(inAnyOrder(map.calls)).toEqual(
+      inAnyOrder([
+        ['remove', 0, SCHOOL_LIT_STATE],
+        ['set', 1, { [SCHOOL_LIT_STATE]: true }],
+      ]),
+    );
+    await covered(map);
+    expect(inAnyOrder(map.calls)).toEqual(
+      inAnyOrder([
+        ['remove', 0, SCHOOL_LIT_STATE],
+        ['set', 1, { [SCHOOL_LIT_STATE]: true }],
+        ['remove', 1, SCHOOL_COVERED_STATE],
+        ['set', 0, { [SCHOOL_COVERED_STATE]: true }],
+      ]),
+    );
+    // Nothing lit: every dot is back.
+    map.calls = [];
+    glow.light(NOTHING_LIT);
+    await covered(map);
+    expect(inAnyOrder(map.calls)).toEqual(
+      inAnyOrder([
+        ['remove', 1, SCHOOL_LIT_STATE],
+        ['remove', 0, SCHOOL_COVERED_STATE],
+        ['remove', 3, SCHOOL_COVERED_STATE],
+        ['remove', 5, SCHOOL_COVERED_STATE],
+      ]),
+    );
+    map.calls = [];
+    glow.light(NOTHING_LIT);
+    await covered(map);
+    expect(map.calls).toEqual([]);
+  });
+
+  it('makes no worker for them as it goes on the map, nor until a light has schools lit', async () => {
+    const map = new FakeMap();
+    map.load();
+    let made = 0;
+    let waiting: (() => void)[] = [];
+    const glow = mountGlow(map as unknown as MapLibreMap, {
+      covers: {
+        worker: () => {
+          made++;
+          return null;
+        },
+        covered: () => {
+          for (const call of waiting.splice(0)) call();
+        },
+      },
+    });
+    const done = (): Promise<void> =>
+      new Promise((resolve) => {
+        waiting.push(resolve);
+      });
+    for (let n = 0; n < 20; n++) await settle();
+    glow.light(NOTHING_LIT);
+    await done();
+    expect(made).toBe(0);
+    const places = directoryPlaces();
+    glow.light(litIn(places, 2));
+    await done();
+    expect(made).toBe(1);
+    glow.remove();
+    waiting = [];
+  });
+
+  it('covers them a few tasks after the first light on a page that is never idle', async () => {
+    // A page drawing its map every frame: an idle callback never runs, and no timer comes due.
+    const idle = vi.fn();
+    vi.stubGlobal('requestIdleCallback', idle);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'] });
+    try {
+      const map = new FakeMap();
+      map.load();
+      const glow = mount(map);
+      const places = directoryPlaces();
+      glow.light(litIn(places, 2));
+      map.calls = [];
+      await covered(map);
+      expect(map.calls).toEqual([['set', 4, { [SCHOOL_COVERED_STATE]: true }]]);
+      expect(idle).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('covers the schools of the light shown when the index comes in, not of one before it', async () => {
+    const map = new FakeMap();
+    map.load();
+    const glow = mount(map);
+    const places = directoryPlaces();
+    glow.light(litIn(places, 0));
+    glow.light(litIn(places, 2));
+    map.calls = [];
+    await covered(map);
+    expect(map.calls).toEqual([['set', 4, { [SCHOOL_COVERED_STATE]: true }]]);
+    // Removed before it comes in: nothing more is marked.
+    const other = new FakeMap();
+    other.load();
+    const gone = mount(other);
+    const elsewhere = directoryPlaces();
+    gone.light(litIn(elsewhere, 0));
+    gone.remove();
+    other.calls = [];
+    for (let n = 0; n < 20; n++) await settle();
+    expect(other.calls).toEqual([]);
+  });
+
+  it('covers a lit one’s neighbours only once the map has its school tiles', async () => {
+    const map = new FakeMap();
+    const glow = mount(map);
+    const places = directoryPlaces();
+    glow.light(litIn(places, 2));
+    for (let n = 0; n < 20; n++) await settle();
+    expect(map.calls).toEqual([]);
+    map.load();
+    await covered(map);
+    expect(map.calls).toEqual([
+      ['set', 2, { [SCHOOL_LIT_STATE]: true }],
+      ['set', 4, { [SCHOOL_COVERED_STATE]: true }],
+    ]);
+  });
+
   it('takes each school it lights off the quiet dots, by its place in the directory', () => {
     const map = new FakeMap();
     const glow = mount(map);
@@ -272,6 +649,36 @@ describe('the dust', () => {
     expect(map.layer?.stats.dustHidden).toBe(2);
     glow.light(NOTHING_LIT);
     expect(map.layer?.stats.dustHidden).toBe(0);
+  });
+
+  it('leaves a school at the very place of one it lights out of the dust too, and out of a tap’s reach', async () => {
+    const map = new FakeMap();
+    map.load();
+    const glow = mount(map);
+    // Schools 0 and 1 at one place.
+    const shared = {
+      ...schools,
+      lngLat: new Float64Array([-94.6, 39.1, -94.6, 39.1, -71.1, 42.4]),
+    };
+    glow.dust(source(() => Promise.resolve(shared)));
+    map.zoomTo(8);
+    await settle();
+    const atKansasCity = (): number[] =>
+      [
+        ...(glow.specks?.near(mercatorXFromLng(-94.6), mercatorYFromLat(39.1), 0.0001) ?? []),
+      ].sort();
+    expect(atKansasCity()).toEqual([0, 1]);
+    const sharedPlaces = Int32Array.from(shared.lngLat, (degrees) => Math.round(degrees * 1e6));
+    glow.light(litIn(sharedPlaces, 0));
+    expect(map.layer?.stats.dustHidden).toBe(1);
+    await covered(map);
+    expect(map.layer?.stats.dustHidden).toBe(2);
+    expect(atKansasCity()).toEqual([]);
+    glow.light(NOTHING_LIT);
+    expect(map.layer?.stats.dustHidden).toBe(1);
+    await covered(map);
+    expect(map.layer?.stats.dustHidden).toBe(0);
+    expect(atKansasCity()).toEqual([0, 1]);
   });
 
   it('takes a school lit in a status or of a kind the menu hides back into the dust, as its dot is', async () => {

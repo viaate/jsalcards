@@ -32,7 +32,12 @@ import { MAP_FONT_FILES, MAP_FONTS, addMapFonts } from '../fonts';
 import { BASEMAP_IDS } from '../ids';
 import { BORDER_LAYER, MASK_LAYER } from '../mask/format';
 import { OPENFREEMAP_MIN_ZOOM } from '../openfreemap';
-import { SCHOOLS_TILE_LAYER, SCHOOL_LIT_STATE, SCHOOL_TILES_PROTOCOL } from '../ids';
+import {
+  SCHOOLS_TILE_LAYER,
+  SCHOOL_COVERED_STATE,
+  SCHOOL_LIT_STATE,
+  SCHOOL_TILES_PROTOCOL,
+} from '../ids';
 import { NEARBY_ZOOM } from '../limits';
 import {
   SCHOOL_DOTS_FROM,
@@ -1168,15 +1173,21 @@ describe('schools', () => {
   });
 
   it('leave a school the glow lights to its light: no white dot and no white light around it', () => {
-    const opacity = (id: string, name: string, zoom: number, lit: boolean): unknown => {
+    const opacity = (
+      id: string,
+      name: string,
+      zoom: number,
+      lit: boolean,
+      state: string = SCHOOL_LIT_STATE,
+    ): unknown => {
       const paint = (schoolLayer(id) as { paint: Record<string, unknown> }).paint;
       const spec = (latest as unknown as Record<string, Record<string, unknown>>).paint_circle?.[
         name
       ];
       const parsed = expression.createPropertyExpression(paint[name], name, spec as never);
       if (parsed.result !== 'success') throw new Error(`${id} ${name}`);
-      const state = lit ? { [SCHOOL_LIT_STATE]: true } : {};
-      return parsed.value.evaluate({ zoom }, { type: GEOMETRY.point, properties: {} }, state);
+      const feature = lit ? { [state]: true } : {};
+      return parsed.value.evaluate({ zoom }, { type: GEOMETRY.point, properties: {} }, feature);
     };
     const drawn: [string, string][] = [
       [BASEMAP_IDS.schoolDots, 'circle-opacity'],
@@ -1188,12 +1199,39 @@ describe('schools', () => {
         if (zoom > (schoolLayer(id).maxzoom ?? 24)) continue;
         const where = `${id} ${name} ${String(zoom)}`;
         expect(opacity(id, name, zoom, true), where).toBe(0);
+        // Nor a school at the very place of one it lights: no white inside the lit one's glyph.
+        expect(opacity(id, name, zoom, true, SCHOOL_COVERED_STATE), where).toBe(0);
         expect(opacity(id, name, zoom, false), where).toBe(num(id, 'paint', name, zoom));
         expect(opacity(id, name, zoom, false), where).toBeGreaterThan(0);
       }
     }
+    // A covered school shows no name either, at any zoom names are drawn at; a lit one does.
+    const nameOpacity = (zoom: number, state: Record<string, boolean>): unknown => {
+      const paint = (schoolLayer(BASEMAP_IDS.schoolNames) as { paint: Record<string, unknown> })
+        .paint;
+      const spec = (latest as unknown as Record<string, Record<string, unknown>>).paint_symbol?.[
+        'text-opacity'
+      ];
+      const parsed = expression.createPropertyExpression(
+        paint['text-opacity'],
+        'text-opacity',
+        spec as never,
+      );
+      if (parsed.result !== 'success') throw new Error('text-opacity');
+      return parsed.value.evaluate({ zoom }, { type: GEOMETRY.point, properties: {} }, state);
+    };
+    for (const zoom of [SCHOOL_NAMES_FROM - SCHOOL_FADE / 2, SCHOOL_NAMES_FROM, 15, 17]) {
+      const shown = num(BASEMAP_IDS.schoolNames, 'paint', 'text-opacity', zoom);
+      expect(shown).toBeGreaterThan(0);
+      expect(nameOpacity(zoom, { [SCHOOL_COVERED_STATE]: true })).toBe(0);
+      expect(nameOpacity(zoom, { [SCHOOL_LIT_STATE]: true })).toBe(shown);
+      expect(nameOpacity(zoom, {})).toBe(shown);
+    }
     // The ring around the school a panel is open for stays, lit or not.
     expect(JSON.stringify(schoolLayer(BASEMAP_IDS.schoolSelected))).not.toContain(SCHOOL_LIT_STATE);
+    expect(JSON.stringify(schoolLayer(BASEMAP_IDS.schoolSelected))).not.toContain(
+      SCHOOL_COVERED_STATE,
+    );
   });
 
   it('put a dot at each school under every label, and each name over every other label', () => {

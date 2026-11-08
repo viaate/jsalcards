@@ -11,7 +11,7 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { BASEMAP_IDS, SCHOOL_LIT_STATE } from '../basemap/ids';
+import { BASEMAP_IDS, SCHOOL_COVERED_STATE, SCHOOL_LIT_STATE } from '../basemap/ids';
 import {
   SCHOOL_DOT_OPACITY,
   SCHOOL_DOT_RADIUS,
@@ -29,6 +29,7 @@ import {
   schoolDustRadius,
 } from '../basemap/schools';
 import { dustStyle, litRadius } from '../glow-mount';
+import { GlowStatus } from '../glow/color';
 import { dustAtZoom } from '../glow/dust';
 import {
   latFromMercatorY,
@@ -36,6 +37,7 @@ import {
   mercatorXFromLng,
   mercatorYFromLat,
 } from '../glow/mercator';
+import { drawRank } from '../glow/pack';
 import {
   DOUBLE_TAP_MS,
   DRILL_MARGIN,
@@ -76,6 +78,8 @@ interface Drawn {
   readonly label?: readonly [number, number, number, number];
   /** Whether the glow lights it (its dot's feature state). */
   readonly lit?: boolean;
+  /** Whether the glow lights another school at its very place (its dot's feature state). */
+  readonly covered?: boolean;
 }
 
 type Listener = (event: never) => void;
@@ -199,7 +203,10 @@ class FakeMap {
     for (const school of this.drawn) {
       const properties = { id: school.id, name: school.name };
       const point = { type: 'Point', coordinates: [school.lon, school.lat] };
-      const state = school.lit === true ? { [SCHOOL_LIT_STATE]: true } : {};
+      const state = {
+        ...(school.lit === true ? { [SCHOOL_LIT_STATE]: true } : {}),
+        ...(school.covered === true ? { [SCHOOL_COVERED_STATE]: true } : {}),
+      };
       const { x, y } = this.project([school.lon, school.lat]);
       const dx = Math.max(x0 - x, 0, x - x1);
       const dy = Math.max(y0 - y, 0, y - y1);
@@ -238,15 +245,19 @@ class FakeMap {
   }
 }
 
-/** The glow's data for these schools, as data/closings.ts lightSchools gives it. */
+/**
+ * The glow's data for these schools, as data/closings.ts lightSchools gives
+ * it: each in its own status, or closed.
+ */
 function lit(
-  schools: readonly { id: string; lon: number; lat: number }[],
+  schools: readonly { id: string; lon: number; lat: number; status?: GlowStatus }[],
   names?: string[],
 ): LitSpots {
   return {
     lngLat: new Float64Array(schools.flatMap((school) => [school.lon, school.lat])),
     ids: schools.map((school) => school.id),
     names: names ?? schools.map((school) => school.id),
+    status: new Uint8Array(schools.map((school) => school.status ?? GlowStatus.Closed)),
   };
 }
 
@@ -284,8 +295,8 @@ function eastOf(map: FakeMap, id: string, px: number): Drawn {
   return { id, name: id, lon: at.lng, lat: PEMBROKE_HILL.lat };
 }
 
-function mark(id: string, distance: number, dx = 0, dy = 0): MarkHit {
-  return { id, lon: 0, lat: 0, dx, dy, distance, name: () => id };
+function mark(id: string, distance: number, dx = 0, dy = 0, drawn = -1): MarkHit {
+  return { id, lon: 0, lat: 0, dx, dy, distance, drawn, name: () => id };
 }
 
 function opened(action: TapAction | null): string | undefined {
@@ -550,6 +561,196 @@ describe('a drawn school', () => {
     map.drawn = [{ ...PEMBROKE_HILL, name: 'Pembroke Hill' }, eastOf(map, '290000000003', 20)];
     const tap = beside(map, PEMBROKE_HILL, 8, 0);
     expect(opened(tapAction(map.map, tap, HIT_RADIUS.touch, null))).toBe(PEMBROKE_HILL.id);
+  });
+});
+
+describe('schools at one place', () => {
+  /** A school the glow does not light, at Pembroke Hill's very place (another district's). */
+  const DARK = {
+    id: '290000000002',
+    name: 'Wornall Academy',
+    lon: PEMBROKE_HILL.lon,
+    lat: PEMBROKE_HILL.lat,
+  };
+  const ZOOMS = [11, 14, 16] as const;
+  const RADII = [HIT_RADIUS.mouse, HIT_RADIUS.touch] as const;
+  let map: FakeMap;
+  beforeEach(() => {
+    map = new FakeMap();
+  });
+
+  it('a lit school over a dark one: a tap on its light opens the lit school, at its center or a pixel off, with a mouse or a finger', () => {
+    const spots = lit([{ ...PEMBROKE_HILL, status: GlowStatus.Delayed }]);
+    for (const zoom of ZOOMS) {
+      map.zoom = zoom;
+      for (const radius of RADII) {
+        for (const [dx, dy] of [
+          [0, 0],
+          [1, 0],
+          [0, -1],
+        ] as const) {
+          // The dark school's dot drawn, the lit one's hidden under its light, in either order.
+          for (const drawn of [
+            [{ ...DARK }, { ...PEMBROKE_HILL, name: 'Pembroke Hill', lit: true }],
+            [{ ...PEMBROKE_HILL, name: 'Pembroke Hill', lit: true }, { ...DARK }],
+          ]) {
+            map.drawn = drawn;
+            const where = `z${String(zoom)} r${String(radius)} (${String(dx)}, ${String(dy)})`;
+            const pointer = beside(map, PEMBROKE_HILL, dx, dy);
+            const marks = schoolsInReach(map.map, pointer, radius, spots);
+            expect(marks.map((hit) => hit.id).sort(), where).toEqual(
+              [DARK.id, PEMBROKE_HILL.id].sort(),
+            );
+            expect(opened(tapAction(map.map, pointer, radius, spots)), where).toBe(
+              PEMBROKE_HILL.id,
+            );
+          }
+        }
+      }
+    }
+  });
+
+  it('a lit school over a dark one is its light even where its name is under the pointer too', () => {
+    map.zoom = 16;
+    const at = map.project([PEMBROKE_HILL.lon, PEMBROKE_HILL.lat]);
+    map.drawn = [
+      { ...DARK },
+      {
+        ...PEMBROKE_HILL,
+        name: 'Pembroke Hill',
+        lit: true,
+        label: [at.x - 2, at.y - 8, at.x + 120, at.y + 8],
+      },
+    ];
+    const spots = lit([{ ...PEMBROKE_HILL, status: GlowStatus.EarlyDismissal }]);
+    const marks = schoolsInReach(map.map, at, HIT_RADIUS.touch, spots);
+    // Found by its name and its light, as near as each other: counted once, as its light.
+    expect(marks.find((hit) => hit.id === PEMBROKE_HILL.id)?.drawn).toBe(
+      drawRank(GlowStatus.EarlyDismissal),
+    );
+    expect(opened(tapAction(map.map, at, HIT_RADIUS.touch, spots))).toBe(PEMBROKE_HILL.id);
+  });
+
+  it('two lit at one place: the one the glow draws on top opens; of one status, the first', () => {
+    map.zoom = 16;
+    map.drawn = [];
+    const two = (first: GlowStatus, second: GlowStatus): string | undefined =>
+      opened(
+        tapAction(
+          map.map,
+          beside(map, PEMBROKE_HILL, 0.5, 0),
+          HIT_RADIUS.touch,
+          lit([
+            { ...PEMBROKE_HILL, status: first },
+            { ...DARK, status: second },
+          ]),
+        ),
+      );
+    // The glow's own order: closed on top, then delayed, remote and early dismissal.
+    expect(drawRank(GlowStatus.Closed)).toBeGreaterThan(drawRank(GlowStatus.Delayed));
+    expect(drawRank(GlowStatus.Delayed)).toBeGreaterThan(drawRank(GlowStatus.Remote));
+    expect(drawRank(GlowStatus.Remote)).toBeGreaterThan(drawRank(GlowStatus.EarlyDismissal));
+    expect(drawRank(GlowStatus.EarlyDismissal)).toBeGreaterThan(-1);
+    expect(two(GlowStatus.Delayed, GlowStatus.Closed)).toBe(DARK.id);
+    expect(two(GlowStatus.Closed, GlowStatus.Delayed)).toBe(PEMBROKE_HILL.id);
+    expect(two(GlowStatus.EarlyDismissal, GlowStatus.Remote)).toBe(DARK.id);
+    expect(two(GlowStatus.Remote, GlowStatus.EarlyDismissal)).toBe(PEMBROKE_HILL.id);
+    expect(two(GlowStatus.Delayed, GlowStatus.Delayed)).toBe(PEMBROKE_HILL.id);
+  });
+
+  it('an open light, which the glow draws under every other, yields to a closed one at its place', () => {
+    map.zoom = 16;
+    const two = (first: GlowStatus, second: GlowStatus): string | undefined =>
+      opened(
+        tapAction(
+          map.map,
+          beside(map, PEMBROKE_HILL, 0.5, 0),
+          HIT_RADIUS.touch,
+          lit([
+            { ...PEMBROKE_HILL, status: first },
+            { ...DARK, status: second },
+          ]),
+        ),
+      );
+    map.drawn = [];
+    // Open is packed last but drawn first (GlowLayer drawGlyphs): under every glowing status.
+    for (const glowing of [
+      GlowStatus.Closed,
+      GlowStatus.Delayed,
+      GlowStatus.Remote,
+      GlowStatus.EarlyDismissal,
+    ]) {
+      expect(drawRank(GlowStatus.Open)).toBeLessThan(drawRank(glowing));
+    }
+    expect(two(GlowStatus.Open, GlowStatus.Closed)).toBe(DARK.id);
+    expect(two(GlowStatus.Closed, GlowStatus.Open)).toBe(PEMBROKE_HILL.id);
+    expect(two(GlowStatus.Open, GlowStatus.EarlyDismissal)).toBe(DARK.id);
+    // And over a dark dot at its place, which is drawn under the glow.
+    expect(drawRank(GlowStatus.Open)).toBeGreaterThan(-1);
+    map.drawn = [{ ...DARK }];
+    const spots = lit([{ ...PEMBROKE_HILL, status: GlowStatus.Open }]);
+    expect(
+      opened(tapAction(map.map, beside(map, PEMBROKE_HILL, 0, 0), HIT_RADIUS.touch, spots)),
+    ).toBe(PEMBROKE_HILL.id);
+  });
+
+  it('a dark dot a fraction of a metre off the light, the pointer nearer its center: the lit school', () => {
+    // The tiles round a place to their grid (tiles.py): a dot 0.3 m east of the light.
+    const metres = 0.3;
+    const east = metres / (111_320 * Math.cos((PEMBROKE_HILL.lat * Math.PI) / 180));
+    const dot = { ...DARK, lon: PEMBROKE_HILL.lon + east };
+    const spots = lit([{ ...PEMBROKE_HILL, status: GlowStatus.Delayed }]);
+    for (const zoom of ZOOMS) {
+      map.zoom = zoom;
+      map.drawn = [dot, { ...PEMBROKE_HILL, name: 'Pembroke Hill', lit: true }];
+      const pointer = beside(map, dot, 0, 0);
+      // The pointer is on the dot's center, nearer it than the light's.
+      const light = beside(map, PEMBROKE_HILL, 0, 0);
+      expect(
+        Math.hypot(light.x - pointer.x, light.y - pointer.y),
+        `z${String(zoom)}`,
+      ).toBeGreaterThan(0);
+      for (const radius of RADII) {
+        expect(opened(tapAction(map.map, pointer, radius, spots)), `z${String(zoom)}`).toBe(
+          PEMBROKE_HILL.id,
+        );
+      }
+    }
+  });
+
+  it('a dot the glow covers (a lit school at its very place) takes no tap, as a lit one takes none', () => {
+    map.zoom = 14;
+    map.drawn = [{ ...DARK, covered: true }];
+    const on = beside(map, PEMBROKE_HILL, 0, 0);
+    expect(schoolsInReach(map.map, on, HIT_RADIUS.touch, null)).toEqual([]);
+    const spots = lit([{ ...PEMBROKE_HILL, status: GlowStatus.Delayed }]);
+    expect(schoolsInReach(map.map, on, HIT_RADIUS.touch, spots).map((hit) => hit.id)).toEqual([
+      PEMBROKE_HILL.id,
+    ]);
+    // Uncovered, its dot is there again.
+    map.drawn = [{ ...DARK }];
+    expect(opened(tapAction(map.map, on, HIT_RADIUS.touch, null))).toBe(DARK.id);
+  });
+
+  it('a covered school’s name takes no tap either: the map draws none for it', () => {
+    map.zoom = 16;
+    const at = map.project([PEMBROKE_HILL.lon, PEMBROKE_HILL.lat]);
+    const label: [number, number, number, number] = [at.x + 6, at.y - 8, at.x + 120, at.y + 8];
+    const onName = { x: at.x + 60, y: at.y };
+    map.drawn = [{ ...DARK, covered: true, label }];
+    expect(schoolsInReach(map.map, onName, HIT_RADIUS.touch, null)).toEqual([]);
+    map.drawn = [{ ...DARK, label }];
+    expect(schoolsInReach(map.map, onName, HIT_RADIUS.touch, null).map((hit) => hit.id)).toEqual([
+      DARK.id,
+    ]);
+  });
+
+  it('two dark at one place still open the nearest center, then the first found, as before', () => {
+    map.zoom = 16;
+    map.drawn = [{ ...DARK }, { ...PEMBROKE_HILL, name: 'Pembroke Hill' }];
+    expect(
+      opened(tapAction(map.map, beside(map, PEMBROKE_HILL, 1, 0), HIT_RADIUS.touch, null)),
+    ).toBe(DARK.id);
   });
 });
 

@@ -37,9 +37,16 @@ export interface Points {
   readonly district: Int32Array;
   /** Each school's kind flags: 0x01 private, 0x02 charter, 0x04 exclusively virtual. */
   readonly kind: Uint8Array;
+  /**
+   * Longitude, latitude of each school in millionths of a degree, as points.bin
+   * keeps them, interleaved: what lngLat is read from. Worked out from lngLat
+   * where a directory is made without points.bin.
+   */
+  readonly e6?: Int32Array;
 }
 
 export interface Directory extends Points {
+  readonly e6: Int32Array;
   readonly meta: SchoolDirectoryMeta;
   readonly count: number;
   /** A school's position, or -1 when the directory has no such school. */
@@ -99,20 +106,25 @@ export function parsePoints(bytes: ArrayBuffer, meta: SchoolDirectoryMeta): Poin
   if (bytes.byteLength !== HEADER_BYTES + RECORD_BYTES * count) return null;
 
   const lngLat = new Float64Array(count * 2);
+  const e6 = new Int32Array(count * 2);
   const district = new Int32Array(count);
   const kind = new Uint8Array(count);
   for (let i = 0, at = HEADER_BYTES; i < count; i++, at += RECORD_BYTES) {
-    const lon = view.getInt32(at, true) * MICRODEGREES;
-    const lat = view.getInt32(at + 4, true) * MICRODEGREES;
+    const x = view.getInt32(at, true);
+    const y = view.getInt32(at + 4, true);
+    const lon = x * MICRODEGREES;
+    const lat = y * MICRODEGREES;
     const index = view.getUint32(at + 8, true);
     if (Math.abs(lon) > 180 || Math.abs(lat) > 90) return null;
     if (index !== NO_DISTRICT && index >= districts) return null;
     lngLat[i * 2] = lon;
     lngLat[i * 2 + 1] = lat;
+    e6[i * 2] = x;
+    e6[i * 2 + 1] = y;
     district[i] = index === NO_DISTRICT ? -1 : index;
     kind[i] = view.getUint8(at + 12);
   }
-  return { lngLat, district, kind };
+  return { lngLat, district, kind, e6 };
 }
 
 /** Positions by id, built on first use: a lookup table for 100,000 ids takes a moment. */
@@ -129,6 +141,8 @@ export function createDirectory(meta: SchoolDirectoryMeta, points: Points): Dire
     meta,
     count: meta.count,
     lngLat: points.lngLat,
+    e6:
+      points.e6 ?? Int32Array.from(points.lngLat, (degrees) => Math.round(degrees / MICRODEGREES)),
     district: points.district,
     kind: points.kind,
     schoolIndex: lookup(meta.ids),

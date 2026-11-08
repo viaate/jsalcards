@@ -166,8 +166,9 @@ describe('GlowLayer', () => {
   it('holds every school as dust, leaving out the ones the glow lights and the kinds not shown', () => {
     const layer = new GlowLayer({ dust: dustStyle() });
     fakeMap().add(layer);
-    // Lit before the dust is in: left out as soon as it is.
-    layer.hideDust(new Set([1, 7]));
+    // Lit, or covered at a lit school's place, before the dust is in: left out as soon as it is.
+    layer.hideDust(new Set([7]));
+    layer.coverDust(1, true);
     expect(layer.stats).toMatchObject({ dust: 0, dustHidden: 0, dustDrawn: false });
     // Kansas City, beside it, Boston; the second private.
     layer.setDust(
@@ -176,8 +177,25 @@ describe('GlowLayer', () => {
     );
     // School 7 is not in the list: nothing to leave out for it.
     expect(layer.stats).toMatchObject({ dust: 3, dustHidden: 1 });
+    layer.coverDust(1, false);
+    expect(layer.stats.dustHidden).toBe(0);
     layer.hideDust(new Set([0, 2]));
     expect(layer.stats.dustHidden).toBe(2);
+    layer.hideDust(new Set());
+    expect(layer.stats.dustHidden).toBe(0);
+    // Lit and covered left out alike, each kept apart: a school lit and covered stays out until
+    // it is neither.
+    layer.hideDust(new Set([0]));
+    layer.coverDust(0, true);
+    layer.coverDust(1, true);
+    expect(layer.stats.dustHidden).toBe(2);
+    layer.hideDust(new Set([2]));
+    expect(layer.stats.dustHidden).toBe(3);
+    expect([...layer.dustNear(mercatorXFromLng(-71.1), mercatorYFromLat(42.4), 0.001)]).toEqual([]);
+    layer.coverDust(0, false);
+    expect(layer.stats.dustHidden).toBe(2);
+    layer.coverDust(1, false);
+    layer.coverDust(1, false);
     layer.hideDust(new Set());
     expect(layer.stats.dustHidden).toBe(0);
     // Found near a point by their places in the list, as drawn.
@@ -199,6 +217,34 @@ describe('GlowLayer', () => {
     layer.setDust(null);
     expect(layer.stats.dust).toBe(0);
     expect(layer.dustNear(0.5, 0.5, 1)).toEqual([]);
+  });
+
+  it('sends the dust to the GPU once a light’s covers are all marked, not once a cover', () => {
+    const layer = new GlowLayer({ dust: dustStyle() });
+    fakeMap().add(layer);
+    layer.setDust(new Float64Array([-94.6, 39.1, -94.5, 39.0, -71.1, 42.4]));
+    // As a frame leaves it once it has sent the places.
+    const internals = layer as unknown as { dustStale: boolean };
+    internals.dustStale = false;
+    layer.coverDust(1, true);
+    layer.coverDust(0, true);
+    // Left out at once for a tap, and sent with the next change that sends the dust, or when
+    // the covers are all marked: not a frame at a time while they are.
+    expect(layer.stats.dustHidden).toBe(2);
+    expect([...layer.dustNear(mercatorXFromLng(-94.55), mercatorYFromLat(39.05), 0.001)]).toEqual(
+      [],
+    );
+    expect(internals.dustStale).toBe(false);
+    layer.showCoveredDust();
+    expect(internals.dustStale).toBe(true);
+    internals.dustStale = false;
+    layer.showCoveredDust();
+    expect(internals.dustStale).toBe(false);
+    layer.coverDust(0, false);
+    expect(internals.dustStale).toBe(false);
+    layer.hideDust(new Set([2]));
+    expect(internals.dustStale).toBe(true);
+    expect(layer.stats.dustHidden).toBe(2);
   });
 
   it('keeps the open school as dust whatever its kind, though not over its light', () => {
