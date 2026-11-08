@@ -2,14 +2,16 @@
 date (or, on an evening read, tomorrow's) is dated by it, unless the row's own date says it is
 older. Every name and text is SYNTHETIC."""
 
+import itertools
 import os
 import sqlite3
 import time
 from collections.abc import Iterator
 from contextlib import closing
 from dataclasses import dataclass, replace
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pytest
 from hypothesis import given, settings
@@ -49,6 +51,11 @@ from snowlight.live.resolve import (
     f5_reader,
 )
 from snowlight.live.weekdays import (
+    _ages,
+    _clocked,
+    _lone_candidates,
+    _mask_clocks,
+    _weekday_words,
     named_weekdays,
     names_date,
     post_ages,
@@ -2233,6 +2240,10 @@ def test_words_that_end_the_closure_keep_the_hold(text: str) -> None:
 # --- pass time on long rows (WD-R5C1-S7) -----------------------------------------------------
 
 
+_CACHED = (named_weekdays, _weekday_words, _clocked, _lone_candidates, _ages, _mask_clocks)
+"""What the reader keeps for words it has read: cleared before each timed read."""
+
+
 @pytest.mark.parametrize(
     "text",
     [
@@ -2241,6 +2252,22 @@ def test_words_that_end_the_closure_keep_the_hold(text: str) -> None:
         "2 hour delay Thursday " + "2 hours late " * 150,
         "Closed Thursday " + "Thursday " * 220,
         "Closed Thursday " + "word " * 400,
+        "Closed Thursday " + "Fri 9:14 PM " * 170,
+        "Closed Thursday " + "Thursday 9 AM start " * 100,
+        "Closed Thursday " + "Updated 11/5 6:30 AM. " * 90,
+        # many clock times, spans, stamp words and weekdays with marks (WD-R7C1-B2)
+        "9:14 " * 400,
+        "9 PM " * 400,
+        "noon " * 400,
+        "9 AM to " * 250,
+        "Closed Thursday " + "9:14 PM closed " * 140,
+        "Closed Thursday " + "8:30-3:15 " * 200 + " 9:14 PM Friday",
+        "Closed Thursday " + "9 to 3 " * 285,
+        "Closed Thursday " + "9 a " * 500,
+        "posted " * 290,
+        "Closed Thursday " + "Thursday posted " * 125,
+        "Closed Thursday " + "Thu _ " * 330,
+        "Closed Thursday " + "Thursday: from 9 AM to 3 PM " * 75,
     ],
 )
 def test_a_long_row_is_read_in_time_linear_in_its_length(text: str) -> None:
@@ -2248,15 +2275,1358 @@ def test_a_long_row_is_read_in_time_linear_in_its_length(text: str) -> None:
         words = text[:length]
         best = float("inf")
         for _ in range(3):
-            named_weekdays.cache_clear()
+            for cached in _CACHED:
+                cached.cache_clear()
             began = time.perf_counter()
             named_weekdays(words, "", NOV5)
             names_date(words, NOV5)
             post_ages(words)
-            stamp_dates(words, NOV5)
+            stamp_dates(words, NOV5, THU_0600)
             best = min(best, time.perf_counter() - began)
         return best
 
     # four times as long (the archive's longest row is 2000 characters) takes about four
     # times as long, never the sixteen a reading over each whole prefix would
     assert took(2000) < 9 * took(500) + 0.002  # linear, with room for noise
+
+
+# --- round 6: clock stamps, glued ages, over words, dated stamps two or more days back -------
+
+THU_0600 = at("2026-11-05 12:00").astimezone(ZoneInfo("America/Chicago"))
+"""The read the round 6 word tests are read at: Thursday Nov. 5, 06:00 Central."""
+
+
+@pytest.mark.parametrize(
+    ("text", "named", "stamps"),
+    [
+        # a weekday with a clock time and no status word is a posting stamp (WD-R5C2-S1)
+        ("Closed Thursday · Fri 9:14 PM", {3}, (None,)),
+        ("Closed Thursday | Fri 9:14 PM", {3}, (None,)),
+        ("Closed Thursday · Friday, 9:14 PM", {3}, (None,)),
+        ("Closed Thursday · Friday 21:14", {3}, (None,)),
+        ("Closed Thursday · Friday at 9:14 PM", {3}, (None,)),
+        ("Closed Thursday Sat 7:12am", {3}, (None,)),
+        ("Closed Thursday Sat. 7:12am", {3}, (None,)),
+        ("Closed Thursday. Fri 9:14 PM", {3}, (None,)),
+        ("Closed Thursday (Fri 9pm)", {3}, (None,)),
+        ("2 hour delay Thursday · Fri 9:14 PM", {3}, (None,)),
+        ("Closed Thursday · Wed 9:14 PM", {3}, (date(2026, 11, 4),)),
+        ("Closed Thursday · Thu 5:02 AM", {3}, (date(2026, 11, 5),)),
+        ("Closed Thursday · Thu 6:02 AM", {3}, (None,)),  # after the read: a week back
+        ("Closed. Thursday 5:02 AM", set(), (date(2026, 11, 5),)),
+        ("Fri 9:14 PM Closed Thursday", {3}, (None,)),  # "Closed" is Thursday's
+        ("Fri 9:14 PM: Closed Thursday", {3}, (None,)),
+        # a status word in its clause makes it a day the row is for
+        ("Early dismissal Thursday 1:30 PM", {3}, ()),
+        ("Thursday 10 AM start", {3}, ()),
+        ("Opening late at 10:00 AM Thursday, 9 AM buses", {3}, ()),
+        ("Closed Thursday 6 AM", {3}, (date(2026, 11, 5),)),  # a time on its day: by the read
+        ("Closed Thursday, 2 hour delay Friday 10 AM start", {3, 4}, ()),
+        ("Thursday 10 AM start, Friday closed", {3, 4}, ()),
+    ],
+)
+def test_a_weekday_with_a_clock_time_and_no_status_word_is_a_stamp(
+    text: str, named: set[int], stamps: tuple[date | None, ...]
+) -> None:
+    assert named_weekdays(text, "", NOV5) == frozenset(named)
+    assert stamp_dates(text, NOV5, THU_0600) == stamps
+
+
+@pytest.mark.parametrize(
+    ("text", "ages"),
+    [
+        # an age glued to the word before it is an age (WD-R5C2-S2)
+        ("Closed Thursday,5d", (timedelta(days=5),)),
+        ("Closed Thursday.5d", (timedelta(days=5),)),
+        ("Closed Thursday:6d", (timedelta(days=6),)),
+        ("Closed Thursday/6d", (timedelta(days=6),)),
+        ("Closed Thursday5d", (timedelta(days=5),)),
+        ("Closed Thursday,30h", (timedelta(hours=30),)),
+        ("Closed Thursday,2h", (timedelta(hours=2),)),
+        # never the end of another number
+        ("2.5 hr delay", ()),
+        ("Updated 10:30m", ()),
+        ("Closed 11/5d", ()),
+        ("1,440 students, 2,000 ft", ()),
+        ("Snow for 3-6 hours", ()),
+    ],
+)
+def test_glued_ages(text: str, ages: tuple[timedelta, ...]) -> None:
+    assert post_ages(text) == ages
+
+
+@pytest.mark.parametrize(
+    ("text", "named"),
+    [
+        ("Closed Thursday,5d", set()),
+        ("Closed Thursday.5d", set()),
+        ("Closed Thursday:6d", set()),
+        ("Closed Thursday/6d", set()),
+        ("Closed Thursday 5d", set()),
+        ("Closed Thursday 5x", set()),  # a day number with a letter glued names no day
+        ("Closed Thursday,2h", {3}),  # an age under a day: left to the resolver
+        ("Closed Thursday 5", {3}),
+        # open again and over words (WD-R5C2-S3)
+        ("Closed Thursday. Open again", set()),
+        ("Closed Thursday. Opening again Friday", set()),
+        ("Closed Thursday. Back open", set()),
+        ("Closed Thursday (over)", set()),
+        ("Closed Thursday ( over )", set()),
+        ("Closed Thursday. It is over", set()),
+        ("Closed Thursday, it\u2019s over", set()),
+        ("Closed Thursday. Over.", set()),
+        ("Closed Thursday • over", set()),
+        ("Closed Thursday. Ended", set()),
+        ("Closed Thursday; expired", set()),
+        ("Closed Thursday, no longer in effect", set()),
+        ("Closed Thursday, sent out Friday", set()),
+        ("Closed Thursday. Notice went out Friday", set()),
+        ("Closed Thursday, mailed Friday", set()),
+        ("Closed Thursday over 6 inches of snow", {3}),
+        ("Closed Thursday as recommended", {3}),
+    ],
+)
+def test_glued_ages_and_over_words_in_the_words(text: str, named: set[int]) -> None:
+    assert named_weekdays(text, "", NOV5) == frozenset(named)
+
+
+@pytest.mark.parametrize(
+    ("text", "stamps"),
+    [
+        # a stamp of the read's day at a clock time after the read is unreadable
+        ("Closed Thursday. Updated 11/5 6:30 AM", (None,)),
+        ("Closed Thursday. Updated 11/5 6:30 AM CST", (None,)),
+        ("Closed Thursday. Updated 11/5 6:30 AM EST", (date(2026, 11, 5),)),  # 5:30 Central
+        ("Closed Thursday. Updated 11/5 5:30 AM", (date(2026, 11, 5),)),
+        ("Closed Thursday. Posted Thu 6:02 AM", (None,)),
+        ("Closed Thursday. Posted Nov. 5 7:00 AM", (None,)),  # its date runs on past "."
+        ("Closed Thursday. Posted Nov 5 at noon", (None,)),
+        ("Closed Thursday. Updated today at 7 AM", (None,)),
+        ("Closed Thursday. Updated 11/4 11:00 PM", (date(2026, 11, 4),)),
+        ("Closed Thursday. Updated Fri 10/30", (date(2026, 10, 30),)),
+    ],
+)
+def test_a_stamp_after_the_read_is_unread(text: str, stamps: tuple[date | None, ...]) -> None:
+    assert stamp_dates(text, NOV5, THU_0600) == stamps
+
+
+def test_with_no_read_time_a_clock_time_bounds_nothing() -> None:
+    assert stamp_dates("Closed Thursday. Updated 11/5 6:30 AM", NOV5) == (date(2026, 11, 5),)
+    assert stamp_dates("Closed Thursday · Thu 6:02 AM", NOV5) == (date(2026, 11, 5),)
+    assert stamp_dates("Closed Thursday · Fri 9:14 PM", NOV5, clocked=False) == ()
+
+
+@pytest.mark.parametrize(
+    ("when", "text"),
+    [
+        # a weekday with a clock time and no status word: a stamp (WD-R5C2-S1)
+        ("2026-11-05 12:00", "Closed Thursday · Fri 9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday | Fri 9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday, 9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday 21:14"),
+        ("2026-11-05 12:00", "Closed Thursday · Fri 9pm"),
+        ("2026-11-05 12:00", "Closed Thursday · Sat 7:12 AM"),
+        ("2026-11-05 12:00", "Closed Thursday · Sun 10:00 PM"),
+        ("2026-11-05 12:00", "Closed Thursday Sat 7:12am"),
+        ("2026-11-05 12:00", "Closed Thursday Sat. 7:12am"),
+        ("2026-11-05 12:00", "Closed Thursday. Fri 9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday. Friday at 9:14 PM"),
+        ("2026-11-05 12:00", "2 hour delay Thursday · Fri 9:14 PM"),
+        ("2026-11-05 12:00", "Fri 9:14 PM Closed Thursday"),
+        ("2026-11-06 12:00", "Closed Friday · Sat 7:12 AM"),
+        ("2026-11-09 12:00", "Closed Monday · Tue 8:00 PM"),
+        ("2026-11-05 10:30", "Closed Thursday · Thu 5:02 AM"),  # 04:30: after the read
+        # glued ages (WD-R5C2-S2)
+        ("2026-11-05 12:00", "Closed Thursday,5d"),
+        ("2026-11-05 12:00", "Closed Thursday.5d"),
+        ("2026-11-05 12:00", "Closed Thursday:6d"),
+        ("2026-11-05 12:00", "Closed Thursday/6d"),
+        ("2026-11-05 12:00", "Closed Thursday,30h"),
+        # open again and over words, a notice sent out (WD-R5C2-S3)
+        ("2026-11-05 12:00", "Closed Thursday. Open again"),
+        ("2026-11-05 12:00", "Closed Thursday (over)"),
+        ("2026-11-05 12:00", "Closed Thursday. It is over"),
+        ("2026-11-05 12:00", "Closed Thursday. Ended"),
+        ("2026-11-05 12:00", "Closed Thursday, no longer in effect"),
+        ("2026-11-05 12:00", "Closed Thursday, sent out Friday"),
+        ("2026-11-05 12:00", "Closed Nov. 5. Open again"),
+        # dated stamps two or more days back (WD-R5C2-S4, lead ruling: hold)
+        ("2026-11-05 12:00", "Closed Thursday. Updated Fri 10/30"),
+        ("2026-11-05 12:00", "Closed Thursday. Posted 10/30"),
+        ("2026-11-05 12:00", "Closed Thursday. Posted Oct 30"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated Oct. 30 4:00 PM"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated 10/31 6:00 AM"),
+        ("2026-11-05 12:00", "Closed Thursday. Posted Mon 11/2"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated Nov. 3"),
+        ("2026-11-05 12:00", "Closed Thursday (updated 11/3/2026)"),
+        ("2026-11-05 01:00", "Closed Thursday. Posted 11/2"),  # Wed 19:00: two days back
+        # a stamp of the read's day after the read
+        ("2026-11-05 12:00", "Closed Thursday. Updated 11/5 6:30 AM"),
+        ("2026-11-05 12:00", "Closed Thursday. Posted Thu 6:02 AM"),
+        ("2026-11-05 01:00", "Closed Thursday. Posted Wed 8:00 PM"),
+    ],
+)
+def test_round_6_shapes_keep_the_hold(when: str, text: str) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {}
+
+
+@pytest.mark.parametrize(
+    ("when", "text", "day", "status"),
+    [
+        ("2026-11-05 12:00", "Closed Thursday · Thu 5:02 AM", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Early dismissal Thursday 1:30 PM", THURSDAY, "EARLY_DISMISSAL"),
+        ("2026-11-05 12:00", "Thursday 10 AM start", THURSDAY, "DELAYED"),
+        ("2026-11-05 12:00", "Thursday: 2 hour delay, 10:00 AM start", THURSDAY, "DELAYED"),
+        ("2026-11-05 12:00", "Closed Thursday 6 AM", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday,2h", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday over 6 inches of snow", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated Nov. 4", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated 11/5 5:30 AM", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated 11/5 6:30 AM EST", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday. Posted Wed 9pm", THURSDAY, "CLOSED"),
+        ("2026-11-05 01:00", "Closed Thursday. Posted 11/3", THURSDAY, "CLOSED"),
+        ("2026-11-05 01:00", "Closed Thursday. Posted Wed 6:00 PM", THURSDAY, "CLOSED"),
+        # a date names its day exactly: a stamp days before it is a notice given ahead
+        ("2026-11-05 12:00", "Closed Nov. 5. Posted 10/30", THURSDAY, "CLOSED"),
+    ],
+)
+def test_round_6_shapes_that_still_light(when: str, text: str, day: str, status: str) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {(0, day): status}
+
+
+def test_a_dated_stamp_two_or_more_days_back_holds_only_on_the_weekday_path() -> None:
+    hi = at("2026-11-05 12:00")
+    entry = LedgerRow(
+        key=b"k",
+        source_id=SOURCE,
+        hi=hi,
+        lo=None,
+        start=Start.COLD,
+        row_stamp=None,
+        last_seen=hi,
+        absent_since=None,
+        gone=False,
+        ident=b"i",
+        pred=None,
+        lapsed=False,
+        earliest=hi,
+    )
+    zones = ["America/Chicago"]
+    for text, recent in [
+        ("Closed Thursday. Posted 10/30", False),
+        ("Closed Thursday. Posted 11/3", False),
+        ("Closed Thursday. Posted 11/4", True),
+        ("Closed Thursday. Posted 11/5 5:00 AM", True),
+        ("Closed Thursday. Posted 11/5 7:00 AM", False),
+        ("Closed Thursday · Fri 9:14 PM", False),
+        ("Closed Thursday · Wed 9:14 PM", True),
+    ]:
+        seen = row(ALPHA_SCHOOL, text)
+        assert _posted_before(seen, entry, zones, NOV5) is recent, text
+        assert _posted_before(seen, entry, zones, NOV5, weekday=False) is (
+            recent or "Fri" in text or "10/30" in text or "11/3" in text
+        ), text
+
+
+@settings(max_examples=300, deadline=None)
+@given(
+    st.lists(
+        st.sampled_from(
+            ["Closed", "Thursday", "Fri", "Sat.", "9:14", "PM", "7:12am", "21:14", "noon", "at",
+             "@", "·", "|", ".", ",", "5d", ",5d", ".6d", "2h", "over", "(over)", "again",
+             "open", "sent", "out", "Updated", "Posted", "11/5", "10/30", "6:30 AM", "EST",
+             "CST", "ET", "99:99", "13 pm", "0 am", "midnight", "start", "dismissal"]
+        ),
+        max_size=12,
+    ),
+    st.integers(min_value=0, max_value=23),
+    st.booleans(),
+)  # fmt: skip
+def test_round_6_rules_never_raise(tokens: list[str], hour: int, aware: bool) -> None:
+    text = " ".join(tokens)
+    now = THU_0600.replace(hour=hour)
+    if not aware:
+        now = now.replace(tzinfo=None)
+    named_weekdays(text, "", NOV5)
+    post_ages(text)
+    stamp_dates(text, NOV5, now)
+    stamp_dates(text, NOV5, now, clocked=False)
+
+
+# --- round 6, critic round 1: clock forms, named days at a time after the read, more words --
+
+
+@pytest.mark.parametrize(
+    ("when", "text"),
+    [
+        # a second weekday with a clock time and no status word is a stamp in every form
+        # (WD-R6C1-B1): in brackets or quotes, before the weekday, a bare or approximate hour
+        ("2026-11-05 12:00", "Closed Thursday · Friday (9:14pm)"),
+        ("2026-11-05 12:00", "Closed Thursday · Fri (21:14)"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday [9:14 PM]"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday {9:14 PM}"),
+        ("2026-11-05 12:00", 'Closed Thursday · Friday "9:14 PM"'),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM, Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · at 9:14 PM Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM Fri"),
+        ("2026-11-05 12:00", "Closed Thursday · 21:14 Fri"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday at 9"),
+        ("2026-11-05 12:00", "Closed Thursday · Fri at 9"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday around 9 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday about 9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Fri 2114"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday evening"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday night"),
+        # a named weekday whose clock time is after the read on its day (WD-R6C1-S2)
+        ("2026-11-06 12:00", "Closed Friday 9:14 PM"),
+        ("2026-11-06 12:00", "Friday 9:14 PM Closed"),
+        ("2026-11-06 12:00", "Friday closed 9:14 PM"),
+        ("2026-11-06 12:00", "Fri 9:14 PM closed"),
+        ("2026-11-06 12:00", "School closed Fri 9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Fri 9:14 PM closed"),
+        ("2026-11-05 12:00", "Closed Thursday · Fri 9:14 PM school"),
+        ("2026-11-05 12:00", "Closed Thursday 7:00 AM update"),
+        ("2026-11-05 12:00", "Closed Thursday 1030 am"),
+        # a stamp whose weekday or date ends in "." before its clock time (WD-R6C1-S1)
+        ("2026-11-05 12:00", "Closed Thursday. Updated Thu. 7:00 AM"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated Thu., 7:00 AM"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated Thu. Nov. 5 7:00 AM"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated Nov. 5. 7:00 AM"),
+        # over, again, past-tense and notice words (WD-R6C1-S3)
+        ("2026-11-05 12:00", "Closed Thursday [over]"),
+        ("2026-11-05 12:00", "Closed Thursday *over*"),
+        ("2026-11-05 12:00", "Closed Thursday ~ over"),
+        ("2026-11-05 12:00", "Closed Thursday / over"),
+        ("2026-11-05 12:00", "Closed Thursday over"),
+        ("2026-11-05 12:00", "Closed Thursday. Open once more"),
+        ("2026-11-05 12:00", "School had been closed Thursday"),
+        ("2026-11-05 12:00", "Classes were cancelled Thursday"),
+        ("2026-11-05 12:00", "Closed Thursday, notified families Friday"),
+        ("2026-11-05 12:00", "Closed Thursday, communicated Friday"),
+        ("2026-11-05 12:00", "Closed Thursday, broadcast Friday"),
+        ("2026-11-05 12:00", "Closed Thursday, called Friday"),
+        ("2026-11-05 12:00", "Closed Thursday, reported Friday"),
+        ("2026-11-05 12:00", "Closed Thursday, confirmed Friday"),
+        ("2026-11-05 12:00", "Closed Thursday, message Friday"),
+        ("2026-11-05 12:00", "Closed Thursday, alert Friday"),
+        ("2026-11-05 12:00", "Closed Thursday, notification Friday"),
+        # an age glued to a clock time (WD-R6C1-S4)
+        ("2026-11-05 12:00", "Closed Thursday 6:00,5d"),
+        # a stamp of the day before in a stated zone, after the read (WD-R6C1-S7)
+        ("2026-11-05 07:00", "Closed Thursday. Updated 11/4 11:30 PM PT"),
+        ("2026-11-05 07:00", "Closed Thursday · Wed 11:30 PM PT"),
+    ],
+)
+def test_round_6_critic_shapes_keep_the_hold(when: str, text: str) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {}
+
+
+@pytest.mark.parametrize(
+    ("when", "text", "day", "status"),
+    [
+        # a start, opening, closing or dismissal time owns the clock: the day still lights
+        ("2026-11-05 12:00", "Early dismissal Thursday (1:30 PM)", THURSDAY, "EARLY_DISMISSAL"),
+        ("2026-11-05 12:00", "Opening at 10 AM Thursday", THURSDAY, "DELAYED"),
+        ("2026-11-05 12:00", "Closing at 1 p.m. Thursday", THURSDAY, "EARLY_DISMISSAL"),
+        ("2026-11-06 12:00", "Closed Friday 5:30 AM", FRIDAY, "CLOSED"),  # before the read
+        # a part of the day as a heading, an alert's own day, "called off"
+        ("2026-11-05 12:00", "Thursday Afternoon: Closed", THURSDAY, "EARLY_DISMISSAL"),
+        ("2026-11-05 12:00", "Alert Thursday. Closed Thursday", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "School called off Thursday", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday 6:00, 2h", THURSDAY, "CLOSED"),
+        # a stamp with a "." before its clock time, read after that time
+        ("2026-11-05 14:00", "Closed Thursday. Updated Thu. 7:00 AM", THURSDAY, "CLOSED"),
+        ("2026-11-05 14:00", "Closed Thursday. Updated Thu., 7:00 AM", THURSDAY, "CLOSED"),
+        ("2026-11-05 14:00", "Closed Thursday. Updated Thu. Nov. 5 7:00 AM", THURSDAY, "CLOSED"),
+        ("2026-11-05 14:00", "Closed Thursday. Updated Nov. 5. 7:00 AM", THURSDAY, "CLOSED"),
+        # night-before stamps on an evening read light tomorrow (WD-R6C1-S5): the stamp's
+        # weekday names no status day, so the row is dated by the day it names
+        ("2026-11-05 03:30", "Thursday closed. Wed 9:14 PM", THURSDAY, "CLOSED"),
+        ("2026-11-05 03:30", "Closed Thursday | Wed 9:14 PM", THURSDAY, "CLOSED"),
+        ("2026-11-05 03:30", "Thursday closed (Wed 9:14 PM)", THURSDAY, "CLOSED"),
+        ("2026-11-06 12:00", "Closed Friday. Posted yesterday Nov. 5 9 PM", FRIDAY, "CLOSED"),
+    ],
+)
+def test_round_6_critic_shapes_that_still_light(
+    when: str, text: str, day: str, status: str
+) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {(0, day): status}
+
+
+THU_0100 = at("2026-11-05 07:00").astimezone(ZoneInfo("America/Chicago"))
+"""Thursday Nov. 5, 01:00 Central: Wednesday 23:00 Pacific."""
+
+
+@pytest.mark.parametrize(
+    ("text", "now", "named", "stamps"),
+    [
+        # clock forms (WD-R6C1-B1)
+        ("Closed Thursday · Friday (9:14pm)", THU_0600, {3}, (None,)),
+        ("Closed Thursday · 9:14 PM Fri", THU_0600, {3}, (None,)),
+        ("Closed Thursday · at 9 Friday", THU_0600, {3}, (None,)),
+        ("Closed Thursday · Fri 2114", THU_0600, {3}, (None,)),
+        ("Closed Thursday · Wed (9:14 PM)", THU_0600, {3}, (date(2026, 11, 4),)),
+        ("Closed Thursday · 9:14 PM Wed", THU_0600, {3}, (date(2026, 11, 4),)),
+        ("Closed Thursday · Wed evening", THU_0600, {3}, (date(2026, 11, 4),)),
+        ("Closed Thursday · Thu evening", THU_0600, {3}, (None,)),
+        # a bare hour is after the read if it is so in the morning or the evening
+        ("Closed Thursday · Thu at 5", THU_0600, {3}, (None,)),
+        ("Closed Thursday · Thu at 5", THU_0600.replace(hour=18), {3}, (date(2026, 11, 5),)),
+        # a status word or an owner keeps the weekday a day the row is for
+        ("Early dismissal Thursday (1:30 PM)", THU_0600, {3}, ()),
+        ("Opening at 10 AM Thursday", THU_0600, {3}, ()),
+        ("Closing 1pm Thursday", THU_0600, {3}, ()),
+        ("Building closing Thursday at 5pm", THU_0600, {3}, ()),
+        ("Activities cancelled Thursday evening", THU_0600, {3}, ()),
+        ("Thursday Afternoon: Closed", THU_0600, {3}, ()),
+        ("No 8 AM Mass Thursday", THU_0600, {3}, ()),
+        ("10am Thursday worship canceled", THU_0600, {3}, ()),
+        ("Services at 8:30 or 11:00 on Thursday cancelled", THU_0600, {3}, ()),
+        ("6 a.m. to 8 p.m. on Thursday: closed", THU_0600, {3}, ()),
+        ("Staff report at 9am Thursday, closed to students", THU_0600, {3}, ()),
+        # a named weekday's clock time is a time on its day: after the read, it holds
+        ("Closed Thursday 9:14 PM", THU_0600, {3}, (None,)),
+        ("Thursday closed 9:14 PM", THU_0600, {3}, (None,)),
+        ("Closed Thursday 5:30 AM", THU_0600, {3}, (date(2026, 11, 5),)),
+        ("Closed Friday 6 AM", THU_0600.replace(hour=20), {4}, (None,)),  # a week back
+        # a stamp's clock time past its "." (WD-R6C1-S1)
+        ("Closed Thursday. Updated Thu. 7:00 AM", THU_0600, {3}, (None,)),
+        ("Closed Thursday. Updated Nov. 5. 7:00 AM", THU_0600, {3}, (None,)),
+        ("Closed Thursday. Updated Nov. 5. 5:00 AM", THU_0600, {3}, (date(2026, 11, 5),)),
+        ("Closed Thursday. Updated Mon. Nov. 2", THU_0600, set(), (None,)),
+        ("Closed Thursday. Posted yesterday. 9 AM start", THU_0600, {3}, (None,)),
+        # a stamp of the day before in a stated zone, after the read (WD-R6C1-S7)
+        ("Closed Thursday. Updated 11/4 11:30 PM PT", THU_0100, {3}, (None,)),
+        ("Closed Thursday · Wed 11:30 PM PT", THU_0100, {3}, (None,)),
+        ("Closed Thursday. Updated 11/4 10:30 PM PT", THU_0100, {3}, (date(2026, 11, 4),)),
+        ("Closed Thursday. Updated 11/4 11:30 PM", THU_0100, {3}, (date(2026, 11, 4),)),
+        # a weekday-only stamp with its date run on
+        ("Closed Thursday · Wed 9 PM, Nov. 4", THU_0600, set(), (date(2026, 11, 4),)),
+        ("Closed Thursday · Wed 9 PM, Oct. 28", THU_0600, set(), (date(2026, 10, 28),)),
+    ],
+)
+def test_round_6_clock_forms_and_stamps(
+    text: str, now: datetime, named: set[int], stamps: tuple[date | None, ...]
+) -> None:
+    assert named_weekdays(text, "", now.date()) == frozenset(named)
+    assert stamp_dates(text, now.date(), now) == stamps
+
+
+@pytest.mark.parametrize(
+    ("text", "named"),
+    [
+        ("Closed Thursday [over]", set()),
+        ("Closed Thursday *over*", set()),
+        ("Closed Thursday - over", set()),
+        ("Closed Thursday over", set()),
+        ("Closed Thursday over 6 inches of snow", {3}),
+        ("Closed Thursday; moreover, buses", {3}),
+        ("Closed Thursday. Open once more", set()),
+        ("School had been closed Thursday", set()),
+        ("Classes were cancelled Thursday", set()),
+        ("Closed Thursday, notified families Friday", set()),
+        ("Closed Thursday, communicated to parents Friday", set()),
+        ("Closed Thursday, message Friday", set()),
+        ("Closed Thursday, alert sent Friday", set()),
+        ("Alert Thursday. Closed Thursday", {3}),  # the alert's own day, as a heading
+        ("Games called off Thursday", {3}),
+        ("District announced school closed Thursday", {3}),
+    ],
+)
+def test_round_6_over_past_and_notice_words(text: str, named: set[int]) -> None:
+    assert named_weekdays(text, "", NOV5) == frozenset(named)
+
+
+@pytest.mark.parametrize(
+    ("text", "ages"),
+    [
+        ("Closed Thursday 6:00,5d", (timedelta(days=5),)),
+        ("Closed Thursday 6:00/5d", (timedelta(days=5),)),
+        ("Updated 10:30,2h", (timedelta(hours=2),)),
+        ("Updated 10:30m", ()),
+        ("1,440 students, 2,000 ft", ()),
+    ],
+)
+def test_round_6_an_age_glued_to_a_clock_time(text: str, ages: tuple[timedelta, ...]) -> None:
+    assert post_ages(text) == ages
+
+
+# --- round 6, critic round 2 -----------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("when", "text"),
+    [
+        # a second weekday's clock time past a clause mark is a stamp (WD-R6C2-B1)
+        ("2026-11-05 12:00", "Closed Thursday · Friday: 9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday; 9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday | 9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday/9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday · 9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday • 9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Fri ·9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM - Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM \u2013 Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM (Friday)"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM · Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM • Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM; Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM | Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM / Friday"),
+        # a clock time with no day after the read: an earlier day's (WD-R6C2-S1)
+        ("2026-11-05 12:00", "Closed Thursday. Updated 7 AM"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated 07:00"),
+        ("2026-11-05 12:00", "Closed Thursday. Posted @ 7:00"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated 11 PM"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated noon"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated 4:30 AM PT"),
+        ("2026-11-05 12:00", "Closed Thursday · 7:14 AM"),
+        ("2026-11-05 12:00", "Closed Thursday · 7 AM"),
+        ("2026-11-05 12:00", "Closed Thursday | 7:14 AM"),
+        ("2026-11-05 12:00", "Thursday: Closed. 7:14 AM"),
+        ("2026-11-05 12:00", "Closed Thursday 7:14 AM"),
+        ("2026-11-05 12:00", "Closed Thursday (7:14 AM)"),
+        ("2026-11-06 12:00", "Friday: Closed 9:14 PM"),
+        ("2026-11-06 12:00", "Closed Friday · 9:14 PM"),
+        ("2026-11-05 03:00", "Closed Thursday. Updated 9:30 PM"),
+        ("2026-11-05 03:00", "Closed Thursday. Updated 21:30"),
+        ("2026-11-05 03:00", "Closed Thursday · 9:30 PM"),
+        ("2026-11-05 03:00", "Thursday closed. 9:30 PM"),
+        ("2026-11-05 07:00", "Closed Thursday. Updated 1:30 AM"),
+        ("2026-11-05 12:00", "Closed Thursday. Posted this afternoon"),
+        ("2026-11-05 12:00", "Closed Thursday. Posted this evening"),
+        ("2026-11-05 12:00", "Closed Thursday. Posted tonight"),
+        # more notice words (WD-R6C2-S2)
+        ("2026-11-05 12:00", "Closed Thursday, update Friday"),
+        ("2026-11-05 12:00", "Closed Thursday, news Friday"),
+        ("2026-11-05 12:00", "Closed Thursday, decision made Friday"),
+        ("2026-11-05 12:00", "Closed Thursday, sent to all families Friday"),
+        ("2026-11-05 12:00", "Closed Thursday, notified all parents and staff Friday"),
+        ("2026-11-05 12:00", "Closed Thursday. Friday release"),
+        ("2026-11-05 12:00", "Closed Thursday. Friday text"),
+        ("2026-11-05 12:00", "Closed Thursday. Friday notification"),
+        ("2026-11-05 12:00", "Closed Thursday. Friday robocall"),
+        ("2026-11-05 12:00", "Closed Thursday. Friday bulletin"),
+        # decimal ages and an age after a clock time with seconds (WD-R6C2-S3)
+        ("2026-11-05 12:00", "Closed Thursday · 1.5d"),
+        ("2026-11-05 12:00", "Closed Thursday. Posted 1.5 days ago"),
+        ("2026-11-05 12:00", "Closed Thursday,1.5d"),
+        ("2026-11-05 12:00", "Closed Thursday 6:00:5d"),
+        ("2026-11-05 12:00", "Closed Thursday 6:00.5d"),
+        ("2026-11-05 12:00", "Closed Thursday 11/5,5d"),
+        # a part of the day after "late", a bare "late" or "PM" (WD-R6C2-S4)
+        ("2026-11-05 12:00", "Closed Thursday · Friday late evening"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday late night"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday late"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday p.m."),
+        ("2026-11-05 12:00", "Closed Thursday, Friday early"),
+    ],
+)
+def test_round_6_second_critic_shapes_keep_the_hold(when: str, text: str) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {}
+
+
+@pytest.mark.parametrize(
+    ("when", "text", "day", "status"),
+    [
+        # a start or a dismissal owns a clock time past a clause mark: the day lights
+        ("2026-11-06 12:00", "Early dismissal Friday: 1:30 PM", FRIDAY, "EARLY_DISMISSAL"),
+        ("2026-11-06 12:00", "Friday: Early dismissal 1:30 PM", FRIDAY, "EARLY_DISMISSAL"),
+        ("2026-11-06 12:00", "Friday: 10 AM start", FRIDAY, "DELAYED"),
+        ("2026-11-05 12:00", "Closed Thursday; offices open 8 AM - 4 PM", THURSDAY, "CLOSED"),
+        # a stamp's day past a mark, the day before
+        ("2026-11-05 12:00", "Closed Thursday | Wed | 9:14 PM", THURSDAY, "CLOSED"),
+        # a clock time with no day at or before the read
+        ("2026-11-05 12:00", "Closed Thursday · 5:14 AM", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated 5:14 AM", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Thursday: Closed. 5:14 AM", THURSDAY, "CLOSED"),
+        ("2026-11-05 03:00", "Closed Thursday. Updated 8:30 PM", THURSDAY, "CLOSED"),
+        ("2026-11-05 03:00", "Closed Thursday · 8:30 PM", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday. Posted this morning", THURSDAY, "CLOSED"),
+        # a notice word as the heading, a status after a notice verb, an early release
+        ("2026-11-05 12:00", "Update Thursday: closed", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "District announced school closed Thursday", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Early release Thursday", THURSDAY, "EARLY_DISMISSAL"),
+        # an age under a day, a delay's decimal length, a late start, a dismissal "PM"
+        ("2026-11-05 12:00", "Closed Thursday · 1.5h", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Delayed Thursday 1.5 hr delay", THURSDAY, "DELAYED"),
+        ("2026-11-05 12:00", "Thursday late start", THURSDAY, "DELAYED"),
+        ("2026-11-05 12:00", "Early dismissal Thursday PM", THURSDAY, "EARLY_DISMISSAL"),
+    ],
+)
+def test_round_6_second_critic_shapes_that_still_light(
+    when: str, text: str, day: str, status: str
+) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {(0, day): status}
+
+
+@pytest.mark.parametrize(
+    ("text", "now", "named", "stamps"),
+    [
+        # past a clause mark, a weekday's clock time is a stamp's only
+        ("Closed Thursday · Friday: 9:14 PM", THU_0600, {3}, (None,)),
+        ("Closed Thursday · 9:14 PM (Friday)", THU_0600, {3}, (None,)),
+        ("Closed Thursday · 9:14 PM; Friday", THU_0600, {3}, (None,)),
+        ("Closed Thursday · Wed: 9:14 PM", THU_0600, {3}, (date(2026, 11, 4),)),
+        ("Closed Thursday · 9:14 PM · Wed", THU_0600, {3}, (date(2026, 11, 4),)),
+        ("Early dismissal Friday: 1:30 PM", THU_0600, {4}, ()),
+        ("Delayed Thursday 10 AM | Friday closed", THU_0600, {3, 4}, ()),
+        ("Closed Friday | 10 AM delay Saturday", THU_0600, {4, 5}, ()),
+        # a clock time with no day: after the read it is an earlier day's, unreadable
+        ("Closed Thursday · 7:14 AM", THU_0600, {3}, (None,)),
+        ("Closed Thursday · 5:14 AM", THU_0600, {3}, ()),
+        ("Closed Thursday. Updated 7 AM", THU_0600, {3}, (None,)),
+        ("Closed Thursday. Updated 5:30 AM", THU_0600, {3}, ()),
+        ("Closed Thursday. Updated 9:14 PM", THU_0600.replace(hour=21, minute=30), {3}, ()),
+        ("Closed Thursday. Posted this evening", THU_0600, {3}, (None,)),
+        ("Closed Thursday. Posted this morning", THU_0600, {3}, (date(2026, 11, 5),)),
+        # owned, or in a clause with other words: no posting time
+        ("Closed Thursday. Game at 7 PM", THU_0600, set(), ()),
+        ("Closed Thursday. Updated Wed. 9:14 PM", THU_0600, {3}, (date(2026, 11, 4),)),
+        ("Closed Thursday. Updated Nov. 5. 7:00 AM", THU_0600, {3}, (None,)),
+        ("Closed Thursday; offices open 8 AM - 4 PM", THU_0600, {3}, ()),
+        ("Delayed Thursday. Buses run 2 hours late, 10 AM start", THU_0600, {3}, ()),
+    ],
+)
+def test_round_6_marks_and_clock_only_stamps(
+    text: str, now: datetime, named: set[int], stamps: tuple[date | None, ...]
+) -> None:
+    assert named_weekdays(text, "", now.date()) == frozenset(named)
+    assert stamp_dates(text, now.date(), now) == stamps
+
+
+def test_a_clock_only_stamp_is_read_only_on_the_weekday_path() -> None:
+    # the date path keeps its bound (WD-R6C2-S5 is the lead's): no clock-only stamp is read
+    for text in ("Closed Nov. 5. Updated 7 AM", "Closed Nov. 5 · 7:14 AM"):
+        assert stamp_dates(text, THU_0600.date(), THU_0600, clocked=False) == ()
+    assert stamp_dates("Closed Nov. 5. Updated 7 AM", THU_0600.date(), THU_0600) == (None,)
+
+
+@pytest.mark.parametrize(
+    ("text", "named"),
+    [
+        ("Closed Thursday, update Friday", set()),
+        ("Closed Thursday, decision made Friday", set()),
+        ("Closed Thursday, notified all parents and staff Friday", set()),
+        ("Closed Thursday. Friday text", set()),
+        ("Closed Thursday · Friday late", set()),
+        ("Closed Thursday · Friday PM", set()),
+        ("Closed Thursday · Friday late evening", {3}),  # a stamp: a part of the day
+        ("Update Thursday: closed", {3}),
+        ("Early release Thursday", {3}),
+        ("Early dismissal Thursday PM", {3}),
+        ("Thursday late start", {3}),
+        ("Open late Thursday", {3}),
+    ],
+)
+def test_round_6_more_notice_and_bare_words(text: str, named: set[int]) -> None:
+    assert named_weekdays(text, "", NOV5) == frozenset(named)
+
+
+@pytest.mark.parametrize(
+    ("text", "ages"),
+    [
+        ("Closed Thursday · 1.5d", (timedelta(days=1.5),)),
+        ("Posted 1.5 days ago", (timedelta(days=1.5),)),
+        ("Closed Thursday,1.5d", (timedelta(days=1.5),)),
+        ("Closed Thursday · 1.5h", (timedelta(hours=1.5),)),
+        ("Delayed Thursday 1.5 hr delay", ()),
+        ("2.5 hr delay", ()),
+        ("Closed Thursday 6:00:5d", (timedelta(days=5),)),
+        ("Closed Thursday 6:00.5d", (timedelta(days=5),)),
+        ("Closed Thursday 9:14:22 PM", ()),
+        ("Closed Thursday 11/5,5d", (timedelta(days=5),)),
+        ("1,440 students, 2,000 ft", ()),
+        ("routes 2,3,4", ()),
+    ],
+)
+def test_round_6_decimal_ages_and_ages_after_seconds(
+    text: str, ages: tuple[timedelta, ...]
+) -> None:
+    assert post_ages(text) == ages
+
+
+# --- round 7: spans, mark runs, void words, grouped ages ---------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("when", "text"),
+    [
+        # a span of hours with no status or event word by its weekday is a stamp (WD-R6C3-B1):
+        # it never lights the stamp's day, the day the row was posted
+        ("2026-11-05 12:00", "Closed Wednesday · Thursday 9 AM - 3 PM"),
+        ("2026-11-05 12:00", "Closed Wednesday · Thursday 8:30-3:15"),
+        ("2026-11-05 12:00", "Closed Wednesday · Thursday 10 AM to 3 PM"),
+        ("2026-11-05 12:00", "Closed Wednesday · Thursday 9 AM until 3 PM"),
+        ("2026-11-05 12:00", "Closed Wednesday · Thursday 7 AM - 9 AM"),
+        ("2026-11-05 12:00", "Closed Wed · Thu 9:00-11:00"),
+        ("2026-11-05 12:00", "Wednesday closed, Thursday 7:45-2:45"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday 9 AM - 3 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday 9:14-9:30 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday 6 a.m. to 8 p.m."),
+        ("2026-11-05 12:00", "Closed Thursday · Friday (9:14-9:30 PM)"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday: 9 AM - 3 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · 9 AM to 3 PM on Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday 9 AM until 3 PM"),
+        # any run of marks between a weekday and its clock time is a stamp mark (WD-R6C3-B2)
+        ("2026-11-05 12:00", "Closed Wednesday · Thursday::5:14 AM"),
+        ("2026-11-05 12:00", "Closed Wednesday · 5:14 AM-- Thursday"),
+        ("2026-11-05 12:00", "Closed Wednesday · Thursday...6:14 AM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday...9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday::9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM-- Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM- Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM\u2013 Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · 9:14 PM\u2014 Friday"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday _9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday,.9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday:/9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday)/9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday(:9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday~/9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday*:9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday…/9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday=:9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Friday ,.: 9:14 PM"),
+        ("2026-11-05 12:00", "Closed Thursday · Fri::2114"),
+        ("2026-11-05 12:00", "Closed Thursday @ 9:14 PM"),
+        ("2026-11-05 12:00", 'Closed Thursday "9:14 PM"'),
+        # glued decimal and grouped ages, and "dys" (WD-R6C3-S1)
+        ("2026-11-05 12:00", "Closed Thursday.1.5d"),
+        ("2026-11-05 12:00", "Closed Thursday.2.5 days"),
+        ("2026-11-05 12:00", "Closed Thursday · 2,880 min"),
+        ("2026-11-05 12:00", "Closed Thursday · 2,880m"),
+        ("2026-11-05 12:00", "Closed Thursday · 5dys"),
+        # void and old-post words in either order (WD-R6C3-S2)
+        ("2026-11-05 12:00", "Revoked. Closed Thursday"),
+        ("2026-11-05 12:00", "Withdrawn. Closed Thursday"),
+        ("2026-11-05 12:00", "Closed Thursday rescinded"),
+        ("2026-11-05 12:00", "Closed Thursday (old)"),
+        ("2026-11-05 12:00", "Old. Closed Thursday"),
+        ("2026-11-05 12:00", "Archived. Closed Thursday"),
+        ("2026-11-05 12:00", "Past event. Closed Thursday"),
+        ("2026-11-05 12:00", "Closed Thursday past event"),
+        ("2026-11-05 12:00", "Not in effect. Closed Thursday"),
+        ("2026-11-05 12:00", "Sent in error. Closed Thursday"),
+        ("2026-11-05 12:00", "Closed Thursday nevermind"),
+        ("2026-11-05 12:00", "Closed Thursday ignore previous"),
+        ("2026-11-05 12:00", "Update: open. Closed Thursday"),
+        ("2026-11-05 12:00", "Update - school open. Closed Thursday"),
+        ("2026-11-05 12:00", "Closed Thursday school is in session"),
+        ("2026-11-05 12:00", "Closed Nov. 5. Revoked"),
+        # a notice word or a weekday's first letters by a lone clock time (WD-R6C3-S3)
+        ("2026-11-05 12:00", "Closed Thursday. 7:14 AM update"),
+        ("2026-11-05 12:00", "Closed Thursday. Released 7:14 AM"),
+        ("2026-11-05 12:00", "Closed Thursday | Fr 9:14 PM"),
+    ],
+)
+def test_round_7_shapes_keep_the_hold(when: str, text: str) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {}
+
+
+@pytest.mark.parametrize(
+    ("when", "text", "days"),
+    [
+        # a status word by the weekday or right before the span owns it: the day still lights
+        (
+            "2026-11-05 12:00",
+            "Closed Thursday · Friday 9 AM - 3 PM closed",
+            {THURSDAY: "CLOSED", FRIDAY: "CLOSED"},
+        ),
+        ("2026-11-06 12:00", "Early dismissal Friday 1:30-2 PM", {FRIDAY: "EARLY_DISMISSAL"}),
+        ("2026-11-06 12:00", "Closed 6 a.m. to 8 p.m. on Friday", {FRIDAY: "CLOSED"}),
+        ("2026-11-06 12:00", "6 a.m. to 8 p.m. on Friday: closed", {FRIDAY: "CLOSED"}),
+        ("2026-11-05 12:00", "Early dismissal Thursday: 1:30 PM", {THURSDAY: "EARLY_DISMISSAL"}),
+        # two weekdays a status word is said with, ages under a day, a dated stamp of the day
+        ("2026-11-05 12:00", "Closed Thursday and Friday", {THURSDAY: "CLOSED", FRIDAY: "CLOSED"}),
+        (
+            "2026-11-05 12:00",
+            "Thursday: Closed. Friday: 2 hour delay",
+            {THURSDAY: "CLOSED", FRIDAY: "DELAYED"},
+        ),
+        ("2026-11-05 12:00", "Closed Thursday · 1,200 m", {THURSDAY: "CLOSED"}),
+        ("2026-11-05 12:00", "Closed Thursday. Updated 11/05", {THURSDAY: "CLOSED"}),
+        ("2026-11-05 12:00", "Update: Closed Thursday", {THURSDAY: "CLOSED"}),
+        ("2026-11-05 12:00", "2 hour delay Thursday, 10 AM start", {THURSDAY: "DELAYED"}),
+    ],
+)
+def test_round_7_shapes_that_still_light(when: str, text: str, days: dict[str, str]) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {
+        (0, day): status for day, status in days.items()
+    }
+
+
+@pytest.mark.parametrize(
+    ("text", "named", "stamps"),
+    [
+        # a span with no status word by its weekday: a stamp, read as one
+        ("Closed Wednesday · Thursday 9 AM - 3 PM", {2}, (None,)),
+        ("Closed Thursday · Friday: 9 AM - 3 PM", {3}, (None,)),
+        ("Closed Wednesday · Thursday 7:45-9:00 AM", {2}, (None,)),
+        # a span of hours is no time a row went up at: its stamp is unreadable (round 8)
+        ("Closed Wednesday · Thursday 5 AM - 3 PM", {2}, (None,)),
+        # owned by a status word in its clause, around the span or a heading after it
+        ("Closed Thursday · Friday closed 9 AM - 3 PM", {3, 4}, ()),
+        ("Closed Thursday · Friday 9 AM - 3 PM closed", {3, 4}, ()),
+        ("6 a.m. to 8 p.m. on Thursday: closed", {3}, ()),
+        ("Thursday 7:45-2:45, closed Wednesday", {2}, (None,)),
+        # a run of marks, either way round
+        ("Closed Thursday · Friday...9:14 PM", {3}, (None,)),
+        ("Closed Thursday · 9:14 PM-- Wed", {3}, (date(2026, 11, 4),)),
+        ("Closed Thursday · Wed::9:14 PM", {3}, (date(2026, 11, 4),)),
+        ("Closed Thursday · Wed _9:14 PM", {3}, (date(2026, 11, 4),)),
+        # past a run of marks and owned by nothing, a clock time has no day
+        ("Closed Thursday @ 9:14 PM", {3}, (None,)),
+        ("Closed Thursday @ 5:14 AM", {3}, (date(2026, 11, 5),)),
+        ('Closed Thursday "9:14 PM"', {3}, (None,)),
+        ("Closed Thursday · 9:14 PM Wed", {3}, (date(2026, 11, 4),)),
+    ],
+)
+def test_round_7_spans_and_mark_runs(
+    text: str, named: set[int], stamps: tuple[date | None, ...]
+) -> None:
+    assert named_weekdays(text, "", THU_0600.date()) == frozenset(named)
+    assert stamp_dates(text, THU_0600.date(), THU_0600) == stamps
+
+
+@pytest.mark.parametrize(
+    "marks",
+    [
+        "".join(run)
+        for size in (1, 2, 3)
+        for run in __import__("itertools").product(".:/,(-_~|", repeat=size)
+    ],
+)
+def test_round_7_no_run_of_marks_lights_a_stamp_day(marks: str) -> None:
+    # the whole class at the function level: a stamp's weekday with its clock time past any
+    # run of up to three marks, either way round and spaced or glued, is never a status day
+    for gap in ("", " "):
+        for text in (
+            f"Closed Thursday · Friday{gap}{marks}{gap}9:14 PM",
+            f"Closed Thursday · 9:14 PM{gap}{marks}{gap}Friday",
+            f"Closed Wednesday · Thursday{gap}{marks}{gap}5:14 AM",
+            f"Closed Wednesday · 5:14 AM{gap}{marks}{gap}Thursday",
+        ):
+            named = named_weekdays(text, "", THU_0600.date())
+            stamp_weekday = 4 if "Friday" in text else 3
+            assert stamp_weekday not in named or None in stamp_dates(
+                text, THU_0600.date(), THU_0600
+            ), text
+
+
+@pytest.mark.parametrize(
+    ("text", "ages"),
+    [
+        ("Closed Thursday.1.5d", (timedelta(days=1.5),)),
+        ("Closed Thursday.2.5 days", (timedelta(days=2.5),)),
+        ("Closed Thursday · 2,880 min", (timedelta(days=2),)),
+        ("Closed Thursday · 2,880m", (timedelta(days=2),)),
+        ("Posted 1,440 min ago", (timedelta(days=1),)),
+        ("Closed Thursday · 1,200 m", (timedelta(hours=20),)),
+        ("Closed Thursday · 5dys", (timedelta(days=5),)),
+        ("Closed Thursday · 5dy", (timedelta(days=5),)),
+        # never a decimal after a number's "." nor a group after money or a mark
+        ("Closed 11.1.5d", ()),
+        ("$1,500 m raised", ()),
+        ("1,440 students, 2,000 ft", ()),
+    ],
+)
+def test_round_7_glued_decimal_and_grouped_ages(text: str, ages: tuple[timedelta, ...]) -> None:
+    assert post_ages(text) == ages
+
+
+@pytest.mark.parametrize(
+    ("text", "named"),
+    [
+        ("Revoked. Closed Thursday", set()),
+        ("Reversed. Closed Thursday", set()),
+        ("Closed Thursday withdrawn", set()),
+        ("Closed Thursday (old)", set()),
+        ("Closed Thursday [OLD]", set()),
+        ("Old. Closed Thursday", set()),
+        ("Closed Thursday · archived", set()),
+        ("Closed Thursday past event", set()),
+        ("Closed Thursday - not in effect", set()),
+        ("Closed Thursday, sent in error", set()),
+        ("Never mind: closed Thursday", set()),
+        ("Please disregard. Closed Thursday", set()),
+        ("Update - school open. Closed Thursday", set()),
+        ("Closed Thursday open on time", set()),
+        ("Posted Wednesday: ignore. Closed Thursday", set()),
+        # the same letters in other words name the day as before
+        ("Old Mill school closed Thursday", {3}),
+        ("Closed Thursday for the past storm", {3}),
+        ("UPDATE: Closed Thursday", {3}),
+        ("Closed Thursday, all past due fees waived", {3}),
+    ],
+)
+def test_round_7_void_words(text: str, named: set[int]) -> None:
+    assert named_weekdays(text, "", NOV5) == frozenset(named)
+
+
+def test_round_7_void_words_hold_on_the_date_path() -> None:
+    assert names_date("Closed Nov. 5", NOV5)
+    assert not names_date("Closed Nov. 5 (old)", NOV5)
+    assert not names_date("Rescinded: closed Nov. 5", NOV5)
+
+
+# --- round 7, critic round 1: spans and clocks past words or marks, long runs, spaces -------
+
+_R7C1_HOLD = [
+    # a span or clock time in a weekday's clause, or past its marks, with no status or event
+    # word there: the weekday is a stamp, never a status day (WD-R7C1-B1)
+    "Closed Wednesday · Thursday hours 8:30-3:15",
+    "Closed Wednesday · Thursday hrs 8:30-3:15",
+    "Closed Wednesday · Thursday times 8:30-3:15",
+    "Closed Wednesday · Thursday by 8:30-3:15",
+    "Closed Wednesday · Thursday office hours 8:30-3:15",
+    "Closed Wednesday · Thursday school hours 8:30-3:15",
+    "Closed Wednesday · Thursday hours 9:00-11:00",
+    "Closed Wednesday · Thursday hours 1:00-3:00 PM",
+    "Closed Wednesday · Thursday hours 9 AM until 3 PM",
+    "Closed Wednesday · Thursday: from 9 AM to 3 PM",
+    "Closed Wednesday · Thursday, from 9 AM to 3 PM",
+    "Closed Wednesday · Thursday | from 9 AM - 3 PM",
+    "Closed Wednesday · Thursday | from approx. 9 AM - 3 PM",
+    "Closed Wednesday · Thursday hours: 9 AM - 3 PM",
+    "Closed Wednesday · 9 AM - 3 PM: hours Thursday",
+    "Closed Wednesday · 8:30-3:15 hours on Thursday",
+    "Closed Thursday · Friday hours 8:30-3:15",
+    "Closed Thursday · Friday: from 9 AM to 3 PM",
+    "Closed Thursday · Friday | hours 9 AM - 3 PM",
+    "Closed Thursday · Friday: between 9 AM and 3 PM",
+    # bare hours, clock times with a leading zero or cut short (WD-R7C1-S1)
+    "Closed Wednesday · Thursday: 9 to 3",
+    "Closed Wednesday · 9 to 3 on Thursday",
+    "Closed Wednesday · Thursday: 0900-1500",
+    "Closed Wednesday · Thursday 0900",
+    "Closed Wednesday · Thursday 0514 hrs",
+    "Closed Thursday · Friday: 9 - 3",
+    "Closed Thursday · Friday 0900",
+    "Closed Thursday · Friday: 9 a",
+    # a run of five or more marks (WD-R7C1-S2) and Unicode spaces (WD-R7C1-S3)
+    "Closed Wednesday · 5:14 AM ----- Thursday",
+    "Closed Wednesday · Thursday .......... 5:14 AM",
+    "Closed Thursday · Friday ---------- 9:14 PM",
+    "Closed Wednesday · Thursday\u00a05:14 AM",
+    "Closed Wednesday · Thursday:\u20095:14 AM",
+    "Closed Wednesday · 5:14\u202fAM Thursday",
+    "Closed Wednesday · 5:14 AM\u3000Thursday",
+    # a stamp word after the weekday (WD-R7C1-S4)
+    "Closed Wednesday · Thursday posted 5:14 AM",
+    "Closed Wednesday · Thursday. Posted 5:14 AM",
+    "Closed Wednesday · Thursday hours 5:14 AM",
+    "Closed Wednesday · Thursday issued 5:14 AM",
+    "Closed Thursday · Friday posted 9 PM",
+    # a lone clock time with no start, delay, dismissal or event word; a correction; ages a
+    # day long or that cannot be read exactly (WD-R7C1-S5)
+    "Closed Thursday. 7:14 AM upd",
+    "Closed Thursday. 7:14 AM revised",
+    "Closed Thursday. 7:14 AM edit",
+    "Closed Thursday. 7:14 AM by admin",
+    "Closed Thursday. 7:14 AM entry",
+    "Closed Thursday. 7:14 AM tweet",
+    "Closed Thursday. 7:14 AM report",
+    "Closed Thursday. 7:14 AM info",
+    "Correction: open. Closed Thursday",
+    "Correction - Closed Thursday",
+    "Closed Thursday · 1.440 min",
+    "Closed Thursday · 1 440 min",
+    "Closed Thursday · 86,400 s",
+    "Closed Thursday · 1 - 2w",
+]
+
+
+@pytest.mark.parametrize(
+    ("when", "text"),
+    [
+        *(("2026-11-05 12:00", text) for text in _R7C1_HOLD),
+        # the evening path: tomorrow is no stamp's day either
+        ("2026-11-05 01:00", "Closed Tuesday · Wednesday hours 8:30-3:15"),
+        ("2026-11-06 01:00", "Closed Thursday · Friday office hours 9:00-11:00"),
+    ],
+)
+def test_round_7_critic_shapes_keep_the_hold(when: str, text: str) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {}
+
+
+@pytest.mark.parametrize(
+    ("when", "text", "days"),
+    [
+        # a status or event word by the weekday owns its span or clock time
+        ("2026-11-06 12:00", "Early dismissal Friday hours 1:30-2 PM", {FRIDAY: "EARLY_DISMISSAL"}),
+        ("2026-11-05 12:00", "Closed Thursday hours 8:30-3:15", {THURSDAY: "CLOSED"}),
+        ("2026-11-05 12:00", "Thursday: closed. Office hours 9 AM - 3 PM", {THURSDAY: "CLOSED"}),
+        # a weekday with words before it in its clause is no stamp's day
+        ("2026-11-05 12:00", "Closed Thursday, updated 5:00 AM", {THURSDAY: "CLOSED"}),
+        ("2026-11-05 12:00", "Snow day Thursday. Updated 5:00 AM", {THURSDAY: "CLOSED"}),
+        # a clock time with a start, an office or a school by it is the day's, not a post's
+        ("2026-11-05 12:00", "Closed Thursday. 5:14 AM update", {THURSDAY: "CLOSED"}),
+        (
+            "2026-11-05 06:48",
+            "Thursday Morning: 2 hour delay, classes start at 10:15am, front office at 9:50am",
+            {THURSDAY: "DELAYED"},
+        ),
+        (
+            "2026-11-05 12:00",
+            "2 hour delay Thursday; 10:40 a.m. for Gamma Middle; 10:50 a.m. for Delta Elementary",
+            {THURSDAY: "DELAYED"},
+        ),
+        # a span of something else than hours names its weekday as before
+        (
+            "2026-11-05 12:00",
+            "Due to 0-5 degree wind chills on Thursday, all schools open 2 hours late",
+            {THURSDAY: "DELAYED"},
+        ),
+    ],
+)
+def test_round_7_critic_shapes_that_still_light(when: str, text: str, days: dict[str, str]) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {
+        (0, day): status for day, status in days.items()
+    }
+
+
+def _a_stamp_day_lights(text: str, weekday: int) -> bool:
+    """Whether ``text``, read Thursday at 06:00, names ``weekday`` as a status day with no
+    stamp that keeps the row held."""
+    return weekday in named_weekdays(text, "", THU_0600.date()) and None not in stamp_dates(
+        text, THU_0600.date(), THU_0600
+    )
+
+
+@pytest.mark.parametrize(
+    "mark", ["", ":", " :", " |", ",", " ·", " -", " \u2013", ".", ";", " (", " -----", "\u00a0"]
+)
+def test_round_7_critic_no_span_or_clock_by_a_weekday_names_its_day(mark: str) -> None:
+    # the class at the function level: a weekday with a span or a clock time after it or
+    # before it, past any marks and any words that are no status or event word, is no day
+    for between in ("", "hours", "office hours", "school hours", "by", "from", "between", "posted"):
+        gap = f"{mark} {between} " if between else f"{mark} "
+        for span in (
+            "8:30-3:15",
+            "9 AM - 3 PM",
+            "9 AM until 3 PM",
+            "9 to 3",
+            "0900-1500",
+            "5:14 AM",
+        ):
+            for lead, day, weekday in (
+                ("Closed Wednesday · ", "Thursday", 3),
+                ("Closed Thursday · ", "Friday", 4),
+            ):
+                after = f"{lead}{day}{gap}{span}"
+                before = f"{lead}{span}{gap}{'' if mark else 'on '}{day}"
+                assert not _a_stamp_day_lights(after, weekday), after
+                assert not _a_stamp_day_lights(before, weekday), before
+
+
+@pytest.mark.parametrize(
+    "run", ["-----", "..........", "_______", "· · · · · ·", "-.-.-.-", "=====>", "~~~~~~~~~~~~"]
+)
+def test_round_7_critic_a_long_run_of_marks_is_a_stamp_mark(run: str) -> None:
+    for gap in ("", " "):
+        for text, weekday in (
+            (f"Closed Thursday · Friday{gap}{run}{gap}9:14 PM", 4),
+            (f"Closed Thursday · 9:14 PM{gap}{run}{gap}Friday", 4),
+            (f"Closed Wednesday · Thursday{gap}{run}{gap}5:14 AM", 3),
+            (f"Closed Wednesday · 5:14 AM{gap}{run}{gap}Thursday", 3),
+        ):
+            assert not _a_stamp_day_lights(text, weekday), text
+
+
+@pytest.mark.parametrize(
+    "space",
+    ["\u00a0", "\u1680", "\u2002", "\u2007", "\u2009", "\u200a", "\u202f", "\u205f", "\u3000"],
+)
+def test_round_7_critic_a_unicode_space_is_a_space(space: str) -> None:
+    for text, weekday in (
+        (f"Closed Wednesday · Thursday{space}5:14 AM", 3),
+        (f"Closed Wednesday · Thursday:{space}5:14 AM", 3),
+        (f"Closed Wednesday · 5:14{space}AM{space}Thursday", 3),
+        (f"Closed Thursday · Friday{space}9:14{space}PM", 4),
+    ):
+        assert not _a_stamp_day_lights(text, weekday), text
+    assert named_weekdays(f"Closed{space}Thursday", "", NOV5) == frozenset({3})
+
+
+@pytest.mark.parametrize(
+    ("text", "named", "stamps"),
+    [
+        # a weekday right before a stamp word, starting its clause, is the stamp's day
+        ("Closed Wednesday · Thursday posted 5:14 AM", {2}, (date(2026, 11, 5),)),
+        ("Closed Wednesday · Thursday - updated 5:14 AM", {2}, (date(2026, 11, 5),)),
+        ("Closed Thursday · Friday posted 9 PM", {3}, (None,)),
+        ("Closed Thursday · Wednesday posted 9:14 PM", {3}, (date(2026, 11, 4),)),
+        # with a word before it, the day the row is for, as before
+        ("Closed Thursday, updated 5:00 AM", {3}, ()),
+        ("Snow day Thursday. Updated 5:00 AM", {3}, ()),
+        # a span of hours as a stamp gives no time a row went up at
+        ("Closed Wednesday · Thursday hours 7:45-9:00", {2}, (None,)),
+        ("Closed Wednesday · Thursday: 4 to 5", {2}, (None,)),
+        # a span of something else is no span of hours
+        ("Closed Thursday · 0-5 degrees", {3}, ()),
+        ("Closed Thursday · 2 to 4 inches", {3}, ()),
+        # more than sixteen weekdays are a schedule: no day, and no stamp read
+        ("Closed " + "Thursday, " * 17, set(), (None,)),
+        ("Closed Thursday, Thursday, Thursday", {3}, ()),
+    ],
+)
+def test_round_7_critic_stamp_days_spans_and_schedules(
+    text: str, named: set[int], stamps: tuple[date | None, ...]
+) -> None:
+    assert named_weekdays(text, "", THU_0600.date()) == frozenset(named)
+    assert stamp_dates(text, THU_0600.date(), THU_0600) == stamps
+
+
+@pytest.mark.parametrize(
+    ("text", "ages"),
+    [
+        # thousands grouped with a "." or a space may be a day or a minute and a half
+        ("Closed Thursday · 1.440 min", (None,)),
+        ("Closed Thursday · 1 440 min", (None,)),
+        # seconds, grouped or of four digits or more
+        ("Closed Thursday · 86,400 s", (timedelta(days=1),)),
+        ("Closed Thursday · 3600 sec", (timedelta(hours=1),)),
+        ("Closed Thursday · 86,400s", (timedelta(days=1),)),
+        ("Temps in the 30s; the 1990s", ()),
+        # the end of a span of lengths cannot be read exactly; a delay's is no age
+        ("Closed Thursday · 1 - 2w", (None,)),
+        ("Closed Thursday · 9 to 3 hours", (None,)),
+        ("Delayed 2 to 3 hours Thursday", ()),
+        ("Thursday 3-6 hours", ()),
+    ],
+)
+def test_round_7_critic_ages(text: str, ages: tuple[timedelta | None, ...]) -> None:
+    assert post_ages(text) == ages
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Correction: open. Closed Thursday",
+        "Correction - Closed Thursday",
+        "Closed Thursday (corrected)",
+    ],
+)
+def test_round_7_critic_a_correction_holds(text: str) -> None:
+    assert not named_weekdays(text, "", NOV5)
+    assert not names_date(text.replace("Thursday", "Nov. 5"), NOV5)
+
+
+# --- round 7, critic round 2: clauses past the connector, glued spans, weak owners ----------
+
+_R7C2_HOLD = [
+    # past the weekday's marks, a span or clock time further on, over words and marks with no
+    # status or event word, makes the weekday a stamp (WD-R7C2-B1)
+    "Closed Wednesday · Thursday | hours (8:30-3:15)",
+    "Closed Wednesday · Thursday: hours (9 AM - 3 PM)",
+    "Closed Wednesday · Thursday, hours (9 AM to 3 PM)",
+    "Closed Wednesday · Thursday | from (9 AM - 3 PM)",
+    "Closed Wednesday · Thursday | from (9:14-9:30 PM)",
+    "Closed Wednesday · Thursday | hours (9:14-9:30 PM)",
+    "Closed Wednesday · Thursday: hours - 8:30-3:15",
+    "Closed Wednesday · Thursday: hours. 8:30-3:15",
+    "Closed Wednesday · Thursday | hours: 8:30-3:15",
+    "Closed Wednesday · Thursday | hours | 8:30-3:15",
+    "Closed Wednesday · Thursday | office | hours 8:30-3:15",
+    "Closed Wednesday · Thursday: office (8:30-3:15)",
+    "Closed Wednesday · Thursday | hours (5:14 AM)",
+    "Closed Wednesday · (8:30-3:15) | hours | Thursday",
+    "Closed Wednesday · between 9 and 3 hours Thursday",
+    "Closed Thursday · Friday | hours (9 AM - 3 PM)",
+    "Closed Thursday · Friday | from (9:14-9:30 PM)",
+    # a span or a bare number right past a run of marks, glued to it too (WD-R7C2-B2)
+    "Closed Wednesday · Thursday:9 to 3",
+    "Closed Wednesday · Thursday...9 to 3",
+    "Closed Wednesday · Thursday...9 - 3",
+    "Closed Wednesday · Thursday//9 to 3",
+    "Closed Wednesday · Thursday...between 9 and 3",
+    "Closed Wednesday · Thursday:between 9 and 3",
+    "Closed Wednesday · Thursday?:9 to 3",
+    "Closed Wednesday · Thu✔/9 to 3",
+    "Closed Wednesday · Thursday...9",
+    "Closed Wednesday · Thursday ... 9",
+    "Closed Wednesday · 9 to 3_ Thursday",
+    "Closed Wednesday · noon_ °.Thursday",
+    "Closed Thursday · Friday!#9 to 3",
+    "Closed Thursday · Friday+ _9 to 3",
+    "Closed Thursday · Friday#between 9 and 3",
+    "Closed Thursday\nFriday ● ,9 to 3",
+    "Closed Thursday; 0900: } Friday",
+    # a weekday glued to a "_" is no day the words can be read for
+    "Closed Thursday · 5:14 AM| . ► _Friday",
+    # "report" and "arrival" own no clock time on their own (WD-R7C2-S1)
+    "Closed Wednesday · Thursday report 5:14 AM",
+    "Closed Wednesday · Thursday arrival 7:45 AM",
+    "Closed Thursday · Friday report 9:14 PM",
+    "Closed Thursday · Friday report 0900-1500",
+    "Closed Thursday • 8:30-3:15 report Friday",
+    # spans cut short or written with an "h", on either side (WD-R7C2-S2)
+    "Closed Thursday • 9a-3p >> Friday",
+    "Closed Wednesday • 9a-3p at Thursday",
+    "Closed Thursday · 9a-3p hours (Friday",
+    "Closed Wednesday · Thursday time 8h30-15h15",
+    "Closed Wednesday • 8h30-15h15: Thursday",
+]
+
+
+@pytest.mark.parametrize(
+    ("when", "text"),
+    [
+        *(("2026-11-05 12:00", text) for text in _R7C2_HOLD),
+        # the evening path: tomorrow is no stamp's day either
+        ("2026-11-05 01:00", "Closed Wednesday · Thursday | hours (9:14-9:30 PM)"),
+        ("2026-11-05 01:00", "Closed Wednesday · Thursday|,9 to 3"),
+        ("2026-11-05 01:00", "Closed Wednesday · Thursday =¶\\,between 9 and 3"),
+    ],
+)
+def test_round_7_second_critic_shapes_keep_the_hold(when: str, text: str) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {}
+
+
+@pytest.mark.parametrize(
+    ("when", "text", "days"),
+    [
+        # a status word in the weekday's clause owns its span or clock time past the marks
+        ("2026-11-05 12:00", "Thursday: closed (9 AM - 3 PM)", {THURSDAY: "CLOSED"}),
+        ("2026-11-05 12:00", "Thursday: closed (between 9 and 3)", {THURSDAY: "CLOSED"}),
+        ("2026-11-05 12:00", "Thursday | closed | 8:30-3:15", {THURSDAY: "CLOSED"}),
+        ("2026-11-06 12:00", "Early dismissal Friday | (1:30 PM)", {FRIDAY: "EARLY_DISMISSAL"}),
+        # a glued span with a status word is read as a spaced one
+        ("2026-11-05 12:00", "Closed Thursday: 9 to 3", {THURSDAY: "CLOSED"}),
+        ("2026-11-05 12:00", "Closed Thursday:9 to 3", {THURSDAY: "CLOSED"}),
+        # the evening path
+        ("2026-11-05 01:00", "Thursday: closed (9 AM - 3 PM)", {THURSDAY: "CLOSED"}),
+    ],
+)
+def test_round_7_second_critic_shapes_that_still_light(
+    when: str, text: str, days: dict[str, str]
+) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {
+        (0, day): status for day, status in days.items()
+    }
+
+
+_R7C2_SPANS = (
+    "9 to 3",
+    "between 9 and 3",
+    "9 - 3",
+    "9a-3p",
+    "8h30-15h15",
+    "(9:14-9:30 PM)",
+    "8:30-3:15",
+)
+_R7C2_MARKS = ".,:;!?-/|\\()[]{}<>'`~@#$^&*_+=·•…►✔"
+
+
+def _r7c2_shapes(run: str, span: str) -> Iterator[tuple[str, int]]:
+    """Each shape of ``span`` and a weekday with the run of marks ``run`` between, either way
+    round, glued or spaced, with the other weekday's status before: the weekday it names."""
+    for lead, day, weekday in (
+        ("Closed Wednesday · ", "Thursday", 3),
+        ("Closed Thursday · ", "Friday", 4),
+    ):
+        for text in (
+            f"{lead}{day}{run}{span}",
+            f"{lead}{day} {run}{span}",
+            f"{lead}{span}{run}{day}",
+            f"{lead}{span}{run} {day}",
+        ):
+            yield text, weekday
+
+
+@pytest.mark.parametrize("gap", ["", " "])
+@pytest.mark.parametrize("size", [1, 2, 3])
+def test_round_7_second_critic_no_run_of_marks_by_a_span_names_its_day(size: int, gap: str) -> None:
+    # the class at the function level: one, two or three marks (of 33, every pair, and every
+    # triple of the first 10), glued or spaced, between a weekday and a span of hours either way
+    # round, read Thursday at 06:00, never light the weekday; each run is read with one of the
+    # spans in turn (8,712 shapes of two marks for each gap)
+    pool = _R7C2_MARKS if size < 3 else _R7C2_MARKS[:10]
+    for index, combo in enumerate(itertools.product(pool, repeat=size)):
+        run = gap.join(combo)
+        for text, weekday in _r7c2_shapes(run, _R7C2_SPANS[index % len(_R7C2_SPANS)]):
+            assert not _a_stamp_day_lights(text, weekday), text
+
+
+@pytest.mark.parametrize(
+    "between",
+    ["hours", "hrs", "times", "from", "between", "by", "office", "at", "around", "office hours"],
+)
+def test_round_7_second_critic_a_span_past_a_connector_and_more_marks_names_no_day(
+    between: str,
+) -> None:
+    marks = ("", ":", " |", ",", " ·", " -", ".", " (", ";", " /", " •", " >>", " [")
+    for first, second in itertools.product(marks, repeat=2):
+        for span in ("8:30-3:15", "9 AM - 3 PM", "(9:14-9:30 PM)", "9 to 3", "5:14 AM", "9a-3p"):
+            for lead, day, weekday in (
+                ("Closed Wednesday · ", "Thursday", 3),
+                ("Closed Thursday · ", "Friday", 4),
+            ):
+                after = f"{lead}{day}{first} {between}{second} {span}"
+                before = f"{lead}{span}{first} {between}{second} {day}"
+                assert not _a_stamp_day_lights(after, weekday), after
+                assert not _a_stamp_day_lights(before, weekday), before
+
+
+@pytest.mark.parametrize(
+    ("text", "named"),
+    [
+        # a status or event word on the way keeps the weekday a status day, as before
+        ("Thursday | closed | 8:30-3:15", {3}),
+        ("Thursday: closed (9 AM - 3 PM)", {3}),
+        ("Early dismissal Friday | (1:30 PM)", {4}),
+        ("Closed Thursday:9 to 3", {3}),
+        # who reports or arrives, or a status word, makes it a time on that day
+        ("Thursday: students report 10 AM", {3}),
+        ("2 hour delay Thursday, staff report 9 AM", {3}),
+        # "in effect" and "begins" still own a clock time
+        ("Parking ban in effect at 5 p.m. Saturday", {5}),
+        # a weekday glued to a "_" names no day
+        ("Closed_Thursday", set()),
+        ("Closed Thursday · 5:14 AM _Friday", set()),
+        ("Closed Thursday_ 5:14 AM", set()),
+    ],
+)
+def test_round_7_second_critic_status_days(text: str, named: set[int]) -> None:
+    assert named_weekdays(text, "", THU_0600.date()) == frozenset(named)
+
+
+@pytest.mark.parametrize(
+    ("text", "ages"),
+    [
+        # the end of "between" two numbers is the end of a span: no exact age
+        ("Closed Wednesday · between 9 and 3 hours Thursday", (None,)),
+        ("Closed Thursday, posted between 2 and 3 hours ago", (None,)),
+        # a delay's is still no age
+        ("Delayed between 1 and 2 hours Thursday", ()),
+    ],
+)
+def test_round_7_second_critic_ages(text: str, ages: tuple[timedelta | None, ...]) -> None:
+    assert post_ages(text) == ages
