@@ -40,7 +40,9 @@ holds rows of that source from its own read (its own resolve of them then judges
 pass, as in any run) or a read of it cannot be taken in, and never past the end listed:
 :func:`withheld_until` from the last pass whose own resolve failed, the age past which a
 record carries nothing at all, and never extended by a run that only inherited it (its own
-record lists the source with the same end). A failure that passed at the run before's last
+record lists the source with the same end, or that bound from its own record's time when
+that is earlier: a clock running behind the run before's, which the run after would
+otherwise refuse as ``unreadable``). A failure that passed at the run before's last
 pass so darkens those states in the successor until its own read, at most that end. The
 record is also used only when it is not older than the closings file the live host serves now (its
 ``generated_at``, read back once at the start: one call to our own host's API per process

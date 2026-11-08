@@ -101,8 +101,11 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   at each pass as in any run, or until a read of it cannot be taken in (it then holds no rows
   of it, as the run before would not), and never past the end listed: 90 minutes (the longest
   G13 bound, the age past which a record carries nothing) from the last pass whose own resolve
-  failed. A run that only inherited the listing hands it on with the same end, so it never
-  outlives that bound, and a source the run before no longer held is listed the same way. The
+  failed. A run that only inherited the listing hands it on with the same end, or with 90
+  minutes from its own record's time when that is earlier (its clock running behind the run
+  before's, by up to the minute a record may be ahead; the run after would refuse a later end
+  as `unreadable` and carry nothing), so it never outlives that bound, and a source the run
+  before no longer held is listed the same way. The
   withholding counts toward the two-pass alert as any unknown source does. The cost falls on a
   failure that had passed at the run before's last pass: those states stay dark in the
   successor until its own read of the source (a source whose last good read held rows is

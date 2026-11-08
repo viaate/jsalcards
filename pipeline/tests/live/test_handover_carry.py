@@ -1099,3 +1099,106 @@ def test_a_record_written_before_the_unknown_list_still_carries(tmp_path: Path) 
     successor = _ingest(world, tmp_path / "s")
     successor.start_carry(path, T0 + timedelta(minutes=40))
     assert set(successor.carried) == {A, B}
+
+
+def _failing_at_the_last_pass(
+    folder: Path, monkeypatch: pytest.MonkeyPatch, fault: str, rows: tuple[object, ...]
+) -> tuple[World, Path, Ingest, Path]:
+    """The run before: A and B read at T0, B every 5 minutes; its resolve of A fails at its
+    last pass, T0+10 (``queue``: A's reads at T0+5 and T0+10 bring ``rows``, which the code
+    fails on; ``last pass``: its resolve raises at that pass alone), and its upload then
+    fails, so the host serves T0+5. Returns its world, host, reader and record."""
+
+    def failing(_self: Publisher, _files: object) -> None:
+        raise OSError
+
+    world = _world()
+    host = folder / "host"
+    run = _ingest(world, folder / "p", host)
+    path = folder / CARRY
+    run.start_carry(path, T0)
+    for minutes in (0, 5, 10):
+        now = T0 + timedelta(minutes=minutes)
+        reads = [_ok(B, now)]
+        if fault == "queue" or not minutes:
+            reads.append(_ok(A, now, rows if minutes else ()))
+        with monkeypatch.context() as patch:
+            if minutes == 10:
+                patch.setattr(DirPublisher, "write", failing)
+                if fault == "last pass":
+                    _failing_for(run, patch)
+            run.run_pass(reads, now)
+    assert json.loads(path.read_text())["unknown"] == {A: _stamp(100)}
+    return world, host, run, path
+
+
+def _aging(
+    world: World, host: Path, run: Ingest, rows: tuple[object, ...]
+) -> list[set[tuple[int, str]]]:
+    """``run``'s passes from T0+15 to T0+165 (B every pass, A at T0+60 with ``rows``): what
+    the host serves after each; no status stands past its own G13 bound, nor a carried one
+    past the end the run before applied."""
+    found = []
+    for minutes in range(15, 180, 15):
+        now = T0 + timedelta(minutes=minutes)
+        reads = [_ok(B, now), *([_ok(A, now, rows)] if minutes == 60 else [])]
+        assert run.run_pass(reads, now).exit is Exit.OK
+        found.append(_published(host))
+        for state in world.ledger.sources():
+            until = run.hold_until(now).get(state.source_id)
+            if until is not None:
+                assert state.last_good_at is not None
+                assert now <= until <= state.last_good_at + RULES.hold_quiet
+                carried = run.carried.get(state.source_id)
+                assert carried is None or until <= carried.until
+    return found
+
+
+@pytest.mark.parametrize("fault", ["queue", "last pass"])
+def test_a_successor_clock_behind_hands_on_what_one_in_step_hands_on(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fault: str
+) -> None:
+    # S2R3R3 (SYNTHETIC): the successor's one pass runs at T0+10:20, its clock 30 s behind
+    # the run before's (inside FUTURE_LEEWAY): it reads T0+9:50 and relisted A until T0+100,
+    # 10 s more than 90 minutes after its own record, so the run after refused the whole
+    # record (unreadable) and lit B's statuses in A's state at once. Now the end is clamped
+    # to 90 minutes from the record (never later than given), and the run after serves at
+    # every pass what it serves after a successor whose clock is right: in "queue" what one
+    # run that never stopped serves; in "last pass" the same once it reads A (the cost the
+    # record's withholding has), A's statuses then aging out on their own rule (T0+60 + 90)
+    rows = _code_fault("queue", monkeypatch) if fault == "queue" else A_ROWS
+    true = T0 + timedelta(minutes=10, seconds=20)
+    seen: dict[str, list[set[tuple[int, str]]]] = {}
+    for mode in ("one run", "in step", "behind"):
+        world, host, run, path = _failing_at_the_last_pass(
+            tmp_path / mode, monkeypatch, fault, rows
+        )
+        if mode == "one run":
+            run.run_pass([_ok(B, true)], true)
+        else:
+            _end(path)
+            clock = true if mode == "in step" else true - timedelta(seconds=30)
+            run = _ingest(world, tmp_path / mode / "s", host)
+            run.start_carry(path, clock)
+            assert run.inherited == {A: T0 + timedelta(minutes=100)}
+            run.run_pass([_ok(B, clock)], clock)
+            record = json.loads(path.read_text())
+            assert record["at"] == clock.isoformat()
+            # never later than the end given, nor than 90 minutes from the record's own time
+            end = min(T0 + timedelta(minutes=100), clock + timedelta(minutes=90))
+            assert record["unknown"] == {A: end.isoformat()}
+            _end(path)
+            run = _ingest(world, tmp_path / mode / "third", host)
+            run.start_carry(path, T0 + timedelta(minutes=15))
+            assert run.inherited == {A: end}
+        seen[mode] = _aging(world, host, run, rows)
+    assert seen["behind"] == seen["in step"]
+    if fault == "queue":
+        assert seen["in step"] == seen["one run"] == [set()] * len(seen["one run"])
+    else:
+        both, b_only = {(0, "CLOSED"), (10, "CLOSED")}, {(10, "CLOSED")}
+        passes = range(15, 180, 15)
+        assert seen["one run"] == [both if m <= 150 else b_only for m in passes]
+        assert seen["in step"] == [
+            set() if m < 60 else both if m <= 150 else b_only for m in passes
+        ]

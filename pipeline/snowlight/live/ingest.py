@@ -563,10 +563,22 @@ class Ingest:
         return None if remote is None else remote.generated_at
 
     def start_carry(self, path: Path, now: datetime) -> None:
-        """Take over what the run before held (``path``, :func:`~snowlight.live.carry.read_carry`:
-        never raises; a record not marked final by the run before's ``live finish --record``,
-        or older than the file the host serves, carries nothing) and write this run's own
-        record there, unmarked, after each pass."""
+        """Take over what the run before handed on at its last completed pass (``path``,
+        :func:`~snowlight.live.carry.read_record`) and write this run's own record there,
+        unmarked, after each pass (:meth:`record_carry`).
+
+        Two things are taken: :attr:`carried`, the sources the run before held, each with the
+        good read it held them under and the end of that hold, and :attr:`inherited`, the
+        ``unknown`` map, the sources whose states it withheld for a failing resolve, each with
+        the end of that (at most 90 minutes, the longest G13 bound, from the last pass that
+        failed to resolve it; an end already passed is left out). Only a record marked final by
+        the run before's ``live finish --record`` is used. One that is missing, unreadable (an
+        ``unknown`` map that is not a map of times, or ends more than 90 minutes after the
+        record, included), of another version or key, not final, stamped more than a minute
+        ahead of this clock, over 90 minutes old, or older than the file the host serves, and a
+        host that cannot be read or holds no file, carries nothing at all; a listed entry that
+        does not hold together is left out alone. One codes-and-counts line (``carry: ...``);
+        never raises."""
         self.carry_key = carry_key(self.resolver.version, self.rules)
         record = read_record(
             path, key=self.carry_key, now=now, rules=self.rules, published=self._served_at
@@ -581,7 +593,8 @@ class Ingest:
         last good read's time and the end of its hold, and the sources whose states it
         withheld for a failing resolve (``unknown``: its own, ending
         :func:`~snowlight.live.carry.withheld_until` from now, and those it still withholds
-        for the run before, with the end that run gave), for the run after it
+        for the run before, with the end that run gave, or that bound from now when that is
+        earlier: a clock running behind the run before's), for the run after it
         (:mod:`snowlight.live.carry`). A failed write is logged by its type."""
         if self.carry_path is None:
             return
@@ -590,10 +603,13 @@ class Ingest:
             for state in states
             if (end := until.get(state.source_id)) is not None and state.last_good_at is not None
         }
-        unknown = self.still_inherited(now)
+        # never past the longest bound from this record's own time, nor later than given: a
+        # clock behind the run before's (inside FUTURE_LEEWAY) would otherwise relist an end
+        # past it, and the run after would refuse the whole record (``unreadable``)
+        bound = withheld_until(now, self.rules)
+        unknown = {sid: min(end, bound) for sid, end in self.still_inherited(now).items()}
         for sid in self.unresolved:
-            end = withheld_until(now, self.rules)
-            unknown[sid] = max(end, unknown.get(sid, end))
+            unknown[sid] = bound
         self.carry_bytes = write_carry(
             self.carry_path, key=self.carry_key, now=now, held=held_at, unknown=unknown
         )
