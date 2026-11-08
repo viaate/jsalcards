@@ -786,7 +786,7 @@ on Friday" and "Wednesday closed, Thursday 7:45-2:45" the second weekday is a st
 and the row lights neither the stamp's day nor, read on it, the day before. The same holds
 for a clock time or a span further on in the weekday's clause, or in the clauses past the marks
 that end it, read on over each clause and each run of marks to the first with a status or event
-word (or the next weekday, or 80 characters), either way round, whatever words with no status or
+word (or the next weekday, or 400 characters past the marks), either way round, whatever words with no status or
 event word stand between ("Closed Wednesday · Thursday hours 8:30-3:15", "Thursday office hours 9:00-11:00", "Thursday:
 from 9 AM to 3 PM", "Thursday | from approx. 9 AM - 3 PM", "Thursday hours: 9 AM - 3 PM", "9 AM
 - 3 PM: hours Thursday", "8:30-3:15 hours on Thursday", "Friday: between 9 AM and 3 PM",
@@ -795,8 +795,16 @@ from (9:14-9:30 PM)", "Thursday: hours - 8:30-3:15", "Thursday | office | hours 
 "(8:30-3:15) | hours | Thursday", "between 9 and 3 hours Thursday"), for bare hours ("Thursday: 9
 to 3", "9 to 3 on Thursday", "Friday: 9 - 3", glued to the marks too: "Thursday:9 to 3",
 "Thursday...between 9 and 3", "Friday!#9 to 3", "Friday _9 to 3", "9 to 3_ Thursday"; never "0-5
-degrees" or "2 to 4 inches"), for a bare number of one or two digits past the marks with nothing
-after it ("Thursday...9", "Thursday ... 9": unreadable), for a 24-hour time with a leading zero
+degrees" or "2 to 4 inches"; "9 to 3 in effect" and "9 to 3 students report" are hours, and a
+spaced dash in such a span ends no clause: "Thursday: 2 - 3 hour delay" lights), for a bare
+number of one or two digits on either side of the marks, glued or spaced, with words after it
+or none, after the "." a weekday ends with too, with a mark glued before it before the
+marks, and with a line break in or by the marks, as a clock time past them is read ("Thursday:
+45" and "45 · Thursday" on two lines; "Thursday...9", "Thursday ... 9", "Thursday: 9 | info", "Thursday.45", "Thursday. 60
+info", "10.Thursday", "9:: Thursday", "3_ Thursday", ":9 · Thursday", "#12 :: Thursday", "$9 ·
+Thursday": unreadable; a clock time, a date and a count with a delay's length unit are read as
+before: "Thursday: 2 hour delay", "Thursday. 2 hour delay", "Closed Thursday. 45 schools",
+"Closed Wednesday · 10:30 · Thursday"), for a 24-hour time with a leading zero
 before a run of marks ("0900: } Friday"), for a time cut short after the weekday ("Friday: 9 a")
 and for a span cut short or written with an "h" on either side ("9a-3p >> Friday", "Thursday
 time 8h30-15h15"): one rule, swept over 21,888 shapes and the round 7 critic's 96,921 (0 that
@@ -823,8 +831,30 @@ row is for ("Early dismissal Thursday 1:30 PM", "Early dismissal Thursday (1:30 
 10 AM start"), and so does a word that makes the clock time when the school starts, opens,
 closes or lets out, or a notice takes effect ("Opening at 10 AM Thursday", "Closing at 1 p.m.
 Thursday", "In effect at 5 p.m. Saturday"), a report or an arrival only with who it is for or
-with a status or event word ("Staff report Thursday 9 AM", "Thursday: students report 10 AM";
-"Closed Wednesday · Thursday report 5:14 AM" and "Thursday arrival 7:45 AM" are stamps), an event named next to it ("No 8 AM Mass Thursday",
+with a status or event word ("Staff report Thursday 9 AM", "2 hour delay Thursday, staff report
+9 AM"; "Closed Wednesday · Thursday report 5:14 AM" and "Thursday arrival 7:45 AM" are stamps).
+A word that is no status word ("begins", "in effect", "effective", a report or an arrival,
+and the start, opening and dismissal words the status reader reads no status from: "dismiss",
+"starting", "opened") owns only a single clock time in the weekday's own clause with no mark
+between the weekday, the word and the clock time, wherever the word stands, and never a span of
+hours or a clock time a mark parts from the weekday, a clause mark or a stamp's ("=", "#", "»"):
+"Closed Wednesday · Thursday | begins (8:30-3:15)", "Closed Wednesday · Thursday in effect 9 to
+3", "Closed Wednesday · Thursday: staff report 9:14 PM", "Closed Wednesday · in effect Thursday:
+9:14 PM", "Closed Wednesday · 9:14 PM: Thursday begins", "Closed Wednesday · Thursday: 9:14 PM
+effective immediately", "Closed Wednesday · Thursday = begin 9:14 PM", "Closed Wednesday ·
+Thursday | dismiss 9:14 PM", "Closed Wednesday · Thursday | starting (8:30-3:15)", "Thursday:
+students report 10 AM" and "Closed Thursday · Friday in effect 9 AM - 3 PM" are stamps, while
+"Closed Wednesday · Thursday begins 9:14 PM" and "Closed Wednesday · Thursday begins around 9:14
+PM" name Thursday. "At" or "@" between such a word and the clock time changes none of this
+("Closed Wednesday · Thursday: started at 9:14 PM", "Closed Wednesday · opened at 9:14 PM,
+Thursday", "Closed Wednesday · Thursday started at 9 AM - 3 PM" and "Closed Wednesday · Thursday
+opened at 9 to 3" are stamps), and a "~" is a mark there as anywhere by a weekday ("Closed
+Wednesday · Thursday begins ~ 9:14 PM" and "... begins ~9:14 PM" are stamps, as "Thursday ~
+9:14 PM" is). The one such word that owns a clock time past the marks is a dismissal with "at"
+or "@" right before a single clock time the status reader reads a dismissal at, 8 a.m. to 1:30
+p.m. ("Thursday: dismiss at 1:30", "Thursday | dismiss @ 1:30" light; "Closed Wednesday ·
+Thursday: dismiss at 9:14 PM", "... dismiss at 7:30" and "... dismiss at 8:30-3:15" are
+stamps). So does an event named next to it ("No 8 AM Mass Thursday",
 "10am Thursday worship canceled") or a span of hours a status word is said with ("6 a.m. to 8
 p.m. on Thursday: closed"); a part of the day as a heading ("Thursday Afternoon: Closed") is no
 time.
@@ -941,7 +971,44 @@ clause, which the first weekday's status then lights (round 7 second critic S4, 
 "Thursday lunch 11:30", "Thursday breakfast 7:15 AM", "Thursday board meeting 6 PM", "Thursday |
 open (9 AM - 3 PM)"; read Wednesday at 19:00, "Closed Wednesday · Thursday buses 6:45 AM"),
 and a span of hours with a degree or inch mark after it ("9 to 3° Thursday", '9 to 3" Thursday':
-read as no span of hours).
+read as no span of hours). Round 8 leaves these, each lit at db3f087 and at the round 7 head: a
+word that is no status word owning a single clock time in the weekday's own clause with no mark
+between, the lead's ruling ("Closed Wednesday · Thursday begins 5 a.m.", "Closed Wednesday ·
+5:14 AM staff report Thursday": 73 of the round 7 last critic's 3,000 owner shapes light through
+the resolver, each such a shape, and 11 lit archive rows hold a weekday, such a word and a clock
+time in one clause); a clock time or a span glued to a word, read as no clock time, and a span
+after a quote mark or a number sign ("Closed Wednesday · Thursday ·staff arrival5 a.m.",
+"Thursday .reports21:14", "Thursday ;: xbetween 9 and 3", 'between 9 and 3" info ·@ Thursday',
+"Thursday(= info #9 to 3": 33 of those shapes, which light with the owner word taken out too,
+and 0 lit archive rows of that form); a span past the marks with "regular", a status word, on
+the way ("Closed Wednesday · Thursday# regular families (9 AM - 3 PM)": 19 of the critic's 3,000
+far shapes, 0 lit archive rows); a span or a bare number more than 400 characters past a
+weekday's marks ("Closed Wednesday · Thursday | " and 82 words, then "(9 AM - 3 PM)"): 37
+archive rows hold a weekday, its marks and a number that far on, 6 of them lit, all on the date
+path and none on the weekday path the reach bounds; a bare number one clause away from a
+weekday ("Closed Wednesday · 9 · info · Thursday": 2 lit archive rows hold a bare number two
+clause marks before a weekday, both on the date path, none on the weekday path); and a count of hours right by a weekday's marks, with or
+without a delay word, read as a posting age under a day and bounded as every age is ("Closed
+Wednesday · Thursday|2 hrs", "Closed Wednesday · Thursday: 15 mins ago": 49 of the critic's 3,000
+bare-number shapes, 88 lit archive rows; the lead rules on these). The round 8 second critic's
+also stay, each lit at db3f087 and at the round 7 head with 0 lit archive rows: a number glued
+to a mark or a word, or a word between it and the weekday's marks, outside the bare-number rule
+("Closed Wednesday · #45 Thursday", "Closed Wednesday · Thursday: No 45", "... Thursday: no.
+45", "... Thursday: v45", "... Thursday: 45x": 48 of 48 function-level shapes of each light; 0
+archive rows hold a "#" or "$" glued to a number before a weekday); and a spaced span of bare
+hours followed by a count word that is a status word ("Closed Wednesday · Thursday | 2 - 3
+schools", "... Thursday: 9 - 3 buses": 1,008 function-level reads newly lit against the round 7
+head, each with such a word in the weekday's clause, as "Thursday: 9 schools" was lit there; 0
+archive rows; the lead's awareness). Two more stay, lit at all three heads with 0 lit archive
+rows: a bare hour after "at" past the weekday's marks with a word between, read as no clock
+time, so the row reads as "Closed Wednesday · Thursday: info" does, an owner word there or not
+("Closed Wednesday · Thursday: started at 9", "... Thursday: info at 9": 80 of the critic's 88
+reads of each such word after the weekday; 16 archive rows hold a weekday's marks, a word and a bare
+hour after "at", and the one of them lit has a status word in its weekday's clause); and a line
+break with no mark between a weekday and a clock time, a span or a bare number, or a clock time
+before marks and a line break ("Closed Wednesday · Thursday", then "5:14 AM" or "45" on the
+next line; "Closed Wednesday · 5:14 AM |", then "Thursday": 86 of the critic's 504 line-break
+reads; 0 of the archive's 118,950 reader texts hold a line break).
 
 A row whose words may be older than its first sighting is not self-dated unless the ledger can
 bound them. Every key the ledger adds keeps `earliest`, the earliest its words may have been on
