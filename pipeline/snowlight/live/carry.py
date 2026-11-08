@@ -16,7 +16,12 @@ itself, treats the rows the ledger holds present as the rows of that read, while
 ``last_good_at`` is still the one listed: it holds them while both the listed end and its own
 G13 bound (from that read's own time) allow, so a status is never shown longer than the run
 before would have shown it, and reuses only derivations made under its own version. Its own
-first good read of the source replaces them, as any later read does.
+first good read of the source replaces them, as any later read does. A successor whose clock
+runs behind the run before's, by up to :data:`~snowlight.live.guards.FUTURE_LEEWAY`, finds
+last good reads stamped ahead of its clock: G13 counts each as made now (age 0, never
+younger), so it holds and lists the source, and the hold still ends at that read's own time
+plus the bound, the instant a run in step would end it, or sooner, when the withholding of a
+source whose resolve failed ends first (below).
 
 The record travels in the pushed state with the ledger, and a successor uses it only when it
 is the run before's last word: ``live finish --record``, the step after the reader has ended
@@ -42,8 +47,12 @@ pass, as in any run) or a read of it cannot be taken in, and never past the end 
 record carries nothing at all, and never extended by a run that only inherited it (its own
 record lists the source with the same end, or that bound from its own record's time when
 that is earlier: a clock running behind the run before's, which the run after would
-otherwise refuse as ``unreadable``). A failure that passed at the run before's last
-pass so darkens those states in the successor until its own read, at most that end. The
+otherwise refuse as ``unreadable``; so the withholding can end up to that minute sooner,
+and the run after then lights the other sources' statuses in those states, each under its own
+G13 bound, while the withheld source's own stay dark: a run lists a withheld source as held no
+later than its withholding ends, so no carried status of it outlasts the withholding). A
+failure that passed at the run before's last pass so darkens those states in the successor
+until its own read, at most that end. The
 record is also used only when it is not older than the closings file the live host serves now (its
 ``generated_at``, read back once at the start: one call to our own host's API per process
 start; a refusal it meets is kept by the host client for the process): any later writer's
@@ -63,14 +72,12 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Final, NamedTuple
 
-from snowlight.live.guards import Rules
+from snowlight.live.guards import FUTURE_LEEWAY, Rules
 from snowlight.output import JSONValue, dumps_json, write_bytes_atomic
 
 LOG: Final = logging.getLogger(__name__)
 CARRY: Final = "carry.json"
 CARRY_VERSION: Final = 2
-FUTURE_LEEWAY: Final = timedelta(seconds=60)
-"""A record stamped later than this after the reader's clock is not trusted."""
 
 
 class Carried(NamedTuple):
@@ -226,12 +233,20 @@ def _aware(value: object) -> datetime | None:
 
 
 def _entry(value: object, written: datetime, longest: timedelta) -> Carried | None:
-    """One listed source, or ``None`` when it does not hold together (a read later than the
-    record, or a hold ending before its read or longer than the longest bound)."""
+    """One listed source, or ``None`` when it does not hold together (a read more than
+    :data:`~snowlight.live.guards.FUTURE_LEEWAY` later than the record, or a hold ending
+    before its read or longer than the longest bound). A read up to that leeway later is the
+    run before's clock running ahead of the writer's, which G13 held
+    (:func:`~snowlight.live.guards.held`)."""
     if not isinstance(value, dict):
         return None
     good, until = _aware(value.get("good")), _aware(value.get("until"))
-    if good is None or until is None or good > written or not good <= until <= good + longest:
+    if (
+        good is None
+        or until is None
+        or good > written + FUTURE_LEEWAY
+        or not good <= until <= good + longest
+    ):
         return None
     return Carried(good, until)
 

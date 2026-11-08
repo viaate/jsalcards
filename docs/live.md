@@ -58,7 +58,14 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   run before, even when the successor counts the source quiet because its first alerts read
   failed (a new process has no alert set to keep yet); and only derivations stored under its
   own version light (another version only darkens). Its own record keeps the earlier end for
-  the run after it. Its own first good read of the source replaces them, as any later read
+  the run after it. A successor whose clock runs behind the run before's, by up to the minute
+  a record may be ahead, finds that run's last good reads stamped ahead of its clock: G13
+  counts such a read as made now (age 0, never younger), so the source stays held and in its
+  own record, and its hold still ends at that read's time plus the bound on the successor's
+  clock, the instant a run in step ends it, or sooner when the source's states are withheld
+  for a failing resolve and that withholding ends first (below; a read further ahead is not
+  held, as before). Its
+  own first good read of the source replaces them, as any later read
   does; a read that fails (`error`, `partial`, `late`, a wait or a block) leaves them as the
   run before would have: held until G13 or the listed end stops them. So a source whose last
   read failed, which is not read early, stays shown exactly as long as the run before would
@@ -104,8 +111,14 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   failed. A run that only inherited the listing hands it on with the same end, or with 90
   minutes from its own record's time when that is earlier (its clock running behind the run
   before's, by up to the minute a record may be ahead; the run after would refuse a later end
-  as `unreadable` and carry nothing), so it never outlives that bound, and a source the run
-  before no longer held is listed the same way. The
+  as `unreadable` and carry nothing), so it never outlives that bound, and the withholding can
+  end up to that minute sooner: a pass of the run after inside that minute lights the other
+  sources' statuses in those states, which a run in step still withholds, each under its own
+  G13 bound; the withheld source's own stay dark. A run lists a withheld source as held no
+  later than the end of its withholding, so the run after never lights that source's carried
+  statuses once the withholding ends (with its clock behind, a last good read up to that
+  minute ahead would otherwise hold it up to that minute longer). A source the run before
+  no longer held is listed the same way. The
   withholding counts toward the two-pass alert as any unknown source does. The cost falls on a
   failure that had passed at the run before's last pass: those states stay dark in the
   successor until its own read of the source (a source whose last good read held rows is

@@ -221,15 +221,26 @@ def names_part(text: str) -> bool:
 # --- holds and the breaker --------------------------------------------------------------------
 
 
-def held(last_good_at: datetime | None, now: datetime, *, boosted: bool, rules: Rules) -> bool:
-    """G13: whether a source's statuses still stand at ``now``.
+FUTURE_LEEWAY: Final = timedelta(seconds=60)
+"""How far ahead of the process clock a time another process stamped may be and still count:
+a last good read (G13, :func:`held`) and a handover record (:mod:`snowlight.live.carry`)."""
 
-    ``boosted`` is whether the source is in a reading window or an alert.
+
+def held(last_good_at: datetime | None, now: datetime, *, boosted: bool, rules: Rules) -> bool:
+    """G13: whether a source's statuses still stand at ``now``: while the last good read's age
+    is at most the bound for the source (its time plus that bound, on the process clock).
+
+    ``boosted`` is whether the source is in a reading window or an alert. A last good read
+    at most :data:`FUTURE_LEEWAY` ahead of ``now`` (stamped by a run before whose clock ran
+    ahead of this one's) counts as made now, age 0, never younger: it is held, and its hold
+    still ends at its own time plus the bound on the process clock, the instant a run whose
+    clock is in step with the one that stamped it ends it, so no status stands longer than
+    its own age rule there. One further ahead is not held.
     """
     if last_good_at is None:
         return False
     limit = rules.hold_boosted if boosted else rules.hold_quiet
-    return timedelta(0) <= now - last_good_at <= limit
+    return -FUTURE_LEEWAY <= now - last_good_at <= limit
 
 
 def breaker_limit(source_id: str, rules: Rules) -> int:

@@ -430,21 +430,27 @@ def test_read_carry_never_raises(tmp_path: Path, caplog: pytest.LogCaptureFixtur
     assert read_carry(tmp_path / "s.json", key=key, now=moment, rules=RULES, published=served) == {
         A: hold
     }
-    # an entry later than the record's own time, or whose hold ends before its read or runs
-    # past the longest bound, is dropped
+    # an entry more than a minute later than the record's own time (up to a minute: the run
+    # before's clock ahead of the writer's, which G13 held), or whose hold ends before its
+    # read or runs past the longest bound, is dropped
+    ahead = Carried(T0 + timedelta(minutes=1), T0 + timedelta(minutes=2))
     write_carry(
         path,
         key=key,
         now=T0,
         held={
             A: Carried(T0, T0),
-            B: Carried(T0 + timedelta(minutes=1), T0 + timedelta(minutes=2)),
+            B: Carried(T0 + timedelta(seconds=61), T0 + timedelta(minutes=2)),
+            "e": ahead,
             "c": Carried(T0, T0 - timedelta(seconds=1)),
             "d": Carried(T0, T0 + timedelta(minutes=91)),
         },
     )
     _end(path)
-    assert read_carry(path, key=key, now=T0, rules=RULES, published=served) == {A: Carried(T0, T0)}
+    assert read_carry(path, key=key, now=T0, rules=RULES, published=served) == {
+        A: Carried(T0, T0),
+        "e": ahead,
+    }
 
 
 def test_the_record_is_packed_and_pushed_but_never_exported(tmp_path: Path) -> None:
@@ -1162,10 +1168,12 @@ def test_a_successor_clock_behind_hands_on_what_one_in_step_hands_on(
     # the run before's (inside FUTURE_LEEWAY): it reads T0+9:50 and relisted A until T0+100,
     # 10 s more than 90 minutes after its own record, so the run after refused the whole
     # record (unreadable) and lit B's statuses in A's state at once. Now the end is clamped
-    # to 90 minutes from the record (never later than given), and the run after serves at
-    # every pass what it serves after a successor whose clock is right: in "queue" what one
-    # run that never stopped serves; in "last pass" the same once it reads A (the cost the
-    # record's withholding has), A's statuses then aging out on their own rule (T0+60 + 90)
+    # to 90 minutes from the record (never later than given), so the withholding can end up
+    # to that minute sooner (a pass inside it: the test after this one), and at these passes
+    # the run after serves what it serves after a successor whose clock is right: in "queue"
+    # what one run that never stopped serves; in "last pass" the same once it reads A (the
+    # cost the record's withholding has), A's statuses then aging out on their own rule,
+    # 90 minutes from T0+60
     rows = _code_fault("queue", monkeypatch) if fault == "queue" else A_ROWS
     true = T0 + timedelta(minutes=10, seconds=20)
     seen: dict[str, list[set[tuple[int, str]]]] = {}
@@ -1202,3 +1210,278 @@ def test_a_successor_clock_behind_hands_on_what_one_in_step_hands_on(
         assert seen["in step"] == [
             set() if m < 60 else both if m <= 150 else b_only for m in passes
         ]
+
+
+def _ages_rightly(world: World, run: Ingest, now: datetime) -> None:
+    """No status ``run`` holds at ``now`` is older than its own G13 bound, nor a carried one
+    past the end the run before applied."""
+    for state in world.ledger.sources():
+        until = run.hold_until(now).get(state.source_id)
+        if until is not None:
+            assert state.last_good_at is not None
+            assert now <= until <= state.last_good_at + RULES.hold_quiet
+            assert now - state.last_good_at <= RULES.hold_quiet
+            carried = run.carried.get(state.source_id)
+            assert carried is None or until <= carried.until
+
+
+@pytest.mark.parametrize("skew", [30, 60])
+def test_a_successor_clock_behind_ends_an_inherited_withholding_up_to_that_minute_sooner(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, skew: int
+) -> None:
+    # S1 (SYNTHETIC, lead ruling: accepted): the clamp above ends the withholding the behind
+    # successor hands on at 90 minutes from its own record (T0+10:20 less the skew), up to
+    # that minute before the end given (T0+100). The run after never reads A: at a pass
+    # inside that window it lights the other source's status in the states a run in step
+    # still withholds, B's from its own read of that pass (age 0), while A's own stays dark:
+    # the record lists A held no later than its withholding ends (B1: A's read at T0+10 is
+    # ahead of the behind clock, so G13 held it to T0+100). No status it serves is older than
+    # its own G13 bound, and from T0+100:05 both serve the same
+    rows = _code_fault("queue", monkeypatch)
+    true = T0 + timedelta(minutes=10, seconds=20)
+    end = true - timedelta(seconds=skew) + timedelta(minutes=90)
+    window = [end + timedelta(seconds=5), T0 + timedelta(minutes=100)]
+    after = T0 + timedelta(minutes=100, seconds=5)
+    passes = [T0 + timedelta(minutes=m) for m in range(15, 105, 15)] + [*window, after]
+    seen: dict[str, list[set[tuple[int, str]]]] = {}
+    for mode in ("in step", "behind"):
+        world, host, run, path = _failing_at_the_last_pass(
+            tmp_path / mode, monkeypatch, "queue", rows
+        )
+        _end(path)
+        clock = true if mode == "in step" else true - timedelta(seconds=skew)
+        run = _ingest(world, tmp_path / mode / "s", host)
+        run.start_carry(path, clock)
+        run.run_pass([_ok(B, clock)], clock)
+        _end(path)
+        run = _ingest(world, tmp_path / mode / "third", host)
+        run.start_carry(path, passes[0])
+        withheld = T0 + timedelta(minutes=100) if mode == "in step" else end
+        assert run.inherited == {A: withheld}
+        # A's hold as listed: its read's time plus the bound, never past its withholding
+        assert run.carried[A] == Carried(T0 + timedelta(minutes=10), withheld)
+        seen[mode] = []
+        for now in passes:
+            assert run.run_pass([_ok(B, now)], now).exit is Exit.OK
+            seen[mode].append(_published(host))
+            _ages_rightly(world, run, now)
+            if now in window:
+                # B's read of this pass, age 0; A held in step alone, where its withholding
+                # still stands, and dark behind, where it has ended
+                state = world.ledger.source(B)
+                assert state is not None
+                assert state.last_good_at == now
+                assert run.held(now) == {A: mode == "in step", B: True}
+                assert run.still_inherited(now) == ({} if mode == "behind" else {A: withheld})
+    dark: set[tuple[int, str]] = set()
+    b_only = {(10, "CLOSED")}
+    before = len(passes) - len(window) - 1
+    assert seen["in step"] == [dark] * (before + len(window)) + [b_only]
+    assert seen["behind"] == [dark] * before + [b_only] * len(window) + [b_only]
+
+
+@pytest.mark.parametrize("ahead", [10, 30, 60])
+def test_a_successor_clock_behind_never_lights_a_source_its_own_resolve_withholds_past_the_end(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, ahead: int
+) -> None:
+    # B1 (SYNTHETIC): the run before reads A and B at T0, T0+5 and T0+10 (its upload at
+    # T0+10 fails, so the host serves T0+5) and resolves both. The successor's clock reads
+    # ``ahead`` seconds before T0+10, A's last good read, and its own resolve of the carried
+    # A fails: it withholds A's states and lists A unknown for 90 minutes from its record,
+    # T0+100 less ``ahead``. G13 holds A's read ahead of its clock (age 0) to T0+100, but its
+    # record lists A held no later than the withholding ends, so the run after never lights
+    # A's own statuses (derivations no resolve confirmed since) past that end: B's lights
+    # alone, and at no pass is a status older than its own G13 bound
+
+    def failing(_self: Publisher, _files: object) -> None:
+        raise OSError
+
+    world = _world()
+    host = tmp_path / "host"
+    run = _ingest(world, tmp_path / "p", host)
+    path = tmp_path / CARRY
+    run.start_carry(path, T0)
+    for minutes in (0, 5, 10):
+        now = T0 + timedelta(minutes=minutes)
+        with monkeypatch.context() as patch:
+            if minutes == 10:
+                patch.setattr(DirPublisher, "write", failing)
+            run.run_pass([_ok(B, now), _ok(A, now)], now)
+    _end(path)
+    good = T0 + timedelta(minutes=10)
+    clock = good - timedelta(seconds=ahead)
+    successor = _ingest(world, tmp_path / "s", host)
+    successor.start_carry(path, clock)
+    assert set(successor.carried) == {A, B}
+    with monkeypatch.context() as patch:
+        _failing_for(successor, patch)
+        # its gate refuses the pass (a source whose say is unknown); it still writes its record
+        successor.run_pass([_ok(B, clock)], clock)
+    assert successor.unresolved == {A}
+    assert successor.held(clock)[A]
+    end = clock + timedelta(minutes=90)
+    record = json.loads(path.read_text())
+    assert record["unknown"] == {A: end.isoformat()}
+    assert record["sources"][A] == {"good": good.isoformat(), "until": end.isoformat()}
+    _end(path)
+    third = _ingest(world, tmp_path / "third", host)
+    start = T0 + timedelta(minutes=15)
+    third.start_carry(path, start)
+    assert third.inherited == {A: end}
+    assert third.carried[A] == Carried(good, end)
+    second = timedelta(seconds=1)
+    window = [end + second, end + timedelta(seconds=5), good + timedelta(minutes=90)]
+    marks = [start, T0 + timedelta(minutes=60), end - timedelta(seconds=5), end, *window]
+    seen = []
+    for now in [*marks, good + timedelta(minutes=90, seconds=5)]:
+        assert third.run_pass([_ok(B, now)], now).exit is Exit.OK
+        seen.append(_published(host))
+        _ages_rightly(world, third, now)
+        assert not third.held(now)[A] or now <= end
+    b_only = {(10, "CLOSED")}
+    assert seen == [set()] * 4 + [b_only] * (len(window) + 1)
+
+
+def test_a_carried_hold_never_outlasts_a_withholding_inherited_for_its_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # B1 (SYNTHETIC, defence in depth): a record listing A held past the withholding it
+    # lists for A (as a writer before the cap in record_carry could): the successor ends A's
+    # hold with the withholding, so A's own statuses never light once it ends. And a
+    # withholding ending before a read ahead of the clock leaves that source out of the record
+    rows = _code_fault("queue", monkeypatch)
+
+    def handed_over(folder: Path, withheld: datetime) -> tuple[World, Path, Path]:
+        world, host, _, path = _failing_at_the_last_pass(folder, monkeypatch, "queue", rows)
+        _end(path)
+        doc = json.loads(path.read_text())
+        assert doc["sources"][A] == {"good": _stamp(10), "until": _stamp(100)}
+        doc["unknown"] = {A: withheld.isoformat()}
+        path.write_text(json.dumps(doc))
+        return world, host, path
+
+    withheld = T0 + timedelta(minutes=99, seconds=30)
+    world, host, path = handed_over(tmp_path / "one", withheld)
+    successor = _ingest(world, tmp_path / "one" / "s", host)
+    successor.start_carry(path, T0 + timedelta(minutes=15))
+    assert successor.carried[A] == Carried(T0 + timedelta(minutes=10), T0 + timedelta(minutes=100))
+    assert successor.inherited == {A: withheld}
+    found = []
+    for now in (withheld - timedelta(seconds=10), withheld + timedelta(seconds=15)):
+        assert successor.run_pass([_ok(B, now)], now).exit is Exit.OK
+        found.append((successor.held(now)[A], _published(host)))
+        _ages_rightly(world, successor, now)
+    assert found == [(True, set()), (False, {(10, "CLOSED")})]
+
+    # a clock 40 s behind A's read at T0+10 (G13 holds it), A withheld until T0+9:40
+    soon = T0 + timedelta(minutes=9, seconds=40)
+    world, host, path = handed_over(tmp_path / "two", soon)
+    clock = T0 + timedelta(minutes=9, seconds=20)
+    behind = _ingest(world, tmp_path / "two" / "s", host)
+    behind.start_carry(path, clock)
+    behind.run_pass([_ok(B, clock)], clock)
+    assert behind.held(clock)[A]
+    record = json.loads(path.read_text())
+    assert record["unknown"] == {A: soon.isoformat()}
+    assert A not in record["sources"]
+
+
+def _upload_failing_at_the_last_pass(
+    folder: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[World, Path, Path]:
+    """The run before: A and B read at T0, B again at T0+5 and T0+10; its upload at T0+10
+    fails, so the host serves T0+5. Returns its world, host and final record (A held until
+    T0+90, B until T0+55)."""
+
+    def failing(_self: Publisher, _files: object) -> None:
+        raise OSError
+
+    world = _world()
+    host = folder / "host"
+    run = _ingest(world, folder / "p", host)
+    path = folder / CARRY
+    run.start_carry(path, T0)
+    for minutes in (0, 5, 10):
+        now = T0 + timedelta(minutes=minutes)
+        reads = [_ok(B, now), *([_ok(A, now)] if not minutes else [])]
+        with monkeypatch.context() as patch:
+            if minutes == 10:
+                patch.setattr(DirPublisher, "write", failing)
+            run.run_pass(reads, now)
+    _end(path)
+    return world, host, path
+
+
+@pytest.mark.parametrize("ahead", [10, 30, 60, 61])
+def test_a_successor_clock_behind_keeps_a_read_ahead_of_it_held_and_handed_on(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, ahead: int
+) -> None:
+    # S2 (SYNTHETIC): the successor's first pass reads its clock ``ahead`` seconds before
+    # T0+10, the run before's last good read of B, and its own read of B is late (not newer
+    # than the ledger's). Before, G13 held B for no read ahead of the clock: B went dark at
+    # that pass, its record left B out, and the run after carried nothing of it. Now a read
+    # up to a minute ahead counts as made now: B stays held and in the record, the run after
+    # carries it, and every hold ends at the same instant on each process's clock as after a
+    # successor in step. 61 s ahead keeps today's handling: the record is stamped too far
+    # ahead (``future``), nothing is carried, and B's read is held for no one
+    found: dict[
+        str, tuple[dict[str, bool], set[int], dict[str, object], dict[str, Carried], set[int]]
+    ] = {}
+    ends: dict[str, list[tuple[dict[str, bool], dict[str, bool]]]] = {}
+    marks = [
+        T0 + timedelta(minutes=55),
+        T0 + timedelta(minutes=55, seconds=1),
+        T0 + timedelta(minutes=90),
+        T0 + timedelta(minutes=90, seconds=1),
+    ]
+    start = T0 + timedelta(minutes=15)
+    for mode, skew in (("in step", 0), ("behind", ahead)):
+        world, host, path = _upload_failing_at_the_last_pass(tmp_path / mode, monkeypatch)
+        clock = T0 + timedelta(minutes=10, seconds=-skew)
+        successor = _ingest(world, tmp_path / mode / "s", host)
+        successor.start_carry(path, clock)
+        successor.run_pass([_ok(B, clock)], clock)
+        state = world.ledger.source(B)
+        assert state is not None
+        assert state.last_good_at == T0 + timedelta(minutes=10)
+        _ages_rightly(world, successor, clock)
+        held_then = successor.held(clock)
+        served_then = {school for school, _ in shown(successor, clock)}
+        record = json.loads(path.read_text())["sources"]
+        _end(path)
+        third = _ingest(world, tmp_path / mode / "third", host)
+        third.start_carry(path, start)
+        # what its first pass would serve before any read of its own (before the gate)
+        lit_then = {school for school, _ in shown(third, start)}
+        _ages_rightly(world, third, start)
+        found[mode] = (held_then, served_then, record, dict(third.carried), lit_then)
+        ends[mode] = [(successor.held(m), third.held(m)) for m in marks]
+        for moment in marks:
+            _ages_rightly(world, successor, moment)
+            _ages_rightly(world, third, moment)
+    assert found["in step"] == (
+        {A: True, B: True},
+        {0, 10},
+        {
+            A: {"good": _stamp(0), "until": _stamp(90)},
+            B: {"good": _stamp(10), "until": _stamp(55)},
+        },
+        {
+            A: Carried(T0, T0 + timedelta(minutes=90)),
+            B: Carried(T0 + timedelta(minutes=10), T0 + timedelta(minutes=55)),
+        },
+        {0, 10},
+    )
+    # B to T0+55 and A to T0+90, on the successor's clock and on the run after's
+    assert ends["in step"] == [
+        ({A: True, B: True},) * 2,
+        ({A: True, B: False},) * 2,
+        ({A: True, B: False},) * 2,
+        ({A: False, B: False},) * 2,
+    ]
+    if ahead <= 60:
+        assert found["behind"] == found["in step"]
+        assert ends["behind"] == ends["in step"]
+    else:
+        assert found["behind"] == ({A: False, B: False}, set(), {}, {}, set())
+        assert ends["behind"] == [({A: False, B: False},) * 2] * len(marks)

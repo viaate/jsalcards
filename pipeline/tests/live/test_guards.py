@@ -6,6 +6,7 @@ import pytest
 
 from live.world import at
 from snowlight.live.guards import (
+    FUTURE_LEEWAY,
     MAX_GZIP_BYTES,
     GateInput,
     Refusal,
@@ -28,7 +29,29 @@ def test_g13_holds() -> None:
     assert held(now - timedelta(minutes=90), now, boosted=False, rules=rules)
     assert not held(now - timedelta(minutes=91), now, boosted=False, rules=rules)
     assert not held(None, now, boosted=True, rules=rules)
-    assert not held(now + timedelta(minutes=1), now, boosted=True, rules=rules)
+    assert not held(now + timedelta(seconds=61), now, boosted=True, rules=rules)
+
+
+@pytest.mark.parametrize("ahead", [10, 30, 60])
+@pytest.mark.parametrize(("boosted", "bound"), [(True, 45), (False, 90)])
+def test_g13_holds_a_read_up_to_a_minute_ahead_until_its_own_bound(
+    ahead: int, boosted: bool, bound: int
+) -> None:
+    # a last good read stamped by a run before whose clock ran ahead of this one's counts as
+    # made now (age 0, never younger): held, and its hold still ends at its own time plus the
+    # bound on this clock, the instant a run in step with the stamping clock ends it
+    rules = Rules()
+    good = at("2026-11-17 12:00")
+    now = good - timedelta(seconds=ahead)
+    assert timedelta(seconds=60) == FUTURE_LEEWAY
+    assert held(good, now, boosted=boosted, rules=rules)
+    assert held(good, good, boosted=boosted, rules=rules)
+    last = good + timedelta(minutes=bound)
+    assert held(good, last, boosted=boosted, rules=rules)
+    assert not held(good, last + timedelta(seconds=1), boosted=boosted, rules=rules)
+    # further ahead than the leeway: not held, as before
+    early = good - FUTURE_LEEWAY - timedelta(seconds=1)
+    assert not held(good, early, boosted=boosted, rules=rules)
 
 
 def test_g9_breaker_limits() -> None:

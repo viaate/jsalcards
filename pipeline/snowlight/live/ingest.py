@@ -528,10 +528,12 @@ class Ingest:
     ) -> dict[str, datetime | None]:
         """G13 per source, for the sources read in this process and those carried: the end of
         the hold that stands at ``now`` (its last good read's time plus the bound for the
-        source now), or ``None``. A carried source is held only while the end the run before
+        source now; a read up to a minute ahead of ``now`` counts as made now, :func:`held`),
+        or ``None``. A carried source is held only while the end the run before
         applied allows too, so its statuses never stand longer than they would have there
         (this process's bound alone could be the longer quiet one: an alert set it has not
-        read yet)."""
+        read yet), and never past the end of a withholding inherited for it
+        (:attr:`inherited`): its own statuses stay dark once that ends."""
         found: dict[str, datetime | None] = {}
         states = self.ledger.sources() if states is None else states
         carrying = self.carrying(states)
@@ -549,6 +551,10 @@ class Ingest:
                     until = good + (self.rules.hold_boosted if boosted else self.rules.hold_quiet)
                     if sid in carrying:
                         until = min(until, self.carried[sid].until)
+                        if sid in self.inherited:
+                            # never past the withholding the run before listed for its
+                            # failing resolve: no resolve confirmed these derivations since
+                            until = min(until, self.inherited[sid])
                         until = until if now <= until else None
             found[sid] = until
         return found
@@ -576,9 +582,11 @@ class Ingest:
         ``unknown`` map that is not a map of times, or ends more than 90 minutes after the
         record, included), of another version or key, not final, stamped more than a minute
         ahead of this clock, over 90 minutes old, or older than the file the host serves, and a
-        host that cannot be read or holds no file, carries nothing at all; a listed entry that
-        does not hold together is left out alone. One codes-and-counts line (``carry: ...``);
-        never raises."""
+        host that cannot be read or holds no file, carries nothing at all; a held source's
+        entry that does not hold together (not a pair of times, its read more than a minute
+        later than the record, or its end before that read or more than 90 minutes after it)
+        is left out alone. One codes-and-counts line (``carry: ...``; ``carry: none (error
+        <type>)`` when reading the record raises); never raises."""
         self.carry_key = carry_key(self.resolver.version, self.rules)
         record = read_record(
             path, key=self.carry_key, now=now, rules=self.rules, published=self._served_at
@@ -595,7 +603,8 @@ class Ingest:
         :func:`~snowlight.live.carry.withheld_until` from now, and those it still withholds
         for the run before, with the end that run gave, or that bound from now when that is
         earlier: a clock running behind the run before's), for the run after it
-        (:mod:`snowlight.live.carry`). A failed write is logged by its type."""
+        (:mod:`snowlight.live.carry`). A source listed both ways is held no later than its
+        withholding ends. A failed write is logged by its type."""
         if self.carry_path is None:
             return
         held_at = {
@@ -605,11 +614,24 @@ class Ingest:
         }
         # never past the longest bound from this record's own time, nor later than given: a
         # clock behind the run before's (inside FUTURE_LEEWAY) would otherwise relist an end
-        # past it, and the run after would refuse the whole record (``unreadable``)
+        # past it, and the run after would refuse the whole record (``unreadable``); so the
+        # withholding can end up to that minute sooner, the other sources' statuses in those
+        # states then each under its own G13 bound
         bound = withheld_until(now, self.rules)
         unknown = {sid: min(end, bound) for sid, end in self.still_inherited(now).items()}
         for sid in self.unresolved:
             unknown[sid] = bound
+        # a withheld source's hold never outlasts its withholding: a last good read up to
+        # FUTURE_LEEWAY ahead of this clock (G13 holds it) would otherwise list it held up to
+        # that minute past the end listed, and the run after would light its own statuses
+        # from derivations no resolve confirmed; so it stays dark then (an end before its
+        # read leaves it out)
+        for sid, end in unknown.items():
+            if (entry := held_at.get(sid)) is not None:
+                if end < entry.good:
+                    del held_at[sid]
+                else:
+                    held_at[sid] = Carried(entry.good, min(entry.until, end))
         self.carry_bytes = write_carry(
             self.carry_path, key=self.carry_key, now=now, held=held_at, unknown=unknown
         )
