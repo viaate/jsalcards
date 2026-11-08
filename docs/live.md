@@ -664,8 +664,40 @@ explicit date (the date dates the row instead: "Closed Thursday, Nov. 5"), a rel
 ("today", "tomorrow", "next") or a word that puts the status before ("previously", "earlier",
 "was"), a weekday as the end or another day ("until Thursday", "reopens on Thursday", "back to
 school Thursday", "through Thursday", "instead of Friday", "rather than Friday", "not Friday",
-"moved to Friday"), a weekday followed by a day number ("Thursday 29", "Thursday #29"), a span
-("Mon-Wed") or a holiday's name ("Ash Wednesday", "Black Friday") (`live/weekdays.py`). A date is stated as a
+"moved to Friday"), a weekday followed by a day number that is not the day it lights ("Thursday
+29" on Nov. 5) or by one with a mark ("Thursday #5"), or after one ("Closed 29 Thursday"), a
+weekday a notice went out on ("Issued Friday", "Released Friday", "Friday post", "per Friday's
+notice"; "Thursday's classes are cancelled" names Thursday), a span ("Mon-Wed") or a holiday's
+name ("Ash Wednesday", "Black Friday") (`live/weekdays.py`). "Closed Thursday 5" first seen
+Thursday Nov. 5 lights. Nor is it read, and the row stays held, when the words:
+
+- give a posting age of a day or more, or one that cannot be read exactly ("(1w)", "• 6d", "2d",
+  "1d", "24h", "1440m", "1 wk", "3 days ago", "a few hours ago", "Posted yesterday" with no time;
+  a length in days with no "ago", "2 days", counts as one). An age under a day ("2h", "8h",
+  "23h", "5m", "an hour ago", "just now") dates the posting to the read's day or the evening or
+  night before, as a stamp of the day before does ("Posted Wed 9pm", "Posted yesterday at 9 PM",
+  "Updated last night" read Thursday), and the row lights: "Closed Thursday • 8h" first seen
+  Thursday at 06:00 lights. The bound is the same from every read, so a feed age that ticks
+  between reads ("• 1h", then "• 2h", then "• 8h") keeps a lit row lit, and one that reaches a
+  day ("• 1d") darkens it. A delay's length of up to five hours ("2 hr delay", "2 hr. delay",
+  "Open 2 Hrs. Late", "90 Min. Delay", "2 hours late", "delayed 2 hours", "Delayed Thursday 2
+  Hours") is no age; a longer one, or one after a bullet, a dot or a spaced dash, is ("Delayed
+  Thursday • 168h" stays held);
+- hold a number that may be a month and day, with a year or not ("1029", "#1105", "115": Jan.
+  15 or Nov. 5; "1029-26", "102926", "10292026": Oct. 29, 2026) and is not, in every reading,
+  the day the row lights ("Closed Thursday 1105" and "Closed Thursday 110526" light on Nov. 5),
+  unless the words just around it make it exactly no date: a bus, route, room or district
+  number ("Bus 1029", "Room 104", "USD 105"), a clock time ("at 1030", "1030 am", "0530 hrs") or
+  a length ("120 minute delay"); "0530" alone may be May 30 and holds. A day number standing
+  alone as the first or the last clause ("29: Closed Thursday", "Closed Thursday, 29"), never
+  one of a list of numbers ("routes 2, 3, 4"), holds unless it is the day;
+- say the school is open again or back on its schedule ("open since", "reopened", "resumed",
+  "back in session", "classes resume", "normal schedule", "now open", "lifted", "all clear"), or
+  that the closure or delay is over ("closure over", "delay cancelled", "closing rescinded"): the
+  row may report a closure that has ended. "Closed Thursday, open Friday" and "Delayed opening
+  Thursday" still light.
+
+A date is stated as a
 month and day, a numeric or an ISO date in no other year ("Closed Nov 5, 2025" and "Closed Nov. 5
 '25" stay held), and the same end words and spans keep a date from dating its row, today's date
 too: "Closed until Nov. 5", "Classes resume Nov. 5", "Closed through Nov. 5" and "Closed Nov.
@@ -686,13 +718,17 @@ still name their weekday.
 A row's own dates bound it. Its row date, when it has one (a row stamp too old to date it, or a
 date-only row date such as Gray's), and each stamp in its words ("Posted 10/29", "Updated Oct.
 29", "(updated Oct 29, 2025)", "Updated 2026-10-29", "Posted Wednesday, October 28", "Updated
-Wednesday 9:00 PM", "Posted yesterday"; a date with no year is the latest such date, a weekday
-alone the latest such weekday) must fall after the same weekday a week before the day it lights
+Wednesday 9:00 PM", "Updated last night", "Posted yesterday at 9 PM"; a date with no year is the latest such date, a weekday
+alone the latest such weekday when that is the read's day or the day before) must fall after the same weekday a week before the day it lights
 and not after the read's local day, on the weekday path and the date path alike: "Closed
 Thursday. Posted 10/29" read Thursday Nov. 5 is last week's and stays held, "Closed Thursday.
 Updated Nov. 4" lights. A row date that cannot be read, one after the read, and a stamp that
-carries a day it does not read exactly ("Updated last week", "Posted 3 days ago", "Posted Feb.
-30", a weekday that is not its date's) keep the hold; a stamp with no day ("Updated 5:30 AM",
+carries a day it does not read exactly ("Updated last week", "Posted 3 days ago", "Posted
+yesterday" with no time, "Posted Feb. 30", a weekday that is not its date's, and a weekday alone two or more
+days back, which may be any week's or after the day the row is for: "Posted Friday", "Updated
+Saturday" or "Posted Mon" read Thursday) keep the hold, while "Closed Thursday. Posted Wed 9pm"
+and "Closed Thursday. Posted Thu" read Thursday still light; an age in a stamp ("Updated 2 hours
+ago") gives no day and is bounded as every age is; a stamp with no day ("Updated 5:30 AM",
 "Posted by the district") bounds nothing. A stamp is read over all the words the weekday rule
 leaves out as the stamp: from its stamp word to the first ".", ";" or "|", across lines, with a
 date or time that runs on past a "." read whole ("Oct. 29", "6 a.m."). Words in it that give no
@@ -702,8 +738,8 @@ give no day), and any number, month, weekday or relative day word in it that it 
 part of a date, a time or a day makes the stamp unreadable ("Posted by District 5", "Updated by
 staff, 29 October"): the row stays held. What a "." leaves in the status words is read by the
 status rules, and a date there in a form they do not read ("29 October", "10-29", "10.29" or
-"29.10", "20261029", a day number in parentheses "(29)", a month alone) or a time counted from the posting ("3 days ago") names no weekday or
-date for this rule either: "Closed Thursday. Posted by Supt. Lee 10-29" stays held. A weekday or
+"29.10", "20261029", a day number in parentheses "(29)", a month alone) or a posting age of a
+day or more ("3 days ago") names no weekday or date for this rule either: "Closed Thursday. Posted by Supt. Lee 10-29" stays held. A weekday or
 date inside a stamp never names the day the row is for. A page's own stamp (page-scoped or unmarked) still dates nothing and is no part
 of a key (D2), but when it reads as a day on or before the same weekday a week before, the page
 was last changed then and so was the row: it keeps the hold.
@@ -744,7 +780,14 @@ keeps 14 days of good reads, so it watches long enough from the start. The one c
 is a source a ledger that has watched for a week has never read (new to the registry, or failing
 until now), read cold for the first time while it still shows a row from an earlier week that
 names today's weekday: the reader cannot tell, and the day the row names, today or an evening's
-tomorrow, bounds it.
+tomorrow, bounds it. That first read carries on through the same local day as built (the
+lead's ruling): a warm read later that day carries the row on, and a tied successor that
+escalates it ("2 hour delay Thursday" first, "Closed Thursday" an hour later) lights too, since a
+successor's `earliest` is its predecessor's first sighting, the same day. It never outlasts the
+day the words name. The live ledger's own counts find such reads rare: in the four consecutive
+live reads up to Nov. 7, 2026 that round 4 measured, every list group counted "never read 0",
+and of the 193 rows the cold census held as `unknown_start`, 0 came from a first read of their
+source or a gap.
 
 A self-dated row gives no announced time, and merge takes it as posted at an unknown time: when
 it is the newest word for a school and day, every other row for that school and day counts as

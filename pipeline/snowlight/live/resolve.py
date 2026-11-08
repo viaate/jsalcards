@@ -32,40 +32,43 @@ spec 7.4):
    stretch of the interval where its answer is constant is read at least once.
    Every reading must agree (``ZONE_SPLIT`` across zones at one time,
    ``INTERVAL_DISAGREES`` across times).
-   **Self-dating.** A row held because its posting time is unknown (``UNKNOWN_START``: no
-   fresh row stamp and ``lo`` unknown) whose status words name a weekday
-   (:func:`~snowlight.live.weekdays.named_weekdays`: "Closed Thursday", "Closed Thu &
-   Fri"; never a weekday after "until", "reopens" or "returns", in a span, a holiday's
-   name, a stamp, a proper name, the row's name or a directory name of its schools or
-   matched record, and never beside an explicit date or a relative day word) or state a
-   date (:func:`~snowlight.live.weekdays.names_date`: "Closed Nov. 5", "Closed Thursday,
-   Nov. 5": the date wins) is dated by that day when it is the school's local today at the
-   first sighting ``hi`` in every zone, or tomorrow on an evening read (the reader dates a
-   bare status read at ``hi`` the next day, and would on a weekday at the same local time:
-   so never a Sunday morning for Monday). The row's own dates, when it has them (its row
-   stamp, a date-only row date, and each stamp in its words:
+   **Self-dating.** A row held because its posting time is unknown (``UNKNOWN_START``: no fresh
+   row stamp and ``lo`` unknown) whose status words name a weekday
+   (:func:`~snowlight.live.weekdays.named_weekdays`: "Closed Thursday", "Closed Thu & Fri";
+   never a weekday after "until", "reopens" or "returns", in a span, a holiday's name, a stamp,
+   a proper name, the row's name or a directory name of its schools or matched record, and
+   never beside an explicit date, a relative day word, a posting age of a day or more, a
+   reopening word or a month and day number that is not the day) or state a date
+   (:func:`~snowlight.live.weekdays.names_date`: "Closed Nov. 5", "Closed Thursday, Nov. 5":
+   the date wins) is dated by that day when it is the school's local today at the first
+   sighting ``hi`` in every zone, or tomorrow on an evening read (the reader dates a bare
+   status read at ``hi`` the next day, and would on a weekday at the same local time: so never
+   a Sunday morning for Monday). The row's own dates, when it has them (its row stamp, a
+   date-only row date, and each stamp in its words:
    :func:`~snowlight.live.weekdays.stamp_dates`), must fall after the same weekday a week
    before that day and not after the read's local day (a row dated last Thursday that says
-   "Closed Thursday" is last week's); a row date or a stamp that cannot be read keeps the
-   hold. The row is then read once, at ``hi``, through every gate below, and lights only
-   when that reading claims the day it was dated by and every day it claims is one its
-   words name; otherwise it stays held as before (and still darkens as before). Its words
-   may be older than ``hi``: :attr:`~snowlight.live.ledger.LedgerRow.earliest` is the
-   earliest they may have been on the list (a key back as a new appearance, a successor,
-   bounded by the keys of its listing it replaced, or, on a source it read before, a key
-   the ledger cannot link to what it replaced, dated from the read before or not, or a cold
-   read added after a gap), a
+   "Closed Thursday" is last week's); a row date or a stamp that cannot be read keeps the hold,
+   and so does each posting age in its words (:func:`~snowlight.live.weekdays.post_ages`: "2h",
+   "5m") of a day or more (:data:`LONGEST_POST_AGE`), or that cannot be read; one under a day
+   dates the posting to the read's day or the one before, as a stamp of the day before does.
+   The row is then read once, at ``hi``, through every gate below, and lights only when that
+   reading claims the day it was dated by and every day it claims is one its words name;
+   otherwise it stays held as before (and still darkens as before). Its words may be older than
+   ``hi``: :attr:`~snowlight.live.ledger.LedgerRow.earliest` is the earliest they may have been
+   on the list (a key back as a new appearance, a successor, bounded by the keys of its listing
+   it replaced, or, on a source it read before, a key the ledger cannot link to what it
+   replaced, dated from the read before or not, or a cold read added after a gap), a
    successor's readings carry its predecessor's first sighting and ``earliest`` too
-   (:func:`_successor_earliest`), and the row is self-dated only when that sighting dates
-   it to the same day, as if it had never left the list; a row with no ``earliest``
-   (written before the column) is not, and nor is any row whose ``earliest`` falls in a
-   ledger's first :data:`POSTED_WINDOW` of watching (:meth:`Resolver._watched`: a new
-   ledger reads every source as new, so a source's first read and every row descended from
-   it, successors and returns, may be last week's). ``CHURN`` rows are never self-dated: a
-   re-keyed list or a re-served old copy can carry any earlier day's rows. It is kept with
-   :attr:`Derived.dated_by`: it gives no ``announced_at``, and merge takes it as posted at
-   an unknown time up to ``hi`` (:mod:`snowlight.live.merge`). The resolver counts such
-   rows as ``weekday_dated`` and ``date_dated``, and by the reason they were held
+   (:func:`_successor_earliest`), and the row is self-dated only when that sighting dates it to
+   the same day, as if it had never left the list; a row with no ``earliest`` (written before
+   the column) is not, and nor is any row whose ``earliest`` falls in a ledger's first
+   :data:`POSTED_WINDOW` of watching (:meth:`Resolver._watched`: a new ledger reads every
+   source as new, so a source's first read and every row descended from it, successors and
+   returns, may be last week's). ``CHURN`` rows are never self-dated: a re-keyed list or a
+   re-served old copy can carry any earlier day's rows. It is kept with
+   :attr:`Derived.dated_by`: it gives no ``announced_at``, and merge takes it as posted at an
+   unknown time up to ``hi`` (:mod:`snowlight.live.merge`). The resolver counts such rows as
+   ``weekday_dated`` and ``date_dated``, and by the reason they were held
    (``self_dated:unknown_start``); the ``cold`` alert still counts them in its
    ``unknown_start``, as before the rule.
 6. **Gates** on every reading: a status kind at 0.8 or more (G4; ``WEAK`` counts
@@ -178,6 +181,7 @@ from snowlight.live.versions import live_version, reader_matcher_version
 from snowlight.live.weekdays import (
     named_weekdays,
     names_date,
+    post_ages,
     stamp_dates,
     states_a_date,
     weekdays_in,
@@ -236,6 +240,11 @@ SELF_DATED_BY: Final = frozenset({"weekday", "date"})
 POSTED_WINDOW: Final = timedelta(days=7)
 """A self-dated row's own date must be after its day less this (the same weekday a week
 before), so a weekday it names cannot be last week's."""
+LONGEST_POST_AGE: Final = timedelta(days=1)
+"""A posting age in a self-dated row's words ("2h", "8h", "23h") must be under this: posted
+on the read's local day or the one before, it is no earlier week's (a stamp of the day before,
+"Posted Wed 9pm" read Thursday, is the same). It is the same from every read, so an age that
+ticks between reads ("2h", then "8h") never makes a successor read otherwise."""
 EVENING_PROBE_WEEKDAY: Final = 2
 """The weekday (Wednesday) a read's local clock time is tried on to tell an evening read: a
 weekday whose next day is a school day, never a daylight-saving change."""
@@ -1407,18 +1416,18 @@ class Resolver:
         """
         if reason not in WEEKDAY_HELD or base.voters or entry.earliest is None:
             return None
-        named = named_weekdays(seen.text, seen.name)
-        if named:
-            schools = (self.directory.schools.get(target.nces_id) for target in base.targets)
-            held = [matched or "", *(school.record.name for school in schools if school)]
-            named -= weekdays_in(held)
         names: Callable[[date], bool]
-        if named:
-            dated_by, names = "weekday", lambda day: day.weekday() in named
-        elif states_a_date(seen.text, seen.name):
+        if states_a_date(seen.text, seen.name):
             dated_by, names = "date", lambda day: names_date(seen.text, day, seen.name)
         else:
-            return None
+            schools = (self.directory.schools.get(target.nces_id) for target in base.targets)
+            held = weekdays_in(
+                [matched or "", *(school.record.name for school in schools if school)]
+            )
+            dated_by, names = (
+                "weekday",
+                lambda day: day.weekday() in named_weekdays(seen.text, seen.name, day) - held,
+            )
         day = self._own_day(entry.hi, zones, names)
         if (
             day is None
@@ -1837,7 +1846,10 @@ def _unknown_start(start: Start) -> Withheld:
 def _posted_before(seen: SeenRow, entry: LedgerRow, zones: Sequence[str], day: date) -> bool:
     """Whether a self-dated row's own dates allow ``day``: none is known, or in every zone
     each falls after ``day`` less :data:`POSTED_WINDOW` and not after the first sighting's
-    local day. Its row stamp (one too old to date it) or its row date gives one, and so
+    local day, and each posting age in its words ("2h", "8h", "5m":
+    :func:`~snowlight.live.weekdays.post_ages`) is one it can read and is under
+    :data:`LONGEST_POST_AGE` ("1d", "24 hours" and "a few hours ago" hold). Its row
+    stamp (one too old to date it) or its row date gives one, and so
     does each stamp in its words ("Posted 10/29", "Updated Oct. 29":
     :func:`~snowlight.live.weekdays.stamp_dates`). A row date that reads as neither a stamp
     nor a board date (or one after the read, or one that does not exist, such as
@@ -1846,6 +1858,8 @@ def _posted_before(seen: SeenRow, entry: LedgerRow, zones: Sequence[str], day: d
     stamp (:attr:`~snowlight.live.ledger.SeenRow.page_date`) dates nothing (D2) but keeps
     the hold when it reads as a day on or before ``day`` less :data:`POSTED_WINDOW`: the
     page, and so the row, was last changed a week before. It never raises."""
+    if any(age is None or age >= LONGEST_POST_AGE for age in post_ages(seen.text)):
+        return False  # "(1w)", "6d", "1d", "3 days ago", "a few hours ago": an earlier day's
     for zone in zones:
         tz = _zone(zone)
         today = entry.hi.astimezone(tz).date()

@@ -51,6 +51,7 @@ from snowlight.live.resolve import (
 from snowlight.live.weekdays import (
     named_weekdays,
     names_date,
+    post_ages,
     stamp_dates,
     states_a_date,
     weekdays_in,
@@ -1250,7 +1251,10 @@ def test_the_resolver_bounds_a_successor_by_its_predecessor() -> None:
         ("Updated Oct 29 '25", (date(2025, 10, 29),)),
         ("Posted 11/6", (date(2025, 11, 6),)),  # no year: the latest such date
         ("Posted 11/6/2026", (date(2026, 11, 6),)),
-        ("Posted yesterday", (date(2026, 11, 4),)),
+        ("Posted yesterday", (None,)),  # an age of about a day, at no time (WD-R5)
+        ("Posted yesterday at 9 PM", (date(2026, 11, 4),)),  # the night before (WD-R5C1-S6)
+        ("Posted 9 PM yesterday", (date(2026, 11, 4),)),
+        ("Updated yesterday evening", (date(2026, 11, 4),)),
         ("Updated this morning", (date(2026, 11, 5),)),
         ("Posted Mon Tue", (None,)),  # two weekdays: which is unknown
         ("Posted 10/29 10/30", (None,)),
@@ -1286,8 +1290,8 @@ def test_the_resolver_bounds_a_successor_by_its_predecessor() -> None:
         ("Posted Nov. 4 - classes start two hours later", (date(2026, 11, 4),)),
         ("Updated: delayed 2 hours, buses 2-hour late", ()),
         ("Posted: snow day, e-learning day", ()),
-        ("Updated 2 hours ago", (None,)),
-        ("Updated two hours ago", (None,)),
+        ("Updated 2 hours ago", ()),  # an age the resolver bounds (WD-R5)
+        ("Updated two hours ago", ()),
         ("Posted: a snow day 10/29", (date(2026, 10, 29),)),
         ("Updated: 2 hour delay on 10/29", (date(2026, 10, 29),)),
         ("Updated: snow day tomorrow", (None,)),
@@ -1674,3 +1678,585 @@ def test_a_cold_row_naming_another_day_or_an_earlier_one_stays_held(text: str) -
     world = _cold("2026-11-05 12:00", text)
     assert reasons(world.resolve()) != [None]
     assert lit(world.publish(at("2026-11-05 12:01"))) == {}
+
+
+# --- posting ages in the words (WD-R5-1) -----------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "ages"),
+    [
+        ("Closed Thursday (1w)", (timedelta(weeks=1),)),
+        ("Closed Thursday • 6d", (timedelta(days=6),)),
+        ("Closed Thursday 2d", (timedelta(days=2),)),
+        ("Closed Thursday 1 wk", (timedelta(weeks=1),)),
+        ("Closed Thursday. 3 days ago", (timedelta(days=3),)),
+        ("Closed Thursday • 2h", (timedelta(hours=2),)),
+        ("Closed Thursday • 5m", (timedelta(minutes=5),)),
+        ("Closed Thursday (2h ago)", (timedelta(hours=2),)),
+        ("Closed Thursday. Updated an hour ago", (timedelta(hours=1),)),
+        ("Closed Thursday. Updated two hours ago", (timedelta(hours=2),)),
+        ("Closed Thursday. Updated just now", (timedelta(0),)),
+        ("Closed Thursday. Posted moments ago", (timedelta(0),)),
+        ("Closed Thursday 1mo", (timedelta(days=28),)),
+        ("Closed Thursday 1y", (timedelta(days=365),)),
+        ("Closed Thursday, a few days ago", (None,)),
+        ("Closed Thursday, several hours ago", (None,)),
+        # a delay's length is no age
+        ("Thursday: 2 hr delay", ()),
+        ("Thursday: 2 hours late", ()),
+        ("Thursday 90 min delay", ()),
+        ("Delayed 2 hours Thursday", ()),
+        ("2-hour delay Thursday", ()),
+        ("Thursday 2hr delay", ()),
+        ("Thursday: dismissed 2 hours early", ()),
+        ("Delayed Thursday 2 Hours.", ()),  # a delay word anywhere before, in its clause
+        ("Opening Late Thursday 2 Hours", ()),
+        # with a period after its unit (WD-R5C1-B1)
+        ("Thursday: Open 2 Hrs. Late", ()),
+        ("Thursday: 2 hr. delay", ()),
+        ("Thursday: 90 Min. Delay", ()),
+        ("Thursday: 2 hrs. late", ()),
+        ("Thursday: 120 minute delay", ()),
+        # a length too long for a delay, or in another clause, is an age (WD-R5C1-S1)
+        ("Delayed Thursday • 168h", (timedelta(hours=168),)),
+        ("Delayed Thursday • 30h", (timedelta(hours=30),)),
+        ("Delayed Thursday 30h", (timedelta(hours=30),)),
+        ("Delay Thursday · 13h", (timedelta(hours=13),)),
+        ("Thursday 2 hour delay - 7h", (timedelta(hours=7),)),
+        ("Thursday: 6 hour delay", (timedelta(hours=6),)),
+        ("Thursday: 5 hour delay", ()),
+        # a count of four or five digits (self-audit): an age, or a clock time
+        ("Closed Thursday 1440m", (timedelta(days=1),)),
+        ("Closed Thursday 10080 min ago", (timedelta(weeks=1),)),
+        ("Closed Thursday 0530 hrs", ()),
+        ("Closed Thursday 1030 h", ()),
+        ("Closed Thursday 2400 hrs", ()),
+        ("Clases canceladas jueves, 2024 y 2025", ()),  # a year, never an age
+        ("Closed Thursday, many hours ago", (None,)),
+        ("Closed Thursday, some hrs ago", (None,)),
+        ("Closed Thursday", ()),
+        ("Closed Thursday 10 am", ()),
+        ("Closed Thursday 5:30", ()),
+        ("Closed Thursday 29", ()),
+    ],
+)
+def test_post_ages(text: str, ages: tuple[timedelta | None, ...]) -> None:
+    assert post_ages(text) == ages
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Closed Thursday (1w)",
+        "Closed Thursday • 6d",
+        "Closed Thursday 2d",
+        "Closed Thursday 1d",
+        "Closed Thursday 1 wk",
+        "Closed Thursday. 3 days ago",
+        "Closed Thursday 1mo",
+        "Closed Thursday, a few hours ago",
+        "Closed Thursday 24 hours",
+        "Closed Thursday yesterday",
+        "Closed Thursday. Posted yesterday",
+        "Closed Thursday. Posted 3d ago",
+        "Closed Thursday • 24h",
+        "Closed Thursday • 30h",
+        "Closed Thursday • 168h",
+        "Closed Thursday 1440m",
+        # a length of a day or more is never a delay's (WD-R5C1-S1)
+        "Delayed Thursday • 168h",
+        "Delayed Thursday • 30h",
+        "Delayed Thursday 168 hours",
+        "Thursday 2 hour delay - 2d",
+        "Closed Nov. 5 (1w)",
+        "Closed Nov. 5 • 6d",
+        "Closed Nov. 5. Posted 3 days ago",
+    ],
+)
+def test_a_posting_age_of_a_day_or_more_keeps_the_hold(
+    text: str,
+) -> None:
+    world = _cold("2026-11-05 12:00", text)  # Thu 06:00 Central, a truly cold read
+    assert reasons(world.resolve()) == ["unknown_start"]
+    assert lit(world.publish(at("2026-11-05 12:01"))) == {}
+
+
+@pytest.mark.parametrize(
+    ("when", "text", "day", "status"),
+    [
+        ("2026-11-05 12:00", "Closed Thursday • 2h", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday • 5m", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday (2h ago)", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated 1 hour ago", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated just now", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Nov. 5 • 2h", THURSDAY, "CLOSED"),
+        ("2026-11-05 07:00", "Closed Thursday • 30m", THURSDAY, "CLOSED"),  # 01:00
+        ("2026-11-06 01:00", "Closed Friday • 3h", FRIDAY, "CLOSED"),  # Thu 19:00
+        # posted the evening or the night before, as "Posted Wed 9pm" (WD-R5C1-B2, S6)
+        ("2026-11-05 12:00", "Closed Thursday • 8h", THURSDAY, "CLOSED"),  # Wed 22:00
+        ("2026-11-05 12:00", "Closed Thursday. Updated 7 hours ago", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday • 23h", THURSDAY, "CLOSED"),  # Wed 07:00
+        ("2026-11-05 12:00", "Closed Thursday. Posted yesterday at 9 PM", THURSDAY, "CLOSED"),
+        ("2026-11-05 12:00", "Closed Thursday. Updated last night", THURSDAY, "CLOSED"),
+        # a delay's length is no age
+        ("2026-11-05 12:00", "Thursday: 2 hr delay", THURSDAY, "DELAYED"),
+        ("2026-11-05 12:00", "Thursday: 2 hours late", THURSDAY, "DELAYED"),
+        ("2026-11-05 12:00", "Thursday 90 min delay", THURSDAY, "DELAYED"),
+        ("2026-11-05 12:00", "Delayed 2 hours Thursday", THURSDAY, "DELAYED"),
+        # with a period after its unit, first read before the length after midnight: B1
+        ("2026-11-05 07:00", "Thursday: Open 2 Hrs. Late", THURSDAY, "DELAYED"),  # 01:00
+        ("2026-11-05 07:00", "Thursday: 2 hr. delay", THURSDAY, "DELAYED"),
+        ("2026-11-05 06:45", "Thursday: 90 Min. Delay", THURSDAY, "DELAYED"),  # 00:45
+        ("2026-11-05 07:00", "Thursday: 2 hrs. late", THURSDAY, "DELAYED"),
+        ("2026-11-05 12:00", "Thursday: 120 minute delay", THURSDAY, "DELAYED"),
+        ("2026-11-05 12:00", "Thursday: 120-min. delay", THURSDAY, "DELAYED"),
+    ],
+)
+def test_an_age_under_a_day_still_lights(when: str, text: str, day: str, status: str) -> None:
+    world = _cold(when, text)
+    assert reasons(world.resolve()) == [None]
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {(0, day): status}
+
+
+def test_an_age_is_bounded_the_same_in_every_zone() -> None:
+    # 12:00Z is 06:00 Central and 02:00 in Honolulu: "3h" was the evening before in
+    # Honolulu, as "Posted Wed 9pm" would be; "1d" is a day before in both
+    hi = at("2026-11-05 12:00")
+    entry = LedgerRow(
+        key=b"k",
+        source_id=SOURCE,
+        hi=hi,
+        lo=None,
+        start=Start.COLD,
+        row_stamp=None,
+        last_seen=hi,
+        absent_since=None,
+        gone=False,
+        ident=b"i",
+        pred=None,
+        lapsed=False,
+        earliest=hi,
+    )
+    seen = row(ALPHA_SCHOOL, "Closed Thursday • 3h")
+    assert _posted_before(seen, entry, ["America/Chicago"], NOV5)
+    assert _posted_before(seen, entry, ["America/Chicago", "Pacific/Honolulu"], NOV5)
+    a_day = row(ALPHA_SCHOOL, "Closed Thursday • 1d")
+    assert not _posted_before(a_day, entry, ["America/Chicago"], NOV5)
+    assert not _posted_before(a_day, entry, ["America/Chicago", "Pacific/Honolulu"], NOV5)
+
+
+@settings(max_examples=300, deadline=None)
+@given(
+    st.integers(min_value=1, max_value=999),
+    st.sampled_from(["d", " d", "day", " days", "w", " wk", " weeks", "mo", " months", "y"]),
+    st.sampled_from(["", " ago"]),
+    st.sampled_from(["(", "• ", "- ", "", ". Posted ", ". Updated "]),
+    st.integers(min_value=0, max_value=47),
+)
+def test_an_age_of_a_day_or_more_never_lights(
+    count: int, unit: str, ago: str, before: str, hour: int
+) -> None:
+    text = f"Closed Thursday {before}{count}{unit}{ago}{')' if before == '(' else ''}"
+    when = at("2026-11-05 00:00") + timedelta(hours=hour)
+    world = _cold(f"{when:%Y-%m-%d %H:%M}", text)
+    world.resolve()
+    assert lit(world.publish(when + timedelta(minutes=1))) == {}
+
+
+_TOKENS = [
+    *"0123456789 .,:;-/#@$()'\u2019\u2022\u00b7\n",
+    *("Thursday", "Thu", "Friday's", "many", "some", "few", "several", "a", "an", "two"),
+    *("h", "hr", "hrs", "hrs.", "hours", "m", "min", "Min.", "d", "days", "w", "wk", "mo", "y"),
+    *("ago", "delay", "late", "Late", "early", "dismissal", "Open", "Closed", "Bus", "Room"),
+    *("at", "Posted", "Updated", "yesterday", "last night", "9 PM", "Nov.", "Issued", "post"),
+    *("notice", "closure", "over", "all clear", "1029", "110526", "1029-26", "0530", "1440"),
+    *("many hrs", "some hours", "few h", "0530 hrs", "2 Hrs. Late", "1440m", "30h", "29:"),
+]
+
+
+@settings(max_examples=500, deadline=None)
+@given(st.lists(st.sampled_from(_TOKENS), max_size=24))
+def test_the_word_rules_never_raise(tokens: list[str]) -> None:
+    text = " ".join(tokens)
+    for day in (NOV5, None):
+        named_weekdays(text, "", day)
+        named_weekdays(text, "Thu", day)
+    names_date(text, NOV5)
+    states_a_date(text)
+    stamp_dates(text, NOV5)
+    post_ages(text)
+
+
+@settings(max_examples=300, deadline=None)
+@given(st.text(max_size=40), st.integers(min_value=0, max_value=47))
+def test_ages_never_raise(text: str, hour: int) -> None:
+    post_ages(text)
+    hi = at("2026-11-05 00:00") + timedelta(hours=hour)
+    entry = LedgerRow(
+        key=b"k",
+        source_id=SOURCE,
+        hi=hi,
+        lo=None,
+        start=Start.COLD,
+        row_stamp=None,
+        last_seen=hi,
+        absent_since=None,
+        gone=False,
+        ident=b"i",
+        pred=None,
+        lapsed=False,
+        earliest=hi,
+    )
+    _posted_before(row(ALPHA_SCHOOL, f"Closed Thursday {text}"), entry, ["Pacific/Honolulu"], NOV5)
+
+
+# --- month and day numbers (WD-R5-2) ---------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "day", "named"),
+    [
+        ("Closed Thursday 1029", None, set()),
+        ("Closed Thursday 1029", NOV5, set()),
+        ("Closed Thursday 1105", None, set()),
+        ("Closed Thursday 1105", NOV5, {3}),
+        ("Closed Thursday 115", NOV5, set()),  # Jan. 15 or Nov. 5: not exact
+        ("Closed Thursday 105", NOV5, set()),  # Jan. 5 or Oct. 5
+        ("Closed Thursday #1105", NOV5, set()),
+        ("Closed Thursday 0530", NOV5, set()),  # May 30, or a time with nothing to say so
+        ("Closed Thursday, 120 students", NOV5, set()),
+        ("Closed Thursday 2026", NOV5, {3}),  # no month and day
+        ("Closed Thursday, 911 calls only", NOV5, set()),  # may be Sept. 11
+        ("Closed Thursday, 100 students", NOV5, {3}),  # no month and day
+        # an age under a day, taken out of the words, never joins the words around it
+        ("Opening Late Thursday 2 Hours. No 4K Classes.", NOV5, {3}),
+        ("Activity Canceled Thursday. 4-H Officer Training", NOV5, {3}),
+        # told apart by the words around it
+        ("Closed Thursday, Bus 1029 runs late", NOV5, {3}),
+        ("Closed Thursday, bus #1029 late", NOV5, {3}),
+        ("Closed Thursday, Route 104", NOV5, {3}),
+        ("Closed Thursday, Room 104", NOV5, {3}),
+        ("Closed Thursday, USD 105", NOV5, {3}),
+        ("Closed Thursday, meeting at 1030", NOV5, {3}),
+        ("Closed Thursday, meeting @ 1030", NOV5, {3}),
+        ("Closed Thursday 1030 am", NOV5, {3}),
+        ("Closed Thursday 0530 hrs", NOV5, {3}),
+        # a day number after the weekday
+        ("Closed Thursday 5", None, set()),
+        ("Closed Thursday 5", NOV5, {3}),
+        ("Closed Thursday, the 5", NOV5, {3}),
+        ("Closed Thursday 29", NOV5, set()),
+        ("Closed Thursday 6", NOV5, set()),
+        ("Closed Thursday #5", NOV5, set()),
+        ("Closed Thursday no. 5", NOV5, set()),
+        ("Closed Wednesday 5 and Thursday", NOV5, set()),
+        ("Closed Thursday 5 and Friday 6", NOV5, set()),  # Friday 6 is not Nov. 5
+    ],
+)
+def test_numbers_that_may_be_a_month_and_day(text: str, day: date | None, named: set[int]) -> None:
+    assert named_weekdays(text, "", day) == frozenset(named)
+
+
+@pytest.mark.parametrize(
+    ("text", "shown"),
+    [
+        ("Closed Thursday 1029", False),
+        ("Closed Thursday 1028", False),
+        ("Closed Thursday 115", False),
+        ("Closed Thursday #1105", False),
+        ("Closed Thursday 29", False),
+        ("Closed Thursday 6", False),
+        ("Closed Thursday 1105", True),
+        ("Closed Thursday 5", True),
+        ("Closed Thursday, Bus 1029 runs late", True),
+        ("Closed Thursday, Room 104", True),
+        ("Closed Thursday, meeting at 1030", True),
+        ("Closed Nov. 5 1029", False),
+        ("Closed Nov. 5, Bus 1029", True),
+    ],
+)
+def test_a_month_and_day_number_lights_only_on_its_own_day(text: str, shown: bool) -> None:
+    world = _cold("2026-11-05 12:00", text)
+    assert reasons(world.resolve()) == ([None] if shown else ["unknown_start"])
+    expected = {(0, THURSDAY): "CLOSED"} if shown else {}
+    assert lit(world.publish(at("2026-11-05 12:01"))) == expected
+
+
+def test_a_month_and_day_number_on_an_evening_read_names_tomorrow() -> None:
+    evening = "2026-11-06 01:00"  # Thu 19:00 Central
+    assert lit(_cold(evening, "Closed Friday 1106").publish(at(evening))) == {(0, FRIDAY): "CLOSED"}
+    assert lit(_cold(evening, "Closed Friday 1105").publish(at(evening))) == {}
+    assert lit(_cold(evening, "Closed Friday 6").publish(at(evening))) == {(0, FRIDAY): "CLOSED"}
+
+
+# --- reopening words (WD-R5-3) ---------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Closed on Thursday due to the storm; open since",
+        "Closed Thursday. Reopened",
+        "Closed Thursday; classes resumed",
+        "Closed Thursday. Classes resume at 10",
+        "Closed Thursday, back in session",
+        "Closed Thursday, normal schedule",
+        "Closed Thursday. Regular schedule",
+        "Closed Thursday; back to normal",
+        "Closed Thursday. Now open",
+        "Closed Thursday. Classes have resumed",
+        "Closed Thursday; closure lifted",
+        "CLOSED THURSDAY - RE-OPENED",
+        "Closed Nov. 5; open since",
+        "Closed Nov. 5. Normal schedule",
+        "Closed Nov. 5, classes resumed",
+    ],
+)
+def test_reopening_words_keep_the_hold(text: str) -> None:
+    assert not named_weekdays(text, "", NOV5)
+    assert not names_date(text, NOV5)
+    world = _cold("2026-11-05 12:00", text)
+    assert reasons(world.resolve()) != [None]
+    assert lit(world.publish(at("2026-11-05 12:01"))) == {}
+
+
+@pytest.mark.parametrize(
+    ("text", "status"),
+    [
+        ("Closed Thursday, open Friday", "CLOSED"),
+        ("Delayed opening Thursday", "DELAYED"),
+        ("Closed Thursday", "CLOSED"),
+    ],
+)
+def test_words_that_only_name_an_opening_still_light(text: str, status: str) -> None:
+    world = _cold("2026-11-05 12:00", text)
+    assert lit(world.publish(at("2026-11-05 12:01"))) == {(0, THURSDAY): status}
+
+
+# --- weekday-only posting stamps (WD-R5-4) ---------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "dates"),
+    [
+        ("Posted Friday", (None,)),
+        ("Updated Saturday", (None,)),
+        ("Posted Mon", (None,)),
+        ("Posted Tue 9pm", (None,)),
+        ("Posted Wed", (date(2026, 11, 4),)),
+        ("Posted Wed 9pm", (date(2026, 11, 4),)),
+        ("Posted Thu", (date(2026, 11, 5),)),
+        ("Updated last night", (date(2026, 11, 4),)),
+        ("Posted 3d ago", (None,)),
+        ("Updated 5 min ago", ()),
+    ],
+)
+def test_weekday_stamps_two_or_more_days_back_are_unread(
+    text: str, dates: tuple[date | None, ...]
+) -> None:
+    assert stamp_dates(text, NOV5) == dates
+
+
+@pytest.mark.parametrize(
+    ("when", "text", "day"),
+    [
+        ("2026-11-05 12:00", "Closed Thursday. Posted Friday", None),
+        ("2026-11-05 12:00", "Closed Thursday. Posted Saturday", None),
+        ("2026-11-05 12:00", "Closed Thursday. Updated Saturday", None),
+        ("2026-11-05 12:00", "Closed Thursday. Posted Mon", None),
+        ("2026-11-05 12:00", "Closed Thursday. Posted Tuesday", None),
+        ("2026-11-05 12:00", "Closed Nov. 5. Posted Friday", None),
+        ("2026-11-06 01:00", "Closed Friday. Posted Tuesday", None),
+        ("2026-11-05 12:00", "Closed Thursday. Posted Wed 9pm", THURSDAY),
+        ("2026-11-05 12:00", "Closed Thursday (posted Wed)", THURSDAY),
+        ("2026-11-05 12:00", "Closed Thursday. Posted Thu", THURSDAY),
+        ("2026-11-05 12:00", "Closed Thursday. Updated last night", THURSDAY),
+        ("2026-11-05 12:00", "Closed Nov. 5. Posted Wed", THURSDAY),
+        ("2026-11-06 01:00", "Closed Friday. Posted Thursday", FRIDAY),
+        ("2026-11-06 01:00", "Closed Friday. Posted Wednesday", FRIDAY),
+    ],
+)
+def test_a_weekday_only_stamp_lights_only_from_the_read_day_or_the_day_before(
+    when: str, text: str, day: str | None
+) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    expected = {} if day is None else {(0, day): "CLOSED"}
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == expected
+
+
+# --- a feed age that ticks between reads (WD-R5C1-B2) ----------------------------------------
+
+
+@pytest.mark.parametrize(
+    "reads",
+    [
+        # posted Thu 04:00 Central, read three times that day
+        [
+            ("2026-11-05 11:00", "Closed Thursday · 1h"),
+            ("2026-11-05 12:00", "Closed Thursday · 2h"),
+            ("2026-11-05 18:00", "Closed Thursday · 8h"),
+        ],
+        # posted Wed 21:00 Central: tomorrow on the evening read, today the next morning
+        [
+            ("2026-11-05 04:00", "Closed Thursday · 1h"),
+            ("2026-11-05 12:00", "Closed Thursday · 9h"),
+        ],
+        [
+            ("2026-11-05 03:00", "Closed Thursday · 1h"),
+            ("2026-11-05 12:00", "Closed Thursday · 10h"),
+        ],
+        [
+            ("2026-11-05 03:00", "Closed Thursday. Posted Wed 8pm"),
+            ("2026-11-05 12:00", "Closed Thursday. Posted Wed 8pm"),
+        ],
+    ],
+)
+def test_a_lit_row_whose_feed_age_ticks_stays_lit(reads: list[tuple[str, str]]) -> None:
+    world = World(reader=F5)
+    for when, text in reads:
+        world.read(at(when), [row(ALPHA_SCHOOL, text)])
+        assert lit(world.publish(at(when))) == {(0, THURSDAY): "CLOSED"}, (when, text)
+
+
+def test_a_successor_whose_age_reaches_a_day_is_held() -> None:
+    world = World(reader=F5)
+    world.read(at("2026-11-05 11:00"), [row(ALPHA_SCHOOL, "Closed Thursday · 23h")])
+    assert lit(world.publish(at("2026-11-05 11:00"))) == {(0, THURSDAY): "CLOSED"}
+    world.read(at("2026-11-05 12:00"), [row(ALPHA_SCHOOL, "Closed Thursday · 1d")])
+    assert lit(world.publish(at("2026-11-05 12:00"))) == {}
+
+
+# --- more month and day numbers, reopening words and possessives (WD-R5C1-S2-S5) -------------
+
+
+@pytest.mark.parametrize(
+    ("text", "day", "named"),
+    [
+        # a month and day with a year (WD-R5C1-S2): Oct. 29, 2026 was last week's Thursday
+        ("Closed Thursday 1029-26", NOV5, set()),
+        ("Closed Thursday 102926", NOV5, set()),
+        ("Closed Thursday 10292026", NOV5, set()),
+        ("Closed Thursday 110525", NOV5, set()),  # Nov. 5, 2025
+        ("Closed Thursday 1105-25", NOV5, set()),
+        ("Closed Thursday 110526", NOV5, {3}),
+        ("Closed Thursday 11052026", NOV5, {3}),
+        ("Closed Thursday 1105-26", NOV5, {3}),
+        ("Closed Thursday 110526", None, set()),
+        ("Closed Thursday, 123456 students", NOV5, {3}),  # no month and day
+        ("Closed Thursday, call 608-555-1029", NOV5, {3}),  # a phone number
+        # a length in minutes is no date (WD-R5C1-B1)
+        ("Thursday: 120 minute delay", NOV5, {3}),
+        ("Thursday: 120-min. delay", NOV5, {3}),
+        ("Thursday: 110 mins late", NOV5, {3}),
+        # a day number before the weekday (WD-R5C1-S5)
+        ("Closed 29 Thursday", NOV5, set()),
+        ("Closed 6 Thursday", NOV5, set()),
+        ("Closed 5 Thursday", NOV5, {3}),
+        ("Closed 5 Thursday", None, set()),
+        ("5&6 Thursday and Friday", NOV5, set()),
+        ("Opening at 9 Thursday", NOV5, {3}),  # a clock time
+        ("Closed Thursday, Bus 5 Thursday route", NOV5, {3}),
+        # a possessive weekday that owns no school day (WD-R5C1-S4)
+        ("Closed Thursday, per Friday's notice", NOV5, set()),
+        ("Closed Thursday, per Friday\u2019s notice", NOV5, set()),
+        ("Closed Thursday as in Monday's message", NOV5, set()),
+        ("Closed Thursday per Friday's", NOV5, set()),
+        ("Thursday's classes are cancelled", NOV5, {3}),
+        ("Thursday's activities canceled", NOV5, {3}),
+        # a weekday a notice went out on (self-audit of the critic's shapes)
+        ("Closed Thursday. Released Friday", NOV5, set()),
+        ("Closed Thursday. Issued Friday", NOV5, set()),
+        ("Closed Thursday. Friday post", NOV5, set()),
+        ("Closed Thursday, see Friday notice", NOV5, set()),
+        ("Closed Thursday as announced on Monday", NOV5, set()),
+        # a day number standing alone as a clause
+        ("29: Closed Thursday", NOV5, set()),
+        ("Closed Thursday, 29", NOV5, set()),
+        ("5: Closed Thursday", NOV5, {3}),
+        ("29: Closed Thursday", None, set()),
+        ("Closed 11/05: Thursday", NOV5, set()),  # a date wins
+        ("Closed Thursday, 6:30 start", NOV5, {3}),  # a clock time
+        ("Closed Thursday, routes 2, 3, 4", NOV5, {3}),  # a list of numbers
+        ("Closed Thursday, 52", NOV5, {3}),  # no day of a month
+        ("Closed Thursday (29)", NOV5, set()),
+    ],
+)
+def test_more_numbers_and_possessives(text: str, day: date | None, named: set[int]) -> None:
+    assert named_weekdays(text, "", day) == frozenset(named)
+
+
+@pytest.mark.parametrize(
+    ("text", "shown"),
+    [
+        ("Closed Thursday 1029-26", False),
+        ("Closed Thursday 102926", False),
+        ("Closed Thursday 10292026", False),
+        ("Closed Thursday 110526", True),
+        ("Closed 29 Thursday", False),
+        ("Closed Thursday, per Friday's notice", False),
+        ("Thursday's classes are cancelled", True),
+        ("Closed Nov. 5 102926", False),
+        ("Closed Nov. 5 110526", True),
+    ],
+)
+def test_a_dated_number_or_a_possessive_lights_only_on_its_own_day(text: str, shown: bool) -> None:
+    world = _cold("2026-11-05 12:00", text)
+    world.resolve()
+    expected = {(0, THURSDAY): "CLOSED"} if shown else {}
+    assert lit(world.publish(at("2026-11-05 12:01"))) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Closed Thursday. Closure over",
+        "Closed Thursday. Closure is over",
+        "Closed Thursday. All clear",
+        "Closed Thursday; closing ended",
+        "Closed Thursday. Closure has been lifted",
+        "Thursday: 2 hour delay. Delay cancelled",
+        "Thursday 2 hour delay; delay is over",
+        "Closed Thursday. Closing rescinded",
+        "Closed Nov. 5. All clear",
+    ],
+)
+def test_words_that_end_the_closure_keep_the_hold(text: str) -> None:
+    assert not named_weekdays(text, "", NOV5)
+    assert not names_date(text, NOV5)
+    world = _cold("2026-11-05 12:00", text)
+    world.resolve()
+    assert lit(world.publish(at("2026-11-05 12:01"))) == {}
+
+
+# --- pass time on long rows (WD-R5C1-S7) -----------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Closed Thursday " + "Bus 1029 " * 220,
+        "Closed Thursday " + "2h " * 660,
+        "2 hour delay Thursday " + "2 hours late " * 150,
+        "Closed Thursday " + "Thursday " * 220,
+        "Closed Thursday " + "word " * 400,
+    ],
+)
+def test_a_long_row_is_read_in_time_linear_in_its_length(text: str) -> None:
+    def took(length: int) -> float:
+        words = text[:length]
+        best = float("inf")
+        for _ in range(3):
+            named_weekdays.cache_clear()
+            began = time.perf_counter()
+            named_weekdays(words, "", NOV5)
+            names_date(words, NOV5)
+            post_ages(words)
+            stamp_dates(words, NOV5)
+            best = min(best, time.perf_counter() - began)
+        return best
+
+    # four times as long (the archive's longest row is 2000 characters) takes about four
+    # times as long, never the sixteen a reading over each whole prefix would
+    assert took(2000) < 9 * took(500) + 0.002  # linear, with room for noise
