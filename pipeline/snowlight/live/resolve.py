@@ -47,7 +47,9 @@ spec 7.4):
    date-only row date, and each stamp in its words:
    :func:`~snowlight.live.weekdays.stamp_dates`), must fall after the same weekday a week
    before that day and not after the read's local day (a row dated last Thursday that says
-   "Closed Thursday" is last week's); a row date or a stamp that cannot be read keeps the hold,
+   "Closed Thursday" is last week's), and on the weekday path a stamp in its words must fall on
+   the read's local day or the one before (:data:`STAMP_LATEST_BACK`: "Updated Fri 10/30" read
+   Thursday Nov. 5 is held); a row date or a stamp that cannot be read keeps the hold,
    and so does each posting age in its words (:func:`~snowlight.live.weekdays.post_ages`: "2h",
    "5m") of a day or more (:data:`LONGEST_POST_AGE`), or that cannot be read; one under a day
    dates the posting to the read's day or the one before, as a stamp of the day before does.
@@ -245,6 +247,14 @@ LONGEST_POST_AGE: Final = timedelta(days=1)
 on the read's local day or the one before, it is no earlier week's (a stamp of the day before,
 "Posted Wed 9pm" read Thursday, is the same). It is the same from every read, so an age that
 ticks between reads ("2h", then "8h") never makes a successor read otherwise."""
+STAMP_LATEST_BACK: Final = timedelta(days=1)
+"""How far before the read's local day a stamp in a weekday-dated row's words may fall: the
+read's day or the day before ("Posted Wed 9pm" read Thursday). A stamp two or more days back
+("Updated Fri 10/30", "Posted Oct. 30", "Updated 10/31 6:00 AM" read Thursday Nov. 5) may be
+of a post about the weekday before it, and the row keeps its hold, as one whose weekday-only
+stamp is ("Posted Friday": :func:`~snowlight.live.weekdays.stamp_dates`). A row dated by an
+explicit date ("Closed Nov. 5. Posted 10/30") names its day exactly, so a stamp days before
+it is a notice given ahead and keeps the round 4 bound (:data:`POSTED_WINDOW`)."""
 EVENING_PROBE_WEEKDAY: Final = 2
 """The weekday (Wednesday) a read's local clock time is tried on to tell an evening read: a
 weekday whose next day is a school day, never a daylight-saving change."""
@@ -1431,7 +1441,7 @@ class Resolver:
         day = self._own_day(entry.hi, zones, names)
         if (
             day is None
-            or not _posted_before(seen, entry, zones, day)
+            or not _posted_before(seen, entry, zones, day, weekday=dated_by == "weekday")
             or self._own_day(entry.earliest, zones, names) != day
             or not self._watched(entry.earliest)
         ):
@@ -1843,7 +1853,9 @@ def _unknown_start(start: Start) -> Withheld:
     )
 
 
-def _posted_before(seen: SeenRow, entry: LedgerRow, zones: Sequence[str], day: date) -> bool:
+def _posted_before(
+    seen: SeenRow, entry: LedgerRow, zones: Sequence[str], day: date, *, weekday: bool = True
+) -> bool:
     """Whether a self-dated row's own dates allow ``day``: none is known, or in every zone
     each falls after ``day`` less :data:`POSTED_WINDOW` and not after the first sighting's
     local day, and each posting age in its words ("2h", "8h", "5m":
@@ -1851,7 +1863,10 @@ def _posted_before(seen: SeenRow, entry: LedgerRow, zones: Sequence[str], day: d
     :data:`LONGEST_POST_AGE` ("1d", "24 hours" and "a few hours ago" hold). Its row
     stamp (one too old to date it) or its row date gives one, and so
     does each stamp in its words ("Posted 10/29", "Updated Oct. 29":
-    :func:`~snowlight.live.weekdays.stamp_dates`). A row date that reads as neither a stamp
+    :func:`~snowlight.live.weekdays.stamp_dates`, read at the first sighting). On the weekday
+    path (``weekday``) each stamp in the words, and each weekday with a clock time that is one
+    ("Closed Thursday \u00b7 Fri 9:14 PM"), must also fall on the read's local day or the one
+    before (:data:`STAMP_LATEST_BACK`). A row date that reads as neither a stamp
     nor a board date (or one after the read, or one that does not exist, such as
     "2026-02-30 12:00"), and a stamp in the words that carries a day it does not read
     exactly ("Updated last week"), give no such date, and the row keeps its hold. A page's
@@ -1862,8 +1877,14 @@ def _posted_before(seen: SeenRow, entry: LedgerRow, zones: Sequence[str], day: d
         return False  # "(1w)", "6d", "1d", "3 days ago", "a few hours ago": an earlier day's
     for zone in zones:
         tz = _zone(zone)
-        today = entry.hi.astimezone(tz).date()
-        owned: list[date | None] = list(stamp_dates(seen.text, today))
+        now = entry.hi.astimezone(tz)
+        today = now.date()
+        stamps = stamp_dates(seen.text, today, now, clocked=weekday)
+        if weekday and any(
+            stamp is not None and stamp < today - STAMP_LATEST_BACK for stamp in stamps
+        ):
+            return False  # "Closed Thursday. Updated Fri 10/30" read Thursday: an earlier week's
+        owned: list[date | None] = list(stamps)
         if entry.row_stamp is not None:
             owned.append(entry.row_stamp.astimezone(tz).date())
         elif seen.row_date.strip():
