@@ -689,10 +689,18 @@ explicit date (the date dates the row instead: "Closed Thursday, Nov. 5"), a rel
 "was"), a weekday as the end or another day ("until Thursday", "reopens on Thursday", "back to
 school Thursday", "through Thursday", "instead of Friday", "rather than Friday", "not Friday",
 "moved to Friday"), a weekday followed by a day number that is not the day it lights ("Thursday
-29" on Nov. 5) or by one with a mark ("Thursday #5"), or after one ("Closed 29 Thursday"), a
-weekday a notice went out on ("Issued Friday", "Released Friday", "Friday post", "per Friday's
-notice"; "Thursday's classes are cancelled" names Thursday), a span ("Mon-Wed") or a holiday's
-name ("Ash Wednesday", "Black Friday") (`live/weekdays.py`). "Closed Thursday 5" first seen
+29" on Nov. 5) or by one with a mark ("Thursday #5") or a letter ("Thursday 5d"), or after one
+("Closed 29 Thursday"), a weekday a notice went out on ("Issued Friday", "Released Friday",
+"sent out Friday", "notified families Friday", "notified all parents and staff Friday",
+"communicated Friday", "confirmed Friday", "Closed Thursday, message Friday", "update Friday",
+"decision made Friday", "Friday post", "Friday text", "Friday release", "per Friday's notice";
+"Thursday's classes are
+cancelled", "Games called off Thursday" and a heading such as "Alert Thursday. Closed Thursday"
+name Thursday), a span ("Mon-Wed") or a holiday's
+name ("Ash Wednesday", "Black Friday"), or a weekday whose clause ends in a bare "late",
+"early", "AM" or "PM" with no status word before it ("Closed Thursday · Friday late", "Closed
+Thursday · Friday PM": a late start, or a post's time; "Early dismissal Thursday PM" and
+"Thursday late start" light) (`live/weekdays.py`). "Closed Thursday 5" first seen
 Thursday Nov. 5 lights. Nor is it read, and the row stays held, when the words:
 
 - give a posting age of a day or more, or one that cannot be read exactly ("(1w)", "• 6d", "2d",
@@ -706,7 +714,22 @@ Thursday Nov. 5 lights. Nor is it read, and the row stays held, when the words:
   day ("• 1d") darkens it. A delay's length of up to five hours ("2 hr delay", "2 hr. delay",
   "Open 2 Hrs. Late", "90 Min. Delay", "2 hours late", "delayed 2 hours", "Delayed Thursday 2
   Hours") is no age; a longer one, or one after a bullet, a dot or a spaced dash, is ("Delayed
-  Thursday • 168h" stays held);
+  Thursday • 168h" stays held). An age glued to the word before it, with any mark or none, is an
+  age too ("Closed Thursday,5d", "Closed Thursday.5d", "Closed Thursday:6d", "Closed
+  Thursday/6d", "Closed Thursday 6:00,5d", "Closed Thursday 6:00:5d", "Closed Thursday 11/5,5d"
+  stay held), and a decimal one is what it says, glued to a word's "." too ("Closed Thursday ·
+  1.5d", "Closed Thursday.1.5d" and "Posted 1.5 days ago" stay held; "Closed Thursday · 1.5h"
+  lights, "1.5 hr delay" is a delay's length); a count in thousands groups before a minute or
+  hour unit is its whole number ("Closed Thursday · 2,880 min" and "Posted 1,440 min ago" stay
+  held, "· 1,200 m" lights), and "dy" and "dys" are days ("Closed Thursday · 5dys" stays held);
+  an age is never the end of another number ("10:30m", "3-6 hours", "$1,500 m"); a glued,
+  grouped or decimal one under a day ("Closed Thursday,2h") is bounded as every age is and the
+  status rules read the words as before. A count grouped in thousands with a "." or a space
+  before a minute or second unit may be a day or a minute and a half and cannot be read exactly
+  ("Closed Thursday · 1.440 min", "· 1 440 min" stay held); seconds are read when grouped or of
+  four digits or more ("Closed Thursday · 86,400 s" stays held; "the 1990s" is no age); and the
+  end of a spaced span of lengths cannot be read exactly ("Closed Thursday · 1 - 2w", "9 to 3
+  hours" stay held), unless it is a delay's ("Delayed 2 to 3 hours" lights);
 - hold a number that may be a month and day, with a year or not ("1029", "#1105", "115": Jan.
   15 or Nov. 5; "1029-26", "102926", "10292026": Oct. 29, 2026) and is not, in every reading,
   the day the row lights ("Closed Thursday 1105" and "Closed Thursday 110526" light on Nov. 5),
@@ -716,10 +739,108 @@ Thursday Nov. 5 lights. Nor is it read, and the row stays held, when the words:
   alone as the first or the last clause ("29: Closed Thursday", "Closed Thursday, 29"), never
   one of a list of numbers ("routes 2, 3, 4"), holds unless it is the day;
 - say the school is open again or back on its schedule ("open since", "reopened", "resumed",
-  "back in session", "classes resume", "normal schedule", "now open", "lifted", "all clear"), or
-  that the closure or delay is over ("closure over", "delay cancelled", "closing rescinded"): the
-  row may report a closure that has ended. "Closed Thursday, open Friday" and "Delayed opening
-  Thursday" still light.
+  "back in session", "is in session", "open on time", "classes resume", "normal schedule", "now open", "open again", "back open",
+  "lifted", "all clear"), or that the closure or delay is over ("closure over", "is over",
+  "(over)", "[over]", "*over*", "- over", "over" ending the words or a clause, "open once more",
+  "ended", "expired", "no longer", "delay cancelled", "closing rescinded"), or put the status
+  before ("was", "were", "had been closed"): the row may report a closure that has ended. "Closed Thursday, open
+  Friday", "Delayed opening Thursday" and "Closed Thursday, over 6 inches of snow" still light;
+- void the post or call it an old one, anywhere in the words and its stamps, before the status
+  or after it ("Revoked. Closed Thursday", "Closed Thursday rescinded", "Withdrawn",
+  "Reversed", "Retracted", "Resolved", "(old)", "Old. Closed Thursday", "Archived", "Past
+  event", "Not in effect", "Sent in error", "Nevermind", "Ignore previous", "Please
+  disregard"), call it a correction ("Correction: open. Closed Thursday", "Correction - Closed
+  Thursday", "(corrected)"), or open with an update heading that says the school is open
+  ("Update: open. Closed Thursday", "Update - school open. Closed Thursday"); on the date path
+  too ("Closed Nov. 5 (old)"). "Old Mill school closed Thursday" and "UPDATE: Closed Thursday"
+  still light;
+- name more than sixteen weekdays: a schedule or a list of days, which names no day exactly and
+  gives no stamp that can be read (the archive's lit rows name at most ten).
+
+A weekday with a clock time right by it and no status word in its clause is a posting stamp with
+no stamp word, in every form the clock time takes: after it ("Closed Thursday · Fri 9:14 PM",
+"Closed Thursday | Fri 9:14 PM", "Closed Thursday Sat 7:12am", "Closed Thursday. Friday 21:14",
+"Fri 2114"), in brackets or quotes ("Friday (9:14pm)", "Friday [9:14 PM]", 'Friday "9:14 PM"'),
+before it ("9:14 PM Fri", "21:14 Fri", "9:14 PM, Friday", "at 9:14 PM Friday"), as a bare or
+approximate hour ("Friday at 9", "Friday around 9 PM", "Friday about 9:14 PM"), as a part of
+the day ending the words ("Closed Thursday · Friday evening", "Friday late evening"), as a
+24-hour time with a leading zero ("Thursday 0900", "Thursday 0514 hrs", "0900-1500"), or past
+any run of marks, as long as it is, spaced or glued, after it or before it ("Closed Thursday ·
+Friday: 9:14 PM", "Friday | 9:14 PM", "Friday · 9:14 PM", "Friday/9:14 PM", "9:14 PM - Friday",
+"9:14 PM (Friday)", "9:14 PM; Friday", "Friday...9:14 PM", "Friday::9:14 PM", "Friday _9:14
+PM", "Friday,.9:14 PM", "Friday)/9:14 PM", "9:14 PM-- Friday", "9:14 PM– Friday", "5:14 AM -----
+Thursday", "Thursday .......... 5:14 AM"; one rule, swept over every run of up to three of 41
+marks and 34,428 longer runs either way round). Every Unicode space is read as a space (a
+no-break, thin or ideographic space between "Thursday" and "5:14 AM"). A clock time past a run
+of marks
+is only ever a stamp's: by a weekday with a status word it is that weekday's time only when a
+start or a dismissal owns it ("Early dismissal Friday: 1:30 PM" lights Friday), and otherwise a
+clock time with no day (below: "Closed Thursday @ 9:14 PM" and 'Closed Thursday "9:14 PM"' read
+at 06:00 stay held). A span of hours ("9 AM - 3 PM", "8:30-3:15", "10 AM to 3 PM", "9 AM until 3
+PM", "(9:14-9:30 PM)") is a weekday's hours only when a status or an event word stands in that
+weekday's clause or around the span: "Closed Thursday · Friday closed 9 AM - 3 PM", "Closed
+Thursday · Friday 9 AM - 3 PM closed", "Early dismissal Friday 1:30-2 PM", "Closed 6 a.m. to 8
+p.m. on Friday" and "6 a.m. to 8 p.m. on Friday: closed" name Friday, while in "Closed Wednesday
+· Thursday 9 AM - 3 PM", "Closed Thursday · Friday 9 AM - 3 PM", "Closed Thursday · 9 AM to 3 PM
+on Friday" and "Wednesday closed, Thursday 7:45-2:45" the second weekday is a stamp, read as one,
+and the row lights neither the stamp's day nor, read on it, the day before. The same holds
+for a clock time or a span further on in the weekday's clause, or in the clauses past the marks
+that end it, read on over each clause and each run of marks to the first with a status or event
+word (or the next weekday, or 80 characters), either way round, whatever words with no status or
+event word stand between ("Closed Wednesday · Thursday hours 8:30-3:15", "Thursday office hours 9:00-11:00", "Thursday:
+from 9 AM to 3 PM", "Thursday | from approx. 9 AM - 3 PM", "Thursday hours: 9 AM - 3 PM", "9 AM
+- 3 PM: hours Thursday", "8:30-3:15 hours on Thursday", "Friday: between 9 AM and 3 PM",
+"Thursday posted 5:14 AM", "Thursday hours 5:14 AM", "Thursday | hours (8:30-3:15)", "Thursday |
+from (9:14-9:30 PM)", "Thursday: hours - 8:30-3:15", "Thursday | office | hours 8:30-3:15",
+"(8:30-3:15) | hours | Thursday", "between 9 and 3 hours Thursday"), for bare hours ("Thursday: 9
+to 3", "9 to 3 on Thursday", "Friday: 9 - 3", glued to the marks too: "Thursday:9 to 3",
+"Thursday...between 9 and 3", "Friday!#9 to 3", "Friday _9 to 3", "9 to 3_ Thursday"; never "0-5
+degrees" or "2 to 4 inches"), for a bare number of one or two digits past the marks with nothing
+after it ("Thursday...9", "Thursday ... 9": unreadable), for a 24-hour time with a leading zero
+before a run of marks ("0900: } Friday"), for a time cut short after the weekday ("Friday: 9 a")
+and for a span cut short or written with an "h" on either side ("9a-3p >> Friday", "Thursday
+time 8h30-15h15"): one rule, swept over 21,888 shapes and the round 7 critic's 96,921 (0 that
+light), every run of one to three of 33 marks either way round, glued or spaced, by seven forms
+of span (448,448 shapes, 0 that light), and 119,952 shapes of a weekday, marks, a connector
+word, more marks and a span (0 that light). With a status word in the weekday's clause such a
+row is read as before ("Closed Thursday:9 to 3" and "Thursday | closed | 8:30-3:15" light
+Thursday). A weekday glued to a "_" ("5:14 AM| . _Friday") names no day: the row is held. Words that name hours
+are no status ("Thursday school hours 8:30-3:15", "Thursday open hours 9 to 3" are stamps), and a
+single clock time something runs until is no stamp ("Friday Evening: help desk available until 8:30 PM"
+names Friday). A span of hours gives no time a row went up at, so a stamp with one is
+unreadable and keeps the hold ("Closed Thursday · Wednesday 9 AM - 3 PM" read Thursday). A
+weekday right before a stamp word that starts its clause is the stamp's day ("Closed Wednesday ·
+Thursday posted 5:14 AM", "Closed Wednesday · Thursday. Posted 5:14 AM" are "Posted Thursday
+5:14 AM"; "Closed Thursday · Friday posted 9 PM" read Thursday stays held); with a word before it
+in its clause it is the day the row is for ("Closed Thursday, updated 5:00 AM", "Snow day
+Thursday. Updated 5:00 AM" light). A stamp is never a
+day the row lights,
+and on the weekday path it bounds the row as "Posted Fri 9:14 PM" would (below), so "Closed
+Thursday · Fri 9:14 PM" read Thursday stays held and lights neither Thursday nor Friday, while
+"Closed Thursday · Thu 5:02 AM" read Thursday at 06:00 lights. A bare hour is after the read
+when it is so in the morning or in the evening. A status word in its clause makes it a day the
+row is for ("Early dismissal Thursday 1:30 PM", "Early dismissal Thursday (1:30 PM)", "Thursday
+10 AM start"), and so does a word that makes the clock time when the school starts, opens,
+closes or lets out, or a notice takes effect ("Opening at 10 AM Thursday", "Closing at 1 p.m.
+Thursday", "In effect at 5 p.m. Saturday"), a report or an arrival only with who it is for or
+with a status or event word ("Staff report Thursday 9 AM", "Thursday: students report 10 AM";
+"Closed Wednesday · Thursday report 5:14 AM" and "Thursday arrival 7:45 AM" are stamps), an event named next to it ("No 8 AM Mass Thursday",
+"10am Thursday worship canceled") or a span of hours a status word is said with ("6 a.m. to 8
+p.m. on Thursday: closed"); a part of the day as a heading ("Thursday Afternoon: Closed") is no
+time.
+
+A weekday the row lights whose clock time, right by it or in its clause, is after the read on
+its day, and that no such word owns, keeps the hold: "Closed Friday 9:14 PM", "Friday closed
+9:14 PM" and "School closed Fri 9:14 PM" read Friday at 06:00 may be last Friday night's post,
+and "Closed Thursday · Fri 9:14 PM closed" read Thursday lights neither day. "Closed Friday 5:30
+AM" read Friday at 06:00 lights, and "Closed Friday 6 AM" read Thursday evening, whose Friday
+may be last week's, stays held.
+
+A night-before stamp of either kind dates the row by the day it names on an evening read:
+"Thursday closed. Wed 9:14 PM", "Closed Thursday | Wed 9:14 PM" and "Thursday closed (Wed 9:14
+PM)" read Wednesday at 21:30 light Thursday, as "Closed Friday. Posted yesterday Nov. 5 9 PM"
+read Friday morning lights Friday. On the date path the date names its day and such a weekday
+bounds nothing.
 
 A date is stated as a
 month and day, a numeric or an ISO date in no other year ("Closed Nov 5, 2025" and "Closed Nov. 5
@@ -746,14 +867,45 @@ Wednesday 9:00 PM", "Updated last night", "Posted yesterday at 9 PM"; a date wit
 alone the latest such weekday when that is the read's day or the day before) must fall after the same weekday a week before the day it lights
 and not after the read's local day, on the weekday path and the date path alike: "Closed
 Thursday. Posted 10/29" read Thursday Nov. 5 is last week's and stays held, "Closed Thursday.
-Updated Nov. 4" lights. A row date that cannot be read, one after the read, and a stamp that
+Updated Nov. 4" lights. On the weekday path a stamp in the words must also fall on the read's
+local day or the day before, as a weekday-only stamp must: "Closed Thursday. Updated Fri 10/30",
+"Posted Oct 30", "Updated 10/31 6:00 AM" and "Updated Nov. 3" read Thursday Nov. 5 may be of a
+post about the Thursday before and stay held (`STAMP_LATEST_BACK`), while "Closed Nov. 5. Posted
+10/30", whose date names its day, still lights. A stamp of the read's day at a clock time after
+the read ("Closed Thursday. Updated 11/5 6:30 AM", or "Closed Thursday · Thu 5:02 AM", read at
+04:30), or of the day before at a time after the read in the zone it states ("Updated 11/4 11:30
+PM PT" read at 23:00 Pacific), is unreadable, since it may be the same weekday's a week before,
+and keeps the hold. A stamp's clock time is read past the "." that ends its weekday or date
+("Updated Thu. 7:00 AM", "Updated Thu., 7:00 AM", "Updated Thu. Nov. 5 7:00 AM", "Updated Nov.
+5. 7:00 AM" read at 06:00 stay held, and light read at 08:00). On the weekday path a clock time
+that gives no day, in a stamp ("Updated 7 AM", "Updated noon", "Posted this evening", "Posted
+tonight") or standing in its own clause with no other number and no word that makes it the
+time of a status or an event on its day ("Closed Thursday · 7:14 AM", "Thursday: Closed. 7:14
+AM", "Friday: Closed 9:14 PM", "Closed Thursday. 7:14 AM update", "Closed Thursday. Released
+7:14 AM", "Closed Thursday | Fr 9:14 PM", "Closed Thursday. 7:14 AM upd", "7:14 AM revised",
+"7:14 AM by admin", "7:14 AM report"), that is
+after the read on the
+read's day keeps the hold: the row went up at that time on an earlier day, and which day it
+does not say, as with "Posted Friday" read Thursday. So "Closed Thursday. Updated 9:14 PM" read
+Thursday at 06:00 stays held, as "Closed Thursday 9:14 PM" and "Closed Thursday (7:14 AM)" do,
+and read Wednesday at 21:30 it lights Thursday; "Closed Thursday. Updated 5:30 AM" and "Closed
+Thursday · 5:14 AM" read at 06:00 light. A clock time a start, an opening, a span of hours or an
+event owns, or one in a clause with another number or with a start, an opening, a delay, a
+dismissal, a closing time, a span's end, a bus, a staff call, an office, a meal, a stream, a
+schedule, a school, a decision still to come or an event ("offices open 8 AM - 4 PM", "Buses run
+2 hours late, 10 AM start", "front office at 9:50am", "10:50 a.m. for Delta Elementary",
+"decision by 6:45a", "Livestream only at 10:15"), is no posting time (the lead's ruling, round 6 S1: this hold stays,
+knowing its cost: a night-before row that gives only a clock time, read the next morning, is
+missed; 3 rows in the archive). The date path reads no such stamp: its date names its day (the
+lead's ruling, round 6 S5: the round 4 bound stays on dated rows; reading clock-only stamps
+there would hold 536 today and 207 tomorrow rows in the archive). A row date that cannot be read, one after the read, and a stamp that
 carries a day it does not read exactly ("Updated last week", "Posted 3 days ago", "Posted
 yesterday" with no time, "Posted Feb. 30", a weekday that is not its date's, and a weekday alone two or more
 days back, which may be any week's or after the day the row is for: "Posted Friday", "Updated
 Saturday" or "Posted Mon" read Thursday) keep the hold, while "Closed Thursday. Posted Wed 9pm"
 and "Closed Thursday. Posted Thu" read Thursday still light; an age in a stamp ("Updated 2 hours
-ago") gives no day and is bounded as every age is; a stamp with no day ("Updated 5:30 AM",
-"Posted by the district") bounds nothing. A stamp is read over all the words the weekday rule
+ago") gives no day and is bounded as every age is; a stamp with no day ("Updated 5:30 AM" read
+at 06:00, "Posted by the district") bounds nothing. A stamp is read over all the words the weekday rule
 leaves out as the stamp: from its stamp word to the first ".", ";" or "|", across lines, with a
 date or time that runs on past a "." read whole ("Oct. 29", "6 a.m."). Words in it that give no
 day are passed over ("Posted by the district on 10/29", "Updated per district, 10/29", "Updated"
@@ -767,6 +919,29 @@ day or more ("3 days ago") names no weekday or date for this rule either: "Close
 date inside a stamp never names the day the row is for. A page's own stamp (page-scoped or unmarked) still dates nothing and is no part
 of a key (D2), but when it reads as a day on or before the same weekday a week before, the page
 was last changed then and so was the row: it keeps the hold.
+
+Some rows still light though an earlier-day reading of them exists; the lead accepts each as
+listed (round 6 S4), every one within the bounds above or the residual below: a weekday-only
+stamp of the day before may be a week earlier ("Closed Thursday. Posted Wed 9pm" read Thursday
+at 06:00, "Updated Tue 9:30 PM" read Wednesday at 21:00); a stamp of the read's own weekday read
+on it ("Closed Thursday. Posted Thu" read Thursday at 06:00, "Thursday closed. Wed 9:14 PM" read
+Wednesday at 21:30); bare and repeated rows ("Closed Thursday again", "Still closed Thursday",
+"Closed Wednesday and Thursday": the cold-source residual below); ages under a day ("Closed
+Thursday · 0.9d", "Updated 1 hour ago"); and date-path rows, whose date names their day. A row
+that names two weekdays, or a weekday and a date, with no status word in the piece of the words
+one of them stands in ("Thursday: Closed | Friday: TBD", "Closed Thursday | Wednesday") is not
+held for that alone: holding such rows would hold 203 lit archive rows (175 when only the day
+it lights must have one), past the 30 the lead set, and the lead rules later. The same goes for a
+status word between two weekdays with no clause mark ("Thursday closed Friday 9 AM - 3 PM", or
+"Thursday closed [Friday 9 AM - 3 PM": a "[" ends no clause), which lights both days, with the
+reader's reading of the span (round 7 critic S6, with the 203-row measurement). So do, for the
+same reason, an event word or a status-time word that owns a clock time in the second weekday's
+clause, which the first weekday's status then lights (round 7 second critic S4, read Thursday at
+06:00: "Closed Wednesday · Thursday classes 8:30-3:15", "Thursday school day 8:30-3:15",
+"Thursday lunch 11:30", "Thursday breakfast 7:15 AM", "Thursday board meeting 6 PM", "Thursday |
+open (9 AM - 3 PM)"; read Wednesday at 19:00, "Closed Wednesday · Thursday buses 6:45 AM"),
+and a span of hours with a degree or inch mark after it ("9 to 3° Thursday", '9 to 3" Thursday':
+read as no span of hours).
 
 A row whose words may be older than its first sighting is not self-dated unless the ledger can
 bound them. Every key the ledger adds keeps `earliest`, the earliest its words may have been on
