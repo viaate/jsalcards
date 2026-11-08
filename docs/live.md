@@ -256,6 +256,17 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   building issues did not. Downed power lines are storm damage, the weather on an ice day,
   and name no cause. The reader, the merge and the replay are part of `derived_version`, so
   a change to them lands on a day the public closings file holds few rows, not in a storm.
+- **Part of a district.** A district's row whose words name one part of it (a campus, a
+  building, a level such as "Lincoln Elementary" or "high schools", a grade band such as
+  "K-8", the preschool, an intermediate school, bus routes, a side of the district, "only")
+  lights none of its schools: they only stand against another row's status. "All campuses"
+  and "every elementary" speak for every school. The pre-K program counts in every spelling:
+  "pre-K", "PreK", "Pre K", "PK", in any case, and with any dash for the hyphen (U+2010 to
+  U+2015, U+2212), so "Closed for Pre K students" and "PK: 2 hour delay" light no school, as
+  "Closed for pre-K students" lights none. A band such as "PK-5", "PreK-8" or "Pre-K–12" is a
+  part as "Pre-K-12" is, and "PK" inside a word ("PKWY") is not the program. The replay and
+  the live guards read the words through one function (`names_part_of_district` in
+  `snowlight/replays/build.py`), so both see the same text.
 - **Commits.** Each upload's commit message is `live <prefix> pass <start> run <id> sweep <s>
   due <n> good <n> lit <n> state <bytes>`: counts only, the public record the soak report reads.
   A message names its own commit only: any other write of a live-read process (an alerts file,

@@ -201,7 +201,8 @@ private)."""
 PART_WORDS: Final = re.compile(
     r"(?<!\ball\s)(?<!\bevery\s)(?<!\beach\s)\b(?:campus|building|elementary|elem|middle|"
     r"high\s+schools?|jr|jhs|ms|hs|upper\s+school|lower\s+school|academy|center|site|location|"
-    r"annex|preschool|pre-?k|early\s+childhood|except|(?:pk|tk|k)\s*-\s*\d{1,2}|grades?\s+(?:pk|k|\d)|"
+    r"annex|preschool|pre[\s-]?k|pk|early\s+childhood|except|(?:pk|tk|k)\s*-\s*\d{1,2}|"
+    r"grades?\s+(?:pk|k|\d)|"
     r"(?:at|for)\s+(?!(?:all|every|each|our|the|public|district|area)\b)"
     r"(?-i:[A-Z])[\w.'-]*(?:\s+(?-i:[A-Z])[\w.'-]*)*\s+school)\b",
     re.IGNORECASE,
@@ -209,7 +210,21 @@ PART_WORDS: Final = re.compile(
 """Words that name one part of a district ("Kibbleworth campus", "Lincoln Elementary", "the
 north site", "except the high school", "Lincoln Elem only", "K-8 closed", "Closed at Lincoln
 School", a comment "High Schools" beside "Early Dismissal at 1:00PM Wednesday"): such a row
-does not speak for all its schools. "All campuses" and "every elementary" speak for every one."""
+does not speak for all its schools. "All campuses" and "every elementary" speak for every one.
+The pre-K program counts in each of its spellings ("pre-K", "PreK", "Pre K", "PK"; a grade band
+such as "PK-5" or "Pre-K-12" too, as "K-8" does), never inside a word ("PKWY"). Read it through
+:func:`names_part_of_district`, which folds every dash first."""
+DASHES: Final = str.maketrans(dict.fromkeys("\u2010\u2011\u2012\u2013\u2014\u2015\u2212", "-"))
+"""The dashes a list may write for a hyphen ("Pre\u2011K", "PK\u20135"), each read as "-"."""
+
+
+def names_part_of_district(text: str) -> bool:
+    """Whether a district row's words name one part of the district (:data:`PART_WORDS`), read
+    with every dash of :data:`DASHES` as a hyphen. The replay and the live guards both read
+    a row through this, so they see the same text."""
+    return PART_WORDS.search(text if text.isascii() else text.translate(DASHES)) is not None
+
+
 NAME_ONLY: Final = frozenset({"name"})
 """The matcher's reasons that rest on a listing's name alone (``snowlight.match.Reason.NAME``)."""
 LISTING_LEVELS: Final = (
@@ -806,7 +821,7 @@ class _Day:
             return Drop.VIRTUAL
         if level == "district" and facility(school):
             return Drop.FACILITY
-        if level == "district" and PART_WORDS.search(text):
+        if level == "district" and names_part_of_district(text):
             return Drop.PART_OF_DISTRICT
         return None
 

@@ -21,10 +21,10 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Final
 
-from snowlight.replays.build import PART_WORDS
+from snowlight.replays.build import names_part_of_district
 from snowlight.replays.gates import LEARNING_WORDS, NON_WEATHER_WORDS, learning_mode
 
-GUARDS_VERSION: Final = "s8c-4"
+GUARDS_VERSION: Final = "s8c-5"
 """Part of every ``derived_version``: bump it when a guard changes what a row derives."""
 
 
@@ -215,7 +215,7 @@ def open_wording_reason(text: str, name: str) -> str | None:
 
 def names_part(text: str) -> bool:
     """Whether a district row's words name only part of the district."""
-    return bool(PART_WORDS.search(text) or EXTRA_PART.search(text))
+    return names_part_of_district(text) or EXTRA_PART.search(text) is not None
 
 
 # --- holds and the breaker --------------------------------------------------------------------
