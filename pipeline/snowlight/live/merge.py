@@ -12,6 +12,9 @@ is recent). For each school and local day:
    withheld (``CONFLICT``); a school's own status beats its district's only when
    they were first seen at the very same time (a real tie, as when one list holds
    both), never when their intervals merely overlap.
+   A row dated by the weekday or date its words name (its posting time unknown) may have been
+   posted before every other row: when it is the newest, every row of the school and
+   day is read as posted at the same time as it.
    Identical ones merge and keep the earliest trustworthy ``announced_at`` since
    the status last changed. (The spec compares first sightings only; two lists
    read a few minutes apart would then be ordered by when they were read.)
@@ -78,6 +81,9 @@ from snowlight.schemas.live import Closing, local_days
 from snowlight.schemas.scalars import MAX_MINUTES_AGO, MAX_SHIFT_MINUTES, MINUTES_PER_DAY
 from snowlight.schemas.vocab import REASON_BY_LABEL, SHIFTED, STATUS_BY_KIND, Status
 
+UNBOUNDED: Final = datetime.min.replace(tzinfo=UTC)
+"""The earliest posting time of a row whose posting time is unknown: before every other."""
+
 type Verdict = Literal["claim", "open", "dissent", "stand"]
 SATURDAY: Final = 5
 
@@ -103,8 +109,13 @@ class Item:
     @property
     def posted_lo(self) -> datetime:
         """The earliest the row can have been posted: its row stamp when that dated it, else
-        the read before it that lacked it (its first sighting when neither is known)."""
+        the read before it that lacked it (its first sighting when neither is known). A row
+        dated by the weekday or date its words name
+        (:attr:`~snowlight.live.resolve.Derived.dated_by`) can have been posted at any time
+        before: :data:`UNBOUNDED`."""
         row = self.result.row
+        if self.result.derived.dated_by:
+            return UNBOUNDED
         stamp = row.row_stamp
         if stamp is not None and self.result.derived.announced_at == stamp:
             return stamp

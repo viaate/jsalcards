@@ -648,6 +648,119 @@ and a 403 are both `blocked` there). With status words such a row names its dist
 the morning record each slot, so the prediction's call time never counts a district it names as
 proven silent (docs/predict.md, "The usual call time").
 
+**Self-dated rows.** A row held as `unknown_start` whose status words name a
+weekday or state a date is **self-dated** when that day is the school's local today at the
+row's first sighting, or tomorrow on an evening read (the reader dates a bare "Closed" read then
+the next day, and would at the same local time on a weekday): "Closed Thursday" or "Closed Nov.
+5" first seen on a cold start Thursday at 06:00 lights Thursday; first seen Wednesday at 19:00 it
+lights Thursday; first seen Friday, or Wednesday morning, it stays held. A Sunday counts as an
+evening read only in the evening: "Closed Monday" first seen Sunday at 08:00 stays held, though
+the reader dates a bare "Closed" read then Monday, since a list left unchanged over the weekend
+may still hold last Monday's row. It is read once, at its first sighting, through every gate,
+and lights only when that reading claims the day it was dated by and no day its words do not
+name ("Closed Thu & Fri" first seen Friday lights Friday; Thursday is a past day). A weekday
+counts in the reader's own spellings ("Weds", "Thurs"); it is not read when the words hold an
+explicit date (the date dates the row instead: "Closed Thursday, Nov. 5"), a relative day word
+("today", "tomorrow", "next") or a word that puts the status before ("previously", "earlier",
+"was"), a weekday as the end or another day ("until Thursday", "reopens on Thursday", "back to
+school Thursday", "through Thursday", "instead of Friday", "rather than Friday", "not Friday",
+"moved to Friday"), a weekday followed by a day number ("Thursday 29", "Thursday #29"), a span
+("Mon-Wed") or a holiday's name ("Ash Wednesday", "Black Friday") (`live/weekdays.py`). A date is stated as a
+month and day, a numeric or an ISO date in no other year ("Closed Nov 5, 2025" and "Closed Nov. 5
+'25" stay held), and the same end words and spans keep a date from dating its row, today's date
+too: "Closed until Nov. 5", "Classes resume Nov. 5", "Closed through Nov. 5" and "Closed Nov.
+5-6" read on Nov. 5 stay held.
+
+A weekday that may be part of a proper name never dates its row, and the row stays held: a
+weekday the row's name holds, or the directory name of a school the row lights or of the record
+the match chose ("Friday Harbor SD"); in words with both cases, a weekday followed by a
+capitalised word that is no status, date, time or connective word ("Friday Harbor schools
+closed", "Closed for Friday Harbor district", "Monday Creek campus closed", "Sunday River routes
+closed"), or by a capitalised status word that also names a school ("Friday School closed",
+"Monday Learning Center": School, Schools, Academy, Preschool, Learning, Day, Early); in words of
+one case, where case tells nothing, a weekday followed by any such word ("closed friday harbor",
+"FRIDAY SCHOOL CLOSED"); and a weekday after a place word ("St. Friday", "Lake Monday").
+"Closed Friday due to weather", "CLOSED FRIDAY DUE TO SNOW" and "Closed Thursday / No Activities"
+still name their weekday.
+
+A row's own dates bound it. Its row date, when it has one (a row stamp too old to date it, or a
+date-only row date such as Gray's), and each stamp in its words ("Posted 10/29", "Updated Oct.
+29", "(updated Oct 29, 2025)", "Updated 2026-10-29", "Posted Wednesday, October 28", "Updated
+Wednesday 9:00 PM", "Posted yesterday"; a date with no year is the latest such date, a weekday
+alone the latest such weekday) must fall after the same weekday a week before the day it lights
+and not after the read's local day, on the weekday path and the date path alike: "Closed
+Thursday. Posted 10/29" read Thursday Nov. 5 is last week's and stays held, "Closed Thursday.
+Updated Nov. 4" lights. A row date that cannot be read, one after the read, and a stamp that
+carries a day it does not read exactly ("Updated last week", "Posted 3 days ago", "Posted Feb.
+30", a weekday that is not its date's) keep the hold; a stamp with no day ("Updated 5:30 AM",
+"Posted by the district") bounds nothing. A stamp is read over all the words the weekday rule
+leaves out as the stamp: from its stamp word to the first ".", ";" or "|", across lines, with a
+date or time that runs on past a "." read whole ("Oct. 29", "6 a.m."). Words in it that give no
+day are passed over ("Posted by the district on 10/29", "Updated per district, 10/29", "Updated"
+and "Oct 29" on two lines all read Oct. 29; "a 2 hour delay", "two hours later" and "snow day"
+give no day), and any number, month, weekday or relative day word in it that it cannot read as
+part of a date, a time or a day makes the stamp unreadable ("Posted by District 5", "Updated by
+staff, 29 October"): the row stays held. What a "." leaves in the status words is read by the
+status rules, and a date there in a form they do not read ("29 October", "10-29", "10.29" or
+"29.10", "20261029", a day number in parentheses "(29)", a month alone) or a time counted from the posting ("3 days ago") names no weekday or
+date for this rule either: "Closed Thursday. Posted by Supt. Lee 10-29" stays held. A weekday or
+date inside a stamp never names the day the row is for. A page's own stamp (page-scoped or unmarked) still dates nothing and is no part
+of a key (D2), but when it reads as a day on or before the same weekday a week before, the page
+was last changed then and so was the row: it keeps the hold.
+
+A row whose words may be older than its first sighting is not self-dated unless the ledger can
+bound them. Every key the ledger adds keeps `earliest`, the earliest its words may have been on
+the list (a nullable column a ledger written before gets on open, so the schema version and the
+ledger stay): its own first sighting; for a key back on the list after 3 hours or more (gone or
+not), the earliest the ledger saw it before; for a successor (new words in a listing, tied or
+not), the earliest the ledger saw every key of that listing it replaced, since it may re-render
+their words; and, on a source the ledger read before, for a key the ledger cannot link to what
+it replaced (no predecessor, never seen before), whether it is dated from the read before or not
+(part of a list moved to another section on a warm read re-keys without churn: the moved rows
+are dated as new by their window, a separate rule this one leaves as it is, but their tied
+successors and their returns on a later day take their `earliest`), and for a key with no known
+posting bound on a cold read (more than 36 hours after the source's last good read, successors and returning
+keys too: their words may have gone up any time in the gap), the earliest of that source's
+previous good read and every sighting the ledger holds of it. When any of those sightings is of
+a row written before the column, `earliest` stays unknown. The resolver bounds a successor by
+its predecessor the same way when it settles how the successor is dated (both readings, and the
+widened one, carry the earlier sighting), so a row held on a cold read and re-worded on the
+next warm read stays held. A row is self-dated only when its `earliest` dates it to the same
+day, as if it had never left the list. "Closed Thursday" first seen last
+Wednesday evening, off the list for a day and back this Thursday morning stays held; first seen
+this Wednesday evening, off for six hours and back Thursday morning, it lights Thursday. A list
+re-identified on a cold read after a reader gap (a renamed section header gives every row a new
+key), any new row on such a read and a listing whose words changed during the gap ("2 hour
+delay" before it, "Closed Thursday" after it: it may have gone up any time in the gap, a week
+ago too) stay held: the read before the gap is over 36 hours earlier, so it never dates the row to the
+same day. A churn read (`churn`, warm) is never self-dated at all: the list it replaced may hold
+the same rows under other keys, or the page may be an old copy re-served from a cache, and
+nothing bounds when such a row went up. A row written before the column (`earliest` unknown) is
+never self-dated. A new ledger (a first run, a lost file, a new schema version) reads every
+source as never read, so no row whose `earliest` falls in the ledger's first 7 days of watching
+(its earliest kept good read of any source, `Ledger.watching_since`) is self-dated: a source's
+first read, and every row descended from it (its successors, tied or not, and its returns); a ledger in use
+keeps 14 days of good reads, so it watches long enough from the start. The one class this leaves
+is a source a ledger that has watched for a week has never read (new to the registry, or failing
+until now), read cold for the first time while it still shows a row from an earlier week that
+names today's weekday: the reader cannot tell, and the day the row names, today or an evening's
+tomorrow, bounds it.
+
+A self-dated row gives no announced time, and merge takes it as posted at an unknown time: when
+it is the newest word for a school and day, every other row for that school and day counts as
+posted at the same time, so an earlier retraction or a different status still darkens it. It
+never lights a day it does not name and never outlasts that day. The resolver counts such rows as
+`weekday_dated` or `date_dated` (they leave `unknown_start`) and by why they were held
+(`self_dated:unknown_start`). The `cold` alert adds `self_dated:unknown_start` to its
+`unknown_start`, since their posting time is as unknown as before, so it reads as it did before
+the rule; the cold census still counts them too, since it reads the ledger's dating and not the
+words. A row date that does not exist ("2026-02-30 12:00" in a board's day field) keeps the hold
+and never stops the pass. A board row keeps its board rule (G5), and a row the ledger holds at a
+known posting bound over 36 hours (`interval_too_long`, a re-worded successor dated from its
+predecessor's posting) is not self-dated. A row whose reading carries a note other than
+`undated` and `unread_words` keeps its `note` hold: "Closed Thursday / No Activities" names its
+weekday, but the reader's `activities_cancelled` note holds it, self-dated or not.
+
 Titles, bodies, comments, annotations and `alerts.json` carry kinds, times, counts, codes,
 registry ids and the run link only: never a listing's words, a name, an email, a token or a
 response body.

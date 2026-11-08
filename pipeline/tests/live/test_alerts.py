@@ -298,6 +298,14 @@ def test_cold_opens_in_a_morning_window_and_clears_when_it_ends(tmp_path: Path) 
     assert "cold" not in book.open
 
 
+def test_cold_still_counts_rows_dated_by_their_own_weekday(tmp_path: Path) -> None:
+    # a self-dated row is kept, but its posting time is as unknown as before the rule
+    alerts, book = _reader(tmp_path)
+    counts = {"kept": 22, "self_dated:unknown_start": 12, "self_dated:churn": 3}
+    _pass(alerts, NOW, resolve_counts=counts)
+    assert book.open["cold"].detail == {"candidates": 22, "unknown_start": 12}
+
+
 def test_the_source_digest(tmp_path: Path) -> None:
     alerts, book = _reader(tmp_path)
     step = timedelta(minutes=5)

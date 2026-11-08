@@ -528,8 +528,11 @@ class ReaderAlerts:
                 book.set(Kind.BREAKER, False, now)
         self.edition(now, edition, ahead=ahead)
         kept = int(resolve_counts.get("kept", 0))
-        unknown = int(resolve_counts.get("withheld:unknown_start", 0))
-        candidates = kept + unknown
+        held = int(resolve_counts.get("withheld:unknown_start", 0))
+        candidates = kept + held
+        # a row dated by the weekday or date its words name is kept, but its posting time is
+        # as unknown as before the rule: the alert counts it as it did then
+        unknown = held + int(resolve_counts.get("self_dated:unknown_start", 0))
         cold = morning(now) and candidates >= COLD_MIN_ROWS and unknown > COLD_SHARE * candidates
         if cold or not morning(now):
             book.set(Kind.COLD, cold, now, {"candidates": candidates, "unknown_start": unknown})

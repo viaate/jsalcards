@@ -32,6 +32,42 @@ spec 7.4):
    stretch of the interval where its answer is constant is read at least once.
    Every reading must agree (``ZONE_SPLIT`` across zones at one time,
    ``INTERVAL_DISAGREES`` across times).
+   **Self-dating.** A row held because its posting time is unknown (``UNKNOWN_START``: no
+   fresh row stamp and ``lo`` unknown) whose status words name a weekday
+   (:func:`~snowlight.live.weekdays.named_weekdays`: "Closed Thursday", "Closed Thu &
+   Fri"; never a weekday after "until", "reopens" or "returns", in a span, a holiday's
+   name, a stamp, a proper name, the row's name or a directory name of its schools or
+   matched record, and never beside an explicit date or a relative day word) or state a
+   date (:func:`~snowlight.live.weekdays.names_date`: "Closed Nov. 5", "Closed Thursday,
+   Nov. 5": the date wins) is dated by that day when it is the school's local today at the
+   first sighting ``hi`` in every zone, or tomorrow on an evening read (the reader dates a
+   bare status read at ``hi`` the next day, and would on a weekday at the same local time:
+   so never a Sunday morning for Monday). The row's own dates, when it has them (its row
+   stamp, a date-only row date, and each stamp in its words:
+   :func:`~snowlight.live.weekdays.stamp_dates`), must fall after the same weekday a week
+   before that day and not after the read's local day (a row dated last Thursday that says
+   "Closed Thursday" is last week's); a row date or a stamp that cannot be read keeps the
+   hold. The row is then read once, at ``hi``, through every gate below, and lights only
+   when that reading claims the day it was dated by and every day it claims is one its
+   words name; otherwise it stays held as before (and still darkens as before). Its words
+   may be older than ``hi``: :attr:`~snowlight.live.ledger.LedgerRow.earliest` is the
+   earliest they may have been on the list (a key back as a new appearance, a successor,
+   bounded by the keys of its listing it replaced, or, on a source it read before, a key
+   the ledger cannot link to what it replaced, dated from the read before or not, or a cold
+   read added after a gap), a
+   successor's readings carry its predecessor's first sighting and ``earliest`` too
+   (:func:`_successor_earliest`), and the row is self-dated only when that sighting dates
+   it to the same day, as if it had never left the list; a row with no ``earliest``
+   (written before the column) is not, and nor is any row whose ``earliest`` falls in a
+   ledger's first :data:`POSTED_WINDOW` of watching (:meth:`Resolver._watched`: a new
+   ledger reads every source as new, so a source's first read and every row descended from
+   it, successors and returns, may be last week's). ``CHURN`` rows are never self-dated: a
+   re-keyed list or a re-served old copy can carry any earlier day's rows. It is kept with
+   :attr:`Derived.dated_by`: it gives no ``announced_at``, and merge takes it as posted at
+   an unknown time up to ``hi`` (:mod:`snowlight.live.merge`). The resolver counts such
+   rows as ``weekday_dated`` and ``date_dated``, and by the reason they were held
+   (``self_dated:unknown_start``); the ``cold`` alert still counts them in its
+   ``unknown_start``, as before the rule.
 6. **Gates** on every reading: a status kind at 0.8 or more (G4; ``WEAK`` counts
    0.7, owner Q5), only the notes ``undated`` and ``unread_words`` (``NOTE``),
    weather (G7, ``NOT_WEATHER``), the wording gates (:func:`~snowlight.live.guards.
@@ -139,6 +175,13 @@ from snowlight.live.provenance import (
     SourceType,
 )
 from snowlight.live.versions import live_version, reader_matcher_version
+from snowlight.live.weekdays import (
+    named_weekdays,
+    names_date,
+    stamp_dates,
+    states_a_date,
+    weekdays_in,
+)
 from snowlight.match import Matcher
 from snowlight.match.matcher import Reason as MatchReason
 from snowlight.match.normalize import Level as MatchLevel
@@ -161,6 +204,7 @@ from snowlight.replays.gates import (
     day_words,
 )
 from snowlight.replays.gates import says_open as open_words
+from snowlight.replays.rows import posted_stamp
 from snowlight.schemas.vocab import REASON_BY_LABEL, STATUS_BY_KIND
 from snowlight.sources.stations.registry import Registry, Station, StationStatus
 
@@ -180,6 +224,21 @@ OPEN_AHEAD: Final = 6
 BARE_STATUS: Final = "Closed"
 """The text whose reading dates an undated open statement: the reader's own rule for a
 listing that names no day (overnight and morning: the posting day)."""
+WEEKDAY_HELD: Final = frozenset({Withheld.UNKNOWN_START})
+"""The reasons a row's posting time is unknown (``lo`` unknown, no fresh row stamp) for which
+it is dated by the weekday or date its status words name, when that is today or an
+evening's tomorrow. ``CHURN`` is not one: a read that re-keyed the list may re-key last
+week's rows or re-serve an old copy of the page, and nothing bounds when such a row went up
+(WD-R3-B1). ``INTERVAL_TOO_LONG`` is not one either: its ``lo`` is known (a successor dated
+from its predecessor's posting, R4C-B1), and it stays held."""
+SELF_DATED_BY: Final = frozenset({"weekday", "date"})
+"""What a self-dated row is dated by (:attr:`Derived.dated_by`)."""
+POSTED_WINDOW: Final = timedelta(days=7)
+"""A self-dated row's own date must be after its day less this (the same weekday a week
+before), so a weekday it names cannot be last week's."""
+EVENING_PROBE_WEEKDAY: Final = 2
+"""The weekday (Wednesday) a read's local clock time is tried on to tell an evening read: a
+weekday whose next day is a school day, never a daylight-saving change."""
 FULL_VIRTUAL: Final = "FULLVIRTUAL"
 QUEUED: Final = frozenset({Withheld.UNMATCHED, Withheld.REJECTED_MATCH})
 """Rows whose listing goes to the private unmatched queue."""
@@ -523,6 +582,10 @@ class Derived:
     (:data:`READ_KINDS`). Empty when the row was not read."""
     undated: bool = False
     """Its readings name no day: the day comes from when it was posted."""
+    dated_by: str = ""
+    """``"weekday"`` or ``"date"`` when its posting time cannot be bounded and it is dated by
+    the weekday or date its words name (read once, at its first sighting): merge takes it
+    as posted at an unknown time. Empty otherwise."""
     stands: tuple[Target, ...] = ()
     """The schools a present row names at school level and lights no claim of its own day for
     (withheld, or dated by its posting time): it stands against their district's
@@ -584,6 +647,7 @@ class Derived:
             "target_drops": dict(sorted(self.target_drops.items())),
             "kinds": list(self.kinds),
             "undated": self.undated,
+            "dated_by": self.dated_by,
             "stands": [[t.index, t.nces_id, t.level] for t in self.stands],
             "reach": list(self.reach),
         }
@@ -601,8 +665,11 @@ class Derived:
         announced = _opt_str(body["announced_at"])
         drops = _object(body["target_drops"])
         undated = body["undated"]
+        dated_by = body.get("dated_by", "")  # absent in payloads stored before it
         if not isinstance(undated, bool):
             raise ValueError("expected a flag")
+        if dated_by != "" and dated_by not in SELF_DATED_BY:
+            raise ValueError("expected what a row is dated by")
         derived = cls(
             withheld=None if withheld is None else Withheld(withheld),
             claims=tuple(_day_claim(item) for item in _list(body["claims"])),
@@ -622,6 +689,7 @@ class Derived:
             target_drops={_str(key): _int(value) for key, value in drops.items()},
             kinds=tuple(_str(kind) for kind in _list(body["kinds"])),
             undated=undated,
+            dated_by=_str(dated_by),
             stands=tuple(_target(item) for item in _list(body["stands"])),
             reach=tuple(_str(leaid) for leaid in _list(body["reach"])),
         )
@@ -743,6 +811,18 @@ def darkens_of(derived: Derived) -> Darkens | None:
         schools=tuple(sorted({t.nces_id for t in dark.voters})),
         days=dark.dissent or None,
     )
+
+
+def _successor_earliest(entry: LedgerRow, pred: LedgerRow | None) -> datetime | None:
+    """The earliest a successor's words may have been on the list: its own ``earliest`` and,
+    since it may re-render its predecessor's posting or have replaced it at any time since
+    the predecessor was first seen, the predecessor's first sighting and ``earliest``.
+    ``None`` when either has none (written before the column: the age is unknown)."""
+    if pred is None:
+        return entry.earliest
+    if entry.earliest is None or pred.earliest is None:
+        return None
+    return min(entry.earliest, pred.hi, pred.earliest)
 
 
 def _same_reading(one: Derived, other: Derived) -> bool:
@@ -936,6 +1016,9 @@ class Resolver:
             superseded = not here and entry.ident in listed
             counts["reused" if reused else "derived"] += 1
             counts[f"withheld:{derived.withheld}" if derived.withheld else "kept"] += 1
+            if derived.dated_by:
+                counts[f"{derived.dated_by}_dated"] += 1
+                counts[f"self_dated:{_unknown_start(entry.start)}"] += 1
             counts["superseded"] += superseded
             for reason, number in derived.target_drops.items():
                 counts[f"target:{reason}"] += number
@@ -1081,7 +1164,7 @@ class Resolver:
         pred_key = entry.pred
         pred = None if pred_key is None else self.ledger.row(pred_key)
         stamp = entry.row_stamp
-        own_entry = entry._replace(pred=None)
+        own_entry = entry._replace(pred=None, earliest=_successor_earliest(entry, pred))
         if (
             pred_key is None
             or pred is None
@@ -1090,8 +1173,8 @@ class Resolver:
             self.ledger.settle(entry.key)
             counts["successor:own_date"] += 1
             return own_entry, None
-        as_before = entry._replace(
-            hi=pred.hi, lo=pred.lo, start=pred.start, row_stamp=pred.row_stamp, pred=None
+        as_before = own_entry._replace(
+            hi=pred.hi, lo=pred.lo, start=pred.start, row_stamp=pred.row_stamp
         )
         own = self.derive(station, own_entry, seen)
         before = self.derive(station, as_before, seen)
@@ -1197,6 +1280,11 @@ class Resolver:
             return replace(base, withheld=Withheld.ZONE_UNKNOWN, targets=(), voters=()), ()
         times, stamped, undatable = self._times(entry, zones)
         if undatable is not None:
+            dated = self._self_dated(
+                station, seen, entry, base, zones=zones, reason=undatable, matched=outcome.best_name
+            )
+            if dated is not None:
+                return dated, base.targets
             return self._undatable(seen, entry, base, zones, undatable), base.targets
         read = self._read(
             station, entry, seen=seen, base=base, zones=zones, times=times, stamped=stamped
@@ -1291,13 +1379,116 @@ class Resolver:
         if stamp is not None and entry.hi - rules.stamp_window <= stamp <= entry.hi:
             return [stamp], True, None
         if entry.lo is None:
-            reason = {Start.CHURN: Withheld.CHURN, Start.REWORDED: Withheld.REWORDED}.get(
-                entry.start, Withheld.UNKNOWN_START
-            )
-            return [], False, reason
+            return [], False, _unknown_start(entry.start)
         if entry.hi - entry.lo > rules.longest_interval:
             return [], False, Withheld.INTERVAL_TOO_LONG
         return samples(entry.lo, entry.hi, zones, rules.sample_step), False, None
+
+    def _self_dated(  # noqa: PLR0913 - one row and why it is held
+        self,
+        station: Station,
+        seen: SeenRow,
+        entry: LedgerRow,
+        base: Derived,
+        *,
+        zones: Sequence[str],
+        reason: Withheld,
+        matched: str | None = None,
+    ) -> Derived | None:
+        """A held row dated by the weekday or date its status words name (see the module),
+        or ``None`` when it is not: it then stays held as before.
+
+        The row is read once, at its first sighting ``hi``, and lights only when that
+        reading passes every gate, claims the day it was dated by and claims no day its
+        words do not name. A row that names part of its district keeps its hold (it
+        stands against every day of its schools). ``matched`` is the name of the record the
+        match chose: a weekday it, or a name of a school the row lights, holds is never read
+        from the words ("Friday Harbor").
+        """
+        if reason not in WEEKDAY_HELD or base.voters or entry.earliest is None:
+            return None
+        named = named_weekdays(seen.text, seen.name)
+        if named:
+            schools = (self.directory.schools.get(target.nces_id) for target in base.targets)
+            held = [matched or "", *(school.record.name for school in schools if school)]
+            named -= weekdays_in(held)
+        names: Callable[[date], bool]
+        if named:
+            dated_by, names = "weekday", lambda day: day.weekday() in named
+        elif states_a_date(seen.text, seen.name):
+            dated_by, names = "date", lambda day: names_date(seen.text, day, seen.name)
+        else:
+            return None
+        day = self._own_day(entry.hi, zones, names)
+        if (
+            day is None
+            or not _posted_before(seen, entry, zones, day)
+            or self._own_day(entry.earliest, zones, names) != day
+            or not self._watched(entry.earliest)
+        ):
+            return None
+        read = self._read(
+            station, entry, seen=seen, base=base, zones=zones, times=[entry.hi], stamped=False
+        )
+        claimed = {claim.day for claim in read.claims}
+        if (
+            read.withheld is not None
+            or read.opens
+            or read.dissent is not None
+            or day not in claimed
+            or not all(names(other) for other in claimed)
+        ):
+            return None
+        return replace(read, announced_at=None, dated_by=dated_by)
+
+    def _watched(self, earliest: datetime) -> bool:
+        """Whether the ledger has watched its sources for :data:`POSTED_WINDOW` before a row's
+        ``earliest`` sighting: only then is a source first read then one no ledger read
+        before. A new ledger (a lost file, a new schema version) reads every source as new,
+        so no row whose earliest sighting falls in its first week is self-dated, whatever
+        descends from it (WD-R3 self-audit, WD-R4C2-B2)."""
+        since = self.ledger.watching_since()
+        return since is not None and since <= earliest - POSTED_WINDOW
+
+    def _own_day(
+        self, hi: datetime, zones: Sequence[str], names: Callable[[date], bool]
+    ) -> date | None:
+        """The day a row whose words name the days ``names`` accepts is dated by at its first
+        sighting ``hi``: the local today when named, else tomorrow when named on an
+        evening read (:meth:`_evening`). The same day in every zone, or ``None``."""
+        days: set[date] = set()
+        for zone in zones:
+            today = hi.astimezone(_zone(zone)).date()
+            tomorrow = today + timedelta(days=1)
+            if names(today):
+                days.add(today)
+                continue
+            if not names(tomorrow) or not self._evening(hi, zone):
+                return None
+            days.add(tomorrow)
+        return days.pop() if len(days) == 1 else None
+
+    def _evening(self, hi: datetime, zone: str) -> bool:
+        """Whether ``hi`` is an evening read in ``zone``: the reader dates a bare status read
+        then the next day, and would at the same local clock time on a weekday (so a
+        Sunday morning, which the reader dates Monday too, is no evening)."""
+        tz = _zone(zone)
+        local = hi.astimezone(tz)
+        for moment in (
+            hi,
+            datetime.combine(
+                local.date() + timedelta(days=EVENING_PROBE_WEEKDAY - local.weekday()),
+                local.time(),
+                tzinfo=tz,
+            ),
+        ):
+            day = moment.astimezone(tz).date()
+            bare = self.reader(BARE_STATUS, posted_at=moment, tz=zone)
+            if sorted({d for item in _status_entries(bare) for d in item.dates}) != [
+                day + timedelta(days=1)
+            ]:
+                return False
+        return True
 
     def _undatable(
         self,
@@ -1634,6 +1825,61 @@ def board_date(text: str) -> date | None:
         except ValueError:
             continue
     return None
+
+
+def _unknown_start(start: Start) -> Withheld:
+    """Why a row with no row stamp near its first sighting and ``lo`` unknown is withheld."""
+    return {Start.CHURN: Withheld.CHURN, Start.REWORDED: Withheld.REWORDED}.get(
+        start, Withheld.UNKNOWN_START
+    )
+
+
+def _posted_before(seen: SeenRow, entry: LedgerRow, zones: Sequence[str], day: date) -> bool:
+    """Whether a self-dated row's own dates allow ``day``: none is known, or in every zone
+    each falls after ``day`` less :data:`POSTED_WINDOW` and not after the first sighting's
+    local day. Its row stamp (one too old to date it) or its row date gives one, and so
+    does each stamp in its words ("Posted 10/29", "Updated Oct. 29":
+    :func:`~snowlight.live.weekdays.stamp_dates`). A row date that reads as neither a stamp
+    nor a board date (or one after the read, or one that does not exist, such as
+    "2026-02-30 12:00"), and a stamp in the words that carries a day it does not read
+    exactly ("Updated last week"), give no such date, and the row keeps its hold. A page's
+    stamp (:attr:`~snowlight.live.ledger.SeenRow.page_date`) dates nothing (D2) but keeps
+    the hold when it reads as a day on or before ``day`` less :data:`POSTED_WINDOW`: the
+    page, and so the row, was last changed a week before. It never raises."""
+    for zone in zones:
+        tz = _zone(zone)
+        today = entry.hi.astimezone(tz).date()
+        owned: list[date | None] = list(stamp_dates(seen.text, today))
+        if entry.row_stamp is not None:
+            owned.append(entry.row_stamp.astimezone(tz).date())
+        elif seen.row_date.strip():
+            try:
+                stamp = posted_stamp(seen.row_date, entry.hi, zone)
+                if stamp is None:
+                    owned.append(board_date(seen.row_date))
+                else:
+                    owned.append(stamp.day if stamp.date_only else stamp.at.astimezone(tz).date())
+            except (ValueError, OverflowError):
+                return False
+        if any(posted is None or not day - POSTED_WINDOW < posted <= today for posted in owned):
+            return False
+        page_day = _page_day(seen.page_date, entry.hi, zone) if seen.page_date.strip() else None
+        if page_day is not None and page_day <= day - POSTED_WINDOW:
+            return False  # the page was last changed a week before: so was the row
+    return True
+
+
+def _page_day(text: str, hi: datetime, zone: str) -> date | None:
+    """The local day a page-scoped stamp ``text`` says the page was last changed, when it
+    reads as one (none after the read); never raises."""
+    try:
+        stamp = posted_stamp(text, hi, zone)
+    except (ValueError, OverflowError):
+        return None
+    if stamp is not None:
+        return stamp.day if stamp.date_only else stamp.at.astimezone(_zone(zone)).date()
+    found = board_date(text)
+    return None if found is None or found > hi.astimezone(_zone(zone)).date() else found
 
 
 def pollable_platforms(registry: Registry) -> dict[str, bool]:

@@ -311,26 +311,32 @@ def _hour(hour: int, half: str | None) -> int:
 
 
 def _numeric(text: str, named: str | None, zone: str) -> datetime | None:
+    """An ISO-shaped stamp, or ``None`` when it does not exist ("2026-02-30 12:00",
+    "2026-11-05 25:00", an offset of a day or more), as :func:`_worded` and
+    :func:`_date_only` give for theirs."""
     found = _NUMERIC.match(text)
     if found is None:
         return None
     parts = found.groupdict()
     offset = parts["offset"]
-    when = datetime(
-        int(parts["year"]),
-        int(parts["mon"]),
-        int(parts["day"]),
-        int(parts["hour"]),
-        int(parts["minute"]),
-    )
-    if offset is None:
-        return when.replace(tzinfo=_zone_of(None, named, zone))
-    if offset == "z":
-        return when.replace(tzinfo=UTC)
-    sign = -1 if offset[0] == "-" else 1
-    digits = offset[1:].replace(":", "")
-    span = timedelta(hours=int(digits[:2]), minutes=int(digits[2:]))
-    return when.replace(tzinfo=timezone(sign * span))
+    try:
+        when = datetime(
+            int(parts["year"]),
+            int(parts["mon"]),
+            int(parts["day"]),
+            int(parts["hour"]),
+            int(parts["minute"]),
+        )
+        if offset is None:
+            return when.replace(tzinfo=_zone_of(None, named, zone))
+        if offset == "z":
+            return when.replace(tzinfo=UTC)
+        sign = -1 if offset[0] == "-" else 1
+        digits = offset[1:].replace(":", "")
+        span = timedelta(hours=int(digits[:2]), minutes=int(digits[2:]))
+        return when.replace(tzinfo=timezone(sign * span))
+    except ValueError:
+        return None
 
 
 def _worded(text: str, captured: datetime, named: str | None, zone: str) -> datetime | None:
@@ -406,7 +412,8 @@ def posted_stamp(
     (the year before, when that would put it after the capture). A stamp later
     than the capture by more than :data:`POSTED_SLACK` is not believed; a stamp
     that names a date and no time (``2025-01-07``) is known to the day, and is
-    not believed for a date after the capture's.
+    not believed for a date after the capture's. A stamp that does not exist
+    ("2026-02-30 12:00") gives ``None``: it never raises.
     """
     if not text:
         return None
@@ -419,4 +426,7 @@ def posted_stamp(
     when = _numeric(clean, named, zone) or _worded(clean, captured, named, zone)
     if when is None or when > captured + POSTED_SLACK:
         return None
-    return Posted(at=when.astimezone(UTC), day=when.astimezone(ZoneInfo(zone)).date())
+    try:
+        return Posted(at=when.astimezone(UTC), day=when.astimezone(ZoneInfo(zone)).date())
+    except OverflowError:  # a stamp at the edge of the calendar ("0001-01-01 00:00+05:00")
+        return None

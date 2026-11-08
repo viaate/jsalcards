@@ -44,6 +44,22 @@ Rules (spec 7.2):
   an earlier local day than its return in any US zone. A key back the same day
   after a spell of empty or old reads keeps its first sighting, so a list restored
   after a glitch is never dated as new (F1);
+* every key a read adds keeps ``earliest``, the earliest its words may have been on the
+  list: its own first sighting, or for a key back as a new appearance (absent 3 hours or
+  more, gone or not) the earliest the ledger saw it before, and for a successor (tied or
+  not) the earliest the ledger saw the keys of its listing it replaced, whose words it may
+  re-render. On a source with an earlier good read, a key may hold any words the source
+  showed before when the ledger cannot link it to what it replaced (no predecessor, not
+  seen before: a re-keyed list, a re-served old copy, part of a list moved to another
+  section on a warm read without churn, whose ``lo`` is the last read), or when its ``lo``
+  is unknown on a cold read (no good read within ``longest``: a new row, a successor or a
+  returning key may have gone up at any time in the gap), so it keeps the earliest of that
+  read and every sighting the ledger holds of the source. A key dated from the last read
+  is not dated by its words, but its successors and its later returns take its
+  ``earliest``. ``earliest`` is ``None`` when any sighting it
+  takes is of a row written before the column (its words' age is unknown). The resolver
+  dates a key by the weekday or date its words name only when that earliest sighting does
+  too (:mod:`snowlight.live.resolve`); ``None`` never is;
 * a read that lost half its rows or more, or every row, is partial: it refreshes
   and deletes nothing, and does not hold the source, unless the next read holds
   the same rows (the list really shrank or emptied);
@@ -202,19 +218,26 @@ class SeenRow:
     """The row-scoped stamp (``updated_scope == "row"``), parsed; never a page's."""
     row_date: str = field(default="", repr=False)
     """The row's own date text: its row-scoped stamp's text, or a board's row-date field."""
+    page_date: str = field(default="", repr=False)
+    """A page-scoped or unmarked stamp's text: never a key or a date (D2), only a bound that
+    keeps a self-dated row held when the page says it was last changed a week before
+    (:mod:`snowlight.live.resolve`)."""
 
 
 def seen_row(raw: RawRow, *, variant: str, platform: str, zone: str) -> SeenRow:
     """Build a :class:`SeenRow` from an adapter's row.
 
     ``zone`` is the station's zone, in which a row stamp without its own zone is read.
-    A page-scoped or unmarked stamp is dropped (D2), and so is a stamp that names a
-    date and no time.
+    A page-scoped or unmarked stamp dates nothing (D2), and nor does a row stamp that
+    names a date and no time; the first is kept only as :attr:`SeenRow.page_date`.
     """
     extra = raw.raw_extra
     detail = detail_of(raw.raw_name, raw.raw_status, extra)
     stamp: datetime | None = None
     row_date = ""
+    page_date = ""
+    if extra.get("updated_scope") != "row" and raw.raw_updated_text:
+        page_date = raw.raw_updated_text
     if extra.get("updated_scope") == "row" and raw.raw_updated_text:
         row_date = raw.raw_updated_text
         named = extra.get("updated_zone")
@@ -233,6 +256,7 @@ def seen_row(raw: RawRow, *, variant: str, platform: str, zone: str) -> SeenRow:
         places=stated_places(variant, extra),
         row_stamp=stamp,
         row_date=row_date,
+        page_date=page_date,
     )
 
 
@@ -267,6 +291,18 @@ class LedgerRow(NamedTuple):
     """The key this one replaced in its listing, until the resolver settles how it is dated."""
     lapsed: bool
     """A read lacking the key showed something new (the list was live while it was away)."""
+    earliest: datetime | None = None
+    """The earliest the key's words may have been on the list: its first sighting ``hi``, or
+    earlier for a key back as a new appearance (after 3 hours or more, gone or not) or a
+    successor (the earliest the ledger saw it, or the keys of its listing it replaced), and,
+    on a source read before, for a key the ledger cannot link to what it replaced (its ``lo``
+    known or not: its successors and later returns take this) or one with ``lo`` unknown
+    that a cold read added, the earliest of the source's previous good read and every
+    sighting the ledger holds of the source. The resolver dates a row by the
+    weekday or date its words name only when this dates it to the same day
+    (:mod:`snowlight.live.resolve`). ``None`` for a row written by code from before the
+    column, or one whose words may repeat such a row's: their age is unknown and it is never
+    dated so."""
 
 
 class SourceState(NamedTuple):
@@ -310,7 +346,7 @@ CREATE TABLE IF NOT EXISTS rows (
     key BLOB PRIMARY KEY, source_id TEXT NOT NULL, hi TEXT NOT NULL, lo TEXT,
     start TEXT NOT NULL, row_stamp TEXT, last_seen TEXT NOT NULL, absent_since TEXT,
     gone INTEGER NOT NULL DEFAULT 0, ident BLOB NOT NULL, pred BLOB,
-    lapsed INTEGER NOT NULL DEFAULT 0
+    lapsed INTEGER NOT NULL DEFAULT 0, earliest TEXT
 );
 CREATE INDEX IF NOT EXISTS rows_source ON rows (source_id);
 CREATE INDEX IF NOT EXISTS rows_ident ON rows (ident);
@@ -331,12 +367,19 @@ CREATE INDEX IF NOT EXISTS darkens_key ON darkens (key);
 
 _SELECT_ROWS: Final = (
     "SELECT key, source_id, hi, lo, start, row_stamp, last_seen, absent_since, gone, ident,"
-    " pred, lapsed FROM rows"
+    " pred, lapsed, earliest FROM rows"
 )
 _INSERT_ROW: Final = (
     "INSERT OR REPLACE INTO rows (key, source_id, hi, lo, start, row_stamp, last_seen,"
-    " absent_since, gone, ident, pred, lapsed) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 0, ?, ?, 0)"
+    " absent_since, gone, ident, pred, lapsed, earliest)"
+    " VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 0, ?, ?, 0, ?)"
 )
+_IN_CHUNK: Final = 500
+"""Keys per ``IN (...)`` lookup: under SQLite's bound-parameter limit."""
+_ADDED_COLUMNS: Final = (("rows", "earliest", "TEXT"),)
+"""Columns added after a schema version was in use, each nullable: a ledger written before
+gets them on open (its rows read ``None``), and code from before reads a ledger with them
+unchanged, so neither needs a new schema version (which starts a new, cold ledger)."""
 
 
 def _iso(moment: datetime | None) -> str | None:
@@ -375,6 +418,18 @@ def _earlier_day(first: datetime, now: datetime) -> bool:
     )
 
 
+def _sightings(entries: Iterable[LedgerRow]) -> list[datetime] | None:
+    """When the ledger saw ``entries``: their first sightings and the earliest they kept, or
+    ``None`` when one was written before the ``earliest`` column (its words' age is unknown,
+    and so is that of words that may repeat them)."""
+    moments: list[datetime] = []
+    for entry in entries:
+        if entry.earliest is None:
+            return None
+        moments.extend((entry.hi, entry.earliest))
+    return moments
+
+
 def _predecessor(replaced: Sequence[LedgerRow]) -> tuple[bytes | None, bool]:
     """The absent key a successor replaced: the one last seen (then first seen) latest.
 
@@ -409,6 +464,7 @@ class Ledger:
 
     def __init__(self, path: Path | str, *, longest: timedelta = LONGEST) -> None:
         self._db = sqlite3.connect(str(path))
+        self._watching: datetime | None = None
         fresh = self._db.execute("SELECT count(*) FROM sqlite_master").fetchone()[0] == 0
         version = self._db.execute("PRAGMA user_version").fetchone()[0]
         if not fresh and version != SCHEMA_VERSION:
@@ -416,6 +472,10 @@ class Ledger:
             raise ValueError(f"ledger schema {version}, expected {SCHEMA_VERSION}: start a new one")
         with self._db:
             self._db.executescript(_SCHEMA)
+            for table, column, kind in _ADDED_COLUMNS:
+                have = {row[1] for row in self._db.execute(f"PRAGMA table_info({table})")}
+                if column not in have:
+                    self._db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {kind}")
             self._db.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
             self._db.execute(
                 "INSERT OR IGNORE INTO meta (name, value) VALUES ('secret', ?)",
@@ -483,9 +543,44 @@ class Ledger:
         found = self._db.execute(query + " ORDER BY hi, key", (source_id,)).fetchall()
         return [_ledger_row(row) for row in found]
 
+    def _stored(self, keys: Sequence[bytes]) -> dict[bytes, LedgerRow]:
+        """The rows the ledger still holds of ``keys`` (gone ones, for keys new to a read)."""
+        found: dict[bytes, LedgerRow] = {}
+        for start in range(0, len(keys), _IN_CHUNK):
+            chunk = keys[start : start + _IN_CHUNK]
+            marks = ", ".join("?" * len(chunk))
+            query = f"{_SELECT_ROWS} WHERE key IN ({marks})"
+            found.update((row.key, row) for row in map(_ledger_row, self._db.execute(query, chunk)))
+        return found
+
+    def _gone_sightings(self, source_id: str) -> list[datetime] | None:
+        """When the ledger saw the source's gone keys (:func:`_sightings`): ``None`` when one
+        has no ``earliest``."""
+        moments: list[datetime] = []
+        for texts in self._db.execute(
+            "SELECT hi, earliest FROM rows WHERE source_id = ? AND gone = 1", (source_id,)
+        ):
+            for text in texts:
+                moment = _when(None if text is None else str(text))
+                if moment is None:
+                    return None
+                moments.append(moment)
+        return moments
+
     def row(self, key: bytes) -> LedgerRow | None:
         found = self._db.execute(_SELECT_ROWS + " WHERE key = ?", (key,)).fetchone()
         return None if found is None else _ledger_row(found)
+
+    def watching_since(self) -> datetime | None:
+        """The earliest good read of any source the ledger keeps: it has watched its sources
+        since then (``None`` before its first good read). A new ledger (a first run, a lost
+        file, a new schema version) has watched for no time, so a source it has never read
+        may have been read by the ledger it replaced. Kept once found: pruning only moves it
+        later, and the ledger did watch since then."""
+        if self._watching is None:
+            (first,) = self._db.execute("SELECT MIN(at) FROM good_reads").fetchone()
+            self._watching = _when(None if first is None else str(first))
+        return self._watching
 
     def good_reads(self, source_id: str) -> list[datetime]:
         """The times of a source's good reads in the last 14 days, oldest first."""
@@ -607,6 +702,7 @@ class Ledger:
         listed_now = set(idents.values())
         churn = _churn(listed_before, listed_now)
         new = [key for key in keys if key not in known]
+        gone_before = self._stored(new)
         key_churn = _churn(before, set(keys))
         absent_by_ident: dict[bytes, list[LedgerRow]] = {}
         for key, entry in known.items():
@@ -634,11 +730,17 @@ class Ledger:
             )
         successors: list[bytes] = []
         ambiguous = 0
+        oldest: list[datetime] | None = None
+        oldest_read = False
         for key in [*new, *reappeared]:
             pred: bytes | None = None
             tied = False
+            earlier = known.get(key) or gone_before.get(key)
+            seen_before = [] if earlier is None else [earlier]
             if key in new:
-                pred, tied = _predecessor(absent_by_ident.get(idents[key], []))
+                replaced = absent_by_ident.get(idents[key], [])
+                pred, tied = _predecessor(replaced)
+                seen_before.extend(replaced)  # a successor may re-render the listing's words
             ambiguous += tied
             if pred is not None:
                 successors.append(key)
@@ -654,6 +756,19 @@ class Ledger:
                 start = Start.CHURN
             else:
                 start = Start.COLD
+            moments = _sightings(seen_before)
+            unlinked = earlier is None and pred is None and not tied
+            if moments is not None and last is not None and (unlinked or not warm):
+                # Unlinked (dated from the last read or not: part of a list moved to another
+                # section re-keys without churn), or first seen after a gap: it may re-key,
+                # re-word or re-serve any words the source showed before, or have gone up at
+                # any time since its last read. A key dated from the last read is not
+                # self-dated, but its successors and its later returns take its earliest.
+                if not oldest_read:
+                    oldest_read = True
+                    shown, gone_shown = _sightings(known.values()), self._gone_sightings(source_id)
+                    oldest = None if shown is None or gone_shown is None else [*shown, *gone_shown]
+                moments = None if oldest is None else [last, *moments, *oldest]
             self._db.execute(
                 _INSERT_ROW,
                 (
@@ -666,6 +781,7 @@ class Ledger:
                     now,
                     idents[key],
                     pred,
+                    _iso(None if moments is None else min([fetched_at, *moments])),
                 ),
             )
             self._db.execute("DELETE FROM derived WHERE key = ?", (key,))
@@ -888,7 +1004,9 @@ def _payload(text: object) -> object:
 
 
 def _ledger_row(found: tuple[object, ...]) -> LedgerRow:
-    key, source_id, hi, lo, start, stamp, last_seen, absent, gone, ident, pred, lapsed = found
+    key, source_id, hi, lo, start, stamp, last_seen, absent, gone, ident, pred, lapsed, earliest = (
+        found
+    )
     if (
         not isinstance(key, bytes)
         or not isinstance(source_id, str)
@@ -909,6 +1027,7 @@ def _ledger_row(found: tuple[object, ...]) -> LedgerRow:
         ident=ident,
         pred=pred,
         lapsed=bool(lapsed),
+        earliest=_when(None if earliest is None else str(earliest)),
     )
 
 
