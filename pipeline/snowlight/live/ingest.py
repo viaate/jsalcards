@@ -17,15 +17,20 @@
    light; a record not marked final at the run's end, or older than the file the host
    serves, carries nothing). Any other source not yet read since a start has no present
    rows, so it gives only its dissents. Each pass writes the sources it held for the run
-   after it (``carry.json``);
+   after it (``carry.json``), and a read the ledger could not take drops its source from
+   that record at once;
 4. withholds every status and open statement in the states of a source whose say is
    unknown this pass (``source_unknown``): one whose read could not be taken in or
-   whose resolve failed (its dissents are missing), or one due for reading holding a
-   row first seen in the last 36 hours that was never derived (a pass cut off between
-   reading and resolving: it may be a retraction, and it reads only when the source is
-   read again). A source not due (no longer listed, not active, or not pollable) is
-   never read again; its never-derived rows are left out and expire. Two passes in a
-   row with such a source raise the alert;
+   whose resolve failed (its dissents are missing), one whose states the run before
+   withheld so at its last pass and this process holds no rows of from its own read yet
+   (it resolves a carried source from stored derivations alone, so a step only a read's
+   rows reach cannot fail here; never past the end the record gives, the longest G13 bound
+   from the last pass whose own resolve failed), or one due for reading holding a row first
+   seen in the last 36 hours that was never derived (a pass cut off between reading and
+   resolving: it may be a retraction, and it reads only when the source is read again). A
+   source not due (no longer listed, not active, or not pollable) is never read again; its
+   never-derived rows are left out and expire. Two passes in a row with such a source raise
+   the alert;
 5. merges, checks the directory handshake against the stamps the public files carry
    (read back from the host), and publishes through the gate
    (:class:`~snowlight.live.publish.LivePublisher`), with the share of the sources
@@ -57,7 +62,14 @@ from pathlib import Path
 from typing import Final
 
 from snowlight.listed.matching import Query
-from snowlight.live.carry import Carried, carry_key, read_carry, write_carry
+from snowlight.live.carry import (
+    Carried,
+    carry_key,
+    drop_carry,
+    read_record,
+    withheld_until,
+    write_carry,
+)
 from snowlight.live.edition import EditionState, EditionVerdict, EditionWatch
 from snowlight.live.guards import Refusal, Rules, held
 from snowlight.live.ledger import GOOD, LONGEST, Ledger, SeenRow, SourceState
@@ -246,7 +258,14 @@ class Ingest:
     carried: dict[str, Carried] = field(default_factory=dict)
     """The sources the run before held at its last pass and this process has not read (a
     good read, or a read the ledger could not take, ends it), each with the ``last_good_at``
-    it held them under and the end of that hold (:func:`~snowlight.live.carry.read_carry`)."""
+    it held them under and the end of that hold (:func:`~snowlight.live.carry.read_record`)."""
+    inherited: dict[str, datetime] = field(default_factory=dict)
+    """The sources whose states the run before withheld for a failing resolve at its last
+    pass, each with the end of that (:func:`~snowlight.live.carry.withheld_until`): withheld
+    here too until this process holds rows of the source from its own read, or a read of it
+    cannot be taken in (:meth:`still_inherited`)."""
+    unresolved: set[str] = field(default_factory=set)
+    """Sources whose resolve failed this pass (of :attr:`failed`)."""
     carry_path: Path | None = None
     """Where each pass writes the sources it held for the run after it; ``None``: nowhere."""
     carry_key: str = ""
@@ -277,6 +296,11 @@ class Ingest:
                 self.failed.add(read.source_id)
                 self.present.pop(read.source_id, None)
                 self.carried.pop(read.source_id, None)
+                self.inherited.pop(read.source_id, None)
+                if self.carry_path is not None:
+                    # held dark from now on, while the ledger still matches the record's entry:
+                    # out of the record at once, should this pass never write its own
+                    drop_carry(self.carry_path, read.source_id)
                 self.recent.append((at or read.fetched_at, read.source_id, False))
                 continue
             outcomes[observed.outcome.value] += 1
@@ -288,6 +312,8 @@ class Ingest:
             confirmed = read.outcome is ReadOutcome.NOT_MODIFIED and not read.rows
             if observed.outcome in GOOD and not confirmed:
                 self.present[read.source_id] = read.rows
+                # its own resolve of its own read's rows judges it from now on
+                self.inherited.pop(read.source_id, None)
             # A "not modified" with no rows confirms the body this process last read; one
             # this process never read leaves the source unheld (dissents only) until a
             # full read (the fetch layer's first read after a start is a full GET).
@@ -348,6 +374,7 @@ class Ingest:
         states = self.ledger.sources() if states is None else states
         carrying = self.carrying(states)
         resolved = []
+        self.unresolved = set()
         for source_id in sorted(state.source_id for state in states):
             self.beat()
             station = self.stations.get(source_id) or orphan_station(source_id)
@@ -360,6 +387,7 @@ class Ingest:
             except Exception as error:
                 LOG.error("resolve %s: %s", source_id, type(error).__name__)
                 self.failed.add(source_id)
+                self.unresolved.add(source_id)
         return resolved
 
     def undecided(self, now: datetime) -> dict[str, int]:
@@ -388,9 +416,22 @@ class Ingest:
                 found[state.source_id] = count
         return found
 
+    def still_inherited(self, now: datetime) -> dict[str, datetime]:
+        """The sources of :attr:`inherited` withheld at ``now``: no rows of them read in this
+        process yet, and the end the run before gave not passed. (The successor resolves a
+        carried source from stored derivations alone, so a failing step only a read's rows
+        reach cannot fail here: the run before's failure stands until this process's own
+        read, bounded.)"""
+        return {
+            sid: end
+            for sid, end in self.inherited.items()
+            if sid not in self.present and now <= end
+        }
+
     def unknown_states(self, now: datetime) -> frozenset[str]:
-        """The states of the sources whose say is unknown this pass (failed or undecided)."""
-        sources = self.failed | set(self.undecided(now))
+        """The states of the sources whose say is unknown this pass (failed, undecided, or
+        withheld by the run before and not read here yet: :meth:`still_inherited`)."""
+        sources = self.failed | set(self.undecided(now)) | set(self.still_inherited(now))
         return frozenset(
             state
             for source_id in sources
@@ -527,16 +568,20 @@ class Ingest:
         or older than the file the host serves, carries nothing) and write this run's own
         record there, unmarked, after each pass."""
         self.carry_key = carry_key(self.resolver.version, self.rules)
-        self.carried = read_carry(
+        record = read_record(
             path, key=self.carry_key, now=now, rules=self.rules, published=self._served_at
         )
+        self.carried, self.inherited = record.sources, record.unknown
         self.carry_path = path
 
     def record_carry(
         self, now: datetime, until: Mapping[str, datetime | None], states: Sequence[SourceState]
     ) -> None:
         """Write the sources this pass held (``until``: :meth:`hold_until`), each with its
-        last good read's time and the end of its hold, for the run after it
+        last good read's time and the end of its hold, and the sources whose states it
+        withheld for a failing resolve (``unknown``: its own, ending
+        :func:`~snowlight.live.carry.withheld_until` from now, and those it still withholds
+        for the run before, with the end that run gave), for the run after it
         (:mod:`snowlight.live.carry`). A failed write is logged by its type."""
         if self.carry_path is None:
             return
@@ -545,7 +590,13 @@ class Ingest:
             for state in states
             if (end := until.get(state.source_id)) is not None and state.last_good_at is not None
         }
-        self.carry_bytes = write_carry(self.carry_path, key=self.carry_key, now=now, held=held_at)
+        unknown = self.still_inherited(now)
+        for sid in self.unresolved:
+            end = withheld_until(now, self.rules)
+            unknown[sid] = max(end, unknown.get(sid, end))
+        self.carry_bytes = write_carry(
+            self.carry_path, key=self.carry_key, now=now, held=held_at, unknown=unknown
+        )
 
     def record_morning(
         self,
