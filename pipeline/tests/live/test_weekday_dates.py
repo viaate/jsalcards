@@ -2268,6 +2268,10 @@ _CACHED = (named_weekdays, _weekday_words, _clocked, _lone_candidates, _ages, _m
         "Closed Thursday " + "Thursday posted " * 125,
         "Closed Thursday " + "Thu _ " * 330,
         "Closed Thursday " + "Thursday: from 9 AM to 3 PM " * 75,
+        # bare numbers by runs of marks, and a span far past them (round 8)
+        "Closed Thursday " + "9...Thu " * 250,
+        "Closed Thursday " + "Thursday: 9 | info " * 105,
+        "Closed Thursday · Friday | " + "word " * 400 + "(9 AM - 3 PM)",
     ],
 )
 def test_a_long_row_is_read_in_time_linear_in_its_length(text: str) -> None:
@@ -3603,8 +3607,9 @@ def test_round_7_second_critic_a_span_past_a_connector_and_more_marks_names_no_d
         ("Thursday: closed (9 AM - 3 PM)", {3}),
         ("Early dismissal Friday | (1:30 PM)", {4}),
         ("Closed Thursday:9 to 3", {3}),
-        # who reports or arrives, or a status word, makes it a time on that day
-        ("Thursday: students report 10 AM", {3}),
+        # a status word makes a call a time on that day; who reports past the weekday's marks,
+        # with no status word, owns no clock time there (WD-R7C3-B1)
+        ("Thursday: students report 10 AM", set()),
         ("2 hour delay Thursday, staff report 9 AM", {3}),
         # "in effect" and "begins" still own a clock time
         ("Parking ban in effect at 5 p.m. Saturday", {5}),
@@ -3630,3 +3635,383 @@ def test_round_7_second_critic_status_days(text: str, named: set[int]) -> None:
 )
 def test_round_7_second_critic_ages(text: str, ages: tuple[timedelta | None, ...]) -> None:
     assert post_ages(text) == ages
+
+
+# --- round 8: owner words own a single own-clause clock; bare numbers by a mark run --------
+
+_R8_HOLD = [
+    # owner words that are no status word own no span and no clock past the marks (WD-R7C3-B1)
+    "Closed Wednesday · Thursday | begins (8:30-3:15)",
+    "Closed Wednesday · Thursday in effect 9 to 3",
+    "Closed Wednesday · Thursday | effective (9:14-9:30 PM)",
+    "Closed Wednesday · Thursday | students report (9 AM)",
+    "Closed Wednesday · Thursday: staff report 9:14 PM",
+    "Closed Thursday · Friday in effect 9 AM - 3 PM",
+    "Closed Wednesday · 9 to 3 in effect Thursday",
+    "Closed Wednesday · 9 to 3 students arrive Thursday",
+    "Closed Wednesday · 8:30-3:15 | teachers arrive Thursday",
+    "Closed Wednesday · Thursday: teachers arrive 9:14 PM",
+    # a bare number on either side of a weekday's run of marks (WD-R7C3-B2)
+    "Closed Wednesday · 10.Thursday",
+    "Closed Wednesday · 9...Thursday",
+    "Closed Wednesday · 9:: Thursday",
+    "Closed Wednesday · Thursday: 9 | info",
+    "Closed Thursday · 9...Friday",
+    "Closed Wednesday · 3_ Thursday · info",
+    "Closed Wednesday · Thursday ... 12 notes",
+    "Closed Thursday · Friday | 7 update",
+    # a non-status owner word owns no clock time past a mark, wherever it stands: before the
+    # weekday, or after the clock time on either side, or with a mark that ends no clause, as
+    # WD-R8C1-B1 found
+    "Closed Wednesday · in effect Thursday: 9:14 PM",
+    "Closed Wednesday · 9:14 PM: Thursday begins",
+    "Closed Wednesday · Thursday: 9:14 PM begins",
+    "Closed Wednesday · Thursday: 9:14 PM effective immediately",
+    "Closed Wednesday · Thursday; 5:14 AM staff report",
+    "Closed Wednesday · Thursday = begin 9:14 PM",
+    "Closed Wednesday · Thursday # students report 9:14 PM",
+    "Closed Wednesday · in effect = Thursday 9:14 PM",
+    'Closed Wednesday · Thursday effective "9:14 PM"',
+    # a bare number past a weekday's own ".", and one with a mark glued before it before the
+    # weekday's marks (WD-R8C1-B2)
+    "Closed Wednesday · Thursday.45",
+    "Closed Wednesday · Thursday. 60 info",
+    "Closed Wednesday · Thu.50 info",
+    "Closed Thursday · Friday.75",
+    "Closed Wednesday · :9 · Thursday",
+    "Closed Wednesday · #12 :: Thursday",
+    "Closed Wednesday · ,9 · Thursday",
+    "Closed Wednesday · $9 · Thursday",
+    # a start, opening or dismissal word that is no status word owns no span and no clock
+    # time past the marks (WD-R8C1-B3)
+    "Closed Wednesday · Thursday | dismiss 9:14 PM",
+    "Closed Wednesday · Thursday | starting (8:30-3:15)",
+    "Closed Wednesday · Thursday: opened 9:14 PM",
+    # past the marks, a span further on than 80 characters (S2)
+    "Closed Wednesday · Thursday | the front desk and the main phones line will be staffed for "
+    "families during this time of day while the office works through the list (9 AM - 3 PM)",
+    # a start or opening word that is no status word owns no clock time past the marks and no
+    # span with "at" or "@" before it either (WD-R8C2-B1)
+    "Closed Wednesday · Thursday: started at 9:14 PM",
+    "Closed Wednesday · Thursday: started at 5:14 AM",
+    "Closed Wednesday · Thursday | started @ 5:14 AM",
+    "Closed Wednesday · Thursday; opened at 5:14 AM",
+    "Closed Wednesday · started at 9:14 PM: Thursday",
+    "Closed Wednesday · opened at 9:14 PM, Thursday",
+    "Closed Wednesday · Thursday started at 9 AM - 3 PM",
+    "Closed Wednesday · Thursday opened at 9 to 3",
+    "Closed Wednesday · opened at 9a-3p Thursday",
+    "Closed Thursday · Friday: opened at 9:14 PM",
+    "Closed Thursday · Friday started at 8:30-3:15",
+    "Closed Wednesday · Thursday | releasing @ 9:14 PM",
+    # a dismissal at a time the reader reads no dismissal at owns no clock past the marks, as
+    # the round 8 second critic's S4 found
+    "Closed Wednesday · Thursday | dismiss at 9:14 PM",
+    "Closed Wednesday · Thursday: dismiss at 9:14 PM",
+    "Closed Wednesday · Thursday: dismiss at 7:30",
+    "Closed Wednesday · Thursday: dismiss @ 3:00 PM",
+    "Closed Wednesday · Thursday: dismiss at 8:30-3:15",
+    # a "~" by an owner word and a clock time is a mark (WD-R8C2-S1)
+    "Closed Wednesday · Thursday begins ~ 9:14 PM",
+    "Closed Wednesday · Thursday begins ~9:14 PM",
+    # a bare number across a line break from a weekday's marks (WD-R8C2-S2)
+    "Closed Wednesday · Thursday:\n45",
+    "Closed Wednesday · Thursday:\n45 info",
+    "Closed Wednesday · Thursday |\n9 info",
+    "Closed Wednesday · Thursday:\n9 info",
+    "Closed Wednesday · 9:\nThursday",
+    "Closed Wednesday · 45\n· Thursday",
+    "Closed Wednesday · 9\n: Thursday",
+    "Closed Thursday · Friday:\n45 info",
+    "Closed Wednesday · Thursday:\n9:14 PM",
+    "Closed Wednesday · 9:14 PM:\nThursday",
+]
+
+
+@pytest.mark.parametrize("when", ["2026-11-05 12:00", "2026-11-05 01:00"])
+@pytest.mark.parametrize("text", _R8_HOLD)
+def test_round_8_shapes_keep_the_hold(when: str, text: str) -> None:
+    # read Thursday at 06:00 and Wednesday at 19:00
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {}
+
+
+@pytest.mark.parametrize(
+    ("when", "text", "days"),
+    [
+        # a status-like owner word still owns a clock past the marks
+        ("2026-11-05 12:00", "Thursday: dismiss at 1:30", {THURSDAY: "EARLY_DISMISSAL"}),
+        # a single clock time in the weekday's own clause is still owned
+        ("2026-11-05 12:00", "Thursday 10 AM start", {THURSDAY: "DELAYED"}),
+        # a count with a delay's length unit is no stamp's number
+        ("2026-11-05 12:00", "Thursday: 2 hour delay", {THURSDAY: "DELAYED"}),
+        ("2026-11-05 12:00", "Thursday: 90 minute delay", {THURSDAY: "DELAYED"}),
+        ("2026-11-05 12:00", "Thursday: 2-hr. delay", {THURSDAY: "DELAYED"}),
+        # a spaced dash in a span of bare hours ends no clause (S1)
+        ("2026-11-05 12:00", "Thursday: 2 - 3 hour delay", {THURSDAY: "DELAYED"}),
+        # the evening path
+        ("2026-11-05 01:00", "Thursday: 2 hour delay", {THURSDAY: "DELAYED"}),
+        ("2026-11-05 01:00", "Thursday: dismiss at 1:30", {THURSDAY: "EARLY_DISMISSAL"}),
+        # a dismissal word with "at" or "@" right before the clock time owns it past the marks
+        # at a time the reader reads a dismissal at, 8 a.m. to 1:30 p.m. (WD-R8C2-S4)
+        ("2026-11-05 12:00", "Thursday | dismiss @ 1:30", {THURSDAY: "EARLY_DISMISSAL"}),
+        ("2026-11-05 12:00", "Thursday: dismiss at 8:00", {THURSDAY: "EARLY_DISMISSAL"}),
+        ("2026-11-05 12:00", "Thursday: dismiss at 12:30 PM", {THURSDAY: "EARLY_DISMISSAL"}),
+        ("2026-11-05 12:00", "Thursday: dismisses at noon", {THURSDAY: "EARLY_DISMISSAL"}),
+        ("2026-11-05 01:00", "Thursday | dismiss @ 11", {THURSDAY: "EARLY_DISMISSAL"}),
+        # and a single clock time in the weekday's own clause, "at" before it or not
+        ("2026-11-05 12:00", "Thursday dismiss at 1:30", {THURSDAY: "EARLY_DISMISSAL"}),
+        # a bare number across a line break with a status word is read as before (WD-R8C2-S2)
+        ("2026-11-05 12:00", "Closed Thursday:\n2 schools", {THURSDAY: "CLOSED"}),
+        ("2026-11-05 12:00", "Thursday:\n2 hour delay", {THURSDAY: "DELAYED"}),
+        # a delay's length after a weekday's own "." is no stamp's number
+        ("2026-11-05 12:00", "Thursday. 2 hour delay", {THURSDAY: "DELAYED"}),
+    ],
+)
+def test_round_8_shapes_that_still_light(when: str, text: str, days: dict[str, str]) -> None:
+    world = _cold(when, text)
+    world.resolve()
+    assert lit(world.publish(at(when) + timedelta(minutes=1))) == {
+        (0, day): status for day, status in days.items()
+    }
+
+
+@pytest.mark.parametrize(
+    ("text", "named"),
+    [
+        # a status word in the weekday's clause makes the bare number by its marks a number
+        ("Closed Thursday: 9 schools", {3}),
+        ("Thursday: grades 9 - 12 closed", {3}),
+        ("Thursday: 2 - 3 hour delay", {3}),
+        # a month's day number before the marks is no stamp's
+        ("Closed Wednesday · Nov. 5 · Thursday", set()),
+        # who reports, past the marks, owns no clock there
+        ("Thursday: students report 10 AM", set()),
+        ("Staff report Thursday 9 AM", {3}),
+        # a "~" by a weekday and a clock time is a mark, an owner word between or not, while an
+        # approximation word is part of the clock time (WD-R8C2-S1)
+        ("Thursday begins ~ 9:14 PM", set()),
+        ("Thursday begins ~9:14 PM", set()),
+        ("Thursday ~ 9:14 PM", set()),
+        ("Thursday begins around 9:14 PM", {3}),
+        ("Thursday begins approx. 9:14 PM", {3}),
+        # a dismissal past the marks at a time the reader reads none at (WD-R8C2-S4)
+        ("Thursday: dismiss at 1:35", set()),
+        ("Thursday: dismiss at 7:55", set()),
+        ("Thursday: dismiss at 9:14 PM", set()),
+        ("Thursday: dismiss at 1:30", {3}),
+        # a status word keeps a bare number after a weekday's "." a number, as before
+        ("Closed Thursday. 45 schools", {3}),
+        # the end of a clock time before the marks is no bare number
+        ("Closed Wednesday · 10:30 · Thursday", {2}),
+    ],
+)
+def test_round_8_status_days(text: str, named: set[int]) -> None:
+    assert named_weekdays(text, "", THU_0600.date()) == frozenset(named)
+
+
+_R8_OWNERS = (
+    "begins",
+    "beginning",
+    "in effect",
+    "effective",
+    "takes effect",
+    "staff report",
+    "students report",
+    "teachers arrive",
+    "employees report",
+    "faculty arrival",
+    "everyone reports",
+    # start, opening and dismissal words that are no status word (WD-R8C1-B3)
+    "dismiss",
+    "dismisses",
+    "starting",
+    "started",
+    "releases",
+    "opened",
+    "delaying",
+)
+_R8_SPANS = (
+    "8:30-3:15",
+    "9 AM - 3 PM",
+    "(9:14-9:30 PM)",
+    "9 to 3",
+    "between 9 and 3",
+    "9a-3p",
+    "0900-1500",
+    "9 AM until 3 PM",
+    "8h30-15h15",
+)
+_R8_CLOCKS = ("5:14 AM", "9:14 PM", "21:14", "noon", "(9 AM)", "10 AM")
+_R8_MARKS = (":", " |", ",", " ·", ".", ";", " /", " -", " (", " •", " ...", " ::", " |,")
+_R8_OTHER_MARKS = (" =", " ~", " #", " *", " »", " [", " >", " +")
+"""Marks that end no clause but part a weekday from its clock time as a stamp's do."""
+_R8_PLACES = (
+    "{d}{m} {o} {x}",
+    "{d} {o}{m} {x}",
+    "{x}{m} {o} {d}",
+    "{x} {o}{m} {d}",
+    "{o} {d}{m} {x}",
+    "{x}{m} {d} {o}",
+    "{d}{m}{x} {o}",
+    "{d}{m} {x} {o}",
+    "{o}{m} {d} {x}",
+)
+"""Where an owner word (o) stands by a weekday (d), its clock time or span (x) and a mark (m):
+between the weekday and the clock time either side of the mark, before the weekday, after the
+clock time, and before the mark before the weekday."""
+_R8_DAYS = (
+    ("Closed Wednesday · ", date(2026, 11, 5), "2026-11-05"),
+    ("Closed Thursday · ", date(2026, 11, 6), "2026-11-06"),
+)
+"""The other weekday's status, and the day each sweep's weekday is, read the morning of that
+day at 06:00 and the evening before at 19:00 (Chicago)."""
+
+
+def _lights_on(text: str, day: date, now: datetime) -> bool:
+    """Whether ``text``, read at ``now`` (the morning of ``day`` or the evening before), names
+    ``day``'s weekday as a status day with no stamp that keeps the row held, as the live
+    guards read a weekday-dated row."""
+    today = now.date()
+    if states_a_date(text, "") or day.weekday() not in named_weekdays(text, "", day):
+        return False
+    return all(
+        stamp is not None and today - timedelta(days=1) <= stamp <= today
+        for stamp in stamp_dates(text, today, now)
+    ) and all(age is not None and age < timedelta(days=1) for age in post_ages(text))
+
+
+def _r8_reads(lead: str, day: date, iso: str) -> Iterator[tuple[str, date, datetime]]:
+    """The two reads of a sweep's row: the morning of ``day`` and the evening before."""
+    for clock in ("12:00", "01:00"):
+        yield lead, day, at(f"{iso} {clock}").astimezone(ZoneInfo("America/Chicago"))
+
+
+def _r8_owner_shapes(owner: str, clocks: tuple[str, ...]) -> Iterator[tuple[str, date, datetime]]:
+    """Each shape of the owner word ``owner`` with each span in the weekday's own clause, and
+    with each of ``clocks`` and each mark in each of the nine places (:data:`_R8_PLACES`), with
+    each read (:data:`_R8_DAYS`): the shape, the weekday's day and the read."""
+    for lead, day, now in (read for days in _R8_DAYS for read in _r8_reads(*days)):
+        name = day.strftime("%A")
+        shapes = [
+            shape
+            for span in _R8_SPANS
+            for shape in (f"{lead}{name} {owner} {span}", f"{lead}{span} {owner} {name}")
+        ]
+        for mark, clock, place in itertools.product(
+            _R8_MARKS + _R8_OTHER_MARKS, clocks, _R8_PLACES
+        ):
+            if mark == "." and clock.endswith("M") and place.startswith("{x}{m}"):
+                continue
+            shapes.append(lead + place.format(d=name, m=mark, o=owner, x=clock))
+        for text in shapes:
+            yield text, day, now
+
+
+@pytest.mark.parametrize("owner", _R8_OWNERS)
+def test_round_8_owner_words_own_no_span_and_no_clock_past_the_marks(owner: str) -> None:
+    # the class at the function level: each owner word that is no status word with each span
+    # in the weekday's own clause, and with each span or clock time and each mark, clause mark
+    # or not, in each of nine places (between the weekday and the clock time on either side of
+    # the mark, before the weekday, after the clock time on either side, before the mark before
+    # the weekday), read the morning of the day at 06:00 and the evening before at 19:00, never
+    # lights the weekday (11,312 shapes and reads for each owner word); a clock time whose
+    # "a.m." or "p.m." takes the "." stays in the clause, and owned there, as a single clock
+    # time is
+    for text, day, now in _r8_owner_shapes(owner, _R8_SPANS + _R8_CLOCKS):
+        assert not _lights_on(text, day, now), (text, now)
+
+
+_R8_AT_OWNERS = (
+    "started",
+    "starting",
+    "opened",
+    "releasing",
+    "releases",
+    "delaying",
+    "begins",
+    "in effect",
+    "staff report",
+)
+"""Owner words that are no status word, which "at" or "@" after them makes no status word."""
+_R8_NO_DISMISSAL = ("5:14 AM", "9:14 PM", "21:14", "7:30", "7:55 AM", "1:35", "3:00 PM", "6 PM")
+"""Clock times the reader reads no dismissal at ("dismiss at 1:35" is an ordinary afternoon)."""
+
+
+@pytest.mark.parametrize("at_word", [" at", " @"])
+@pytest.mark.parametrize("owner", _R8_AT_OWNERS)
+def test_round_8_owner_words_with_at_own_no_span_and_no_clock_past_the_marks(
+    owner: str, at_word: str
+) -> None:
+    # the class at the function level with "at" or "@" between the owner word and the clock
+    # time (WD-R8C2-B1): each owner word that is no status word, with each span and clock time
+    # and each mark in each of the nine places, read the morning of the day and the evening
+    # before, never lights the weekday
+    for text, day, now in _r8_owner_shapes(f"{owner}{at_word}", _R8_SPANS + _R8_CLOCKS):
+        assert not _lights_on(text, day, now), (text, now)
+
+
+@pytest.mark.parametrize("at_word", [" at", " @"])
+@pytest.mark.parametrize("owner", ["dismiss", "dismisses"])
+def test_round_8_a_dismissal_at_owns_no_span_and_no_time_the_reader_reads_none_at(
+    owner: str, at_word: str
+) -> None:
+    # "dismiss at" owns a clock time past the marks only at a time the reader reads a
+    # dismissal at, and never a span (WD-R8C2-B1, WD-R8C2-S4)
+    for text, day, now in _r8_owner_shapes(f"{owner}{at_word}", _R8_SPANS + _R8_NO_DISMISSAL):
+        assert not _lights_on(text, day, now), (text, now)
+
+
+_R8_NUMBERS = ("9", "10", "1", "12", "07", "45", "60", "99", "32")
+_R8_GLUED = ("", ":", "#", "/", ".", ",", "$")
+"""A mark glued before a bare number before a weekday's marks, with no digit before it."""
+_R8_TAILS = ("", " info", " | info", " update", " posted", ".")
+
+
+@pytest.mark.parametrize("gap", ["", " "])
+@pytest.mark.parametrize("size", [1, 2, 3])
+def test_round_8_no_bare_number_by_a_run_of_marks_names_its_day(size: int, gap: str) -> None:
+    # the class at the function level: a bare number of one or two digits (up to 99) on either
+    # side of a run of one, two or three marks (of 33, every pair, and every triple of the
+    # first 10) by a weekday, glued or spaced, with a mark glued before it before the weekday
+    # or none, with words after it or none, read the morning of the day at 06:00 and the
+    # evening before at 19:00, never lights the weekday (21,780 shapes and reads of two marks
+    # for each gap)
+    pool = _R7C2_MARKS if size < 3 else _R7C2_MARKS[:10]
+    for index, combo in enumerate(itertools.product(pool, repeat=size)):
+        run = gap.join(combo)
+        number = _R8_NUMBERS[index % len(_R8_NUMBERS)]
+        tail = _R8_TAILS[index % len(_R8_TAILS)]
+        glued = _R8_GLUED[index % len(_R8_GLUED)]
+        for lead, day, now in (read for days in _R8_DAYS for read in _r8_reads(*days)):
+            name = day.strftime("%A")
+            for text in (
+                f"{lead}{name}{run}{number}{tail}",
+                f"{lead}{name} {run} {number}{tail}",
+                f"{lead}{name}.{number}{tail}",
+                f"{lead}{glued}{number}{run}{name}{tail}",
+                f"{lead}{glued}{number} {run} {name}{tail}",
+            ):
+                assert not _lights_on(text, day, now), (text, now)
+
+
+@pytest.mark.parametrize("mark", list(_R7C2_MARKS))
+def test_round_8_no_bare_number_across_a_line_break_from_a_run_of_marks_names_its_day(
+    mark: str,
+) -> None:
+    # a line break in a weekday's run of marks parts a bare number from it as spaces do
+    # (WD-R8C2-S2): each mark, each number and each tail, with the line break on either side of
+    # the mark, either way round, read the morning of the day and the evening before
+    for number, tail in itertools.product(_R8_NUMBERS, _R8_TAILS):
+        for lead, day, now in (read for days in _R8_DAYS for read in _r8_reads(*days)):
+            name = day.strftime("%A")
+            for text in (
+                f"{lead}{name}{mark}\n{number}{tail}",
+                f"{lead}{name} {mark}\n{number}{tail}",
+                f"{lead}{name}{mark} \n {number}{tail}",
+                f"{lead}{number}{mark}\n{name}{tail}",
+                f"{lead}{number}\n{mark} {name}{tail}",
+                f"{lead}{number}\n{mark}\n{name}{tail}",
+            ):
+                assert not _lights_on(text, day, now), (text, now)
