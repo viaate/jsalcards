@@ -81,9 +81,37 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   hold, a rate limit): the host then still serves the snapshot's pass, and nothing on the
   host tells the two apart, so carrying it would show the retracted closing as current. A
   pass whose write fails removes the record, so an earlier pass's record is never marked
-  for the run's end. A final record and the ledger pushed with it are the run's last pass,
-  uploaded or not. Then, once the record passes the checks above, the successor reads back
-  the closings file the live host serves (one call to our own host's API per process start,
+  for the run's end. A final record is the run's last completed pass's, uploaded or not. A
+  pass cut off or failed after its reads (a kill, or an error the loop logs as a failed pass)
+  leaves the record of the pass before it beside a ledger that already holds the cut pass's
+  reads: a good read folded in that gap moves the ledger's read time, so its source is not
+  carried (the entry check above); a read the ledger could not take moves nothing, but the
+  reader holds that source dark from that moment, so it takes the source out of the record
+  on disk at once (one line `carry drop: 1 source (observe), <n> left`; a record it cannot
+  rewrite is removed, `carry drop: record removed (<error type>)`). A source whose resolve
+  failed at the pass is carried as any other and also listed `unknown` with an end (the
+  lines read `carry: <n> sources, <m> unknown` and `carry final: <n> sources, <m> unknown`):
+  the run before withheld its states (`source_unknown`) at every pass while its resolve
+  failed. The successor cannot tell a failure that would recur from one that has passed. It
+  resolves a carried source from the derivations the ledger stores, without the read's rows,
+  so a step only a read's rows reach (the unmatched-listing queue, a dated row's successor)
+  never runs there, and a failure in such a step would not recur until it reads the source
+  itself (a row never derived is already withheld, as any undecided row). So it withholds the
+  same states until it holds rows of that source from its own read, whose resolve then judges
+  at each pass as in any run, or until a read of it cannot be taken in (it then holds no rows
+  of it, as the run before would not), and never past the end listed: 90 minutes (the longest
+  G13 bound, the age past which a record carries nothing) from the last pass whose own resolve
+  failed. A run that only inherited the listing hands it on with the same end, so it never
+  outlives that bound, and a source the run before no longer held is listed the same way. The
+  withholding counts toward the two-pass alert as any unknown source does. The cost falls on a
+  failure that had passed at the run before's last pass: those states stay dark in the
+  successor until its own read of the source (a source whose last good read held rows is
+  read early, 4 minutes on, unless its last read failed or a hold or deferral stops it) and at
+  most until the end. Past the end, a failure the successor has not read again is not withheld, as in a run
+  without the record. A state withheld only for a read the ledger could not take is withheld
+  for that pass alone, in the run before as in any run, and is not carried (the record drops
+  the source from both lists). Then, once the record passes the checks above, the successor
+  reads back the closings file the live host serves (one call to our own host's API per process start,
   as the publisher's G12c reads it, never a list server; a refusal it meets, a rate limit
   included, is kept by the host client for the rest of the process) and carries nothing
   when the record's time is earlier than that file's `generated_at` (`behind`; whole
@@ -833,7 +861,7 @@ Private state (`out/internal/live/state/`, kept by the state store, [The state](
   - A successor that lost its state takes each day it has no log for from the public day file under the current stamp (lines with `"by": "seed"`), but only when the file's `content_sha256` is its own directory content: two contents can share one stamp (risk R6), and a file built on the other one indexes other schools. Such a file is skipped with a warning in the log. The public timeline then goes on from where it was, rather than starting again at the successor's first publish. The private details of those changes (source and row key) are lost.
 - `robots.json`: robots.txt verdicts per origin (the parsed rules, the read time and the file's digest), kept 24 hours.
 - `pacer.json`: each pace key's last request start, so a host's Crawl-delay holds across a handoff.
-- `carry.json`: the sources the last pass held, each with the time of the good read holding them and the end of that hold, the pass's time and a key of the resolver's version and the merge rules, so a successor shows them as that pass would have until its own read ([The handover carry](#the-reader)). Rewritten whole and atomically by every pass, unmarked, and marked final by `live finish --record` before the end push (a successor uses only a final record); ids, codes and times only; never exported.
+- `carry.json`: the sources the last pass held, each with the time of the good read holding them and the end of that hold, the sources whose states it withheld for a failing resolve, each with the end of that (`unknown`: 90 minutes from the last pass that failed to resolve it; a successor withholds the same states until its own read of the source, at most to that end, and a list that does not read carries nothing), the pass's time and a key of the resolver's version and the merge rules, so a successor shows them as that pass would have until its own read ([The handover carry](#the-reader)). Rewritten whole and atomically by every pass, unmarked, and marked final by `live finish --record` before the end push (a successor uses only a final record); ids, codes and times only; never exported.
 - `exits.json`: the last runs' exits (the `chain` alert).
 - `d1.json` (never packed): this run's epoch and its last push's counts. `pulse` (never packed): the watcher's heartbeat.
 - `cadence.json`: per source, the start of the pass that last read it, its outcome, the cause of that outcome (`live/causes.py`: a 401 apart from a 403, a 429, a timeout; counted in the export's `read causes:` line), and the earliest next read of a deferred or blocked source.
@@ -1050,6 +1078,7 @@ The pass report sets `alert` (S8-E opens an issue for it) when:
 Some sources' say is unknown in a pass:
 
 - a source whose read could not be taken into the ledger, or whose resolve failed;
+- a source the run before listed so in its handover record, until this run holds rows of it from its own read, at most 90 minutes from the run before's last pass that failed to resolve it ([The handover carry](#the-reader));
 - a source due for reading (active, on a platform whose terms permit polling) holding a row that was read but never resolved within the last 36 hours (a run cut off mid-pass).
 
 Each such source holds back every status and open statement in its registry states until it is read again. The rest of the map publishes. A source not due (the registry no longer lists it, it has no endpoint, or its terms do not permit polling) is never read again, so its unresolved rows are left out and expire.
