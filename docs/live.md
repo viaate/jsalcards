@@ -1212,7 +1212,7 @@ touches every prefix.
 
 1. It writes `live/hold.json` (`held: true`) in `v1/` and `v1-shadow/` (or only the `--prefix` named), first and in a write of its own, so the hold stands whatever happens next.
 2. In each of those with a closings file, it publishes an empty closings and opens file under the file's own stamp.
-3. It empties every day timeline the day index lists, and empties the index.
+3. It empties every day timeline the day index lists, empties the index, and publishes an empty season file ([The season counts](#the-season-counts)).
 4. It reads and writes no private state, so it works while the ingest is broken.
 
 Run `live check` a minute after a blank to see that the public file is empty.
@@ -1229,13 +1229,35 @@ The emergency stop is not history. Which status was false is not recorded, so ev
 
 `live release --prefix P` writes `held: false` under `P` (`every` for both) and keeps the time the hold began. A run that never saw the hold still records the dark minutes. After a release:
 
-- The next pass publishes again, and every day timeline is published again.
+- The next pass publishes again, and every day timeline and the season file are published again.
 - A status the hold darkened lights again only while a source still lists the row that lights it. Merge keeps a row through its day after the source takes it down, but not for these school-days: they stay dark until the day ends.
 - A status a source still lists lights again, and the timeline shows it from the release on.
 
 So to remove one false status for good, fix its cause first: the source takes the row down, or a fix to the code, the matcher or the registry stops it from lighting. Then release. If the cause cannot be fixed, keep the hold until the day ends.
 
 Exit `0` means every prefix is held and every file is blanked. Exit `1` means the host could not be written, so try again. Exit `3` means the hold is set but a file was not blanked, because its blank would be stamped more than 60 s ahead of the host's clock. Fix the clock. The running ingest blanks that file as soon as the clock allows.
+
+## The season counts
+
+Owner decision, Nov 9: each school's panel says how many days it was closed, delayed, remote or dismissed early this school year, exactly, never inflated, and says when counting began (`snowlight/live/season.py`).
+
+**The rule.** Only a final day timeline counts (`final: true`: the day is over everywhere); a day in progress never does. Each school on it counts once, under the status its run of changes ends on: what the map showed at the end of the day, after any correction.
+
+- A status taken back before the day ends (retracted, corrected away, or taken down that evening) counts nowhere.
+- A status changed during the day counts once, as the one it ended as.
+- The admin's manual statuses are in the timelines like any other and count the same.
+- A status the emergency hold darkened is no part of a timeline, so it never counts.
+- The school year runs July 1 to June 30. The file counts the days from `since` through `through`: `through` is the last day over everywhere when it is built, and `since` is July 1, or the later day counting began.
+
+**Directory editions.** A timeline's school indexes point into the edition it was built from. Each day is turned into NCES ids with that edition's own ids, and the counts are placed into the current edition by NCES id, never by position. A day whose edition's ids are not known is left out whole, and counting begins after it. A school the current edition does not hold is left out.
+
+**The ledger** (`season.json` in the state) keeps each counted day's final statuses by NCES id. The reader puts a day in once an upload has carried that day's final timeline, so a day whose change log has left the state, or that was built from another edition, still counts, mapped by id. A final day the ledger does not hold yet is built again from the change log on the next pass, even when its public file is already final (the first pass after this landed fills the ledger from the change log's days, up to the 30 a pass rebuilds). `since` is set when the ledger is first written: the oldest final day it was filled with then, or, with none, the first day not yet over. A ledger lost or unreadable starts again with a later `since`, so the panel then says the later day; it never claims days it does not hold. Rebuilding from the same days gives the same bytes. The overrides job (`reader` off) neither writes the ledger nor publishes the file.
+
+**The file**, `live/season.json` under the mode's prefix (schema `schemas/live-season.schema.json`): the school year, `since`, `through`, the directory stamp and content digest, and one row per school with a day counted, in school order (`gaps` as in closings.json, then the four counts). It goes up with an upload when its bytes differ from the last one published under the prefix: once a day as `through` moves on, and when a day's counts change. Every blank (an edition change, the emergency stop) publishes it empty (`content_sha256` null), and the next upload after the blank or the release puts it back.
+
+**Sizes.** On the public final archives of Oct 26 to Nov 6 (one edition, 10 final days, 293 final school-days with a status): 155 schools listed, 1,954 B raw and 445 B gzip, built in under 1 ms, the same bytes on a rebuild. 113 of the 293 school-days ended dark and are not counted, 41 of them taken down after 3 PM on the school's clock. With synthetic counts: 15,000 schools listed, 154 KB raw and 38 KB gzip; every school of the directory, 1.18 MB raw and 191 KB gzip. The ledger (synthetic NCES ids drawn at random, which compress worse than a district's run of ids): one day of 15,000 schools is 225 KB raw and 94 KB gzip, 30 such days 6.8 MB raw and 2.8 MB gzip in the packed state.
+
+**The panel** (`web/src/data/season.ts`, `web/src/copy-season.ts`): the school panel reads the file when it opens, from the live root beside the closings (at most once in 10 minutes for every panel opened), never with the page. It shows one line, "This school year: closed 2 days, delayed 1.", and, when counting began after July 1, "This school year, since Oct 27: closed 2 days, delayed 1.". The line names each status with a day, in the order closed, delayed, remote, dismissed early. It shows nothing when the school has no day counted (a school the map does not cover could have closed), when the file is missing, does not read, is empty, is for another directory, or is stale: its `through` older than the last day over everywhere an hour before now. A past day on the map (a replay) shows no line.
 
 ## Switches and secrets (environment only)
 
@@ -1339,8 +1361,9 @@ Public, on the live host. These hold school indexes, days, codes and times only.
 - `v1/live/days/<day>.json`: when each school's status changed that day, for the timeline.
 - `v1/live/days/index.json`: lists only the days whose file carries the current stamp, and is written with every upload, even when it lists no day. A finished day is published again from the change log after a restamp or a directory change.
 - `v1/live/hold.json`: the hold, a flag and two times. The web never reads it.
+- `v1/live/season.json`: each school's closed, delayed, remote and early-dismissal days this school year ([The season counts](#the-season-counts)). Written by the reader only, when it changes.
 
-The files go up in this order: closings, opens, day timelines, index.
+The files go up in this order: closings, opens, day timelines, season file, index.
 
 Private state (`out/internal/live/state/`, kept by the state store, [The state](#the-state)):
 
@@ -1352,6 +1375,7 @@ Private state (`out/internal/live/state/`, kept by the state store, [The state](
   - A day leaves the state only once it is more than 45 days old and a durable copy holds it: an evidence database holding its exact bytes (`kept.json`, [The evidence](#the-evidence)), or `changes/durable.json` (`{"through": "YYYY-MM-DD"}`, the push to the private data repository of spec 19, not built yet).
   - A day no copy is known to hold is never pruned, however old.
   - A successor that lost its state takes each day it has no log for from the public day file under the current stamp (lines with `"by": "seed"`), but only when the file's `content_sha256` is its own directory content: two contents can share one stamp (risk R6), and a file built on the other one indexes other schools. Such a file is skipped with a warning in the log. The public timeline then goes on from where it was, rather than starting again at the successor's first publish. The private details of those changes (source and row key) are lost.
+- `season.json`: the season ledger, each counted day's final statuses by NCES id and the day counting began ([The season counts](#the-season-counts)). Written by the reader after an upload that carried a day's final timeline; the overrides job never writes it. NCES ids, days and codes only.
 - `robots.json`: robots.txt verdicts per origin (the parsed rules, the read time and the file's digest), kept 24 hours.
 - `pacer.json`: each pace key's last request start, so a host's Crawl-delay holds across a handoff.
 - `carry.json`: the sources the last pass held, each with the time of the good read holding them and the end of that hold, the sources whose states it withheld for a failing resolve, each with the end of that (`unknown`: 90 minutes from the last pass that failed to resolve it; a successor withholds the same states until its own read of the source, at most to that end, and a list that does not read carries nothing), the pass's time and a key of the resolver's version and the merge rules, so a successor shows them as that pass would have until its own read ([The handover carry](#the-reader)). Rewritten whole and atomically by every pass, unmarked, and marked final by `live finish --record` before the end push (a successor uses only a final record); ids, codes and times only; never exported.
