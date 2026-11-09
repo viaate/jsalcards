@@ -1262,6 +1262,74 @@ A pass reads the sources due through a concurrent pool (`snowlight/live/pool.py`
 - **Cadence.** Every 5 minutes from 18:00 to 23:00 and from 04:00 to 09:00 in the station's own zone (the zone most of its counties are in; real zone rules, so the windows follow daylight saving time), and while an NWS alert of an allowlisted type covers one of its counties (the alerts are read every 5 minutes; a failed read keeps the last set for 2 hours). Otherwise every 30 minutes, or the registry's `poll_minutes` when longer. A source the pass did not get to (`late`) is due at the next pass; a failed read (`error`, such as a 429 or 5xx without `Retry-After`) keeps its cadence, so outside the windows and alerts it waits its calm interval, a successor's first read of it included (the successor shows its carried statuses meanwhile). A source is never read again in the same 5-minute grid slot, nor less than 4 minutes after its last pass.
 - **Health share.** G12b counts the sources due in the passes of the last 15 minutes, and every source blocked now, each by its latest read in that time. Both windows are counted from the passes' starts: a read is kept under the start of the pass that picked its source, the moment the cadence counted that source due, and both are dropped by the same test on the same start, so a source due in the window always has its picking pass's read in it, and that read is its latest (only a pass that picks a source reads it). A pass that read 10 sources or more also counts its own reads alone, and the gate takes the lower share: an outage that starts at a pass is refused at that pass, not only once the window holds nothing but failing reads (up to two passes later after a half-hourly sweep). From Oct 25 to 29 each of the 1261 uploaded passes with 10 reads or more had 84% or more of them good. This makes the gate stricter in one case: a broad degradation that keeps a pass's own reads under 60% (late reads of our pool and deferred reads count as not good, as in the window, since neither gives a fresh say) now refuses every pass until reads recover. Before, good reads still in the window from a half-hourly sweep before the degradation began could carry passes through it. A refusal is exit 3 and the loop goes on; v1 keeps its last good pass, and the `stale` alert opens once the served file is over 15 minutes old. Watch the own share (the commit's good over due) on the first storm-day soak. (Until Oct 30 the reads were kept under their own fetch times and measured from the clock after the reads: each :10 and :40 pass, 15 minutes after a half-hourly sweep, counted the sweep's sources due without their reads, dipped to 37-53% and was refused, 48 times from Oct 25 to 29.)
 
+## What the page lights
+
+The page lights each school with its row of `live/closings.json` on the school's MAP DAY, and
+with that row only (`web/src/data/map-day.ts`). One rule tells every school's day, wherever
+the page shows it: the glow, the key's counts and day line, the menu's counts and their
+heading, the area panel's list and counts, the school panel's nearby list (each glyph is the
+school's light, `closings.ts litStatus`), and the school panel's own today and tomorrow.
+
+- Its own today until 3:30 PM on its own clock, and its own tomorrow from 3:30 PM until
+  midnight there (owner decision, Nov 9). After midnight that date is its today, so nothing
+  changes at midnight. A row for its today never lights after 3:30 PM, nor a row for its
+  tomorrow before.
+- Its clock is its district's time zone (a private school's own) as `predictions/latest.json`
+  gives it, for the directory the closings file names, however old the file: a district's
+  zone does not age. The map and every panel take the same zones (`live.ts toldZones`): the
+  ones the map lights by, else a panel's own read, else the newest file the page's one reader
+  holds. So a school lit for tomorrow says tomorrow in its panel, even when the panel's own
+  read of the file fails.
+- A school the file gives no zone keeps the rule from before: the day that is today in every
+  contiguous US zone (UTC-4 to UTC-8), and nothing from 04:00 to 08:00 UTC. The predictions
+  file of Nov 9, 2026 gave a zone to every district (18,227) and every private school
+  (22,110) of its directory (118,211 schools): none lacked one. It names five zones (New
+  York, Chicago, Denver, Phoenix, Los Angeles).
+- While no zones for the directory can be had (the predictions file still on its way, offline
+  after a reload, a failed read, a file for another directory), a school in the contiguous US
+  (by its place: 24.3 to 49.5 N, 125 to 66.8 W) lights on the day that is today everywhere,
+  and only while it is also the map day of all five contiguous clocks: from 08:00 UTC to 3:30
+  PM in the East. Every clock in the lower 48 keeps one of those five, so that day is the map
+  day of every school there, the ones the file gives a zone and any it gives none alike, and
+  no light steps back to another day once the zones come. From 3:30 PM in the East until
+  08:00 UTC nothing lights (the West past 3:30 PM is on its tomorrow then, while a school with
+  no zone is still on its today); a school outside the contiguous US (Alaska, Hawaii, the
+  territories) never lights this way. Its panel then reads its today as the day that is today
+  everywhere, so its words name the row its light shows, and a school whose record puts it
+  outside the contiguous US names no day. In those dark hours the page gives no update time
+  and names no day: no time stands over a map that cannot show the file's rows.
+- The first lights never wait for the predictions file (about 600 kB compressed, 6 to 9 MB
+  to read): the page lights by the agreed day as soon as the closings file and the directory
+  are in, and lights again by the zones when they come, with no pulse. Outside the hours the
+  agreed day has none, it is every contiguous school's own map day, so the map reads the zones
+  only from 5 minutes before those hours (a page not seen wakes for that read too, so it is not
+  dark at the East's 3:30 PM), and for a school outside the contiguous US; once held for the
+  directory they are not read again. After a read that brings no zones for the directory (it
+  failed, or the file is for another directory, as at a change of directory), the map waits 5
+  minutes before the next, then 10, 20 and 30 at most, so a file that stays on another
+  directory is not downloaded every few minutes all evening; a panel's own read still brings
+  the zones to the map at once.
+- The page relights at the next 3:30 PM and midnight of every zone it shows, and at the
+  visitor's own midnight, without waiting for a read; an open school or area panel shows again
+  at the same minutes for the schools it lists, so its glyphs, counts and heading turn with the
+  lights. A light that appears only because a
+  school's day turned is no news and does not pulse; a row new since the last file read
+  still pulses, also when the file's directory came late or no day could be told when the file
+  came (the rows of a file are taken as seen only once the file is shown).
+- Over the key, the page names the day it shows whenever that is not both the visitor's own
+  today and today on every clock it is shown in ("Showing Tuesday"), so a visitor whose browser
+  keeps UTC still sees it named; and both days and where while it shows two, between 3:30 PM
+  in the East and 3:30 PM in the West ("Tuesday in ET · Monday in CT, MT and PT"). The line
+  stays while the map's credits are open, lifted clear above them.
+- The menu heads its counts with the same day ("Tuesday", or "Monday and Tuesday" while the
+  map shows two), and Today only for the visitor's own today; the area panel heads its counts
+  the same way.
+- The page reads `predictions/latest.json` through one reader the map and the panels share (a
+  panel just opened reads it afresh, for its chance). A closings file that lists no school
+  asks for nothing more.
+- A replay lights the day it replays, as before. Notifications are unchanged
+  ([docs/notify.md](notify.md)).
+
 ## Where files go
 
 Public, on the live host. These hold school indexes, days, codes and times only.

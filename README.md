@@ -1,6 +1,6 @@
 # Snowlight
 
-Snowlight is a near-black map of the continental US where every K-12 school closed, delayed, remote or dismissing early for weather today glows like city lights seen from space.
+Snowlight is a near-black map of the continental US where every K-12 school closed, delayed, remote or dismissing early for weather glows like city lights seen from space: each school's today, and from 3:30 PM on its own clock its tomorrow ([docs/live.md](docs/live.md#what-the-page-lights)).
 
 Live preview of the work in progress: https://viaate.github.io/jsalcards/ (rebuilt on every push to the default branch).
 
