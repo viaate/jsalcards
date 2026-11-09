@@ -30,6 +30,7 @@ from snowlight.schemas.live import (
     DayIndex,
     DayTimeline,
     OpensFile,
+    SeasonFile,
 )
 from snowlight.schemas.predictions import PredictionsFile
 from snowlight.schemas.replays import ReplayFile, ReplayIndex
@@ -54,6 +55,7 @@ PUBLISHED_FILES: tuple[PublishedFile, ...] = (
     PublishedFile("opens", "live/opens.json", OpensFile),
     PublishedFile("live-day", "live/days/{id}.json", DayTimeline),
     PublishedFile("live-days", "live/days/index.json", DayIndex),
+    PublishedFile("live-season", "live/season.json", SeasonFile),
     PublishedFile("predictions", "predictions/latest.json", PredictionsFile),
     PublishedFile("season-stats", "stats/season.json", SeasonStats),
     PublishedFile("track-record", "track-record.json", TrackRecord),

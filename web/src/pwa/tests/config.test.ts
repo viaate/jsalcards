@@ -203,6 +203,7 @@ describe('routeFor', () => {
       directoryEdition: null,
       liveDay: 'data',
       liveDays: 'data',
+      liveSeason: 'data',
       opens: 'data',
       predictions: 'data',
       replayIndex: 'data',

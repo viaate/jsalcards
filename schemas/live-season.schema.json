@@ -1,0 +1,146 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "ContentDigest": {
+      "description": "A SHA-256 digest: 64 lowercase hexadecimal digits.",
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "DayTally": {
+      "description": "How many days of a school year one school had a status.",
+      "maximum": 366,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "DirectoryStamp": {
+      "additionalProperties": false,
+      "description": "The directory a file's school and district indexes point into.\n\nIt must equal generated_on, count and the number of districts of the\nschools/meta.json the reader has loaded; otherwise the file is ignored.",
+      "properties": {
+        "districts": {
+          "$ref": "#/$defs/Count"
+        },
+        "generated_on": {
+          "$ref": "#/$defs/LocalDate"
+        },
+        "schools": {
+          "$ref": "#/$defs/Count"
+        }
+      },
+      "required": [
+        "generated_on",
+        "schools",
+        "districts"
+      ],
+      "title": "DirectoryStamp",
+      "type": "object"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "SchoolGap": {
+      "description": "A school index written as its distance from the one before it: index = previous index + 1 + gap, and the first previous index is -1. So [4, 0, 2] is schools 4, 5 and 8.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "SchoolYear": {
+      "description": "A school year, July to June, as YYYY-YYYY (2026-2027).",
+      "pattern": "^\\d{4}-\\d{4}$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "live/season.json: each school's closed, delayed, remote and early-dismissal days this\nschool year.\n\nCounted from the final day timelines (``live/days/<day>.json`` with ``final`` true) of\nevery day from ``since`` through ``through``: each school is counted once a day, under\nthe status its timeline ended the day on; a status taken back by then counts nowhere.\nOne row per school with at least one such day, in school order: ``gaps`` as in\nclosings.json, and ``closed[i]``, ``delayed[i]``, ``remote[i]`` and\n``early_dismissal[i]`` are the i-th school's days.",
+  "properties": {
+    "closed": {
+      "items": {
+        "$ref": "#/$defs/DayTally"
+      },
+      "type": "array"
+    },
+    "content_sha256": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ContentDigest"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The content digest of the directory edition the school indexes point into (as the day timelines'); null for an emptied file."
+    },
+    "delayed": {
+      "items": {
+        "$ref": "#/$defs/DayTally"
+      },
+      "type": "array"
+    },
+    "directory": {
+      "$ref": "#/$defs/DirectoryStamp"
+    },
+    "early_dismissal": {
+      "items": {
+        "$ref": "#/$defs/DayTally"
+      },
+      "type": "array"
+    },
+    "gaps": {
+      "description": "Each school, as a gap from the previous school's index.",
+      "items": {
+        "$ref": "#/$defs/SchoolGap"
+      },
+      "type": "array"
+    },
+    "remote": {
+      "items": {
+        "$ref": "#/$defs/DayTally"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    },
+    "season": {
+      "$ref": "#/$defs/SchoolYear"
+    },
+    "since": {
+      "$ref": "#/$defs/LocalDate",
+      "description": "The first day counted: the school year's first day (July 1), or the later day counting began."
+    },
+    "through": {
+      "$ref": "#/$defs/LocalDate",
+      "description": "The last day counted, the last day over everywhere."
+    }
+  },
+  "required": [
+    "schema_version",
+    "season",
+    "since",
+    "through",
+    "directory",
+    "content_sha256",
+    "gaps",
+    "closed",
+    "delayed",
+    "remote",
+    "early_dismissal"
+  ],
+  "title": "SeasonFile",
+  "type": "object",
+  "x-snowlight-path": "live/season.json"
+}

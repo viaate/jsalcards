@@ -9,6 +9,7 @@ export const PUBLISHED_PATHS = {
   directoryEdition: 'schools/edition.json',
   liveDay: 'live/days/{id}.json',
   liveDays: 'live/days/index.json',
+  liveSeason: 'live/season.json',
   opens: 'live/opens.json',
   predictions: 'predictions/latest.json',
   replayIndex: 'replays/index.json',
@@ -26,6 +27,7 @@ export interface PublishedDocuments {
   readonly directoryEdition: DirectoryEdition;
   readonly liveDay: DayTimeline;
   readonly liveDays: DayIndex;
+  readonly liveSeason: SeasonFile;
   readonly opens: OpensFile;
   readonly predictions: PredictionsFile;
   readonly replayIndex: ReplayIndex;
@@ -461,6 +463,49 @@ export interface DayEntry {
   readonly schools: Count;
   readonly final: boolean;
 }
+
+// live-season --------------------------------------------------------------------
+
+/**
+ * live/season.json: each school's closed, delayed, remote and early-dismissal days this
+ * school year.
+ *
+ * Counted from the final day timelines (``live/days/<day>.json`` with ``final`` true) of
+ * every day from ``since`` through ``through``: each school is counted once a day, under
+ * the status its timeline ended the day on; a status taken back by then counts nowhere.
+ * One row per school with at least one such day, in school order: ``gaps`` as in
+ * closings.json, and ``closed[i]``, ``delayed[i]``, ``remote[i]`` and
+ * ``early_dismissal[i]`` are the i-th school's days.
+ */
+export interface SeasonFile {
+  readonly schema_version: SchemaVersion;
+  readonly season: SchoolYear;
+  /**
+   * The first day counted: the school year's first day (July 1), or the later day counting began.
+   */
+  readonly since: LocalDate;
+  /** The last day counted, the last day over everywhere. */
+  readonly through: LocalDate;
+  readonly directory: DirectoryStamp;
+  /**
+   * The content digest of the directory edition the school indexes point into (as the day
+   * timelines'); null for an emptied file.
+   */
+  readonly content_sha256: ContentDigest | null;
+  /** Each school, as a gap from the previous school's index. */
+  readonly gaps: readonly SchoolGap[];
+  readonly closed: readonly DayTally[];
+  readonly delayed: readonly DayTally[];
+  readonly remote: readonly DayTally[];
+  readonly early_dismissal: readonly DayTally[];
+}
+
+/**
+ * How many days of a school year one school had a status.
+ * @minimum 0
+ * @maximum 366
+ */
+export type DayTally = number;
 
 // opens --------------------------------------------------------------------------
 

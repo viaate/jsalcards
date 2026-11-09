@@ -752,6 +752,8 @@ export function boot(options: BootOptions): Services {
             replay: replayOn,
             // The districts next door, for the chance section: the directory the glow reads.
             directory: async (stamp) => (await (await data.directories())?.get(stamp)) ?? null,
+            // The school's days this school year, from the season file.
+            seasons: true,
           });
         },
         () => {

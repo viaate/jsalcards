@@ -34,6 +34,7 @@ import { DISTRICT_NAME_FIXES, SCHOOL_NAME_FIXES } from 'virtual:snowlight/school
 
 import { REASON_KEYS, STATUS_KEYS, copy } from '../copy';
 import { format } from '../copy-format';
+import { seasonFormat } from '../copy-season';
 import type { StatusKey } from '../copy';
 import type { NearbyReasonKey } from '../copy-format';
 import { decodeDay, litStatus } from '../data/closings';
@@ -68,6 +69,7 @@ import {
 import type { Outlook, SchoolStatus, StatusRow } from '../data/school-day';
 import type { Directory } from '../data/directory';
 import type { ReplayOn } from '../data/replay';
+import { readSeason, schoolSeason } from '../data/season';
 import { casedName, displayName } from '../text/names';
 import { stateOfId } from '../text/school-names';
 import { PUBLISHED_PATHS, Reason, Status } from '../types/generated';
@@ -78,6 +80,7 @@ import type {
   LocalDate,
   PredictionsFile,
   SchoolId,
+  SeasonFile,
 } from '../types/generated';
 import { chanceView, latestZone, nextTurn, shortDistrictName, todayUnderWay } from './chance';
 import type { ChanceView, DistrictNaming, Names } from './chance';
@@ -148,6 +151,12 @@ export interface SchoolView {
   readonly nearby: readonly NearbyView[];
   /** True until the school's record is read. */
   readonly loading: boolean;
+  /**
+   * The season line: the school's closed, delayed, remote and early-dismissal
+   * days this school year (data/season.ts); null or absent when the season
+   * file counts none for it, or does not speak for now.
+   */
+  readonly season?: string | null;
 }
 
 /** Where a name's campus starts: after a spaced dash, as the map's labels break it (schools.ts). */
@@ -577,6 +586,21 @@ export interface ViewInput {
   readonly timeZone: string;
   /** A past day on the map: the status is that day's, and no chance is given. */
   readonly replay?: ReplayOn | null;
+  /** The season file (data/season.ts), checked; null or absent when there is none. */
+  readonly season?: SeasonFile | null;
+}
+
+/** The season line for a school, or null where the file says nothing that holds now. */
+function seasonLine(file: SeasonFile | null, record: SchoolRecord, now: Date): string | null {
+  if (file === null) return null;
+  const found = schoolSeason(file, record.index, record.directory, now);
+  if (found === null) return null;
+  try {
+    return seasonFormat.line(found.days, found.since);
+  } catch {
+    // A count the formatter refuses: no line rather than a wrong one.
+    return null;
+  }
 }
 
 /** The clock a view reads the school's today by: the one its status was read by. */
@@ -664,6 +688,8 @@ export function schoolView(input: ViewInput): SchoolView | null {
     facts: factsOf(record),
     nearby: nearbyOf(record, input.closings ?? null, now, replay, input.nearbyZones ?? NO_ZONES),
     loading: false,
+    // A past day on the map is that day's: the season so far is not.
+    season: replay === null ? seasonLine(input.season ?? null, record, now) : null,
   };
 }
 
@@ -750,6 +776,11 @@ export interface WatchOptions {
    * live file is read (nothing is polled).
    */
   readonly replay?: ReplayOn | null;
+  /**
+   * Whether the panel reads the season file (data/season.ts readSeason) for
+   * its season line, as it opens. The page's panel does; off by default.
+   */
+  readonly seasons?: boolean;
 }
 
 export function viewerTimeZone(): string {
@@ -769,6 +800,8 @@ export function watchSchool(options: WatchOptions): () => void {
   let stopped = false;
   let record: SchoolRecord | null = null;
   let settled = false;
+  /** The season file, once read (a past day reads none). */
+  let season: SeasonFile | null = null;
   // The page's one reader of the closings file: the panel's first read gets at least the file
   // the map holds, and never one older than it. A past day takes none.
   const reader = replay === null ? closingsReader(files) : null;
@@ -846,6 +879,7 @@ export function watchSchool(options: WatchOptions): () => void {
       now: at,
       timeZone: timeZone(),
       replay,
+      season,
     });
     onView(view);
     if (replay === null && record !== null) {
@@ -922,6 +956,15 @@ export function watchSchool(options: WatchOptions): () => void {
     return () => undefined;
   }
   show();
+  // The season file, read as the panel opens (at most once a SEASON_READ_MS for every panel).
+  if (replay === null && options.seasons === true) {
+    void readSeason(files)
+      .then((file) => {
+        season = file;
+        if (settled && file !== null) show();
+      })
+      .catch(() => undefined);
+  }
   const loading = details.get(id).then(
     (found) => {
       record = found;

@@ -64,7 +64,9 @@ current stamp and this directory's content (each day file records it), is first 
 into the log from that file (a successor that lost its state goes on with the day). The
 files go up in this order: closings, opens, day timelines, index; a host that writes
 them one by one and fails part way reports what it wrote, and the change log keeps what
-the map showed.
+the map showed. A reader also publishes ``live/season.json`` (:mod:`snowlight.live.season`),
+after the day timelines, whenever it changes: each school's closed, delayed, remote and
+early-dismissal days this school year, from the final timelines.
 The public files hold school indexes, days, codes and times only.
 
 ``LIVE_PUBLISH`` (:class:`Mode`): ``on`` writes under ``v1/``, ``shadow`` under
@@ -116,6 +118,16 @@ from snowlight.live.publishers import (
     guarded_write,
 )
 from snowlight.live.resolve import LiveDirectory
+from snowlight.live.season import (
+    LEDGER,
+    SEASON,
+    DayStatuses,
+    SeasonLedger,
+    edition_ids,
+    final_statuses,
+    last_final_day,
+    school_year,
+)
 from snowlight.output import JSONValue, dumps_json, write_bytes_atomic, write_json
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.live import (
@@ -124,8 +136,10 @@ from snowlight.schemas.live import (
     DayIndex,
     DayTimeline,
     OpensFile,
+    SeasonFile,
     local_days,
 )
+from snowlight.schemas.scalars import school_year_bounds
 
 LOG: Final = logging.getLogger(__name__)
 HEARTBEAT: Final = timedelta(minutes=5)
@@ -280,7 +294,8 @@ def blank_files(
     stamp: DirectoryStamp, generated_at: datetime, days: Iterable[date]
 ) -> dict[str, bytes]:
     """A blank publish under ``stamp``: empty closings and opens, each of ``days`` as an empty
-    timeline, and an empty day index (unprefixed paths, closings first)."""
+    timeline, an empty day index and an empty season file (unprefixed paths, closings
+    first)."""
     files = {
         CLOSINGS: ClosingsFile.encode(
             (), generated_at=generated_at, directory=stamp
@@ -306,6 +321,15 @@ def blank_files(
             }
         ).to_json_bytes()
     files[DAYS] = day_index({}, generated_at).to_json_bytes()
+    through = last_final_day(generated_at)
+    files[SEASON] = SeasonFile.encode(
+        {},
+        season=school_year(through),
+        since=through,
+        through=through,
+        directory=stamp,
+        content_sha256=None,
+    ).to_json_bytes()
     return files
 
 
@@ -471,6 +495,9 @@ class Memory:
     deploy is told from a deploy that moved under a public stamp by it)."""
     last_admin: str | None = None
     """The digest of the admin's statuses in the last upload (the G12b/G12e exception)."""
+    season: dict[str, str] = field(default_factory=dict)
+    """``<prefix>``: the digest of the season file last published there (it goes up again
+    only when it changes, or after a blank)."""
 
     def to_json(self) -> dict[str, JSONValue]:
         def when(moment: datetime | None) -> str | None:
@@ -498,6 +525,7 @@ class Memory:
             "redacted": [[nces_id, day] for nces_id, day in sorted(self.redacted)],
             "last_edition_sha": self.last_edition_sha,
             "last_admin": self.last_admin,
+            "season": dict(sorted(self.season.items())),
         }
 
     @classmethod
@@ -544,6 +572,9 @@ class Memory:
                 ),
                 last_edition_sha=_text(data.get("last_edition_sha")),
                 last_admin=_text(data.get("last_admin")),
+                season={
+                    str(prefix): str(digest) for prefix, digest in data.get("season", {}).items()
+                },
             )
         except (KeyError, TypeError, ValueError) as error:
             raise ValueError(f"{path.name} is not the publisher's memory") from error
@@ -552,10 +583,12 @@ class Memory:
         write_json(path, self.to_json())
 
     def forget_days(self, prefix: str) -> None:
-        """Every day file under ``prefix`` is to be published again (after a blank)."""
+        """Every day file and the season file under ``prefix`` are to be published again
+        (after a blank)."""
         self.days = {
             key: record for key, record in self.days.items() if not key.startswith(f"{prefix}/")
         }
+        self.season = {key: digest for key, digest in self.season.items() if key != prefix}
 
 
 @dataclass(frozen=True, slots=True)
@@ -767,12 +800,19 @@ class LivePublisher:
     """The pass this publish belongs to (its commit message on a host that takes one)."""
     memory: Memory = field(init=False)
     changes: ChangeLog = field(init=False)
+    ledger: SeasonLedger = field(init=False)
+    """The season ledger (``season.json`` in the state, :mod:`snowlight.live.season`): only a
+    reader keeps it and publishes the season file."""
     _days: dict[str, DayRecord] = field(init=False, default_factory=dict)
+    _season: tuple[SeasonLedger, str] | None = field(init=False, default=None)
+    """The ledger and season file digest an upload commits once it is written."""
+    _ids: dict[int, str] | None = field(init=False, default=None)
     _seeded: bool = field(init=False, default=False)
 
     def __post_init__(self) -> None:
         self.memory = Memory.load(self.memory_path)
         self.changes = ChangeLog(self.state_dir / "changes")
+        self.ledger = SeasonLedger.load(self.state_dir / LEDGER)
 
     @property
     def memory_path(self) -> Path:
@@ -1486,6 +1526,7 @@ class LivePublisher:
         memory.days = {**memory.days, **self._days}
         memory.last_edition_sha = self.directory.edition
         memory.last_admin = admin
+        self._keep_season(prefix)
         memory.save(self.memory_path)
         self.changes.prune(local_days(generated_at)[0])
         write_bytes_atomic(
@@ -1512,6 +1553,16 @@ class LivePublisher:
             uploaded=tuple(keyed),
             counts={**counts, "changes": len(changes)},
         )
+
+    def _keep_season(self, prefix: str) -> None:
+        """After an upload: keep the season ledger it was built from, and the digest of the
+        season file under ``prefix`` (which the upload carried, or which was already there)."""
+        if self._season is None:
+            return
+        self.ledger, digest = self._season
+        self.ledger.save(self.state_dir / LEDGER)
+        self.memory.season = {**self.memory.season, prefix: digest}
+        self._season = None
 
     def host_refused(
         self, refusal: HostRefusal, now: datetime, *, before: _GateMemory | None = None
@@ -1558,7 +1609,11 @@ class LivePublisher:
         """The day files to publish with this pass, plus the index: each day in progress
         with a status, and each day over whose final timeline is not yet published under
         this prefix, stamp and content (from the change log, which is keyed by NCES id).
-        The index lists only days whose file carries this stamp."""
+        The index lists only days whose file carries this stamp.
+
+        A reader also builds each final day its season ledger does not hold yet, and adds
+        the season file (:mod:`snowlight.live.season`) when it differs from the one last
+        published under this prefix; the ledger is kept once the upload is written."""
         prefix = self.prefix or ""
         token = self._token(stamp)
         pending: dict[date, list[Change]] = {}
@@ -1566,20 +1621,28 @@ class LivePublisher:
             pending.setdefault(change.day, []).append(change)
         files: dict[str, bytes] = {}
         entries: dict[date, tuple[int, bool]] = {}
+        finals: dict[date, DayStatuses] = {}
         self._days = {}
+        self._season = None
         candidates = sorted({*self.changes.days(), *pending}, reverse=True)[:INDEX_DAYS]
+        through = last_final_day(generated_at)
+        year_first, _ = school_year_bounds(school_year(through))
         for day in sorted(candidates):
             final = is_final(day, generated_at)
             key = f"{prefix}/{day.isoformat()}"
             done = self.memory.days.get(key)
-            if (
-                final
+            published = (
+                done
+                if final
                 and done is not None
                 and done.final
                 and done.token == token
                 and day not in pending
-            ):
-                entries[day] = (done.schools, True)  # its log is not read again
+                else None
+            )
+            counted = not self.reader or day in self.ledger.days or day < year_first
+            if published is not None and counted:
+                entries[day] = (published.schools, True)  # its log is not read again
                 continue
             made = timeline(
                 day,
@@ -1591,10 +1654,29 @@ class LivePublisher:
             )
             if made is None:
                 continue
+            if final and self.reader and day >= year_first:
+                # The final timeline this pass holds (published now, or already): the ledger
+                # takes the day as it says.
+                if self._ids is None:
+                    self._ids = edition_ids(self.directory)
+                finals[day] = final_statuses(made, self._ids)
+            if published is not None:
+                # Built for the season ledger alone: the public file already holds it.
+                entries[day] = (published.schools, True)
+                continue
             entries[day] = (len(made.gaps), final)
             files[day_path(day)] = made.to_json_bytes()
             self._days[key] = DayRecord(token, len(made.gaps), final)
         files[DAYS] = day_index(entries, generated_at).to_json_bytes()
+        if self.reader:
+            ledger = self.ledger.with_days(finals, through=through)
+            season = ledger.season(through=through, directory=self.directory, stamp=stamp)
+            if season is not None:
+                body = season.to_json_bytes()
+                digest = hashlib.sha256(body).hexdigest()
+                if self.memory.season.get(prefix) != digest:
+                    files[SEASON] = body
+                self._season = (ledger, digest)
         return files
 
 

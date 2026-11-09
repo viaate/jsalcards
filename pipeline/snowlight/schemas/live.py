@@ -28,10 +28,13 @@ every row, goes past it.
 ``alerts.json`` is written by ``snowlight alerts`` (:mod:`snowlight.weather.publish`)
 and keeps that command's camelCase keys (``asOf``, ``generatedAt``) and its
 ``schema`` version key.
+
+``live/season.json`` (:class:`SeasonFile`) counts each school's days of each status this
+school year, from the final day timelines (:mod:`snowlight.live.season`).
 """
 
 import math
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from itertools import accumulate, combinations, pairwise
@@ -55,10 +58,12 @@ from snowlight.schemas.scalars import (
     SchemaVersion,
     SchoolGap,
     SchoolIndex,
+    SchoolYear,
     ShiftMinutes,
     UtcInstant,
     minute_of,
     minutes_ago,
+    school_year_bounds,
 )
 from snowlight.schemas.vocab import SHIFTED, AlertLevel, Hazard, Reason, Severity, Status
 
@@ -683,3 +688,128 @@ class DayIndex(PublishedModel):
         if days != sorted(set(days), reverse=True):
             raise ValueError("days must be unique, newest first")
         return self
+
+
+SEASON_STATUSES: tuple[Status, ...] = (
+    Status.CLOSED,
+    Status.DELAYED,
+    Status.REMOTE,
+    Status.EARLY_DISMISSAL,
+)
+"""The order of :class:`SeasonFile`'s count columns, and of each :data:`SeasonRow`."""
+
+type SeasonRow = tuple[int, int, int, int]
+"""One school's days closed, delayed, remote and dismissed early (:data:`SEASON_STATUSES`)."""
+
+type DayTally = Annotated[
+    int,
+    Field(ge=0, le=366, description="How many days of a school year one school had a status."),
+]
+
+
+class SeasonFile(PublishedModel):
+    """live/season.json: each school's closed, delayed, remote and early-dismissal days this
+    school year.
+
+    Counted from the final day timelines (``live/days/<day>.json`` with ``final`` true) of
+    every day from ``since`` through ``through``: each school is counted once a day, under
+    the status its timeline ended the day on; a status taken back by then counts nowhere.
+    One row per school with at least one such day, in school order: ``gaps`` as in
+    closings.json, and ``closed[i]``, ``delayed[i]``, ``remote[i]`` and
+    ``early_dismissal[i]`` are the i-th school's days.
+    """
+
+    schema_version: SchemaVersion
+    season: SchoolYear
+    since: LocalDate = Field(
+        description=(
+            "The first day counted: the school year's first day (July 1), or the later day "
+            "counting began."
+        )
+    )
+    through: LocalDate = Field(description="The last day counted, the last day over everywhere.")
+    directory: DirectoryStamp
+    content_sha256: Annotated[
+        ContentDigest | None,
+        Field(
+            description=(
+                "The content digest of the directory edition the school indexes point into "
+                "(as the day timelines'); null for an emptied file."
+            )
+        ),
+    ]
+    gaps: Annotated[
+        tuple[SchoolGap, ...],
+        Field(description="Each school, as a gap from the previous school's index."),
+    ]
+    closed: tuple[DayTally, ...]
+    delayed: tuple[DayTally, ...]
+    remote: tuple[DayTally, ...]
+    early_dismissal: tuple[DayTally, ...]
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        first, last = school_year_bounds(self.season)
+        if not first <= self.since <= self.through <= last:
+            raise ValueError(
+                f"{self.since} to {self.through} is not a stretch of the {self.season} school year"
+            )
+        columns = (self.closed, self.delayed, self.remote, self.early_dismissal)
+        if any(len(column) != len(self.gaps) for column in columns):
+            raise ValueError(f"{len(self.gaps)} schools but count columns of other lengths")
+        days = (self.through - self.since).days + 1
+        for position, row in enumerate(zip(*columns, strict=True)):
+            if sum(row) < 1:
+                raise ValueError(f"row {position}: a school is listed only with a day counted")
+            if sum(row) > days:
+                raise ValueError(f"row {position}: more days counted than {days} days counted")
+        if self.gaps and self.schools()[-1] >= self.directory.schools:
+            raise ValueError(f"school {self.schools()[-1]} is not in the directory")
+        if self.content_sha256 is None and self.gaps:
+            raise ValueError("an emptied file lists no school")
+        return self
+
+    def schools(self) -> tuple[int, ...]:
+        """Each school's index, in order."""
+        return tuple(index - 1 for index in accumulate(gap + 1 for gap in self.gaps))
+
+    def rows(self) -> dict[int, SeasonRow]:
+        """Each listed school's counts, by its index (the decoded file)."""
+        columns = (self.closed, self.delayed, self.remote, self.early_dismissal)
+        return {
+            school: (closed, delayed, remote, early)
+            for school, closed, delayed, remote, early in zip(self.schools(), *columns, strict=True)
+        }
+
+    @classmethod
+    def encode(  # noqa: PLR0913 - the year, its stretch, the directory and the rows
+        cls,
+        rows: Mapping[int, SeasonRow],
+        *,
+        season: str,
+        since: date,
+        through: date,
+        directory: DirectoryStamp,
+        content_sha256: str | None,
+    ) -> "SeasonFile":
+        """The file holding ``rows`` (counts by school index); a school with no day counted
+        is left out."""
+        listed = sorted(school for school, row in rows.items() if sum(row) > 0)
+        gaps = [
+            school - previous - 1 for previous, school in zip([-1, *listed], listed, strict=False)
+        ]
+        return cls.model_validate(
+            {
+                "schema_version": 1,
+                "season": season,
+                "since": since,
+                "through": through,
+                "directory": directory,
+                "content_sha256": content_sha256,
+                "gaps": tuple(gaps),
+                "closed": tuple(rows[school][0] for school in listed),
+                "delayed": tuple(rows[school][1] for school in listed),
+                "remote": tuple(rows[school][2] for school in listed),
+                "early_dismissal": tuple(rows[school][3] for school in listed),
+            }
+        )

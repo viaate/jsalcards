@@ -72,15 +72,20 @@ export function replayIndexUrl(files: DataFiles): string | null {
 }
 
 /**
- * The files a live root serves: the closings (S8) and the chances
- * (predictions/latest.json, S7), both republished there far more often than a
+ * The files a live root serves: the closings (S8), the chances
+ * (predictions/latest.json, S7) and the season counts (live/season.json,
+ * written beside the closings), all republished there far more often than a
  * site build could.
  */
-const LIVE_PATHS: ReadonlySet<string> = new Set([LIVE_CLOSINGS_PATH, PUBLISHED_PATHS.predictions]);
+const LIVE_PATHS: ReadonlySet<string> = new Set([
+  LIVE_CLOSINGS_PATH,
+  PUBLISHED_PATHS.predictions,
+  PUBLISHED_PATHS.liveSeason,
+]);
 
 /**
- * `files`, but with live/closings.json and predictions/latest.json read from
- * `root`, the live root a build names (a host of its own, published apart from
+ * `files`, but with live/closings.json, predictions/latest.json and
+ * live/season.json read from `root`, the live root a build names (a host of its own, published apart from
  * the site), whether or not the build ships them. Every other file,
  * live/covered.json among them, is `files`' own. A root that is null, empty or
  * not one the page can read from (pwa/config.ts liveRootOf, plain http on this

@@ -148,6 +148,11 @@
     </section>
   {/if}
 
+  {#if view.season !== undefined && view.season !== null}
+    <!-- The school's days this school year, as the season file counts them (data/season.ts). -->
+    <p class="block season">{view.season}</p>
+  {/if}
+
   {#if view.facts.length > 0}
     <dl class="block rows facts">
       {#each view.facts as fact (fact.label)}
@@ -211,6 +216,13 @@
     margin: var(--section) 0 0;
     padding-top: var(--section);
     border-top: 1px solid var(--border-1);
+  }
+
+  /* The season line: one plain sentence in the panel's secondary gray. */
+  .season {
+    font: var(--type-small);
+    color: var(--text-2);
+    text-wrap: pretty;
   }
 
   .heading {

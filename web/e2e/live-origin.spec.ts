@@ -22,7 +22,9 @@
  * only a newer copy, which an offline reload is then given. The live root also
  * serves predictions/latest.json, as the chance passes publish it (S7): a file
  * with no districts unless a check gives it a SYNTHETIC forecast, which the
- * school panel and the area panel then show.
+ * school panel and the area panel then show. It serves live/season.json too, as
+ * the publisher writes it beside the closings: no school listed unless a check
+ * gives one SYNTHETIC days this school year, which the school panel then says.
  *
  * Runs under the desktop project, each check twice: in a laptop's context and
  * in a phone's (Pixel 7). The page's clock is Playwright's, installed at the
@@ -46,6 +48,7 @@ import type { PreviewServer } from 'vite';
 import { copy } from '../src/copy';
 import { chanceCopy, chanceFormat } from '../src/copy-chance';
 import { format } from '../src/copy-format';
+import { seasonFormat } from '../src/copy-season';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const GLOW_LAYER = 'snowlight-glow';
@@ -352,6 +355,31 @@ const CALM_THIN_FORECAST = {
 };
 
 /** What the live origin answers, and every request it was sent. */
+/**
+ * SYNTHETIC: live/season.json for the made-up directory, counting from Oct 27 through `through`
+ * (Jan 11, the last day over everywhere at the made-up morning). `rows` gives a school's index
+ * and its days closed, delayed, remote and dismissed early; none by default.
+ */
+function seasonFile(
+  rows: readonly (readonly [number, number, number, number, number])[] = [],
+  through = '2026-01-11',
+): string {
+  const listed = [...rows].sort((a, b) => a[0] - b[0]);
+  return JSON.stringify({
+    schema_version: 1,
+    season: '2025-2026',
+    since: '2025-10-27',
+    through,
+    directory: STAMP,
+    content_sha256: '5'.repeat(64),
+    gaps: listed.map(([school], n) => school - (n === 0 ? -1 : (listed[n - 1]?.[0] ?? 0)) - 1),
+    closed: listed.map((row) => row[1]),
+    delayed: listed.map((row) => row[2]),
+    remote: listed.map((row) => row[3]),
+    early_dismissal: listed.map((row) => row[4]),
+  });
+}
+
 interface LiveOrigin {
   readonly root: string;
   body: string;
@@ -359,6 +387,9 @@ interface LiveOrigin {
   /** The predictions file it serves, and how many times it was read (not in `requests`). */
   predictions: string;
   predictionReads: number;
+  /** The season file it serves (live/season.json), and how many times it was read (not in `requests`). */
+  season: string;
+  seasonReads: number;
   readonly requests: {
     url: string;
     origin: string | undefined;
@@ -382,6 +413,8 @@ async function liveOrigin(port: number, siteOrigin: string): Promise<LiveOrigin>
     status: 200,
     predictions: predictions(),
     predictionReads: 0,
+    season: seasonFile(),
+    seasonReads: 0,
     requests: [],
     close: () => Promise.resolve(),
   };
@@ -408,6 +441,17 @@ async function liveOrigin(port: number, siteOrigin: string): Promise<LiveOrigin>
           'Cache-Control': 'public, max-age=15, stale-while-revalidate=15',
         })
         .end(origin.predictions);
+      return;
+    }
+    if (url.pathname === '/v1/live/season.json' && request.method === 'GET') {
+      origin.seasonReads += 1;
+      response
+        .writeHead(200, {
+          ...cors,
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': 'public, max-age=15, stale-while-revalidate=15',
+        })
+        .end(origin.season);
       return;
     }
     if (
@@ -623,6 +667,8 @@ test.beforeEach(() => {
   site.live.status = 200;
   site.live.predictions = predictions();
   site.live.predictionReads = 0;
+  site.live.season = seasonFile();
+  site.live.seasonReads = 0;
   site.live.requests.length = 0;
 });
 
@@ -750,6 +796,8 @@ for (const [device, options] of DEVICES) {
       await context.setOffline(false);
 
       expectOnlyLiveRoot(requests);
+      // With no school panel open, the season file is never asked for.
+      expect(live.seasonReads).toBe(0);
       // Going offline fails the one read made then; nothing else went wrong.
       expect(problems.filter((line) => !offlineRead(line))).toEqual([]);
       await context.close();
@@ -863,6 +911,47 @@ for (const [device, options] of DEVICES) {
       expectOnlyLiveRoot(requests);
       expect(problems).toEqual([]);
       await context.close();
+    });
+
+    test("an open school panel says the school's days this school year from the live root's season file, and nothing from a stale one", async ({
+      browser,
+    }) => {
+      const { live } = theSite();
+      // SYNTHETIC: Alpha closed 2 days and delayed 1 since Oct 27; Beta remote 1 day.
+      live.season = seasonFile([
+        [0, 2, 1, 0, 0],
+        [1, 0, 0, 1, 0],
+      ]);
+      const line = seasonFormat.line(
+        { closed: 2, delayed: 1, remote: 0, earlyDismissal: 0 },
+        '2025-10-27',
+      );
+      expect(line).toBe('This school year, since Oct 27: closed 2 days, delayed 1.');
+      const open = await visit(browser, options, { query: `?school=${ALPHA}` });
+      const panel = open.page.locator('aside.detail');
+      await expect(statusLines(open.page).first()).toContainText(CLOSED_TODAY, SETTLE);
+      await expect(panel.locator('.season')).toHaveText(line, SETTLE);
+      expect(live.seasonReads).toBe(1);
+      expectOnlyLiveRoot(open.requests);
+      expect(open.problems).toEqual([]);
+      await open.context.close();
+
+      // A school the file does not list says nothing.
+      const gamma = await visit(browser, options, { query: `?school=${SCHOOLS[2].id}` });
+      await expect(gamma.page.locator('aside.detail')).toContainText(SCHOOLS[2].name, SETTLE);
+      await gamma.page.waitForTimeout(2000);
+      await expect(gamma.page.locator('aside.detail .season')).toHaveCount(0);
+      expect(gamma.problems).toEqual([]);
+      await gamma.context.close();
+
+      // A file whose last day counted is behind the last day over everywhere says nothing.
+      live.season = seasonFile([[0, 2, 1, 0, 0]], '2026-01-09');
+      const stale = await visit(browser, options, { query: `?school=${ALPHA}` });
+      await expect(statusLines(stale.page).first()).toContainText(CLOSED_TODAY, SETTLE);
+      await stale.page.waitForTimeout(2000);
+      await expect(stale.page.locator('aside.detail .season')).toHaveCount(0);
+      expect(stale.problems).toEqual([]);
+      await stale.context.close();
     });
 
     test('the school panel and the area panel show the chance from the live root, and how it adds up', async ({
