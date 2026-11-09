@@ -1206,6 +1206,18 @@ test.describe('the admin view with a directory', () => {
     expect(new URL(page.url()).searchParams.has('admin')).toBe(false);
   });
 
+  test('the admin view closes with Escape and takes ?admin out of the address', async ({
+    page,
+  }) => {
+    const api = new StubApi();
+    await openStatuses(page, api, '2026-10-20T17:00:00Z');
+    // From the view itself, not a field of its own that takes Escape first.
+    await page.getByRole('heading', { name: 'Admin' }).focus();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('heading', { name: 'Admin' })).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.has('admin')).toBe(false);
+  });
+
   test('the status form’s fields take 16 px text on a touch screen, an unfolded iPhone’s or a phone’s', async ({
     browser,
   }) => {

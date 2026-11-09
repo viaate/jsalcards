@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { apiRoot, asksForAdmin } from '../config';
+import { asksForAdmin } from '../boot';
+import { apiRoot } from '../config';
 
 describe('apiRoot', () => {
   it('takes an https root and drops its trailing slash', () => {

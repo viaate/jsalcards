@@ -9,7 +9,9 @@
  * are, not how fast they appear.
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
@@ -29,6 +31,16 @@ import {
 } from '../src/map/basemap/us-geo';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
+
+/** The most the page's first script may be, in characters: the suite's build and the deployed one. */
+const FIRST_SCRIPT_BUDGET = 75_000;
+
+/**
+ * An accounts API root standing in for the deployed one (preview.yml finds it on the Cloudflare
+ * account): a workers.dev name longer than the account's own, as the root is written into the
+ * page's first script.
+ */
+const DEPLOYED_API_ROOT = 'https://snowlight-api.a-workers-subdomain-for-the-check.workers.dev/';
 
 interface Viewport {
   name: string;
@@ -1151,7 +1163,7 @@ test.describe('handover to the WebGL map', () => {
     // words, with the one formatter the key's counts need; the rest (src/copy-format.ts) and the
     // address store (src/state/url-store.ts) come in chunks of their own after the first paint.
     // The menu's button is in it; the menu itself, and what it reads, load with the first press.
-    expect(entryJs.length).toBeLessThan(75_000);
+    expect(entryJs.length).toBeLessThan(FIRST_SCRIPT_BUDGET);
     expect(entryJs).not.toMatch(/maplibregl-/);
 
     const context = await newContext(browser, DESKTOP);
@@ -1167,6 +1179,100 @@ test.describe('handover to the WebGL map', () => {
     });
     expect(timing.chunkStart).toBeGreaterThan(timing.fcp);
     await context.close();
+  });
+
+  test('keeps the first script under its budget as the site is deployed', () => {
+    // A build of its own, as preview.yml makes the deployed one: the base, and the VITE_
+    // settings that workflow gives it (the accounts API root, the live root and the waitlist),
+    // and no other.
+    // The root alone makes the first script longer than the suite's build's.
+    test.setTimeout(240_000);
+    const workflow = readFileSync(path.join(WEB, '../.github/workflows/preview.yml'), 'utf8');
+    expect(workflow).toContain('run: npx vite build --base="${BASE_PATH}/"');
+    // The build step's settings, as that workflow writes them: every VITE_ one it gives the
+    // build is given to this one, so a setting added there, or a default given to one, is
+    // built with here too or fails here.
+    const step = (workflow.split('run: npx vite build --base="${BASE_PATH}/"\n')[1] ?? '').split(
+      '\n',
+    );
+    const indent = (line: string): number => line.length - line.trimStart().length;
+    const envAt = step.findIndex((line) => line.trim() === 'env:');
+    expect(envAt, "the build step's env").toBe(0);
+    const block = step.slice(
+      1,
+      step.findIndex((line, i) => i > 0 && indent(line) <= indent(step[0] ?? '')),
+    );
+    const vite: Record<string, string> = {};
+    for (const line of block) {
+      const [, name, value] = /^ +(VITE_\w+): (.*)$/u.exec(line) ?? [];
+      if (name === undefined || value === undefined) continue;
+      // A repository variable, with the default it has when unset, or none: unset, as here.
+      const variable = /^\$\{\{ vars\.\w+(?: \|\| '([^']*)')? \}\}$/u.exec(value);
+      if (variable !== null) vite[name] = variable[1] ?? '';
+      // The accounts API root preview.yml finds, which this build stands in for.
+      else if (value === '${{ steps.api.outputs.root }}') vite[name] = DEPLOYED_API_ROOT;
+      else if (value === '${{ github.repository }}') vite[name] = 'viaate/jsalcards';
+      else throw new Error(`preview.yml gives ${name} as ${value}, which this build does not copy`);
+    }
+    expect(Object.keys(vite).sort()).toEqual([
+      'VITE_API_ROOT',
+      'VITE_GITHUB_REPO',
+      'VITE_SNOWLIGHT_LIVE_ROOT',
+      'VITE_WAITLIST_CONFIRM',
+      'VITE_WAITLIST_CONTACT',
+      'VITE_WAITLIST_HEADLINE',
+      'VITE_WAITLIST_KIT_FORM',
+    ]);
+    // The live root and the waitlist as deployed: the page is the waitlist's.
+    expect(vite.VITE_SNOWLIGHT_LIVE_ROOT).toMatch(/^https:\/\//u);
+    expect(vite.VITE_WAITLIST_KIT_FORM).not.toBe('');
+    const env = Object.fromEntries(
+      Object.entries(process.env).filter(([name]) => !name.startsWith('VITE_')),
+    );
+    const root = mkdtempSync(path.join(tmpdir(), 'snowlight-deployed-'));
+    try {
+      const outDir = path.join(root, 'site');
+      execFileSync(
+        process.execPath,
+        [
+          '--input-type=module',
+          '-e',
+          `import { build } from 'vite';
+          await build({
+            root: ${JSON.stringify(WEB)},
+            base: '/',
+            // A cache of its own, so this build never races another spec's.
+            cacheDir: ${JSON.stringify(path.join(root, 'vite-cache'))},
+            logLevel: 'warn',
+            build: { outDir: ${JSON.stringify(outDir)}, emptyOutDir: true },
+          });`,
+        ],
+        {
+          cwd: WEB,
+          stdio: 'pipe',
+          env: {
+            ...env,
+            GITHUB_PAGES: 'true',
+            // The site's data is no part of its first script.
+            SNOWLIGHT_DATA: 'none',
+            ...vite,
+          },
+        },
+      );
+      const html = readFileSync(path.join(outDir, 'index.html'), 'utf8');
+      // The app's first script, as the page names it: the waitlist's page by data-entry.
+      const entry =
+        /(?:data-entry|<script type="module" crossorigin src)="\/(assets\/index-[\w-]+\.js)"/.exec(
+          html,
+        )?.[1];
+      expect(entry).toBeDefined();
+      const entryJs = readFileSync(path.join(outDir, entry ?? ''), 'utf8');
+      expect(entryJs).toContain(DEPLOYED_API_ROOT.replace(/\/$/, ''));
+      expect(entryJs.length).toBeLessThan(FIRST_SCRIPT_BUDGET);
+      expect(Buffer.byteLength(entryJs)).toBeLessThan(FIRST_SCRIPT_BUDGET);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test('starts every map download at once and waits on none of them', async ({ browser }) => {

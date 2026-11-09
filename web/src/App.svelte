@@ -18,7 +18,7 @@
     Target,
   } from './app/boot';
   import type { Accounts } from './account/boot';
-  import { apiRoot, asksForAdmin } from './account/config';
+  import { apiRoot } from './account/config';
   import type { AccountState, AccountStore, SheetView } from './account/session';
   import { lateFormats } from './app/late-formats';
   import { grantedPlace, opensNearby } from './app/nearby';
@@ -810,18 +810,6 @@
     );
   });
 
-  /** Back to the map from the admin view: ?admin leaves the address, every other part stays. */
-  function closeAdmin(): void {
-    adminWanted = false;
-    try {
-      const url = new URL(location.href);
-      url.searchParams.delete('admin');
-      history.replaceState(history.state, '', url.href);
-    } catch {
-      // The address keeps ?admin; the view stays closed until it is asked for again.
-    }
-  }
-
   /** Moves the still from the static shell into this frame: the same node, never redrawn. */
   const adoptStill: Attachment<HTMLDivElement> = (frame) => {
     if (still !== null) frame.append(still);
@@ -924,10 +912,14 @@
     // has answered (account/boot.ts): never before, and not at all when it does not answer.
     let stopAccount: () => void = () => undefined;
     if (API_ROOT !== null) {
-      adminWanted = asksForAdmin();
+      // The address as the page opened on, read with the account code: ?admin asks for the admin view.
+      const search = location.search;
       void afterFirstPaint()
         .then(() => import('./account/boot'))
-        .then(({ startAccounts }) => startAccounts(API_ROOT, services, controller.signal))
+        .then(({ asksForAdmin, startAccounts }) => {
+          adminWanted = asksForAdmin(search);
+          return startAccounts(API_ROOT, services, controller.signal);
+        })
         .then(
           (started) => {
             if (started === null || controller.signal.aborted) return;
@@ -1141,7 +1133,7 @@
     />
   {/if}
   {#if Admin !== null && adminShown && accounts !== null}
-    <Admin store={accounts.store} services={() => services} onclose={closeAdmin} />
+    <Admin store={accounts.store} services={() => services} onclose={() => (adminWanted = false)} />
   {/if}
   <p class="sr-only" role="status">
     {expanded && options?.length === 0 ? copy.search.noResults : ''}

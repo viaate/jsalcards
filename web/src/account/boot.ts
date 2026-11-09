@@ -18,6 +18,18 @@ export interface Accounts {
   readonly Control: typeof AccountControl;
 }
 
+/**
+ * Whether the address asks for the admin view (?admin): here, in the account code loaded after
+ * the first paint, not in the page's first script.
+ */
+export function asksForAdmin(search: string = location.search): boolean {
+  try {
+    return new URLSearchParams(search).has('admin');
+  } catch {
+    return false;
+  }
+}
+
 /** A school's name as its panel shows it, read once; null after 10 s or when there is none. */
 export function nameVia(app: Services, id: SchoolId): Promise<string | null> {
   return new Promise((resolve) => {

@@ -36,10 +36,22 @@
     heading?.focus();
   });
 
+  /** Back to the map: ?admin leaves the address, every other part stays. */
+  function close(): void {
+    onclose();
+    try {
+      const url = new URL(location.href);
+      url.searchParams.delete('admin');
+      history.replaceState(history.state, '', url.href);
+    } catch {
+      // The address keeps ?admin; the view stays closed until it is asked for again.
+    }
+  }
+
   function onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape' && !event.defaultPrevented) {
       event.preventDefault();
-      onclose();
+      close();
     }
   }
 </script>
@@ -55,7 +67,7 @@
 >
   <header>
     <h2 id="admin-title" tabindex="-1" bind:this={heading}>{adminCopy.title}</h2>
-    <button class="back" type="button" onclick={onclose}>{adminCopy.back}</button>
+    <button class="back" type="button" onclick={close}>{adminCopy.back}</button>
   </header>
   <div class="tabs" role="tablist">
     {#each TABS as name (name)}

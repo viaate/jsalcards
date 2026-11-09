@@ -14,12 +14,3 @@ export function apiRoot(
 ): string | null {
   return checkApiRoot(raw, loopback);
 }
-
-/** Whether the address asks for the admin view (?admin). */
-export function asksForAdmin(search: string = location.search): boolean {
-  try {
-    return new URLSearchParams(search).has('admin');
-  } catch {
-    return false;
-  }
-}
