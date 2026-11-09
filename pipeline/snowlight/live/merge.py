@@ -22,6 +22,10 @@ is recent). For each school and local day:
    left out (two different ones: none); when they name none, the one reason the
    rows of the same status since it last changed name (the school's own rows only
    after a real tie). Wherever the winning rows all name one reason, it is that one.
+   The details shown (:mod:`snowlight.live.details`) are the ones the winning rows state,
+   group by group: the rows that state something of a group must state the same, else the
+   group is dropped; a row that states nothing of it is left out. They never come from rows
+   of an earlier status, so a status taken back or replaced takes its details with it.
 2. **Open and dissent.** When the latest word is an open statement (owner
    decision Q8) or a dissent (a retraction, a denial, a narrowing, a cause that is
    not weather), nothing is published (``RETRACTED``); an open statement is kept as
@@ -73,6 +77,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Final, Literal
 from zoneinfo import ZoneInfo
 
+from snowlight.live.details import agreed
 from snowlight.live.guards import Rules, Withheld, breaker_limit
 from snowlight.live.provenance import SourceType, provenance_line
 from snowlight.live.resolve import DayClaim, LiveDirectory, Resolved, RowResult
@@ -562,6 +567,8 @@ def _closing(  # noqa: PLR0913 - the school-day, its winners and its group
         and generated_at - at <= timedelta(minutes=MAX_MINUTES_AGO)
     ]
     earliest = min(announced, key=lambda found: found[:2]) if announced else None
+    # The details: what the winning rows state, group by group, where they agree.
+    details = agreed(item.result.derived.details for item in top)
     closing = Closing(
         school=school,
         day=day,
@@ -570,6 +577,7 @@ def _closing(  # noqa: PLR0913 - the school-day, its winners and its group
         reason=None if label is None else REASON_BY_LABEL[label],
         shift_minutes=shift,
         clock_minute=clock,
+        details=details,
     )
     return closing, None if earliest is None else earliest[2]
 

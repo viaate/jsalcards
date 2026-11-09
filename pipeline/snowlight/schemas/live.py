@@ -65,7 +65,15 @@ from snowlight.schemas.scalars import (
     minutes_ago,
     school_year_bounds,
 )
-from snowlight.schemas.vocab import SHIFTED, AlertLevel, Hazard, Reason, Severity, Status
+from snowlight.schemas.vocab import (
+    SHIFTED,
+    AlertLevel,
+    Detail,
+    Hazard,
+    Reason,
+    Severity,
+    Status,
+)
 
 # The directory holds contiguous-US schools only, and every contiguous-US time zone
 # is 4 (EDT) to 8 (PST) hours behind UTC. So at any moment the local todays and
@@ -106,9 +114,22 @@ class Closing:
     clock_minute: int | None = None
     manual: bool = False
     """Whether the site's own team set it by hand (the admin's manual status)."""
+    details: tuple[Detail, ...] = ()
+    """The plain details its listings state beside the status (:mod:`snowlight.live.details`),
+    in code order, each at most once; empty when they state none."""
 
 
 type RowPosition = Annotated[int, Field(ge=0, le=INDEX_MAX)]
+type DetailRow = Annotated[
+    tuple[
+        Annotated[RowPosition, Field(title="row")],
+        Annotated[
+            tuple[Detail, ...],
+            Field(title="details", min_length=1, max_length=len(Detail)),
+        ],
+    ],
+    Field(description="A row's position in its day and the details it states, ascending."),
+]
 
 
 class ClosingsDay(PublishedModel):
@@ -117,7 +138,8 @@ class ClosingsDay(PublishedModel):
     Row i is gaps[i], statuses[i], announced[i] and reasons[i]; rows are in school
     order. shifts and clocks hold one entry for each delayed or early-dismissal
     row, in row order: the k-th entry belongs to the k-th such row. manual lists the
-    rows the site's own team set by hand, by position.
+    rows the site's own team set by hand, by position, and details the plain details
+    of the rows that have some, by position.
     """
 
     day: LocalDate
@@ -167,12 +189,28 @@ class ClosingsDay(PublishedModel):
         ),
     ] = ()
     """Always written; a file written before it existed reads as none."""
+    details: Annotated[
+        tuple[DetailRow, ...],
+        Field(
+            description=(
+                "The plain details the listings state beside each row's status, for the rows "
+                "that have some: [row position, [details]], rows ascending, details ascending; "
+                "empty when no row has any."
+            ),
+        ),
+    ] = ()
+    """Always written; a file written before it existed reads as none."""
 
     @model_validator(mode="after")
     def _check(self) -> Self:
         rows = len(self.gaps)
         if any(b <= a for a, b in pairwise(self.manual)) or any(i >= rows for i in self.manual):
             raise ValueError(f"{self.day}: manual rows must be ascending positions of its rows")
+        positions = [position for position, _ in self.details]
+        if any(b <= a for a, b in pairwise(positions)) or any(i >= rows for i in positions):
+            raise ValueError(f"{self.day}: detail rows must be ascending positions of its rows")
+        if any(any(b <= a for a, b in pairwise(codes)) for _, codes in self.details):
+            raise ValueError(f"{self.day}: a row's details must be ascending and distinct")
         for name, column in (
             ("statuses", self.statuses),
             ("announced", self.announced),
@@ -252,6 +290,7 @@ class ClosingsFile(PublishedModel):
         for group in self.days:
             times = iter(zip(group.shifts, group.clocks, strict=True))
             manual = set(group.manual)
+            details = dict(group.details)
             for position, (school, status, ago, reason) in enumerate(
                 zip(group.schools(), group.statuses, group.announced, group.reasons, strict=True)
             ):
@@ -266,6 +305,7 @@ class ClosingsFile(PublishedModel):
                         shift_minutes=shift,
                         clock_minute=clock,
                         manual=position in manual,
+                        details=details.get(position, ()),
                     )
                 )
         return decoded
@@ -320,6 +360,11 @@ class ClosingsFile(PublishedModel):
                     "shifts": tuple(row.shift_minutes for row in shifted),
                     "clocks": tuple(row.clock_minute for row in shifted),
                     "manual": tuple(i for i, row in enumerate(rows) if row.manual),
+                    "details": tuple(
+                        (i, tuple(sorted(set(row.details))))
+                        for i, row in enumerate(rows)
+                        if row.details
+                    ),
                 }
             )
         return cls.model_validate(
@@ -565,6 +610,17 @@ class OpensFile(PublishedModel):
 MAX_LEAD_MINUTES = 7 * MINUTES_PER_DAY
 """How long before its day a change may be shown: a status posted days ahead."""
 
+type ChangeDetails = Annotated[
+    tuple[
+        Annotated[Annotated[int, Field(ge=0, le=INDEX_MAX)], Field(title="change")],
+        Annotated[
+            tuple[Detail, ...],
+            Field(title="details", min_length=1, max_length=len(Detail)),
+        ],
+    ],
+    Field(description="A change's position in the day and the details shown with it."),
+]
+
 type DayMinute = Annotated[
     int,
     Field(
@@ -585,8 +641,9 @@ class DayTimeline(PublishedModel):
     changes for the i-th school, read in order from the flat columns. A change is the
     status the map showed from that minute on (``null``: none, the status was taken
     back), with its reason and, for a delay or an early dismissal, its shift and clock
-    time (one entry in ``shifts`` and ``clocks`` per such change, in order). A day in
-    progress has ``final`` false and grows; once the day is over everywhere it is
+    time (one entry in ``shifts`` and ``clocks`` per such change, in order), and the plain
+    details shown with it (``details``, by change position, for the changes that have some).
+    A day in progress has ``final`` false and grows; once the day is over everywhere it is
     written one last time with ``final`` true.
     """
 
@@ -620,6 +677,16 @@ class DayTimeline(PublishedModel):
     reasons: tuple[Reason | None, ...]
     shifts: tuple[ShiftMinutes | None, ...]
     clocks: tuple[MinuteOfDay | None, ...]
+    details: Annotated[
+        tuple[ChangeDetails, ...],
+        Field(
+            description=(
+                "The plain details shown with each change that has some: [change position, "
+                "[details]], changes ascending, details ascending; empty when none has any."
+            ),
+        ),
+    ] = ()
+    """Always written; a file written before it existed reads as none."""
 
     @model_validator(mode="after")
     def _check(self) -> Self:
@@ -637,6 +704,13 @@ class DayTimeline(PublishedModel):
         shifted = [status in SHIFTED for status in self.statuses]
         if not len(self.shifts) == len(self.clocks) == sum(shifted):
             raise ValueError(f"{self.day}: one shift and clock per delay or dismissal")
+        positions = [position for position, _ in self.details]
+        if any(b <= a for a, b in pairwise(positions)) or any(i >= changes for i in positions):
+            raise ValueError(f"{self.day}: detail changes must be ascending positions of changes")
+        if any(self.statuses[i] is None for i in positions):
+            raise ValueError(f"{self.day}: a status taken back has no details")
+        if any(any(b <= a for a, b in pairwise(codes)) for _, codes in self.details):
+            raise ValueError(f"{self.day}: a change's details must be ascending and distinct")
         if self.gaps and self.schools()[-1] >= self.directory.schools:
             raise ValueError(f"{self.day}: a school is not in the directory")
         self._check_runs(shifted)
@@ -644,9 +718,12 @@ class DayTimeline(PublishedModel):
 
     def _check_runs(self, shifted: list[bool]) -> None:
         times = iter(zip(self.shifts, self.clocks, strict=True))
+        said = dict(self.details)
         details = [
-            (status, reason, *(next(times) if is_shifted else (None, None)))
-            for status, reason, is_shifted in zip(self.statuses, self.reasons, shifted, strict=True)
+            (status, reason, *(next(times) if is_shifted else (None, None)), said.get(at, ()))
+            for at, (status, reason, is_shifted) in enumerate(
+                zip(self.statuses, self.reasons, shifted, strict=True)
+            )
         ]
         start = 0
         for count in self.counts:

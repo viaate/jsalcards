@@ -47,7 +47,8 @@
         null,
         750
       ],
-      "manual": []
+      "manual": [],
+      "details": []
     },
     {
       "day": "2027-01-13",
@@ -71,7 +72,8 @@
       "clocks": [],
       "manual": [
         0
-      ]
+      ],
+      "details": []
     }
   ]
 }

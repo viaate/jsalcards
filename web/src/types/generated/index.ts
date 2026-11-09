@@ -53,6 +53,46 @@ export type ContentDigest = string;
 export type Count = number;
 
 /**
+ * A plain detail a listing states beside its status (:mod:`snowlight.live.details`).
+ *
+ * The site says each in its own words (``src/copy-details.ts``), never the listing's.
+ * In the order the panel says them: who (0-2), buses (3-7), meals (8-11), pre-K
+ * (12-14), after school (15-19) and offices (20-21).
+ */
+export const Detail = {
+  students_and_staff: 0,
+  staff_report: 1,
+  staff_late: 2,
+  buses_snow_routes: 3,
+  buses_emergency_routes: 4,
+  buses_paved_roads: 5,
+  buses_limited: 6,
+  no_buses: 7,
+  no_breakfast: 8,
+  no_lunch: 9,
+  no_hot_lunch: 10,
+  grab_and_go: 11,
+  no_am_prek: 12,
+  no_pm_prek: 13,
+  no_prek: 14,
+  activities_cancelled: 15,
+  after_school_cancelled: 16,
+  evening_cancelled: 17,
+  childcare_closed: 18,
+  childcare_open: 19,
+  offices_closed: 20,
+  offices_open: 21,
+} as const;
+/**
+ * A plain detail a listing states beside its status (:mod:`snowlight.live.details`).
+ *
+ * The site says each in its own words (``src/copy-details.ts``), never the listing's.
+ * In the order the panel says them: who (0-2), buses (3-7), meals (8-11), pre-K
+ * (12-14), after school (15-19) and offices (20-21).
+ */
+export type Detail = (typeof Detail)[keyof typeof Detail];
+
+/**
  * The directory a file's school and district indexes point into.
  *
  * It must equal generated_on, count and the number of districts of the
@@ -318,7 +358,8 @@ export interface ClosingsFile {
  * Row i is gaps[i], statuses[i], announced[i] and reasons[i]; rows are in school
  * order. shifts and clocks hold one entry for each delayed or early-dismissal
  * row, in row order: the k-th entry belongs to the k-th such row. manual lists the
- * rows the site's own team set by hand, by position.
+ * rows the site's own team set by hand, by position, and details the plain details
+ * of the rows that have some, by position.
  */
 export interface ClosingsDay {
   readonly day: LocalDate;
@@ -348,7 +389,19 @@ export interface ClosingsDay {
    * ascending; empty when there are none.
    */
   readonly manual: readonly RowPosition[];
+  /**
+   * The plain details the listings state beside each row's status, for the rows that have some:
+   * [row position, [details]], rows ascending, details ascending; empty when no row has any.
+   */
+  readonly details: readonly DetailRow[];
 }
+
+/**
+ * A row's position in its day and the details it states, ascending.
+ * @minItems 2
+ * @maxItems 2
+ */
+export type DetailRow = readonly [row: RowPosition, details: readonly Detail[]];
 
 /**
  * Whole minutes before the minute of generated_at: the moment is the start of the UTC minute that
@@ -412,8 +465,9 @@ export interface DirectoryEdition {
  * changes for the i-th school, read in order from the flat columns. A change is the
  * status the map showed from that minute on (``null``: none, the status was taken
  * back), with its reason and, for a delay or an early dismissal, its shift and clock
- * time (one entry in ``shifts`` and ``clocks`` per such change, in order). A day in
- * progress has ``final`` false and grows; once the day is over everywhere it is
+ * time (one entry in ``shifts`` and ``clocks`` per such change, in order), and the plain
+ * details shown with it (``details``, by change position, for the changes that have some).
+ * A day in progress has ``final`` false and grows; once the day is over everywhere it is
  * written one last time with ``final`` true.
  */
 export interface DayTimeline {
@@ -437,7 +491,19 @@ export interface DayTimeline {
   readonly reasons: readonly (Reason | null)[];
   readonly shifts: readonly (ShiftMinutes | null)[];
   readonly clocks: readonly (MinuteOfDay | null)[];
+  /**
+   * The plain details shown with each change that has some: [change position, [details]], changes
+   * ascending, details ascending; empty when none has any.
+   */
+  readonly details: readonly ChangeDetails[];
 }
+
+/**
+ * A change's position in the day and the details shown with it.
+ * @minItems 2
+ * @maxItems 2
+ */
+export type ChangeDetails = readonly [change: number, details: readonly Detail[]];
 
 /**
  * Minutes after the start of the day in the school's own zone: negative for a change before the day

@@ -44,6 +44,42 @@ class Reason(IntEnum):
     POWER_OUTAGE = 7
 
 
+class Detail(IntEnum):
+    """A plain detail a listing states beside its status (:mod:`snowlight.live.details`).
+
+    The site says each in its own words (``src/copy-details.ts``), never the listing's.
+    In the order the panel says them: who (0-2), buses (3-7), meals (8-11), pre-K
+    (12-14), after school (15-19) and offices (20-21).
+    """
+
+    STUDENTS_AND_STAFF = 0
+    STAFF_REPORT = 1
+    STAFF_LATE = 2
+    BUSES_SNOW_ROUTES = 3
+    BUSES_EMERGENCY_ROUTES = 4
+    BUSES_PAVED_ROADS = 5
+    BUSES_LIMITED = 6
+    NO_BUSES = 7
+    NO_BREAKFAST = 8
+    NO_LUNCH = 9
+    NO_HOT_LUNCH = 10
+    GRAB_AND_GO = 11
+    NO_AM_PREK = 12
+    NO_PM_PREK = 13
+    NO_PREK = 14
+    ACTIVITIES_CANCELLED = 15
+    AFTER_SCHOOL_CANCELLED = 16
+    EVENING_CANCELLED = 17
+    CHILDCARE_CLOSED = 18
+    CHILDCARE_OPEN = 19
+    OFFICES_CLOSED = 20
+    OFFICES_OPEN = 21
+
+
+# The codes a live derivation stores for each detail (snowlight.live.details).
+DETAIL_BY_CODE: dict[str, Detail] = {detail.name.lower(): detail for detail in Detail}
+
+
 # The labels the listing parser (snowlight.classify) reports, mapped to their codes.
 REASON_BY_LABEL: dict[str, Reason] = {
     "Winter storm": Reason.WINTER_STORM,

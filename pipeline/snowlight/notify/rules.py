@@ -133,9 +133,12 @@ class Shown:
     status: Status
     shift: int | None = None
     clock: int | None = None
+    details: tuple[int, ...] = ()
+    """The plain details shown beside it (:class:`~snowlight.schemas.vocab.Detail` codes): they
+    go with the status's push, and a change of them alone sends nothing."""
 
     def value(self) -> str:
-        """The log's value: the status with its stated delay and time."""
+        """The log's value: the status with its stated delay and time (never its details)."""
         word = STATUS_WORD[self.status]
         if self.status in {Status.DELAYED, Status.EARLY_DISMISSAL}:
             return f"{word}:{_or_dash(self.shift)}:{_or_dash(self.clock)}"
@@ -263,15 +266,15 @@ def _status_on(  # noqa: PLR0913, PLR0917 - one school-day's comparison
         value = current.value()
         if value == was:
             return None
-        return push(
-            value,
-            {
-                "kind": "status",
-                "status": STATUS_WORD[current.status],
-                "shift": current.shift,
-                "clock": current.clock,
-            },
-        )
+        said: dict[str, object] = {
+            "kind": "status",
+            "status": STATUS_WORD[current.status],
+            "shift": current.shift,
+            "clock": current.clock,
+        }
+        if current.details:
+            said["details"] = list(current.details)
+        return push(value, said)
     # Gone from the file is not lifted: only an open statement says the school is open.
     if was is None or was == LIFTED or (school.id, day) not in opens:
         return None

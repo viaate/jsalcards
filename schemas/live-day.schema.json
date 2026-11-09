@@ -1,6 +1,29 @@
 {
   "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
   "$defs": {
+    "ChangeDetails": {
+      "description": "A change's position in the day and the details shown with it.",
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "maximum": 4294967294,
+          "minimum": 0,
+          "title": "change",
+          "type": "integer"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/Detail"
+          },
+          "maxItems": 22,
+          "minItems": 1,
+          "title": "details",
+          "type": "array"
+        }
+      ],
+      "type": "array"
+    },
     "ContentDigest": {
       "description": "A SHA-256 digest: 64 lowercase hexadecimal digits.",
       "pattern": "^[0-9a-f]{64}$",
@@ -17,6 +40,59 @@
       "exclusiveMaximum": 2880,
       "minimum": -10080,
       "type": "integer"
+    },
+    "Detail": {
+      "description": "A plain detail a listing states beside its status (:mod:`snowlight.live.details`).\n\nThe site says each in its own words (``src/copy-details.ts``), never the listing's.\nIn the order the panel says them: who (0-2), buses (3-7), meals (8-11), pre-K\n(12-14), after school (15-19) and offices (20-21).",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "title": "Detail",
+      "type": "integer",
+      "x-enum-names": [
+        "students_and_staff",
+        "staff_report",
+        "staff_late",
+        "buses_snow_routes",
+        "buses_emergency_routes",
+        "buses_paved_roads",
+        "buses_limited",
+        "no_buses",
+        "no_breakfast",
+        "no_lunch",
+        "no_hot_lunch",
+        "grab_and_go",
+        "no_am_prek",
+        "no_pm_prek",
+        "no_prek",
+        "activities_cancelled",
+        "after_school_cancelled",
+        "evening_cancelled",
+        "childcare_closed",
+        "childcare_open",
+        "offices_closed",
+        "offices_open"
+      ]
     },
     "DirectoryStamp": {
       "additionalProperties": false,
@@ -120,7 +196,7 @@
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "description": "live/days/<day>.json: when each school's status for one local day changed.\n\nOne run per school that showed a status for the day, in school order: ``counts[i]``\nchanges for the i-th school, read in order from the flat columns. A change is the\nstatus the map showed from that minute on (``null``: none, the status was taken\nback), with its reason and, for a delay or an early dismissal, its shift and clock\ntime (one entry in ``shifts`` and ``clocks`` per such change, in order). A day in\nprogress has ``final`` false and grows; once the day is over everywhere it is\nwritten one last time with ``final`` true.",
+  "description": "live/days/<day>.json: when each school's status for one local day changed.\n\nOne run per school that showed a status for the day, in school order: ``counts[i]``\nchanges for the i-th school, read in order from the flat columns. A change is the\nstatus the map showed from that minute on (``null``: none, the status was taken\nback), with its reason and, for a delay or an early dismissal, its shift and clock\ntime (one entry in ``shifts`` and ``clocks`` per such change, in order), and the plain\ndetails shown with it (``details``, by change position, for the changes that have some).\nA day in progress has ``final`` false and grows; once the day is over everywhere it is\nwritten one last time with ``final`` true.",
   "properties": {
     "clocks": {
       "items": {
@@ -157,6 +233,13 @@
     },
     "day": {
       "$ref": "#/$defs/LocalDate"
+    },
+    "details": {
+      "description": "The plain details shown with each change that has some: [change position, [details]], changes ascending, details ascending; empty when none has any.",
+      "items": {
+        "$ref": "#/$defs/ChangeDetails"
+      },
+      "type": "array"
     },
     "directory": {
       "$ref": "#/$defs/DirectoryStamp"
@@ -237,7 +320,8 @@
     "statuses",
     "reasons",
     "shifts",
-    "clocks"
+    "clocks",
+    "details"
   ],
   "title": "DayTimeline",
   "type": "object",

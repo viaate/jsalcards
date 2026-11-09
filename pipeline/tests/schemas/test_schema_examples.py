@@ -46,11 +46,20 @@ def test_documents_are_immutable(entry: PublishedFile) -> None:
         setattr(document, field, None)
 
 
+ADDED_LATER: frozenset[tuple[str, str]] = frozenset({("live-day", "details")})
+"""Top-level fields added after files were published, with a default, so the files written before
+them (a day timeline the predictor's labels read back for weeks) still read: as none."""
+
+
 def test_every_field_is_required(entry: PublishedFile) -> None:
-    """Every top-level field is required, but those a compact file may leave at a default."""
+    """Every top-level field is required, but those a compact file may leave at a default and
+    those added later (:data:`ADDED_LATER`), which a file written before them reads without."""
     value = example(entry.name)
     model = entry.model
     for key in list(value):
+        if (entry.name, key) in ADDED_LATER:
+            assert not model.model_fields[key].is_required()
+            continue
         if issubclass(model, CompactModel) and not model.model_fields[key].is_required():
             continue
         partial = {k: v for k, v in value.items() if k != key}

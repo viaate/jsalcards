@@ -42,7 +42,10 @@ def statuses(
         if school not in wanted:
             continue
         found.setdefault(school, {})[row.day] = Shown(
-            status=row.status, shift=row.shift_minutes, clock=row.clock_minute
+            status=row.status,
+            shift=row.shift_minutes,
+            clock=row.clock_minute,
+            details=tuple(int(detail) for detail in row.details),
         )
     return found
 

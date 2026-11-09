@@ -3,7 +3,7 @@
   "$defs": {
     "ClosingsDay": {
       "additionalProperties": false,
-      "description": "Every school with a weather status on one local day, as parallel columns.\n\nRow i is gaps[i], statuses[i], announced[i] and reasons[i]; rows are in school\norder. shifts and clocks hold one entry for each delayed or early-dismissal\nrow, in row order: the k-th entry belongs to the k-th such row. manual lists the\nrows the site's own team set by hand, by position.",
+      "description": "Every school with a weather status on one local day, as parallel columns.\n\nRow i is gaps[i], statuses[i], announced[i] and reasons[i]; rows are in school\norder. shifts and clocks hold one entry for each delayed or early-dismissal\nrow, in row order: the k-th entry belongs to the k-th such row. manual lists the\nrows the site's own team set by hand, by position, and details the plain details\nof the rows that have some, by position.",
       "properties": {
         "announced": {
           "description": "When each row's status was first posted, in minutes before generated_at; null when the listing gave no time.",
@@ -35,6 +35,13 @@
         },
         "day": {
           "$ref": "#/$defs/LocalDate"
+        },
+        "details": {
+          "description": "The plain details the listings state beside each row's status, for the rows that have some: [row position, [details]], rows ascending, details ascending; empty when no row has any.",
+          "items": {
+            "$ref": "#/$defs/DetailRow"
+          },
+          "type": "array"
         },
         "gaps": {
           "description": "Each row's school, as a gap from the previous row's.",
@@ -95,7 +102,8 @@
         "reasons",
         "shifts",
         "clocks",
-        "manual"
+        "manual",
+        "details"
       ],
       "title": "ClosingsDay",
       "type": "object"
@@ -105,6 +113,80 @@
       "maximum": 4294967294,
       "minimum": 0,
       "type": "integer"
+    },
+    "Detail": {
+      "description": "A plain detail a listing states beside its status (:mod:`snowlight.live.details`).\n\nThe site says each in its own words (``src/copy-details.ts``), never the listing's.\nIn the order the panel says them: who (0-2), buses (3-7), meals (8-11), pre-K\n(12-14), after school (15-19) and offices (20-21).",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "title": "Detail",
+      "type": "integer",
+      "x-enum-names": [
+        "students_and_staff",
+        "staff_report",
+        "staff_late",
+        "buses_snow_routes",
+        "buses_emergency_routes",
+        "buses_paved_roads",
+        "buses_limited",
+        "no_buses",
+        "no_breakfast",
+        "no_lunch",
+        "no_hot_lunch",
+        "grab_and_go",
+        "no_am_prek",
+        "no_pm_prek",
+        "no_prek",
+        "activities_cancelled",
+        "after_school_cancelled",
+        "evening_cancelled",
+        "childcare_closed",
+        "childcare_open",
+        "offices_closed",
+        "offices_open"
+      ]
+    },
+    "DetailRow": {
+      "description": "A row's position in its day and the details it states, ascending.",
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/RowPosition",
+          "title": "row"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/Detail"
+          },
+          "maxItems": 22,
+          "minItems": 1,
+          "title": "details",
+          "type": "array"
+        }
+      ],
+      "type": "array"
     },
     "DirectoryStamp": {
       "additionalProperties": false,

@@ -66,7 +66,7 @@ from snowlight.schemas.live import (
     local_days,
 )
 from snowlight.schemas.scalars import MINUTES_PER_DAY
-from snowlight.schemas.vocab import SHIFTED, Reason, Status
+from snowlight.schemas.vocab import SHIFTED, Detail, Reason, Status
 
 LOG: Final = logging.getLogger(__name__)
 KEEP_DAYS: Final = 45
@@ -103,6 +103,9 @@ class Shown:
     reason: int | None
     shift: int | None
     clock: int | None
+    details: tuple[int, ...] = ()
+    """The plain details shown beside the status (:class:`~snowlight.schemas.vocab.Detail`
+    codes, ascending)."""
 
     @classmethod
     def of(cls, closing: Closing) -> "Shown":
@@ -111,6 +114,7 @@ class Shown:
             reason=None if closing.reason is None else int(closing.reason),
             shift=closing.shift_minutes,
             clock=closing.clock_minute,
+            details=tuple(sorted({int(detail) for detail in closing.details})),
         )
 
 
@@ -127,8 +131,10 @@ class Change:
     """Where it came from: school index, edition, source id, row key, ``hi``, announcement."""
 
     def to_json(self) -> dict[str, JSONValue]:
+        """The line (``details`` only when the status shows some: other lines are as they were
+        before the field)."""
         shown = self.shown
-        return {
+        line: dict[str, JSONValue] = {
             **self.fields,
             "at": self.at.astimezone(UTC).isoformat(),
             "day": self.day.isoformat(),
@@ -139,6 +145,9 @@ class Change:
             "shift_minutes": None if shown is None else shown.shift,
             "clock_minute": None if shown is None else shown.clock,
         }
+        if shown is not None and shown.details:
+            line["details"] = list(shown.details)
+        return line
 
     @classmethod
     def from_json(cls, value: object) -> "Change":
@@ -154,10 +163,11 @@ class Change:
                 reason=_opt_int(value["reason"]),
                 shift=_opt_int(value["shift_minutes"]),
                 clock=_opt_int(value["clock_minute"]),
+                details=_codes(value.get("details", [])),
             )
         )
         known = {"at", "day", "nces_id", "event", "status", "reason", "shift_minutes"}
-        known.add("clock_minute")
+        known |= {"clock_minute", "details"}
         return cls(
             at=datetime.fromisoformat(str(value["at"])),
             day=date.fromisoformat(str(value["day"])),
@@ -174,6 +184,18 @@ def _opt_int(value: object) -> int | None:
     if isinstance(value, bool) or not isinstance(value, int):
         raise TypeError("a code is a whole number")
     return value
+
+
+def _codes(value: object) -> tuple[int, ...]:
+    if not isinstance(value, list):
+        raise TypeError("details are a list")
+    codes = tuple(sorted({code for item in value if (code := _opt_int(item)) is not None}))
+    if len(codes) != len(value) or any(code not in DETAIL_CODES for code in codes):
+        raise ValueError("details are distinct detail codes")
+    return codes
+
+
+DETAIL_CODES: Final = frozenset(int(detail) for detail in Detail)
 
 
 type Key = tuple[str, date]
@@ -384,6 +406,11 @@ def timeline(  # noqa: PLR0913 - the day, its changes and the directory they ind
             ),
             "shifts": tuple(shown.shift for shown in shifted),
             "clocks": tuple(shown.clock for shown in shifted),
+            "details": tuple(
+                (position, tuple(Detail(code) for code in shown.details))
+                for position, (_, shown) in enumerate(flat)
+                if shown is not None and shown.details
+            ),
         }
     )
 
@@ -395,6 +422,7 @@ def seed_changes(made: DayTimeline, directory: LiveDirectory) -> list[Change]:
     by_index = {school.index: (nces_id, school) for nces_id, school in directory.schools.items()}
     changes: list[Change] = []
     position = shifted = 0
+    details = {at: tuple(int(code) for code in codes) for at, codes in made.details}
     school = -1
     for gap, count in zip(made.gaps, made.counts, strict=True):
         school += gap + 1
@@ -410,7 +438,13 @@ def seed_changes(made: DayTimeline, directory: LiveDirectory) -> list[Change]:
                 if status in SHIFTED:
                     shift, clock = made.shifts[shifted], made.clocks[shifted]
                     shifted += 1
-                shown = Shown(int(status), None if reason is None else int(reason), shift, clock)
+                shown = Shown(
+                    int(status),
+                    None if reason is None else int(reason),
+                    shift,
+                    clock,
+                    details.get(position - 1, ()),
+                )
             if found is None or not found[1].zones:
                 before = shown
                 continue

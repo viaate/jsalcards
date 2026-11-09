@@ -93,6 +93,10 @@ Besides statuses a row can give:
   dated so (posted at midday or in the evening with no day, or naming a day the exact
   reading does not cover) is never an open signal, but it still dissents
   (``OPEN_UNDATED``): for the day a bare status posted then is for, or every day.
+* **plain details** (:mod:`snowlight.live.details`): the closed set of details its words
+  state beside the one status it lights on one day ("Buses on snow routes", "No breakfast"),
+  as codes (:attr:`Derived.details`), read after every step above, so they never change what
+  it lights.
 * a **dissent**: a reading that takes a status back, denies it, narrows it or
   finds statuses that disagree (the reader's ``revoked``, ``negated``,
   ``superseded``, ``ambiguous``, ``partial_program`` and ``conflict`` notes), says
@@ -164,6 +168,8 @@ from snowlight.listed.build import GUARD_REASON
 from snowlight.listed.located import Gazetteer, Verdict
 from snowlight.listed.matching import Outcome, Query, match_one
 from snowlight.listed.scope import EXCLUDED_PLATFORMS, station_context
+from snowlight.live.details import CODES as DETAIL_CODES
+from snowlight.live.details import row_details
 from snowlight.live.guards import (
     GUARDS_VERSION,
     Rules,
@@ -614,6 +620,11 @@ class Derived:
     kept, lit or not: what the list names, kept when the row is withheld (the automatic
     learning reads a district a list names without lighting as not shown open). Empty when
     the row was not placed."""
+    details: tuple[str, ...] = ()
+    """The plain details its words state beside the one status it lights on one day
+    (:func:`~snowlight.live.details.row_details`, codes of
+    :data:`~snowlight.schemas.vocab.DETAIL_BY_CODE`). Empty for any other row. They never
+    change what it lights."""
 
     def check_codes(self) -> None:
         """Raise unless every string kept is a code (no raw text can be stored).
@@ -640,13 +651,17 @@ class Derived:
             bad.append("kinds")
         if any(not (len(leaid) == LEAID_DIGITS and leaid.isdigit()) for leaid in self.reach):
             bad.append("reach")
+        if any(detail not in DETAIL_CODES for detail in self.details):
+            bad.append("details")
         if bad:
             raise ValueError(f"a derived result keeps only codes: {sorted(set(bad))}")
 
     def to_json(self) -> dict[str, object]:
-        """The stored form (codes, ids and times only; checked by :meth:`check_codes`)."""
+        """The stored form (codes, ids and times only; checked by :meth:`check_codes`).
+        ``details`` is written only when there are some, so every other row's stored form is
+        as it was before the field."""
         self.check_codes()
-        return {
+        stored: dict[str, object] = {
             "withheld": None if self.withheld is None else self.withheld.value,
             "claims": [
                 [c.day.isoformat(), c.kind, c.reason, c.shift_minutes, c.clock_minute, c.ufn]
@@ -670,6 +685,9 @@ class Derived:
             "stands": [[t.index, t.nces_id, t.level] for t in self.stands],
             "reach": list(self.reach),
         }
+        if self.details:
+            stored["details"] = list(self.details)
+        return stored
 
     @classmethod
     def from_json(cls, data: object) -> "Derived":
@@ -685,6 +703,7 @@ class Derived:
         drops = _object(body["target_drops"])
         undated = body["undated"]
         dated_by = body.get("dated_by", "")  # absent in payloads stored before it
+        details = body.get("details", [])  # absent when there are none, and before it
         if not isinstance(undated, bool):
             raise ValueError("expected a flag")
         if dated_by != "" and dated_by not in SELF_DATED_BY:
@@ -711,6 +730,7 @@ class Derived:
             dated_by=_str(dated_by),
             stands=tuple(_target(item) for item in _list(body["stands"])),
             reach=tuple(_str(leaid) for leaid in _list(body["reach"])),
+            details=tuple(_str(detail) for detail in _list(details)),
         )
         derived.check_codes()
         return derived
@@ -1246,6 +1266,18 @@ class Resolver:
     def derive(self, station: Station, entry: LedgerRow, seen: SeenRow) -> Derived:
         """What one row gives (see the module's steps), with the schools it stands for."""
         derived, named = self._derive(station, entry, seen)
+        if derived.withheld is None and derived.claims and derived.targets:
+            days = {claim.day for claim in derived.claims}
+            zones = self._zones(derived.targets) or ()
+            said = row_details(
+                seen.text,
+                (claim.kind for claim in derived.claims),
+                len(days),
+                posted_that_day=bool(zones)
+                and all({entry.hi.astimezone(_zone(zone)).date()} == days for zone in zones),
+            )
+            if said:
+                derived = replace(derived, details=said)
         own = tuple(target for target in named if target.level == "school")
         lights = derived.claims or derived.opens
         if own and set(derived.kinds) - {"dissent"} and (not lights or derived.undated):
