@@ -256,6 +256,105 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   building issues did not. Downed power lines are storm damage, the weather on an ice day,
   and name no cause. The reader, the merge and the replay are part of `derived_version`, so
   a change to them lands on a day the public closings file holds few rows, not in a storm.
+- **Plain details** (`snowlight/live/details.py`, Nov 9, 2026). Beside a lit status the panel
+  and status notifications say a closed set of details in the site's own words
+  (`web/src/copy-details.ts`), never a list's: who (students and staff; staff report, students
+  stay home; staff report late), buses (snow routes, emergency routes, paved roads only,
+  limited routes, no buses), meals (no breakfast, no lunch, no hot lunch, grab-and-go meals),
+  pre-K (no morning, no afternoon, no pre-K), after school (activities, after-school
+  activities or evening activities cancelled; childcare closed or open) and offices (closed,
+  open). closings.json carries them as codes (`Detail`, `schemas/vocab.py`) in each day's
+  `details` column, `[row position, [codes]]` for the rows that have some, and the day
+  timelines in theirs, by change; a file written before the column reads as none, and the site
+  reads the column only with the panel, so one that does not read shows the status alone.
+  `details` on a day timeline is the only top-level field of a stored file the schema test
+  lets be absent (`ADDED_LATER` in `tests/schemas/test_schema_examples.py`): timelines written
+  before it must still read, as no details. The rules:
+  - A row's words are cut into clauses at list marks (a period before a space, a comma,
+    semicolon, bar, exclamation mark or line break) and at scoping marks (a colon, a
+    parenthesis or bracket, a slash between words, a spaced dash). A detail is read only from
+    a clause that is that detail and nothing else, in one of the reader's own patterns; a
+    negation only as the pattern spells it ("no" before the program, "will not be served"
+    after it). A clause with more in it gives nothing: part of the buses, the day or the
+    staff, a place, a route, a time, a hedge.
+  - The rest of the row must be plain too, or the row gives no detail at all. Every other
+    clause must be a status in a closed set of plain shapes (closed, a delay of some hours, a
+    late start, remote or e-learning, an early dismissal, no school), with at most a day, a
+    clock time and a weather reason, or a day or a year alone. Any other clause voids every
+    detail in the row, wherever it stands: a negation or hedge (no, none, TBD, optional, if
+    able), a part of the staff (essential, 12-month, custodians), a school's, area's, road's
+    or route's name, a second sentence about the same staff or buses, a contradiction. So
+    does a question mark anywhere, a detail set off by a parenthesis or bracket, a colon
+    after a detail, and a slash or spaced dash after a detail that another detail does not
+    follow. Unknown words never give a detail and never pass as plain; nothing is inferred.
+  - None is read from a row that names more than one day (a weekday counts as one day with
+    its own date only), that labels part of a day before a colon, whose other words name part
+    of a district or a school (the part rule below), that lights two days or two kinds, or
+    that lights nothing. A detail says something only beside some statuses: buses, breakfast
+    and lunch on a delayed or early-dismissal day, staff reporting and grab-and-go meals on a
+    closed or remote day, staff reporting late on a delayed one, pre-K on a delayed,
+    early-dismissal or remote day; the others beside any. Evening activities cancelled counts
+    only for a row first seen on the day it lights, in every zone of its schools (posted the
+    evening before beside the next day's closing, it may be about that evening). Two details
+    of one group that cannot both hold (snow routes and no buses) drop the group.
+  - A school-day shows what its winning rows state, group by group: the rows that state
+    something of a group must state the same, else the group is dropped; a row that states
+    nothing of it is left out. A status taken back or replaced takes its details with it.
+  - A detail never changes a status, a time or a light: it is read only for a row that already
+    lights, after every gate. On the s4 archive (118,950 rows, each read as its own school with
+    a read 5 minutes before) the published status columns are byte-identical with and without
+    the change: 5,987 rows lit both ways, 0 differences (digest `54d709cc1ad8b870` both ways,
+    sha256 over every row's day, status, announcement, reason, shift, clock and manual flag).
+  - The reader holds most rows that state a detail: its notes `partial_program` (pre-K or a
+    meal not held), `transportation` (bus routes or no buses), `childcare`, `offices_closed`
+    and `activities_cancelled` are not notes a counted claim may carry, so a delay beside no
+    morning pre-K stays dark as before. Those rows show nothing, details included, until a
+    separate change lets the notes a detail fully accounts for light (a lighting change, for
+    the critic and the lead). `partial_program` is also a dissent note, so such a row darkens
+    another list's status for its school. On the archive 400 distinct texts a status reader
+    reads at 0.8 or more are held only by those notes (by note: `activities_cancelled` 198,
+    `partial_program` 72, `childcare` 70, `transportation` 27, `offices_closed` 18, the rest
+    two or more of them), and 360 of them would show a detail if they lit; of the 5,987 rows
+    that light, 4 show a detail. South Winneshiek's Nov 5 row (activities cancelled) is in
+    this class: this change leaves it dark.
+  - The archive counts (rows whose words state each detail, distinct texts, and rows lit with
+    it):
+
+    | Detail | Rows whose words state it | Distinct texts | Rows lit with it |
+    |---|---|---|---|
+    | students and staff | 11 | 10 | 1 |
+    | staff report | 184 | 25 | 2 |
+    | buses on snow routes | 29 | 12 | 0 |
+    | limited routes | 1 | 1 | 0 |
+    | no buses | 67 | 38 | 0 |
+    | no breakfast | 25 | 7 | 0 |
+    | no lunch | 3 | 2 | 0 |
+    | no morning pre-K | 204 | 43 | 0 |
+    | no afternoon pre-K | 17 | 6 | 0 |
+    | no pre-K | 100 | 52 | 0 |
+    | activities cancelled | 826 | 125 | 0 |
+    | after-school activities cancelled | 346 | 105 | 0 |
+    | evening activities cancelled | 445 | 83 | 0 |
+    | childcare closed | 62 | 52 | 0 |
+    | childcare open | 115 | 34 | 0 |
+    | offices closed | 143 | 40 | 0 |
+    | offices open | 8 | 6 | 1 |
+
+    Staff report late, emergency routes, paved roads only, no hot lunch and grab-and-go meals
+    are read from no archive row. Hand checks: the first round found false readings where a
+    detail's own clause was clean but another clause limited it (a colon or dash before a
+    no, a hedge, a part of the staff, an area's buses on snow routes, a road's no buses),
+    which the plain-rest rule above now voids, and the synthetic class sweep in
+    `tests/live/test_plain_details.py` (every detail beside every qualifier, joined by every
+    mark on either side) holds it. The second round checked 474 archive texts by hand (50 a
+    detail at a fresh seed, or all of them) against the row words: 474 right, 0 false; the 4
+    lit rows are all right. Every row-like fixture and example in the code, tests and docs is
+    synthetic: a literal-against-archive scan finds 0 archive rows of two or more clauses or
+    25 or more characters.
+  - The details reader is part of `live_version`, so this change moves `derived_version`: the
+    first run on it refuses the carry (`carry: none (key)`) and reads every stored derivation
+    again, and a source not read yet gives only dissents until its first read. It lands, as
+    any such change does, on a day the public closings file holds few rows.
 - **Part of a district.** A district's row whose words name one part of it (a campus, a
   building, a level such as "Lincoln Elementary" or "high schools", a grade band such as
   "K-8", the preschool, an intermediate school, bus routes, a side of the district, "only")

@@ -41,10 +41,24 @@ never shows a chance that later passes may have moved.
 
 The words are the site's (src/copy-notify.ts), written by the service worker
 when the notification shows: the title is the school's name, the text is
-"Closed today (Tue, Jan 12)", "Delayed start tomorrow (Wed, Jan 13) · 2-hour
-delay · Starts at 10:00 AM", "Open today (Tue, Jan 12)", "Tomorrow (Wed, Jan
+"Closed today (Tue, Jan 12)", "Delayed start tomorrow (Wed, Jan 13). 2-hour
+delay. Starts at 10:00 AM", "Open today (Tue, Jan 12)", "Tomorrow (Wed, Jan
 13): 62% chance of no school". A notification delivered late names
 the date instead of "today". A tap opens the map on the school (`?school=ID`).
+
+A status's text is in sentences: its status line and day as the panel says
+them, then each of its times. Its plain details (docs/live.md, plain details)
+follow in the same run of sentences, in the site's words (src/copy-details.ts,
+written by the worker after the status): "Delayed start today (Tue, Jan 12).
+2-hour delay. Starts at 10:00 AM. Students and staff. Buses run snow routes. No
+breakfast." The push carries them as codes (`details`, only when there are
+some). The text holds at most 160 characters, about what a lock screen shows:
+the status, its day and its times always show, and the details fill what is
+left, whole sentences in their order (who, buses, meals, pre-K, after school,
+offices), the last ones left out first. Details go with the status's push: a
+change of the details alone sends nothing (the log's value is the status and
+its times, as before), and a payload whose details do not read says the status
+alone.
 
 **Asking**: the browser's permission question only ever follows a press of
 **Turn on notifications**, in Settings or in the small offer that shows once
