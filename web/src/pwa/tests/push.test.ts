@@ -40,6 +40,7 @@ describe('reading a push', () => {
       status: 'closed',
       shift: null,
       clock: null,
+      details: [],
     });
     expect(readPayload({ ...base, kind: 'lifted', was: 'delayed', open: true })?.kind).toBe(
       'lifted',
@@ -75,6 +76,51 @@ describe('the notification', () => {
   const show = (payload: Record<string, unknown>, now = MORNING) =>
     notificationFor({ ...base, ...payload }, SCOPE, ICON, now);
 
+  it('says the plain details after the status and its times, as more sentences', () => {
+    const delayed = { kind: 'status', status: 'delayed', shift: 120, clock: 600 };
+    expect(show({ ...delayed, details: [0, 3, 8] }).options.body).toBe(
+      'Delayed start today (Tue, Jan 12). 2-hour delay. Starts at 10:00\u00a0AM. ' +
+        'Students and staff. Buses run snow routes. No breakfast.',
+    );
+    // Details only add: a payload without them, or with ones that do not read, says the status.
+    for (const details of [undefined, [], 'x', [8, 3], [3, 3], [22], [-1], ['3'], [1.5]]) {
+      expect(show({ ...delayed, details }).options.body).toBe(
+        'Delayed start today (Tue, Jan 12). 2-hour delay. Starts at 10:00\u00a0AM',
+      );
+    }
+  });
+
+  it('leaves out the last details that do not fit, never the status or its day', () => {
+    const every = Array.from({ length: 22 }, (_, code) => code);
+    const status = 'Early dismissal today (Tue, Jan 12). Dismissal at 12:30\u00a0PM. 3 hours early';
+    const body =
+      show({
+        kind: 'status',
+        status: 'early_dismissal',
+        shift: 180,
+        clock: 750,
+        details: every,
+      }).options.body ?? '';
+    expect(body.startsWith(`${status}. `)).toBe(true);
+    expect(body).not.toContain('\n');
+    expect(body.length).toBeLessThanOrEqual(160);
+    // Whole sentences, from the first detail on, in order.
+    expect(body.slice(status.length + 2)).toBe(
+      'Students and staff. Staff report, students stay home. Staff report late.',
+    );
+    expect(`${body} Buses run snow routes.`.length).toBeGreaterThan(160);
+    const closed = show({
+      kind: 'status',
+      status: 'closed',
+      shift: null,
+      clock: null,
+      details: [1],
+    });
+    expect(closed.options.body).toBe(
+      'Closed today (Tue, Jan 12). Staff report, students stay home.',
+    );
+  });
+
   it('says a status for the school’s own today, with its date', () => {
     const shown = show({ kind: 'status', status: 'closed', shift: null, clock: null });
     expect(shown.title).toBe('Lincoln High');
@@ -86,7 +132,7 @@ describe('the notification', () => {
 
   it('gives a delay and an early dismissal their times', () => {
     expect(show({ kind: 'status', status: 'delayed', shift: 120, clock: 600 }).options.body).toBe(
-      'Delayed start today (Tue, Jan 12) · 2-hour delay · Starts at 10:00 AM',
+      'Delayed start today (Tue, Jan 12). 2-hour delay. Starts at 10:00 AM',
     );
     expect(
       show({
@@ -96,7 +142,7 @@ describe('the notification', () => {
         clock: 750,
         day: '2027-01-13',
       }).options.body,
-    ).toBe('Early dismissal tomorrow (Wed, Jan 13) · Dismissal at 12:30 PM');
+    ).toBe('Early dismissal tomorrow (Wed, Jan 13). Dismissal at 12:30 PM');
   });
 
   it('names the date, not today, when it shows a day late', () => {

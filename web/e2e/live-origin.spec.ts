@@ -47,8 +47,10 @@ import type { PreviewServer } from 'vite';
 
 import { copy } from '../src/copy';
 import { chanceCopy, chanceFormat } from '../src/copy-chance';
+import { detailsFormat } from '../src/copy-details';
 import { format } from '../src/copy-format';
 import { seasonFormat } from '../src/copy-season';
+import { Detail } from '../src/types/generated';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const GLOW_LAYER = 'snowlight-glow';
@@ -952,6 +954,45 @@ for (const [device, options] of DEVICES) {
       await expect(stale.page.locator('aside.detail .season')).toHaveCount(0);
       expect(stale.problems).toEqual([]);
       await stale.context.close();
+    });
+
+    test("a status's plain details show below it in the site's own words, and a status without them shows none", async ({
+      browser,
+    }) => {
+      const { live } = theSite();
+      // SYNTHETIC: Alpha on a delayed start whose listing stated its buses and its breakfast,
+      // Beta closed with no details.
+      const file = JSON.parse(
+        closings('2026-01-12T12:42:00Z', [
+          [0, 1],
+          [1, 0],
+        ]),
+      ) as { days: Record<string, unknown>[] };
+      file.days[0] = {
+        ...file.days[0],
+        details: [[0, [Detail.buses_snow_routes, Detail.no_breakfast]]],
+      };
+      live.body = JSON.stringify(file);
+      const { context, page, problems, requests } = await visit(browser, options, {
+        query: `?school=${ALPHA}`,
+      });
+      const panel = page.locator('aside.detail');
+      await expect(statusLines(page).first()).toContainText(
+        format.statusOn('delayed', TODAY, NOW, ZONE),
+        SETTLE,
+      );
+      await expect(panel.locator('.line-said')).toHaveText([
+        detailsFormat.said([Detail.buses_snow_routes, Detail.no_breakfast]) ?? '',
+      ]);
+      expectOnlyLiveRoot(requests);
+      expect(problems).toEqual([]);
+      await context.close();
+
+      const other = await visit(browser, options, { query: `?school=${SCHOOLS[1].id}` });
+      await expect(statusLines(other.page).first()).toContainText(CLOSED_TODAY, SETTLE);
+      await expect(other.page.locator('aside.detail .line-said')).toHaveCount(0);
+      expect(other.problems).toEqual([]);
+      await other.context.close();
     });
 
     test('the school panel and the area panel show the chance from the live root, and how it adds up', async ({

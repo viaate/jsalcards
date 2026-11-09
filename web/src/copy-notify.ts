@@ -22,8 +22,6 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-const DOT = ' · ';
-
 export const notifyCopy = /* @__PURE__ */ deepFreeze({
   settings: {
     title: 'Notifications',
@@ -116,9 +114,15 @@ function dated(
   return `${line.on} ${format.day(localDate)}`;
 }
 
+/** Between a notification's sentences: "Delayed start today (Tue, Jan 12). 2-hour delay". */
+const STOP = '. ';
+
 /**
- * A status notification's text: "Closed today (Tue, Jan 12)",
- * "Delayed start tomorrow (Wed, Jan 13) · 2-hour delay · Starts at 10:00 AM".
+ * A status notification's text, in sentences: "Closed today (Tue, Jan 12)",
+ * "Delayed start tomorrow (Wed, Jan 13). 2-hour delay. Starts at 10:00 AM",
+ * "Early dismissal today (Tue, Jan 12). Dismissal at 12:30 PM. 3 hours early": the panel's
+ * status line and its times (app/school.ts), each time a sentence of its own, so the plain
+ * details can follow as more sentences (src/copy-details.ts).
  */
 function statusBody(
   word: string,
@@ -129,14 +133,12 @@ function statusBody(
   clock: number | null,
 ): string {
   const key = statusKey(word);
-  const line = dated(copy.statusLine[key], localDate, now, timeZone);
-  const detail =
-    key === 'delayed'
-      ? format.delay(shift, clock)
-      : key === 'earlyDismissal'
-        ? format.dismissal(shift, clock)
-        : null;
-  return detail === null ? line : `${line}${DOT}${detail}`;
+  const parts: (string | null)[] = [dated(copy.statusLine[key], localDate, now, timeZone)];
+  if (key === 'delayed') parts.push(format.delay(shift, null), format.delay(null, clock));
+  if (key === 'earlyDismissal') {
+    parts.push(format.dismissal(null, clock), format.dismissal(shift, null));
+  }
+  return parts.filter((part): part is string => part !== null).join(STOP);
 }
 
 /**

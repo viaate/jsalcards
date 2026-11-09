@@ -66,6 +66,7 @@ export interface StatusLine {
   readonly headline: string;
   readonly detail: string | null;
   readonly note: string | null;
+  readonly said: string | null;
 }
 
 /** How the directory names a district, for its short name and for telling it from another. */

@@ -8,6 +8,7 @@ import { copy, mapLocale, REASON_KEYS, shellFormat, STATUS_KEYS } from './copy';
 import type { AlertLevelKey, HazardKey, StatusKey } from './copy';
 import { accountCopy, accountFormat, adminCopy } from './copy-account';
 import { notifyCopy, notifyFormat } from './copy-notify';
+import { detailsCopy } from './copy-details';
 import { areaFormat } from './copy-area';
 import { chanceCopy, chanceFormat } from './copy-chance';
 import type { BaseInput, ReasonInput, Zones } from './copy-chance';
@@ -3055,7 +3056,7 @@ describe('notification copy (src/copy-notify.ts)', () => {
     ];
     expect(shown.slice(0, 3)).toEqual([
       'Closed today (Tue, Jan 12)',
-      'Delayed start tomorrow (Wed, Jan 13) · 2-hour delay · Starts at 10:00\u00a0AM',
+      'Delayed start tomorrow (Wed, Jan 13). 2-hour delay. Starts at 10:00\u00a0AM',
       'Remote learning Mon, Jan 11',
     ]);
     expect(notifyFormat.hour('20:30')).toBe('8:30\u00a0PM');
@@ -4427,8 +4428,8 @@ ${aliases}
     expect(findings).toEqual([]);
     // copy.ts's strings, the chance section's fixed words (src/copy-chance.ts), the waitlist's
     // (src/copy-waitlist.ts), the account controls' and admin view's (src/copy-account.ts) and
-    // the notifications' (src/copy-notify.ts), the screen check's (src/copy-diag.ts) and the
-    // themes' (src/copy-themes.ts).
+    // the notifications' (src/copy-notify.ts), the plain details' (src/copy-details.ts), the
+    // screen check's (src/copy-diag.ts) and the themes' (src/copy-themes.ts).
     expect(scanned.strings).toBe(
       strings.length +
         copyLeaves(chanceCopy).length +
@@ -4436,6 +4437,7 @@ ${aliases}
         copyLeaves(accountCopy).length +
         copyLeaves(adminCopy).length +
         copyLeaves(notifyCopy).length +
+        copyLeaves(detailsCopy).length +
         copyLeaves(diagCopy).length +
         copyLeaves(themesCopy).length,
     );

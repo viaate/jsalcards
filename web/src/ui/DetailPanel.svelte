@@ -143,6 +143,9 @@
           {#if line.note !== null}
             <p class="line-note">{line.note}</p>
           {/if}
+          {#if line.said !== null}
+            <p class="line-said">{line.said}</p>
+          {/if}
         </div>
       {/each}
     </section>

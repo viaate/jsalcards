@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ClosingsDay, CoveredFile, PredictionsFile } from '../../types/generated';
+import type {
+  ClosingsDay,
+  ClosingsFile,
+  CoveredFile,
+  PredictionsFile,
+} from '../../types/generated';
 import { NO_DETAIL } from '../forecast-detail';
 import {
   NO_STATUS,
@@ -55,6 +60,7 @@ function delayedDay(day: string): ClosingsDay {
     shifts: [120],
     clocks: [600],
     manual: [0],
+    details: [[0, [3, 8]]],
   };
 }
 
@@ -178,6 +184,7 @@ describe('a school’s status', () => {
         shiftMinutes: null,
         clockMinute: null,
         manual: false,
+        details: [],
       },
       tomorrow: null,
     });
@@ -192,11 +199,52 @@ describe('a school’s status', () => {
         shiftMinutes: 120,
         clockMinute: 600,
         manual: true,
+        details: [3, 8],
       },
     });
     expect(
       schoolStatus({ school: 2, directory: STAMP, closings, covered: null, now: NOON }).tomorrow,
     ).toMatchObject({ status: 0, shiftMinutes: null, clockMinute: null, manual: false });
+  });
+
+  it("reads a row's plain details, and none from a file without the column or a bad one", () => {
+    const day = delayedDay('2026-01-13');
+    const today = testDay('2026-01-12', [[0, 0]]);
+    const file = (details: unknown): ClosingsFile => ({
+      ...closings,
+      days: [today, { ...day, details } as unknown as ClosingsDay],
+    });
+    const tomorrow = (found: ClosingsFile) =>
+      schoolStatus({ school: 1, directory: STAMP, closings: found, covered: null, now: NOON })
+        .tomorrow?.details;
+    expect(tomorrow(file([[0, [3, 8]]]))).toEqual([3, 8]);
+    expect(tomorrow(file([[1, [15]]]))).toEqual([]);
+    const old = Object.fromEntries(
+      Object.entries(day).filter(([key]) => key !== 'details'),
+    ) as unknown as ClosingsDay;
+    expect(Object.hasOwn(old, 'details')).toBe(false);
+    expect(tomorrow({ ...closings, days: [today, old] })).toEqual([]);
+    for (const bad of [
+      'x',
+      [[0]],
+      [[0, []]],
+      [[0, [8, 3]]],
+      [[0, [3, 3]]],
+      [[0, [22]]],
+      [[0, ['3']]],
+      [
+        [1, [3]],
+        [0, [8]],
+      ],
+      [[-1, [3]]],
+    ]) {
+      expect(tomorrow(file(bad))).toEqual([]);
+    }
+    // A column that does not read never hides the status.
+    expect(
+      schoolStatus({ school: 1, directory: STAMP, closings: file('x'), covered: null, now: NOON })
+        .tomorrow?.status,
+    ).toBe(1);
   });
 
   it('says open only where the school was checked today and has no row', () => {

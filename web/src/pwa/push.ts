@@ -14,6 +14,7 @@
  * script the generated worker imports (PUSH_FILE).
  */
 
+import { detailsFormat } from '../copy-details';
 import { notifyCopy, notifyFormat } from '../copy-notify';
 
 const STATUS_WORDS: ReadonlySet<string> = new Set([
@@ -23,6 +24,8 @@ const STATUS_WORDS: ReadonlySet<string> = new Set([
   'early_dismissal',
 ]);
 const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/;
+/** How many detail codes there are (types/generated Detail: 0 to 21). */
+const DETAILS = 22;
 /** A school id: NCES (12 digits) or PSS (8 capitals or digits). */
 const SCHOOL_ID = /^(?:\d{12}|[0-9A-Z]{8})$/;
 
@@ -39,6 +42,8 @@ export type PushPayload =
       readonly status: string;
       readonly shift: number | null;
       readonly clock: number | null;
+      /** The plain details beside the status (Detail codes, ascending); empty for none. */
+      readonly details: readonly number[];
     })
   /** Lifted by an open statement: the sender sends no other lift (docs/notify.md). */
   | (Base & { readonly kind: 'lifted'; readonly was: string; readonly open: true })
@@ -54,6 +59,22 @@ function minutes(value: unknown, max: number): number | null | undefined {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= max
     ? value
     : undefined;
+}
+
+/**
+ * A status push's detail codes: distinct, ascending, each a Detail code. Details only add to
+ * a status, so a payload without them, or with ones that do not read, says the status alone.
+ */
+function detailCodes(value: unknown): readonly number[] {
+  if (!Array.isArray(value)) return [];
+  let last = -1;
+  for (const code of value as readonly unknown[]) {
+    if (typeof code !== 'number' || !Number.isInteger(code) || code <= last || code >= DETAILS) {
+      return [];
+    }
+    last = code;
+  }
+  return value as readonly number[];
 }
 
 function knownZone(zone: string): boolean {
@@ -79,7 +100,7 @@ export function readPayload(data: unknown): PushPayload | null {
     const clock = minutes(data.clock, 1439);
     if (typeof data.status !== 'string' || !STATUS_WORDS.has(data.status)) return null;
     if (shift === undefined || clock === undefined) return null;
-    return { ...base, kind, status: data.status, shift, clock };
+    return { ...base, kind, status: data.status, shift, clock, details: detailCodes(data.details) };
   }
   if (kind === 'lifted') {
     if (typeof data.was !== 'string' || !STATUS_WORDS.has(data.was)) return null;
@@ -115,13 +136,16 @@ export function schoolUrl(scope: string, school: string | null): string {
 export function bodyOf(payload: PushPayload, now: Date): string {
   switch (payload.kind) {
     case 'status':
-      return notifyFormat.statusBody(
-        payload.status,
-        payload.day,
-        payload.zone,
-        now,
-        payload.shift,
-        payload.clock,
+      return detailsFormat.afterStatus(
+        notifyFormat.statusBody(
+          payload.status,
+          payload.day,
+          payload.zone,
+          now,
+          payload.shift,
+          payload.clock,
+        ),
+        payload.details,
       );
     case 'lifted':
       return notifyFormat.openBody(payload.day, payload.zone, now);

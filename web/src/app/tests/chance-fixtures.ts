@@ -181,6 +181,7 @@ export const A_CLOSINGS: ClosingsFile = {
       shifts: [],
       clocks: [],
       manual: [],
+      details: [],
     },
   ],
 };
@@ -191,4 +192,5 @@ export const CLOSED_TODAY: StatusLine = {
   headline: copy.statusLine.closed.today,
   detail: null,
   note: null,
+  said: null,
 };

@@ -90,6 +90,7 @@ export const COPY_MODULES = [
   'src/copy-area.ts',
   'src/copy-account.ts',
   'src/copy-notify.ts',
+  'src/copy-details.ts',
   'src/copy-waitlist.ts',
   'src/copy-diag.ts',
   'src/copy-themes.ts',

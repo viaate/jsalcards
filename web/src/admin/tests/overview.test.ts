@@ -261,6 +261,7 @@ describe('onTheMap', () => {
           shifts: [120, null],
           clocks: [null, 780],
           manual,
+          details: [],
         },
       ],
     };
@@ -340,6 +341,7 @@ describe('dayState', () => {
           shifts: [],
           clocks: [],
           manual: rows.flatMap(([, , manual], i) => (manual ? [i] : [])),
+          details: [],
         },
       ],
     };

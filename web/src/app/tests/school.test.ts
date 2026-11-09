@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { copy } from '../../copy';
 import { format } from '../../copy-format';
+import { detailsFormat } from '../../copy-details';
 import type { DetailsSource, SchoolRecord } from '../../data/details';
 import { createDataFiles, withLiveRoot } from '../../data/files';
 import { LIVE_POLL_MS, LIVE_SIDE_POLL_MS, closingsReader, startLive } from '../../data/live';
@@ -258,6 +259,7 @@ describe('schoolView', () => {
             shiftMinutes: 120,
             clockMinute: 600,
             manual: false,
+            details: [3, 8],
           },
           tomorrow: {
             status: 0,
@@ -266,6 +268,7 @@ describe('schoolView', () => {
             shiftMinutes: null,
             clockMinute: null,
             manual: false,
+            details: [],
           },
         },
       }),
@@ -276,11 +279,19 @@ describe('schoolView', () => {
         headline: copy.statusLine.delayed.today,
         detail: format.delay(120, 600),
         note: `${copy.reason.ice} · ${format.posted(new Date('2026-01-12T11:12:00Z'), 'America/Chicago', NOON)}`,
+        // The plain details its listings state, in the site's own words, below the status.
+        said: detailsFormat.said([3, 8]),
       },
-      { tone: 'closed', headline: copy.statusLine.closed.tomorrow, detail: null, note: null },
+      {
+        tone: 'closed',
+        headline: copy.statusLine.closed.tomorrow,
+        detail: null,
+        note: null,
+        said: null,
+      },
     ]);
     expect(schoolView(input({ status: { today: 'open', tomorrow: null } }))?.status).toEqual([
-      { tone: 'open', headline: copy.open.today, detail: null, note: null },
+      { tone: 'open', headline: copy.open.today, detail: null, note: null, said: null },
     ]);
   });
 
@@ -296,6 +307,7 @@ describe('schoolView', () => {
             shiftMinutes: null,
             clockMinute: null,
             manual: true,
+            details: [],
           },
           tomorrow: null,
         },
@@ -307,6 +319,7 @@ describe('schoolView', () => {
         headline: copy.statusLine.closed.today,
         detail: null,
         note: `${copy.detail.confirmed} · ${format.posted(posted, 'America/Chicago', NOON)}`,
+        said: null,
       },
     ]);
   });
@@ -1134,6 +1147,7 @@ describe('the chance section in the panel', () => {
       shiftMinutes: null,
       clockMinute: null,
       manual: false,
+      details: [],
     };
     /** 4 AM in Kansas City, before the day is under way at 7:30. */
     const morning = new Date('2026-01-12T10:00:00Z');
@@ -1174,6 +1188,7 @@ describe('the chance section in the panel', () => {
       shiftMinutes: null,
       clockMinute: null,
       manual: true,
+      details: [],
     };
     /** 4 AM in Kansas City, before the day is under way at 7:30. */
     const morning = new Date('2026-01-12T10:00:00Z');
@@ -1362,6 +1377,7 @@ describe('what districts nearby said, where a school’s own status names no rea
     shiftMinutes: null,
     clockMinute: null,
     manual: false,
+    details: [],
   });
   const notes = (
     closings: ReturnType<typeof file> | null,
@@ -1632,6 +1648,7 @@ describe('a school on a past day', () => {
         headline: 'Closed Mon, Jan 5, 2026',
         detail: null,
         note: copy.reason.winterStorm,
+        said: null,
       },
     ]);
     expect(lit?.chance).toBeNull();

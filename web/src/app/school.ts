@@ -33,6 +33,7 @@ import { ALIKE_DISTRICTS } from 'virtual:snowlight/district-names';
 import { DISTRICT_NAME_FIXES, SCHOOL_NAME_FIXES } from 'virtual:snowlight/school-names';
 
 import { REASON_KEYS, STATUS_KEYS, copy } from '../copy';
+import { detailsFormat } from '../copy-details';
 import { format } from '../copy-format';
 import { seasonFormat } from '../copy-season';
 import type { StatusKey } from '../copy';
@@ -103,6 +104,8 @@ export interface StatusLineView {
   readonly detail: string | null;
   /** "Winter storm · Posted 5:12 AM", or null. */
   readonly note: string | null;
+  /** "Students and staff. Buses run snow routes. No breakfast.", or null (src/copy-details.ts). */
+  readonly said: string | null;
 }
 
 /** A school near this one, as the panel lists it. */
@@ -279,6 +282,7 @@ function statusLine(
     headline: copy.statusLine[key][day],
     detail,
     note: notes.length > 0 ? notes.join(DOT) : null,
+    said: detailsFormat.said(row.details),
   };
 }
 
@@ -296,6 +300,7 @@ function replayLines(id: SchoolId, replay: ReplayOn): StatusLineView[] {
       headline: format.replayStatus(key, replay.day),
       detail: null,
       note: found.reason === null ? null : reasonName(found.reason as Reason),
+      said: null,
     },
   ];
 }
@@ -316,7 +321,7 @@ function statusLines(
 ): StatusLineView[] {
   const lines: StatusLineView[] = [];
   if (status.today === 'open') {
-    lines.push({ tone: 'open', headline: copy.open.today, detail: null, note: null });
+    lines.push({ tone: 'open', headline: copy.open.today, detail: null, note: null, said: null });
   } else if (status.today !== null) {
     lines.push(statusLine(status.today, 'today', now, timeZone, said.today));
   }

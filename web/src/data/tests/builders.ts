@@ -80,6 +80,7 @@ export function testDay(
     shifts: Array.from({ length: shifted }, () => null),
     clocks: Array.from({ length: shifted }, () => null),
     manual: [],
+    details: [],
   };
 }
 

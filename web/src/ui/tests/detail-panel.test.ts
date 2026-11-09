@@ -88,8 +88,9 @@ describe('DetailPanel', () => {
           headline: 'Early dismissal today',
           detail: 'Dismissal at 12:30 PM',
           note: null,
+          said: 'No lunch.',
         },
-        { tone: 'closed', headline: 'Closed tomorrow', detail: null, note: null },
+        { tone: 'closed', headline: 'Closed tomorrow', detail: null, note: null, said: null },
       ],
     });
     const lines = [...panel.querySelectorAll('.status .line')];
@@ -100,6 +101,9 @@ describe('DetailPanel', () => {
     expect(lines[0]?.querySelector('.glyph')?.classList.contains('is-early-dismissal')).toBe(true);
     expect(lines[1]?.querySelector('.glyph')?.classList.contains('is-closed')).toBe(true);
     expect(lines[0]?.querySelector('.line-detail')?.textContent).toBe('Dismissal at 12:30 PM');
+    // The plain details, in the site's words, below the status; none on a line without.
+    expect(lines[0]?.querySelector('.line-said')?.textContent).toBe('No lunch.');
+    expect(lines[1]?.querySelector('.line-said')).toBeNull();
   });
 
   it('lists the nearest schools, each with its status glyph where it has one, and opens them', () => {

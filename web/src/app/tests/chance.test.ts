@@ -835,6 +835,7 @@ describe('the timeline', () => {
           shifts: Array<null>(shifted).fill(null),
           clocks: Array<null>(shifted).fill(null),
           manual: [],
+          details: [],
         },
       ],
     };
@@ -878,6 +879,7 @@ describe('the timeline', () => {
           shifts: [],
           clocks: [],
           manual: [],
+          details: [],
         },
       ],
     };
@@ -947,6 +949,7 @@ describe('the timeline', () => {
           shifts: [null, null],
           clocks: [null, null],
           manual: [],
+          details: [],
         },
       ],
     };

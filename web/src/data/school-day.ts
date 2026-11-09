@@ -24,8 +24,10 @@ import { format } from '../copy-format';
 import { parseInstant } from '../state/instant';
 import { Status } from '../types/generated';
 import type {
+  ClosingsDay,
   ClosingsFile,
   CoveredFile,
+  Detail,
   DayForecast,
   DirectoryStamp,
   LocalDate,
@@ -39,6 +41,8 @@ import { UNREAD_ZONE, isIndex, isTimeZone, nextDay, parsePredictions, parseStamp
 
 export { isTimeZone, parsePredictions };
 import type { ForecastDetail } from './forecast-detail';
+
+const DETAIL_COUNT = 22;
 
 /** Three of the pipeline's slowest passes (about every 30 minutes, S8): older, the passes have stopped. */
 export const PREDICTIONS_FRESH_MS = 90 * 60_000;
@@ -114,6 +118,8 @@ export interface StatusRow {
   readonly clockMinute: number | null;
   /** Whether the site's own team set it by hand. */
   readonly manual: boolean;
+  /** The plain details its listings state (Detail codes, ascending); empty for none. */
+  readonly details: readonly Detail[];
 }
 
 export interface SchoolStatus {
@@ -130,6 +136,32 @@ function minuteBefore(generatedAt: string, ago: number): Date | null {
   const generated = parseInstant(generatedAt);
   if (generated === null) return null;
   return new Date((Math.floor(generated.getTime() / 60_000) - ago) * 60_000);
+}
+
+/**
+ * The details of the row at `position`: the day's details column, read here rather than with
+ * the file (data/closings.ts, in the first script), so a file written before the column, or
+ * one whose column does not read, gives none. Details only add to a status: a column that
+ * does not read never hides one.
+ */
+function detailsOf(group: ClosingsDay, position: number): readonly Detail[] {
+  const column = (group as { readonly details?: unknown }).details;
+  if (!Array.isArray(column)) return [];
+  let last = -1;
+  let found: readonly Detail[] = [];
+  for (const entry of column as readonly unknown[]) {
+    if (!Array.isArray(entry) || entry.length !== 2) return [];
+    const [at, codes] = entry as readonly unknown[];
+    if (!isIndex(at) || at <= last || !Array.isArray(codes) || codes.length === 0) return [];
+    let previous = -1;
+    for (const code of codes as readonly unknown[]) {
+      if (!isIndex(code) || code <= previous || code >= DETAIL_COUNT) return [];
+      previous = code;
+    }
+    last = at;
+    if (at === position) found = codes as readonly Detail[];
+  }
+  return found;
 }
 
 /** The school's row on `day` (its position in the directory), or null. */
@@ -161,6 +193,7 @@ export function rowOn(closings: ClosingsFile, day: LocalDate, school: number): S
         shiftMinutes: shifted ? (group.shifts[slot] ?? null) : null,
         clockMinute: shifted ? (group.clocks[slot] ?? null) : null,
         manual: group.manual.includes(middle),
+        details: detailsOf(group, middle),
       };
     }
   }
