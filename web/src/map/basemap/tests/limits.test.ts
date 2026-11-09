@@ -518,7 +518,8 @@ describe('panning', () => {
       }
     }
     expect(failures).toEqual([]);
-  });
+    // Every edge panned along on every screen: two seconds on a CI runner.
+  }, 30_000);
 
   it('moves smoothly when zooming out against an edge', () => {
     const limits = limitsFor([1565, 957]);

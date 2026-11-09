@@ -464,7 +464,8 @@ describe('the live map at the turn of a school’s day', () => {
       expect(map.reads().predictions).toBe(night + 1);
       expect(statusOf(map.lights.at(-1), 1)).toBe(3);
       map.stop();
-    });
+      // A day and a half of the page's timers run through: 2 s on a CI runner, more on a busy one.
+    }, 30_000);
   }
 
   it('reads the zones ahead of the East’s 3:30 PM in a page not seen, so the map is never dark at the turn', async () => {
@@ -716,5 +717,7 @@ describe('the day every contiguous US clock agrees on, while the zones cannot be
         ).toBe(false);
       }
     }
-  });
+    // Every 70 minutes of a year and every 5 of three clock change days, at each place: 2 s on a
+    // CI runner, more on a busy one.
+  }, 30_000);
 });

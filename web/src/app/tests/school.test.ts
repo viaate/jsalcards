@@ -458,8 +458,11 @@ describe('the live files at a live root', () => {
   ]);
   const newer = testClosings('2026-01-12T17:40:00Z', meta, [testDay('2026-01-12', [[2, 0]])]);
   const older = testClosings('2026-01-12T17:20:00Z', meta, []);
+  /** What a test started, stopped after it however it ends: a test cut short leaves no reader. */
+  const running: (() => void)[] = [];
 
   afterEach(() => {
+    for (const stop of running.splice(0)) stop();
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -853,6 +856,10 @@ describe('the live files at a live root', () => {
         onLight: () => undefined,
         now: () => new Date(Date.now()),
       });
+      running.push(() => {
+        stop?.();
+        map.stop();
+      });
       await vi.advanceTimersByTimeAsync(10);
       stop ??= panel();
       await vi.advanceTimersByTimeAsync(1000);
@@ -874,10 +881,10 @@ describe('the live files at a live root', () => {
       expect(reads.predictions - opened.predictions).toBe(
         (7 * 60 * LIVE_POLL_MS) / LIVE_SIDE_POLL_MS,
       );
-      stop();
-      map.stop();
+      for (const end of running.splice(0)) end();
       visibility.mockRestore();
-    });
+      // Seven hours of the page's timers run through: a second on a CI runner, more on a busy one.
+    }, 30_000);
   }
 
   it('reads within a poll of a forced read the reader made between its own polls', async () => {

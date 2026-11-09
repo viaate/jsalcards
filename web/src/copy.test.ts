@@ -35,7 +35,7 @@ interface CheckCopy {
   lintProject: (options: {
     root: string;
     dist?: string;
-  }) => Promise<{ findings: Finding[]; scanned: Record<string, number> }>;
+  }) => Promise<{ findings: Finding[]; scanned: Record<string, number>; steps: number }>;
 }
 
 const WEB_ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -1256,7 +1256,8 @@ describe('format', () => {
         // Pooled counts are district-days: theirs, never calendar days of the place.
         if (input.kind === 'pooled' && !borrowed) expect(sentence, label).toMatch(/\btheir\b/);
       }
-    });
+      // Every count of every kind written and read back: a second and a half on a CI runner.
+    }, 30_000);
 
     it('says days read live where a base counts them', () => {
       const say = (input: BaseInput): string => chanceFormat.baseReason(input, 'Riverside');
@@ -2929,7 +2930,8 @@ describe('format', () => {
       }
       for (let minute = 0; minute < 1440; minute += 1) outputs.push(format.clock(minute));
       expect(allProblems(outputs)).toEqual([]);
-    });
+      // Some 200,000 lines written and checked: three seconds on a CI runner, more on a busy one.
+    }, 30_000);
 
     it('for every day of a year and a leap year', () => {
       const now = new Date(Date.UTC(2026, 0, 1, 12));
@@ -3097,8 +3099,8 @@ describe('check-copy lint', () => {
   async function expectFindings(
     files: Record<string, string>,
     expected: Expected[],
-  ): Promise<Finding[]> {
-    const { findings } = await lintProject({ root: project(files) });
+  ): Promise<{ findings: Finding[]; steps: number }> {
+    const { findings, steps } = await lintProject({ root: project(files) });
     const seen = findings.map(({ file, line, message }) => `${file}:${String(line)} ${message}`);
     const wanted = expected.map(([file, at, fragment]) => {
       const lines = (files[file] ?? '').split('\n');
@@ -3114,7 +3116,7 @@ describe('check-copy lint', () => {
     const unexpected = seen.filter((entry) => !wanted.some((want) => matches(entry, want)));
     expect({ missing, unexpected }).toEqual({ missing: [], unexpected: [] });
     expect(findings).toHaveLength(expected.length);
-    return findings;
+    return { findings, steps };
   }
 
   const cleanCopy = `export const copy = {
@@ -4289,8 +4291,7 @@ ${aliases}
 <p>{b400}</p>
 `,
     };
-    const started = performance.now();
-    await expectFindings(files, [
+    const { steps } = await expectFindings(files, [
       ['src/Paths.svelte', "'Chained'", '"Chained" in <p>'],
       ['src/Paths.svelte', "'Self one'", '"Self one" in <p>'],
       ['src/Paths.svelte', "'Self two'", '"Self two" in <p>'],
@@ -4307,7 +4308,11 @@ ${aliases}
         'text reaches <p> through more steps than the copy lint follows',
       ],
     ]);
-    expect(performance.now() - started).toBeLessThan(10_000);
+    // Quick counted in the work done, not in time, so it holds on any runner: the whole check
+    // takes a few hundred evaluation steps, where one place alone may take 250,000 before it is
+    // cut short.
+    expect(steps).toBeGreaterThan(0);
+    expect(steps).toBeLessThanOrEqual(2_000);
   }, 30_000);
 
   it('fails on a file it cannot read, rather than passing it unread', async () => {

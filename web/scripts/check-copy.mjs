@@ -2277,6 +2277,8 @@ class Flow {
     this.calling = new Map();
     this.depth = 0;
     this.steps = 0;
+    /** Steps taken over the whole check, every place's together. */
+    this.spent = 0;
     this.exhausted = false;
     /** @type {Finding[]} */
     this.findings = [];
@@ -2300,6 +2302,7 @@ class Flow {
   evaluate(node, env) {
     if (node === undefined) return [];
     this.steps += 1;
+    this.spent += 1;
     if (this.steps > STEP_LIMIT || this.depth > DEPTH_LIMIT) {
       this.exhausted = true;
       this.cuts += 1;
@@ -2417,6 +2420,7 @@ class Flow {
       return [];
     }
     this.steps += 1;
+    this.spent += 1;
     if (this.steps > STEP_LIMIT || this.depth > DEPTH_LIMIT) {
       this.exhausted = true;
       this.cuts += 1;
@@ -6051,6 +6055,7 @@ async function scanOne(source, file, kind) {
  * @typedef {object} LintResult
  * @property {Finding[]} findings
  * @property {{ strings: number, svelte: number, scripts: number, styles: number, html: number, manifests: number }} scanned
+ * @property {number} steps Evaluation steps the check took, every place's together.
  */
 
 /**
@@ -6209,7 +6214,7 @@ export async function lintProject({ root: given = WEB_ROOT, dist } = {}) {
   if (dist !== undefined) await servedAsIs(path.resolve(root, dist));
 
   findings.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line || a.column - b.column);
-  return { findings, scanned };
+  return { findings, scanned, steps: flow.spent };
 }
 
 // Command line ---------------------------------------------------------------------------------

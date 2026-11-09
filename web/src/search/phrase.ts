@@ -24,7 +24,7 @@ export interface PhraseWord {
 }
 
 /** Steps one check may take before giving up; real names need a few dozen. */
-const STEP_BUDGET = 4000;
+export const STEP_BUDGET = 4000;
 
 /** One way to read a stretch of name tokens: the words it stands for. */
 interface Edge {

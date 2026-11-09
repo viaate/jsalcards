@@ -23,6 +23,12 @@ import type {
   Tasks,
 } from '../same-places';
 
+/**
+ * How far the held clock moves each time it is read, in milliseconds: a build of the directory
+ * looks at it about 2,000 times, so it takes about 20 ms on this clock, a dozen or so slices.
+ */
+const CLOCK_STEP_MS = 0.01;
+
 /** No lit schools, for an ask that wants the index alone. */
 const NONE_LIT = new Int32Array(0);
 
@@ -53,11 +59,22 @@ function syntheticDirectory(count = DIRECTORY_SCHOOLS): Int32Array {
   return places;
 }
 
-/** A loop of tasks that counts and times them, and the gaps between them. */
-function countedLoop(): Tasks & { readonly ran: number; readonly busyMs: number } {
+/**
+ * A loop of tasks that counts and times them, how many were posted to it, and the most posted at
+ * once and not yet run.
+ */
+function countedLoop(): Tasks & {
+  readonly ran: number;
+  readonly busyMs: number;
+  readonly posted: number;
+  readonly mostWaiting: number;
+} {
   const loop = taskLoop();
   let ran = 0;
   let busyMs = 0;
+  let posted = 0;
+  let waiting = 0;
+  let mostWaiting = 0;
   const timed = (task: () => void): void => {
     const start = performance.now();
     task();
@@ -66,7 +83,11 @@ function countedLoop(): Tasks & { readonly ran: number; readonly busyMs: number 
   };
   return {
     post(task) {
+      posted++;
+      waiting++;
+      mostWaiting = Math.max(mostWaiting, waiting);
       loop.post(() => {
+        waiting--;
         timed(task);
       });
     },
@@ -84,6 +105,12 @@ function countedLoop(): Tasks & { readonly ran: number; readonly busyMs: number 
     get busyMs() {
       return busyMs;
     },
+    get posted() {
+      return posted;
+    },
+    get mostWaiting() {
+      return mostWaiting;
+    },
   };
 }
 
@@ -91,6 +118,23 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
 });
+
+/**
+ * A clock for the page's work that moves only when the test moves it, and by `perLook` each time
+ * it is read: whether a task's time is spent is the test's to say, never the runner's speed.
+ */
+function heldClock(perLook = 0): { advance(ms: number): void; restore(): void } {
+  let now = 0;
+  const clock = vi.spyOn(performance, 'now').mockImplementation(() => (now += perLook));
+  return {
+    advance(ms) {
+      now += ms;
+    },
+    restore() {
+      clock.mockRestore();
+    },
+  };
+}
 
 describe('the index of the schools at one place, built on the page where no worker starts', () => {
   it('comes in on a page that is never idle and whose timers never come due', async () => {
@@ -113,20 +157,46 @@ describe('the index of the schools at one place, built on the page where no work
   });
 
   it('is in, on a directory the size of the real one, a few tasks after the light asks for it', async () => {
+    // As in a page drawing its map every frame: idle time never comes and timers never come due,
+    // so a slice that waited on either would leave the build never in.
+    const idle = vi.fn();
+    vi.stubGlobal('requestIdleCallback', idle);
+    vi.useFakeTimers({
+      toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'setImmediate'],
+    });
     const places = syntheticDirectory();
     const tasks = countedLoop();
-    const asked = performance.now();
-    const index = await new Promise<SamePlaces>((resolve) => {
-      samePlaces(places, NONE_LIT, resolve, { tasks });
-    });
-    const wallMs = performance.now() - asked;
+    // Each look at the clock moves it on a step, so a slice spends its time by the work it does,
+    // on any runner.
+    const clock = heldClock(CLOCK_STEP_MS);
+    let index: SamePlaces;
+    try {
+      index = await new Promise<SamePlaces>((resolve) => {
+        samePlaces(places, NONE_LIT, resolve, { tasks });
+      });
+    } finally {
+      clock.restore();
+    }
     expect(index.shared).toBeGreaterThan(DIRECTORY_SCHOOLS / 8);
+    // The index built at once, compared number by number: a deep compare this long is slow.
+    const now = samePlacesNow(places);
+    const same = (a: Int32Array, b: Int32Array): boolean =>
+      a.length === b.length && a.every((value, i) => value === b[i]);
+    expect(index.shared).toBe(now.shared);
+    expect(same(index.start, now.start) && same(index.near, now.near)).toBe(true);
+    // The build was cut into slices, not done in one task.
+    expect(tasks.ran).toBeGreaterThan(3);
     // Each slice but the last works its full SLICE_MS, so the tasks are as few as the work
     // allows (and one more, which tells the light it is in).
     expect(tasks.ran).toBeLessThanOrEqual(Math.ceil(tasks.busyMs / SLICE_MS) + 2);
-    // And they run one after another, with no wait for idle time or a timer between them: the
-    // wait between slices was 50 ms each when they waited for the page to be idle.
-    expect((wallMs - tasks.busyMs) / tasks.ran).toBeLessThan(2);
+    // And they run one after another, with no wait for idle time or a timer between them (the
+    // wait between slices was 50 ms each when they waited for the page to be idle): every task
+    // came through the loop, each posted by the one before it, none on idle time or a timer.
+    expect(tasks.posted).toBe(tasks.ran);
+    expect(tasks.mostWaiting).toBe(1);
+    expect(idle).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+    tasks.close();
   });
 
   it('waits on one build however many lights ask for it before it is in', async () => {
@@ -314,26 +384,41 @@ describe('the index of the schools at one place, built in a worker', () => {
     // The list handed over, not copied: gone from the page once sent.
     const handed = lit.slice();
     let covered: Int32Array | null = null;
-    const index = await new Promise<SamePlaces>((resolve) => {
-      expect(
-        samePlaces(
-          places,
-          handed,
-          (ready) => {
-            told.push('index');
-            resolve(ready);
-          },
-          { worker: () => worker, tasks },
-          // No time to spare: the first part sent in the call that asks, the rest in a task
-          // after it.
-          -Infinity,
-          (first) => {
-            told.push('covered');
-            covered = first;
-          },
-        ),
-      ).toBeNull();
-    });
+    // Each part's copy takes no time on this clock, so the task after the ask sends every part
+    // left, on any runner.
+    const clock = heldClock();
+    // Where each part was sent: in the call that asks, or in which task of the loop's.
+    const sentIn: (number | 'call')[] = [];
+    let calling = true;
+    const steps = (kind: StepKind): void => {
+      if (kind === 'send') sentIn.push(calling ? 'call' : tasks.ran);
+    };
+    let index: SamePlaces;
+    try {
+      index = await new Promise<SamePlaces>((resolve) => {
+        expect(
+          samePlaces(
+            places,
+            handed,
+            (ready) => {
+              told.push('index');
+              resolve(ready);
+            },
+            { worker: () => worker, tasks, steps },
+            // No time to spare: the first part sent in the call that asks, the rest in a task
+            // after it.
+            -Infinity,
+            (first) => {
+              told.push('covered');
+              covered = first;
+            },
+          ),
+        ).toBeNull();
+        calling = false;
+      });
+    } finally {
+      clock.restore();
+    }
     // Compared number by number: a deep compare of lists this long takes seconds.
     const same = (a: Int32Array | undefined | null, b: Int32Array): boolean =>
       a?.length === b.length && a.every((value, i) => value === b[i]);
@@ -354,9 +439,65 @@ describe('the index of the schools at one place, built in a worker', () => {
     expect(Math.max(...worker.parts)).toBeLessThanOrEqual(PLACES_PART);
     expect(worker.handedOver).toHaveLength(worker.parts.length + 1);
     expect(worker.terminated).toBe(true);
+    // The first part in the call, every other in the one task after it.
+    expect(sentIn).toEqual(['call', ...worker.parts.slice(1).map(() => 0)]);
     // Of the build, only the task that sends it the places after the first part, and the
     // events of its two answers, ran on the page.
     expect(tasks.ran).toBe(3);
+    tasks.close();
+  });
+
+  it('sends the part after a slow copy in one more task of its own', async () => {
+    const places = syntheticDirectory(80_000);
+    const lit = Int32Array.from({ length: 200 }, (_, n) => n * 100);
+    const answers = await workerAnswer({ places, lit });
+    const worker = new FakeWorker(() => answers);
+    const tasks = countedLoop();
+    const told: string[] = [];
+    const clock = heldClock();
+    const sentIn: (number | 'call')[] = [];
+    let calling = true;
+    const steps = (kind: StepKind): void => {
+      if (kind !== 'send') return;
+      sentIn.push(calling ? 'call' : tasks.ran);
+      // The first part the task after the ask copies takes the whole of its time.
+      if (sentIn.length === 2) clock.advance(COVER_MS);
+    };
+    let index: SamePlaces;
+    try {
+      index = await new Promise<SamePlaces>((resolve) => {
+        samePlaces(
+          places,
+          lit.slice(),
+          (ready) => {
+            told.push('index');
+            resolve(ready);
+          },
+          { worker: () => worker, tasks, steps },
+          -Infinity,
+          () => {
+            told.push('covered');
+          },
+        );
+        calling = false;
+      });
+    } finally {
+      clock.restore();
+    }
+    const now = samePlacesNow(places);
+    const same = (a: Int32Array | undefined | null, b: Int32Array): boolean =>
+      a?.length === b.length && a.every((value, i) => value === b[i]);
+    expect(same(index.start, now.start) && same(index.near, now.near)).toBe(true);
+    expect(told).toEqual(['covered', 'index']);
+    // Every part sent once and whole, the lit ones' list after them.
+    expect(worker.parts).toHaveLength(Math.ceil((80_000 * 2) / PLACES_PART));
+    expect(worker.parts.length).toBeGreaterThan(2);
+    expect(worker.sent).toHaveLength(1);
+    expect(same(worker.sent[0]?.places, places) && same(worker.sent[0]?.lit, lit)).toBe(true);
+    // The first part in the call, the second alone in the task after it, the rest in the next.
+    expect(sentIn).toEqual(['call', 0, ...worker.parts.slice(2).map(() => 1)]);
+    // The two tasks that send the places, and the events of the worker's two answers.
+    expect(tasks.ran).toBe(4);
     tasks.close();
   });
 
@@ -680,22 +821,28 @@ describe('the schools a light covers', () => {
     await settled();
     expect(made).toHaveLength(0);
     // A light with schools lit: made in its call, to start on its own thread while the page
-    // lists them, and sent nothing until the task after it.
+    // lists them, and sent nothing until the task after it. Each step takes no time on this
+    // clock, so no task runs out of its time on a slow runner.
+    const clock = heldClock();
     const before = tasks.ran;
-    covers.light(places, new Set([0, 16]));
-    expect(made).toHaveLength(1);
-    expect(made[0]?.parts).toHaveLength(0);
-    // Another light, or none, before then makes no other.
-    covers.light(places, new Set([0]));
-    covers.light(places, new Set([0, 16]));
-    expect(made).toHaveLength(1);
-    await settled();
-    expect(made).toHaveLength(1);
-    expect(made[0]?.sent).toHaveLength(1);
-    // Marked from the first answer, before the index is in; the worker let go once it is.
-    expect(made[0]?.terminated).toBe(false);
-    expect(marks.sorted()).toEqual(expected(places, [0, 16]));
-    while (made[0]?.terminated !== true) await new Promise((resolve) => setTimeout(resolve, 0));
+    try {
+      covers.light(places, new Set([0, 16]));
+      expect(made).toHaveLength(1);
+      expect(made[0]?.parts).toHaveLength(0);
+      // Another light, or none, before then makes no other.
+      covers.light(places, new Set([0]));
+      covers.light(places, new Set([0, 16]));
+      expect(made).toHaveLength(1);
+      await settled();
+      expect(made).toHaveLength(1);
+      expect(made[0]?.sent).toHaveLength(1);
+      // Marked from the first answer, before the index is in; the worker let go once it is.
+      expect(made[0]?.terminated).toBe(false);
+      expect(marks.sorted()).toEqual(expected(places, [0, 16]));
+      while (made[0]?.terminated !== true) await new Promise((resolve) => setTimeout(resolve, 0));
+    } finally {
+      clock.restore();
+    }
     // Listed, asked and the places sent in one task; marked in the event of the first answer,
     // the index taken in the event of the second.
     expect(tasks.ran - before).toBe(3);

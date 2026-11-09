@@ -200,7 +200,8 @@ describe('a school’s map day', () => {
     }
     // Lit about half of each day all the same: from the West's morning to 3:30 PM in the East.
     expect(lit).toBeGreaterThan(12 * 11 * 60);
-  });
+    // Some 155,000 readings of a clock: 1.5 s on a CI runner, several on a busy one.
+  }, 30_000);
 
   it('gives no day for a clock this browser cannot read, or an instant that is not one', () => {
     expect(mapDay(at('2026-11-09T20:45:00Z'), 'Not/A_Zone')).toBeNull();

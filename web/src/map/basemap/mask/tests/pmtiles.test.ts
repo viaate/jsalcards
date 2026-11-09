@@ -128,7 +128,8 @@ describe('archives', () => {
       expect(await ours.tile(9, x, y)).toEqual(expected);
     }
     expect(await ours.tile(9, 3, 0)).toBeNull();
-  });
+    // Two archives built and read through, tile by tile: two seconds on a CI runner.
+  }, 30_000);
 
   it('are read with gzipped tiles unzipped, as the school tiles are', async () => {
     const plain = tile('school tile');

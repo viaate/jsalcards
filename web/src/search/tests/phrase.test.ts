@@ -5,7 +5,7 @@ import { loadIndex } from '../decode';
 import { encodeIndex } from '../encode';
 import { PHRASE_WINDOW, SearchEngine } from '../engine';
 import { tokenize, typoBudget } from '../normalize';
-import { isPhrase, wordMatches } from '../phrase';
+import { STEP_BUDGET, isPhrase, wordMatches } from '../phrase';
 import { Tier } from '../query';
 import type { TierValue } from '../query';
 import type { SearchRecord } from '../types';
@@ -91,10 +91,22 @@ describe('isPhrase', () => {
   it('gives up quickly on pathological input', () => {
     const name = Array.from({ length: 40 }, () => 'st').join(' ');
     const query = Array.from({ length: 8 }, (_, i) => (i === 7 ? 'zzz' : 'st')).join(' ');
-    const words = tokenize(query).map((text) => ({ text, budget: 0 }));
-    const t0 = performance.now();
+    // Quick counted in the work done, not in time, so it holds on any runner: every step that
+    // compares a word reads it from the list, so the reads count those steps.
+    const typed = tokenize(query).map((text) => ({ text, budget: 0 }));
+    let reads = 0;
+    const words = new Proxy(typed, {
+      get(target, key, receiver) {
+        if (typeof key === 'string' && /^\d+$/u.test(key)) reads++;
+        return Reflect.get(target, key, receiver) as unknown;
+      },
+    });
     expect(isPhrase(tokenize(name), words, Tier.fuzzy)).toBe(false);
-    expect(performance.now() - t0).toBeLessThan(50);
+    // The words read once each to read the query, then at most once a step, and the steps
+    // stop at the budget: a few thousand reads, where the search in full takes millions.
+    expect(reads).toBeGreaterThan(typed.length);
+    expect(reads).toBeLessThanOrEqual(typed.length + STEP_BUDGET + 1);
+    expect(reads).toBeLessThanOrEqual(5_000);
   });
 
   it('matches words the way the engine does', () => {

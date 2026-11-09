@@ -157,7 +157,7 @@ describe('lightReplay', () => {
     );
   });
 
-  it('parses and lights a day of 5,000 schools within 50 ms', () => {
+  it('parses and lights a day of 5,000 schools reading each row and school a few times', () => {
     const many = Array.from({ length: 5000 }, (_, i) => ({
       id: String(100000000000 + i),
       name: `School ${String(i)}`,
@@ -165,7 +165,22 @@ describe('lightReplay', () => {
       lat: 40,
       district: -1,
     }));
-    const meta = testMeta(many);
+    // Quick counted in the work done, not in time, so it holds on any runner: each row of the
+    // file and each school of the directory read a fixed few times, never once for each other.
+    const reads = { rows: 0, ids: 0, names: 0 };
+    const counted = <T extends object>(list: T, kind: keyof typeof reads): T =>
+      new Proxy(list, {
+        get(target, key, receiver) {
+          if (typeof key === 'string' && /^\d+$/u.test(key)) reads[kind]++;
+          return Reflect.get(target, key, receiver) as unknown;
+        },
+      });
+    const listed = testMeta(many);
+    const meta = {
+      ...listed,
+      ids: counted(listed.ids, 'ids'),
+      names: counted(listed.names, 'names'),
+    };
     const points = parsePoints(testPoints(many, 0), meta);
     if (points === null) throw new Error('points did not parse');
     const directory = createDirectory(meta, points);
@@ -176,13 +191,22 @@ describe('lightReplay', () => {
         many.map((_, i) => [i, (i % 4) as 0 | 1 | 2 | 3, null] as const),
       ),
     );
-    const started = performance.now();
-    const replay = parseReplay(JSON.parse(text));
+    const file = JSON.parse(text) as { rows: unknown[] };
+    file.rows = counted(file.rows, 'rows');
+    reads.ids = 0;
+    reads.names = 0;
+    const replay = parseReplay(file);
     if (replay === null) throw new Error('replay did not parse');
     const lit = lightReplay(replay, directory);
     replayLookup(replay, directory);
-    const took = performance.now() - started;
     expect(lit.status).toHaveLength(5000);
-    expect(took).toBeLessThan(50);
+    expect(lit.ids.at(-1)).toBe(many.at(-1)?.id);
+    expect(lit.names.at(-1)).toBe(many.at(-1)?.name);
+    // Read to check it, to light it and to look it up: three times a row, and the last once
+    // more; each school's id and name once, to light it.
+    expect(reads.rows).toBeGreaterThanOrEqual(5000);
+    expect(reads.rows).toBeLessThanOrEqual(3 * 5000 + 1);
+    expect(reads.ids).toBeLessThanOrEqual(5000);
+    expect(reads.names).toBeLessThanOrEqual(5000);
   });
 });
