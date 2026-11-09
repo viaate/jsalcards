@@ -35,56 +35,15 @@ import type {
 } from '../types/generated';
 import { decodeDay, todayEverywhere } from './closings';
 import { forecastDetail, neighborsOf } from './forecast-detail';
-import type { ForecastDetail } from './forecast-detail';
+import { UNREAD_ZONE, isIndex, isTimeZone, nextDay, parsePredictions, parseStamp } from './map-day';
 
-const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const MAX_INDEX = 4_294_967_294;
-const REASON_COUNT = 8;
-const DAY_MS = 86_400_000;
+export { isTimeZone, parsePredictions };
+import type { ForecastDetail } from './forecast-detail';
 
 /** Three of the pipeline's slowest passes (about every 30 minutes, S8): older, the passes have stopped. */
 export const PREDICTIONS_FRESH_MS = 90 * 60_000;
 /** A stamp more than this ahead of now is a clock gone wrong, and its file would never go stale. */
 export const PREDICTIONS_AHEAD_MS = 15 * 60_000;
-
-function isIndex(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= MAX_INDEX;
-}
-
-function isProbability(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
-}
-
-/** A chance of no school: never a certainty (0.01 to 0.99), so its sum always shows. */
-function isChance(value: unknown): value is number {
-  return isProbability(value) && value >= 0.01 && value <= 0.99;
-}
-
-const zones = new Map<string, boolean>();
-
-/** An IANA time zone this browser knows: "America/Chicago". */
-export function isTimeZone(value: unknown): value is string {
-  if (typeof value !== 'string' || value === '') return false;
-  let known = zones.get(value);
-  if (known === undefined) {
-    try {
-      new Intl.DateTimeFormat('en-US', { timeZone: value });
-      known = true;
-    } catch {
-      known = false;
-    }
-    zones.set(value, known);
-  }
-  return known;
-}
-
-function parseStamp(value: unknown): DirectoryStamp | null {
-  if (typeof value !== 'object' || value === null) return null;
-  const { generated_on: day, schools, districts } = value as Record<string, unknown>;
-  if (typeof day !== 'string' || !LOCAL_DATE.test(day)) return null;
-  if (!isIndex(schools) || !isIndex(districts)) return null;
-  return { generated_on: day, schools, districts };
-}
 
 export function sameStamp(a: DirectoryStamp, b: DirectoryStamp): boolean {
   return (
@@ -92,10 +51,7 @@ export function sameStamp(a: DirectoryStamp, b: DirectoryStamp): boolean {
   );
 }
 
-/** The calendar day after `day` (YYYY-MM-DD). */
-export function nextDay(day: LocalDate): LocalDate {
-  return new Date(Date.parse(`${day}T00:00:00Z`) + DAY_MS).toISOString().slice(0, 10);
-}
+export { nextDay };
 
 /** live/covered.json, checked; null for anything else. */
 export function parseCovered(value: unknown): CoveredFile | null {
@@ -128,86 +84,6 @@ export function covers(covered: CoveredFile, school: number): boolean {
     else return true;
   }
   return false;
-}
-
-function parseForecast(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) return false;
-  const day = value as Record<string, unknown>;
-  switch (day.state) {
-    case 'no_threat':
-      return true;
-    case 'forecast': {
-      // Every forecast carries its reasons list, even empty (contract: the one default the
-      // compact file keeps).
-      const reasons = day.reasons;
-      return (
-        isChance(day.p_no_school) &&
-        isProbability(day.p_delay) &&
-        Array.isArray(reasons) &&
-        reasons.every(
-          (reason) =>
-            typeof reason === 'number' &&
-            Number.isInteger(reason) &&
-            reason >= 0 &&
-            reason < REASON_COUNT,
-        )
-      );
-    }
-    default:
-      return false;
-  }
-}
-
-/** predictions/latest.json, checked; null for anything else. */
-export function parsePredictions(value: unknown): PredictionsFile | null {
-  if (typeof value !== 'object' || value === null) return null;
-  const file = value as Record<string, unknown>;
-  if (file.schema_version !== 1 || parseInstant(file.generated_at) === null) return null;
-  if (parseStamp(file.directory) === null) return null;
-  const { days, districts } = file;
-  if (!Array.isArray(days) || days.length === 0 || !Array.isArray(districts)) return null;
-  let previous = '';
-  for (const day of days as unknown[]) {
-    // Consecutive days, today first.
-    if (typeof day !== 'string' || !LOCAL_DATE.test(day)) return null;
-    if (previous !== '' && day !== nextDay(previous)) return null;
-    previous = day;
-  }
-  for (const entry of districts as unknown[]) {
-    if (typeof entry !== 'object' || entry === null) return null;
-    const { district, time_zone: zone, days: forecasts } = entry as Record<string, unknown>;
-    if (!isIndex(district) || !Array.isArray(forecasts) || forecasts.length !== days.length) {
-      return null;
-    }
-    if (!isTimeZone(zone)) return null;
-    if (!forecasts.every(parseForecast)) return null;
-  }
-  return parseSchools(file, days.length) ? (value as PredictionsFile) : null;
-}
-
-/**
- * The private schools' section (contract C3): each school once, sorted, with its time zone
- * named by its place in the file's zones (each one this browser knows) and one outlook a day
- * named by its place in the file's outlooks, each of which reads. A file without one has no
- * private school's outlook.
- */
-function parseSchools(file: Record<string, unknown>, days: number): boolean {
-  const schools = file.schools ?? [];
-  const outlooks = file.outlooks ?? [];
-  const zones = file.zones ?? [];
-  if (!Array.isArray(schools) || !Array.isArray(outlooks) || !Array.isArray(zones)) return false;
-  if (!outlooks.every(parseForecast) || !zones.every(isTimeZone)) return false;
-  let previous = -1;
-  for (const entry of schools as unknown[]) {
-    if (typeof entry !== 'object' || entry === null) return false;
-    const { school, zone, days: named } = entry as Record<string, unknown>;
-    if (!isIndex(school) || school <= previous) return false;
-    previous = school;
-    if (!isIndex(zone) || zone >= zones.length) return false;
-    if (!Array.isArray(named) || named.length !== days) return false;
-    if (!named.every((index) => isIndex(index) && index < outlooks.length)) return false;
-  }
-  return true;
 }
 
 /** A private school's entry in the file, by binary search (the schools are sorted). */
@@ -304,10 +180,12 @@ export interface StatusInput {
 
 /**
  * The school's today at a moment: the calendar day in its time zone, or
- * without one the day that is today everywhere (null overnight).
+ * without one, or with one that cannot be read (map-day.ts UNREAD_ZONE), the
+ * day that is today everywhere (null overnight): the today the map tells its
+ * light by (map-day.ts clockToday). Null for a clock not known.
  */
 export function schoolToday(now: Date, timeZone: string | null): LocalDate | null {
-  if (timeZone === null) return todayEverywhere(now);
+  if (timeZone === null || timeZone === UNREAD_ZONE) return todayEverywhere(now);
   try {
     return format.localDay(now, timeZone);
   } catch {

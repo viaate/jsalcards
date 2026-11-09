@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { MenuView } from '../app/menu';
+  import { format } from '../copy-format';
   import type { StatusCounts } from '../data/closings';
+  import type { MapDays } from '../data/live';
   import type { Basemap } from '../map/basemap';
   import { SHOW_ALL, sameFilter, showsAll } from '../state/filter';
   import type { MapFilter } from '../state/filter';
@@ -20,6 +22,10 @@
     map: () => Basemap | undefined;
     /** How many schools the map lights in each status, of the kinds it shows; null while none is. */
     counts: () => StatusCounts | null;
+    /** The days the map's live lights are for, or null while none is shown. */
+    days: () => MapDays | null;
+    /** Hears each change of `days`. */
+    onDays: (listener: () => void) => () => void;
     /** The past day the map shows, or null while it shows live. */
     replayDay: () => LocalDate | null;
     /** Has the map show a past day, or live again (null). */
@@ -28,7 +34,8 @@
     warm: (day: LocalDate) => void;
   }
 
-  let { button, stage, read, show, map, counts, replayDay, replay, warm }: Props = $props();
+  let { button, stage, read, show, map, counts, days, onDays, replayDay, replay, warm }: Props =
+    $props();
 
   /** The panel's id, which the button names while it shows. */
   const ID = 'menu';
@@ -41,6 +48,22 @@
   let reading = false;
   /** What the map shows: everything, as every visit opens, until it is changed here. */
   let filter = $state<MapFilter>(SHOW_ALL);
+
+  /** The days the map's live lights, and so their counts, are for. */
+  let mapDays = $state<MapDays | null>(null);
+  $effect(() => {
+    mapDays = days();
+    return onDays(() => {
+      mapDays = days();
+    });
+  });
+  /**
+   * The words naming that day over the counts: its weekday, or both while the map shows two
+   * (copy-format.ts dayHeading); null for the visitor's own today, and while none is shown.
+   */
+  const dayName = $derived(
+    mapDays === null ? null : format.dayHeading(mapDays.days, mapDays.viewerToday),
+  );
 
   /** It shows once what it shows is read, whole: nothing in it moves as a part comes in. */
   const shown = $derived(open && view !== null);
@@ -123,6 +146,7 @@
     id={ID}
     {filter}
     counts={counts()}
+    {dayName}
     replayDay={replayDay()}
     {button}
     onfilter={pick}

@@ -36,8 +36,9 @@ import { REASON_KEYS, STATUS_KEYS, copy } from '../copy';
 import { format } from '../copy-format';
 import type { StatusKey } from '../copy';
 import type { NearbyReasonKey } from '../copy-format';
-import { decodeDay } from '../data/closings';
+import { decodeDay, litStatus } from '../data/closings';
 import { createDetailsSource } from '../data/details';
+import { sameDirectory } from '../data/directory';
 import { DETAILS_INDEX_PATH } from '../data/details-format';
 import type { DetailsSource, SchoolRecord } from '../data/details';
 import { fetchJson } from '../data/files';
@@ -50,13 +51,16 @@ import {
   newerClosings,
   newerPredictions,
   pollWhileVisible,
+  predictionsReader,
+  toldZones,
   turnTimer,
 } from '../data/live';
+import { nextTurnOf, schoolZone, unreadZoneOf, zoneOf } from '../data/map-day';
+import type { ToldZones } from '../data/map-day';
 import {
   NO_STATUS,
   nextDay,
   parseCovered,
-  parsePredictions,
   schoolOutlook,
   schoolStatus,
   schoolToday,
@@ -328,7 +332,7 @@ function nearbySaid(input: ViewInput, own: number | null): NearbySaid {
   const closings = input.closings ?? null;
   const names = input.names ?? null;
   if (neighbors.length === 0 || closings === null || names === null) return NOTHING_SAID;
-  const today = schoolToday(input.now, input.outlook?.timeZone ?? null);
+  const today = schoolToday(input.now, viewZone(input));
   if (today === null) return NOTHING_SAID;
   return {
     today: unnamed(input.status.today) ? nearbyReason(closings, today, neighbors, names) : null,
@@ -441,11 +445,84 @@ export function shownName(id: string, name: string): string {
   return displayName(name, { state: stateOfId(id) }, SCHOOL_NAME_FIXES[id] ?? {});
 }
 
+/**
+ * The zones the nearby schools' lights are told by (live.ts toldZones), and
+ * each school's district, by its position, where the directory is read (a
+ * district's zone is its schools'); null before it is.
+ */
+export interface NearbyZones {
+  readonly told: ToldZones;
+  readonly districtOf: ((school: number) => number) | null;
+}
+
+/** With no zones given: every nearby school by the day that is today everywhere. */
+const NO_ZONES: NearbyZones = { told: null, districtOf: null };
+
+/**
+ * The status a nearby school's light shows (closings.ts litStatus), so its glyph is always its
+ * light: its row on its own map day, by the clock the map tells it by; none where that clock
+ * cannot be told yet (its district not read).
+ */
+function nearbyStatus(
+  near: SchoolRecord['nearby'][number],
+  directory: DirectoryStamp,
+  closings: ClosingsFile | null,
+  zones: NearbyZones,
+  now: Date,
+): Status | null {
+  const zone = nearbyZone(near, zones);
+  return zone === undefined ? null : litStatus(closings, directory, near.index, zone, now);
+}
+
+/**
+ * The clock a nearby school's light is told by (map-day.ts schoolZone); undefined where it
+ * cannot be told yet (its district not read).
+ */
+function nearbyZone(
+  near: SchoolRecord['nearby'][number],
+  zones: NearbyZones,
+): string | null | undefined {
+  const { told, districtOf } = zones;
+  let district = -1;
+  if (told !== null && told !== undefined) {
+    if (districtOf === null) return undefined;
+    district = districtOf(near.index);
+  }
+  return schoolZone(told, near.index, district, near.lon, near.lat);
+}
+
+/**
+ * The next instant a light the panel shows can change by the clock alone: the next turn
+ * (map-day.ts nextMapTurn: 3:30 PM, midnight) of the school's own clock and of each nearby
+ * school's, so its glyphs turn with the map's lights at that minute, not at the next read.
+ */
+export function nearbyTurn(
+  record: SchoolRecord,
+  zone: string | null,
+  zones: NearbyZones,
+  now: Date,
+): Date | null {
+  const clocks = new Set<string | null>([zone]);
+  for (const near of record.nearby) {
+    const found = nearbyZone(near, zones);
+    if (found !== undefined) clocks.add(found);
+  }
+  return nextTurnOf(now, [...clocks]);
+}
+
+/** The earlier of two instants, either of which may be none. */
+export function earlier(a: Date | null, b: Date | null): Date | null {
+  if (a === null) return b;
+  if (b === null) return a;
+  return a < b ? a : b;
+}
+
 function nearbyOf(
   record: SchoolRecord,
   closings: ClosingsFile | null,
   now: Date,
   replay: ReplayOn | null,
+  zones: NearbyZones,
 ): NearbyView[] {
   return record.nearby.map((near) => {
     if (replay !== null) {
@@ -459,18 +536,12 @@ function nearbyOf(
         lat: near.lat,
       };
     }
-    const today = schoolStatus({
-      school: near.index,
-      directory: record.directory,
-      closings,
-      covered: null,
-      now,
-    }).today;
+    const status = nearbyStatus(near, record.directory, closings, zones, now);
     return {
       id: near.id,
       name: shownName(near.id, near.name),
       distance: format.apart(near.metres),
-      tone: today === null || today === 'open' ? null : statusKey(today.status),
+      tone: status === null ? null : statusKey(status),
       lon: near.lon,
       lat: near.lat,
     };
@@ -486,8 +557,19 @@ export interface ViewInput {
   readonly settled: boolean;
   readonly status: SchoolStatus;
   readonly outlook: Outlook;
+  /**
+   * The school's own clock, the one its status was read by: its zone from the
+   * predictions file for its directory, however old (data/map-day.ts, as the
+   * map tells its day by). Absent: the outlook's.
+   */
+  readonly zone?: string | null;
   /** The live closings file, for the nearby schools' statuses; null when there is none. */
   readonly closings?: ClosingsFile | null;
+  /**
+   * The zones the nearby schools' lights are told by, so each glyph is its
+   * light. Absent: each by the day that is today everywhere.
+   */
+  readonly nearbyZones?: NearbyZones;
   /** The directory's district names, for the districts next door; null until read. */
   readonly names?: Names | null;
   readonly now: Date;
@@ -495,6 +577,11 @@ export interface ViewInput {
   readonly timeZone: string;
   /** A past day on the map: the status is that day's, and no chance is given. */
   readonly replay?: ReplayOn | null;
+}
+
+/** The clock a view reads the school's today by: the one its status was read by. */
+function viewZone(input: ViewInput): string | null {
+  return input.zone === undefined ? (input.outlook?.timeZone ?? null) : input.zone;
 }
 
 /** The panel's view, or null when there is nothing to show for this id (no such school). */
@@ -545,7 +632,7 @@ export function schoolView(input: ViewInput): SchoolView | null {
   };
   // Before today is under way on the school's clock it is not called yet: no "Open today".
   if (replay === null && input.status.today === 'open') {
-    const today = schoolToday(now, input.outlook?.timeZone ?? null);
+    const today = schoolToday(now, viewZone(input));
     if (today === null || !todayUnderWay(today, input.outlook, latestZone(record.state), now)) {
       status = status.filter((line) => line.tone !== 'open');
     }
@@ -575,7 +662,7 @@ export function schoolView(input: ViewInput): SchoolView | null {
             timeZone,
           }),
     facts: factsOf(record),
-    nearby: nearbyOf(record, input.closings ?? null, now, replay),
+    nearby: nearbyOf(record, input.closings ?? null, now, replay, input.nearbyZones ?? NO_ZONES),
     loading: false,
   };
 }
@@ -608,12 +695,15 @@ export interface LiveFiles {
  * by default). The closings file comes from the page's one reader
  * (data/live.ts closingsReader): the newest the page has taken, the map's
  * reads or a panel's, read again only when the last read began most of a
- * poll (`pollMs`, default LIVE_POLL_MS) ago or more.
+ * poll (`pollMs`, default LIVE_POLL_MS) ago or more. The predictions file
+ * comes from the page's one reader of it too (predictionsReader), which the
+ * map reads each school's zone from: read again when its last read began
+ * most of LIVE_SIDE_POLL_MS ago, or at once for 'fresh' (a panel opening).
  */
 export async function readLiveFiles(
   files: DataFiles,
   pollMs?: number,
-  sides: { readonly covered: boolean; readonly predictions: boolean } = {
+  sides: { readonly covered: boolean; readonly predictions: boolean | 'fresh' } = {
     covered: true,
     predictions: true,
   },
@@ -630,7 +720,10 @@ export async function readLiveFiles(
   const [closings, covered, predictions] = await Promise.all([
     closingsReader(files).read({ pollMs }),
     sides.covered ? read(PUBLISHED_PATHS.covered, parseCovered) : null,
-    sides.predictions ? read(PUBLISHED_PATHS.predictions, parsePredictions) : null,
+    // The page's one reader of the predictions file: the map reads it too, for each school's zone.
+    sides.predictions === false
+      ? null
+      : predictionsReader(files).read({ force: sides.predictions === 'fresh' }),
   ]);
   return { closings, covered, predictions };
 }
@@ -680,13 +773,21 @@ export function watchSchool(options: WatchOptions): () => void {
   // the map holds, and never one older than it. A past day takes none.
   const reader = replay === null ? closingsReader(files) : null;
   const live: LiveFiles = { closings: null, covered: null, predictions: null };
+  /** The directory, once asked for and read: the districts' names, and each school's district. */
+  let directory: Directory | null = null;
+  let askedDirectory = false;
   /** The directory's names, once asked for and read. */
   let names: Names | null = null;
-  let askedNames = false;
+  let wantNames = false;
+  /** Each school's district, from the directory, for the nearby schools' zones; null till read. */
+  let districtOf: ((school: number) => number) | null = null;
   // The minute the school's day turns under way: shown again then, not at the next read.
-  const turn = turnTimer(() => {
-    show();
-  });
+  const turn = turnTimer(
+    () => {
+      show();
+    },
+    () => now().getTime(),
+  );
 
   const show = (): void => {
     if (stopped) return;
@@ -703,7 +804,23 @@ export function watchSchool(options: WatchOptions): () => void {
             now: at,
           });
     // The school's own today: its district's time zone (a private school's own), where the
-    // predictions file gives it.
+    // predictions file for its directory gives it, however old the file (a district's clock does
+    // not age), as the map tells the school's day by (data/map-day.ts): its words always agree
+    // with its light.
+    // The zones the map lights the school by (live.ts toldZones): those it holds, or this
+    // panel's own read, or the page's newest; while none can be had, the day every contiguous US
+    // clock agrees on, as the map's (map-day.ts UNREAD_ZONE), and none outside it.
+    const told: ToldZones =
+      record === null ? null : toldZones(files, record.directory, live.predictions);
+    let zone: string | null = null;
+    if (record !== null) {
+      zone =
+        told === undefined
+          ? unreadZoneOf(record.state)
+          : told === null
+            ? null
+            : zoneOf(told, record.index, record.district?.index ?? -1);
+    }
     const status =
       record === null
         ? NO_STATUS
@@ -713,7 +830,7 @@ export function watchSchool(options: WatchOptions): () => void {
             closings: live.closings,
             covered: live.covered,
             now: at,
-            timeZone: outlook?.timeZone ?? null,
+            timeZone: zone,
           });
     const view = schoolView({
       id,
@@ -722,7 +839,9 @@ export function watchSchool(options: WatchOptions): () => void {
       settled,
       status,
       outlook,
+      zone,
       closings: live.closings,
+      nearbyZones: { told, districtOf },
       names,
       now: at,
       timeZone: timeZone(),
@@ -730,26 +849,49 @@ export function watchSchool(options: WatchOptions): () => void {
     });
     onView(view);
     if (replay === null && record !== null) {
-      turn.set(nextTurn(outlook, latestZone(record.state), at), at);
+      // The chance's turn (7:30 AM, or the buses), and the map's (3:30 PM, midnight) of each
+      // light the panel shows: the earlier of the two.
+      const lights = nearbyTurn(record, zone, { told, districtOf }, at);
+      turn.set(earlier(nextTurn(outlook, latestZone(record.state), at), lights), at);
     }
-    // A chance for a district with neighbors, or a status line with no reason of its own:
-    // their names, and their schools' districts, come from the directory, read once (the glow
-    // has most often read it already).
+    // Nearby schools' glyphs by the zones the map lights them by: a district's zone is its
+    // schools', so the directory says each one's district. A chance for a district with
+    // neighbors, or a status line with no reason of its own: their names come from it too. It
+    // is read once, for both (the glow has most often read it already).
+    const listed = live.closings !== null && live.closings.days.length > 0;
+    const nearbyNeed =
+      replay === null &&
+      record !== null &&
+      record.nearby.length > 0 &&
+      listed &&
+      told !== null &&
+      told !== undefined;
     const neighbors = outlook?.neighbors ?? [];
-    const stamp = live.closings?.directory ?? live.predictions?.directory ?? null;
-    if (
-      !askedNames &&
+    const namesNeed =
       view !== null &&
       (view.chance !== null || unnamed(status.today) || unnamed(status.tomorrow)) &&
-      neighbors.length > 0 &&
-      stamp !== null
-    ) {
-      askedNames = true;
+      neighbors.length > 0;
+    if (namesNeed && !wantNames) {
+      wantNames = true;
+      if (directory !== null) {
+        names = namesOf(directory);
+        show();
+        return;
+      }
+    }
+    const stamp = live.closings?.directory ?? live.predictions?.directory ?? null;
+    if (!askedDirectory && (nearbyNeed || namesNeed) && stamp !== null) {
+      askedDirectory = true;
       void options
         .directory?.(stamp)
-        .then((directory) => {
-          if (directory === null || stopped) return;
-          names = namesOf(directory);
+        .then((found) => {
+          if (found === null || stopped) return;
+          directory = found;
+          if (wantNames) names = namesOf(found);
+          // Its districts, only for the directory the record points into.
+          if (record !== null && sameDirectory(found, record.directory)) {
+            districtOf = (school) => found.district[school] ?? -1;
+          }
           show();
         })
         .catch(() => undefined);
@@ -759,9 +901,13 @@ export function watchSchool(options: WatchOptions): () => void {
   const pollMs = options.pollMs ?? LIVE_POLL_MS;
   // Covered and predictions, which S8 does not publish live, are read as often as before it.
   const sidesDue = dueEvery(LIVE_SIDE_POLL_MS);
+  let readOnce = false;
   const readLive = async (): Promise<void> => {
     const due = sidesDue();
-    const read = await readLiveFiles(files, pollMs, { covered: due, predictions: due });
+    // The first read of a panel just opened reads its chance afresh; later ones share the page's.
+    const predictions = due && !readOnce ? 'fresh' : due;
+    readOnce = true;
+    const read = await readLiveFiles(files, pollMs, { covered: due, predictions });
     // A read that fails keeps what was read before: it is still true as of its own time. The
     // reader takes only a newer closings file; newerClosings here holds the panel to that too,
     // in depth, so a panel never steps back whatever the reader hands it.

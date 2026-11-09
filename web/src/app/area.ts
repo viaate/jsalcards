@@ -60,8 +60,12 @@ import {
   newerClosings,
   newerPredictions,
   pollWhileVisible,
+  toldZones,
   turnTimer,
 } from '../data/live';
+import { litStatus } from '../data/closings';
+import { clockToday, localDay, mapDay, nextTurnOf, schoolZone } from '../data/map-day';
+import type { ToldZones } from '../data/map-day';
 import { nextDay, schoolOutlook, schoolStatus, schoolToday } from '../data/school-day';
 import type { Outlook, StatusRow } from '../data/school-day';
 import type { ReplayOn } from '../data/replay';
@@ -192,6 +196,12 @@ export interface AreaInput {
   readonly timeZone: string;
   /** A past day on the map: each school's status is that day's, and no chance is given. */
   readonly replay?: ReplayOn | null;
+  /**
+   * The zones the map lights the area's schools by (live.ts toldZones), so each
+   * glyph is its light; undefined while none can be had. Absent: each by the
+   * day that is today everywhere.
+   */
+  readonly told?: ToldZones;
 }
 
 function sameStamp(a: DirectoryStamp, b: DirectoryStamp): boolean {
@@ -233,16 +243,75 @@ function rowView(member: Member, tone: StatusKey | null): AreaSchoolView {
   };
 }
 
-/** Today's status a school's light shows, as the map's and the school panel's nearby list read it. */
-function todayTone(record: SchoolRecord, live: LiveFiles, now: Date): StatusKey | null {
-  const today = schoolStatus({
-    school: record.index,
-    directory: record.directory,
-    closings: live.closings,
-    covered: null,
+/**
+ * The clock a member's light is told by (map-day.ts schoolZone), as the map's: its zone from
+ * the zones the map lights by, or while none can be had the day every contiguous US clock
+ * agrees on where it is.
+ */
+function memberZone(member: Member, told: ToldZones): string | null {
+  const { entry, record } = member;
+  return schoolZone(told, record.index, record.district?.index ?? -1, entry.lon, entry.lat);
+}
+
+/**
+ * The status a school's light shows (closings.ts litStatus): its row on its own map day, so
+ * the glyph is always its light, as the school panel's nearby list reads it too.
+ */
+function lightTone(member: Member, live: LiveFiles, now: Date, told: ToldZones): StatusKey | null {
+  const status = litStatus(
+    live.closings,
+    member.record.directory,
+    member.record.index,
+    memberZone(member, told),
     now,
-  }).today;
-  return today === null || today === 'open' ? null : statusKey(today.status);
+  );
+  return status === null ? null : statusKey(status);
+}
+
+/**
+ * The heading over the area's counts: the day its schools' lights are for, by its weekday (or
+ * both, while they are on two), where it is not the visitor's own today; else Today.
+ */
+function tallyDay(
+  members: readonly Member[],
+  now: Date,
+  timeZone: string,
+  told: ToldZones,
+): string {
+  const days = new Map<LocalDate, boolean>();
+  for (const member of members) {
+    const zone = memberZone(member, told);
+    const day = mapDay(now, zone);
+    if (day === null) continue;
+    days.set(day, (days.get(day) ?? true) && clockToday(now, zone) === day);
+  }
+  const shown = [...days].map(([day, today]) => ({ day, today }));
+  return format.dayHeading(shown, localDay(now, timeZone)) ?? copy.days.today;
+}
+
+/**
+ * The next instant the area's lights can change by the clock alone (map-day.ts nextMapTurn:
+ * 3:30 PM, midnight) on the clock of any of its schools read, as the map's lights do, or the
+ * visitor's own midnight (the heading names a day against the visitor's today); null where
+ * none can be read.
+ */
+export function lightTurn(
+  area: AreaRecord | null,
+  records: ReadonlyMap<string, SchoolRecord | null> | null,
+  told: ToldZones,
+  now: Date,
+  timeZone: string,
+): Date | null {
+  if (area === null || records === null) return null;
+  const clocks = new Set<string | null>();
+  for (const entry of [...area.own, ...area.near]) {
+    const record = records.get(entry.id) ?? null;
+    if (record === null) continue;
+    clocks.add(memberZone({ entry, record, own: false }, told));
+  }
+  if (clocks.size === 0) return null;
+  // The visitor's clock's turns with them (its midnight among them), as the map's day line's.
+  return nextTurnOf(now, [...clocks, timeZone]);
 }
 
 /** The area's chance, and who decides, or null where no chance is given for its day. */
@@ -528,9 +597,11 @@ export function areaView(input: AreaInput): AreaView | null {
   const members = [...own, ...near];
   const unread = area.own.length + area.near.length - members.length;
   if (unread > 0 && !settled) return { ...reading, place: placeOf(area, own) };
-  const tones = members.map(({ record }) => {
-    if (replay === null) return todayTone(record, live, now);
-    const found = replay.lookup(record.id);
+  // Given as undefined: no zones to be had (the day every contiguous US clock agrees on).
+  const told = 'told' in input ? input.told : null;
+  const tones = members.map((member) => {
+    if (replay === null) return lightTone(member, live, now, told);
+    const found = replay.lookup(member.record.id);
     return found === null ? null : statusKey(found.status);
   });
   const rows = members.map((member, i) => rowView(member, tones[i] ?? null));
@@ -548,7 +619,7 @@ export function areaView(input: AreaInput): AreaView | null {
     label,
     back,
     chance,
-    tallyLabel: reading.tallyLabel,
+    tallyLabel: replay === null ? tallyDay(members, now, input.timeZone, told) : reading.tallyLabel,
     counts,
     heading: areaFormat.schoolCount(area.own.length),
     own: rows.slice(0, own.length),
@@ -595,14 +666,18 @@ export function watchArea(options: WatchAreaOptions): () => void {
   const reader = replay === null ? closingsReader(files) : null;
   const live: LiveFiles = { closings: null, covered: null, predictions: null };
   // The first minute one of its schools' days turns under way: shown again then.
-  const turn = turnTimer(() => {
-    show();
-  });
+  const turn = turnTimer(
+    () => {
+      show();
+    },
+    () => now().getTime(),
+  );
 
   const show = (): void => {
     if (stopped) return;
     const at = now();
     const shipped = files.has(PUBLISHED_PATHS.predictions);
+    const told = area === null ? null : toldZones(files, area.directory, live.predictions);
     onView(
       areaView({
         zip,
@@ -615,6 +690,7 @@ export function watchArea(options: WatchAreaOptions): () => void {
         now: at,
         timeZone: timeZone(),
         replay,
+        told,
       }),
     );
     if (replay !== null || records === null) return;
@@ -634,17 +710,24 @@ export function watchArea(options: WatchAreaOptions): () => void {
       const found = nextTurn(outlook, outlook.timeZone, at);
       if (found !== null && (next === null || found < next)) next = found;
     }
+    // The map's turns (3:30 PM, midnight) of each school's light, and the visitor's midnight
+    // the tally's heading names its day against: its glyphs, counts and heading turn with the
+    // map's lights at that minute, not at the next read.
+    const lights = lightTurn(area, records, told, at, timeZone());
+    if (lights !== null && (next === null || lights < next)) next = lights;
     turn.set(next, at);
   };
   const pollMs = options.pollMs ?? LIVE_POLL_MS;
   // Predictions, which S8 does not publish live, are read as often as before it; the area shows
   // nothing of covered, so it is never read here.
   const predictionsDue = dueEvery(LIVE_SIDE_POLL_MS);
+  let readOnce = false;
   const readLive = async (): Promise<void> => {
-    const read = await readLiveFiles(files, pollMs, {
-      covered: false,
-      predictions: predictionsDue(),
-    });
+    const due = predictionsDue();
+    // The first read of a panel just opened reads its chance afresh; later ones share the page's.
+    const predictions = due && !readOnce ? 'fresh' : due;
+    readOnce = true;
+    const read = await readLiveFiles(files, pollMs, { covered: false, predictions });
     // A read that fails keeps what was read before: it is still true as of its own time. The
     // reader takes only a newer closings file; newerClosings here holds the panel to that too,
     // in depth, so a panel never steps back whatever the reader hands it.

@@ -63,6 +63,8 @@ const BORDER_STAR = { lon: -94.592692, lat: 39.013304 };
 /** Where Pembroke Hill is, as the directory has it. */
 const PEMBROKE_HILL_PLACE = { lon: -94.593001, lat: 39.03606 };
 const SHAWNEE_MISSION_EAST = '201164001574';
+/** Where Blue Valley High is, as the staged directory has it. */
+const BLUE_VALLEY = { lon: -94.656, lat: 38.839 };
 const PIN_KEY = 'snowlight:pin';
 /** Chrome's own lines about SwiftShader, not the page's. */
 const GPU_DRIVER_NOISE =
@@ -2524,6 +2526,254 @@ test.describe('with data staged', () => {
     expect(await layoutShifts(page)).toEqual([]);
     expect(problems).toEqual([]);
     await context.close();
+  });
+
+  test('each school shows its tomorrow from 3:30 PM on its clock, the day named; the morning shows today', async ({
+    browser,
+  }) => {
+    test.setTimeout(240_000);
+    // SYNTHETIC: the evening's chances, with every district of the made-up directory, and the
+    // private school, on Kansas City's clock, so each school's day is its own.
+    const zoned = JSON.parse(syntheticPredictions()) as {
+      days: string[];
+      districts: { district: number; time_zone: string; days: unknown[] }[];
+      schools?: unknown[];
+      outlooks?: unknown[];
+      zones?: string[];
+    };
+    const calm = zoned.days.map(() => ({ state: 'no_threat' }));
+    for (const district of [0, 2]) {
+      if (!zoned.districts.some((entry) => entry.district === district)) {
+        zoned.districts.push({ district, time_zone: ZONE, days: calm });
+      }
+    }
+    zoned.districts.sort((a, b) => a.district - b.district);
+    zoned.outlooks = [{ state: 'no_threat' }];
+    zoned.zones = [ZONE];
+    zoned.schools = [{ school: 4, zone: 0, days: zoned.days.map(() => 0) }];
+    const body = JSON.stringify(zoned);
+    const dayLine = format.mapDays(
+      [{ day: '2026-01-13', regions: ['central'], today: false }],
+      '2026-01-12',
+    );
+    expect(dayLine).toBe('Showing Tuesday');
+    for (const [name, device] of [
+      ['desktop', { viewport: { width: 1440, height: 900 } }],
+      ['phone', devices['Pixel 7']],
+    ] as const) {
+      for (const evening of [true, false]) {
+        const context = await browser.newContext({
+          ...device,
+          timezoneId: ZONE,
+          // The live files come from the routes below, not a worker's cache.
+          serviceWorkers: 'block',
+        });
+        const page = await context.newPage();
+        await fixDate(page, evening ? EVENING : SYNTHETIC_NOW);
+        const { problems } = watch(page);
+        await page.route('**/data/predictions/latest.json*', (route) =>
+          route.fulfill({ contentType: 'application/json', body }),
+        );
+        if (evening) {
+          await page.route('**/data/live/closings.json*', (route) =>
+            route.fulfill({ contentType: 'application/json', body: syntheticEveningClosings() }),
+          );
+        }
+        // Over Blue Valley High, closed Tuesday, and Olathe North beside it.
+        await page.goto(`${site}?at=${String(BLUE_VALLEY.lat)},${String(BLUE_VALLEY.lon)},11`);
+        await waitForMap(page);
+        const counts = page.locator('.legend li');
+        if (evening) {
+          // 9:05 PM in Kansas City: Tuesday's two closings, never Monday's closing and delay.
+          await expect
+            .poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 })
+            .toBe(2);
+          await expect(counts.nth(0).locator('.count'), name).toHaveText(format.number(2));
+          await expect(counts.nth(1).locator('.count'), name).toHaveCount(0);
+          // The day named over the key, clear of it, and on the screen.
+          const line = page.locator('.map-day');
+          await expect(line, name).toHaveText(dayLine ?? '');
+          const [above, key] = await Promise.all([
+            line.boundingBox(),
+            page.locator('.legend').boundingBox(),
+          ]);
+          expect(above, name).not.toBeNull();
+          expect((above?.y ?? 0) + (above?.height ?? 0), name).toBeLessThanOrEqual(key?.y ?? 0);
+          expect(above?.x ?? -1, name).toBeGreaterThanOrEqual(0);
+          expect((above?.x ?? 0) + (above?.width ?? 0), name).toBeLessThanOrEqual(
+            page.viewportSize()?.width ?? 0,
+          );
+          // The map's credits open over the key's corner: the key steps aside, and the day line
+          // stays, named, clear above them.
+          const credits = page.locator('.maplibregl-ctrl-attrib');
+          await credits.locator('.maplibregl-ctrl-attrib-button').click();
+          await expect(credits, name).toHaveClass(/maplibregl-compact-show/);
+          await expect(page.locator('.legend'), name).toBeHidden();
+          await expect(line, name).toBeVisible();
+          await expect
+            .poll(
+              async () => {
+                const [words, chip] = await Promise.all([
+                  line.boundingBox(),
+                  credits.boundingBox(),
+                ]);
+                return (words?.y ?? 0) + (words?.height ?? 0) <= (chip?.y ?? 0);
+              },
+              { message: name },
+            )
+            .toBe(true);
+          // Closed by its button from the keyboard: the button sits under the locate button now.
+          await credits.locator('.maplibregl-ctrl-attrib-button').press('Enter');
+          await expect(credits, name).not.toHaveClass(/maplibregl-compact-show/);
+          await expect(page.locator('.legend'), name).toBeVisible();
+          // The menu's counts are Tuesday's, and headed so: never Today.
+          await page.locator('button.menu-button').click();
+          const menu = page.locator('aside.menu');
+          await expect(menu.locator('h2'), name).toHaveText(['Tuesday', copy.menu.kinds]);
+          await expect(menu.locator('h2', { hasText: copy.menu.today }), name).toHaveCount(0);
+          await page.locator('button.menu-button').click();
+          await expect(menu, name).toHaveCount(0);
+          // A tap on Blue Valley's light: its panel says the closing the light shows is tomorrow's.
+          await settleMap(page);
+          const light = await onScreen(page, BLUE_VALLEY);
+          if (name === 'phone') {
+            await page.touchscreen.tap(Math.round(light.x), Math.round(light.y));
+          } else {
+            await page.mouse.click(Math.round(light.x), Math.round(light.y));
+          }
+          const panel = page.locator('aside.detail');
+          await expect(panel.locator('h2'), name).toHaveText('Blue Valley High', {
+            timeout: 30_000,
+          });
+          await expect(panel.locator('.status .headline'), name).toHaveText([
+            copy.statusLine.closed.tomorrow,
+          ]);
+        } else {
+          // Noon: Monday's closing and delay, the visitor's own today: no day line.
+          await expect
+            .poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 })
+            .toBe(2);
+          await expect(counts.nth(0).locator('.count'), name).toHaveText(format.number(1));
+          await expect(counts.nth(1).locator('.count'), name).toHaveText(format.number(1));
+          await expect(page.locator('.map-day'), name).toHaveCount(0);
+          // The menu's counts are today's, and headed so.
+          await page.locator('button.menu-button').click();
+          const menu = page.locator('aside.menu');
+          await expect(menu.locator('h2'), name).toHaveText([copy.menu.today, copy.menu.kinds]);
+          await page.locator('button.menu-button').click();
+          await expect(menu, name).toHaveCount(0);
+        }
+        // Border Star's panel: Pembroke Hill beside it, delayed Monday, keys its light's status
+        // at noon, and none in the evening, when the map shows its Tuesday, with no row.
+        await page.goto(`${site}?school=291640000557`);
+        const near = page.locator('aside.detail .near');
+        await expect(near, name).toHaveCount(1, { timeout: 30_000 });
+        await expect(near.locator('.near-distance'), name).toHaveText(format.apart(2530));
+        await expect(near.locator('.glyph'), name).toHaveCount(evening ? 0 : 1);
+        expect(problems, name).toEqual([]);
+        await context.close();
+      }
+    }
+  });
+
+  test('names both days and where while the map shows two, and relights at 3:30 PM with no reload', async ({
+    browser,
+  }) => {
+    test.setTimeout(300_000);
+    // SYNTHETIC: Olathe and Blue Valley on New York's clock, the rest on Kansas City's. At 3 PM
+    // in Kansas City (4 PM in New York) the map shows two days: the East's Tuesday (Olathe and
+    // Blue Valley closed) and Kansas City's Monday (Border Star closed, Pembroke Hill delayed).
+    const zoned = JSON.parse(syntheticPredictions()) as {
+      days: string[];
+      districts: { district: number; time_zone: string; days: unknown[] }[];
+      schools?: unknown[];
+      outlooks?: unknown[];
+      zones?: string[];
+    };
+    const calm = zoned.days.map(() => ({ state: 'no_threat' }));
+    const EAST = 'America/New_York';
+    for (const district of [0, 2]) {
+      if (!zoned.districts.some((entry) => entry.district === district)) {
+        zoned.districts.push({ district, time_zone: EAST, days: calm });
+      }
+    }
+    zoned.districts.sort((a, b) => a.district - b.district);
+    zoned.outlooks = [{ state: 'no_threat' }];
+    zoned.zones = [ZONE];
+    zoned.schools = [{ school: 4, zone: 0, days: zoned.days.map(() => 0) }];
+    const body = JSON.stringify(zoned);
+    // The evening's file, as made at 2:55 PM in Kansas City.
+    const closings = JSON.stringify({
+      ...(JSON.parse(syntheticEveningClosings()) as object),
+      generated_at: '2026-01-12T20:55:00Z',
+    });
+    const mixed = format.mapDays(
+      [
+        { day: '2026-01-13', regions: ['eastern'], today: false },
+        { day: SYNTHETIC_DAY, regions: ['central'], today: true },
+      ],
+      SYNTHETIC_DAY,
+    );
+    expect(mixed).toBe('Tuesday in ET · Monday in CT');
+    const both = format.dayHeading(
+      [
+        { day: '2026-01-13', today: false },
+        { day: SYNTHETIC_DAY, today: true },
+      ],
+      SYNTHETIC_DAY,
+    );
+    expect(both).toBe('Monday and Tuesday');
+    for (const [name, device] of [
+      ['desktop', { viewport: { width: 1440, height: 900 } }],
+      ['phone', devices['Pixel 7']],
+    ] as const) {
+      const context = await browser.newContext({
+        ...device,
+        timezoneId: ZONE,
+        serviceWorkers: 'block',
+      });
+      const page = await context.newPage();
+      const { problems } = watch(page);
+      // 3 PM in Kansas City, on Playwright's clock, so the turn can be stepped to.
+      await page.clock.install({ time: new Date('2026-01-12T21:00:00Z') });
+      await page.route('**/data/predictions/latest.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body }),
+      );
+      await page.route('**/data/live/closings.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body: closings }),
+      );
+      await page.goto(`${site}?at=${String(BLUE_VALLEY.lat)},${String(BLUE_VALLEY.lon)},10`);
+      await waitForMap(page);
+      const counts = page.locator('.legend li');
+      const line = page.locator('.map-day');
+      // Each school on its own day: three closings (two Tuesday's, one Monday's) and a delay.
+      await expect(counts.nth(0).locator('.count'), name).toHaveText(format.number(3), {
+        timeout: 30_000,
+      });
+      await expect(counts.nth(1).locator('.count'), name).toHaveText(format.number(1));
+      await expect(line, name).toHaveText(mixed ?? '');
+      await page.locator('button.menu-button').click();
+      const menu = page.locator('aside.menu');
+      await expect(menu.locator('h2'), name).toHaveText([both ?? '', copy.menu.kinds]);
+      await page.locator('button.menu-button').click();
+      await expect(menu, name).toHaveCount(0);
+      // 3:30 PM in Kansas City, with no reload: its schools on Tuesday, which has no row for
+      // them, so only the East's two closings stay lit, and the map names Tuesday alone.
+      const turn = Date.parse('2026-01-12T21:30:05Z');
+      for (let step = 0; step < 5; step += 1) {
+        const left = turn - (await page.evaluate(() => Date.now()));
+        if (left <= 0) break;
+        await page.clock.fastForward(left);
+        await page.waitForTimeout(250);
+      }
+      await expect(line, name).toHaveText('Showing Tuesday', { timeout: 30_000 });
+      await expect(counts.nth(0).locator('.count'), name).toHaveText(format.number(2));
+      await expect(counts.nth(1).locator('.count'), name).toHaveCount(0);
+      await page.locator('button.menu-button').click();
+      await expect(menu.locator('h2'), name).toHaveText(['Tuesday', copy.menu.kinds]);
+      expect(problems, name).toEqual([]);
+      await context.close();
+    }
   });
 
   test('the menu shows one status or all four, and public schools, private ones or both', async ({

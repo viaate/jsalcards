@@ -208,7 +208,7 @@
 
   /** The page's controls over the map, which its labels keep clear of (the results list aside). */
   const CONTROLS =
-    '.wordmark, .search, .menu-button, .account, .updated, .legend, .locate, .detail, .menu';
+    '.wordmark, .search, .menu-button, .account, .updated, .legend, .map-day, .locate, .detail, .menu';
 
   /**
    * Loads MapLibre after the first paint and hands the view over from the

@@ -40,6 +40,8 @@ import type { Selection } from '../state/url';
 import type { UrlStore } from '../state/url-store';
 import type { DistrictId, LocalDate, SchoolId, UtcInstant } from '../types/generated';
 import type { StatusCounts } from '../data/closings';
+import type { MapDays } from '../data/live';
+import type { DayLine } from '../ui/map-day-host';
 import { AREAS_INDEX_PATH } from '../data/areas-format';
 import type { AreaSource } from '../data/areas';
 import type { DetailsSource } from '../data/details';
@@ -364,6 +366,35 @@ export function boot(options: BootOptions): Services {
       if (!aborted() && still()) options.onCounts?.(counts);
     });
   };
+  /** The day line over the key (ui/map-day-host.ts), loaded with the first day it names. */
+  let dayLine: Promise<DayLine | null> | null = null;
+  /** The days last handed to it, so the line shows the latest once its code is in. */
+  let daysShown: MapDays | null = null;
+  /** The days the live lights are for, as the live glow last gave them, for the menu's heading. */
+  let liveDays: MapDays | null = null;
+  const liveDaysListeners = new Set<() => void>();
+  const showDays = (days: MapDays | null): void => {
+    daysShown = days;
+    if (days === null && dayLine === null) return;
+    dayLine ??= import('../ui/map-day-host').then(
+      ({ startDayLine }) => {
+        if (aborted()) return null;
+        const line = startDayLine(document.querySelector<HTMLElement>('.stage') ?? document.body);
+        signal.addEventListener('abort', () => {
+          line.destroy();
+        });
+        return line;
+      },
+      () => {
+        // Its code could not load (offline, a deploy in flight): the next days ask again.
+        dayLine = null;
+        return null;
+      },
+    );
+    void dayLine.then((line) => {
+      line?.show(daysShown);
+    });
+  };
   /** Replay mode, loaded with the first replay asked for (app/replay.ts). */
   let replays: Promise<Controller> | null = null;
   /** Its code could not load (offline, a deploy in flight): live it is, and the address says so. */
@@ -438,6 +469,14 @@ export function boot(options: BootOptions): Services {
         // promise, so counts heard later are passed on later.
         onCounts: (counts) => {
           deliver(counts, () => replayOn === null);
+        },
+        // The day line over the key, in the face it keeps, as the counts; a replay names its own.
+        onDays: (days) => {
+          liveDays = days;
+          for (const listener of [...liveDaysListeners]) listener();
+          void document.fonts.ready.then(() => {
+            if (!aborted() && (days === null || replayOn === null)) showDays(days);
+          });
         },
       },
       filter,
@@ -606,6 +645,13 @@ export function boot(options: BootOptions): Services {
               },
               map: () => basemap,
               counts,
+              days: () => liveDays,
+              onDays: (listener) => {
+                liveDaysListeners.add(listener);
+                return () => {
+                  liveDaysListeners.delete(listener);
+                };
+              },
               replayDay: () => replayOn?.day ?? null,
               replay: (day) => {
                 services.replay(day);

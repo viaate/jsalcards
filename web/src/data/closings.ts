@@ -2,12 +2,13 @@
  * live/closings.json, read for the map: which schools glow, in which color.
  *
  * The file groups schools by local day: each school has a row on its local
- * today and, once announced, tomorrow. The directory does not say which time
- * zone a school is in, so the map shows a day only while it is today in every
- * contiguous US time zone, UTC-4 to UTC-8: from 08:00 UTC to 04:00 UTC the
- * next day. In the four hours between, when the East has moved on to the next
- * day and the West has not, nothing glows rather than a day that is already
- * over, or not yet begun, for some of the schools shown.
+ * today and, once announced, tomorrow. Each school glows with its row on its
+ * MAP DAY (data/map-day.ts): its own today until 3:30 PM on its clock, its
+ * own tomorrow from then, in its district's time zone as the predictions file
+ * gives it; and only with that row, never another day's. A school with no
+ * time zone known shows the day that is today in every contiguous US time
+ * zone, UTC-4 to UTC-8 (todayEverywhere), and nothing in the four hours
+ * between, when the East has moved on to the next day and the West has not.
  *
  * A file that does not match its schema, or whose stamp names another
  * directory, is not read at all: nothing is shown from it.
@@ -17,16 +18,21 @@ import { showsSchool, showsStatus } from '../state/filter';
 import type { MapFilter } from '../state/filter';
 import { parseInstant } from '../state/instant';
 import { Status } from '../types/generated';
-import type { ClosingsDay, ClosingsFile, LocalDate, SchoolId } from '../types/generated';
+import type {
+  ClosingsDay,
+  ClosingsFile,
+  DirectoryStamp,
+  LocalDate,
+  SchoolId,
+} from '../types/generated';
 import { sameDirectory } from './directory';
 import type { Directory } from './directory';
+import { mapDay, schoolZone, todayEverywhere, zonesFor } from './map-day';
+import type { MapZones, ToldZones } from './map-day';
+
+export { todayEverywhere };
 
 const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const HOUR_MS = 3_600_000;
-/** Eastern Daylight Time, the contiguous US zone furthest ahead of UTC. */
-const EAST_OFFSET_HOURS = -4;
-/** Pacific Standard Time, the one furthest behind. */
-const WEST_OFFSET_HOURS = -8;
 const MAX_MINUTES_AGO = 20_160;
 const MAX_SHIFT_MINUTES = 720;
 const MINUTES_PER_DAY = 1440;
@@ -140,23 +146,6 @@ export function decodeDay(group: ClosingsDay): DayRows {
   return { day: group.day, schools, statuses };
 }
 
-function utcDate(ms: number): string {
-  return new Date(ms).toISOString().slice(0, 10);
-}
-
-/**
- * The calendar day that is today in every contiguous US time zone at `now`,
- * or null in the hours when the East has reached the next day and the West
- * has not.
- */
-export function todayEverywhere(now: Date): LocalDate | null {
-  const time = now.getTime();
-  if (!Number.isFinite(time)) return null;
-  const east = utcDate(time + EAST_OFFSET_HOURS * HOUR_MS);
-  const west = utcDate(time + WEST_OFFSET_HOURS * HOUR_MS);
-  return east === west ? east : null;
-}
-
 /**
  * What the glow layer draws: where each lit school is and its status, and
  * which school each is, for a tap on its light (map/school-taps.ts).
@@ -194,40 +183,191 @@ export const NOTHING_LIT: LitSchools = Object.freeze({
 });
 
 export interface LightOptions {
-  /** Now, to decide which day is today. */
+  /** Now, to decide each school's map day. */
   readonly now: Date;
   /** The schools lit before, or null on the first load: only schools new since then pulse. */
   readonly previous: ReadonlySet<number> | null;
   /** performance.now() of this update, the moment new schools pulse in. */
   readonly bornMs: number;
+  /**
+   * Each school's time zone, from the predictions file read against this
+   * file's directory; absent (or null) in a build that ships none, when every
+   * school shows the day that is today everywhere. Zones read against another
+   * directory light nothing: a school's position means nothing in it.
+   */
+  readonly zones?: MapZones | null;
+  /**
+   * Whether the build ships a predictions file whose zones cannot be had: each
+   * school in the contiguous US then shows the map day every contiguous US
+   * clock agrees on, while it is today everywhere, and none while they differ
+   * (map-day.ts UNREAD_ZONE); a school outside it shows none. `zones` is not read.
+   */
+  readonly unread?: boolean;
+  /**
+   * The rows the map has accounted for, by day, school positions (Lit.seen of
+   * the light before): with it, a school pulses in only for a row it did not
+   * have (a newly announced one), never for one it had, that its map day
+   * turning to it now shows. Without it, a school pulses in when it was not
+   * lit before (`previous`).
+   */
+  readonly seen?: ReadonlyMap<LocalDate, ReadonlySet<number>> | null;
+}
+
+/** The rows of a file, by day: each day's school positions. */
+export function rowsByDay(closings: ClosingsFile): ReadonlyMap<LocalDate, ReadonlySet<number>> {
+  return new Map(closings.days.map((group) => [group.day, new Set(decodeDay(group).schools)]));
+}
+
+/** The schools lit, and the rows the map has now accounted for (LightOptions.seen). */
+export interface Lit {
+  readonly lit: LitSchools;
+  /**
+   * The file's rows whose school's map day could be told, lit or not, and the
+   * rows accounted for before that still could not be: a row first seen while
+   * its school's day could not be told (no zones, overnight) still pulses in
+   * once it can be, as a row newly announced. On a first light (`previous`
+   * null) every row of the file, for nothing pulses on a first light.
+   */
+  readonly seen: ReadonlyMap<LocalDate, ReadonlySet<number>>;
+  /** Whether some row's school had no day to be told (map-day.ts mapDay null): it shows none. */
+  readonly untold: boolean;
+}
+
+/** The zones a light is told by: LightOptions' zones, or none to be had (unread). */
+function toldOf(options: LightOptions): ToldZones {
+  return options.unread === true ? undefined : (options.zones ?? null);
 }
 
 /**
- * The schools to light today: each school with a row on the day that is
- * today everywhere, at its place in the directory. Nothing when the file is
- * for another directory, today has no rows, or it is the overnight hours.
+ * The schools to light now: each school with a row on its own map day
+ * (data/map-day.ts), at its place in the directory, with that row's status.
+ * Nothing when the file, or the zones, are for another directory, or any day
+ * of the file has a row past the end of the directory (a broken file).
  */
 export function lightSchools(
   closings: ClosingsFile,
   directory: Directory,
   options: LightOptions,
 ): LitSchools {
-  if (!sameDirectory(directory, closings.directory)) return NOTHING_LIT;
-  const today = todayEverywhere(options.now);
-  const group = closings.days.find((item) => item.day === today);
-  if (today === null || group === undefined) return NOTHING_LIT;
+  return lightAndSee(closings, directory, options).lit;
+}
+
+/** The schools to light now (lightSchools), and the rows accounted for (Lit.seen). */
+export function lightAndSee(
+  closings: ClosingsFile,
+  directory: Directory,
+  options: LightOptions,
+): Lit {
+  const told = toldOf(options);
+  const before = options.seen ?? null;
+  const first = options.previous === null;
+  const none: Lit = {
+    lit: NOTHING_LIT,
+    seen: first ? rowsByDay(closings) : (before ?? new Map()),
+    untold: false,
+  };
+  if (!sameDirectory(directory, closings.directory)) return none;
+  if (told !== null && told !== undefined && !zonesFor(told, closings.directory)) return none;
+  const { now } = options;
+  // Each zone's map day, worked out once: a file names a handful of zones.
+  const days = new Map<string | null, LocalDate | null>();
+  const dayIn = (zone: string | null): LocalDate | null => {
+    let day = days.get(zone);
+    if (day === undefined) {
+      day = mapDay(now, zone);
+      days.set(zone, day);
+    }
+    return day;
+  };
+  const picked: { school: number; status: number; day: LocalDate }[] = [];
+  const seen = new Map<LocalDate, Set<number>>();
+  let untold = false;
+  for (const group of closings.days) {
+    const rows = decodeDay(group);
+    // Rows past the end of the directory mean a broken file: none of it is read.
+    if ((rows.schools[rows.schools.length - 1] ?? 0) >= directory.count) return none;
+    const accounted = new Set<number>();
+    const had = before?.get(group.day);
+    seen.set(group.day, accounted);
+    for (let i = 0; i < rows.schools.length; i++) {
+      const school = rows.schools[i] ?? 0;
+      const zone = schoolZone(
+        told,
+        school,
+        directory.district[school] ?? -1,
+        directory.lngLat[school * 2] ?? Number.NaN,
+        directory.lngLat[school * 2 + 1] ?? Number.NaN,
+      );
+      const day = dayIn(zone);
+      if (day === null) untold = true;
+      if (first || day !== null || had?.has(school) === true) accounted.add(school);
+      if (day === group.day) {
+        picked.push({ school, status: rows.statuses[i] ?? 0, day: group.day });
+      }
+    }
+  }
+  if (picked.length === 0) return { lit: NOTHING_LIT, seen, untold };
+  // One row a school at most (its map day's), in school order as a day's rows are.
+  picked.sort((a, b) => a.school - b.school);
+  const schools = Uint32Array.from(picked, (row) => row.school);
+  const statuses = Uint8Array.from(picked, (row) => row.status);
+  const known =
+    before === null
+      ? undefined
+      : (row: number) => before.get(picked[row]?.day ?? '')?.has(schools[row] ?? -1) === true;
+  return {
+    lit: litRows(directory, schools, statuses, options.previous, options.bornMs, known),
+    seen,
+    untold,
+  };
+}
+
+/**
+ * The status a school's light shows: its row on its map day (map-day.ts
+ * mapDay, by the clock schoolZone tells), or null for none (no row that day,
+ * no day to be had, a file for another directory). The lists of schools
+ * beside the map (the area panel's, the school panel's nearby) read each
+ * school's glyph by it, so a glyph is always the school's light.
+ */
+export function litStatus(
+  closings: ClosingsFile | null,
+  directory: DirectoryStamp,
+  school: number,
+  zone: string | null,
+  now: Date,
+): Status | null {
+  if (closings === null) return null;
+  const stamp = closings.directory;
+  if (
+    stamp.generated_on !== directory.generated_on ||
+    stamp.schools !== directory.schools ||
+    stamp.districts !== directory.districts
+  ) {
+    return null;
+  }
+  const day = mapDay(now, zone);
+  const group = day === null ? undefined : closings.days.find((item) => item.day === day);
+  if (group === undefined) return null;
   const rows = decodeDay(group);
-  // Rows past the end of the directory mean a broken file: none of it is read.
-  if ((rows.schools[rows.schools.length - 1] ?? 0) >= directory.count) return NOTHING_LIT;
-  return litRows(directory, rows.schools, rows.statuses, options.previous, options.bornMs);
+  let low = 0;
+  let high = rows.schools.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    const found = rows.schools[middle] ?? 0;
+    if (found < school) low = middle + 1;
+    else if (found > school) high = middle;
+    else return (rows.statuses[middle] ?? null) as Status | null;
+  }
+  return null;
 }
 
 /**
  * The lit schools for rows of school positions, ascending and in the
  * directory, and their statuses: where each is, its kind, id and name. With
- * `previous` null none pulses (no bornAt); else a school not in it pulses in
- * at `bornMs`. Live (lightSchools) and a replay (data/replay.ts) both light
- * through it.
+ * `previous` null none pulses (no bornAt); else a row pulses in at `bornMs`
+ * unless `known` says it was there before (by default: its school was lit,
+ * in `previous`). Live (lightSchools) and a replay (data/replay.ts) both
+ * light through it.
  */
 export function litRows(
   directory: Directory,
@@ -235,6 +375,7 @@ export function litRows(
   statuses: Uint8Array,
   previous: ReadonlySet<number> | null,
   bornMs: number,
+  known?: (row: number) => boolean,
 ): LitSchools {
   const count = schoolRows.length;
   const lngLat = new Float64Array(count * 2);
@@ -252,7 +393,8 @@ export function litRows(
     lngLat[i * 2 + 1] = directory.lngLat[school * 2 + 1] ?? 0;
     kinds[i] = directory.kind[school] ?? 0;
     if (bornAt !== undefined) {
-      bornAt[i] = previous?.has(school) === true ? Number.NaN : bornMs;
+      const was = known === undefined ? previous?.has(school) === true : known(i);
+      bornAt[i] = was ? Number.NaN : bornMs;
     }
   }
   const places = directory.e6;

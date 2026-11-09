@@ -10,6 +10,7 @@ import { mount, unmount } from 'svelte';
 
 import type { MenuView } from '../app/menu';
 import type { StatusCounts } from '../data/closings';
+import type { MapDays } from '../data/live';
 import type { Basemap } from '../map/basemap';
 import type { MapFilter } from '../state/filter';
 import type { LocalDate } from '../types/generated';
@@ -26,6 +27,10 @@ export interface MenuOptions {
   readonly map: () => Basemap | undefined;
   /** How many schools the map lights in each status, of the kinds it shows; null while none is. */
   readonly counts: () => StatusCounts | null;
+  /** The days the map's live lights are for (data/live.ts MapDays), or null while none is shown. */
+  readonly days: () => MapDays | null;
+  /** Hears each change of `days`. Returns the function that stops it. */
+  readonly onDays: (listener: () => void) => () => void;
   /** The past day the map shows, or null while it shows live. */
   readonly replayDay: () => LocalDate | null;
   /** Has the map show a past day, or live again (null). */

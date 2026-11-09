@@ -2756,6 +2756,90 @@ describe('format', () => {
       }
     });
 
+    it('names the day the map shows by its weekday, and both days and where while it shows two', () => {
+      // One day, the visitor's own today and today on every clock it shows: no line.
+      expect(
+        format.mapDays([{ day: '2026-11-09', regions: ['eastern'], today: true }], '2026-11-09'),
+      ).toBeNull();
+      expect(format.mapDays([], '2026-11-09')).toBeNull();
+      // One day that is not: its weekday.
+      expect(
+        format.mapDays(
+          [{ day: '2026-11-10', regions: ['eastern', 'pacific'], today: false }],
+          '2026-11-09',
+        ),
+      ).toBe('Showing Tuesday');
+      expect(format.mapDays([{ day: '2026-11-10', regions: ['other'], today: false }], null)).toBe(
+        'Showing Tuesday',
+      );
+      // The visitor's browser keeps UTC, already on Tuesday at 7 PM in New York: the day the map
+      // shows is the East's tomorrow, so it is named all the same.
+      expect(
+        format.mapDays([{ day: '2026-11-10', regions: ['eastern'], today: false }], '2026-11-10'),
+      ).toBe('Showing Tuesday');
+      // Today on every clock shown, but not the visitor's (a visitor abroad): named too.
+      expect(
+        format.mapDays([{ day: '2026-11-09', regions: ['eastern'], today: true }], '2026-11-10'),
+      ).toBe('Showing Monday');
+      // Two days: both, and where, the latest first.
+      const mixed = format.mapDays(
+        [
+          { day: '2026-11-10', regions: ['eastern'], today: false },
+          {
+            day: '2026-11-09',
+            regions: ['central', 'mountain', 'arizona', 'pacific'],
+            today: true,
+          },
+        ],
+        '2026-11-09',
+      );
+      expect(mixed).toBe('Tuesday in ET · Monday in CT, MT and PT');
+      // Arizona (MST) apart from Mountain in summer; a clock not named, as elsewhere.
+      expect(
+        format.mapDays(
+          [
+            { day: '2026-07-15', regions: ['eastern', 'central', 'mountain'], today: false },
+            { day: '2026-07-14', regions: ['arizona', 'pacific', 'other'], today: true },
+          ],
+          '2026-07-14',
+        ),
+      ).toBe('Wednesday in ET, CT and MT · Tuesday in MST, PT and elsewhere');
+      expect(
+        format.mapDays(
+          [
+            { day: '2026-11-10', regions: ['eastern', 'central'], today: true },
+            { day: '2026-11-09', regions: ['other'], today: true },
+          ],
+          '2026-11-10',
+        ),
+      ).toBe('Tuesday in ET and CT · Monday elsewhere');
+      for (const text of [mixed ?? '', 'Showing Tuesday']) expect(problems(text)).toEqual([]);
+    });
+
+    it('heads statuses with the day they are for, never Today past 3:30 PM on their clocks', () => {
+      // The visitor's own today, today on every clock: the heading's own Today stands.
+      expect(format.dayHeading([{ day: '2026-11-09', today: true }], '2026-11-09')).toBeNull();
+      expect(format.dayHeading([], '2026-11-09')).toBeNull();
+      // Tomorrow on the schools' clocks: its weekday, whatever the visitor's clock says.
+      expect(format.dayHeading([{ day: '2026-11-10', today: false }], '2026-11-09')).toBe(
+        'Tuesday',
+      );
+      expect(format.dayHeading([{ day: '2026-11-10', today: false }], '2026-11-10')).toBe(
+        'Tuesday',
+      );
+      expect(format.dayHeading([{ day: '2026-11-10', today: false }], null)).toBe('Tuesday');
+      // Two days at once: both, the earlier first.
+      const both = format.dayHeading(
+        [
+          { day: '2026-11-10', today: false },
+          { day: '2026-11-09', today: true },
+        ],
+        '2026-11-09',
+      );
+      expect(both).toBe('Monday and Tuesday');
+      for (const text of [both ?? '', 'Tuesday']) expect(problems(text)).toEqual([]);
+    });
+
     it('writes a replay day with its weekday and year, from the day alone', () => {
       expect(format.replayDay('2024-01-16')).toBe('Tue, Jan 16, 2024');
       expect(format.replayLine('2024-01-16')).toBe('Replay · Tue, Jan 16, 2024');

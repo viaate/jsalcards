@@ -18,12 +18,19 @@
     /** What the map shows now: all four statuses or one, and which schools. */
     filter: MapFilter;
     /**
-     * How many schools the map lights in each status today, of the kinds it
-     * shows; null while none is lit, and then no count is given.
+     * How many schools the map lights in each status on the day each shows
+     * (its map day: data/map-day.ts), of the kinds it shows; null while none
+     * is lit, and then no count is given.
      */
     counts?: StatusCounts | null;
     /** The button that opens and closes it: a press on it is the button's, not a press elsewhere. */
     button?: HTMLElement | undefined;
+    /**
+     * The words naming the day the counts are for, while it is not the
+     * visitor's own today: "Tuesday", or "Monday and Tuesday" while the map
+     * shows both; null for today.
+     */
+    dayName?: string | null;
     /** The past day the map shows, or null while it shows live. */
     replayDay?: LocalDate | null;
     /** Asks the page to show what the menu now picks. */
@@ -45,6 +52,7 @@
     filter,
     counts = null,
     button,
+    dayName = null,
     replayDay = null,
     onfilter = () => undefined,
     onreplay = () => undefined,
@@ -177,8 +185,11 @@
   and lined up with it. A list of what it sets and opens, each row an icon
   and its name, the one in use on a filled pill:
 
-  - Today: which of today's lights the map shows, all four statuses or one,
-    each with the legend's mark and, once schools are lit, how many.
+  - Today: which of the lights the map shows, all four statuses or one,
+    each with the legend's mark and, once schools are lit, how many. Its
+    heading names the day they are for where it is not the visitor's own
+    today (from 3:30 PM on the schools' clocks, their tomorrow), and both
+    days while the map shows two.
   - Schools: public schools, private schools, or both.
   - The season so far and the track record, each only once its published
     file has something to count, and About: each opens a page of its own in
@@ -193,7 +204,7 @@
     {#if page === 'list'}
       <div class="group" role="radiogroup" aria-labelledby="{id}-today">
         <h2 class="label" id="{id}-today">
-          {replayDay === null ? copy.menu.today : format.replayDay(replayDay)}
+          {replayDay === null ? (dayName ?? copy.menu.today) : format.replayDay(replayDay)}
         </h2>
         <label class="item" class:is-on={filter.status === null}>
           <input

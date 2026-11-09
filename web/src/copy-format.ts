@@ -24,7 +24,7 @@ const SCHOOL_YEAR = /^(\d{4})-(\d{4})$/;
 let speedFormat: Intl.NumberFormat | undefined;
 const dateTimeFormats = new Map<string, Intl.DateTimeFormat>();
 
-type DateStyle = 'clock' | 'day' | 'monthDay' | 'dayYear' | 'dayFull' | 'ymd';
+type DateStyle = 'clock' | 'day' | 'monthDay' | 'dayYear' | 'dayFull' | 'ymd' | 'weekday';
 
 const DATE_STYLES: Readonly<Record<DateStyle, Intl.DateTimeFormatOptions>> = {
   clock: { hour: 'numeric', minute: '2-digit', hourCycle: 'h23' },
@@ -33,6 +33,7 @@ const DATE_STYLES: Readonly<Record<DateStyle, Intl.DateTimeFormatOptions>> = {
   dayYear: { month: 'short', day: 'numeric', year: 'numeric' },
   dayFull: { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' },
   ymd: { year: 'numeric', month: '2-digit', day: '2-digit' },
+  weekday: { weekday: 'long' },
 };
 
 /** One cached Intl formatter per style and time zone; an unknown zone throws RangeError. */
@@ -436,6 +437,105 @@ function reasonNearby(reason: NearbyReasonKey, districts: number): string {
   return districts === 1 ? `A district nearby said ${said}` : `Districts nearby said ${said}`;
 }
 
+/**
+ * Where in the country a day shows, by the clock its schools keep (data/map-day.ts regionOf),
+ * east to west; `other` for a clock not named here, or none.
+ */
+export type RegionKey =
+  'eastern' | 'central' | 'mountain' | 'arizona' | 'pacific' | 'alaska' | 'hawaii' | 'other';
+
+/** Each clock as the site writes it after a time ("7 AM CT"); Arizona's own, MST, all year. */
+const REGION_WORDS: Readonly<Record<Exclude<RegionKey, 'other'>, string>> = {
+  eastern: 'ET',
+  central: 'CT',
+  mountain: 'MT',
+  arizona: 'MST',
+  pacific: 'PT',
+  alaska: 'AKT',
+  hawaii: 'HST',
+};
+
+const REGION_ORDER: readonly RegionKey[] = [
+  'eastern',
+  'central',
+  'mountain',
+  'arizona',
+  'pacific',
+  'alaska',
+  'hawaii',
+  'other',
+];
+
+/** A list of words as a sentence says it: "A", "A and B", "A, B and C". */
+function listed(words: readonly string[]): string {
+  if (words.length <= 2) return words.join(' and ');
+  return `${words.slice(0, -1).join(', ')} and ${words.at(-1) ?? ''}`;
+}
+
+/** A calendar day (YYYY-MM-DD) as its weekday: "Tuesday". */
+function weekday(localDate: string): string {
+  return dateTimeFormat('weekday', 'UTC').format(parseLocalDate(localDate));
+}
+
+/**
+ * Where a day shows, by its schools' clocks: "in ET", "in CT, MT and PT",
+ * "in CT and elsewhere", "elsewhere". Arizona keeps Mountain's clock half the year: beside MT it is
+ * not named again.
+ */
+function where(regions: readonly RegionKey[]): string {
+  const keys = REGION_ORDER.filter((key) => regions.includes(key));
+  const named = keys.filter(
+    (key): key is Exclude<RegionKey, 'other'> =>
+      key !== 'other' && !(key === 'arizona' && keys.includes('mountain')),
+  );
+  if (named.length === 0) return 'elsewhere';
+  const words = named.map((key) => REGION_WORDS[key]);
+  return `in ${listed(keys.includes('other') ? [...words, 'elsewhere'] : words)}`;
+}
+
+/** A day the map shows, where, and whether it is today on every clock it shows it in. */
+interface DayShown {
+  readonly day: string;
+  readonly regions: readonly RegionKey[];
+  readonly today: boolean;
+}
+
+/**
+ * The day line over the map's key: which day the map shows, by its weekday,
+ * wherever it is not the visitor's own today, or not today on the clocks of
+ * the schools it shows (past 3:30 PM there: their tomorrow), so the day is
+ * named even to a visitor whose browser keeps another clock ("Showing
+ * Tuesday"); and both days, and where, while it shows two ("Tuesday in ET ·
+ * Monday in CT, MT and PT"), the latest first. Null where it shows only the
+ * visitor's own today, or no day.
+ */
+function mapDays(days: readonly DayShown[], viewerToday: string | null): string | null {
+  const [only] = days;
+  if (only === undefined) return null;
+  if (days.length === 1) {
+    return only.today && only.day === viewerToday ? null : `Showing ${weekday(only.day)}`;
+  }
+  return days.map((shown) => `${weekday(shown.day)} ${where(shown.regions)}`).join(DOT);
+}
+
+/**
+ * The day a set of statuses is for, as a heading over them (the menu's
+ * counts, an area's): its weekday ("Tuesday"), or both days while the map
+ * shows two ("Monday and Tuesday", the earlier first). Null where it is the
+ * visitor's own today and today on every clock it is for, or there is no day:
+ * the heading's own word for today stands.
+ */
+function dayHeading(
+  days: readonly Pick<DayShown, 'day' | 'today'>[],
+  viewerToday: string | null,
+): string | null {
+  const [only] = days;
+  if (only === undefined) return null;
+  if (days.length === 1 && only.today && only.day === viewerToday) return null;
+  const sorted = [...new Set(days.map((shown) => shown.day))].sort();
+  return listed(sorted.map(weekday));
+}
+
 // Functions only, so freezing the object freezes all of it.
 export const format = /* @__PURE__ */ Object.freeze({
   number,
@@ -473,6 +573,8 @@ export const format = /* @__PURE__ */ Object.freeze({
   speed,
   alert: alertName,
   reasonNearby,
+  mapDays,
+  dayHeading,
   // The date and clock workings the chance section's sentences share with these
   // (src/copy-chance.ts, which loads with the school panel): not words of their own.
   checkInstant,

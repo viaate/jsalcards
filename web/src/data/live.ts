@@ -12,8 +12,30 @@
  * area panels share with the map: none of them shows a file older than one
  * another has taken, and a panel open beside the map adds no reads of its
  * own. The schools lit are worked out afresh each minute, since "today"
- * moves on even when the file does not. Schools that light up after the
- * first read pulse in once.
+ * moves on even when the file does not. Each school lights with its row on
+ * its own map day (data/map-day.ts): its today until 3:30 PM on its clock,
+ * its tomorrow from then. The page relights at the next such turn of any
+ * zone it shows, and at midnight, without waiting for a read. A row new
+ * since the last file read pulses in once; a row the file already had, that
+ * a school's day turning to it now shows, does not.
+ *
+ * The time zones come from predictions/latest.json, through the page's one
+ * reader of it, which the school and area panels share (toldZones: every
+ * list and panel beside the map tells a school's day by the same zones). A
+ * build that ships no predictions file lights every school on the day that
+ * is today everywhere (map-day.ts todayEverywhere). One that ships it lights
+ * each school in the contiguous US, while no zones for the file's directory
+ * are held, on the day that is today everywhere while it is every contiguous
+ * US clock's map day too, which is then its own map day with a zone or none
+ * (map-day.ts UNREAD_ZONE), and none from 3:30 PM in the East until the
+ * West's morning: a school is never lit on a day guessed for it. So the first
+ * lights never wait for the zones, and the zones are read only for those
+ * hours (from ZONES_AHEAD_MS before them, a turn of its own in a page not
+ * seen) and for a school outside the contiguous US; once held for the
+ * directory they are not read again, for a district's zone does not age. A
+ * file that cannot be read (offline, after a reload) or is for another
+ * directory leaves the agreed day, and is read again for the zones less and
+ * less often (ZONES_RETRY_MS).
  *
  * A build without the file never asks for it. A read that fails keeps what
  * is shown: the last file read is still true as of its own time. A read of
@@ -28,20 +50,44 @@
  * `onCounts` hears how many schools are lit in each status, for the legend:
  * counted from the schools lit, so a count is only ever given for lights the
  * map shows, and none while nothing is lit.
+ *
+ * `onDays` hears which days the map shows, and where, for the key's day line
+ * (ui/MapDay.svelte): given with the file the lights come from, null while
+ * none is shown.
  */
 
 import { PUBLISHED_PATHS } from '../types/generated';
-import type { ClosingsFile, DirectoryStamp, UtcInstant } from '../types/generated';
+import type {
+  ClosingsFile,
+  DirectoryStamp,
+  LocalDate,
+  PredictionsFile,
+  UtcInstant,
+} from '../types/generated';
 import {
   NOTHING_LIT,
   countStatuses,
-  lightSchools,
+  decodeDay,
+  lightAndSee,
   parseClosings,
+  rowsByDay,
   sameCounts,
-  todayEverywhere,
 } from './closings';
 import type { LitSchools, StatusCounts } from './closings';
 import type { Directory } from './directory';
+import {
+  UNREAD_ZONE,
+  localDay,
+  mapDay,
+  nextMapTurn,
+  nextTurnOf,
+  parsePredictions,
+  shownDays,
+  zoneOf,
+  zonesFor,
+  zonesOf,
+} from './map-day';
+import type { MapZones, ShownDay, ToldZones } from './map-day';
 import { wallClock, watchWake } from '../state/wake';
 import type { WakeHost } from '../state/wake';
 import { fetchJson } from './files';
@@ -67,6 +113,10 @@ export interface LiveOptions {
    * changes; null while none is lit (no file, none today, or overnight).
    */
   readonly onCounts?: (counts: StatusCounts | null) => void;
+  /** Called with the days the map shows whenever they change; null while no file is shown. */
+  readonly onDays?: (days: MapDays | null) => void;
+  /** The visitor's own time zone, for their today. Default: the browser's. */
+  readonly viewerZone?: () => string;
   readonly fetch?: Fetch;
   readonly now?: () => Date;
   /** performance.now(), the glow layer's clock. */
@@ -82,6 +132,21 @@ export interface Live {
   /** The last file read, or null. */
   readonly closings: ClosingsFile | null;
   stop(): void;
+}
+
+/** The days the map shows, the latest first, each with where; and the visitor's own today. */
+export interface MapDays {
+  readonly days: readonly ShownDay[];
+  /** The visitor's today on their own clock, or null where it cannot be read. */
+  readonly viewerToday: LocalDate | null;
+}
+
+function browserZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return 'UTC';
+  }
 }
 
 /** How often the live files are read again while the page is visible: a minute. */
@@ -477,9 +542,173 @@ export function closingsReader(files: DataFiles, init: ClosingsReaderInit = {}):
   return reader;
 }
 
+/**
+ * How far ahead of the hours the day every contiguous US clock agrees on has none (from 3:30 PM
+ * in the East, and overnight) the map reads the zones, so they are in when those hours come.
+ */
+export const ZONES_AHEAD_MS = 5 * 60_000;
+
+/**
+ * After a read of the predictions file that brought the map no zones for its directory (one
+ * that failed, or a file for another directory, as at a change of directory): how long the map
+ * waits before it reads it again for them, doubling with each such read up to
+ * ZONES_RETRY_MAX_MS, so a file that keeps failing, or stays on another directory, is not
+ * downloaded and read every few minutes all evening. A panel's own read of it still brings
+ * the zones to the map at once.
+ */
+export const ZONES_RETRY_MS = LIVE_SIDE_POLL_MS;
+export const ZONES_RETRY_MAX_MS = 6 * LIVE_SIDE_POLL_MS;
+
+/** How long one read of the predictions file may take: a larger file than the closings file. */
+export const PREDICTIONS_READ_TIMEOUT_MS = 3 * LIVE_READ_TIMEOUT_MS;
+
+/** The page's one reader of predictions/latest.json: the map's zones, and every panel's chance. */
+export interface PredictionsReader {
+  /** The file the latest read to bring one brought, or null. */
+  readonly current: PredictionsFile | null;
+  /**
+   * Reads the file, and resolves to the file the latest read to bring one
+   * brought. A read asked for while another is on its way gets that one's;
+   * one asked for within most of LIVE_SIDE_POLL_MS (READ_REUSE of it) of the
+   * last read's start gets what is held, whether that read brought a file or
+   * not. With `force` (a panel just opened, which reads its chance afresh) it
+   * reads at once and resolves to what that read brings, or null. Never
+   * rejects: a read that fails, or takes longer than
+   * PREDICTIONS_READ_TIMEOUT_MS, leaves what is held. Which of two files is
+   * newer is each reader's own to judge (newerPredictions).
+   */
+  read(options?: {
+    readonly fetch?: Fetch | undefined;
+    readonly force?: boolean;
+  }): Promise<PredictionsFile | null>;
+}
+
+const predictionReaders = new WeakMap<DataFiles, PredictionsReader>();
+
+/**
+ * The reader of predictions/latest.json for `files`, one for the page, as
+ * closingsReader is for the closings file: the map (for each school's time
+ * zone) and the panels (for their chances) share one newest file and one
+ * read every LIVE_SIDE_POLL_MS between them. Each holds its own newest
+ * (newerPredictions): a copy an edge still serves never steps a panel's
+ * chance, or the map's zones, back. `init` applies when the reader is made.
+ */
+export function predictionsReader(
+  files: DataFiles,
+  init: ClosingsReaderInit = {},
+): PredictionsReader {
+  const known = predictionReaders.get(files);
+  if (known !== undefined) return known;
+  const clocks = init.clocks ?? PAGE_CLOCKS;
+  const timeoutMs = init.timeoutMs ?? PREDICTIONS_READ_TIMEOUT_MS;
+  let current: PredictionsFile | null = null;
+  /** The read on its way that a read asked for joins, and what it brings. */
+  let inflight: Promise<PredictionsFile | null> | null = null;
+  let began: { wall: number; monotonic: number } | null = null;
+  /** Each read's turn, and the turn of the read `current` came from: a later read's file stands. */
+  let turns = 0;
+  let taken = 0;
+  const readNow = (fetch: Fetch | undefined): Promise<PredictionsFile | null> => {
+    began = { wall: clocks.wall(), monotonic: clocks.monotonic() };
+    const turn = ++turns;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const done: Promise<PredictionsFile | null> = Promise.race([
+      // no-cache: past the HTTP cache to the server (or the worker's revalidation).
+      fetchJson(
+        files,
+        PUBLISHED_PATHS.predictions,
+        { cache: 'no-cache', signal: controller.signal },
+        fetch,
+      ).then(parsePredictions),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          resolve(null);
+        }, timeoutMs);
+      }),
+    ])
+      .then(
+        (file) => {
+          if (file !== null && turn > taken) {
+            current = file;
+            taken = turn;
+          }
+          return file;
+        },
+        // Reading is best effort; what is held stays.
+        () => null,
+      )
+      .finally(() => {
+        clearTimeout(timer);
+        if (inflight === done) inflight = null;
+      });
+    inflight = done;
+    return done;
+  };
+  const reader: PredictionsReader = {
+    get current() {
+      return current;
+    },
+    read(options = {}) {
+      if (!files.has(PUBLISHED_PATHS.predictions)) return Promise.resolve(null);
+      // A panel just opened reads afresh, as each did before the page had one reader: what it
+      // reads is its own, whatever another read on its way brings.
+      if (options.force === true) return readNow(options.fetch);
+      if (inflight !== null) return inflight.then(() => current);
+      if (began === null || elapsed(clocks, began, LIVE_SIDE_POLL_MS * READ_REUSE)) {
+        return readNow(options.fetch).then(() => current);
+      }
+      return Promise.resolve(current);
+    },
+  };
+  predictionReaders.set(files, reader);
+  return reader;
+}
+
+/** The zones the live map lights by, for each page's files (startLive). */
+const zonesHeld = new WeakMap<DataFiles, MapZones>();
+
+/**
+ * The zones a school of `directory` has its day told by, the same for the
+ * map's lights and every panel beside them: the zones the live map lights by,
+ * else those of `own` (a panel's own read of the predictions file), else
+ * those of the newest file the page's one reader of it holds; each only where
+ * read against that directory (a school's position means nothing in another).
+ * Null in a build that ships no predictions file (the day that is today
+ * everywhere); undefined while none for the directory can be had (map-day.ts
+ * schoolZone: the day every contiguous US clock agrees on).
+ */
+export function toldZones(
+  files: DataFiles,
+  directory: DirectoryStamp,
+  own: PredictionsFile | null = null,
+): ToldZones {
+  if (!files.has(PUBLISHED_PATHS.predictions)) return null;
+  const held = zonesHeld.get(files);
+  if (held !== undefined && zonesFor(held, directory)) return held;
+  for (const file of [own, predictionReaders.get(files)?.current ?? null]) {
+    if (file === null) continue;
+    const zones = zonesOf(file);
+    if (zonesFor(zones, directory)) return zones;
+  }
+  return undefined;
+}
+
 /** The absolute URL the page reads live/closings.json from, or null when the build has none. */
 export function closingsUrl(files: DataFiles): string | null {
   return files.url(PUBLISHED_PATHS.closings);
+}
+
+/** What a relight works out from the clock: each zone's map day, and what is keyed on. */
+interface Plan {
+  /** The zones the map shows schools in (null: schools with none). */
+  readonly zones: readonly (string | null)[];
+  /** The map days of those zones. */
+  readonly days: ReadonlySet<LocalDate>;
+  /** The days shown, and where, for the key's day line. */
+  readonly shown: readonly ShownDay[];
+  readonly key: string;
 }
 
 export function startLive(options: LiveOptions): Live {
@@ -488,11 +717,14 @@ export function startLive(options: LiveOptions): Live {
   const clock = options.clock ?? (() => performance.now());
   const pollMs = options.pollMs ?? LIVE_POLL_MS;
   const host: LiveHost = options.host ?? window;
+  const viewerZone = options.viewerZone ?? browserZone;
 
   const reader = closingsReader(files);
   let closings: ClosingsFile | null = null;
   let lit: ReadonlySet<number> | null = null;
-  /** What the lit schools were worked out from: the file's time and the day. */
+  /** The rows of the file the schools were last lit from, by day, so only new rows pulse. */
+  let seen: ReadonlyMap<LocalDate, ReadonlySet<number>> | null = null;
+  /** What the lit schools were worked out from: the file's time, the zones' and each map day. */
   let shownKey = '';
   let stopped = false;
   let running: Promise<void> | null = null;
@@ -503,6 +735,20 @@ export function startLive(options: LiveOptions): Live {
   let shownAt: UtcInstant | null = null;
   /** The counts last passed to onCounts. */
   let shownCounts: StatusCounts | null = null;
+  /** The days last passed to onDays, as text, so the same days are not given twice. */
+  let shownDaysKey: string | null = null;
+  /** Whether the build ships the predictions file, whose zones each school's day is told by. */
+  const shipsZones = files.has(PUBLISHED_PATHS.predictions);
+  /** Whether some school lit or listed has no zone, so the day it shows is named too. */
+  let unzoned = false;
+  // At the next turn of a school's day (3:30 PM, midnight), relit then, not at the next read.
+  // The held file is lit again by the clock alone: a turn reads nothing, seen or not.
+  const turn = turnTimer(
+    () => {
+      void update(false, true);
+    },
+    () => now().getTime(),
+  );
 
   const report = (generatedAt: UtcInstant | null): void => {
     if (generatedAt === shownAt) return;
@@ -516,17 +762,157 @@ export function startLive(options: LiveOptions): Live {
     options.onCounts?.(counts);
   };
 
+  const reportDays = (shown: readonly ShownDay[] | null, at: Date): void => {
+    let next: MapDays | null = null;
+    if (shown !== null) {
+      next = { days: shown, viewerToday: localDay(at, viewerZone()) };
+    }
+    const key = next === null ? null : JSON.stringify(next);
+    if (key === shownDaysKey) return;
+    shownDaysKey = key;
+    options.onDays?.(next);
+  };
+
+  /** The read of the predictions file on its way, for the zones; none at rest. */
+  let zonesReading: Promise<void> | null = null;
+  /**
+   * When the last read for the zones began, and how long to wait from then before the next:
+   * 0 until a read brings no zones for the file's directory (ZONES_RETRY_MS).
+   */
+  let zonesAsked: { wall: number; monotonic: number } | null = null;
+  let zonesWait = 0;
+
+  /**
+   * Reads the zones of the newest predictions file, when due (predictionsReader),
+   * without holding the lights back: until they come, each school in the
+   * contiguous US lights by the day every contiguous clock agrees on
+   * (map-day.ts UNREAD_ZONE), which is its own map day whenever there is one.
+   * Once they come, the file held is lit again by them, with no read and no
+   * pulse for a row it had.
+   */
+  const readZones = (directory: DirectoryStamp): void => {
+    if (zonesReading !== null) return;
+    const clocks: Clocks = { wall: () => now().getTime(), monotonic: clock };
+    if (zonesAsked !== null && zonesWait > 0 && !elapsed(clocks, zonesAsked, zonesWait)) return;
+    zonesAsked = { wall: clocks.wall(), monotonic: clocks.monotonic() };
+    const before = zonesHeld.get(files);
+    zonesReading = predictionsReader(files)
+      .read({ fetch: options.fetch })
+      .then((file) => {
+        const held = zonesHeld.get(files);
+        // Only a newer file: a copy an edge still serves never steps the zones back.
+        if (
+          file !== null &&
+          (held === undefined || Date.parse(file.generated_at) > Date.parse(held.generatedAt))
+        ) {
+          zonesHeld.set(files, zonesOf(file));
+        }
+      })
+      .finally(() => {
+        zonesReading = null;
+        // No zones for the directory still (the read failed, or its file is for another one):
+        // the next read waits, longer each time; zones for it end the wait.
+        if (toldZones(files, directory) === undefined) {
+          zonesWait = Math.min(
+            zonesWait === 0 ? ZONES_RETRY_MS : 2 * zonesWait,
+            ZONES_RETRY_MAX_MS,
+          );
+        } else {
+          zonesWait = 0;
+        }
+        // New zones: the file held, lit again by them. The same: nothing to do.
+        if (!stopped && closings !== null && zonesHeld.get(files) !== before) {
+          void update(false, true);
+        }
+      });
+  };
+
+  const planFor = (file: ClosingsFile, told: ToldZones, at: Date): Plan => {
+    const names = told === undefined || told === null ? [] : told.names;
+    // Every zone a school may be told by, and none: a school the file gives no zone shows the
+    // day that is today everywhere, whether or not one has been seen yet. Zones that cannot be
+    // had: one day for every school in the contiguous US, the one every clock agrees on.
+    const list: (string | null)[] = told === undefined ? [UNREAD_ZONE] : [...names, null];
+    const days = new Set<LocalDate>();
+    const each: string[] = [];
+    for (const zone of list) {
+      const day = mapDay(at, zone);
+      if (day !== null) days.add(day);
+      each.push(String(day));
+    }
+    // The days named: those of the zones, and the day of the schools with none where some are
+    // lit or listed (or no school has a zone).
+    const named = told === undefined || names.length === 0 || unzoned ? list : names;
+    const zonesAt = told === undefined ? 'unread' : (told?.generatedAt ?? 'none');
+    return {
+      zones: list,
+      days,
+      shown: shownDays(at, named),
+      key: `${file.generated_at} ${zonesAt} ${each.join(',')}`,
+    };
+  };
+
+  /**
+   * Waits for the next turn of any zone shown, and of the visitor's own clock; while the zones
+   * are not held (`unread`), also for ZONES_AHEAD_MS before the next hours the day every
+   * contiguous US clock agrees on has none, so the zones are read ahead of them even in a page
+   * that is not seen, where no poll runs.
+   */
+  const schedule = (plan: Plan | null, at: Date, unread: boolean): void => {
+    if (plan === null) {
+      turn.set(null, at);
+      return;
+    }
+    let next = nextTurnOf(at, [...plan.zones, viewerZone()]);
+    if (unread) {
+      const blind = nextMapTurn(at, UNREAD_ZONE);
+      if (blind !== null && mapDay(blind, UNREAD_ZONE) === null) {
+        const ahead = blind.getTime() - ZONES_AHEAD_MS;
+        if (ahead > at.getTime() && (next === null || ahead < next.getTime())) {
+          next = new Date(ahead);
+        }
+      }
+    }
+    turn.set(next, at);
+  };
+
+  /** Whether the poller stopped, or `file` is no longer the one to show: read afresh after an await. */
+  const halted = (file: ClosingsFile | null): boolean =>
+    stopped || (file !== null && file !== closings);
+
   const relight = async (file: ClosingsFile): Promise<void> => {
-    const today = todayEverywhere(now());
-    const key = `${file.generated_at} ${String(today)}`;
-    if (key === shownKey) return;
-    const group = file.days.find((item) => item.day === today);
+    // A file that lists no school needs no zone: nothing lights on any day.
+    const listed = file.days.length > 0;
+    const told = toldZones(files, file.directory);
+    let at = now();
+    let plan = planFor(file, told, at);
+    // The zones are read only where the day every contiguous US clock agrees on cannot tell a
+    // school's day: in the hours it has none, or will have none within ZONES_AHEAD_MS (so they
+    // are in by then), and for a school outside the contiguous US. Otherwise it is each school's
+    // own map day, and every visitor is spared the predictions file's download and its reading.
+    const unread = listed && shipsZones && told === undefined;
+    const blindAt = (instant: number): boolean => mapDay(new Date(instant), UNREAD_ZONE) === null;
+    if (unread && (blindAt(at.getTime()) || blindAt(at.getTime() + ZONES_AHEAD_MS))) {
+      readZones(file.directory);
+    }
+    if (plan.key === shownKey) {
+      reportDays(shownAt === null ? null : plan.shown, at);
+      schedule(plan, at, unread);
+      return;
+    }
     let next: LitSchools = NOTHING_LIT;
-    // With no schools today there is nothing to read against the directory.
-    let shown = group === undefined;
+    /** The rows accounted for by this light (closings.ts Lit.seen); null where nothing was lit. */
+    let nextSeen: ReadonlyMap<LocalDate, ReadonlySet<number>> | null = null;
+    // With no schools on any day shown there is nothing to read against the directory.
+    const lights = file.days.some((group) => plan.days.has(group.day));
+    // While no school's day can be told (the zones unread, from 3:30 PM in the East to 3:30 PM
+    // in the West, and overnight), the file is not shown: no update time stands over a map that
+    // cannot show its rows, as none does over one whose directory cannot be had.
+    const blind = listed && told === undefined && plan.days.size === 0;
+    let shown = !lights && !blind;
     /** Whether the directory was still not read when its wait ran out: asked again next time. */
     let late = false;
-    if (group !== undefined) {
+    if (lights) {
       // A directory read that never settles must not hold every later file: past the read's
       // limit the map goes dark for this file, and lights it as soon as the directory comes.
       const reading = options.directory(file.directory);
@@ -552,45 +938,94 @@ export function startLive(options: LiveOptions): Live {
           },
         );
       });
-      if (stopped || file !== closings) return;
+      if (halted(file)) return;
       late = directory === 'late';
       if (directory !== null && directory !== 'late') {
-        next = lightSchools(file, directory, { now: now(), previous: lit, bornMs: clock() });
+        if (told !== null && told !== undefined) {
+          unzoned = file.days.some((group) =>
+            decodeDay(group).schools.some(
+              (school) => zoneOf(told, school, directory.district[school] ?? -1) === null,
+            ),
+          );
+        }
+        // The clock as the schools light, so the day each shows and the turn waited for agree.
+        at = now();
+        plan = planFor(file, told, at);
+        const result = lightAndSee(file, directory, {
+          now: at,
+          previous: lit,
+          bornMs: clock(),
+          zones: told ?? null,
+          unread: told === undefined,
+          seen,
+        });
+        next = result.lit;
+        nextSeen = result.seen;
         shown = true;
+        // A school the agreed day cannot tell (outside the contiguous US): its zone is read.
+        if (unread && result.untold) readZones(file.directory);
       }
     }
-    if (stopped) return;
-    shownKey = late ? '' : key;
+    if (halted(null)) return;
+    shownKey = late ? '' : plan.key;
     report(shown ? file.generated_at : null);
     // Counted from the schools lit, so the counts are always the map's own.
     reportCounts(countStatuses(next));
+    reportDays(shown ? plan.shown : null, at);
+    // Blind, the turn when the days can be told again is waited for all the same.
+    schedule(shown || blind ? plan : null, at, unread);
+    // A file shown with no row on any day shown: each of its rows is one the map had, so the
+    // turn that shows it later pulses nothing.
+    if (shown && nextSeen === null) nextSeen = rowsByDay(file);
+    // The rows of a file shown, only: a file left dark (its directory late, or not to be had, or
+    // no day to be told) leaves a row it brings still new, to pulse once it lights.
+    if (nextSeen !== null && (lit !== null || next.schools.size > 0)) seen = nextSeen;
     // Nothing lit before and nothing now: the layer has nothing to change.
     if (lit === null && next.schools.size === 0) return;
     lit = next.schools;
     options.onLight(next);
   };
 
+  /** Whether the next run lights the held file again without reading (a turn of a school's day). */
+  let heldOnly = false;
+
   const read = async (): Promise<void> => {
     const forced = force;
     force = false;
+    const held = heldOnly && !forced && closings !== null;
+    heldOnly = false;
     // The newest file the page has taken, the map's own reads, a panel's, or this one.
-    const file = await reader.read({ force: forced, fetch: options.fetch, pollMs });
+    const file = held
+      ? closings
+      : await reader.read({ force: forced, fetch: options.fetch, pollMs });
     if (stopped) return;
     closings = newerClosings(closings, file);
     if (closings !== null) await relight(closings);
   };
 
-  /** Reads and relights; `network` reads past what the reader holds (refresh). */
-  const update = (network: boolean): Promise<void> => {
+  /**
+   * Reads and relights; `network` reads past what the reader holds (refresh);
+   * `held` lights the file held again by the clock alone, reading nothing.
+   */
+  const update = (network: boolean, held = false): Promise<void> => {
     if (stopped || !files.has(PUBLISHED_PATHS.closings)) return Promise.resolve();
     if (network) force = true;
     if (running !== null) {
+      // A turn while a run is on its way: lit again by the clock once it ends, with no read of
+      // its own unless a read is asked for meanwhile.
+      if (held) {
+        if (!again) heldOnly = true;
+        again = true;
+        return running;
+      }
+      heldOnly = false;
       again = true;
       // Asked while a read is on its way: the reader gives that read up if it began longer
       // ago than it may take (the device slept since), so this one is not held behind it.
       void reader.read({ fetch: options.fetch, pollMs });
       return running;
     }
+    heldOnly = held;
     // Functions, so each check reads the flags afresh after an await.
     const more = (): boolean => again && !stopped;
     const run = async (): Promise<void> => {
@@ -635,6 +1070,7 @@ export function startLive(options: LiveOptions): Live {
     },
     stop() {
       stopped = true;
+      turn.stop();
       stopPolling();
       stopHearing();
     },
@@ -656,9 +1092,12 @@ export interface TurnTimer {
 /**
  * Calls `run` once at the turn `set` last named (a school day turning under way on a school's
  * clock), so an open panel shows the next day's chance at that minute and not at its next
- * read. A turn it already ran for, or already waits for, is not waited for again.
+ * read. A turn it already ran for, or already waits for, is not waited for again. With `clock`
+ * (the one `set` is told the time by), a turn is run for only once that clock has reached it:
+ * a timer that fires early, or a wall clock set back meanwhile, runs `run` all the same, and
+ * the turn is waited for again when `run` sets it once more.
  */
-export function turnTimer(run: () => void): TurnTimer {
+export function turnTimer(run: () => void, clock?: () => number): TurnTimer {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let waiting: number | null = null;
   let ran: number | null = null;
@@ -678,7 +1117,7 @@ export function turnTimer(run: () => void): TurnTimer {
     timer = setTimeout(() => {
       timer = null;
       waiting = null;
-      if (wait === left) ran = turn;
+      if (wait === left && (clock === undefined || clock() >= turn)) ran = turn;
       run();
     }, wait + TURN_SLACK_MS);
   };

@@ -201,6 +201,26 @@ describe('MenuPanel', () => {
     });
   });
 
+  it('heads the counts with the day they are for where it is not the visitor’s today', () => {
+    const target = document.createElement('div');
+    document.body.append(target);
+    const counts: StatusCounts = [2, 0, 0, 0];
+    component = mount(MenuPanel, {
+      target,
+      props: { view: NOTHING, id: 'menu', filter: SHOW_ALL, counts, dayName: 'Tuesday' },
+    });
+    flushSync();
+    const panel = target.querySelector('aside.menu');
+    if (!(panel instanceof HTMLElement)) throw new Error('no panel');
+    // From 3:30 PM on the schools' clocks: Tuesday's lights and counts, headed Tuesday.
+    expect(headings(panel)).toEqual(['Tuesday', copy.menu.kinds]);
+    const group = panel.querySelector('[role="radiogroup"]');
+    expect(document.getElementById(group?.getAttribute('aria-labelledby') ?? '')?.textContent).toBe(
+      'Tuesday',
+    );
+    expect(headings(panel)).not.toContain(copy.menu.today);
+  });
+
   it('lists what the map shows today and which schools, then About, with nothing to count', () => {
     const { panel } = show(NOTHING);
     expect(panel.id).toBe('menu');

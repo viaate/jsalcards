@@ -254,7 +254,10 @@ export const copy = deepFreeze({
 
   menu: {
     label: 'Menu',
-    /** The first group: which of today's lights the map shows, all four statuses or one. */
+    /**
+     * The first group: which of the lights the map shows, all four statuses or one. Headed
+     * Today while the lights are the visitor's today; else by their day (copy-format.ts dayHeading).
+     */
     today: 'Today',
     all: 'All',
     /** The second: which schools the map shows. */

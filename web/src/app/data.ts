@@ -10,6 +10,7 @@
 import { DATA_FILES } from 'virtual:snowlight/data-files';
 
 import type { LitSchools, StatusCounts } from '../data/closings';
+import type { MapDays } from '../data/live';
 import type { DirectorySource } from '../data/directory';
 import { DATA_PATHS, createDataFiles, dataRootFor, withLiveRoot } from '../data/files';
 import type { DataFiles } from '../data/files';
@@ -110,6 +111,8 @@ export interface LiveGlowListeners {
    * shows (null while none is lit), for the legend and the menu.
    */
   readonly onCounts?: (counts: StatusCounts | null) => void;
+  /** Which days the map shows, and where, for the key's day line (null while none is shown). */
+  readonly onDays?: (days: MapDays | null) => void;
 }
 
 /** The live glow, running. */
@@ -132,7 +135,7 @@ export interface LiveGlow {
  */
 export function notLive(
   glow: Promise<Glow | null>,
-  { onShown, onCounts }: LiveGlowListeners = {},
+  { onShown, onCounts, onDays }: LiveGlowListeners = {},
   held = false,
 ): LiveGlow {
   let holding = held;
@@ -147,6 +150,7 @@ export function notLive(
       });
       onShown?.(null);
       onCounts?.(null);
+      onDays?.(null);
     },
     stop: () => undefined,
   };
@@ -186,7 +190,7 @@ export async function startLiveGlow(
   { held = false }: { readonly held?: boolean } = {},
 ): Promise<LiveGlow> {
   if (!data.files.has(PUBLISHED_PATHS.closings)) return notLive(glow, listeners, held);
-  const { onShown, onCounts } = listeners;
+  const { onShown, onCounts, onDays } = listeners;
   const [
     { closingsUrl, startLive },
     { onDataUpdate },
@@ -204,6 +208,8 @@ export async function startLiveGlow(
   let holding = held;
   /** The generated_at of the file shown last, given again when the hold ends. */
   let lastShown: UtcInstant | null = null;
+  /** The days shown last, named again when the hold ends. */
+  let lastDays: MapDays | null = null;
   /** Each paint's turn: a paint that lands after a newer one, or after a hold, is dropped. */
   let paints = 0;
   const count = (): void => {
@@ -234,6 +240,10 @@ export async function startLiveGlow(
       lastShown = generatedAt;
       if (!holding) onShown?.(generatedAt);
     },
+    onDays: (days) => {
+      lastDays = days;
+      if (!holding) onDays?.(days);
+    },
   });
   const url = closingsUrl(data.files);
   // The worker fetched a newer copy in the background: read it (from its cache) and relight.
@@ -252,8 +262,9 @@ export async function startLiveGlow(
       const was = holding;
       holding = next;
       if (next) {
-        // Whatever was queued to paint lands no more.
+        // Whatever was queued to paint lands no more; a replay names its own day.
         paints += 1;
+        if (!was) onDays?.(null);
         return;
       }
       if (!was) return;
@@ -261,6 +272,7 @@ export async function startLiveGlow(
       counted = lit === null ? null : countShown(lit, shown);
       onShown?.(lastShown);
       onCounts?.(counted);
+      onDays?.(lastDays);
     },
     stop() {
       live.stop();
