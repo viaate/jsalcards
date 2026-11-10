@@ -30,9 +30,13 @@ Each rule is held by a script, a test or the compiler, named beside it.
 2. **The app says nothing the site would not.** Every shown string is a `ShownText`. Only
    `SnowlightCore/Sources/SnowlightCore/Words/` can make one: the initializer is not public
    (the compiler holds that for the kit), and `check-ios` refuses every other way to make
-   one in the rest of SnowlightCore. `Words/` is the site's words, ported and proven
-   against the site's own code (the golden files), plus the short list of words only the
-   app has (`tools/app-words.txt`, each marked approved or pending with who said so).
+   one in the rest of SnowlightCore. The kit and the app may not import SnowlightCore with
+   `@testable` or an underscored attribute, which would see past what it makes public
+   (`view.import`), and neither they nor SnowlightCore may use an unchecked cast, raw
+   memory or a symbol looked up by name (`code.unsafe`). `Words/` is the site's words,
+   ported and proven against the site's own code (the golden files), plus the short list
+   of words only the app has (`tools/app-words.txt`, each marked approved or pending with
+   who said so).
 3. **A view draws only what its screen model hands it.** No string literal in a view (but
    symbol names in `Shell/Names.swift`); `Text(` only in `Shell/Shown.swift`, and there
    only as `Text(verbatim:)` from a `ShownText`; no word table named; no system formatter;
@@ -40,14 +44,19 @@ Each rule is held by a script, a test or the compiler, named beside it.
    files, settings). SnowlightCore's public surface holds no text at all but two things:
    a `ShownText`'s characters (`drawnString`, read only in `Shell/Shown.swift`) and what a
    person typed into search (`SearchQuery.typed`, reachable in a view only as the binding
-   `$query.typed`). So no other text can reach a control that takes a plain string.
-   (`check-ios`, rules `words.*`, `view.*`, `core.publicstring`.)
+   `$query.typed`). So SnowlightCore hands a view no other text; what the system itself
+   could hand a view as text (a number spelled out, a name, an identifier, the device's
+   own words) is refused by the lists of `words.value` and `view.device`. (`check-ios`,
+   rules `words.*`, `view.*`, `core.publicstring`.)
 4. **No read of the device's clock or zone, of the process's environment or of the
    phone's own settings store, in SnowlightCore or in a test.** The clock, the zones and
    the settings store are always parameters. The one test that may read the clock, the
    zone and the environment is `ThisMachineTests.swift`: it proves the odd test zone took
    hold. From M5, one allow-listed file (`Net/DeviceClock.swift`) will read the clock and
-   the phone's zone to hand them to the models; none exists yet. (`core.device`,
+   the phone's zone to hand them to the models; none exists yet. SnowlightCore reads
+   nothing else of the machine either (its files, the app's bundle, a process, a random
+   value, a path such as the zone file), and no test starts a process or names a path of
+   the machine: the fixtures come from the tests' own bundle. (`core.device`,
    `tests.device`.)
 5. **No network in a test, in SnowlightCore or in a view.** M0 makes no request at all.
    (`core.network`, `tests.network`, `view.network`.)
@@ -67,12 +76,16 @@ Each rule is held by a script, a test or the compiler, named beside it.
 `check-ios.mjs` reads code, not comments, and skips itself and this file, which both name
 what is banned. It tests itself on every run first: a list of samples, at least one for
 every rule and one for every entry of its lists of the clock, the zone, the environment,
-the network and the device (planted in SnowlightCore, in a test and in a view), each of
-which must be refused.
+the network, the device, the machine and the ways around the type system (each planted
+wherever its list applies: in SnowlightCore, in a test, in a view), each of which must be
+refused.
 Its lists are lists: a spelling a list leaves out passes it. The locks that need no list
 are the compiler's (the word tables, `ShownText`'s initializer and every text form of
-SnowlightCore are not public) and the public-surface rule. The screen itself is read from
-M1 on, by a UI test with the first real screen.
+SnowlightCore are not public, and `view.import` keeps the kit from seeing past that) and
+the public-surface rule. A lock the compiler would hold for the system's own plain-string
+controls is still to come (for example, the kit declaring their `StringProtocol` forms
+unavailable, proven on the Mac). The screen itself is read from M1 on, by a UI test with
+the first real screen.
 
 ## The workflows
 

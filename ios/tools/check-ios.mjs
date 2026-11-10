@@ -348,6 +348,8 @@ const VIEW_VALUE_WORDS = [
   [/(?<![A-Za-z0-9_])Mirror(?![A-Za-z0-9_])/, 'reflection, which hands out the names of fields'],
   [/#(?:function|fileID|filePath|file|dsohandle)(?![A-Za-z0-9_])/, "a literal the compiler fills with a name"],
   [/(?<![A-Za-z0-9_])as\s*[?!]?\s*(?:String|Substring|Character|NSString|StaticString)(?![A-Za-z0-9_])/, 'a cast to text'],
+  [/(?<![A-Za-z0-9_)\]>?!])\.\s*init(?![A-Za-z0-9_])/, 'an initializer whose type is left to the compiler (name the type: in a view it could be text)'],
+  [/(?<![A-Za-z0-9_])(?:Character|UnicodeScalar|Unicode\s*\.\s*Scalar)(?![A-Za-z0-9_])/, 'a character made from a number'],
 ];
 
 /** What was typed into search may reach a view only as its binding, `$query.typed`. (b) */
@@ -451,8 +453,48 @@ const VIEW_DEVICE = [
   [/(?<![A-Za-z0-9_])UserDefaults(?![A-Za-z0-9_])/, 'the settings store (only Shell/WindowStyle.swift holds it)', 'let store = UserDefaults.standard'],
   [/(?<![A-Za-z0-9_])(?:string|stringArray|object|array|dictionary|value|url)\s*\(\s*forKey\s*:/, 'a stored value read as it is', 'let kept = store.string(forKey: key)'],
   [/(?<![A-Za-z0-9_])dictionaryRepresentation(?![A-Za-z0-9_])/, 'every stored value at once', 'let all = store.dictionaryRepresentation()'],
+  [/(?<![A-Za-z0-9_])UUID(?![A-Za-z0-9_])/, 'a random identifier, whose text form is a word', 'Button(UUID().uuidString) { }'],
+  [/(?<![A-Za-z0-9_])CommandLine(?![A-Za-z0-9_])/, "the app's launch arguments, which are text", 'Button(CommandLine.arguments[0]) { }'],
+  [/(?<![A-Za-z0-9_])(?:fontName|familyName|familyNames|fontNames|accessibilityName|persistentIdentifier|accessibilityIdentifier|_kvcKeyPathString)(?![A-Za-z0-9_])/, 'a name the system hands out as text', 'Button(UIFont.systemFont(ofSize: 1).fontName) { }'],
 ];
 const SETTINGS_STORE = 'the settings store (only Shell/WindowStyle.swift holds it)';
+
+/**
+ * Ways around the type system, which would let code make a ShownText it may not make, or
+ * read text a type keeps to itself: a cast the compiler does not check, raw memory, a
+ * symbol looked up by its name. In the views and in SnowlightCore. (b)
+ */
+const UNSAFE = [
+  [/(?<![A-Za-z0-9_])(?:unsafeBitCast|unsafeDowncast)(?![A-Za-z0-9_])/, 'a cast the compiler does not check', 'let made = unsafeBitCast(characters, to: Said.self)'],
+  [/(?<![A-Za-z0-9_])(?:Unsafe[A-Za-z0-9_]*|withUnsafe[A-Za-z0-9_]*|Unmanaged|withMemoryRebound|assumingMemoryBound|bindMemory)(?![A-Za-z0-9_])/, 'raw memory', 'let bytes = withUnsafeBytes(of: value) { Array($0) }'],
+  [/(?<![A-Za-z0-9_])(?:dlsym|dlopen|NSClassFromString|NSSelectorFromString|NSProtocolFromString)(?![A-Za-z0-9_])|@_silgen_name|@_cdecl/, 'a symbol looked up by its name', 'let call = dlsym(nil, name)'],
+];
+
+/**
+ * Imports that see past what SnowlightCore makes public: a testable import hands the kit
+ * every internal name (ShownText's initializer, the stored forms), and the underscored
+ * attributes (@_spi, @_private and the like) do the same. Anywhere in the kit and the
+ * app, the tour included. (b)
+ */
+const PRIVATE_IMPORT = /(?<![A-Za-z0-9_])@(?:testable|_[A-Za-z0-9_]+)(?![A-Za-z0-9_])/;
+
+/**
+ * What else of the machine SnowlightCore could read: its files, the app's bundle, a
+ * process or its arguments, a random value, the user's own folders. SnowlightCore is
+ * handed its data and gives the same answer every time. (c)
+ */
+const CORE_HOST = [
+  [/(?<![A-Za-z0-9_])(?:FileManager|FileHandle|InputStream|OutputStream|fopen|opendir)(?![A-Za-z0-9_])/, "the machine's files", 'let kept = FileManager.default.contents(atPath: path)'],
+  [/(?<![A-Za-z0-9_])(?:Data|NSData|String|NSString)\s*\(\s*contentsOf(?:File)?\s*:/, 'a file read by its address', 'let kept = try? Data(contentsOf: address)'],
+  [/(?<![A-Za-z0-9_])Bundle(?![A-Za-z0-9_])/, "the app's bundle", 'let id = Bundle.main.bundleIdentifier'],
+  [/(?<![A-Za-z0-9_])(?:CommandLine|Process|NSTask|posix_spawn[A-Za-z_]*|popen)(?![A-Za-z0-9_])/, 'a process or its arguments', 'let said = CommandLine.arguments'],
+  [/(?<![A-Za-z0-9_])(?:random|randomElement|shuffled|shuffle|arc4random[A-Za-z0-9_]*|SystemRandomNumberGenerator|UUID|drand48)(?![A-Za-z0-9_])/, 'a random value (the core gives the same answer every time)', 'let pick = Int.random(in: 0...9)'],
+  [/(?<![A-Za-z0-9_])(?:homeDirectory[A-Za-z]*|temporaryDirectory|currentDirectoryPath|NSHomeDirectory[A-Za-z]*|NSTemporaryDirectory|NSUserName|NSFullUserName)(?![A-Za-z0-9_])/, "this machine's own folders or user", 'let folder = NSTemporaryDirectory()'],
+];
+/** The tests read their fixtures from their own bundle, and nothing else of the machine. (c) */
+const TEST_HOST = [CORE_HOST[3], CORE_HOST[5]];
+/** A string literal that is a path on this machine. In SnowlightCore and the tests. (c) */
+const MACHINE_PATH_LITERAL = /^\/[A-Za-z]/;
 
 /**
  * The types that hold text. SnowlightCore's public surface may name one of them in two
@@ -600,6 +642,14 @@ function checkTree(files, banned) {
         for (const found of matches(swift.code, pattern)) hit('view.device', path, found.line, `a view reads the device: ${what}`);
       }
       checkNetwork(path, swift, 'view.network', hit);
+      checkUnsafe(path, swift, hit);
+    }
+
+    if (path.startsWith(KIT) || path.startsWith(APP)) {
+      // (b) The kit and the app see SnowlightCore only through what it makes public.
+      for (const found of matches(swift.code, PRIVATE_IMPORT)) {
+        hit('view.import', path, found.line, `${found.text}: an attribute that sees past what SnowlightCore makes public`);
+      }
     }
 
     if (isTourCode(path)) {
@@ -630,7 +680,12 @@ function checkTree(files, banned) {
       for (const [pattern, what] of [...CLOCK_ZONE, ...ENVIRONMENT]) {
         for (const found of matches(swift.code, pattern)) hit('core.device', path, found.line, `the device's clock or zone: ${what}`);
       }
+      for (const [pattern, what] of CORE_HOST) {
+        for (const found of matches(swift.code, pattern)) hit('core.device', path, found.line, `the machine: ${what}`);
+      }
+      checkMachinePaths(path, swift, 'core.device', hit);
       checkNetwork(path, swift, 'core.network', hit);
+      checkUnsafe(path, swift, hit);
       for (const [pattern, what] of CORE_FORMATTER) {
         for (const found of matches(swift.code, pattern)) hit('core.formatter', path, found.line, `${what}: ${found.text}`);
       }
@@ -649,6 +704,12 @@ function checkTree(files, banned) {
           for (const found of matches(swift.code, pattern)) hit('tests.device', path, found.line, `${what} outside ${THIS_MACHINE}`);
         }
       }
+      // No test starts a process, reads the user's folders or a path of the machine,
+      // ThisMachineTests.swift included: the fixtures come from the tests' own bundle.
+      for (const [pattern, what] of TEST_HOST) {
+        for (const found of matches(swift.code, pattern)) hit('tests.device', path, found.line, `the machine: ${what}`);
+      }
+      checkMachinePaths(path, swift, 'tests.device', hit);
       // No test reads the network, ThisMachineTests.swift included.
       checkNetwork(path, swift, 'tests.network', hit);
       for (const found of matches(swift.code, /^[ \t]*(?:@[A-Za-z_]+[ \t]+)*import[ \t]+([^\n]*)$/m)) {
@@ -673,6 +734,20 @@ function checkTree(files, banned) {
 
 /** The modules a test may import. */
 const TEST_IMPORTS = ['XCTest', 'Foundation', 'SnowlightCore'];
+
+/** (b) A way around the type system, in a view or in SnowlightCore. */
+function checkUnsafe(path, swift, hit) {
+  for (const [pattern, what] of UNSAFE) {
+    for (const found of matches(swift.code, pattern)) hit('code.unsafe', path, found.line, `a way around the type system: ${what}`);
+  }
+}
+
+/** (c) A string literal that is a path on this machine, such as its zone file. */
+function checkMachinePaths(path, swift, rule, hit) {
+  for (const literal of swift.literals) {
+    if (MACHINE_PATH_LITERAL.test(literal.value)) hit(rule, path, literal.line, `a path on this machine: "${literal.value}"`);
+  }
+}
 
 /** (c) The network: its types and calls, and any string literal that names an address. */
 function checkNetwork(path, swift, rule, hit) {
@@ -1281,6 +1356,28 @@ for (const [, what, example] of NETWORK) {
 for (const [, what, example] of VIEW_DEVICE) {
   SAMPLES.push({ name: `in a view: ${what}`, rules: ['view.device'], files: [[VIEW, view(example)]] });
 }
+for (const [, what, example] of UNSAFE) {
+  SAMPLES.push({ name: `in SnowlightCore: ${what}`, rules: ['code.unsafe'], files: [[CORE_FILE, core(example)]] });
+  SAMPLES.push({ name: `in a view: ${what}`, rules: ['code.unsafe'], files: [[VIEW, view(example)]] });
+}
+for (const [, what, example] of CORE_HOST) {
+  SAMPLES.push({ name: `in SnowlightCore: ${what}`, rules: ['core.device'], files: [[CORE_FILE, core(example)]] });
+}
+for (const [, what, example] of TEST_HOST) {
+  SAMPLES.push({ name: `in a test: ${what}`, rules: ['tests.device'], files: [[TEST_FILE, test(example)]] });
+  SAMPLES.push({ name: `in ThisMachineTests: ${what}`, rules: ['tests.device'], files: [[`ios/SnowlightCore/Tests/SnowlightCoreTests/${THIS_MACHINE}`, `import Foundation\nfunc sample() {\n    ${example}\n}\n`]] });
+}
+// The forms the second look at M0a's guards planted and saw pass: each by itself.
+SAMPLES.push(
+  { name: 'text made by an initializer whose type is left to the compiler, in a view', rules: ['words.value'], files: [[VIEW, view('let said: String = .init(42)\n        return Button(said) { }')]] },
+  { name: 'a word spelled from numbers, in a view', rules: ['words.value'], files: [[VIEW, view('Button(Character(Unicode.Scalar(UInt8(65))).uppercased()) { }')]] },
+  { name: 'a testable import of SnowlightCore in the kit', rules: ['view.import'], files: [[VIEW, `@testable import SnowlightCore\n${view('ShownLabel(model.title)')}`]] },
+  { name: 'a testable import of SnowlightCore in the app', rules: ['view.import'], files: [[APP + 'Sample.swift', '@testable import SnowlightCore\nimport SwiftUI\n']] },
+  { name: 'a testable import of SnowlightCore in the tour', rules: ['view.import'], files: [[TOUR, '#if DEBUG\n@testable import SnowlightCore\nlet key = "tour.name"\n#endif\n']] },
+  { name: 'an SPI import of SnowlightCore in the kit', rules: ['view.import'], files: [[VIEW, `@_spi(Words) import SnowlightCore\n${view('ShownLabel(model.title)')}`]] },
+  { name: 'a path on this machine in SnowlightCore', rules: ['core.device'], files: [[CORE_FILE, core('let zone = "/etc/localtime"')]] },
+  { name: 'a path on this machine in a test', rules: ['tests.device'], files: [[TEST_FILE, test('let zone = FileManager.default.contents(atPath: "/etc/localtime")')]] },
+);
 // The forms the first critic of M0a planted in an export and saw pass: each by itself.
 for (const example of [
   'let now = Date.init()', 'let now = NSDate()', 'let zone = NSTimeZone.local', 'let zone = NSTimeZone.system',
@@ -1295,7 +1392,7 @@ const RULES = [
   'signing.file', 'signing.profile', 'signing.identity', 'signing.team',
   'workflow.secrets', 'runner.label', 'workflow.uses', 'workflow.permissions', 'workflow.syntax', 'workflow.zone',
   'words.literal', 'words.names', 'words.text', 'words.table', 'words.drawn', 'words.system', 'words.value',
-  'view.device', 'view.network',
+  'view.device', 'view.network', 'view.import', 'code.unsafe',
   'core.showntext', 'core.screenliteral', 'core.publicstring', 'language.file',
   'appwords.list', 'appwords.format', 'appwords.banned', 'appwords.style',
   'core.import', 'core.device', 'core.network', 'core.formatter', 'core.pattern', 'core.crash',
