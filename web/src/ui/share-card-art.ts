@@ -93,7 +93,8 @@ export const MARK_GRID = 24;
 
 /**
  * Draws the mark in one color: grid point (0, 0) at (x, y), `u` pixels to a
- * grid unit. Its ink runs from 0.5 to 23.5 across and from 2 to 21 down.
+ * grid unit. Its ink runs from 2 to 21 down: the mound from 0.5 to 23.5 across,
+ * the slanted arms' branches a quarter unit past it each side.
  */
 export function drawMark(
   ctx: CanvasRenderingContext2D,
@@ -106,9 +107,10 @@ export function drawMark(
   for (const shape of MARK_SHAPES) {
     ctx.beginPath();
     for (const step of shape) {
-      if (step[0] === 'M') ctx.moveTo(x + step[1] * u, y + step[2] * u);
-      else if (step[0] === 'L') ctx.lineTo(x + step[1] * u, y + step[2] * u);
-      else ctx.quadraticCurveTo(x + step[1] * u, y + step[2] * u, x + step[3] * u, y + step[4] * u);
+      if (step[0] === 'Q') {
+        ctx.quadraticCurveTo(x + step[1] * u, y + step[2] * u, x + step[3] * u, y + step[4] * u);
+      } else if (step[0] === 'M') ctx.moveTo(x + step[1] * u, y + step[2] * u);
+      else ctx.lineTo(x + step[1] * u, y + step[2] * u);
     }
     ctx.closePath();
     ctx.fill();
