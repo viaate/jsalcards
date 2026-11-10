@@ -86,6 +86,7 @@ from snowlight.live.morning import (
     Slot,
     slot_start,
 )
+from snowlight.predict import host_files
 from snowlight.predict.calendar import is_school_day, likely_break, season_of
 from snowlight.predict.config import LabelSettings
 from snowlight.predict.geography import state_of_leaid
@@ -534,11 +535,14 @@ class StateSource:
 
     def index(self) -> DayIndex | None:
         data = self.read_file("live/days/index.json")
-        return None if data is None else DayIndex.from_json_bytes(data)
+        if data is None:
+            return None
+        return host_files.index(data, where="live/days/index.json")
 
     def timeline(self, day: date) -> DayTimeline | None:
-        data = self.read_file(f"live/days/{day.isoformat()}.json")
-        return None if data is None else DayTimeline.from_json_bytes(data)
+        path = f"live/days/{day.isoformat()}.json"
+        data = self.read_file(path)
+        return None if data is None else host_files.timeline(data, where=path)
 
     def morning(self, day: date) -> Morning | str:
         log = MorningLog(self.folder / "morning")

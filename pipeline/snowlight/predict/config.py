@@ -103,6 +103,11 @@ class ServeSettings(_Settings):
     history_lead_hours: int = Field(ge=0)
     check_minutes: int = Field(ge=1)
     min_gap_minutes: int = Field(ge=1)
+    restart_after_dark: int = Field(default=0, ge=0, le=12)
+    """After this many dark passes since the last good pass whose cause newer code may cure
+    (a file of ours this code cannot read, an unforeseen error), ``predict run`` asks for the
+    branch head after each such pass and ends early when it is not the commit it runs, so its
+    successor starts on the head (predict-next ON-AIR). 0: it never asks."""
     grid_minutes: tuple[int, ...] = Field(min_length=1)
     opens_max_age_minutes: int = Field(ge=1)
     elevation_margin_feet: float = Field(ge=0, le=5000)

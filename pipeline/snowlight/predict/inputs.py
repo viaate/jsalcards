@@ -20,10 +20,12 @@ from typing import Final
 from urllib.parse import urlencode
 
 import httpx
+from pydantic import ValidationError
 
 from snowlight import __version__
 from snowlight.directory.deployed import DeployedEditionError, Reader
 from snowlight.directory.points import PointsFormatError, decode
+from snowlight.predict.host_files import Refused
 from snowlight.predict.publish import Dark, DarkError
 from snowlight.predict.serve import DeployedDirectory
 from snowlight.predict.situations import HEADS_UP_BY_CODE
@@ -63,6 +65,21 @@ def client(headers: Mapping[str, str] | None = None) -> httpx.Client:  # pragma:
     )
 
 
+def edition_dark(error: BaseException, prefix: str = "") -> DarkError:
+    """The dark error for a deployed directory that did not read, with today's text
+    (``prefix`` and the error's type). It is a :class:`~snowlight.predict.host_files.Refused`,
+    a cause newer code may cure, when a directory file does not validate (``error`` or its
+    cause is pydantic's ``ValidationError``: the handshake or this module refused
+    ``edition.json`` or ``meta.json``) or ``points.bin`` does not decode. A handshake, API or
+    CDN error, a deploy in progress and every other cause stay a plain :class:`DarkError`: a
+    restart on newer code would not cure them."""
+    text = prefix + type(error).__name__
+    cannot_read = isinstance(error, ValidationError | PointsFormatError) or isinstance(
+        error.__cause__, ValidationError
+    )
+    return Refused(Dark.EDITION, text) if cannot_read else DarkError(Dark.EDITION, text)
+
+
 def directory_from_files(
     edition: DirectoryEdition, meta_bytes: bytes, points_bytes: bytes
 ) -> tuple[DeployedDirectory, SchoolDirectoryMeta]:
@@ -77,7 +94,7 @@ def directory_from_files(
         meta = SchoolDirectoryMeta.from_json_bytes(meta_bytes)
         points = decode(points_bytes)
     except (ValueError, PointsFormatError) as error:
-        raise DarkError(Dark.EDITION, f"directory files: {type(error).__name__}") from error
+        raise edition_dark(error, "directory files: ") from error
     if made != edition:
         raise DarkError(Dark.EDITION, "meta.json and points.bin are not the deployed edition")
     try:
@@ -136,7 +153,7 @@ def read_deployed_meta(
             edition = DirectoryEdition.from_json_bytes(found.data)
             files = reader.page_directory(None, datetime.now(UTC) + EDITION_WAIT)
         except (DeployedEditionError, httpx.HTTPError, ValueError) as error:
-            raise DarkError(Dark.EDITION, type(error).__name__) from error
+            raise edition_dark(error) from error
     return directory_from_files(edition, files.meta, files.points)
 
 

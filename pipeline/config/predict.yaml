@@ -94,6 +94,7 @@ serve:
   history_lead_hours: 48      # a rebuilt memory reads NWS alert products from this long before
   check_minutes: 5            # the alerts are checked this often between passes
   min_gap_minutes: 10         # at most one extra pass per this many minutes
+  restart_after_dark: 3       # after this many dark passes newer code may cure, a run ends early for a newer branch head (0: never)
   grid_minutes: [7, 37]       # the heartbeat passes, on the hour's grid
   opens_max_age_minutes: 60   # an opens file older than this says nothing (the usual chance stands)
   elevation_margin_feet: 500  # an alert "above N feet" reaches a school at N - 500 ft or higher ("below", "between" alike; docs/predict.md, Heights)

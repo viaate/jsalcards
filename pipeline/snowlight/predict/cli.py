@@ -38,7 +38,8 @@ from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Final, NamedTuple
+from typing import TYPE_CHECKING, Any, Final, NamedTuple
+from urllib.parse import quote
 
 import httpx
 import numpy as np
@@ -65,6 +66,7 @@ from snowlight.predict import (
     forecast_adjust_cli,
     forecast_history,
     frozen,
+    host_files,
     inputs,
     learn,
     live_switch,
@@ -198,9 +200,12 @@ from snowlight.predict.serve import (
     with_terms,
 )
 from snowlight.predict.situations import CLASS_BY_CODE, Window
-from snowlight.schemas.live import ClosingsFile, DayTimeline, OpensFile
+from snowlight.schemas.live import DayTimeline
 from snowlight.schemas.predictions import PredictionsFile
 from snowlight.sources.nws.alerts import NwsAlert
+
+if TYPE_CHECKING:
+    from snowlight.sources.nws.boundaries import BoundaryCatalog, BoundarySet
 
 LOG: Final = logging.getLogger("snowlight.predict")
 HEIGHTS_RETRY_MINUTES: Final = 15
@@ -1103,6 +1108,20 @@ class Pass:
     """The live view of the shipped morning record (predict-next LIVE-READS, shadow:
     :mod:`snowlight.predict.live_reads`), taken after each pass; nothing served reads it.
     ``None``: no view (``serve.live_reads`` off, tests)."""
+    boundaries_held: bool = False
+    """Whether this run's NWS boundaries came from a saved copy because the weather service
+    did not answer or did not read (:attr:`snowlight.sources.nws.boundaries.BoundaryCatalog.
+    held`); ``predict run`` reports one that lasts (:func:`note_boundaries`)."""
+    boundaries_pages: dict[str, tuple[datetime, date]] = field(default_factory=dict)
+    """For each kind (zone, county) whose release list came from the saved page: when that
+    page was last checked and the newest release date it lists."""
+    _newer_code: bool = False
+    """Whether the last pass went dark for a cause newer code may cure: a file one of our
+    chains wrote that this code cannot read (:class:`host_files.Refused`), our own file not
+    validating, or an error no one foresaw. The loop counts only these toward an early end."""
+    _served_at: datetime | None = None
+    """When the last pass's serving part ended and its live view began; ``None``: it raised
+    before that."""
     _products_retry: datetime | None = None
     """After the record step's product log rebuild failed: no new try before this time."""
     _built: tuple[object, ServeModel] | None = None
@@ -1415,8 +1434,12 @@ def one_pass(run: Pass, *, grid: bool = True) -> int:
     With ``PREDICT_OUTLOOK`` on, the file is the outlook's (:func:`_outlook_file`); shadow or
     on, a pass that published (or found nothing to change) then takes the outlook's private
     record (:func:`_outlook_after`), which can never change the file or darken the pass.
+
+    The moment between the serving part and the live view is kept (``run._served_at``), so
+    the loop can print the two times apart.
     """
     code = _serve_pass(run, grid=grid)
+    run._served_at = run.now()
     live_view(run)
     return code
 
@@ -1482,6 +1505,7 @@ def _serve_pass(run: Pass, *, grid: bool) -> int:
             built = _pass_file(run, model, days, now, classes, private_classes)
         checked(built.data)
     except DarkError as error:
+        run._newer_code = isinstance(error, host_files.Refused) or error.reason is Dark.INVALID
         _err(f"predict: dark ({error})")
         return EXIT_DARK
     except ServeError as error:
@@ -2337,7 +2361,7 @@ def _neighbors(run: Pass, model: ServeModel, days: tuple[date, ...], now: dateti
     path = f"{key.split('/', 1)[0]}/live/closings.json"
     try:
         data = run.host.read(path)
-        closings = ClosingsFile.from_json_bytes(data) if data else None
+        closings = host_files.closings(data, where=path) if data else None
     except (OSError, PublishError, ValueError) as error:
         _warn(f"{path}: {type(error).__name__}: no neighbors reasons this pass")
         return UNREAD
@@ -2500,9 +2524,9 @@ def _closed_on(
         found: DayTimeline | None = None
         if data is not None:
             try:
-                found = DayTimeline.from_json_bytes(data)
+                found = host_files.timeline(data, where=path)
             except ValueError as error:
-                raise DarkError(Dark.DAY_FILE, f"{path} does not validate") from error
+                raise host_files.Refused(Dark.DAY_FILE, f"{path} does not validate") from error
         read[day] = found
         return found
 
@@ -2537,10 +2561,14 @@ def _said_open(run: Pass, model: ServeModel, now: datetime) -> SaidOpen:
     if opens_data is None:
         return NOTHING_SAID
     try:
-        opens = OpensFile.from_json_bytes(opens_data)
-        closings = ClosingsFile.from_json_bytes(closings_data) if closings_data else None
+        opens = host_files.opens(opens_data, where=f"{prefix}/live/opens.json")
+        closings = (
+            host_files.closings(closings_data, where=f"{prefix}/live/closings.json")
+            if closings_data
+            else None
+        )
     except ValueError as error:
-        raise DarkError(Dark.OPENS, f"{prefix}/live: {type(error).__name__}") from error
+        raise host_files.Refused(Dark.OPENS, f"{prefix}/live: {type(error).__name__}") from error
     serve = run.config.serve
     private = model.private.positions if model.private is not None else np.zeros(0, np.int64)
     try:
@@ -2569,12 +2597,88 @@ def _last_file(run: Pass) -> PredictionsFile | None:
         return None
 
 
+def load_boundaries(catalog: "BoundaryCatalog", today: date) -> "tuple[BoundarySet, BoundarySet]":
+    """The zone and county boundaries in effect today.
+
+    Raises:
+        ConfigError: the weather service gives none and no cached copy holds them, or no
+            release is in effect.
+    """
+    from snowlight.sources.nws.boundaries import BoundaryError  # noqa: PLC0415
+    from snowlight.sources.nws.http import FetchError  # noqa: PLC0415
+
+    try:
+        zones = catalog.boundaries_for("zone", today)
+        counties = catalog.boundaries_for("county", today)
+    except (FetchError, BoundaryError) as error:
+        raise ConfigError(
+            "the NWS boundaries cannot be had and no cached copy holds them "
+            f"({type(error).__name__})"
+        ) from error
+    if zones is None or counties is None:
+        raise ConfigError("no NWS boundary release is in effect")
+    return zones, counties
+
+
+BOUNDARIES_REPORT_AFTER: Final = timedelta(hours=24)
+"""Runs that have started on a saved copy of the NWS boundaries for this long are reported."""
+BOUNDARIES_OLD_COPY: Final = timedelta(days=7)
+"""A saved release page last checked longer ago than this is reported at once."""
+
+
+def note_boundaries(run: Pass, now: datetime, env: Mapping[str, str]) -> bool:
+    """Keep since when the runs start on a saved copy of the NWS boundaries
+    (``state.boundaries_held_since``; cleared by a start on a fresh answer) and report one that
+    lasts: a warning, and ``boundaries=held`` in the file ``GITHUB_OUTPUT`` names (the
+    workflow opens an issue), once the copy has been in use for
+    :data:`BOUNDARIES_REPORT_AFTER`, or at once when a saved page was last checked over
+    :data:`BOUNDARIES_OLD_COPY` ago. Returns whether it reported."""
+    state = run.state
+    if not run.boundaries_held:
+        state.boundaries_held_since = None
+        return False
+    if state.boundaries_held_since is None:
+        state.boundaries_held_since = now
+    since = state.boundaries_held_since
+    pages = sorted(run.boundaries_pages.items())
+    old = any(now - checked > BOUNDARIES_OLD_COPY for _kind, (checked, _newest) in pages)
+    if now - since < BOUNDARIES_REPORT_AFTER and not old:
+        return False
+    named = "; ".join(
+        f"{kind}: page checked {checked:%Y-%m-%dT%H:%MZ}, newest release listed {newest}"
+        for kind, (checked, newest) in pages
+    )
+    _warn(
+        f"predict run: the NWS boundaries come from a saved copy since {since:%Y-%m-%dT%H:%MZ}"
+        + (f" ({named})" if named else "")
+        + ": the zones may be out of date"
+    )
+    output = env.get("GITHUB_OUTPUT")
+    if output:
+        try:
+            with Path(output).open("a", encoding="utf-8") as handle:
+                handle.write("boundaries=held\n")
+        except OSError as error:
+            _warn(f"predict run: the step output did not write: {type(error).__name__}")
+    return True
+
+
 def make_pass(  # pragma: no cover
-    args: argparse.Namespace, env: Mapping[str, str], *, serving: bool = True
+    args: argparse.Namespace,
+    env: Mapping[str, str],
+    *,
+    serving: bool = True,
+    ask_boundaries: bool = False,
 ) -> Pass:
     """A pass against the real world; ``serving`` false (``predict read-labels``, which serves
     nothing): the live switch's state is not read and no serving line is said, and the anchor
-    is the committed config's."""
+    is the committed config's.
+
+    The NWS boundaries fall back to a saved copy when the weather service does not answer
+    (:class:`~snowlight.sources.nws.boundaries.BoundaryCatalog`, ``fallback``), and a service
+    that was silent under 15 minutes ago is not asked again; ``ask_boundaries`` (``predict
+    run``): it is asked once all the same, so the long run never serves on a saved copy
+    without having asked itself."""
     from snowlight.predict.inputs import (  # noqa: PLC0415
         AlertsHistory,
         AlertsReader,
@@ -2615,12 +2719,14 @@ def make_pass(  # pragma: no cover
             _warn(f"anchor: the private report: {type(error).__name__}")
     alerts = AlertsReader(client({"Accept": "application/geo+json"}))
     history = AlertsHistory(client({"Accept": "application/geo+json"}))
-    catalog = BoundaryCatalog(HttpCache(client()), args.weather_cache)
-    today = datetime.now(UTC).date()
-    zones = catalog.boundaries_for("zone", today)
-    counties = catalog.boundaries_for("county", today)
-    if zones is None or counties is None:
-        raise ConfigError("no NWS boundary release is in effect")
+    catalog = BoundaryCatalog(
+        HttpCache(client(), attempts=2),
+        args.weather_cache,
+        fallback=True,
+        warn=_warn,
+        ask_first=ask_boundaries,
+    )
+    zones, counties = load_boundaries(catalog, datetime.now(UTC).date())
     lookup = TimeZoneLookup(counties, zones)
     areas = {**zones.areas, **counties.areas}
     elevation = PinnedTable(
@@ -2672,6 +2778,8 @@ def make_pass(  # pragma: no cover
         switch=switch,
         **outlook,
     )
+    run.boundaries_held = catalog.held
+    run.boundaries_pages = {str(kind): page for kind, page in catalog.held_pages.items()}
     if serving and config.serve.live_reads and getattr(args, "live_view", False):
         run.live_reads = _make_live_reads(args, env, run, committed)
     return run
@@ -3137,7 +3245,12 @@ def _make_notifier(  # pragma: no cover - the real world
     if host is None or key is None or mode is not Mode.ON:
         return None
     closings_key = f"{key.split('/', 1)[0]}/live/closings.json"
-    notifier = chance_notifier(env, notify_client(), closings=lambda: host.read(closings_key))
+    notifier = chance_notifier(
+        env,
+        notify_client(),
+        closings=lambda: host.read(closings_key),
+        parse=functools.partial(host_files.closings, where=closings_key),
+    )
     if notifier is None:
         _out("predict: no Cloudflare secrets: no notification is sent")
     return notifier
@@ -3265,16 +3378,130 @@ class Loop:
 
     now: Callable[[], datetime] = field(default=lambda: datetime.now(UTC))
     sleep: Callable[[float], None] = time.sleep
+    head: Callable[[], str | None] | None = None
+    """The commit at the head of the branch this run is on (:func:`head_reader`); ``None``
+    back: not known. ``None``: never asked, and the loop never ends early."""
+    commit: str | None = None
+    """The commit this run started on (``GITHUB_SHA``)."""
 
 
 def safe_pass(run: Pass, *, grid: bool) -> int:
     """:func:`one_pass`, with any error it did not foresee counted as a dark pass (the loop
-    goes on; the old file ages out on its own)."""
+    goes on; the old file ages out on its own).
+
+    It also keeps whether a dark pass's cause is one newer code may cure
+    (``run._newer_code``): an error no one foresaw is; a pass that went dark on its own says so
+    itself (:func:`_serve_pass`), and every other dark exit is not."""
+    run._newer_code = False
+    run._served_at = None
     try:
         return one_pass(run, grid=grid)
     except Exception as error:
+        run._newer_code = True
         _err(f"predict: dark (unexpected {type(error).__name__}: {error})")
         return EXIT_DARK
+
+
+HEAD_TIMEOUT: Final = httpx.Timeout(10.0, connect=5.0)
+"""The branch head question waits this long at most, once, and is never tried again."""
+GITHUB_API: Final = "https://api.github.com"
+_COMMIT: Final = re.compile(r"[0-9a-f]{40}")
+_HEAD_SAID: Final[set[str]] = set()
+"""Holds one entry once the branch head's failure to answer was said (once per process)."""
+
+
+def branch_head(
+    http: httpx.Client, repository: str, branch: str, token: str, *, api: str = GITHUB_API
+) -> str | None:
+    """The commit at the head of ``branch``: one GET of GitHub's API with the job's own
+    built-in token, no retry. Anything but a 200 that names a 40-hex commit is ``None``, never
+    an error, with one warning per process (no token, header or body is ever printed)."""
+    url = f"{api.rstrip('/')}/repos/{repository}/git/ref/heads/{quote(branch, safe='/')}"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Authorization": f"Bearer {token}",
+    }
+    try:
+        response = http.get(url, headers=headers, timeout=HEAD_TIMEOUT)
+        if response.status_code != httpx.codes.OK:
+            why = f"HTTP {response.status_code}"
+        else:
+            found = response.json()
+            sha = found["object"]["sha"] if isinstance(found, dict) else None
+            if isinstance(sha, str) and _COMMIT.fullmatch(sha):
+                return sha
+            why = "not a commit id"
+    except Exception as error:  # the question never touches the run
+        why = type(error).__name__
+    if not _HEAD_SAID:
+        _HEAD_SAID.add("said")
+        _warn(f"predict: the branch head did not answer ({why}): the run goes on")
+    return None
+
+
+def head_reader(env: Mapping[str, str], http: httpx.Client) -> Callable[[], str | None] | None:
+    """The question :attr:`Loop.head` asks, or ``None`` (nothing is ever asked) unless this
+    is a GitHub job on a branch: ``GITHUB_SHA`` (40 hex), ``GITHUB_REPOSITORY``,
+    ``GITHUB_REF_NAME`` and ``GITHUB_TOKEN`` are set and ``GITHUB_REF_TYPE`` is ``branch``.
+    Only the job's built-in token is sent: the live host's token is never read here."""
+    repository = env.get("GITHUB_REPOSITORY", "")
+    branch = env.get("GITHUB_REF_NAME", "")
+    token = env.get("GITHUB_TOKEN", "")
+    if (
+        not _COMMIT.fullmatch(env.get("GITHUB_SHA", ""))
+        or not repository
+        or not branch
+        or not token
+        or env.get("GITHUB_REF_TYPE") != "branch"
+    ):
+        return None
+    api = env.get("GITHUB_API_URL") or GITHUB_API
+    return functools.partial(branch_head, http, repository, branch, token, api=api)
+
+
+def head_line(commit: str, head: str | None) -> str:
+    """The start-up line: the commit this run is on, and the branch head beside it."""
+    if head is None:
+        return f"predict run: on {commit[:7]}; the branch head did not answer"
+    if head == commit:
+        return f"predict run: on {commit[:7]}, the branch head"
+    return f"predict run: on {commit[:7]}; the branch head is {head[:7]}"
+
+
+def _pass_times(  # noqa: PLR0913 - one pass's line
+    run: Pass, number: int, began: datetime, ended: datetime, *, grid: bool, dark: bool
+) -> str:
+    """The start of a pass's line: its number in this run, grid or extra, ok or dark, the
+    seconds its serving part took and the seconds the live view took after it (neither below
+    0; a pass that raised before its view: all of it is the first, the second 0.0)."""
+    served = run._served_at
+    took = max(0.0, ((ended if served is None else served) - began).total_seconds())
+    view = 0.0 if served is None else max(0.0, (ended - served).total_seconds())
+    how = "dark" if dark else "ok"
+    kind = "grid" if grid else "extra"
+    return f"predict: pass {number} ({kind}) {how} in {took:.1f} s, the live view {view:.1f} s more"
+
+
+def _ends_early(serve: ServeSettings, row: int, clock: Loop) -> bool:
+    """Whether the loop ends now for a newer branch head (see :func:`loop`): the row has
+    reached ``serve.restart_after_dark``, and the head, asked once, answers and is not this
+    run's commit. It says so when it does."""
+    if serve.restart_after_dark <= 0 or row < serve.restart_after_dark:
+        return False
+    if clock.head is None or not clock.commit:
+        return False
+    try:
+        head = clock.head()
+    except Exception:  # no answer changes nothing
+        return False
+    if head is None or head == clock.commit:
+        return False
+    _out(
+        f"predict run: ending early: {row} dark passes since the last good pass that newer "
+        f"code may cure; the branch head {head[:7]} is not this run's {clock.commit[:7]}"
+    )
+    return True
 
 
 def loop(run: Pass, until: datetime, clock: Loop, save: Callable[[State], None]) -> int:
@@ -3286,12 +3513,25 @@ def loop(run: Pass, until: datetime, clock: Loop, save: Callable[[State], None])
       again at once): a pass when the alerts differ from the ones the last good pass was made
       from, or when the last pass went dark (try again), at most one per ``min_gap_minutes``.
     * The state is saved after every pass.
+    * Each pass prints one line as it ends: its number in this run, grid or extra, ok or dark,
+      the seconds its serving part took and the seconds the live view took after it.
+    * **The early end** (predict-next ON-AIR). A dark pass whose cause newer code may cure
+      (``run._newer_code``: a file of ours this code cannot read, our own file not validating,
+      an unforeseen error) adds one to a row; a good pass sets the row back to 0; a dark pass
+      of any other cause (the feed, the upload, a host read error, ...) neither counts nor
+      resets. After a counted pass whose state saved, once the row has reached
+      ``serve.restart_after_dark`` (0: never), the branch head is asked once
+      (:attr:`Loop.head`); when it answers and is not this run's commit, the loop ends, and
+      the workflow's successor step starts the next run on the head. The same head, no answer
+      or a state that did not save change nothing: the next counted dark pass asks again.
 
     Returns the number of dark passes (each printed as it happens); the watchdog
     (``predict check``) judges whether the public file stayed fresh.
     """
     serve = run.config.serve
     dark = 0
+    row = 0
+    passes = 0
     retry = False
     last_pass: datetime | None = None
     grid_at = clock.now()
@@ -3309,18 +3549,32 @@ def loop(run: Pass, until: datetime, clock: Loop, save: Callable[[State], None])
             changed = outlook_changed(run, last_pass, now)
         gap_ok = last_pass is None or now - last_pass >= timedelta(minutes=serve.min_gap_minutes)
         if on_grid or ((changed or retry) and gap_ok):
+            began = clock.now()
             code = safe_pass(run, grid=on_grid)
+            ended = clock.now()
+            passes += 1
             retry = code == EXIT_DARK
+            said = _pass_times(run, passes, began, ended, grid=on_grid, dark=retry)
+            counted = retry and run._newer_code
             if retry:
                 dark += 1
                 _warn("a pass stayed dark; the next check tries again")
+                row += 1 if counted else 0
+                _out(f"{said}, {row} since the last good pass that newer code may cure")
+            else:
+                row = 0
+                _out(said)
+            saved = True
             try:
                 save(run.state)
             except OSError as error:
+                saved = False
                 _warn(f"the state did not save: {error}")
             last_pass = now
             if on_grid:
                 grid_at = next_grid(clock.now(), serve.grid_minutes)
+            if counted and saved and _ends_early(serve, row, clock):
+                break
         # The next check counts from this one's start, so a pass's time (and a shadow chart's
         # tail after it publishes) never moves the alert checks later (critic r2 S3).
         wake = min(now + timedelta(minutes=serve.check_minutes), grid_at, until)
@@ -3371,13 +3625,21 @@ def run_loop(args: argparse.Namespace) -> int:  # pragma: no cover - the real wo
     env = dict(os.environ)
     try:
         until = parse_until(args.until, datetime.now(UTC))
-        run = make_pass(args, env)
+        run = make_pass(args, env, ask_boundaries=True)
     except (ConfigError, ValueError, OSError) as error:
         _err(f"predict run: error: {error}")
         return 1
+    http = inputs.client()
     try:
-        dark = loop(run, until, Loop(), lambda state: save_state(args.state, state))
+        head = head_reader(env, http)
+        commit = env.get("GITHUB_SHA")
+        if head is not None and commit:
+            _out(head_line(commit, head()))
+        note_boundaries(run, datetime.now(UTC), env)
+        clock = Loop(head=head, commit=commit)
+        dark = loop(run, until, clock, lambda state: save_state(args.state, state))
     finally:
+        http.close()
         if run.live_reads is not None:
             _out(run.live_reads.summary())
             run.live_reads.close()

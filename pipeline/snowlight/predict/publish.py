@@ -223,6 +223,11 @@ class State:
     chart_shadow: list[dict[str, object]] = field(default_factory=list)
     """Each shadow pass of the last 48 hours (:func:`snowlight.predict.chart_evidence.record`):
     counts and times only, summed into ``predictions/chart-shadow.json`` on the host."""
+    boundaries_held_since: datetime | None = None
+    """Since when every ``predict run`` started on a saved copy of the NWS zone and county
+    boundaries because the weather service's page did not answer or did not read (predict-next
+    ON-AIR); ``None``: the last run started on a fresh answer. Moved only by ``predict run``,
+    which reports a copy in use for a day."""
 
     def as_json(self) -> dict[str, object]:
         """For the state store."""
@@ -263,6 +268,8 @@ class State:
             found["chart_health"] = self.chart_health
         if self.chart_shadow:
             found["chart_shadow"] = self.chart_shadow
+        if self.boundaries_held_since is not None:
+            found["boundaries_held_since"] = when(self.boundaries_held_since)
         return found
 
     @classmethod
@@ -286,6 +293,13 @@ class State:
         tables = value.get("tables")
         chart = value.get("chart_health")
         shadow = value.get("chart_shadow")
+        held_since: datetime | None = None
+        try:
+            text = value.get("boundaries_held_since")
+            moment = datetime.fromisoformat(text) if isinstance(text, str) else None
+            held_since = moment if moment is not None and moment.tzinfo is not None else None
+        except ValueError:
+            held_since = None
         return cls(
             digest=digest if isinstance(digest, str) else None,
             uploaded_at=datetime.fromisoformat(uploaded) if isinstance(uploaded, str) else None,
@@ -317,6 +331,7 @@ class State:
             chart_shadow=[dict(item) for item in shadow if isinstance(item, dict)]
             if isinstance(shadow, list)
             else [],
+            boundaries_held_since=held_since,
         )
 
 

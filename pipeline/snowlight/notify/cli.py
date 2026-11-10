@@ -276,6 +276,10 @@ class ChanceNotifier:
     secrets: Secrets
     client: httpx.Client
     closings: Callable[[], bytes | None]
+    parse: Callable[[bytes], ClosingsFile] = ClosingsFile.from_json_bytes
+    """How the closings bytes are read: strictly unless the chance job hands its own reader
+    (:func:`snowlight.predict.host_files.closings`, which drops keys this code does not know;
+    this package imports nothing of predict)."""
     pause: float = RETRY_PAUSE
     loopback: bool = False
     deadline: Callable[[], Clock] = Clock
@@ -308,11 +312,16 @@ class ChanceNotifier:
             None if int(value) == NO_DISTRICT else int(value)
             for value in directory.points.district.tolist()
         ]
+        unread = ""
         try:
             data = self.closings()
-            shown = None if data is None else ClosingsFile.from_json_bytes(data)
-        except Exception:
+            shown = None if data is None else self.parse(data)
+        except Exception as error:
             shown = None
+            unread = (
+                f"; the closings file did not read ({type(error).__name__}): "
+                "no shown status is known"
+            )
         pushes = chance_pushes(
             ready.accounts,
             outlooks(file, ids, district_of, wanted),
@@ -323,17 +332,21 @@ class ChanceNotifier:
         report: Report = deliver(
             ready.db, pushes, ready.accounts, ready.sender, now, self.deadline()
         )
-        return f"notify chance: {report.line()}"
+        return f"notify chance: {report.line()}{unread}"
 
 
 def chance_notifier(
-    env: Env, client: httpx.Client, closings: Callable[[], bytes | None]
+    env: Env,
+    client: httpx.Client,
+    closings: Callable[[], bytes | None],
+    parse: Callable[[bytes], ClosingsFile] = ClosingsFile.from_json_bytes,
 ) -> ChanceNotifier | None:
-    """The predictions loop's notifier, or ``None`` without the Cloudflare secrets."""
+    """The predictions loop's notifier, or ``None`` without the Cloudflare secrets. ``parse``
+    reads the closings bytes (:attr:`ChanceNotifier.parse`)."""
     secrets = Secrets.from_env(env)
     if secrets is None:
         return None
-    return ChanceNotifier(secrets=secrets, client=client, closings=closings)
+    return ChanceNotifier(secrets=secrets, client=client, closings=closings, parse=parse)
 
 
 def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
