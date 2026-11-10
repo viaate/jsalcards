@@ -23,7 +23,7 @@ from snowlight.predict import cli, host_files, inputs
 from snowlight.predict.live_labels import StateSource
 from snowlight.predict.nowcast import UNREAD
 from snowlight.predict.opens import NOTHING_SAID
-from snowlight.predict.publish import Dark, DarkError, State
+from snowlight.predict.publish import Dark, DarkError, State, content_digest
 from snowlight.predict.serve import ServeError
 from snowlight.schemas.directory import DirectoryStamp, written_edition
 from snowlight.schemas.live import DayEntry, DayIndex
@@ -86,7 +86,7 @@ def test_the_file_equals_the_one_made_without_the_key() -> None:
     assert cli.one_pass(make_pass(plain, directory=world.directory())) == 0
     assert cli.one_pass(make_pass(more, directory=world.directory())) == 0
     assert more.files[KEY] == plain.files[KEY]
-    assert cli.content_digest(more.files[KEY]) == cli.content_digest(plain.files[KEY])
+    assert content_digest(more.files[KEY]) == content_digest(plain.files[KEY])
     # The host files matter to the file: without them it differs.
     bare = MemoryHost()
     assert cli.one_pass(make_pass(bare, directory=world.directory())) == 0
@@ -117,13 +117,17 @@ def test_the_neighbours_and_the_labels_read_the_grown_files(capsys: Any, tmp_pat
         "live/days/index.json": grown(index.to_json_bytes())[0],
         "live/days/2026-01-06.json": grown(world.timeline().to_json_bytes())[0],
     }
+
+    def read_file(path: str) -> bytes | None:
+        return files.get(path)
+
     source = StateSource(
         folder=tmp_path,
         market_of={},
         zone_of=dict(world.ZONES),
         settings=world.CONFIG.labels,
         prefix="v1",
-        read_file=files.get,
+        read_file=read_file,
     )
     assert source.index() == index
     assert source.timeline(date(2026, 1, 6)) == world.timeline()
@@ -160,7 +164,12 @@ def test_a_file_the_code_cannot_validate_darkens_as_today(capsys: Any) -> None:
             change(host)
             run = make_pass(host, directory=world.directory())
             called: list[int] = []
-            run.notify = lambda _file, _directory, _now: str(called.append(1))  # noqa: B023
+
+            def notify(_file: Any, _directory: Any, _now: Any, seen: list[int] = called) -> str:
+                seen.append(1)
+                return "notify chance: 0 due"
+
+            run.notify = notify
             assert cli.one_pass(run) == cli.EXIT_DARK
             assert capsys.readouterr().err.endswith(line)
             assert KEY not in host.files
@@ -288,7 +297,7 @@ def test_the_same_head_or_no_answer_changes_nothing(capsys: Any, monkeypatch: An
         update={"serve": world.CONFIG.serve.model_copy(update={"restart_after_dark": 0})}
     )
     until = GRID + timedelta(minutes=65)
-    for case in (
+    cases: tuple[dict[str, Any], ...] = (
         {"head": MINE},
         {"head": None},
         {"head": RuntimeError("the question broke")},
@@ -296,8 +305,9 @@ def test_the_same_head_or_no_answer_changes_nothing(capsys: Any, monkeypatch: An
         {"commit": None},
         {"commit": ""},
         {"config": never},
-    ):
-        ran = looped(capsys, monkeypatch, script=["curable"], **case)  # type: ignore[arg-type]
+    )
+    for case in cases:
+        ran = looped(capsys, monkeypatch, script=["curable"], **case)
         assert ran.passes[-1] > until - timedelta(minutes=10), case  # it ran to `until`
         assert ran.dark == len(ran.passes) >= 7, case
         assert "ending early" not in ran.out, case
@@ -549,10 +559,16 @@ def with_code_99(_m: Any, run: cli.Pass) -> None:
     run.host = host
 
 
+def with_version_2(_m: Any, run: cli.Pass) -> None:
+    host = host_of(more=True)
+    version_2(host)
+    run.host = host
+
+
 CURABLE: dict[str, tuple[Callable[[Any, cli.Pass], None], str]] = {
     "a status code of 99": (with_code_99, "opens_unreadable: v1/live: ValidationError"),
     "a timeline of another version": (
-        lambda _m, run: (setattr(run, "host", host_of(more=True)), version_2(run.host))[0],  # type: ignore[arg-type]
+        with_version_2,
         f"day_file_unreadable: {DAY_FILE} does not validate",
     ),
     "our own file does not validate": (
@@ -714,10 +730,9 @@ def test_the_branch_head_question(capsys: Any) -> None:
         ask = cli.head_reader(ENV, http)
         assert ask is not None
         assert ask() == NEWER
-        assert (
-            cli.head_reader({**ENV, "GITHUB_API_URL": "https://ghe.example/api/v3/"}, http)()
-            == NEWER
-        )  # type: ignore[misc]
+        other = cli.head_reader({**ENV, "GITHUB_API_URL": "https://ghe.example/api/v3/"}, http)
+        assert other is not None
+        assert other() == NEWER
     first, second, third = seen
     for request in (first, second):
         assert request.method == "GET"

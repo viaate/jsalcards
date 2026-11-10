@@ -15,7 +15,8 @@ import pytest
 from pydantic import ValidationError
 
 from predict import world
-from predict.test_opens import NOW, TODAY, opens
+from predict.test_opens import TODAY, opens
+from predict.test_publish import NOW
 from snowlight.directory import build
 from snowlight.directory import points as points_codec
 from snowlight.notify.cli import ChanceNotifier

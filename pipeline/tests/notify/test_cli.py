@@ -11,6 +11,7 @@ Every account, school, key and file here is SYNTHETIC (the schemas' example file
 """
 
 import argparse
+import functools
 import json
 from collections.abc import Iterator
 from dataclasses import replace
@@ -45,6 +46,7 @@ from snowlight.live.overrides import DeployedSchools
 from snowlight.notify import cli
 from snowlight.notify.d1 import Secrets
 from snowlight.notify.deliver import Clock
+from snowlight.predict import host_files
 from snowlight.predict.serve import DeployedDirectory
 from snowlight.schemas.live import ClosingsFile
 from snowlight.schemas.predictions import PredictionsFile
@@ -479,6 +481,133 @@ def test_chance_notifier_end_to_end(push: PushService) -> None:
     closed["days"] = [{**closed["days"][0], "day": "2027-01-12"}]
     shown = replace(notifier, closings=lambda: json.dumps(closed).encode())
     assert shown(file, directory(), evening).startswith("notify chance: 0 due")
+
+
+LATER = "x_later"
+"""A key no model knows."""
+
+
+def grown(data: bytes) -> tuple[bytes, int]:
+    """``data`` with a key no model knows added to every JSON object, and how many."""
+    added = 0
+
+    def grow(value: Any) -> Any:
+        nonlocal added
+        if isinstance(value, dict):
+            added += 1
+            return {**{key: grow(inner) for key, inner in value.items()}, LATER: [[0, [1]]]}
+        if isinstance(value, list):
+            return [grow(inner) for inner in value]
+        return value
+
+    return json.dumps(grow(json.loads(data))).encode(), added
+
+
+def test_the_chance_notifier_reads_a_grown_closings_file(push: PushService, capsys: Any) -> None:
+    """Predict-next ON-AIR: the chance job hands the notifier its own reader of the closings
+    file, so a key this code does not know cannot hide a status the site shows."""
+    fake = database()
+    add_vapid(fake)
+    add_user(
+        fake,
+        "u1",
+        [(IDS[0], "Lincoln High")],
+        [Browser.make(push.endpoint("phone"))],
+        settings={"night_before": 1, "night_time": "17:00"},
+    )
+    file = PredictionsFile.from_json_bytes((EXAMPLES / "synthetic-predictions.json").read_bytes())
+    evening = datetime(2027, 1, 11, 23, 7, tzinfo=UTC)
+    closed = json.loads(CLOSINGS)
+    closed["generated_at"] = "2027-01-11T23:00:00Z"
+    closed["days"] = [{**closed["days"][0], "day": "2027-01-12"}]
+    plain = json.dumps(closed).encode()
+    more, added = grown(plain)
+    assert added >= 3
+    tolerant = functools.partial(host_files.closings, where="v1/live/closings.json")
+    unread = "; the closings file did not read (ValidationError): no shown status is known"
+
+    def line(data: bytes | None, **how: Any) -> str:
+        fake.db.execute("DELETE FROM notify_sent")
+        fake.db.commit()
+        push.received.clear()
+        notifier = cli.ChanceNotifier(
+            secrets=Secrets(token="tok", account="acct", api=API),  # noqa: S106 - a test token
+            client=routed(fake),
+            closings=lambda: data,
+            pause=0,
+            loopback=True,
+            **how,
+        )
+        return notifier(file, directory(), evening)
+
+    # No closings file: the chance push goes out, and nothing is said of the file.
+    assert line(None).startswith("notify chance: 1 due, 1 sent")
+    assert "did not read" not in line(None, parse=tolerant)
+    # The plain file shows a status for tomorrow: no chance push, by either reader.
+    for how in ({}, {"parse": tolerant}):
+        said = line(plain, **how)
+        assert said.startswith("notify chance: 0 due")
+        assert "did not read" not in said
+        assert push.received == []
+    # The same file with a key added to every object, read as the chance job reads it:
+    # what the plain file gives.
+    host_files.forget()
+    capsys.readouterr()
+    assert line(more, parse=tolerant) == line(plain, parse=tolerant)
+    assert push.received == []
+    err = capsys.readouterr().err
+    assert f"v1/live/closings.json: {added} unknown keys dropped" in err
+    assert LATER not in err
+    # Read strictly (today's hole, and why the chance job must hand its own reader): the
+    # status is not seen, a push goes out, and the line says the file did not read.
+    strict = line(more)
+    assert strict.startswith("notify chance: 1 due, 1 sent")
+    assert strict.endswith(unread)
+    assert len(push.received) == 1
+    # A file the chance job's reader refuses too still counts as no file, said in the line.
+    unknown = json.loads(plain)
+    unknown["days"][0]["statuses"][0] = 99
+    refused = line(json.dumps(unknown).encode(), parse=tolerant)
+    assert refused.startswith("notify chance: 1 due, 1 sent")
+    assert refused.endswith(unread)
+
+    host_files.forget()
+
+
+def test_the_chance_notifier_is_handed_its_reader(push: PushService) -> None:
+    fake = database()
+    add_vapid(fake)
+    add_user(
+        fake,
+        "u1",
+        [(IDS[0], "Lincoln High")],
+        [Browser.make(push.endpoint("phone"))],
+        settings={"night_before": 1, "night_time": "17:00"},
+    )
+    file = PredictionsFile.from_json_bytes((EXAMPLES / "synthetic-predictions.json").read_bytes())
+
+    def broken() -> bytes | None:
+        raise OSError("the host said no")
+
+    failing = cli.ChanceNotifier(
+        secrets=Secrets(token="tok", account="acct", api=API),  # noqa: S106 - a test token
+        client=routed(fake),
+        closings=broken,
+        pause=0,
+        loopback=True,
+    )
+    # A closings read that fails says its own error's type.
+    assert failing(file, directory(), datetime(2027, 1, 11, 23, 7, tzinfo=UTC)).endswith(
+        "; the closings file did not read (OSError): no shown status is known"
+    )
+    # The loop's notifier is given the reader it is handed, and reads strictly by default.
+    tolerant = functools.partial(host_files.closings, where="v1/live/closings.json")
+    handed = cli.chance_notifier(ENV, routed(fake), lambda: None, parse=tolerant)
+    assert handed is not None
+    assert handed.parse is tolerant
+    default = cli.chance_notifier(ENV, routed(fake), lambda: None)
+    assert default is not None
+    assert default.parse == ClosingsFile.from_json_bytes
 
 
 def test_the_deadline_leaves_pushes_for_the_next_pass(push: PushService) -> None:
