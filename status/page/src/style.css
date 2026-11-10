@@ -310,6 +310,9 @@ ol {
   block-size: 3.5rem;
   border-block-start: 1px solid var(--border);
 }
+.more-row:empty {
+  border-color: transparent;
+}
 button {
   min-block-size: 2.5rem;
   padding: 0 1rem;
