@@ -8,7 +8,9 @@
 //   (b) words: any way for a view to draw text that did not come from its screen model;
 //   (c) impurity in SnowlightCore: the device's clock or zone, a formatter, a pattern
 //       engine, a crash path, any import but Foundation;
-//   (d) golden families that no test reads, and tests that name a family that is not there.
+//   (d) golden families that no test reads, and tests that name a family that is not there;
+//   (e) debug code that a release build would hold: the picture tour's folder is outside
+//       the words rules, so every line of code in it must sit inside `#if DEBUG`.
 //
 // It reads code, not comments. It skips itself and ios/README.md: both must be able to
 // name what is banned.
@@ -64,6 +66,51 @@ function isIosWorkflow(path) {
 
 function isViewCode(path) {
   return path.endsWith('.swift') && (path.startsWith(KIT) || path.startsWith(APP)) && !path.includes('/Tour/');
+}
+
+/** The debug tour: the one part of the kit and the app that the words rules leave alone. */
+function isTourCode(path) {
+  return path.endsWith('.swift') && (path.startsWith(KIT) || path.startsWith(APP)) && path.includes('/Tour/');
+}
+
+/**
+ * (e) The first line of code in a tour file that a release build would hold, or null when
+ * there is none. Every line of code must sit inside one `#if DEBUG` block that stands at
+ * the top of the file's nesting and has no `#else` or `#elseif` of its own. An import
+ * counts as code: a release build must not even link what the tour uses.
+ * @param {string} code Swift source with comments and the contents of strings blanked.
+ * @returns {{ line: number, what: string } | null}
+ */
+function outsideDebug(code) {
+  const lines = code.split('\n');
+  let depth = 0;
+  let inDebug = false;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    const number = index + 1;
+    if (line === '') continue;
+    if (/^#if(?![A-Za-z0-9_])/.test(line)) {
+      if (depth === 0) {
+        if (!/^#if\s+DEBUG$/.test(line)) return { line: number, what: `'${line}' is not '#if DEBUG'` };
+        inDebug = true;
+      }
+      depth += 1;
+      continue;
+    }
+    if (/^#endif(?![A-Za-z0-9_])/.test(line)) {
+      if (depth === 0) return { line: number, what: "an '#endif' that closes nothing" };
+      depth -= 1;
+      if (depth === 0) inDebug = false;
+      continue;
+    }
+    if (/^#else(?:if)?(?![A-Za-z0-9_])/.test(line)) {
+      if (depth <= 1) return { line: number, what: `'${line}' gives the debug block a branch that a release build would hold` };
+      continue;
+    }
+    if (!inDebug) return { line: number, what: 'code outside #if DEBUG' };
+  }
+  if (depth !== 0) return { line: lines.length, what: "an '#if' that is never closed" };
+  return null;
 }
 
 // Reading Swift ----------------------------------------------------------------------------
@@ -426,6 +473,12 @@ function checkTree(files, banned) {
       }
     }
 
+    if (isTourCode(path)) {
+      // (e) The tour is outside the words rules, so none of it may reach a release build.
+      const outside = outsideDebug(swift.code);
+      if (outside !== null) hit('tour.debug', path, outside.line, `the debug tour must be wholly inside #if DEBUG: ${outside.what}`);
+    }
+
     if (path.startsWith(CORE)) {
       // (b) Only Words/ makes a ShownText; a screen model types no word.
       if (!path.startsWith(CORE_WORDS)) {
@@ -642,7 +695,7 @@ const CLEAN = new Map([
   [NAMES, 'import SwiftUI\nstruct SymbolName {\n    fileprivate let name: String\n    static let map = SymbolName(name: "map")\n    static let done = SymbolName(name: "checkmark.square")\n}\n'],
   // A comment may name what is banned; so may the debug tour, which no release build holds.
   [VIEW, view('ShownLabel(model.title) // never Text("x"), never Date() or String(x)')],
-  [TOUR, '#if DEBUG\nlet key = "tour.name"\nlet said = String(describing: 3) + "Text(\\"x\\")"\n#endif\n'],
+  [TOUR, '// The tour.\n#if DEBUG\nimport MetalKit\nlet key = "tour.name"\nlet said = String(describing: 3) + "Text(\\"x\\")"\n#if targetEnvironment(simulator)\nlet where = "#endif is only named in this string"\n#else\nlet where = "a phone"\n#endif\n#endif // DEBUG\n'],
   [CORE_FILE, core('let note = "Date() and Calendar.current are only named in this string"\n    if 3 != 4 { _ = note }')],
   [SCREEN_FILE, 'struct Sample {\n    let title: ShownText\n}\n'],
   [APP_WORDS_SWIFT, appWords('My School', 'Call it')],
@@ -784,6 +837,15 @@ const SAMPLES = [
   { name: 'permissions with a second line', rules: ['workflow.permissions'], files: [[WORKFLOW, workflow({ permissions: 'permissions:\n  contents: read\n  id-token: write' })]] },
   { name: 'no permissions at all', rules: ['workflow.permissions'], files: [[WORKFLOW, workflow({ permissions: 'env:\n  A: b' })]] },
   { name: 'permissions set by a job', rules: ['workflow.permissions'], files: [[WORKFLOW, workflow({ run: 'echo ok\n    permissions:\n      contents: write' })]] },
+  // (e) Debug code that a release build would hold.
+  { name: 'tour code with no #if DEBUG at all', rules: ['tour.debug'], files: [[TOUR, 'import SwiftUI\nlet key = "tour.name"\n']] },
+  { name: 'an import before the #if DEBUG of a tour file', rules: ['tour.debug'], files: [[TOUR, 'import MetalKit\n#if DEBUG\nlet key = "tour.name"\n#endif\n']] },
+  { name: 'tour code after the #endif', rules: ['tour.debug'], files: [[TOUR, '#if DEBUG\nlet key = "tour.name"\n#endif\nlet late = 3\n']] },
+  { name: 'a tour file whose debug block has an #else', rules: ['tour.debug'], files: [[TOUR, '#if DEBUG\nlet key = "tour.name"\n#else\nlet key = "none"\n#endif\n']] },
+  { name: 'a tour file under another condition', rules: ['tour.debug'], files: [[TOUR, '#if os(iOS)\nlet key = "tour.name"\n#endif\n']] },
+  { name: 'a tour file under DEBUG or something else', rules: ['tour.debug'], files: [[TOUR, '#if DEBUG || TESTFLIGHT\nlet key = "tour.name"\n#endif\n']] },
+  { name: 'a tour folder in the app, outside #if DEBUG', rules: ['tour.debug'], files: [[APP + 'Tour/Sample.swift', 'let key = "tour.name"\n']] },
+  { name: 'a tour file whose #if DEBUG is never closed', rules: ['tour.debug'], files: [[TOUR, '#if DEBUG\nlet key = "tour.name"\n']] },
   // (d) Families.
   { name: 'a golden family no test names', rules: ['families.unnamed'], files: [[`${GOLDEN}orphan.json`, '{}\n']] },
   { name: 'a golden family named only in a comment', rules: ['families.unnamed'], files: [[TEST_FILE, '// GoldenFile.family("sample")\n']] },
@@ -799,6 +861,7 @@ const RULES = [
   'appwords.list', 'appwords.format', 'appwords.banned', 'appwords.style',
   'core.import', 'core.device', 'core.formatter', 'core.pattern', 'core.crash', 'tests.device',
   'families.unnamed', 'families.missing',
+  'tour.debug',
 ];
 
 /**

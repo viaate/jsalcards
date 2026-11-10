@@ -10,6 +10,9 @@
 # What the words file is: every string the screen's model offers the view. It is not a
 # reading of the screen.
 #
+# The last picture is the machine probe. It has no words: its file holds two facts about
+# the machine it ran on, so it is printed and never compared.
+#
 # Bash 3.2 on macOS: no associative arrays, no mapfile.
 set -euo pipefail
 BUNDLE=com.snowlightmap.app
@@ -149,4 +152,10 @@ shoot light light-settings-dark-then-system settings diff -tour.appearance dark 
 # The simulator's language set to Spanish and a 24-hour region: do the words iOS itself
 # draws change when the app ships English only? Judged by eye.
 shoot light light-search-es search diff -AppleLanguages "(es)" -AppleLocale es_ES
+# The machine probe: the top half of the screen is a Metal view cleared to one teal and
+# presented once, with two glass controls over it. Its file holds facts about this machine
+# (the Metal device's name, whether a drawable was presented), not words: it is printed
+# and uploaded, never compared with a committed file. Whether the teal shows in the
+# picture is read by ios/tools/pixels.swift and printed as yes or no.
+shoot dark dark-probe probe nodiff
 exit $FAILED

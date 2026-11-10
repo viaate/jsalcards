@@ -4,7 +4,8 @@
 // arguments, which arrive in the app's defaults:
 //
 //     -tour.name <picture>        the picture's name; without it the app runs as usual
-//     -tour.screen <screen>       the screen to show: myschool, map, callit, settings, search
+//     -tour.screen <screen>       the screen to show: myschool, map, callit, settings, search,
+//                                 or probe (the machine probe, MetalProbe.swift)
 //     -tour.appearance <choice>   the look to start with: system, light or dark
 //     -tour.then <choice>         a look to switch to in code, after the first frame
 //
@@ -23,6 +24,9 @@
 // What the file is: every string the screen's model offers the view, read off the model
 // itself. It is not a reading of the screen.
 //
+// The probe is the one exception. It has no model and shows no word: it stands in place
+// of the shell, and its file holds two facts about the machine instead (MetalProbe.swift).
+//
 // Only keys that begin with "tour." are ever passed. A launch argument shadows a stored
 // value for the whole run, so the app's own settings keys are never given this way: if
 // they were, the app could keep "system" and still read back "dark", and the picture of
@@ -37,18 +41,46 @@ import SnowlightCore
 import SwiftUI
 import UIKit
 
+/// What a launch of the tour shows.
+enum TourShow: Sendable {
+    /// One of the shell's five screens.
+    case shell(ScreenID)
+    /// The machine probe, in place of the shell.
+    case probe
+}
+
 /// What one launch of the tour asks for.
 struct TourPlan: Sendable {
     /// The picture's name. The words file is Documents/tour/<name>.txt.
     let name: String
     /// The screen to show, as the script names it.
     let screenName: String
-    /// The screen to show.
-    let screen: ScreenID
+    /// What to show.
+    let show: TourShow
     /// The look to start with, or nil to start as a fresh install does.
     let appearance: AppearanceChoice?
     /// A look to switch to in code after the first frame, or nil.
     let switchTo: AppearanceChoice?
+
+    /// The screen of the shell to open on, or nil when the launch shows the probe.
+    var screen: ScreenID? {
+        switch show {
+        case .shell(let id):
+            return id
+        case .probe:
+            return nil
+        }
+    }
+
+    /// True when the launch shows the machine probe in place of the shell.
+    var showsProbe: Bool {
+        switch show {
+        case .shell:
+            return false
+        case .probe:
+            return true
+        }
+    }
 
     /// The plan of this launch, or nil on every ordinary launch. Read once.
     static let ofThisLaunch: TourPlan? = TourPlan.fromLaunchArguments()
@@ -66,31 +98,33 @@ struct TourPlan: Sendable {
             Tour.note("no screen was named for the picture " + name)
             return nil
         }
-        guard let screen = TourPlan.screenID(named: screenName) else {
+        guard let show = TourPlan.show(named: screenName) else {
             Tour.note("there is no screen named " + screenName)
             return nil
         }
         return TourPlan(
             name: name,
             screenName: screenName,
-            screen: screen,
+            show: show,
             appearance: TourPlan.choice(under: "tour.appearance", in: defaults),
             switchTo: TourPlan.choice(under: "tour.then", in: defaults)
         )
     }
 
-    private static func screenID(named name: String) -> ScreenID? {
+    private static func show(named name: String) -> TourShow? {
         switch name {
         case "myschool":
-            return .mySchool
+            return .shell(.mySchool)
         case "map":
-            return .map
+            return .shell(.map)
         case "callit":
-            return .callIt
+            return .shell(.callIt)
         case "settings":
-            return .settings
+            return .shell(.settings)
         case "search":
-            return .search
+            return .shell(.search)
+        case "probe":
+            return .probe
         default:
             return nil
         }
@@ -130,29 +164,35 @@ struct TourPlan: Sendable {
 
 /// Put on the root view in debug builds. On an ordinary launch it does nothing. On a tour
 /// launch it turns animations off and, a little after the shell appears, makes the switch
-/// the launch asked for, if any, and has the words of the screen's model written.
+/// the launch asked for, if any, and has the words of the screen's model written. On the
+/// one launch that asks for the probe, it shows the probe in place of the shell.
 struct TourStage: ViewModifier {
     /// The app's appearance choice: the same object the Settings tiles change.
     let appearance: AppearanceStore
 
     func body(content: Content) -> some View {
-        content.onAppear {
-            guard let plan = TourPlan.ofThisLaunch, Tour.begin() else {
-                return
-            }
-            UIView.setAnimationsEnabled(false)
-            Tour.note("showing " + plan.screenName + " for the picture " + plan.name)
-            let store = appearance
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                guard let next = plan.switchTo else {
-                    Tour.writeWords(for: plan, shownWith: store)
+        if let plan = TourPlan.ofThisLaunch, plan.showsProbe {
+            // None of the shell is shown on this launch, and the probe writes its own file.
+            MetalProbeScreen(plan: plan)
+        } else {
+            content.onAppear {
+                guard let plan = TourPlan.ofThisLaunch, Tour.begin() else {
                     return
                 }
-                // The same call a tap on a Settings tile makes.
-                store.choose(next)
-                Tour.note("switched the look in code to " + next.stored)
+                UIView.setAnimationsEnabled(false)
+                Tour.note("showing " + plan.screenName + " for the picture " + plan.name)
+                let store = appearance
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    Tour.writeWords(for: plan, shownWith: store)
+                    guard let next = plan.switchTo else {
+                        Tour.writeWords(for: plan, shownWith: store)
+                        return
+                    }
+                    // The same call a tap on a Settings tile makes.
+                    store.choose(next)
+                    Tour.note("switched the look in code to " + next.stored)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                        Tour.writeWords(for: plan, shownWith: store)
+                    }
                 }
             }
         }
@@ -196,7 +236,11 @@ enum Tour {
     /// Writes the words file of a picture: the words of the screen's model as the screen
     /// is shown now, one per line.
     static func writeWords(for plan: TourPlan, shownWith store: AppearanceStore) {
-        let model = ShellModel(appearance: store.choice).screen(plan.screen)
+        guard let screen = plan.screen else {
+            note("the picture " + plan.name + " shows no screen of the shell, so it has no words")
+            return
+        }
+        let model = ShellModel(appearance: store.choice).screen(screen)
         let lines = shownTexts(in: model).map { $0.drawnString }
         Tour.write(lines, for: plan)
     }

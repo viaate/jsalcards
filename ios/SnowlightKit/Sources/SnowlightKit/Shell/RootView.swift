@@ -24,8 +24,9 @@ public struct RootView: View {
 
     public var body: some View {
         // In debug builds the picture tour (Tour/) watches the shell appear, so that it
-        // can write the words of the screen's model for the picture being taken. A
-        // release build holds none of it.
+        // can write the words of the screen's model for the picture being taken; on the
+        // one tour launch that asks for the machine probe, it shows the probe in place
+        // of the shell. A release build holds none of it.
         #if DEBUG
         shell.modifier(TourStage(appearance: appearance))
         #else
@@ -36,8 +37,8 @@ public struct RootView: View {
     /// The screen the app opens to: My School, or the screen a tour launch names.
     private static func firstScreen() -> ScreenID {
         #if DEBUG
-        if let plan = TourPlan.ofThisLaunch {
-            return plan.screen
+        if let screen = TourPlan.ofThisLaunch?.screen {
+            return screen
         }
         #endif
         return ScreenID.mySchool

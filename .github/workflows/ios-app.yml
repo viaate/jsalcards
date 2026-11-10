@@ -8,6 +8,12 @@ name: iOS app
 # screen from a dark one. No signing identity, no account and no secret is involved.
 # Logic lives in the ios/tools scripts so this file changes rarely: every change to it
 # also runs the normal CI.
+#
+# There are two jobs, with the same steps. The first is the one that counts: the Xcode
+# pinned by its path, on the settled image. The second does the same on the newer image
+# with whatever Xcode is its default, on an iOS 27 simulator; that image is still marked
+# a preview, so the second job may fail without failing the run, and what it did is read
+# from its log.
 on:
   push:
     paths:
@@ -47,7 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ ! -d "$DEVELOPER_DIR" ]; then
-            echo "::error::The pinned Xcode is gone from this image. Bump DEVELOPER_DIR in this workflow."
+            echo "::error::The pinned Xcode is gone from this image. Bump DEVELOPER_DIR in this workflow (ios/README.md says how)."
             ls /Applications | grep -i xcode || true
             exit 1
           fi
@@ -94,6 +100,75 @@ jobs:
         if: always()
         with:
           name: ios-screens-full
+          path: ios/out/full/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  app-27:
+    name: app (xcode-27, may fail)
+    # The second leg: the same steps on the newer image, with its default Xcode and the
+    # newest iOS 27 simulator it has. Also a standard runner, free for this public
+    # repository. The image is still marked a preview, so this job is allowed to fail:
+    # the run stays green on the first job alone, and this job's result is recorded.
+    # A workflow has no include, so the steps are written out again; the one step left
+    # out is the test that the pinned Xcode exists, because nothing is pinned here.
+    runs-on: xcode-27
+    continue-on-error: true
+    timeout-minutes: 30
+    env:
+      SIM_OS_PREFIX: "iOS 27."
+      SIM_DEVICE: "iPhone 18 Pro"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: What this machine has
+        run: |
+          set -euo pipefail
+          sw_vers
+          uname -m
+          xcode-select -p
+          xcodebuild -version
+          swift --version
+          date +%Z
+          xcrun simctl list runtimes
+          xcrun simctl list devicetypes | grep -i iphone || true
+          xcrun simctl help launch || true
+          xcbeautify --version || true
+          df -h /
+      - name: Core tests on macOS, in a half-hour zone with clock changes
+        env:
+          TZ: America/St_Johns
+          SNOWLIGHT_EXPECT_ZONE: America/St_Johns
+        run: swift test --package-path ios/SnowlightCore
+      - name: XcodeGen, pinned and checked
+        run: bash ios/tools/get-xcodegen.sh
+      - name: Generate the project
+        run: |
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate --spec ios/project.yml
+      - name: Build for the simulator, unsigned
+        run: bash ios/tools/build.sh
+      - name: Picture tour
+        run: bash ios/tools/tour.sh
+      - name: Colors at named points in the pictures
+        if: always()
+        run: |
+          xcrun swiftc -O ios/tools/pixels.swift -o "$RUNNER_TEMP/pixels"
+          "$RUNNER_TEMP/pixels" ios/out/full
+      - name: Small pictures
+        if: always()
+        run: bash ios/tools/shots.sh
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ios-shots-27
+          path: ios/out/small/
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ios-screens-full-27
           path: ios/out/full/
           if-no-files-found: ignore
           retention-days: 7
