@@ -16,6 +16,9 @@ CREATE TABLE incidents (id INTEGER PRIMARY KEY, part TEXT NOT NULL,
   kind TEXT NOT NULL,                                      -- 'late' | 'down': the worst state in it
   start INTEGER NOT NULL, last INTEGER NOT NULL,           -- ticks of its first and latest not-ok sample
   ended INTEGER, gap INTEGER NOT NULL DEFAULT 0);          -- ended NULL: open. gap 1: the readings stopped
+-- A tick reads the open problems and the newest closed ones, each by an index, never the table.
+CREATE INDEX incidents_open ON incidents (part) WHERE ended IS NULL;
+CREATE INDEX incidents_start ON incidents (start);
 
 CREATE TABLE meta (k TEXT PRIMARY KEY, v TEXT NOT NULL) WITHOUT ROWID;
 -- k: 'first', 'processed' (ticks), 'summary' (the document the page reads)

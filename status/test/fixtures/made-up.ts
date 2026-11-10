@@ -147,8 +147,24 @@ export function worst(now: number): Summary {
   });
 }
 
-export type Made = 'history' | 'ok' | 'first' | 'stale' | 'unreachable' | 'worst';
-export const MADE: readonly Made[] = ['history', 'ok', 'first', 'stale', 'unreachable', 'worst'];
+/**
+ * Launch day: the checks began two hours ago, everything works, and the chances could not be
+ * checked at any tick (their stamp is not on the host yet). No problem has been seen.
+ */
+export function launch(now: number): Summary {
+  return simulate(now - 2 * 3600, now, () => ({ ...ALL_OK, chances: 'unknown' }));
+}
+
+export type Made = 'history' | 'ok' | 'first' | 'stale' | 'unreachable' | 'worst' | 'launch';
+export const MADE: readonly Made[] = [
+  'history',
+  'ok',
+  'first',
+  'stale',
+  'unreachable',
+  'worst',
+  'launch',
+];
 
 /** What `/api/status` answers for a made-up state at a clock, or null: it does not answer. */
 export function answerOf(
@@ -160,6 +176,7 @@ export function answerOf(
   if (state === 'first') return { served, summary: null };
   if (state === 'ok') return { served, summary: allOk(tickAt(clock)) };
   if (state === 'worst') return { served, summary: worst(tickAt(clock)) };
+  if (state === 'launch') return { served, summary: launch(tickAt(clock)) };
   if (state === 'stale') return { served, summary: history(tickAt(clock) - 8 * TICK) };
   return { served, summary: history(tickAt(clock)) };
 }

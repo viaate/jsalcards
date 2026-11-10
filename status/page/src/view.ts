@@ -44,14 +44,21 @@ export type Input =
 export type Shape = State | 'wait';
 
 export interface BarView {
-  cls: BarClass | 'wait';
+  /** `yet`: the day has begun and its first check is not due; nothing is drawn. */
+  cls: BarClass | 'wait' | 'yet';
   /** The bar's name; null while there is nothing to name. */
   label: string | null;
   picked: boolean;
 }
 
 export interface View {
-  banner: { shape: Shape; lead: string[]; more: string | null };
+  banner: {
+    shape: Shape;
+    lead: string[];
+    more: string | null;
+    /** While it waits: what the banner says if the page's script never starts. */
+    stuck: string | null;
+  };
   parts: {
     part: Part;
     name: string;
@@ -152,6 +159,9 @@ export function listed(names: readonly string[]): string {
   return fill(copy.list.and, { a: head, b: names[names.length - 1]! });
 }
 
+/** A no-break space: a line never breaks inside a date, a time or a count. */
+const NB = '\u00a0';
+
 const UTC_DAY = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
   month: 'short',
@@ -159,10 +169,10 @@ const UTC_DAY = new Intl.DateTimeFormat('en-US', {
   timeZone: 'UTC',
 });
 
-/** 'Tue, Nov 3': a bar's UTC day. */
+/** 'Tue, Nov 3': a bar's UTC day, the month tied to its day. */
 function utcDay(t: number): string {
   const parts = new Map(UTC_DAY.formatToParts(new Date(t * 1000)).map((p) => [p.type, p.value]));
-  return `${parts.get('weekday')}, ${parts.get('month')} ${parts.get('day')}`;
+  return `${parts.get('weekday')}, ${parts.get('month')}${NB}${parts.get('day')}`;
 }
 
 interface Local {
@@ -171,7 +181,10 @@ interface Local {
   zone: string;
 }
 
-/** An instant in the reader's zone: 'Nov 7', '6:10 AM', 'EST'. */
+/**
+ * An instant in the reader's zone: 'Nov 7', '6:10 AM', 'EST'. The month is tied to its day and
+ * the time to its AM or PM; `zoned` ties the zone on.
+ */
 function local(t: number, zone: string | undefined): Local {
   const format = new Intl.DateTimeFormat('en-US', {
     month: 'short',
@@ -184,10 +197,15 @@ function local(t: number, zone: string | undefined): Local {
   });
   const parts = new Map(format.formatToParts(new Date(t * 1000)).map((p) => [p.type, p.value]));
   return {
-    date: `${parts.get('month')} ${parts.get('day')}`,
-    time: `${parts.get('hour')}:${parts.get('minute')} ${parts.get('dayPeriod')}`,
+    date: `${parts.get('month')}${NB}${parts.get('day')}`,
+    time: `${parts.get('hour')}:${parts.get('minute')}${NB}${parts.get('dayPeriod')}`,
     zone: parts.get('timeZoneName') ?? '',
   };
+}
+
+/** 'Nov 7, 6:10 AM EST': breaks only after the comma. */
+function zoned(at: Local): string {
+  return `${at.date}, ${at.time}${NB}${at.zone}`;
 }
 
 /** What a bar's name is made from. */
@@ -204,6 +222,11 @@ interface DayFacts {
   yet: boolean;
 }
 
+/** The day has begun, its first check is not due, and the last check is not old: no bar yet. */
+function notDue(e: number, yet: boolean): boolean {
+  return e === 0 && yet;
+}
+
 /**
  * A bar's name. "All day" is said only of a day checked from its first tick to its last, and
  * "today" only of the clock's own day: a day the checks began in says so, and its time with
@@ -212,7 +235,7 @@ interface DayFacts {
 function dayText({ start, counts, e, whole, today, yet }: DayFacts): string {
   const date = utcDay(start);
   const bar = barOf(counts, e);
-  if (bar.e === 0) return fill(yet ? copy.day.yet : copy.day.before, { date });
+  if (bar.e === 0) return fill(notDue(e, yet) ? copy.day.yet : copy.day.before, { date });
   if (bar.k === 0) return fill(copy.day.none, { date });
   const [, late, down] = counts;
   const began = whole > e;
@@ -233,6 +256,15 @@ function dayText({ start, counts, e, whole, today, yet }: DayFacts): string {
   });
 }
 
+/**
+ * When a problem ended, as far as the page can say, and whether the checks stopped on it. With
+ * no fresh readings an open one is drawn as one whose readings stopped, a tick after its last.
+ */
+function ending(incident: SummaryIncident, stale: boolean): { end: number | null; gap: boolean } {
+  if (incident.e === null && stale) return { end: (incident.l ?? incident.s) + TICK, gap: true };
+  return { end: incident.e, gap: incident.g === 1 };
+}
+
 function problemText(
   incident: SummaryIncident,
   clock: number,
@@ -243,23 +275,17 @@ function problemText(
   const kind = incident.k === 'down' ? copy.problem.down : copy.problem.late;
   const from = local(incident.s, zone);
   const start = `${from.date}, ${from.time}`;
-  let end = incident.e;
-  let gap = incident.g === 1;
-  if (end === null && stale) {
-    // No fresh readings: it is drawn as one whose readings stopped, a tick after its last.
-    end = (incident.l ?? incident.s) + TICK;
-    gap = true;
-  }
+  const { end, gap } = ending(incident, stale);
   if (end === null) {
     return {
-      what: fill(copy.problem.open, { part, kind, start: `${start} ${from.zone}` }),
+      what: fill(copy.problem.open, { part, kind, start: zoned(from) }),
       when: fill(copy.problem.openWhen, { dur: dur(clock - incident.s) }),
     };
   }
   if (gap) {
     return {
       what: fill(copy.problem.gap, { part, kind, dur: dur(end - incident.s) }),
-      when: fill(copy.problem.gapWhen, { start: `${start} ${from.zone}` }),
+      when: fill(copy.problem.gapWhen, { start: zoned(from) }),
     };
   }
   const to = local(end, zone);
@@ -267,8 +293,8 @@ function problemText(
     what: fill(copy.problem.closed, { part, kind, dur: dur(end - incident.s) }),
     when: fill(copy.problem.closedWhen, {
       // Both zones are named when the clocks changed in between.
-      start: to.zone === from.zone ? start : `${start} ${from.zone}`,
-      end: `${to.date === from.date ? '' : `${to.date}, `}${to.time} ${to.zone}`,
+      start: to.zone === from.zone ? start : zoned(from),
+      end: `${to.date === from.date ? '' : `${to.date}, `}${to.time}${NB}${to.zone}`,
     }),
   };
 }
@@ -292,7 +318,8 @@ function waiting(input: Input): View {
     picked: false,
   }));
   return {
-    banner: { shape, lead: [lead], more },
+    // Only the page as built can be left waiting for a script that never starts.
+    banner: { shape, lead: [lead], more, stuck: input.kind === 'wait' ? copy.stuck : null },
     parts: PARTS.map((part) => ({
       part,
       name: copy.parts[part].name,
@@ -375,8 +402,10 @@ export function viewOf(input: Input): View {
   // when the summary's last day is behind it, the bars move up and the days since have no check.
   const at = Math.max(clock, summary.now);
   const today = Math.floor(at / DAY) * DAY;
-  const behind = Math.min(DAYS_KEPT, (today - Math.floor(summary.now / DAY) * DAY) / DAY);
-  const from = dayStart(summary.from) + behind * DAY;
+  /** The first second of the oldest day shown. */
+  const from = today - (DAYS_KEPT - 1) * DAY;
+  /** How many days the summary's last day is behind the clock's: that many bars have no count. */
+  const behind = Math.min(DAYS_KEPT, (from - dayStart(summary.from)) / DAY);
   const starts = Array.from({ length: DAYS_KEPT }, (_, i) => from + i * DAY);
   /**
    * The instant a day's checks are counted to. A past day: its end. The clock's day: the
@@ -391,15 +420,17 @@ export function viewOf(input: Input): View {
     const bars = counts.map((triple, i): BarView => {
       const start = starts[i]!;
       const e = expected(start, summary.first, until(start));
+      const yet = start > summary.now;
       return {
-        cls: barOf(triple, e).cls,
+        // A day with no check due yet is not drawn as one before the checks began.
+        cls: notDue(e, yet) ? 'yet' : barOf(triple, e).cls,
         label: dayText({
           start,
           counts: triple,
           e,
           whole: expected(start, 0, until(start)),
           today: start === today,
-          yet: start > summary.now,
+          yet,
         }),
         picked: input.picked !== null && input.picked.part === part && input.picked.day === i,
       };
@@ -410,26 +441,38 @@ export function viewOf(input: Input): View {
       starts.map((start) => expected(start, summary.first, summary.now)),
     );
     const days = count(share.days, copy.dur.day, copy.dur.days);
+    // No reading to take a share of: either no check of this part gave an answer, or the last
+    // check is older than every day shown. "No checks yet" is said only before the first check.
+    let line: string = share.days === 0 ? copy.share.old : copy.share.unknown;
+    if (share.pct !== null) line = fill(copy.share.line, { pct: share.pct, days });
     const picked = bars.find((bar) => bar.picked)?.label ?? null;
     return {
       part,
       name: copy.parts[part].name,
-      share: share.pct === null ? copy.share.none : fill(copy.share.line, { pct: share.pct, days }),
+      share: line,
       bars,
       note: picked ?? copy.share.hint,
       hint: picked === null,
     };
   });
 
-  const all = summary.incidents.map((incident) => problemText(incident, clock, stale, zone));
+  // The list is of the 90 days the bars show: a problem that ended before them is left out.
+  const all = summary.incidents
+    .filter((incident) => {
+      const { end } = ending(incident, stale);
+      return end === null || end >= from;
+    })
+    .map((incident) => problemText(incident, clock, stale, zone));
   const shown: View['problems']['slots'] = input.expanded ? [...all] : all.slice(0, SLOTS);
   while (shown.length < SLOTS) shown.push(null);
   let empty: string | null = null;
   if (all.length === 0) {
-    const young = clock - summary.first < DAYS_KEPT * DAY;
-    empty = young
-      ? fill(copy.problem.noneSince, { date: local(summary.first, zone).date })
-      : copy.problem.none;
+    // With no recent checks nothing is said of the time since the last one.
+    if (summary.now < from) empty = copy.share.old;
+    else if (stale) empty = copy.problem.noneStale;
+    else if (clock - summary.first < DAYS_KEPT * DAY) {
+      empty = fill(copy.problem.noneSince, { date: local(summary.first, zone).date });
+    } else empty = copy.problem.none;
   }
   let button: string | null = null;
   if (all.length > SLOTS) {
@@ -438,7 +481,7 @@ export function viewOf(input: Input): View {
       : fill(copy.problem.showAll, { n: all.length });
   }
   return {
-    banner: { shape, lead, more },
+    banner: { shape, lead, more, stuck: null },
     parts,
     history,
     problems: { slots: shown, empty, button, expanded: input.expanded },

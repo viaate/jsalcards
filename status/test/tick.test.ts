@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { tick } from '../prober/src/tick.ts';
-import { dayOf } from '../shared/history.ts';
-import { DAY } from '../shared/types.ts';
-import type { Summary } from '../shared/types.ts';
+import { CLOSED_READ, CLOSED_SQL, OPEN_SQL, tick } from '../prober/src/tick.ts';
+import { INCIDENTS_MAX, dayOf, summarize, windowStart } from '../shared/history.ts';
+import { DAY, PARTS, TICK } from '../shared/types.ts';
+import type { Incident, Sample, Summary } from '../shared/types.ts';
 import {
   CLOSINGS_URL,
   Net,
@@ -188,9 +188,9 @@ test('a tick sends 25 statements at most, even its worst', async () => {
   assert.equal(await tick({ ...WHERE, DB: watch.db }, next, web), 'taken');
   assert.equal(web.calls.length, 8);
   assert.equal(watch.statements() <= 25, true, String(watch.statements()));
-  // The stored values, two reads, the sample, 4 days, 4 problems closed where the readings
+  // The stored values, three reads, the sample, 4 days, 4 problems closed where the readings
   // stopped, 4 opened, the tick, the summary and the day's 3 deletes.
-  assert.equal(watch.statements(), 21);
+  assert.equal(watch.statements(), 22);
   const summary = await summaryOf();
   assert.equal(summary.incidents.filter((i) => i.e === null).length, 4);
   assert.equal(summary.incidents.filter((i) => i.g === 1 && i.e === T + 1200).length, 4);
@@ -235,7 +235,7 @@ test('a tick that cannot write leaves the store as it was', async () => {
   const broken = {
     prepare: (query: string) => store.db.prepare(query),
     batch: (list: D1PreparedStatement[]) =>
-      list.length === 2
+      list.length === 3
         ? store.db.batch(list)
         : store.db.batch([...list, store.db.prepare('INSERT INTO nowhere VALUES (1)')]),
   } as unknown as D1Database;
@@ -244,4 +244,88 @@ test('a tick that cannot write leaves the store as it was', async () => {
   assert.deepEqual(await store.sql("SELECT v FROM meta WHERE k = 'processed'"), [
     { v: String(t - 300) },
   ]);
+});
+
+test('a part that went wrong for weeks costs a tick a bounded read, and the summary is the same', async () => {
+  const fresh = await startStore();
+  try {
+    const t = Math.floor(T / DAY) * DAY + 40 * DAY;
+    const start = windowStart(t);
+    // 600 closed problems, four parts beginning one at every tick, so the newest hundred end in
+    // the middle of a tick's four; one long one that began before the window and ended in it;
+    // one that ended before the window and waits for the day's delete; and one still open.
+    const rows: string[] = [];
+    for (let i = 0; i < 150; i += 1) {
+      const began = t - 2 * DAY - i * 3 * TICK;
+      for (const part of PARTS) rows.push(`('${part}','late',${began},${began},${began + TICK},0)`);
+    }
+    rows.push(`('site','down',${start - 5 * DAY},${start + DAY},${start + DAY + TICK},0)`);
+    rows.push(`('site','down',${start - 3 * DAY},${start - 2 * DAY},${start - TICK},0)`);
+    rows.push(`('accounts','down',${t - DAY},${t - TICK},NULL,0)`);
+    for (let i = 0; i < rows.length; i += 100) {
+      await fresh.sql(
+        `INSERT INTO incidents (part, kind, start, last, ended, gap) VALUES ${rows.slice(i, i + 100).join(',')}`,
+      );
+    }
+    const before = await fresh.sql<Incident>('SELECT * FROM incidents');
+    assert.equal(before.length, 603);
+
+    // What the reads cost and return, as D1 counts it.
+    const reads: { rows: number; read: number }[] = [];
+    const watched = {
+      prepare: (query: string) => fresh.db.prepare(query),
+      async batch(list: D1PreparedStatement[]) {
+        const results = await fresh.db.batch(list);
+        if (list.length === 3) {
+          for (const result of results) {
+            reads.push({ rows: result.results.length, read: result.meta.rows_read });
+          }
+        }
+        return results;
+      },
+    } as unknown as D1Database;
+    const web = healthy(new Net(t * 1000 + 2000)).on(WHERE.ACCOUNTS_HEALTH_URL, { status: 500 });
+    assert.equal(await tick({ ...WHERE, DB: watched }, t, web), 'taken');
+    const [, open, closed] = reads as [unknown, (typeof reads)[0], (typeof reads)[0]];
+    assert.equal(CLOSED_READ, INCIDENTS_MAX + 3);
+    assert.deepEqual([open.rows, closed.rows], [1, CLOSED_READ]);
+    // Neither read walks the table: the open one reads its one row, the closed one a few more
+    // than it returns (the one that ended before the window is passed over).
+    assert.equal(open.read <= 2, true, `open read ${open.read}`);
+    assert.equal(closed.read <= 2 * CLOSED_READ + 2, true, `closed read ${closed.read}`);
+
+    // The summary is the one a read of every row gives.
+    const summary = JSON.parse(
+      (await fresh.sql<{ v: string }>("SELECT v FROM meta WHERE k = 'summary'"))[0]!.v,
+    ) as Summary;
+    const after = await fresh.sql<Incident>('SELECT * FROM incidents');
+    const sample = { t, parts: {} } as unknown as Sample;
+    for (const part of PARTS) {
+      (sample.parts as Record<string, unknown>)[part] = { s: summary.parts[part].s, made: null };
+    }
+    const whole = summarize(sample, summary.first, [], after);
+    assert.equal(summary.incidents.length, INCIDENTS_MAX);
+    assert.deepEqual(summary.incidents, whole.incidents);
+    assert.equal(summary.incidents[0]!.e, null);
+    // The hundred end inside one tick's four parts, in the parts' order.
+    const last = summary.incidents.slice(-3).map((i) => [i.p, i.s]);
+    assert.equal(new Set(last.map(([, s]) => s)).size, 1);
+    assert.deepEqual(
+      last.map(([p]) => p),
+      PARTS.slice(0, 3),
+    );
+
+    // And the plans say so: each read names its index.
+    for (const [sql, index, params] of [
+      [OPEN_SQL, 'incidents_open', []],
+      [CLOSED_SQL, 'incidents_start', [start, CLOSED_READ]],
+    ] as const) {
+      const plan = await fresh.sql<{ detail: string }>(`EXPLAIN QUERY PLAN ${sql}`, ...params);
+      const said = plan.map((row) => row.detail).join(' | ');
+      assert.match(said, new RegExp(`USING INDEX ${index}`), said);
+      assert.equal(/TEMP B-TREE/.test(said), false, said);
+    }
+  } finally {
+    await fresh.close();
+  }
 });

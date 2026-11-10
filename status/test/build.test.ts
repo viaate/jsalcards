@@ -10,8 +10,24 @@ import { viewOf } from '../page/src/view.ts';
 import type { Input } from '../page/src/view.ts';
 import { DAY } from '../shared/types.ts';
 import type { Summary } from '../shared/types.ts';
-import { allOk, history, simulate, worst } from './fixtures/made-up.ts';
+import { allOk, history, launch, simulate, worst } from './fixtures/made-up.ts';
 import { root } from './harness.ts';
+
+/** The words as a reader sees them: a no-break space as a space, the word joiner gone. */
+const plain = (text: string): string => text.replace(/\u00a0/g, ' ').replace(/\u2060/g, '');
+
+/**
+ * The places a line must never break, in a text of the page: after a number and before its
+ * word ("5 minutes", "7 PM"), inside a date ("Nov 10"), between a time and its zone
+ * ("PM EST"), and after the hyphen of a name ("Snow-day").
+ */
+function breaks(text: string): string[] {
+  return [
+    ...text.matchAll(
+      /\d [A-Za-z]+|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d+|[AP]M [A-Z]\w*|\w+-[A-Za-z]+/g,
+    ),
+  ].map((m) => m[0]);
+}
 
 let out: string;
 const file = (name: string): string => readFileSync(join(out, name), 'utf8');
@@ -67,12 +83,28 @@ test('the first paint is the same boxes saying Checking', () => {
     html,
     /<h1><svg class="tile"[^]*<\/svg><span class="brand">Snowlight<\/span> <span class="page">Status<\/span><\/h1>/,
   );
-  assert.deepEqual(html.match(/<h2[^>]*>[^<]*<\/h2>/g), [
+  assert.deepEqual(html.match(/<h2[^>]*>[^<]*<\/h2>/g)?.map(plain), [
     '<h2 id="h-now">Right now</h2>',
     '<h2 id="h-history">Last 90 days</h2>',
     '<h2 id="h-problems">Problems in the last 90 days</h2>',
   ]);
   assert.match(html, /<p class="sr" id="said" role="status"><\/p>/);
+  // If the script never starts, the stylesheet draws this line in the lead's place.
+  assert.match(
+    html,
+    /<div class="swap"><p class="lead">Checking…<\/p><p class="lead stuck">This page did not finish loading\. Reload it to try again\.<\/p><\/div>/,
+  );
+  for (const kind of ['unreachable', 'data'] as const) {
+    const other = mainHtml(
+      viewOf(
+        kind === 'data'
+          ? { kind, summary: null, clock: 0, kept: false, expanded: false, picked: null }
+          : { kind },
+      ),
+    );
+    assert.equal(/stuck|swap/.test(other), false, kind);
+  }
+  assert.match(html, /<footer><p class="how">/);
   assert.match(
     html,
     /<noscript><p class="noscript">Turn on JavaScript to see the status\.<\/p><\/noscript>/,
@@ -207,6 +239,12 @@ test('in every state each text of the page is made from the copy, and all of the
     data(young, { clock: NOW + DAY + 7200, picked: { part: 'chances', day: 89 } }),
     data(bad, { clock: NOW + 3 * DAY + 7200, picked: { part: 'closings', day: 86 } }),
   );
+  // Launch day (one part never answered), a quiet summary a day old, and one 100 days old.
+  inputs.push(
+    data(launch(NOW)),
+    data(quiet, { clock: NOW + DAY }),
+    data(young, { clock: NOW + 100 * DAY, picked: { part: 'site', day: 89 } }),
+  );
 
   const all = leaves(copy);
   const patterns = all.map(([key, text]) => [key, pattern(text)] as const);
@@ -241,9 +279,9 @@ test('in every state each text of the page is made from the copy, and all of the
     ['problem.down', /: not working (?:for|since)/],
     ['problem.late', /: slow or late (?:for|since)/],
   ]);
-  const everything = inputs
-    .map((input) => texts(pageHtml(mainHtml(viewOf(input)))).join('\n'))
-    .join('\n');
+  const everything = plain(
+    inputs.map((input) => texts(pageHtml(mainHtml(viewOf(input)))).join('\n')).join('\n'),
+  );
   for (const [key, shows] of pieces) if (shows.test(everything)) used.add(key);
   assert.deepEqual(
     all.map(([key]) => key).filter((key) => !used.has(key)),
@@ -259,7 +297,7 @@ test('in every state each text of the page is made from the copy, and all of the
     assert.equal(tabular.length > 0, true);
     for (const [, text] of tabular) assert.equal(/[-‐‑]/.test(text!), false, text);
     const names = [...html.matchAll(/<span class="(?:name|what)">([^<]*)</g)].map((m) => m[1]);
-    assert.equal(names.includes('Snow-day chances'), true);
+    assert.equal(names.map((name) => plain(name!)).includes('Snow-day chances'), true);
     if (input.kind !== 'wait') {
       const box = /<(?:div class="probs none"><p>|span class="what">)([^<]+)</.exec(html);
       assert.notEqual(box, null, 'an empty box under Problems');
@@ -270,9 +308,66 @@ test('in every state each text of the page is made from the copy, and all of the
         .slice(0, 11)
         .replace(/^(\w+), 0?(\d+) (\w+)$/, '$1, $3 $2');
       for (const [, label] of html.matchAll(/aria-label="([^"]*today[^"]*)"/g))
-        assert.equal(label!.startsWith(`${clockDay}:`), true, `${label} on ${clockDay}`);
+        assert.equal(plain(label!).startsWith(`${clockDay}:`), true, `${label} on ${clockDay}`);
     }
   }
+});
+
+test('no line of the page can break inside a name, a date, a time or a count', () => {
+  // The copy itself: every number is tied to its word and every hyphen in a name to the next.
+  for (const [key, text] of leaves(copy)) assert.deepEqual(breaks(text), [], key);
+  assert.equal(copy.parts.chances.name, 'Snow-\u2060day chances');
+  assert.deepEqual(breaks('5 minutes, Nov 10, 2:35\u00a0PM EST, Snow-day'), [
+    '5 minutes',
+    'Nov 10',
+    'PM EST',
+    'Snow-day',
+  ]);
+
+  // And every text the page draws, in every state, in zones whose times are written apart.
+  const NOW = Date.UTC(2026, 10, 10, 15, 0, 0) / 1000;
+  const summaries = [history(NOW), worst(NOW), allOk(NOW), launch(NOW)];
+  let seen = 0;
+  for (const summary of summaries) {
+    for (const zone of ['America/New_York', 'America/Los_Angeles', 'Europe/Paris', 'UTC']) {
+      for (const clock of [NOW + 130, NOW + 2000, NOW + 3 * DAY, NOW + 100 * DAY]) {
+        for (const day of [0, 30, 66, 67, 79, 86, 89]) {
+          const input: Input = {
+            kind: 'data',
+            summary,
+            clock,
+            kept: false,
+            expanded: true,
+            picked: { part: day % 2 === 0 ? 'closings' : 'chances', day },
+            zone,
+          };
+          for (const text of texts(pageHtml(mainHtml(viewOf(input))))) {
+            assert.deepEqual(breaks(text), [], text);
+            seen += 1;
+          }
+        }
+      }
+    }
+  }
+  assert.equal(seen > 50000, true, String(seen));
+  // What ties them is in the words themselves, so it holds in every typeface and at every width.
+  const html = mainHtml(
+    viewOf({
+      kind: 'data',
+      summary: history(NOW),
+      clock: NOW + 130,
+      kept: false,
+      expanded: true,
+      picked: { part: 'closings', day: 79 },
+      zone: 'America/New_York',
+    }),
+  );
+  assert.match(html, /<p class="lead">Slow or late right now: Snow-\u2060day chances\.<\/p>/);
+  assert.match(
+    html,
+    /Snow-\u2060day chances: slow or late since Nov\u00a010, 8:55\u00a0AM\u00a0EST\./,
+  );
+  assert.match(html, /aria-label="Sat, Oct\u00a031: [^"]*not checked for 6\u00a0hours\."/);
 });
 
 test('the key names every kind of bar, and a bar that is not a state has its own drawing', () => {
@@ -289,7 +384,7 @@ test('the key names every kind of bar, and a bar that is not a state has its own
     ],
   );
   const css = file('style.css');
-  for (const cls of ['b-ok', 'b-late', 'b-down', 'b-none', 'b-before', 'b-wait'])
+  for (const cls of ['b-ok', 'b-late', 'b-down', 'b-none', 'b-before', 'b-wait', 'b-yet'])
     assert.equal(css.includes(`.${cls}`), true, cls);
 });
 

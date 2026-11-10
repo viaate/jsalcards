@@ -13,6 +13,8 @@ const REDRAW_MS = 30000;
 
 const main = document.getElementById('main') as HTMLElement;
 const said = document.getElementById('said') as HTMLElement;
+// The script has started: the stylesheet's "did not finish loading" line is never shown now.
+main.classList.add('on');
 
 /** The last good answer, and the device's clocks when it arrived. */
 let answer: { served: number; summary: Summary | null; at: Marks } | null = null;

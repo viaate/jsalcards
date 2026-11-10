@@ -35,7 +35,13 @@ export function shape(of: Shape | 'none' | 'before'): string {
 function banner(view: View): string {
   const lead = view.banner.lead.map((line) => `<p class="lead">${esc(line)}</p>`).join('');
   const more = view.banner.more === null ? '' : `<p class="more">${esc(view.banner.more)}</p>`;
-  return `<section class="banner card" id="banner">${shape(view.banner.shape)}<div>${lead}${more}</div></section>`;
+  // Drawn in the lead's place by the stylesheet alone, when the script has not started in time.
+  const stuck =
+    view.banner.stuck === null ? '' : `<p class="lead stuck">${esc(view.banner.stuck)}</p>`;
+  return (
+    `<section class="banner card" id="banner">${shape(view.banner.shape)}` +
+    `<div${stuck === '' ? '' : ' class="swap"'}>${lead}${more}${stuck}</div></section>`
+  );
 }
 
 function now(view: View): string {
@@ -139,7 +145,7 @@ export function pageHtml(main: string): string {
     `<noscript><p class="noscript">${esc(copy.noscript)}</p></noscript>\n` +
     `<main id="main">${main}</main>\n` +
     '<p class="sr" id="said" role="status"></p>\n' +
-    `<footer><p>${esc(copy.foot.how)}</p><p>${esc(copy.foot.privacy)}</p>` +
+    `<footer><p class="how">${esc(copy.foot.how)}</p><p>${esc(copy.foot.privacy)}</p>` +
     `<p><a class="home" href="${HOME_URL}">${MARK}<span>${esc(copy.foot.home)}</span></a></p></footer>\n` +
     '</body>\n</html>\n'
   );

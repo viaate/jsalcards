@@ -1,6 +1,6 @@
 /** One tick: probe the four parts, then write what was found in one transaction. */
 
-import { dayOf, step, windowStart } from '../../shared/history.ts';
+import { INCIDENTS_MAX, dayOf, step, windowStart } from '../../shared/history.ts';
 import { DAY, DAYS_KEPT, PARTS } from '../../shared/types.ts';
 import type { DayRow, Incident, Part, Reading, Sample } from '../../shared/types.ts';
 import { probe } from './probe.ts';
@@ -9,6 +9,19 @@ import type { Deps, Where } from './probe.ts';
 export interface Env extends Where {
   DB: D1Database;
 }
+
+const INCIDENT_COLUMNS = 'id, part, kind, start, last, ended, gap';
+/**
+ * The closed problems a tick reads: the newest by start. The summary lists `INCIDENTS_MAX` in
+ * all, newest first with the parts in their order among those that began at one tick, so the
+ * newest `INCIDENTS_MAX` and the rest of the last tick among them (a part begins one problem at
+ * a tick at most) always hold every one it lists. A part that goes wrong and right for weeks
+ * then costs each tick these rows and no more. Both reads walk an index of the migration.
+ */
+export const CLOSED_READ = INCIDENTS_MAX + PARTS.length - 1;
+export const OPEN_SQL = `SELECT ${INCIDENT_COLUMNS} FROM incidents WHERE ended IS NULL`;
+export const CLOSED_SQL =
+  `SELECT ${INCIDENT_COLUMNS} FROM incidents WHERE ended >= ? ` + 'ORDER BY start DESC LIMIT ?';
 
 /**
  * Take the tick `t` (Unix seconds, a multiple of 300) in. A tick is taken in once: a second call
@@ -31,19 +44,17 @@ export async function tick(env: Env, t: number, deps: Deps): Promise<'taken' | '
   const sample: Sample = { t, parts };
 
   const start = windowStart(t);
-  const [days, incidents] = await db.batch<Record<string, unknown>>([
+  const [days, open, closed] = await db.batch<Record<string, unknown>>([
     db.prepare('SELECT day, part, ok, late, down FROM days WHERE day >= ?').bind(dayOf(start)),
-    db
-      .prepare(
-        'SELECT id, part, kind, start, last, ended, gap FROM incidents WHERE ended IS NULL OR ended >= ?',
-      )
-      .bind(start),
+    db.prepare(OPEN_SQL),
+    db.prepare(CLOSED_SQL).bind(start, CLOSED_READ),
   ]);
+  const incidents = [...(open?.results ?? []), ...(closed?.results ?? [])];
   const stepped = step(
     {
       first: kept.get('first') ?? null,
       days: (days?.results ?? []) as unknown as DayRow[],
-      incidents: (incidents?.results ?? []) as unknown as Incident[],
+      incidents: incidents as unknown as Incident[],
     },
     sample,
   );

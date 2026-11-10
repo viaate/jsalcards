@@ -112,8 +112,31 @@ test('tabular numbers are only on the lines whose numbers change in place', () =
 });
 
 test('with scripts off only the line that says so is shown', () => {
+  // The boxes cannot fill in, and the footer does not explain bars that are not there.
   assert.match(
     css.replace(/\s+/g, ' '),
-    /@media \(scripting: none\) \{ main \{ display: none; \} \}/,
+    /@media \(scripting: none\) \{ main, \.how \{ display: none; \} \}/,
   );
+});
+
+test('the lines read first are balanced, so none ends in a line of one word', () => {
+  assert.deepEqual(rulesWith('text-wrap: balance'), ['.lead', '.what', '.probs.none']);
+});
+
+test('a page whose script never starts stops saying Checking, by the stylesheet alone', () => {
+  const flat = css.replace(/\/\*[^]*?\*\//g, '').replace(/\s+/g, ' ');
+  // Hidden until 10 s have passed without the script's mark on <main>, then drawn in the
+  // lead's own grid cell; gone for good once the script has started.
+  assert.match(flat, /\.swap \{ display: grid; \} \.swap > \* \{ grid-area: 1 \/ 1; \}/);
+  assert.match(flat, /\.stuck \{ visibility: hidden; \} main\.on \.stuck \{ display: none; \}/);
+  assert.match(flat, /main:not\(\.on\) \.stuck \{ animation: shown 0\.01s 10s forwards; \}/);
+  assert.match(
+    flat,
+    /main:not\(\.on\) \.swap > :not\(\.stuck\), main:not\(\.on\) \.state \{ animation: gone 0\.01s 10s forwards; \}/,
+  );
+  assert.match(flat, /@keyframes shown \{ to \{ visibility: visible; \} \}/);
+  assert.match(flat, /@keyframes gone \{ to \{ visibility: hidden; \} \}/);
+  // The script's first act is the mark, before any fetch.
+  const app = readFileSync(join(root, 'page/src/app.ts'), 'utf8');
+  assert.match(app, /const said = [^\n]*\n\/\/[^\n]*\nmain\.classList\.add\('on'\);/);
 });

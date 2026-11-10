@@ -9,9 +9,30 @@ import {
 } from '../shared/judge.ts';
 import { DAY, PARTS, TICK } from '../shared/types.ts';
 import type { Part, State, Summary, SummaryIncident } from '../shared/types.ts';
-import { ago, dur, elapsed, listed, nextDelay, readAnswer, viewOf } from '../page/src/view.ts';
+import * as page from '../page/src/view.ts';
+import { elapsed, listed, nextDelay, readAnswer } from '../page/src/view.ts';
 import type { Input, View } from '../page/src/view.ts';
-import { allOk, history, simulate, worst } from './fixtures/made-up.ts';
+import { allOk, history, launch, simulate, worst } from './fixtures/made-up.ts';
+
+/**
+ * The words as a reader sees them: a no-break space as a space, the word joiner gone. Every
+ * test but the ones on line breaks reads the page this way.
+ */
+function plain<T>(value: T): T {
+  if (typeof value === 'string') {
+    return value.replace(/\u00a0/g, ' ').replace(/\u2060/g, '') as unknown as T;
+  }
+  if (Array.isArray(value)) return value.map((item) => plain(item)) as unknown as T;
+  if (typeof value === 'object' && value !== null) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, plain(item)]),
+    ) as unknown as T;
+  }
+  return value;
+}
+const viewOf = (input: Input): View => plain(page.viewOf(input));
+const ago = (seconds: number): string => plain(page.ago(seconds));
+const dur = (seconds: number): string => plain(page.dur(seconds));
 
 const ZONE = 'America/New_York';
 /** Tue Nov 10 2026, 15:00 UTC (10:00 AM EST). */
@@ -46,7 +67,12 @@ function data(summary: Summary | null, more: Partial<Extract<Input, { kind: 'dat
 
 test('while it waits, the same boxes say Checking', () => {
   const view = viewOf({ kind: 'wait' });
-  assert.deepEqual(view.banner, { shape: 'wait', lead: ['Checking…'], more: null });
+  assert.deepEqual(view.banner, {
+    shape: 'wait',
+    lead: ['Checking…'],
+    more: null,
+    stuck: 'This page did not finish loading. Reload it to try again.',
+  });
   assert.deepEqual(
     view.parts.map((row) => [row.name, row.word, row.shape, row.updated]),
     [
@@ -89,6 +115,7 @@ test('before the first check, and when the status cannot be loaded', () => {
     shape: 'wait',
     lead: ['The first check is on its way.'],
     more: 'This page fills in within 5 minutes.',
+    stuck: null,
   });
   assert.deepEqual(
     first.parts.map((row) => row.word),
@@ -105,6 +132,7 @@ test('before the first check, and when the status cannot be loaded', () => {
     shape: 'unknown',
     lead: ['We cannot load the status right now.'],
     more: 'This page tries again every minute.',
+    stuck: null,
   });
   assert.deepEqual(
     unreachable.parts.map((row) => row.word),
@@ -158,11 +186,13 @@ test('the banner says the worst first', () => {
     shape: 'ok',
     lead: ['Everything is working.'],
     more: 'Last checked 2 minutes ago.',
+    stuck: null,
   });
   assert.deepEqual(data(summaryWith({ accounts: 'unknown' })).banner, {
     shape: 'unknown',
     lead: ['We could not check everything just now.'],
     more: 'Last checked 2 minutes ago.',
+    stuck: null,
   });
   assert.deepEqual(data(summaryWith({ chances: 'late', accounts: 'unknown' })).banner.lead, [
     'Slow or late right now: Snow-day chances.',
@@ -180,6 +210,7 @@ test('the banner says the worst first', () => {
       'Slow or late right now: Accounts.',
     ],
     more: 'Last checked 2 minutes ago.',
+    stuck: null,
   });
   assert.deepEqual(data(summaryWith({ closings: 'down' })).banner.lead, [
     'Not working right now: Live school closings.',
@@ -205,6 +236,7 @@ test('a failed refresh keeps what is shown and says so', () => {
     shape: 'late',
     lead: ['Slow or late right now: Snow-day chances.'],
     more: 'Could not refresh. This is the check from 14 minutes ago.',
+    stuck: null,
   });
 });
 
@@ -237,6 +269,7 @@ test('stale: after 900 s with no newer summary nothing is said to work', () => {
       shape: 'unknown',
       lead: ['We have no recent checks.'],
       more: 'The last check was 15 minutes ago. Everything below is from then.',
+      stuck: null,
     });
     assert.deepEqual(
       stale.parts.map((row) => [row.word, row.updated]),
@@ -369,7 +402,7 @@ test('just after midnight the new day waits for its first check', () => {
     [
       ['ok', 'Sun, Nov 8: working all day.'],
       ['ok', 'Mon, Nov 9: working all day.'],
-      ['before', 'Tue, Nov 10: not checked yet.'],
+      ['yet', 'Tue, Nov 10: not checked yet.'],
     ],
   );
   // The day before, with its last tick not in yet, is not said to be whole.
@@ -495,7 +528,7 @@ test("a bar's name, for each class and for a gap", () => {
   // A block with no bar picked says how to pick one.
   assert.deepEqual(
     [view.history[1]!.note, view.history[1]!.hint],
-    ['Tap a bar to see that day.', true],
+    ['Pick a bar to see that day.', true],
   );
   // 889 of the 925 checks that gave a reading.
   assert.equal(site.share, 'Working in 96.1% of our checks over 6 days.');
@@ -598,6 +631,104 @@ test('the three slots with 0, 3 and 4 problems', () => {
   assert.deepEqual([four.problems.slots.length, four.problems.button], [3, 'Show all 4']);
   const open = data(summaryWith({}, [one(0), one(1), one(2), one(3)]), { expanded: true });
   assert.deepEqual([open.problems.slots.length, open.problems.button], [4, 'Show fewer']);
+});
+
+test('a part no check could reach says so, and an old summary says nothing of the days since', () => {
+  // Launch day: the chances' stamp is not on the host, so every check of them gave no answer.
+  const first = data(launch(NOW));
+  assert.deepEqual(first.banner.lead, ['We could not check everything just now.']);
+  assert.deepEqual(
+    first.history.map((block) => block.share),
+    [
+      'Working in 100% of our checks over 1 day.',
+      'Working in 100% of our checks over 1 day.',
+      'Could not check so far.',
+      'Working in 100% of our checks over 1 day.',
+    ],
+  );
+  assert.equal(first.problems.empty, 'No problems since checks began on Nov 10.');
+  // "No checks yet" is said before the first check only.
+  assert.equal(JSON.stringify(first).includes('No checks yet'), false);
+
+  // A quiet summary a day old: no problem is known, and nothing is said of the day since.
+  const quiet = summaryWith({});
+  const day = data(quiet, { clock: NOW + DAY });
+  assert.equal(day.problems.empty, 'No problems up to the last check.');
+  assert.equal(data(allOk(NOW), { clock: NOW + DAY }).problems.empty, day.problems.empty);
+  // Not yet stale, and only the refresh failed: the summary's own sentence stands.
+  assert.equal(
+    data(quiet, { clock: NOW + 800, kept: true }).problems.empty,
+    'No problems since checks began on Nov 7.',
+  );
+
+  // The list is of the 90 days the bars show. The made-up history has four problems: 20, 10
+  // and 3 days back, and one open. Read 85 days late, the bars begin 4 days before its last
+  // check, so the two older ones are gone and the open one ends where the checks stopped.
+  const old = history(NOW);
+  assert.equal(data(old, { expanded: true }).problems.slots.length, 4);
+  const late = data(old, { clock: NOW + 85 * DAY, expanded: true });
+  assert.equal(late.history[0]!.bars[0]!.label, 'Fri, Nov 6: working all day.');
+  assert.deepEqual(late.problems.slots, [
+    {
+      what: 'Snow-day chances: slow or late for at least 1 hour 10 minutes.',
+      when: 'From Nov 10, 8:55 AM EST. Our checks stopped while it was going on.',
+    },
+    {
+      what: 'Live school closings: not working for 25 minutes.',
+      when: 'Nov 7, 6:10 AM to 6:35 AM EST',
+    },
+    null,
+  ]);
+  assert.equal(late.problems.button, null);
+
+  // 100 days late: no day shown was checked. Each bar is a day of the clock's own 90, the
+  // last one the clock's day; nothing is listed; and the lines say why, not "No checks yet".
+  const gone = data(old, { clock: NOW + 100 * DAY, expanded: true });
+  assert.deepEqual(gone.banner.lead, ['We have no recent checks.']);
+  assert.deepEqual(
+    gone.history.map((block) => block.share),
+    Array.from({ length: 4 }, () => 'Not checked in the last 90 days.'),
+  );
+  assert.deepEqual(gone.problems, {
+    slots: [null, null, null],
+    empty: 'Not checked in the last 90 days.',
+    button: null,
+    expanded: true,
+  });
+  const bars = gone.history[0]!.bars;
+  assert.deepEqual(
+    [bars[0]!.label, bars[89]!.label],
+    ['Sat, Nov 21: not checked.', 'Thu, Feb 18: not checked.'],
+  );
+  assert.equal(
+    bars.every((bar) => bar.cls === 'none'),
+    true,
+  );
+  // 89 days late: the summary's last day is still the first bar.
+  const edge = data(old, { clock: NOW + 89 * DAY });
+  assert.equal(
+    edge.history[0]!.bars[0]!.label,
+    'Tue, Nov 10: working when checked; not checked for 8 hours 55 minutes.',
+  );
+  assert.equal(edge.history[0]!.share, 'Working in 100% of our checks over 1 day.');
+});
+
+test('a day whose first check is not due has a bar of its own kind', () => {
+  const midnight = Math.floor(NOW / DAY) * DAY;
+  const eve = simulate(midnight - 2 * DAY, midnight - 300, () => OK);
+  const classes = (clock: number): string[] =>
+    data(eve, { clock }).history.map((block) => block.bars[89]!.cls);
+  // The clock is in the new day and the last check, 23:55, is not old: nothing is drawn yet.
+  assert.deepEqual(classes(midnight + 100), ['yet', 'yet', 'yet', 'yet']);
+  assert.deepEqual(classes(midnight + 599), ['yet', 'yet', 'yet', 'yet']);
+  // Once that check is old the day's checks are counted to the clock: it was not checked.
+  assert.deepEqual(classes(midnight + 601), ['none', 'none', 'none', 'none']);
+  assert.equal(
+    data(eve, { clock: midnight + 601 }).history[0]!.bars[89]!.label,
+    'Tue, Nov 10: not checked.',
+  );
+  // A day before the checks began keeps its own kind.
+  assert.equal(data(eve, { clock: midnight + 100 }).history[0]!.bars[86]!.cls, 'before');
 });
 
 test('the made-up history reads as the pictures show it', () => {
