@@ -120,7 +120,9 @@ test('with scripts off only the line that says so is shown', () => {
 });
 
 test('the lines read first are balanced, so none ends in a line of one word', () => {
-  assert.deepEqual(rulesWith('text-wrap: balance'), ['.lead', '.what', '.probs.none']);
+  // The headline and the one line of an empty problems box. A problem's heading is not: it
+  // reads better broken late ("… not working for" / "25 minutes.") than in the middle.
+  assert.deepEqual(rulesWith('text-wrap: balance'), ['.lead', '.probs.none']);
 });
 
 test('a page whose script never starts stops saying Checking, by the stylesheet alone', () => {

@@ -353,7 +353,6 @@ main:not(.on) .state {
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.375rem;
-  text-wrap: balance;
 }
 .when {
   color: var(--quiet);

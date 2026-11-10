@@ -2,9 +2,12 @@
  * Takes the status page's proof pictures from the preview server (`node scripts/preview.mjs`)
  * and checks each state: no layout shift and no box that moved or grew from load to data, no
  * horizontal scroll (at 320 px too), no console error, no request leaving the origin. Then
- * three checks of their own: with scripts off only the line that says so is shown; coming back
- * to the tab with an old answer says its age at once, before any fetch settles; and with text
- * at 150% on a 320 px screen nothing scrolls sideways. Fails if any check does.
+ * checks of their own: at nine widths from 320 to 1280 px no line breaks inside a name, a date,
+ * a time or a count, and neither the headline nor the line in an empty problems box ends in a
+ * line of one word; with scripts off only the line that says so is shown; a page whose script
+ * never loads stops saying "Checking" after 10 s and moves nothing; coming back to the tab with
+ * an old answer says its age at once, before any fetch settles; and with text at 150% on a
+ * 320 px screen nothing scrolls sideways. Fails if any check does.
  *
  *   NODE_PATH=../web/node_modules node scripts/shots.cjs [out folder]
  *
@@ -40,7 +43,14 @@ const SHOTS = [
   ['worst-light-320', 'worst', 'light', NARROW],
   ['worst-light-phone', 'worst', 'light', PHONE],
   [null, 'worst', 'light', DESKTOP],
+  ['launch-light-phone', 'launch', 'light', PHONE],
+  ['ok-light-phone', 'ok', 'light', PHONE],
+  [null, 'launch', 'light', NARROW],
+  [null, 'launch', 'dark', DESKTOP],
 ];
+
+/** The widths the line breaks are checked at: the common phones, a tablet, a desktop. */
+const WIDTHS = [320, 360, 375, 390, 393, 412, 430, 768, 1280];
 
 /** Where each box that fills from data sits, so a box that grew or moved can be told. */
 function boxes(page) {
@@ -153,6 +163,125 @@ function said(good, name, detail) {
   return good;
 }
 
+/**
+ * At each width: a name, a date, a time or a count is drawn on one line (each is tied in the
+ * words themselves, with a word joiner or a no-break space), and the lines read first do not
+ * end in a line of one word.
+ */
+async function lineBreaks(browser, state) {
+  const found = [];
+  for (const width of WIDTHS) {
+    const context = await browser.newContext({
+      viewport: { width, height: 900 },
+      timezoneId: 'America/New_York',
+      locale: 'en-US',
+    });
+    const page = await context.newPage();
+    await (await context.request.get(`${ORIGIN}/__set?state=${state}`)).text();
+    await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
+    await page.waitForFunction(
+      () => !document.querySelector('.lead')?.textContent?.includes('Checking'),
+    );
+    if ((await page.locator('#more').count()) > 0) await page.locator('#more').click();
+    const bars = page.locator('.bars[data-part="closings"]');
+    await bars.scrollIntoViewIfNeeded();
+    const box = await bars.boundingBox();
+    await page.mouse.move(box.x + (box.width * 79.5) / 90, box.y + box.height / 2);
+    await page.waitForFunction(() => document.querySelector('.note:not(.hint)') !== null);
+    const seen = await page.evaluate(() => {
+      const split = [];
+      const lone = [];
+      let tied = 0;
+      /** The tops of the lines a stretch of a text node is drawn on. */
+      const tops = (node, from, to) => {
+        const range = document.createRange();
+        range.setStart(node, from);
+        range.setEnd(node, to);
+        return [...new Set([...range.getClientRects()].map((rect) => Math.round(rect.top)))];
+      };
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+        const parent = node.parentElement;
+        if (parent === null || parent.closest('.sr, script, style, noscript') !== null) continue;
+        if (parent.getClientRects().length === 0) continue;
+        // A run with no breaking space that holds a joiner or a no-break space is tied.
+        for (const match of node.data.matchAll(/[^ \n]*[\u2060\u00a0][^ \n]*/g)) {
+          tied += 1;
+          if (tops(node, match.index, match.index + match[0].length).length > 1)
+            split.push(`"${match[0]}" in "${node.data}"`);
+        }
+        if (parent.matches('.lead, .probs.none p')) {
+          const words = [...node.data.matchAll(/[^ ]+/g)];
+          const lines = new Map();
+          for (const word of words) {
+            const top = tops(node, word.index, word.index + word[0].length)[0];
+            lines.set(top, (lines.get(top) ?? 0) + 1);
+          }
+          const counts = [...lines.values()];
+          if (counts.length > 1 && counts[counts.length - 1] === 1) lone.push(`"${node.data}"`);
+        }
+      }
+      return { split, lone, tied };
+    });
+    await context.close();
+    if (seen.tied === 0) found.push(`${width} px: nothing tied was found to check`);
+    for (const text of seen.split) found.push(`${width} px: split ${text}`);
+    for (const text of seen.lone) found.push(`${width} px: a last line of one word in ${text}`);
+  }
+  return said(
+    found.length === 0,
+    `line breaks ${state}`,
+    found.length === 0
+      ? `no name, date, time or count split and no one-word last line at ${WIDTHS.join(', ')} px`
+      : found.join('; '),
+  );
+}
+
+/**
+ * The script never loads (scripts are on). For 10 s the page says "Checking"; then the
+ * stylesheet alone draws the line that says the page did not finish loading, in the same
+ * place, and the rows stop saying "Checking". No box moves.
+ */
+async function scriptMissing(browser) {
+  const context = await browser.newContext({
+    viewport: { width: PHONE.width, height: PHONE.height },
+    deviceScaleFactor: PHONE.scale,
+  });
+  const page = await context.newPage();
+  await page.route('**/app.js', (route) => route.abort());
+  await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
+  const look = () =>
+    page.evaluate(() => {
+      const shown = (box) => getComputedStyle(box).visibility === 'visible';
+      return {
+        lead: shown(document.querySelector('.lead:not(.stuck)')),
+        stuck: shown(document.querySelector('.stuck')),
+        states: [...document.querySelectorAll('.state')].filter(shown).length,
+        line: document.querySelector('.stuck').textContent,
+      };
+    });
+  const first = await look();
+  const before = await boxes(page);
+  await page.waitForTimeout(10500);
+  const then = await look();
+  const change = moved(before, await boxes(page));
+  await page.screenshot({ path: join(out, 'script-missing-light-phone.png'), fullPage: true });
+  await context.close();
+  return said(
+    first.lead &&
+      !first.stuck &&
+      first.states === 4 &&
+      !then.lead &&
+      then.stuck &&
+      then.states === 0 &&
+      change === null,
+    'script-missing-light-phone',
+    `at load "Checking" is shown (${first.states} rows); after 10 s "${then.line}" is shown in ` +
+      `its place, ${then.states} rows say "Checking"` +
+      (change === null ? ', no box moved' : `; moved: ${change}`),
+  );
+}
+
 /** With scripts off the boxes cannot fill in: only the header, the line that says so, the footer. */
 async function scriptsOff(browser) {
   const context = await browser.newContext({
@@ -165,6 +294,7 @@ async function scriptsOff(browser) {
   const seen = await page.evaluate(() => ({
     main: document.getElementById('main').getBoundingClientRect().height,
     line: document.querySelector('.noscript')?.textContent ?? '',
+    how: document.querySelector('.how').getBoundingClientRect().height,
     checking: [...document.querySelectorAll('.lead, .state')].some(
       (box) => box.getBoundingClientRect().height > 0,
     ),
@@ -172,9 +302,10 @@ async function scriptsOff(browser) {
   await page.screenshot({ path: join(out, 'scripts-off-light-phone.png'), fullPage: true });
   await context.close();
   return said(
-    seen.main === 0 && !seen.checking && seen.line !== '',
+    seen.main === 0 && seen.how === 0 && !seen.checking && seen.line !== '',
     'scripts-off-light-phone',
-    `main is ${seen.main} px tall, "${seen.line}" is shown, no "Checking" box is drawn`,
+    `main is ${seen.main} px tall and the footer's line about the bars ${seen.how} px, ` +
+      `"${seen.line}" is shown, no "Checking" box is drawn`,
   );
 }
 
@@ -248,7 +379,10 @@ async function bigText(browser, state) {
   const browser = await chromium.launch();
   let good = true;
   for (const shot of SHOTS) good = (await one(browser, shot)) && good;
+  for (const state of ['history', 'worst', 'launch', 'ok', 'stale'])
+    good = (await lineBreaks(browser, state)) && good;
   good = (await scriptsOff(browser)) && good;
+  good = (await scriptMissing(browser)) && good;
   good = (await comingBack(browser)) && good;
   for (const state of ['history', 'worst', 'first', 'unreachable'])
     good = (await bigText(browser, state)) && good;

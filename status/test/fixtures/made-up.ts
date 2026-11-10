@@ -64,7 +64,8 @@ export function simulate(first: number, last: number, script: Script): Summary {
       }
       if (s === 'ok') delete since[part];
       else if (s !== 'unknown') since[part] ??= t;
-      parts[part] = reading(s, madeFor(part, s, t, since[part] ?? t));
+      // A file that could not be read has no time of its own.
+      parts[part] = reading(s, s === 'unknown' ? null : madeFor(part, s, t, since[part] ?? t));
     }
     const sample: Sample = { t, parts };
     // The store's side of a tick: only the open incidents matter to the next sample.
