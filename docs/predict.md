@@ -2543,6 +2543,9 @@ The token is never written to a log, a file or a chat.
   the Worker or the 20-minute schedule starts a new run within minutes unless the
   workflow is disabled.
 - **To publish again:** `predict release` clears the hold; enable the workflow.
+- **The watch.** `predict blank` keeps the 5-minute watch quiet: it reads the hold and reports
+  nothing while it is set. Disabling the workflow alone does not: with no hold the watch
+  reports the file stale, with a comment each hour (see "Staying on air").
 - Deleting the secret or setting `PREDICT_PUBLISH` to `off` takes effect only at the next
   run (up to 320 minutes later): use the hold to stop now.
 
@@ -2557,10 +2560,10 @@ Run from `pipeline/`. Exit codes: 0 done, 3 dark (nothing uploaded: the gate ref
 | `uv run snowlight predict train` | Fit the strengths on every labeled season and write the committed model, `data/predict/model.json.gz` (derived counts by LEAID only). |
 | `uv run snowlight predict backtest` | The walk-forward backtest and its gates to `out/internal/predict/backtest/` (internal). |
 | `uv run snowlight predict once` | One serving pass. `--site-data DIR` reads a local `meta.json` and `points.bin` instead of the deployed site; `--write FILE` keeps a copy; `--host dir --host-dir DIR` publishes to a folder. |
-| `uv run snowlight predict run --until +320m` | A pass on every :07 and :37 (the loop sleeps to the grid minute, so passes do not drift), and between them, checked every 5 minutes, a pass when the alerts differ from the ones the last good pass used or when the last pass went dark (at most one extra pass per 10 minutes). Uploads when the file differs, and on every grid pass as the heartbeat unless an upload went out under 4 minutes before: the public file is normally under 35 minutes old. The state is saved after every pass; an unexpected error counts as one dark pass and the loop goes on. |
+| `uv run snowlight predict run --until +320m` | A pass on every :07 and :37 (the loop sleeps to the grid minute, so passes do not drift), and between them, checked every 5 minutes, a pass when the alerts differ from the ones the last good pass used or when the last pass went dark (at most one extra pass per 10 minutes). Uploads when the file differs, and on every grid pass as the heartbeat unless an upload went out under 4 minutes before: the public file is normally under 35 minutes old. The state is saved after every pass; an unexpected error counts as one dark pass and the loop goes on. It says at its start which commit it is on, prints one line for each pass as it ends, and may end early for a newer branch head after 3 dark passes newer code may cure (see "Staying on air"). |
 | `uv run snowlight predict blank` | Sets the hold and uploads a valid file with no districts to `v1/` and `v1-shadow/`: every chance disappears and stays off until `predict release`. |
 | `uv run snowlight predict release` | Clears the hold. |
-| `uv run snowlight predict check --max-age 45m` | The watchdog: exit 3 when the public file is missing, invalid, blank, ahead of the clock or older than the limit. The workflow runs it after every run, a failed pass included, and opens one issue, "Snow-day chances are stale", unless one is already open. |
+| `uv run snowlight predict check --max-age 45m` | The watchdog: exit 3 when the public file is missing, invalid, blank, ahead of the clock or older than the limit. The workflow runs it after every run, a failed pass included, and opens one issue, "Snow-day chances are stale", unless one is already open. The watch every 5 minutes (`chances-watch.yml`) shares that issue and closes it when a fresh file is served (see "Staying on air"). |
 | `uv run snowlight predict exposure --work out/internal/predict` | Builds `data/predict/exposure.json.gz` (each district's storm-class days a winter, county medians, national references, the archive's region tallies) from the labels folder (see "The storm-class levels"). Codes and counts only. |
 | `uv run snowlight predict learn` | Labels the live-read days not yet labeled and swaps in a refit only when the held-out live days find it no worse (see "The model learns on its own"). Exit 0 swapped, reset (a served file counted an excluded day) or nothing to change, 4 kept the model served because the refit was worse, 1 an error (nothing changed). The workflow runs it before the passes. |
 | `uv run snowlight predict read-labels` | Labels the live school mornings not yet labeled by the outcome-blind read rule into the private record `out/internal/predict/reads/` and publishes `predictions/read-audit.json` (counts only) when a day is added (see "The read labels"). Exit 0, or 1 on an error (nothing more is labeled). The workflow runs it right after `predict learn` (it continues on error, 2-minute limit); it labels nothing while a coverage file is absent. |
@@ -2605,6 +2608,274 @@ withdrawn warning (the training snapshot counts the first product's window whate
 after: the one place the live path is stricter).
 
 There is never a "no alerts, so 1%" fallback: a pass with fewer inputs publishes nothing.
+
+## Staying on air (predict-next ON-AIR)
+
+On Monday evening, Nov 9 2026, the chances vanished from the page for about two and a half
+hours. One of our own updates made the closings reader write a new key in its files, the
+running chance job refused every file with a key it did not know, and nothing told anyone for
+more than three hours. This section is what keeps that from happening again. It changes no
+chance and no rule about when a pass may publish: the list above stands as it is.
+
+### The files the chance job reads from our other chains
+
+Six files, written by two other chains:
+
+- from the closings reader: `live/closings.json`, `live/opens.json`, the day timelines
+  (`live/days/<day>.json`) and their index (`live/days/index.json`);
+- from the deployed site: `schools/edition.json` and `schools/meta.json`, with `points.bin`.
+
+**The reader's four files are read tolerantly, in the chance job only**
+(`snowlight/predict/host_files.py`). A file is read strictly first, exactly as before, and a
+file that reads that way gives the same object and the same published bytes. Only when every
+problem is a key this code does not know are those keys dropped and the rest read again, just
+as strictly. An unknown status, reason or detail code, another `schema_version`, a missing or
+repeated key, or a file that breaks one of its own rules is refused as before, and the pass
+goes dark with the same line as before. Each drop is said once per run:
+
+```
+predict: v1/live/closings.json: 3 unknown keys dropped (in (top), days[], directory); the rest validates
+```
+
+The line gives counts and our own field names. The name of the unknown key is never printed.
+The chance notifier reads the closings file the same way, so a new key cannot hide a status
+the site already shows; a closings file it still cannot read counts as no file, as before,
+and its line now ends `; the closings file did not read (<error type>): no shown status is
+known`. Everything else stays strict: the writers, the published models, the web, and the
+closings reader's own reads.
+
+**The deployed site's files are read exactly, never tolerantly.** The directory handshake
+reads them "exactly or not at all" by design, and the site build and the closings reader
+share it.
+
+### The rule for changing one of these files
+
+Read this before changing the shape of any of the six.
+
+1. **A new key in one of the reader's four files that changes no existing key's meaning: one
+   commit.** The key keeps the file's `schema_version` and has a default in its model, and the
+   same commit stores the file's new form (see the stored forms below; the test fails until it
+   does). Chance code that is still running drops the key; new chance code reads an older file
+   as "none". It is safe whichever chain restarts first.
+2. **Anything else on the reader's side: two commits, the chance job first.** That is a key
+   removed or renamed, a key with no default, a new code in an existing field, a changed type,
+   meaning, unit or order, or a new `schema_version`.
+   - Commit 1 teaches the file's function in `host_files.py` to read both the old and the new
+     form, and stores the coming form as `tests/predict/host_files/next/<file>`. The writer is
+     unchanged.
+   - Commit 2 is the writer's change. It moves that stored file, byte for byte, to its dated
+     folder. If the bytes must change, commit 1 taught the wrong form: begin again.
+   - Push commit 2 only after a `predict` run has printed `predict run: on <commit 1 or
+     later>`. That is at most 320 minutes after commit 1, or at once after cancelling the run
+     (the timer starts the next within 5 minutes).
+   - Reverts: commit 2 may be reverted at any time. Commit 1 may be reverted only after the
+     reader's chain has restarted on a commit that no longer writes the new form.
+3. **What skipping step 2 costs, by which chain restarts first.** Both chains run 320 minutes
+   and restart on their own; a push does not restart a running reader.
+   - The writer first: chance code that is still running refuses the new files, goes dark,
+     and ends its run early for the branch head (below). About 24 minutes with no new file.
+   - The chance job first, with code that reads only the new form: it refuses the old writer's
+     files until the reader's chain restarts, up to 320 minutes, and **the early end does not
+     cure it**, because the run is already on the branch head. The stored forms stop this
+     order in CI.
+4. **The deployed site's files.** The same two commits: first the model accepts the key, with
+   a default, while the build does not write it (for `edition.json`, which the build writes
+   from the model itself, commit 1 must also keep the key out of what is written); then, once
+   a `predict` run is on that commit, the build writes it.
+   - The site's deploy first (a new key in `edition.json` or `meta.json`, a new form of
+     `points.bin`): a running chance job refuses it until the early end restarts it, about 24
+     minutes after the deploy. The directory is read before the alerts are taken into the
+     memory, so no dark pass of that stretch counted the feed as read, and the successor's
+     first pass must read the alert history once; each failed read adds 10 minutes.
+   - The chance job first, on code that needs what the deployed files do not hold yet: refused
+     on every pass and **not cured by a restart**, until the site's deploy lands, or for good
+     if that deploy fails. The stored forms stop this order in CI too.
+   - The closings reader has its own rules for a changed directory (docs/live.md, "When the
+     deployed directory changes").
+5. **On a storm night** (from the first watch to the day after): none of steps 2 to 4 in one
+   step.
+
+**The stored forms** (`tests/predict/host_files/<form>/`, read by
+`tests/predict/test_host_files.py`) hold these files as our chains have written them. A form
+is a folder named by the date of the commit that first wrote it (a letter after the date for a
+second one on a day), holding only the files whose form changed then; `next/` holds a form no
+writer writes yet. Two checks, both kept for good:
+
+- every stored file of every folder still reads through the chance job's own functions, with
+  no "unknown keys dropped" warning (a key this code no longer reads is removed by name in the
+  file's function, never dropped unseen);
+- the newest dated form of each file is, byte for byte, what today's writer writes for the
+  content read from it, with every part filled.
+
+So a commit that changes what a writer writes fails until it stores the new form beside the
+old ones, and a commit whose chance code can no longer read a stored form fails too. A stored
+form is removed only by a commit that says why no file of that form can be read any more: no
+writer of it is running and, for a day timeline, no day of that form is left in the index.
+Stored at landing: `2026-11-10/` (the reader's four files and the directory's three) and
+`2026-11-08/timeline.json`, the day timeline as it was before it carried `details`, which the
+final day files of earlier days keep on the host.
+
+### A run ends early for a newer branch head
+
+A `predict` run prints, at its start, which commit it is on:
+
+```
+predict run: on 4ddffc0, the branch head
+predict run: on 4ddffc0; the branch head is 9a1b2c3
+predict run: on 4ddffc0; the branch head did not answer
+```
+
+While it runs it keeps a row: the dark passes since the last good pass **whose cause newer
+code may cure**. Those causes are:
+
+- one of the reader's four files does not validate (after the tolerant read);
+- a deployed directory file does not validate, or `points.bin` does not decode;
+- the file this pass made does not validate;
+- an error no one foresaw.
+
+A good pass sets the row back to 0. A dark pass of any other cause neither counts nor resets
+it. Those causes never end a run, because a restart would not cure them: the alert feed
+unreadable, stale or collapsed; the alert memory or its history; a directory that cannot be
+known for certain (a deploy in progress, an API or CDN error) or is not the deployed one;
+coverage; the file's size; a stale forecast; a host read error; another directory's opens
+file; the upload (the hold, a read back that differs, a write error).
+
+After a counted pass, once the row has reached 3 (`serve.restart_after_dark` in
+`config/predict.yaml`; 0 never asks) and the state has been saved, the run asks GitHub once
+for the head of its branch, with the job's own built-in token (the live host's token is never
+sent). When the head answers and is not the commit the run is on, the run says so and ends:
+
+```
+predict run: ending early: 3 dark passes since the last good pass that newer code may cure; the branch head 9a1b2c3 is not this run's 4ddffc0
+```
+
+The workflow's remaining steps run as after any run, and "Start the successor" starts the next
+run on the branch head. The same head, no answer, or a state that did not save change
+nothing: the next counted dark pass asks again.
+
+- **How soon.** No sooner than the third counted dark pass: usually 20 minutes after the first
+  (two 10-minute gaps), and as little as about 10 when a grid pass comes right after another
+  pass.
+- **How often.** One question per counted dark pass from the third on: 6 an hour as a rule, 8
+  at most. A run ends early at most once per new head.
+- **What is lost.** Nothing. The state is saved before the question is asked, and a freeze is
+  only ever taken by a pass that published.
+- **Measured, first dark pass to the successor's first pass: about 24 minutes** (the bar is
+  45): 20.0 to the third dark pass, 0.2 for that pass, 0.45 from the loop's end to the job's
+  end, 0.5 for the next runner, 2.0 from the job's start to the run step (setup 10 to 18 s,
+  learning 30 to 72 s, the read labels 23 to 46 s), 0.5 to its first pass. With every step at
+  its own limit at once: 44.7, and 46.8 if the weather service is also silent at start-up.
+- **The page.** The file is at most 34 minutes old at the first dark pass, so about 59 minutes
+  old at the successor's first upload as measured, and 84 with every step at its limit: under
+  the page's 90. Both figures assume the successor's first pass publishes. After a stretch of
+  directory refusals it must first read the alert history once, and each failed read adds 10
+  minutes.
+
+### Each pass's line, as it happens
+
+Every Python step of the workflow prints each line as it is written (`PYTHONUNBUFFERED`), so
+a line's time in the log is its own. Each pass ends with one line:
+
+```
+predict: pass 1 (grid) ok in 41.2 s, the live view 6.0 s more
+predict: pass 2 (extra) dark in 9.8 s, the live view 0.0 s more, 1 since the last good pass that newer code may cure
+```
+
+The number counts this run's passes. The first time is the serving part: reading the inputs,
+building the file, the upload and what follows it. The second is the live view taken after
+it, which never holds a file back. The last figure of a dark line is the row above.
+
+### The two watches and the one issue
+
+| Watch | When | What it reads |
+|---|---|---|
+| `chances-watch.yml`, job `chances` | Every 5 minutes: each `live-ingest` run the owner's timer starts also starts one watch run. No cron, no owner step. | The public file, with the runner's own tools: no checkout, no install, no secret. |
+| The Watchdog step of `predict.yml` (`predict check --max-age 45m`) | After every `predict` run. | The public file, once. |
+
+The watch judges the file by its own `generated_at`, the time the page's 90-minute rule uses:
+`fresh`, or `stale` (over 45 minutes old, less the time the CDN has held its copy, which is 10
+minutes at most), `ahead` (over 15 minutes after now), `blank` (no districts), `unreadable`,
+`missing` or `unreachable` (no answer in 3 tries, 20 s apart). A healthy file is at most about
+38 minutes old at the host. Anything but fresh is a warning in its log and one issue, titled
+**Snow-day chances are stale**. The Watchdog step uses the same title, so the two share one
+issue: neither opens a second while one is open. While the file stays not fresh the watch
+adds `still <verdict> at <time>` at most once an hour. Once a file 45 minutes old or less is
+served, it adds `recovered at <time>` and closes the issue, so each new dark stretch opens a
+new one. It never cancels, reruns or starts anything.
+
+A dark stretch is reported at the latest 61 minutes after the public file was made (45, plus
+10 for the CDN's copy, 5 for the tick, 1 for the watch run), and about 53 as a rule. That
+holds while the owner's timer runs; a dead timer is reported on its own within 15 minutes
+(docs/live.md, "Alerts"), and the Watchdog step still checks after every run.
+
+The watch bounds itself by its own clock: every request waits 15 s at most, and it ends,
+saying so, once 135 s have passed, so it is over within 150 s whatever answers. It always
+ends green, and it is a workflow of its own so that nothing that happens to it can change a
+`live-ingest` run or hold the timer's next tick. It must never be made a job of
+`live-ingest.yml`.
+
+What each setting does to each watch:
+
+| Setting | The watch every 5 minutes | The Watchdog step after a run |
+|---|---|---|
+| `PREDICT_PUBLISH` `on` (the default) | Watches. | Checks. |
+| `PREDICT_PUBLISH` `shadow` or `off` | Quiet: one line, nothing asked. | Checks the public file all the same, and opens the issue once it is stale. |
+| `predict blank` (the hold) | Quiet: it reads the hold and reports nothing while it is set. | Reports the blank file: the issue opens, and the watch leaves it alone while the hold is set. |
+| The `predict` workflow disabled, no hold | Reports stale, with a comment each hour. | Does not run. |
+
+Three things to know:
+
+- The watch reads the repository variable `PREDICT_PUBLISH` at every tick. The chance job read
+  it once, at its start. So after the variable is set back to `on`, a run that started in
+  shadow or off is reported stale until it ends (up to 320 minutes, or at once after
+  cancelling it).
+- `PREDICT_PUBLISH` must stay a repository variable. Set on the `live` environment it would be
+  seen by `predict.yml` only, and the watch would go on watching.
+- The hold is read through the CDN, which can keep "no such file" well past 10 minutes. If the
+  watch asked for the hold shortly before `predict blank` wrote it, the next ticks may still
+  read "not held" and open the issue, or add its hourly comment, for a stop made on purpose.
+  Once the hold is read the issue is left alone, and it closes at the first fresh file after
+  `predict release`.
+
+### Starting without the weather service
+
+Every step that builds a pass needs the weather service's zone and county map: a page that
+lists the releases, and the release files. Before, a page that did not answer stopped the
+step. Now:
+
+- **The saved copy is used.** When the page does not answer, or answers with something that
+  does not read, the copy already in the cache is used, whatever its age. When the release in
+  effect cannot be downloaded or does not read, the newest earlier release in the cache is
+  used. With no saved copy the step fails with one line, as before.
+- **Never silently.** Each fallback is one warning with the copy's date, for example `NWS zone
+  boundaries: the release page did not answer (FetchError); using the copy checked
+  2026-11-03T02:10:44Z`.
+- **A silent service is not asked again for 15 minutes** (a small note in the cache folder),
+  so the three steps of one job do not each wait for it. `predict run` asks once for itself
+  all the same: the 320-minute run never serves on a saved copy without having asked.
+  Each fetch tries twice, so the wait is about a minute at worst.
+
+A saved copy can be out of date: a release the weather service issued since is not in it, and
+a district in a changed zone could miss its alert. So a copy that lasts is reported. `predict
+run` keeps since when its starts have been on a saved copy and warns `predict run: the NWS
+boundaries come from a saved copy since <time> (...): the zones may be out of date`
+
+- once runs have started on a saved copy for 24 hours, or
+- at once, when the saved page was last checked over 7 days ago.
+
+The workflow then opens one issue, **The weather service's zone map is not refreshing**. The
+run's log names the newest release the copy lists: compare it with the service's page, and
+close the issue once a run starts without the warning. The chances keep publishing on the
+saved map meanwhile.
+
+### Found on the way: the 20-minute memory rule
+
+Item 8 above rebuilds the alert memory when the feed went unread for more than 20 minutes.
+Grid passes are 30 minutes apart, so every grid pass with no extra pass in the 20 minutes
+before it already rebuilds the memory from the alert history, and an error from that history
+darkens a routine pass: two of the 22 dark passes on record were exactly that. It is a rule
+about when a pass may publish, so it is not changed here. It has a piece of its own,
+`memory-gap`, right after this one.
 
 ## Retraining
 

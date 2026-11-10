@@ -15,6 +15,8 @@ Settings: `pipeline/config/live.yaml`. Three workflows run it:
   going (`reader` job), watches the served file (`watch` job), and publishes the admin's
   manual statuses to `v1/` while the reader is not the one writing it
   ([Manual statuses](#manual-statuses-the-admin)), then sends notifications.
+  Each of its runs also starts `chances-watch.yml`, the watch on the served snow-day chances
+  (docs/predict.md, "Staying on air").
 - `.github/workflows/live-blank.yml`: the owner's stop. `live-drill.yml` holds the drills.
 
 ## The reader
@@ -1268,7 +1270,8 @@ unauthenticated limit is 60 an hour).
 The owner's Cloudflare Worker `snowlight-timer` dispatches `predict.yml` and
 `live-ingest.yml` every 5 minutes with a fine-grained personal access token (Actions: read and
 write on this repository). Its expiry date is set when it is made. When it expires, live-ingest
-stops (the admin's statuses in shadow, notify, watch, and the `reader` restarter); live-read
+stops (the admin's statuses in shadow, notify, watch, the `reader` restarter, and with them the
+chances watch, which each live-ingest run starts); live-read
 keeps itself going through its successor and schedule, and `timer` opens within 15 minutes. To
 renew: GitHub > Settings > Developer settings > Fine-grained tokens > the timer's token >
 Regenerate (or make a new one with the same access), then in the Cloudflare dashboard >
@@ -1477,6 +1480,10 @@ Public, on the live host. These hold school indexes, days, codes and times only.
 - `v1/live/season.json`: each school's closed, delayed, remote and early-dismissal days this school year ([The season counts](#the-season-counts)). Written by the reader only, when it changes.
 
 The files go up in this order: closings, opens, day timelines, season file, index.
+
+The chance job reads `closings.json`, `opens.json`, the day timelines and their index, and the
+deployed site's `edition.json`, `meta.json` and `points.bin`. Before changing the shape of any
+of them, read docs/predict.md, "Staying on air".
 
 Private state (`out/internal/live/state/`, kept by the state store, [The state](#the-state)):
 
