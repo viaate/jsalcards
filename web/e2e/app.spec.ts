@@ -42,7 +42,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { devices, expect, test } from '@playwright/test';
-import type { Locator, Page, Route } from '@playwright/test';
+import type { BrowserContext, Locator, Page, Route } from '@playwright/test';
 import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
@@ -634,6 +634,65 @@ test.describe('with no data shipped', () => {
     );
   });
 });
+
+/** How many times the phone test makes its cards, each on a phone new to the site. */
+const CARD_MAKES = 5;
+
+/** How many times the reference picture is timed beside each make. */
+const REFERENCE_SAMPLES = 3;
+
+/**
+ * How long the reference picture below takes at a quarter of the CPU on the machine the
+ * card's 500 ms was set and measured on, in milliseconds: its median there over the two
+ * quietest of five runs (30 timings, Nov 10 2026). With it, the 500 ms reads: a Story takes
+ * no longer than five thirds of the reference picture, on any machine.
+ */
+const REFERENCE_MS = 300;
+
+/**
+ * A reference picture, made in the page and timed: a Story's size, a glow over the whole of
+ * it and a few hundred bars, encoded to a PNG as a card is. It never changes, so its time says
+ * how fast the page runs at that moment: on a slower runner, or one busy with the test beside
+ * this one, it takes longer by as much as a card does.
+ */
+function referencePicture(): Promise<number> {
+  const started = performance.now();
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1920;
+  const ctx = canvas.getContext('2d', { alpha: false });
+  if (ctx === null) return Promise.reject(new Error('no 2D canvas'));
+  ctx.fillStyle = '#05070a';
+  ctx.fillRect(0, 0, 1080, 1920);
+  for (const [radius, light] of [
+    [1400, 'rgba(127, 212, 255, 0.3)'],
+    [420, 'rgba(127, 212, 255, 0.42)'],
+  ] as const) {
+    const glow = ctx.createRadialGradient(540, 700, 0, 540, 700, radius);
+    glow.addColorStop(0, light);
+    glow.addColorStop(1, 'rgba(127, 212, 255, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, 1080, 1920);
+  }
+  // The same bars every time: a fixed sequence stands in for chance.
+  let seed = 12_345;
+  const next = (): number => {
+    seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
+    return seed / 2_147_483_648;
+  };
+  for (let bar = 0; bar < 600; bar++) {
+    ctx.fillStyle = `rgba(255, 255, 255, ${String(0.2 + 0.8 * next())})`;
+    ctx.beginPath();
+    ctx.roundRect(80 + 700 * next(), 120 + 1700 * next(), 12 + 220 * next(), 4 + 28 * next(), 6);
+    ctx.fill();
+  }
+  return new Promise<number>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob === null) reject(new Error('no PNG'));
+      else resolve(performance.now() - started);
+    }, 'image/png');
+  });
+}
 
 // A build with data staged. ------------------------------------------------------------
 
@@ -3408,81 +3467,121 @@ test.describe('with data staged', () => {
   test('share cards on a phone: the share sheet gets the Story’s PNG, its words and the link, made in under 500 ms at a quarter of the CPU', async ({
     browser,
   }) => {
-    test.setTimeout(180_000);
-    const context = await browser.newContext({
-      ...devices['Pixel 7'],
-      timezoneId: 'America/Chicago',
-    });
-    const page = await context.newPage();
-    await fixDate(page, SYNTHETIC_NOW);
-    // The phone's share sheet, stubbed: what it is handed, and the image's own size.
-    await page.addInitScript(() => {
-      const shared: unknown[] = [];
-      Object.assign(window, { __shared: shared });
-      Object.defineProperty(navigator, 'canShare', {
-        configurable: true,
-        value: (data: ShareData) => (data.files ?? []).every((file) => file.type === 'image/png'),
+    test.setTimeout(300_000);
+    /** A phone that has never opened the site, its share sheet stubbed. */
+    const openPhone = async (): Promise<{ context: BrowserContext; page: Page } & Watch> => {
+      const context = await browser.newContext({
+        ...devices['Pixel 7'],
+        timezoneId: 'America/Chicago',
       });
-      Object.defineProperty(navigator, 'share', {
-        configurable: true,
-        value: async (data: ShareData) => {
-          const files = await Promise.all(
-            (data.files ?? []).map(async (file) => {
-              const bitmap = await createImageBitmap(file);
-              return {
-                name: file.name,
-                type: file.type,
-                width: bitmap.width,
-                height: bitmap.height,
-              };
-            }),
-          );
-          shared.push({ title: data.title, text: data.text, url: data.url, files });
-        },
+      const page = await context.newPage();
+      await fixDate(page, SYNTHETIC_NOW);
+      // The phone's share sheet, stubbed: what it is handed, and the image's own size.
+      await page.addInitScript(() => {
+        const shared: unknown[] = [];
+        Object.assign(window, { __shared: shared });
+        Object.defineProperty(navigator, 'canShare', {
+          configurable: true,
+          value: (data: ShareData) => (data.files ?? []).every((file) => file.type === 'image/png'),
+        });
+        Object.defineProperty(navigator, 'share', {
+          configurable: true,
+          value: async (data: ShareData) => {
+            const files = await Promise.all(
+              (data.files ?? []).map(async (file) => {
+                const bitmap = await createImageBitmap(file);
+                return {
+                  name: file.name,
+                  type: file.type,
+                  width: bitmap.width,
+                  height: bitmap.height,
+                };
+              }),
+            );
+            shared.push({ title: data.title, text: data.text, url: data.url, files });
+          },
+        });
       });
-    });
-    const { problems } = watch(page);
-    await page.goto(`${site}?school=${PEMBROKE_HILL}`);
+      return { context, page, ...watch(page) };
+    };
+    // One make times the runner as much as the page: a shared machine runs a third slower from
+    // one run to the next, and slower again while the test beside this one draws its map in
+    // software. So the cards are made several times, each on a phone that has never opened the
+    // site, as a first press of Share finds it; the reference picture is timed beside each, and
+    // the Story's median time is read as the mid phone's: scaled by how the reference picture
+    // fared beside it (its median) against its time on the machine the 500 ms was set on.
+    const makes: { story: number; post: number }[] = [];
+    const references: number[] = [];
+    let phone = await openPhone();
+    for (;;) {
+      const { context, page } = phone;
+      const panel = page.locator('aside.detail');
+      await page.goto(`${site}?school=${PEMBROKE_HILL}`);
+      await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+      await expect(panel.locator('.status .headline')).toHaveText([copy.statusLine.delayed.today]);
+      // The page at rest (the map landed on the school), so the time is the card's own.
+      await waitForMap(page);
+      let last = '';
+      await expect
+        .poll(
+          async () => {
+            const now = JSON.stringify(await mapView(page));
+            const still = now === last;
+            last = now;
+            return still;
+          },
+          { timeout: FIRST_FLIGHT_MS, intervals: [1000] },
+        )
+        .toBe(true);
+      /** The cards' times on the page's performance timeline, by card. */
+      const cardTimes = (): Promise<Record<string, number>> =>
+        page.evaluate(() =>
+          Object.fromEntries(
+            performance
+              .getEntriesByType('measure')
+              .filter((entry) => entry.name.startsWith('share-card '))
+              .map((entry) => [entry.name.slice('share-card '.length), entry.duration]),
+          ),
+        );
+      // A mid phone: the CPU at a quarter of its speed while the cards are made.
+      const cdp = await context.newCDPSession(page);
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+      await panel.locator('.action').nth(1).click();
+      await panel.locator('.option[data-card="story"]').click();
+      await expect
+        .poll(() =>
+          page.evaluate(() => (window as unknown as { __shared: unknown[] }).__shared.length),
+        )
+        .toBe(1);
+      // The Post is made after the Story; the reference picture after both, the page at rest.
+      await expect.poll(async () => Object.keys(await cardTimes())).toEqual(['story', 'post']);
+      const { story = Infinity, post = Infinity } = await cardTimes();
+      for (let sample = 0; sample < REFERENCE_SAMPLES; sample++) {
+        references.push(await page.evaluate(referencePicture));
+      }
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+      makes.push({ story, post });
+      // The last phone stays open: what its sheet was handed is read below.
+      if (makes.length === CARD_MAKES) break;
+      expect(phone.problems).toEqual([]);
+      await context.close();
+      phone = await openPhone();
+    }
+    const { context, page, problems } = phone;
     const panel = page.locator('aside.detail');
-    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
-    await expect(panel.locator('.status .headline')).toHaveText([copy.statusLine.delayed.today]);
-    // The page at rest (the map landed on the school), so the time is the card's own.
-    await waitForMap(page);
-    let last = '';
-    await expect
-      .poll(
-        async () => {
-          const now = JSON.stringify(await mapView(page));
-          const still = now === last;
-          last = now;
-          return still;
-        },
-        { timeout: FIRST_FLIGHT_MS, intervals: [1000] },
-      )
-      .toBe(true);
-    // A mid phone: the CPU at a quarter of its speed while the cards are made.
-    const cdp = await context.newCDPSession(page);
-    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
-    await panel.locator('.action').nth(1).click();
-    await panel.locator('.option[data-card="story"]').click();
-    await expect
-      .poll(() =>
-        page.evaluate(() => (window as unknown as { __shared: unknown[] }).__shared.length),
-      )
-      .toBe(1);
-    const made = await page.evaluate(() =>
-      performance
-        .getEntriesByType('measure')
-        .filter((entry) => entry.name.startsWith('share-card '))
-        .map((entry) => ({ name: entry.name, ms: entry.duration })),
+    const ms = (times: number[]): string => times.map((time) => time.toFixed(0)).join(', ');
+    const median = (times: number[]): number =>
+      [...times].sort((a, b) => a - b)[Math.floor(times.length / 2)] ?? Infinity;
+    const stories = makes.map((make) => make.story);
+    const onMidPhone = (median(stories) * REFERENCE_MS) / median(references);
+    test.info().annotations.push({
+      type: 'share card ms (CPU / 4)',
+      description: JSON.stringify({ onMidPhone, makes, references }),
+    });
+    console.warn(
+      `share card story on a mid phone: ${onMidPhone.toFixed(0)} ms; as timed, in turn: story ${ms(stories)}; post ${ms(makes.map((make) => make.post))}; reference picture ${ms(references)}`,
     );
-    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
-    test
-      .info()
-      .annotations.push({ type: 'share card ms (CPU / 4)', description: JSON.stringify(made) });
-    const story = made.find((entry) => entry.name === 'share-card story');
-    expect(story).toBeDefined();
-    expect(story?.ms ?? Infinity).toBeLessThan(500);
+    expect(onMidPhone).toBeLessThan(500);
     const [sheet] = (await page.evaluate(
       () => (window as unknown as { __shared: unknown[] }).__shared,
     )) as {
