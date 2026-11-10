@@ -6,7 +6,12 @@ on:
     # workflow; it touches no code.
     paths-ignore:
       - pipeline/config/archive-requests.json
+      # The iPhone app has its own workflows, and no job here reads it. Its workflow
+      # files are not listed: tests in the pipeline and web jobs read every workflow.
+      - ios/**
   pull_request:
+    paths-ignore:
+      - ios/**
 
 permissions:
   contents: read

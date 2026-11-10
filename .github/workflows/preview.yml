@@ -41,6 +41,9 @@ on:
     paths-ignore:
       - pipeline/config/archive-requests.json
       - docs/**
+      # The iPhone app and its own workflows change nothing the site deploys.
+      - ios/**
+      - .github/workflows/ios-*.yml
   workflow_dispatch:
     inputs:
       date_past_mismatch:
