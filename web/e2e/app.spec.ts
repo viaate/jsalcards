@@ -43,6 +43,7 @@ import { fileURLToPath } from 'node:url';
 
 import { devices, expect, test } from '@playwright/test';
 import type { BrowserContext, Locator, Page, Route } from '@playwright/test';
+import sharp from 'sharp';
 import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
@@ -692,6 +693,83 @@ function referencePicture(): Promise<number> {
       else resolve(performance.now() - started);
     }, 'image/png');
   });
+}
+
+/** A text's measures at 100 pixels, as the card's layout reads a face (src/ui/share-card.ts Face). */
+type Face = (text: string, weight: number) => { advance: number; left: number; right: number };
+
+/** What these tests use of the card's own code. */
+interface CardCode {
+  readonly CARD_TONES: Readonly<
+    Record<string, { readonly field: string; readonly flake: string; readonly hill: string }>
+  >;
+  readonly LEFT: number;
+  readonly RIGHT: number;
+  readonly fontOf: (size: number, weight: number) => string;
+  readonly offsets: (
+    face: Face,
+    text: string,
+    weight: number,
+    tracking: number,
+    wordSpace: number,
+  ) => number[];
+}
+
+/**
+ * The card's own code (src/ui/share-card.ts), loaded as a test runs rather than imported above:
+ * its types reach the panel's view, whose modules this suite's type check does not read.
+ */
+async function cardCode(): Promise<CardCode> {
+  const file = new URL('../src/ui/share-card.ts', import.meta.url).href;
+  return (await import(file)) as CardCode;
+}
+
+/** A color's three channels, from #rrggbb. */
+function channels(hex: string): [number, number, number] {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/**
+ * A saved card, read back as pixels, is the poster of its status: its field's color at the top
+ * left and low on the left edge, the white hill at the middle of its foot, and no type past
+ * the measure. Left of the left edge and right of the right one (a column in from each, for a
+ * letter's faint edge), above the hill's ends, every pixel lies between the field's color and
+ * the crystal's, give or take 2: so in the real face, as the browser draws it, no letter
+ * starts before the edge every line starts on, and none runs past the edge every line ends by.
+ */
+async function expectPoster(png: Buffer, card: CardCode, tone: string): Promise<void> {
+  const colors = card.CARD_TONES[tone];
+  if (colors === undefined) throw new Error(`no poster for ${tone}`);
+  const { LEFT, RIGHT } = card;
+  const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width, height } = info;
+  expect([width, info.channels]).toEqual([1080, 3]);
+  const pixel = (x: number, y: number): number[] => [
+    ...data.subarray((y * width + x) * 3, (y * width + x) * 3 + 3),
+  ];
+  const field = channels(colors.field);
+  const flake = channels(colors.flake);
+  expect(pixel(10, 10)).toEqual(field);
+  expect(pixel(4, height - 40)).toEqual(field);
+  expect(pixel(540, height - 4)).toEqual(channels(colors.hill));
+  const low = field.map((value, n) => Math.min(value, flake[n] ?? value) - 2);
+  const high = field.map((value, n) => Math.max(value, flake[n] ?? value) + 2);
+  const outside: string[] = [];
+  let toned = 0;
+  for (let y = 0; y <= height - 61; y++) {
+    for (let x = 0; x < width; x++) {
+      const at = pixel(x, y);
+      if (at.every((value, n) => value === flake[n])) toned++;
+      if (x >= LEFT - 1 && x <= RIGHT) continue;
+      if (at.some((value, n) => value < (low[n] ?? 0) || value > (high[n] ?? 255))) {
+        if (outside.length < 5) outside.push(`${String(x)},${String(y)}: ${at.join(' ')}`);
+      }
+    }
+  }
+  expect(outside).toEqual([]);
+  // The crystal stands behind the type, tone on tone.
+  expect(toned).toBeGreaterThan(20_000);
 }
 
 // A build with data staged. ------------------------------------------------------------
@@ -3430,6 +3508,8 @@ test.describe('with data staged', () => {
     });
     const page = await context.newPage();
     await fixDate(page, SYNTHETIC_NOW);
+    const card = await cardCode();
+    const { fontOf, offsets } = card;
     const { problems, requests } = watch(page);
     await page.goto(`${site}?school=${BORDER_STAR_ID}`);
     const panel = page.locator('aside.detail');
@@ -3455,11 +3535,119 @@ test.describe('with data staged', () => {
       // A PNG's signature, then its header's width and height.
       expect(png.subarray(1, 4).toString('latin1')).toBe('PNG');
       expect({ width: png.readUInt32BE(16), height: png.readUInt32BE(20) }).toEqual(size);
+      // The school is closed today: the Closed poster, in the real face, inside its measure.
+      await expectPoster(png, card, 'closed');
       await expect(button).toHaveText(shareCopy.saved);
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
         `${site}?school=${BORDER_STAR_ID}`,
       );
     }
+
+    // The cards' code is its own small file, and none of it is in the page's first script.
+    const chunk = requests.find((url) => /share-cards?-[\w-]+\.js/.test(url)) ?? '';
+    const cards = await (await page.request.get(chunk)).text();
+    expect(cards.length).toBeGreaterThan(5_000);
+    expect(cards.length).toBeLessThan(20_000);
+    expect(cards).toContain('1791dc');
+    const first = await page.evaluate(
+      () => document.querySelector<HTMLScriptElement>('script[type="module"][src]')?.src ?? '',
+    );
+    expect(first).toMatch(/\/assets\/index-[\w-]+\.js$/);
+    const script = await (await page.request.get(first)).text();
+    expect(script.length).toBeGreaterThan(10_000);
+    expect(script).not.toContain('1791dc');
+
+    // The card's layout counts on Geist's cap height (0.71) and descender (0.17): the face the
+    // page has, at the card's boldest weight, measures so.
+    const face700 = fontOf(1000, 700);
+    const metrics = await page.evaluate(async (font) => {
+      await document.fonts.load(font, 'Hgjpqy');
+      const ctx = document.createElement('canvas').getContext('2d');
+      if (ctx === null) throw new Error('no 2D canvas');
+      ctx.font = font;
+      return {
+        loaded: document.fonts.check(font, 'Hgjpqy'),
+        cap: ctx.measureText('H').actualBoundingBoxAscent / 1000,
+        descender: ctx.measureText('gjpqy').actualBoundingBoxDescent / 1000,
+      };
+    }, face700);
+    expect(metrics.loaded).toBe(true);
+    expect(metrics.cap).toBeGreaterThanOrEqual(0.7);
+    expect(metrics.cap).toBeLessThanOrEqual(0.73);
+    expect(metrics.descender).toBeGreaterThanOrEqual(0.155);
+    expect(metrics.descender).toBeLessThanOrEqual(0.185);
+
+    // The card draws each letter itself, at the places offsets() works out from the face's
+    // measures. With no tracking those are the browser's own: a line drawn letter by letter
+    // in the page, from the page's measures of each prefix and each letter, is the line one
+    // fillText draws, kerns and all, at 150 pixels, with the face read from the page at that
+    // same size (this suite's Chromium fits a web font's advances to whole pixels at each size,
+    // so the measures are taken where the line is drawn).
+    const line = 'Tuesday, Jan 13';
+    const letters = Array.from(line);
+    const texts = [
+      ...new Set([...letters.map((_, n) => letters.slice(0, n + 1).join('')), ...letters]),
+    ];
+    const measured = await page.evaluate(
+      ([font, all]) => {
+        const ctx = document.createElement('canvas').getContext('2d');
+        if (ctx === null) throw new Error('no 2D canvas');
+        ctx.font = font;
+        return all.map((text): [string, number, number, number] => {
+          const box = ctx.measureText(text);
+          return [text, box.width, box.actualBoundingBoxLeft, box.actualBoundingBoxRight];
+        });
+      },
+      [fontOf(150, 700), texts] as const,
+    );
+    const boxes = new Map(
+      measured.map(([text, advance, left, right]) => [text, { advance, left, right }]),
+    );
+    const face: Face = (text, weight) => {
+      const box = boxes.get(text);
+      if (box === undefined || weight !== 700) throw new Error(`not measured: ${text}`);
+      return box;
+    };
+    const places = offsets(face, line, 700, 0, 0);
+    expect(places).toHaveLength(letters.length);
+    // "Tu" is kerned in Geist: the "u" starts nearer the "T" than the "T" alone is wide.
+    expect(places[1] ?? 0).toBeLessThan((boxes.get('T')?.advance ?? 0) - 1);
+    // The whole line sits inside the canvas it is drawn on.
+    expect(40 + (boxes.get(line)?.right ?? Infinity)).toBeLessThan(1760);
+    const drawn = await page.evaluate(
+      ([font, text, at]) => {
+        const draw = (each: boolean): Uint8ClampedArray => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1800;
+          canvas.height = 300;
+          const ctx = canvas.getContext('2d');
+          if (ctx === null) throw new Error('no 2D canvas');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, 1800, 300);
+          ctx.fillStyle = '#000000';
+          ctx.font = font;
+          ctx.textBaseline = 'alphabetic';
+          if (each) {
+            Array.from(text).forEach((letter, n) => {
+              ctx.fillText(letter, 40 + (at[n] ?? 0), 220);
+            });
+          } else ctx.fillText(text, 40, 220);
+          return ctx.getImageData(0, 0, 1800, 300).data;
+        };
+        const byLetter = draw(true);
+        const whole = draw(false);
+        let worst = 0;
+        let inked = 0;
+        for (let n = 0; n < whole.length; n += 4) {
+          worst = Math.max(worst, Math.abs((byLetter[n] ?? 0) - (whole[n] ?? 0)));
+          if ((whole[n] ?? 255) < 128) inked++;
+        }
+        return { worst, inked };
+      },
+      [fontOf(150, 700), line, places] as const,
+    );
+    expect(drawn.inked).toBeGreaterThan(20_000);
+    expect(drawn.worst).toBeLessThanOrEqual(32);
     expect(problems).toEqual([]);
     await context.close();
   });

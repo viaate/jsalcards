@@ -1,11 +1,14 @@
 /**
- * The logo's numbers, for the share card to draw (ui/share-card.ts): the
- * one-color mark, a snow crystal coming up over a snowy hill, as flat shapes
- * on the 24 unit grid of scripts/logo/mark.svg (docs/live.md, "The logo and
- * the icons"). The file there is the design's own; these are its shapes
- * without its clip, which a canvas card does not use: the three upper arms,
- * the foot (what the mound's breath leaves of the three lower arms) and the
- * mound. A test draws both and compares them.
+ * The logo's numbers, for the share card to draw (ui/share-card.ts): a snow
+ * crystal coming up over a snowy hill (docs/live.md, "The logo and the
+ * icons"). Twice: the one-color mark at the card's foot, as flat shapes on the
+ * 24 unit grid of scripts/logo/mark.svg (the file there is the design's own;
+ * these are its shapes without its clip, which a canvas card does not use:
+ * the three upper arms, the foot, which is what the mound's breath leaves of
+ * the three lower arms, and the mound; a test draws both and compares them),
+ * and the card's artwork, the same picture large and tone on tone: the
+ * crystal's arms in the icon's own units, a breath of the card's color under
+ * them, and the white hill.
  */
 
 /**
@@ -115,4 +118,112 @@ export function drawMark(
     ctx.closePath();
     ctx.fill();
   }
+}
+
+/** A crystal arm's length in the icon's units: every size below is per this much arm. */
+export const ARM_REACH = 456;
+/** How far the crystal's center stands above the hill's crest. */
+export const CENTER_LIFT = 112;
+/** The band of plain color kept between the crystal's foot and the snow. */
+export const BREATH = 50;
+
+/** A long arm pointing up from the center: 80 wide, one pair of branches, a pointed tip. */
+export const LONG_ARM: readonly (readonly [number, number])[] = [
+  [-40, 0],
+  [-40, -262],
+  [-134, -316.3],
+  [-134, -396.3],
+  [-40, -342],
+  [-40, -432.9],
+  [0, -456],
+  [40, -432.9],
+  [40, -342],
+  [134, -396.3],
+  [134, -316.3],
+  [40, -262],
+  [40, 0],
+];
+
+/** A lower arm, short and bare: the three of them are the foot that goes behind the hill. */
+export const SHORT_ARM: readonly (readonly [number, number])[] = [
+  [-40, 0],
+  [-40, -146.9],
+  [0, -170],
+  [40, -146.9],
+  [40, 0],
+];
+
+/** The arms' turns from straight up, in degrees: three long, then the three short. */
+export const ARM_TURNS: readonly number[] = [0, 60, -60, 120, -120, 180];
+
+/** Where the card's artwork stands. */
+export interface Sunrise {
+  /** The card's width and height. */
+  readonly width: number;
+  readonly height: number;
+  /** The top of the hill, under the crystal's center. */
+  readonly crest: number;
+  /** The crystal's arm in pixels; under 150 no crystal is drawn, the hill alone. */
+  readonly r: number;
+  /** Whether the crystal is drawn. */
+  readonly crystal: boolean;
+  /** The crystal's center. */
+  readonly cx: number;
+  readonly cy: number;
+  /** The breath's curve and the hill's: from the left edge, through a control point, to the right. */
+  readonly breath: readonly (readonly [number, number])[];
+  readonly hill: readonly (readonly [number, number])[];
+}
+
+/** Everything under a curve, down to the card's foot. */
+function under(
+  ctx: CanvasRenderingContext2D,
+  curve: readonly (readonly [number, number])[],
+  foot: number,
+): void {
+  const [from, by, to] = curve;
+  if (from === undefined || by === undefined || to === undefined) return;
+  ctx.beginPath();
+  ctx.moveTo(from[0], from[1]);
+  ctx.quadraticCurveTo(by[0], by[1], to[0], to[1]);
+  ctx.lineTo(to[0], foot);
+  ctx.lineTo(from[0], foot);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/**
+ * Draws the artwork in three flat fills: the crystal in `flake`, the breath in
+ * the card's own color (which trims the crystal's foot to the hill's curve),
+ * then the hill.
+ */
+export function drawSunrise(
+  ctx: CanvasRenderingContext2D,
+  art: Sunrise,
+  flake: string,
+  field: string,
+  hill: string,
+): void {
+  if (art.crystal) {
+    const s = art.r / ARM_REACH;
+    ctx.fillStyle = flake;
+    for (const degrees of ARM_TURNS) {
+      const turn = (degrees * Math.PI) / 180;
+      const cos = Math.cos(turn) * s;
+      const sin = Math.sin(turn) * s;
+      ctx.beginPath();
+      (Math.abs(degrees) > 90 ? SHORT_ARM : LONG_ARM).forEach(([x, y], index) => {
+        const px = art.cx + x * cos - y * sin;
+        const py = art.cy + x * sin + y * cos;
+        if (index === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = field;
+    under(ctx, art.breath, art.height + 2);
+  }
+  ctx.fillStyle = hill;
+  under(ctx, art.hill, art.height + 2);
 }

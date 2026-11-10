@@ -71,8 +71,9 @@ describe('a share card, from the panel’s view', () => {
     expect(model.chance).toBeNull();
     expect(model.asOf).toBe(`As of 6:55${NBSP}AM`);
     expect(model.host).toBe('snowlightmap.com');
-    expect(model.wordmark).toBe(copy.appName);
-    expect(model.initial).toBe('L');
+    // No letter in a circle and no wordmark: the card signs off with the logo and the address.
+    expect(Object.keys(model)).not.toContain('initial');
+    expect(Object.keys(model)).not.toContain('wordmark');
   });
 
   it('says a delay’s length and start as the panel does', () => {
@@ -299,6 +300,46 @@ describe('a share card, from the panel’s view', () => {
       expect(model.alt).not.toContain(model.place ?? 'none');
       expect(model.alt).not.toContain(SEASON_LINE);
     }
+  });
+
+  it('says a second day, a chance under a status and a cut line in the house style', () => {
+    const tuesday = shareFormat.cardDay('2026-01-13');
+    const said = detailsFormat.said([3, 8]) ?? '';
+    const sentences = shareFormat.sentences(said);
+    const lines = [
+      shareFormat.secondDay(copy.statusLine.closed.tomorrow, true, tuesday),
+      shareFormat.secondDay(copy.statusLine.earlyDismissal.tomorrow, false, tuesday),
+      shareFormat.secondDay(copy.statusLine.remote.tomorrow, true, null),
+      shareFormat.chanceLine(shareFormat.percent('64'), chanceFormat.chanceOn('2026-01-13')),
+      shareFormat.paragraph(copy.reason.ice, sentences),
+      shareFormat.paragraph(null, sentences.slice(0, 1)),
+    ];
+    expect(lines).toEqual([
+      'Closed tomorrow too · Tuesday, Jan 13',
+      'Early dismissal tomorrow · Tuesday, Jan 13',
+      'Remote learning tomorrow too',
+      '64% · Chance of no school Tuesday',
+      'Ice · Buses run snow routes. No breakfast.',
+      'Buses run snow routes.',
+    ]);
+    // A delay's facts one to a line, and the school's words sentence by sentence.
+    const facts = shareFormat.facts(format.delay(120, 600) ?? '');
+    expect(facts).toEqual(['2-hour delay', `Starts at 10:00${NBSP}AM`]);
+    expect(sentences).toEqual(['Buses run snow routes.', 'No breakfast.']);
+    expect(sentences.join(' ')).toBe(said);
+    // The chance's digits and its sign, set at two sizes.
+    expect(shareFormat.numberParts('64%')).toEqual({ digits: '64', sign: '%' });
+    expect(shareFormat.numberParts('<1%')).toEqual({ digits: '<1', sign: '%' });
+    expect(shareFormat.numberParts('>99%')).toEqual({ digits: '>99', sign: '%' });
+    // A line cut to fit ends in the one mark, never three full stops.
+    expect(shareCopy.cut).toBe('…');
+    const cut = `${(lines[2] ?? '').slice(0, 21)}${shareCopy.cut}`;
+    expect(cut).toBe('Remote learning tomor…');
+    for (const text of [...lines, ...facts, ...sentences, cut]) {
+      expect(problems.problems(text, 'src/copy-share.ts'), text).toEqual([]);
+    }
+    // The card signs off with the logo and the address: the site's name is not set in type.
+    expect(Object.keys(shareCopy)).not.toContain('wordmark');
   });
 
   it('names its saved image by the school and the card', () => {

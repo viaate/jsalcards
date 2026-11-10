@@ -11,7 +11,7 @@ import type { CardKind } from '../../app/share-card';
 import { ZONE } from '../../app/tests/chance-fixtures';
 import { URL_OF, samples } from '../../app/tests/share-card-fixtures';
 import { drawCard, layoutCard } from '../share-card';
-import type { Measure } from '../share-card';
+import type { Face } from '../share-card';
 import { MARK_GRID, MARK_SHAPES, drawMark } from '../share-card-art';
 
 const WEB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -81,13 +81,12 @@ function recorder(): { ctx: CanvasRenderingContext2D; calls: Call[] } {
 }
 
 /** A face about as wide as Geist: each letter a little over half its size, bolder a little wider. */
-const measure: Measure = (text, size, weight) =>
-  [...new Intl.Segmenter('en-US', { granularity: 'grapheme' }).segment(text)].length *
-  size *
-  (weight >= 650 ? 0.6 : 0.54);
-
-/** The foot's ink, as the site's first text color. */
-const MARK_COLOR = '#f5f5f5';
+const face: Face = (text, weight) => {
+  const advance =
+    [...new Intl.Segmenter('en-US', { granularity: 'grapheme' }).segment(text)].length *
+    (weight >= 650 ? 60 : 46);
+  return { advance, left: 0, right: advance };
+};
 
 describe('the logo in one color', () => {
   it("draws the design's mark: its shapes and scripts/logo/mark.svg are one picture", async () => {
@@ -158,35 +157,36 @@ describe("the mark at the card's foot", () => {
   it.each(cards)('is the logo, flat, on the %s %s card', (_, kind, view, now) => {
     const model = cardModel({ view, url: URL_OF(view.id), now: now, timeZone: ZONE });
     if (model === null) throw new Error('no card');
-    const layout = layoutCard(model, kind, measure);
+    const layout = layoutCard(model, kind, face);
     const { ctx, calls } = recorder();
     drawCard(ctx, layout);
 
-    // After the hairline over the foot, nothing glows: the bloom is gone.
-    const hairline = calls.findIndex(
-      (call) => call.name === 'fillRect' && call.args[1] === Math.round(layout.rule.y),
+    // Nothing on the card glows: no gradient, arc, stroke or image, from first call to last.
+    expect(calls.filter((call) => /^create|^arc$|^stroke$|^drawImage$/.test(call.name))).toEqual(
+      [],
     );
-    expect(hairline).toBeGreaterThan(-1);
-    const foot = calls.slice(hairline + 1);
-    expect(foot.filter((call) => /^create|^arc$|^stroke$|^drawImage$/.test(call.name))).toEqual([]);
 
-    // The logo's five shapes, in the foot's ink, inside the mark's square.
-    const fills = foot.filter((call) => call.name === 'fill');
-    expect(fills.map((call) => call.fillStyle)).toEqual(Array(5).fill(MARK_COLOR));
-    const { x, y, size } = layout.mark;
+    // After the last word, the logo's five shapes, in the card's type color, inside the mark's box.
+    const words = calls.findLastIndex((call) => call.name === 'fillText');
+    expect(words).toBeGreaterThan(-1);
+    const fills = calls.slice(words + 1).filter((call) => call.name === 'fill');
+    expect(fills.map((call) => call.fillStyle)).toEqual(Array(5).fill(layout.colors.type));
+    const { x, y, u, left, width, height, bottom } = layout.mark;
     for (const [px, py] of fills.flatMap((call) => call.path)) {
-      expect(px).toBeGreaterThanOrEqual(x);
-      expect(px).toBeLessThanOrEqual(x + size);
-      expect(py).toBeGreaterThanOrEqual(y);
-      expect(py).toBeLessThanOrEqual(y + size);
+      // The slanted arms' branches reach a quarter unit past the mound each side.
+      expect(px).toBeGreaterThanOrEqual(left - 0.25 * u - 1e-9);
+      expect(px).toBeLessThanOrEqual(left + width + 0.25 * u + 1e-9);
+      expect(py).toBeGreaterThanOrEqual(bottom - height - 1e-9);
+      expect(py).toBeLessThanOrEqual(bottom + 1e-9);
     }
-    // Its mound runs the square's width, half a unit in from each side, on the row's underside.
-    const u = size / MARK_GRID;
+    // Its mound runs the mark's width, on the sign-off's bottom line.
     expect(fills[4]?.path).toEqual([
       [x + 0.5 * u, y + 21 * u],
       [x + 12 * u, y + 15 * u],
       [x + 23.5 * u, y + 21 * u],
     ]);
+    expect(x + 0.5 * u).toBeCloseTo(left, 9);
+    expect(y + 21 * u).toBeCloseTo(bottom, 9);
   });
 
   it('is checked on every sample card, in both formats', () => {

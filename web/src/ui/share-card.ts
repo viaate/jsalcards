@@ -1,138 +1,249 @@
 /**
  * A share card drawn: the layout of a card's model (app/share-card.ts) on its
- * Story or Post canvas, and the PNG of it, made in the browser. Dark like the
- * map, the school's status glowing in its own color behind it, its words in
- * the site's own face (Geist, which the page already has), large enough to
- * read on a phone at a story's size. The layout is worked out first, every
- * line measured and wrapped to the card's width (a word too wide for it
- * broken, never clipped; a headline's last word never left alone on its
- * line), the whole sized to fill the room between the card's safe margins:
- * a story keeps its top and bottom 250 pixels free of words, where a
- * story's own bars sit. Where the words cannot fit at a size still easy to
- * read, the card leaves out its least needed lines (the season, then the
- * plain details, then the reason) rather than shrink further, and where even
- * that is not enough it is not made at all: no line ever runs into another.
- * Loaded with the first press of Share, never with the page.
+ * Story or Post canvas, and the PNG of it, made in the browser. The card is a
+ * poster: its status's color from edge to edge, the logo's picture at its
+ * foot (a snow crystal, tone on tone, coming up over a white hill), and its
+ * words in the site's own face (Geist, which the page already has) on one
+ * left edge, the answer as large as the card allows ("Closed today" fills the
+ * width). The layout is worked out first, from the face's own measures: every
+ * line's ink starts on the left edge and ends by the right one, nothing is set
+ * under 40 pixels, and no line is cut while a smaller allowed size or another
+ * break would hold it whole. A Story keeps its top 250 and bottom 260 pixels
+ * free of words, where a story's own bars sit. Where the words cannot fit
+ * with the answer still large, the card leaves out its least needed lines
+ * (LEFT_OUT) rather than shrink further, and where even that is not enough it
+ * is not made at all: no line ever runs into another. Drawn in flat fills
+ * alone: no gradient, shadow, blur or image. Loaded with the first press of
+ * Share, never with the page.
  */
 
 import { CARD_SIZES } from '../app/share-card';
-import type { CardKind, CardModel, CardTone } from '../app/share-card';
+import type { CardKind, CardModel } from '../app/share-card';
+import { shareCopy, shareFormat } from '../copy-share';
 
-import { MARK_GRID, drawMark } from './share-card-art';
+import { ARM_REACH, BREATH, CENTER_LIFT, drawMark, drawSunrise } from './share-card-art';
+import type { Sunrise } from './share-card-art';
 
 /** The site's face, as the page's style sheet names it. */
 export const CARD_FONT = '"Geist Variable", system-ui, sans-serif';
 
-/** The status colors, as the map's legend draws them (src/styles/global.css). */
-export const TONE_COLORS: Readonly<Record<CardTone, string>> = Object.freeze({
-  closed: '#7fd4ff',
-  delayed: '#ffc46b',
-  remote: '#b79cff',
-  earlyDismissal: '#6bffb0',
-  open: '#a3a3a3',
-  chance: '#7fd4ff',
-  none: '#6b6b6b',
+/** Which poster: a status's, or the chance's. */
+export type PosterTone = 'closed' | 'delayed' | 'remote' | 'earlyDismissal' | 'open' | 'chance';
+
+/** A poster's flat colors. */
+export interface ToneColors {
+  /** The poster itself, edge to edge. */
+  readonly field: string;
+  /** Its type. */
+  readonly type: string;
+  /** The big line, or the chance's number. */
+  readonly big: string;
+  /** Its small type: the place, as of when, the school-year line. */
+  readonly small: string;
+  /** The crystal: a deeper tone of the field (on the deep chance field, a paler one). */
+  readonly flake: string;
+  /** The snow. */
+  readonly hill: string;
+}
+
+/**
+ * One card per status, the same in light and dark: a solid color says "this
+ * happened", the deep teal "this might". Delayed and early dismissal take dark
+ * type, where white would be too faint on amber and on green.
+ */
+export const CARD_TONES: Readonly<Record<PosterTone, ToneColors>> = Object.freeze({
+  closed: tone('#1791dc', '#ffffff', '#ffffff', '#ffffff', '#0d80ca', '#ffffff'),
+  delayed: tone('#f0a020', '#241500', '#241500', '#3d2a04', '#e6930d', '#ffffff'),
+  remote: tone('#8f72f7', '#ffffff', '#ffffff', '#ffffff', '#7f60ec', '#ffffff'),
+  earlyDismissal: tone('#22b46d', '#03200f', '#03200f', '#03200f', '#1aa560', '#ffffff'),
+  open: tone('#4b5563', '#ffffff', '#ffffff', '#ffffff', '#414a57', '#ffffff'),
+  chance: tone('#143f3c', '#f4f5f7', '#5fe3cc', '#b4d6d1', '#1c524d', '#f4f5f7'),
 });
 
-const TEXT_1 = '#f5f5f5';
-const TEXT_2 = '#a3a3a3';
-const TEXT_3 = '#6b6b6b';
-/** The dark: the map's, a breath off black so the glow has something to fall into. */
-const BACKGROUND = '#050607';
+function tone(
+  field: string,
+  type: string,
+  big: string,
+  small: string,
+  flake: string,
+  hill: string,
+): ToneColors {
+  return Object.freeze({ field, type, big, small, flake, hill });
+}
 
-/** The room kept clear each side of the words, in pixels. */
-const SIDE = 96;
-/** A story's top and bottom, kept free of words for its own bars. */
-export const STORY_SAFE = 250;
-/** A post's top and bottom margin. */
-const POST_MARGIN = 96;
-/** The most the type steps up to fill a card with little to say, as a share of its full size. */
-export const MAX_SCALE: Readonly<Record<CardKind, number>> = Object.freeze({
-  story: 1.2,
-  post: 1.1,
+/** The chance's ticks: one per two percent, lit up to the number. */
+export const TICK_COLORS = Object.freeze({ lit: '#36c9b3', unlit: '#2c6b64' });
+
+/** The left edge every line's ink starts on, and the right edge none passes. */
+export const LEFT = 84;
+export const RIGHT = 996;
+const MEASURE = RIGHT - LEFT;
+/** No line of type is ever set smaller than this. */
+export const MIN_TYPE = 40;
+/** Geist's cap height and descender, in em. */
+export const CAP = 0.71;
+export const DESC = 0.17;
+/** The big line's smallest and largest size, and the chance number's. */
+export const BIG_SIZES = Object.freeze({ words: [150, 330], number: [260, 600] } as const);
+/** A Story's first cap-top and the sign-off's bottom line; a Post's. */
+export const FRAME: Readonly<Record<CardKind, { readonly top: number; readonly bottom: number }>> =
+  Object.freeze({ story: { top: 256, bottom: 1650 }, post: { top: 90, bottom: 1266 } });
+/** The top of the hill: the same on every card of a size. */
+export const CREST: Readonly<Record<CardKind, number>> = Object.freeze({ story: 1785, post: 1284 });
+/** The crystal's largest arm, and the arm under which none is drawn. */
+export const ARM = Object.freeze({ most: 550, least: 150 });
+/** The tallest the ticks grow. */
+export const TICKS_TALLEST: Readonly<Record<CardKind, number>> = Object.freeze({
+  story: 240,
+  post: 170,
 });
 /**
- * The least the type steps down to: the smallest words (the site's name, 36 pixels on a
- * story) stay above 25 pixels, easy to read on a phone. Below it the card leaves lines out.
+ * The largest K: all type but the big line is set at its size times K, which
+ * steps down from here to 1 by 0.05. A chance Post stays at 1: its ticks take
+ * the spare height.
  */
-export const MIN_SCALE = 0.7;
-/** The lines a card leaves out, in this order, before its type would go below MIN_SCALE. */
-export const DROPPED_FIRST = ['season', 'said', 'reason'] as const;
-export type Droppable = (typeof DROPPED_FIRST)[number];
+export const LARGEST_K: Readonly<Record<'status' | 'chance', Readonly<Record<CardKind, number>>>> =
+  Object.freeze({ status: { story: 1.5, post: 1.3 }, chance: { story: 1.3, post: 1 } });
 
-/** One run of text, its baseline at `y`, its left at `x`. */
+/**
+ * The lines a card leaves out, in this order, before its big line would go
+ * under its smallest size: the school's words, the school-year line, the
+ * reason, then the other days (with the chance on a status card).
+ */
+export const LEFT_OUT = ['said', 'season', 'reason', 'more'] as const;
+export type LeftOut = (typeof LEFT_OUT)[number];
+
+/** A text's measures at 100 pixels: its advance, and its ink's reach each side of its origin. */
+export interface FaceBox {
+  readonly advance: number;
+  readonly left: number;
+  readonly right: number;
+}
+
+/** The card's face: what a text measures at 100 pixels in a weight. Widths scale with size. */
+export type Face = (text: string, weight: number) => FaceBox;
+
+/** What part of the card a run is. */
+export type Role =
+  | 'place'
+  | 'name'
+  | 'campus'
+  | 'big'
+  | 'digits'
+  | 'sign'
+  | 'day'
+  | 'fact'
+  | 'reason'
+  | 'words'
+  | 'more'
+  | 'chance'
+  | 'few'
+  | 'meaning'
+  | 'chance-day'
+  | 'as-of'
+  | 'season'
+  | 'host';
+
+/** One line of type as drawn. */
 export interface TextRun {
+  readonly role: Role;
   readonly text: string;
+  /** Where its ink starts. */
   readonly x: number;
+  /** Its baseline. */
   readonly y: number;
-  /** Its size in pixels. */
+  /** Its size, a whole pixel. */
   readonly size: number;
   readonly weight: number;
   readonly color: string;
-  /** Its measured width. */
+  /** Its ink's width. */
   readonly width: number;
-  /** What part of the card it is, for tests and the drawing's order. */
-  readonly role: string;
+  /** Where each of its letters is drawn from, in order. */
+  readonly at: readonly number[];
 }
 
 export interface CardLayout {
   readonly kind: CardKind;
   readonly width: number;
   readonly height: number;
-  /** The words' box: no run reaches outside it. */
-  readonly box: {
-    readonly top: number;
-    readonly bottom: number;
-    readonly left: number;
-    readonly right: number;
-  };
+  readonly tone: PosterTone;
+  readonly colors: ToneColors;
+  /** What all type but the big line is multiplied by. */
+  readonly K: number;
+  /** The big line (or the chance's number): its size and how many lines it takes. */
+  readonly big: { readonly size: number; readonly lines: number };
   readonly runs: readonly TextRun[];
-  /** The badge for the school's initial (a school's logo stands here once there are logos). */
-  readonly badge: {
+  /** The chance's ticks, on a chance card. */
+  readonly ticks: {
     readonly x: number;
     readonly y: number;
-    readonly size: number;
-    readonly letter: string;
+    /** One bar's width, and the room between two. */
+    readonly bar: number;
+    readonly gap: number;
+    readonly height: number;
+    readonly count: number;
+    readonly lit: number;
+  } | null;
+  /** The artwork, and what holds the crystal down: 28 pixels under the big line or the ticks. */
+  readonly art: Sunrise & { readonly ceiling: number; readonly tip: number };
+  /** The sign-off's mark: where its grid's (0, 0) goes, pixels per unit, and its box. */
+  readonly mark: {
+    readonly x: number;
+    readonly y: number;
+    readonly u: number;
+    readonly left: number;
+    readonly width: number;
+    readonly height: number;
+    readonly bottom: number;
   };
-  /** The site's mark beside the wordmark: its top left corner and size. */
-  readonly mark: { readonly x: number; readonly y: number; readonly size: number };
-  /** The hairline over the wordmark's row. */
-  readonly rule: { readonly y: number; readonly left: number; readonly right: number };
-  /** The lines left out to fit (DROPPED_FIRST), none for any card with room for all. */
-  readonly dropped: readonly Droppable[];
-  /** The dot before each status headline, in its status's color. */
-  readonly dots: readonly {
-    readonly x: number;
-    readonly y: number;
-    readonly r: number;
-    readonly color: string;
-  }[];
-  /** The glow's center and reach, and its color. */
-  readonly glow: {
-    readonly x: number;
-    readonly y: number;
-    readonly r: number;
-    readonly color: string;
-    readonly strength: number;
-  };
-  /** How far the type stepped down to fit: 1 is full size. */
-  readonly scale: number;
+  /** The lines left out to fit (LEFT_OUT), none for any card with room for all. */
+  readonly dropped: readonly LeftOut[];
 }
-
-/** Measures `text` at `size` pixels and `weight`, in the card's face. */
-export type Measure = (text: string, size: number, weight: number) => number;
 
 /** The font shorthand a canvas takes. */
 export function fontOf(size: number, weight: number): string {
   return `${String(weight)} ${String(Math.round(size))}px ${CARD_FONT}`;
 }
 
+const SEGMENTER = new Intl.Segmenter('en-US', { granularity: 'grapheme' });
+
 /** A text's letters as a reader sees them (graphemes), so none is ever cut in two. */
 function graphemes(text: string): string[] {
-  return Array.from(
-    new Intl.Segmenter('en-US', { granularity: 'grapheme' }).segment(text),
-    (part) => part.segment,
-  );
+  return Array.from(SEGMENTER.segment(text), (part) => part.segment);
+}
+
+function isSpace(letter: string | undefined): boolean {
+  return letter === ' ' || letter === ' ';
+}
+
+/**
+ * Where each letter of a line starts, at 100 pixels, from the line's origin:
+ * the advance of the text up to and with it, less its own, so the kern before
+ * a letter stays before it, then the tracking and word space of the letters
+ * before. At no tracking the line is the browser's own. The card draws each
+ * letter itself, so every browser makes the same picture.
+ */
+export function offsets(
+  face: Face,
+  text: string,
+  weight: number,
+  tracking: number,
+  wordSpace: number,
+): number[] {
+  const out: number[] = [];
+  let spaces = 0;
+  let before = '';
+  graphemes(text).forEach((letter, i) => {
+    before += letter;
+    out.push(
+      face(before, weight).advance -
+        face(letter, weight).advance +
+        i * tracking * 100 +
+        spaces * wordSpace * 100,
+    );
+    if (isSpace(letter)) spaces++;
+  });
+  return out;
 }
 
 /**
@@ -172,639 +283,789 @@ export function wrap(text: string, width: number, measure: (text: string) => num
   return lines;
 }
 
-/** A block of the card: its lines at one size and weight, then the room after it. */
-interface Block {
-  readonly role: string;
-  readonly text: string;
-  readonly size: number;
-  readonly weight: number;
-  readonly color: string;
-  /** Line height, as a share of the size. */
-  readonly leading: number;
-  /** Room after the block, in pixels at full scale. */
-  readonly after: number;
-  /** Indent from the left, in pixels at full scale (a headline after its dot). */
-  readonly indent?: number;
-  /** Never a last word alone on its line: a headline's or a name's. */
-  readonly balance?: boolean;
+/** A row of the card's type: its weight, its size at K = 1, its tracking and word space in em. */
+interface Row {
+  readonly w: number;
+  readonly s: number;
+  readonly tr: number;
+  readonly ws: number;
 }
 
-/** The card's blocks top to bottom at full size: its head, its answer, and its foot. */
-function blocks(model: CardModel, kind: CardKind): { head: Block[]; body: Block[]; foot: Block[] } {
-  const story = kind === 'story';
-  const head: Block[] = [];
-  head.push({
-    role: 'name',
-    text: model.name,
-    size: story ? 80 : 68,
-    weight: 650,
-    color: TEXT_1,
-    leading: 1.1,
-    after: 8,
-    balance: true,
-  });
-  if (model.campus !== null) {
-    head.push({
-      role: 'campus',
-      text: model.campus,
-      size: story ? 46 : 40,
-      weight: 450,
-      color: TEXT_2,
-      leading: 1.2,
-      after: 6,
-    });
-  }
-  if (model.place !== null) {
-    head.push({
-      role: 'place',
-      text: model.place,
-      size: story ? 40 : 36,
-      weight: 450,
-      color: TEXT_2,
-      leading: 1.25,
-      after: 0,
-    });
-  }
-  const body: Block[] = [];
-  model.lines.forEach((line, n) => {
-    // The first line is the card's headline; a second (tomorrow's) a step smaller.
-    const lead = n === 0;
-    const size = lead ? (story ? 112 : 96) : story ? 72 : 60;
-    body.push({
-      role: `headline-${String(n)}`,
-      text: line.headline,
-      size,
-      weight: 700,
-      color: TEXT_1,
-      leading: 1.06,
-      after: 14,
-      indent: Math.round(size * 0.62),
-      balance: true,
-    });
-    if (line.day !== null) {
-      body.push({
-        role: `day-${String(n)}`,
-        text: line.day,
-        size: lead ? (story ? 54 : 48) : story ? 44 : 40,
-        weight: 550,
-        color: TEXT_1,
-        leading: 1.2,
-        after: 10,
-      });
-    }
-    if (line.detail !== null) {
-      body.push({
-        role: `detail-${String(n)}`,
-        text: line.detail,
-        size: story ? 46 : 40,
-        weight: 450,
-        color: TEXT_1,
-        leading: 1.25,
-        after: 8,
-      });
-    }
-    if (line.reason !== null) {
-      body.push({
-        role: `reason-${String(n)}`,
-        text: line.reason,
-        size: story ? 44 : 38,
-        weight: 450,
-        color: TEXT_2,
-        leading: 1.25,
-        after: 8,
-      });
-    }
-    if (line.said !== null) {
-      body.push({
-        role: `said-${String(n)}`,
-        text: line.said,
-        size: story ? 44 : 38,
-        weight: 450,
-        color: TEXT_2,
-        leading: 1.25,
-        after: 8,
-      });
-    }
-    body.push({
-      role: `gap-${String(n)}`,
-      text: '',
-      size: 0,
-      weight: 400,
-      color: TEXT_1,
-      leading: 0,
-      after: lead ? 44 : 32,
-    });
-  });
-  if (model.chance !== null) {
-    const first = model.lines.length === 0;
-    body.push({
-      role: 'chance-number',
-      text: model.chance.number,
-      size: first ? (story ? 280 : 220) : story ? 150 : 120,
-      weight: 700,
-      color: model.chance.fewRecords === null ? TEXT_1 : TEXT_2,
-      leading: 1.0,
-      after: 18,
-    });
-    body.push({
-      role: 'chance-meaning',
-      text: model.chance.meaning,
-      size: first ? (story ? 50 : 44) : story ? 46 : 40,
-      weight: 550,
-      color: TEXT_1,
-      leading: 1.2,
-      after: 8,
-      balance: true,
-    });
-    body.push({
-      role: 'chance-day',
-      text: model.chance.day,
-      size: first ? (story ? 46 : 40) : story ? 44 : 38,
-      weight: 450,
-      color: TEXT_2,
-      leading: 1.25,
-      after: 10,
-    });
-    if (model.chance.fewRecords !== null) {
-      body.push({
-        role: 'chance-few',
-        text: model.chance.fewRecords,
-        size: story ? 40 : 36,
-        weight: 450,
-        color: TEXT_2,
-        leading: 1.25,
-        after: 10,
-      });
-    }
-    body.push({
-      role: 'gap-chance',
-      text: '',
-      size: 0,
-      weight: 400,
-      color: TEXT_1,
-      leading: 0,
-      after: 28,
-    });
-  }
-  if (model.season !== null) {
-    body.push({
-      role: 'season',
-      text: model.season,
-      size: story ? 40 : 36,
-      weight: 450,
-      color: TEXT_2,
-      leading: 1.3,
-      after: 0,
-    });
-  }
-  const foot: Block[] = [
-    {
-      role: 'as-of',
-      text: model.asOf,
-      size: story ? 40 : 36,
-      weight: 500,
-      color: TEXT_2,
-      leading: 1.25,
-      after: 0,
-    },
-  ];
-  return { head, body, foot };
-}
+const row = (w: number, s: number, tr: number, ws = 0): Row => ({ w, s, tr, ws });
 
-interface Placed {
-  readonly runs: TextRun[];
-  readonly height: number;
-  /** How many lines each headline and name took (the blocks that balance their lines). */
-  readonly balanced: ReadonlyMap<string, number>;
-}
+/** The place, and the campus and as of when, set as it is. */
+const PLACE = row(500, 40, -0.012);
+const NAME = row(700, 68, -0.022);
+const BIG = row(700, 100, -0.038, 0.07);
+const NUMBER = row(700, 100, -0.045);
+const DAY = row(700, 68, -0.022);
+const FACT = row(600, 60, -0.016);
+const REASON = row(500, 50, -0.016);
+const WORDS = row(500, 44, -0.014);
+const MORE = row(600, 46, -0.015);
+const MEANING = row(700, 72, -0.022);
+const CHANCE_DAY = row(500, 50, -0.016);
+const SEASON = row(500, 38, -0.012);
+const HOST = row(700, 48, -0.022);
 
-/** Whether a block's last line is one word alone, after a line it could not take from. */
-function orphaned(lines: readonly string[]): boolean {
-  const last = lines.at(-1);
-  return lines.length > 1 && last !== undefined && !/\s/u.test(last);
-}
+/** A text's measures and its count of letters and spaces, each (text, weight) measured once. */
+type Read = (text: string, weight: number) => FaceBox & { n: number; sp: number };
 
-/**
- * A block's size and lines at `scale`: wrapped to `width`; a headline's or a name's with no
- * last word alone on its line, a step smaller where that is what it takes (down to 0.85 of
- * its size), else as wrapped.
- */
-function settle(
-  block: Block,
-  scale: number,
-  width: number,
-  measure: Measure,
-): { size: number; lines: string[] } {
-  const at = (size: number): string[] => {
-    const fit = (text: string): number => measure(text, size, block.weight);
-    const wrapped = wrap(block.text, width, fit);
-    return block.balance === true ? unorphan(wrapped, width, fit) : wrapped;
+function reader(face: Face): Read {
+  const memo = new Map<string, FaceBox & { n: number; sp: number }>();
+  return (text, weight) => {
+    const key = `${String(weight)}|${text}`;
+    let box = memo.get(key);
+    if (box === undefined) {
+      const letters = graphemes(text);
+      box = { ...face(text, weight), n: letters.length, sp: letters.filter(isSpace).length };
+      memo.set(key, box);
+    }
+    return box;
   };
-  const size = block.size * scale;
-  const lines = at(size);
-  if (block.balance !== true || !orphaned(lines)) return { size, lines };
-  for (const step of [0.95, 0.9, 0.85]) {
-    const smaller = at(size * step);
-    if (!orphaned(smaller)) return { size: size * step, lines: smaller };
-  }
-  return { size, lines };
 }
 
-/** Lays blocks out from `top`, each line wrapped to the box, at `scale` of their size. */
-function place(
-  list: readonly Block[],
-  top: number,
-  left: number,
-  width: number,
-  scale: number,
-  measure: Measure,
-): Placed {
-  const runs: TextRun[] = [];
-  const balanced = new Map<string, number>();
-  let y = top;
-  list.forEach((block, i) => {
-    const last = i === list.length - 1;
-    if (block.text === '') {
-      if (!last) y += block.after * scale;
-      return;
-    }
-    const indent = (block.indent ?? 0) * scale;
-    const { size, lines } = settle(block, scale, width - indent, measure);
-    const lineHeight = size * block.leading;
-    if (block.balance === true) balanced.set(block.role, lines.length);
-    lines.forEach((text) => {
-      // The baseline: the ink (caps about 0.75 of the size above it, descenders 0.22 below)
-      // centred in the line's height.
-      const baseline = y + lineHeight * 0.5 + size * 0.265;
-      runs.push({
-        text,
-        x: left + indent,
-        y: baseline,
-        size,
-        weight: block.weight,
-        color: block.color,
-        width: measure(text, size, block.weight),
-        role: block.role,
-      });
-      y += lineHeight;
-    });
-    if (!last) y += block.after * scale;
-  });
-  return { runs, height: y - top, balanced };
+/** A line's ink width at 100 pixels: its two ink edges, its tracking and its word space. */
+function ink(read: Read, text: string, r: Row): number {
+  const box = read(text, r.w);
+  return box.left + box.right + (box.n - 1) * r.tr * 100 + box.sp * r.ws * 100;
+}
+
+/** The largest whole size up to `most` at which a line is no wider than `room`. */
+function fit(read: Read, text: string, r: Row, most: number, room: number): number {
+  return Math.min(most, Math.floor((100 * room) / ink(read, text, r)));
+}
+
+/** A line cut to its room: whole letters, and a space left at the end, come off until it fits. */
+function cut(read: Read, text: string, r: Row, size: number, room: number): string {
+  if ((ink(read, text, r) * size) / 100 <= room) return text;
+  const letters = graphemes(text);
+  do {
+    letters.pop();
+    while (letters.length > 1 && /\s/u.test(letters.at(-1) ?? '')) letters.pop();
+  } while (
+    letters.length > 1 &&
+    (ink(read, letters.join('') + shareCopy.cut, r) * size) / 100 > room
+  );
+  return letters.join('') + shareCopy.cut;
 }
 
 /**
- * Lines with no last word alone on its line where the line before it can give
- * one up and still fit: "Delayed start / today" becomes "Delayed / start
- * today". A word broken to fit is left as it is.
+ * A line that fits: at the largest size up to `most` at which its ink is no wider than its
+ * room, never under MIN_TYPE; only there is it cut.
  */
-export function unorphan(
-  lines: readonly string[],
-  width: number,
-  measure: (text: string) => number,
-): string[] {
-  const out = [...lines];
-  const last = out.length - 1;
-  const before = out[last - 1];
-  const alone = out[last];
-  if (before === undefined || alone === undefined || /\s/u.test(alone)) return out;
-  const cut = before.lastIndexOf(' ');
-  if (cut <= 0) return out;
-  const moved = `${before.slice(cut + 1)} ${alone}`;
-  if (measure(moved) > width) return out;
-  out[last - 1] = before.slice(0, cut);
-  out[last] = moved;
+function fits(
+  read: Read,
+  text: string,
+  r: Row,
+  most: number,
+  room = MEASURE,
+): { text: string; size: number } {
+  const size = Math.max(MIN_TYPE, fit(read, text, r, most, room));
+  return { text: cut(read, text, r, size, room), size };
+}
+
+/** A text on the fewest lines up to `most`, then the most even of those; null where it does not fit. */
+function even(read: Read, text: string, r: Row, size: number, most: number): string[] | null {
+  const words = text.split(' ').filter((word) => word !== '');
+  const width = (line: string): number => (ink(read, line, r) * size) / 100;
+  for (let count = 1; count <= most; count++) {
+    let best: { widest: number; lines: string[] } | null = null;
+    const search = (start: number, left: number, lines: string[], widest: number): void => {
+      if (left === 1) {
+        const line = words.slice(start).join(' ');
+        const all = Math.max(widest, width(line));
+        if (all <= MEASURE && (best === null || all < best.widest)) {
+          best = { widest: all, lines: [...lines, line] };
+        }
+        return;
+      }
+      for (let end = start + 1; end <= words.length - (left - 1); end++) {
+        const line = words.slice(start, end).join(' ');
+        const wide = width(line);
+        if (wide > MEASURE) break;
+        search(end, left - 1, [...lines, line], Math.max(widest, wide));
+      }
+    };
+    if (words.length >= count) search(0, count, [], 0);
+    // TypeScript does not see the closure's write.
+    const found = best as { widest: number; lines: string[] } | null;
+    if (found !== null) return found.lines;
+  }
+  return null;
+}
+
+/** A text too long even for its last allowed line: the lines filled in order, the last one cut. */
+function fill(read: Read, text: string, r: Row, size: number, most: number): string[] {
+  const lines = wrap(text, MEASURE, (line) => (ink(read, line, r) * size) / 100);
+  if (lines.length <= most) return lines;
+  const kept = lines.slice(0, most - 1);
+  let used = kept.join('').replace(/\s/gu, '').length;
+  let from = 0;
+  for (; used > 0; from++) if (!/\s/u.test(text[from] ?? '')) used--;
+  return [...kept, cut(read, text.slice(from).trim(), r, size, MEASURE)];
+}
+
+/** A text parted in two at a space, never before a middle dot; and whether a sentence or clause ends there. */
+function breaks(text: string): [string, string, boolean][] {
+  const words = text.split(' ');
+  const out: [string, string, boolean][] = [];
+  for (let i = 1; i < words.length; i++) {
+    if (words[i] === '·') continue;
+    out.push([
+      words.slice(0, i).join(' '),
+      words.slice(i).join(' '),
+      /[.!?:;·]$/u.test(words[i - 1] ?? ''),
+    ]);
+  }
   return out;
 }
 
-/** The room between the head and the answer, and the answer and the foot, at full scale. */
-const GAP = { story: 96, post: 64 } as const;
-const BADGE = { story: 132, post: 112 } as const;
-/** The wordmark's size at full scale; the site's mark beside it a little larger. */
-const WORDMARK = { story: 54, post: 48 } as const;
-/** The site's name beside it, at the row's right. */
-const HOST = { story: 36, post: 36 } as const;
-
-/** Whether a block is one of the lines a card leaves out first, at this many dropped. */
-function droppedAt(block: Block, count: number): boolean {
-  return DROPPED_FIRST.slice(0, count).some(
-    (kind) => block.role === kind || block.role.startsWith(`${kind}-`),
-  );
+interface Lines {
+  readonly size: number;
+  readonly lines: string[];
 }
 
-/** The scales a card tries, from the largest down, in steps of 0.05. */
-function scalesOf(kind: CardKind): number[] {
-  const scales: number[] = [];
-  for (let step = Math.round(MAX_SCALE[kind] * 20); step >= Math.round(MIN_SCALE * 20); step--) {
-    scales.push(step / 20);
-  }
-  return scales;
+/** The largest whole size from `most` at which both lines of a break fit, or 0 under MIN_TYPE. */
+function fitBoth(read: Read, a: string, b: string, r: Row, most: number): number {
+  const size = Math.min(fit(read, a, r, most, MEASURE), fit(read, b, r, most, MEASURE));
+  return size >= MIN_TYPE ? size : 0;
 }
 
 /**
- * Lays a card out: the badge and the school at the top of its box, the foot
- * (as of when, a hairline, then the site's mark, its wordmark and its name)
- * at its bottom, the answer between them, the type as large as fits between
- * MAX_SCALE and MIN_SCALE. Throws where even the card's needed lines do not
- * fit at MIN_SCALE: a card is never drawn with one line over another.
+ * A paragraph, never cut: at the largest size from `most` down to MIN_TYPE that holds it on one
+ * line or two. One line where it fits; else broken after a word that ends a sentence or a
+ * clause (the widest line least); else the break with the widest line least. Null where it does
+ * not stand on two lines.
  */
-export function layoutCard(model: CardModel, kind: CardKind, measure: Measure): CardLayout {
-  const { width, height } = CARD_SIZES[kind];
-  const margin = kind === 'story' ? STORY_SAFE : POST_MARGIN;
-  const box = { top: margin, bottom: height - margin, left: SIDE, right: width - SIDE };
-  const inner = box.right - box.left;
-  const parts = blocks(model, kind);
-  for (let count = 0; count <= DROPPED_FIRST.length; count++) {
-    const body = parts.body.filter((block) => !droppedAt(block, count));
-    // Leaving out a line the card does not have changes nothing: the next one, then.
-    if (count > 0 && body.length === parts.body.filter((b) => !droppedAt(b, count - 1)).length) {
-      continue;
+function paragraph(read: Read, text: string, r: Row, most: number): Lines | null {
+  // Two lines hold twice the measure of ink at most (and an em, for the space the break takes):
+  // a text longer than that at the smallest size is not searched.
+  if ((ink(read, text, r) * MIN_TYPE) / 100 > 2 * MEASURE + MIN_TYPE) return null;
+  const one = fit(read, text, r, most, MEASURE);
+  let best: (Lines & { clause: boolean; widest: number }) | null = null;
+  for (const [a, b, clause] of breaks(text)) {
+    const size = fitBoth(read, a, b, r, most);
+    if (size === 0) continue;
+    const widest = Math.max(ink(read, a, r), ink(read, b, r));
+    if (
+      best === null ||
+      size > best.size ||
+      (size === best.size &&
+        ((clause && !best.clause) || (clause === best.clause && widest < best.widest)))
+    ) {
+      best = { size, clause, widest, lines: [a, b] };
     }
-    // A headline or a name grown past its full size never takes more lines for it: "Closed
-    // today" stays one line, however much room the card has.
-    const full = new Map([
-      ...place(parts.head, 0, box.left, inner, 1, measure).balanced,
-      ...place(body, 0, box.left, inner, 1, measure).balanced,
-    ]);
-    for (const scale of scalesOf(kind)) {
-      const laid = tryLayout(model, kind, measure, { ...parts, body }, scale, box, inner, full);
-      if (laid !== null) {
-        return { ...laid, dropped: DROPPED_FIRST.slice(0, count) };
+  }
+  if (one >= MIN_TYPE && (best === null || one >= best.size)) return { size: one, lines: [text] };
+  return best;
+}
+
+/**
+ * The school-year line on two lines, never cut: broken after the colon; else after a comma, so
+ * no count is parted from its unit; else at any space. Within a kind of break: the largest size
+ * up to `most`, then the widest line least. Null where it stands on two lines no way at all.
+ */
+function seasonLines(read: Read, text: string, most: number): Lines | null {
+  const best: ((Lines & { widest: number }) | null)[] = [null, null, null];
+  for (const [a, b] of breaks(text)) {
+    const size = fitBoth(read, a, b, SEASON, most);
+    if (size === 0) continue;
+    const widest = Math.max(ink(read, a, SEASON), ink(read, b, SEASON));
+    [a.endsWith(':'), a.endsWith(','), true].forEach((kind, n) => {
+      const held = best[n];
+      if (
+        kind &&
+        (held === null ||
+          held === undefined ||
+          size > held.size ||
+          (size === held.size && widest < held.widest))
+      ) {
+        best[n] = { size, widest, lines: [a, b] };
+      }
+    });
+  }
+  return best[0] ?? best[1] ?? best[2] ?? null;
+}
+
+/** A line placed, before its letters are: its ink starts on `x`, its baseline is `y`. */
+interface Draft {
+  readonly role: Role;
+  readonly text: string;
+  readonly r: Row;
+  readonly size: number;
+  readonly color: string;
+  readonly x: number;
+  readonly y: number;
+}
+
+/** A card laid out at one K. */
+interface Plan {
+  /** Whether its big line is at its smallest size or over. */
+  readonly ok: boolean;
+  readonly K: number;
+  /** The big line's size before it is rounded down, to compare plans by. */
+  readonly raw: number;
+  /** The open space left above the bottom group. */
+  readonly slack: number;
+  /** Whether the school's name ends cut. */
+  readonly nameCut: boolean;
+  readonly tone: PosterTone;
+  readonly big: CardLayout['big'];
+  readonly drafts: readonly Draft[];
+  readonly ticks: CardLayout['ticks'];
+  readonly art: CardLayout['art'];
+  readonly mark: CardLayout['mark'];
+}
+
+type Want = Record<LeftOut, boolean>;
+
+/** A fact under the big line: `gap` from the baseline above to its cap-top. */
+interface Fact {
+  readonly role: Role;
+  readonly text: string;
+  readonly r: Row;
+  readonly color: string;
+  readonly gap: number;
+  readonly size: number;
+}
+
+/**
+ * The line the card is about: the first that is not open; with none, and no chance, the open
+ * line. Undefined on a chance card.
+ */
+function leadOf(model: CardModel): CardModel['lines'][number] | undefined {
+  return (
+    model.lines.find((line) => line.tone !== 'open') ??
+    (model.chance === null ? model.lines[0] : undefined)
+  );
+}
+
+/** Measures everything at one K, then places it. Nothing is drawn here. */
+function planAt(
+  model: CardModel,
+  kind: CardKind,
+  read: Read,
+  K: number,
+  want: Want,
+  oneLine: boolean,
+): Plan {
+  const story = kind === 'story';
+  const { width, height } = CARD_SIZES[kind];
+  const { top, bottom } = FRAME[kind];
+  const k = (value: number): number => Math.round(value * K);
+  const lead = leadOf(model);
+  const chance = model.chance;
+  const toneKey: PosterTone = lead === undefined ? 'chance' : lead.tone;
+  const colors = CARD_TONES[toneKey];
+  const drafts: Draft[] = [];
+  const put = (
+    role: Role,
+    text: string,
+    r: Row,
+    size: number,
+    color: string,
+    y: number,
+    x = LEFT,
+  ): void => {
+    drafts.push({ role, text, r, size, color, x, y });
+  };
+
+  // The bottom group, built upwards: the sign-off (the mark and the address), and over it the
+  // school-year line.
+  const address = k(HOST.s);
+  const markHeight = Math.round(address * 1.3);
+  const u = markHeight / 19;
+  const signTop = bottom - markHeight;
+  let season: Lines = { size: 0, lines: [] };
+  if (model.season !== null && model.season !== '' && want.season) {
+    const most = Math.max(MIN_TYPE, k(SEASON.s));
+    const one = fit(read, model.season, SEASON, most, MEASURE);
+    // One line where that costs at most 6 pixels of size, and never under 40; else two.
+    if (one >= (oneLine ? MIN_TYPE : Math.max(MIN_TYPE, most - 6))) {
+      season = { size: one, lines: [model.season] };
+    } else season = seasonLines(read, model.season, most) ?? season;
+  }
+  const seasonStep = Math.round(season.size * 1.24);
+  const seasonLast = signTop - k(40);
+  const groupTop =
+    season.lines.length > 0
+      ? seasonLast - (season.lines.length - 1) * seasonStep - CAP * season.size
+      : signTop;
+
+  // The top group: the place, the school's name, its campus.
+  let nameTop = top;
+  if (model.place !== null && model.place !== '') {
+    const place = fits(read, model.place, PLACE, k(PLACE.s));
+    const y = top + CAP * place.size;
+    put('place', place.text, PLACE, place.size, colors.small, y);
+    nameTop = y + k(30) + 2;
+  }
+  let nameSize = k(NAME.s);
+  let nameLines = even(read, model.name, NAME, nameSize, 2);
+  if (nameLines === null) {
+    // 60 down to 48 in steps of 2, and 48 itself where the steps pass it by (an odd gap at K).
+    const sizes: number[] = [];
+    for (let size = k(60); size > k(48); size -= 2) sizes.push(size);
+    sizes.push(k(48));
+    for (nameSize of sizes) {
+      nameLines = even(read, model.name, NAME, nameSize, 3);
+      if (nameLines !== null) break;
+    }
+  }
+  if (nameLines === null) {
+    nameSize = k(48);
+    nameLines = fill(read, model.name, NAME, nameSize, 3);
+  }
+  const nameCut = nameLines.at(-1)?.endsWith(shareCopy.cut) === true;
+  const nameStep = Math.round(nameSize * (nameLines.length > 2 ? 1.13 : 1.08));
+  let last = nameTop + CAP * nameSize;
+  nameLines.forEach((text, i) => {
+    put('name', text, NAME, nameSize, colors.type, last + i * nameStep);
+  });
+  last += (nameLines.length - 1) * nameStep;
+  if (model.campus !== null && model.campus !== '') {
+    const campus = fits(read, model.campus, PLACE, k(PLACE.s));
+    last += k(22) + CAP * campus.size;
+    put('campus', campus.text, PLACE, campus.size, colors.small, last);
+  }
+
+  // The facts under the big line.
+  const facts: Fact[] = [];
+  const add = (
+    role: Role,
+    line: { text: string; size: number },
+    r: Row,
+    color: string,
+    gap: number,
+  ): void => {
+    facts.push({
+      role,
+      text: line.text,
+      r,
+      color,
+      size: line.size,
+      gap: facts.length > 0 ? gap : 0,
+    });
+  };
+  const second = (line: CardModel['lines'][number]): void => {
+    // Another day's status: one line, without its date where that would not fit at 40.
+    const same = line.tone === lead?.tone;
+    const text = shareFormat.secondDay(line.headline, same, line.day);
+    const size = fit(read, text, MORE, k(MORE.s), MEASURE);
+    add(
+      'more',
+      size >= MIN_TYPE
+        ? { text, size }
+        : fits(read, shareFormat.secondDay(line.headline, same, null), MORE, k(MORE.s)),
+      MORE,
+      colors.type,
+      k(42),
+    );
+  };
+  if (lead !== undefined) {
+    if (lead.day !== null) add('day', fits(read, lead.day, DAY, k(DAY.s)), DAY, colors.type, 0);
+    if (lead.detail !== null) {
+      // The times run the full measure where they can; under 44 pixels, one fact to a line.
+      const size = fit(read, lead.detail, FACT, k(FACT.s), MEASURE);
+      if (size >= 44) add('fact', { text: lead.detail, size }, FACT, colors.type, k(34));
+      else {
+        shareFormat.facts(lead.detail).forEach((part, i) => {
+          add('fact', fits(read, part, FACT, k(50)), FACT, colors.type, k(i > 0 ? 22 : 34));
+        });
       }
     }
+    // The reason, and the school's own words after it, read as one short paragraph, never cut
+    // inside a sentence: whole sentences are left out from the end until the rest stands.
+    const reason = want.reason ? lead.reason : null;
+    let words: Lines | null = null;
+    if (want.said && lead.said !== null) {
+      const sentences = shareFormat.sentences(lead.said);
+      for (let count = sentences.length; count > 0 && words === null; count--) {
+        const text = shareFormat.paragraph(reason, sentences.slice(0, count));
+        words = paragraph(read, text, WORDS, k(WORDS.s));
+      }
+    }
+    if (words !== null) {
+      const { size, lines } = words;
+      lines.forEach((text, i) => {
+        add(
+          'words',
+          { text, size },
+          WORDS,
+          colors.type,
+          i > 0 ? Math.round(size * 1.26 - CAP * size) : k(32),
+        );
+      });
+    } else if (reason !== null) {
+      add('reason', fits(read, reason, REASON, k(REASON.s)), REASON, colors.type, k(32));
+    }
+    if (want.more) {
+      for (const line of model.lines) if (line !== lead) second(line);
+      if (chance !== null) {
+        const text = shareFormat.chanceLine(chance.number, chance.meaning);
+        add('chance', fits(read, text, MORE, k(MORE.s)), MORE, colors.type, k(42));
+        if (chance.fewRecords !== null) {
+          add('few', fits(read, chance.fewRecords, PLACE, k(PLACE.s)), PLACE, colors.small, k(22));
+        }
+      }
+    }
+  } else if (chance !== null) {
+    // "Chance of no school Tuesday" runs the full measure where it can; under 52, two lines.
+    const size = fit(read, chance.meaning, MEANING, k(MEANING.s), MEASURE);
+    if (size >= 52) add('meaning', { text: chance.meaning, size }, MEANING, colors.type, 0);
+    else {
+      (
+        even(read, chance.meaning, MEANING, 56, 2) ?? fill(read, chance.meaning, MEANING, 56, 2)
+      ).forEach((text) => {
+        add('meaning', { text, size: 56 }, MEANING, colors.type, 22);
+      });
+    }
+    add(
+      'chance-day',
+      fits(read, chance.day, CHANCE_DAY, k(CHANCE_DAY.s)),
+      CHANCE_DAY,
+      colors.small,
+      k(34),
+    );
+    if (chance.fewRecords !== null) {
+      add(
+        'few',
+        fits(read, chance.fewRecords, CHANCE_DAY, k(CHANCE_DAY.s)),
+        CHANCE_DAY,
+        colors.small,
+        k(27),
+      );
+    }
+    if (want.more) model.lines.forEach(second);
+  }
+  if (model.asOf !== '')
+    add('as-of', fits(read, model.asOf, PLACE, k(PLACE.s)), PLACE, colors.small, k(38));
+  // From the cap-top of the first to just under the last baseline.
+  const factsHeight = facts.reduce((sum, fact) => sum + fact.gap + CAP * fact.size, 0) + k(10);
+
+  const bigTop = last + k(66);
+  const room = groupTop - bigTop;
+  const keep = story ? 56 : 40;
+  let ok = true;
+  let raw: number;
+  let size: number;
+  let bigLines: string[] = [];
+  let digits = '';
+  let sign = '';
+  let tick = 0;
+  let tickTop = 0;
+  let bigBase: number;
+  let factsTop: number;
+  if (lead !== undefined) {
+    const [least, most] = BIG_SIZES.words;
+    const under = k(46);
+    // The height a size takes: the first line's caps, the steps to the last, its descender.
+    const sizeOf = (lines: readonly string[]): number =>
+      Math.min(
+        most,
+        (100 * MEASURE) / Math.max(...lines.map((line) => ink(read, line, BIG))),
+        (room - keep - under - factsHeight) / (CAP + (lines.length - 1) * 0.9 + DESC),
+      );
+    const words = lead.headline.split(' ').filter((word) => word !== '');
+    let best: { size: number; lines: string[] } | null = null;
+    if (words.length > 6) {
+      // More words than any status has: wrapped at the smallest size, not searched.
+      const lines = wrap(lead.headline, MEASURE, (line) => (ink(read, line, BIG) * least) / 100);
+      best = { size: sizeOf(lines), lines };
+    } else {
+      // Every break of its words into one to three lines; another line must earn its height,
+      // and wins only where the type grows by more than 15 percent.
+      for (let mask = 0; mask < 1 << Math.max(0, words.length - 1); mask++) {
+        const lines: string[] = [];
+        let line = words[0] ?? '';
+        for (let i = 1; i < words.length; i++) {
+          if ((mask & (1 << (i - 1))) !== 0) {
+            lines.push(line);
+            line = words[i] ?? '';
+          } else line += ` ${words[i] ?? ''}`;
+        }
+        lines.push(line);
+        if (lines.length > 3) continue;
+        const at = sizeOf(lines);
+        if (
+          best === null ||
+          (lines.length > best.lines.length
+            ? at > best.size * 1.15
+            : lines.length < best.lines.length
+              ? at * 1.15 >= best.size
+              : at > best.size)
+        ) {
+          best = { size: at, lines };
+        }
+      }
+    }
+    raw = best?.size ?? 0;
+    bigLines = best?.lines ?? [];
+    size = Math.floor(raw);
+    if (size < least) {
+      ok = false;
+      size = least;
+    }
+    bigBase = bigTop + CAP * size;
+    factsTop = bigBase + (bigLines.length - 1) * 0.9 * size + DESC * size + under;
+  } else {
+    const [least, most] = BIG_SIZES.number;
+    ({ digits, sign } = shareFormat.numberParts(chance?.number ?? ''));
+    const bar = k(104);
+    const over = k(50);
+    const under = k(54);
+    const left = room - keep - over - bar - under - factsHeight;
+    // The digits, a gap of 0.06 and the sign at 0.42 of the size, across the measure.
+    raw = Math.min(
+      most,
+      (100 * MEASURE) / (ink(read, digits, NUMBER) + 6 + ink(read, sign, NUMBER) * 0.42),
+      left / CAP,
+    );
+    size = Math.floor(raw);
+    if (size < least) {
+      ok = false;
+      size = least;
+    }
+    // The ticks take the height that is left over: the row becomes a field.
+    tick = Math.round(Math.min(TICKS_TALLEST[kind], bar + Math.max(0, left - CAP * size)));
+    bigBase = bigTop + CAP * size;
+    tickTop = bigBase + over;
+    factsTop = tickTop + tick + under;
+  }
+  let slack = groupTop - (factsTop + factsHeight);
+  // A sparse Story breathes: open space beyond 200 pixels is shared, three tenths above the big
+  // line and three tenths below it.
+  const shift = story ? Math.round(Math.min(64, Math.max(0, slack - 200) * 0.3)) : 0;
+  bigBase += shift;
+  tickTop += shift;
+  factsTop += 2 * shift;
+  slack -= 2 * shift;
+
+  let ticks: CardLayout['ticks'] = null;
+  let ceiling: number;
+  if (lead !== undefined) {
+    bigLines.forEach((text, i) => {
+      put('big', text, BIG, size, colors.big, bigBase + i * 0.9 * size);
+    });
+    ceiling = bigBase + (bigLines.length - 1) * 0.9 * size + 28;
+  } else {
+    // With few local records the number is lighter, as the panel shows it.
+    const color = (chance?.fewRecords ?? null) === null ? colors.big : colors.small;
+    const signSize = Math.floor(size * 0.42);
+    put('digits', digits, NUMBER, size, color, bigBase);
+    put(
+      'sign',
+      sign,
+      NUMBER,
+      signSize,
+      color,
+      bigBase - CAP * size + CAP * signSize,
+      LEFT + (ink(read, digits, NUMBER) * size) / 100 + size * 0.06,
+    );
+    const value = Number.parseFloat(digits.replace(/[<>]/gu, ''));
+    const gap = 6;
+    ticks = {
+      x: LEFT,
+      y: tickTop,
+      bar: (MEASURE - 49 * gap) / 50,
+      gap,
+      height: tick,
+      count: 50,
+      lit: digits.startsWith('<') ? 0 : digits.startsWith('>') ? 50 : Math.round(value / 2),
+    };
+    ceiling = tickTop + tick + 28;
+  }
+  let base = factsTop;
+  for (const fact of facts) {
+    base += fact.gap + CAP * fact.size;
+    put(fact.role, fact.text, fact.r, fact.size, fact.color, base);
+  }
+  season.lines.forEach((text, i) => {
+    put(
+      'season',
+      text,
+      SEASON,
+      season.size,
+      colors.small,
+      seasonLast - (season.lines.length - 1 - i) * seasonStep,
+    );
+  });
+  // The sign-off: the mark stands on the bottom line, the address beside it.
+  const markWidth = 23 * u;
+  if (model.host !== '') {
+    const from = LEFT + markWidth + address * 0.36;
+    const host = fits(read, model.host, HOST, address, RIGHT - from);
+    put('host', host.text, HOST, host.size, colors.type, bottom - Math.round(address * 0.35), from);
+  }
+
+  // The artwork: the hill is the same on every card of a size; the crystal's top tip stops
+  // under the big line or the ticks, and it is drawn smaller where that leaves less room.
+  const crest = CREST[kind];
+  const r = Math.min(ARM.most, (crest - ceiling) / (1 + CENTER_LIFT / ARM_REACH));
+  const s = r / ARM_REACH;
+  const cy = crest - CENTER_LIFT * s;
+  const curve = (lift: number): [number, number][] => [
+    [0, height - lift],
+    [width / 2, 2 * crest - height - lift],
+    [width, height - lift],
+  ];
+  return {
+    ok,
+    K,
+    raw,
+    slack,
+    nameCut,
+    tone: toneKey,
+    big: { size, lines: Math.max(1, bigLines.length) },
+    drafts,
+    ticks,
+    art: {
+      width,
+      height,
+      crest,
+      r,
+      crystal: r >= ARM.least,
+      cx: width / 2,
+      cy,
+      breath: curve(BREATH * s),
+      hill: curve(0),
+      ceiling,
+      tip: cy - r,
+    },
+    mark: {
+      x: LEFT - 0.5 * u,
+      y: bottom - 21 * u,
+      u,
+      left: LEFT,
+      width: markWidth,
+      height: markHeight,
+      bottom,
+    },
+  };
+}
+
+/** The Ks a card tries, from its largest down to 1, in steps of 0.05. */
+export function stepsOf(model: CardModel, kind: CardKind): number[] {
+  const most = LARGEST_K[leadOf(model) === undefined ? 'chance' : 'status'][kind];
+  const steps: number[] = [];
+  for (let step = Math.round(most * 20); step >= 20; step--) steps.push(step / 20);
+  return steps;
+}
+
+/**
+ * Lays a card out. Of its Ks (a K at which the name would end cut is passed over, 1 excepted)
+ * it keeps the one with the largest big line and, among equals, the largest K: the small type
+ * grows to fill the frame and gives way before the big line does. Where the big line would
+ * still be under its smallest size, lines are left out in LEFT_OUT's order; where that is not
+ * enough it throws: a card is never drawn with one line over another. `only` lays out at that
+ * K alone (the tests').
+ */
+export function layoutCard(
+  model: CardModel,
+  kind: CardKind,
+  face: Face,
+  only?: number,
+): CardLayout {
+  const lead = leadOf(model);
+  if (lead === undefined && model.chance === null) throw new Error('share card: nothing to say');
+  const read = reader(face);
+  const steps = only === undefined ? stepsOf(model, kind) : [only];
+  const has: Want = {
+    said: lead !== undefined && lead.said !== null,
+    season: model.season !== null,
+    reason: lead !== undefined && lead.reason !== null,
+    more:
+      model.lines.some((line) => line !== lead) || (lead !== undefined && model.chance !== null),
+  };
+  const want: Want = { said: true, season: true, reason: true, more: true };
+  const dropped: LeftOut[] = [];
+  for (;;) {
+    const plans = steps
+      .map((K) => planAt(model, kind, read, K, want, false))
+      .filter((plan) => !plan.nameCut || plan.K === 1 || only !== undefined);
+    const top = Math.max(...plans.map((plan) => plan.raw));
+    let plan = plans.find((made) => made.raw >= top - 0.5);
+    if (plan === undefined) break;
+    // More than 120 pixels still open: the larger Ks again, the school-year line held to one line.
+    if (plan.slack > 120 && has.season && want.season) {
+      const from = plan.K;
+      plan =
+        steps
+          .filter((K) => K > from)
+          .map((K) => planAt(model, kind, read, K, want, true))
+          .find((made) => !made.nameCut && made.raw >= top - 0.5) ?? plan;
+    }
+    if (plan.ok) return finish(plan, kind, read, dropped);
+    const next = LEFT_OUT.find((part) => has[part] && want[part]);
+    if (next === undefined) break;
+    want[next] = false;
+    dropped.push(next);
   }
   throw new Error('share card: the words do not fit');
 }
 
-type Box = CardLayout['box'];
-
-/** A card laid out at one scale, or null where its answer does not fit between head and foot. */
-function tryLayout(
-  model: CardModel,
-  kind: CardKind,
-  measure: Measure,
-  parts: { head: Block[]; body: Block[]; foot: Block[] },
-  scale: number,
-  box: Box,
-  inner: number,
-  full: ReadonlyMap<string, number>,
-): Omit<CardLayout, 'dropped'> | null {
+/** A plan's lines with their letters placed: the layout as drawn. */
+function finish(plan: Plan, kind: CardKind, read: Read, dropped: readonly LeftOut[]): CardLayout {
   const { width, height } = CARD_SIZES[kind];
-  const badgeSize = BADGE[kind] * scale;
-  const gap = GAP[kind] * scale;
-  const headTop = box.top + badgeSize + 40 * scale;
-  const head = place(parts.head, headTop, box.left, inner, scale, measure);
-  // The foot, from its bottom up: the wordmark's row, a hairline over it, as of when over that;
-  // never larger than its full size, however little the card has to say.
-  const footScale = Math.min(1, scale);
-  const wordSize = WORDMARK[kind] * footScale;
-  const markSize = wordSize * 1.4;
-  const rowHeight = markSize;
-  const asOf = place(parts.foot, 0, box.left, inner, footScale, measure);
-  const ruleGap = 36 * footScale;
-  const footHeight = asOf.height + ruleGap * 2 + rowHeight;
-  const footTop = box.bottom - footHeight;
-  const bodyTop = headTop + head.height + gap;
-  const body = place(parts.body, bodyTop, box.left, inner, scale, measure);
-  if (scale > 1) {
-    for (const [role, count] of [...head.balanced, ...body.balanced]) {
-      if (count > (full.get(role) ?? count)) return null;
-    }
-  }
-  const room = footTop - gap - bodyTop - body.height;
-  if (room < 0 && parts.body.length > 0) return null;
-  if (headTop + head.height > footTop) return null;
-  // What room is left goes a third above the answer and the rest below it, where the
-  // glow falls: the answer stays near the school it is about.
-  const shift = Math.max(0, room) / 3;
-  const shifted = body.runs.map((run) => ({ ...run, y: run.y + shift }));
-  const asOfRuns = asOf.runs.map((run) => ({ ...run, y: run.y + footTop }));
-  const ruleY = footTop + asOf.height + ruleGap;
-  const rowTop = ruleY + ruleGap;
-  const rowBaseline = rowTop + rowHeight / 2 + wordSize * 0.36;
-  const wordX = box.left + markSize + 10 * footScale;
-  const wordmark: TextRun = {
-    text: model.wordmark,
-    x: wordX,
-    y: rowBaseline,
-    size: wordSize,
-    weight: 600,
-    color: TEXT_1,
-    width: measure(model.wordmark, wordSize, 600),
-    role: 'wordmark',
-  };
-  const rowRuns: TextRun[] = [wordmark];
-  const hostSize = HOST[kind] * footScale;
-  const hostWidth = measure(model.host, hostSize, 450);
-  // The site's name at the row's right, where it fits beside the wordmark; under it where not.
-  if (model.host !== '' && wordX + wordmark.width + 32 * footScale + hostWidth <= box.right) {
-    rowRuns.push({
-      text: model.host,
-      x: box.right - hostWidth,
-      y: rowBaseline,
-      size: hostSize,
-      weight: 450,
-      color: TEXT_3,
-      width: hostWidth,
-      role: 'host',
-    });
-  } else if (model.host !== '') return null;
-  const runs = [...head.runs, ...shifted, ...asOfRuns, ...rowRuns];
-  const dots = shifted
-    .filter(
-      (run, n, all) =>
-        run.role.startsWith('headline-') && all.findIndex((other) => other.role === run.role) === n,
-    )
-    .map((run) => {
-      const index = Number(run.role.slice('headline-'.length));
-      const line = model.lines[index];
-      const r = run.size * 0.2;
-      return {
-        x: box.left + r,
-        y: run.y - run.size * 0.34,
-        r,
-        color: TONE_COLORS[line?.tone ?? 'none'],
-      };
-    });
   return {
     kind,
     width,
     height,
-    box,
-    runs,
-    badge: { x: box.left, y: box.top, size: badgeSize, letter: model.initial },
-    mark: { x: box.left, y: rowTop, size: markSize },
-    rule: { y: ruleY, left: box.left, right: box.right },
-    dots,
-    glow: glowOf(model, shifted, dots, width),
-    scale,
+    tone: plan.tone,
+    colors: CARD_TONES[plan.tone],
+    K: plan.K,
+    big: plan.big,
+    runs: plan.drafts.map(({ role, text, r, size, color, x, y }) => {
+      const origin = x + (read(text, r.w).left * size) / 100;
+      return {
+        role,
+        text,
+        x,
+        y,
+        size,
+        weight: r.w,
+        color,
+        width: (ink(read, text, r) * size) / 100,
+        at: offsets(read, text, r.w, r.tr, r.ws).map((at) => origin + (at * size) / 100),
+      };
+    }),
+    ticks: plan.ticks,
+    art: plan.art,
+    mark: plan.mark,
+    dropped,
   };
 }
 
 /**
- * The glow: behind the first status's dot, reaching across its headline, or
- * behind the chance's number where it stands alone, in its color.
+ * Draws a laid-out card on a 2D context the card's size, measuring nothing: the field, the
+ * artwork, then the type, each line letter by letter at the places the layout worked out.
  */
-function glowOf(
-  model: CardModel,
-  body: readonly TextRun[],
-  dots: CardLayout['dots'],
-  width: number,
-): CardLayout['glow'] {
-  const color = TONE_COLORS[model.tone];
-  const strength = glowStrength(model);
-  const dot = dots[0];
-  if (dot !== undefined)
-    return { x: dot.x + width * 0.14, y: dot.y, r: width * 0.8, color, strength };
-  const number = body.find((run) => run.role === 'chance-number');
-  if (number !== undefined) {
-    return {
-      x: number.x + number.width * 0.5,
-      y: number.y - number.size * 0.36,
-      r: width * 0.8,
-      color,
-      strength,
-    };
-  }
-  return { x: width * 0.3, y: width * 0.6, r: width * 0.8, color, strength };
-}
-
-/** How bright the glow is: a decided status full, a chance by its number, open and none faint. */
-function glowStrength(model: CardModel): number {
-  switch (model.tone) {
-    case 'open':
-    case 'none':
-      return 0.18;
-    case 'chance': {
-      const value = Number.parseFloat(model.chance?.number ?? '');
-      const share = Number.isFinite(value) ? value / 100 : 0;
-      return 0.25 + 0.5 * Math.min(1, Math.max(0, share));
+export function drawCard(ctx: CanvasRenderingContext2D, layout: CardLayout): void {
+  const { colors, ticks, mark } = layout;
+  ctx.fillStyle = colors.field;
+  ctx.fillRect(0, 0, layout.width, layout.height);
+  drawSunrise(ctx, layout.art, colors.flake, colors.field, colors.hill);
+  if (ticks !== null) {
+    for (let i = 0; i < ticks.count; i++) {
+      ctx.fillStyle = i < ticks.lit ? TICK_COLORS.lit : TICK_COLORS.unlit;
+      ctx.fillRect(ticks.x + i * (ticks.bar + ticks.gap), ticks.y, ticks.bar, ticks.height);
     }
-    default:
-      return 0.75;
   }
-}
-
-/** A color as rgba with `alpha`, from #rrggbb. */
-function rgba(hex: string, alpha: number): string {
-  const n = Number.parseInt(hex.slice(1), 16);
-  return `rgba(${String((n >> 16) & 255)}, ${String((n >> 8) & 255)}, ${String(n & 255)}, ${String(alpha)})`;
-}
-
-/** How much smaller the backdrop is drawn than the card, then drawn up to its size. */
-export const BACKDROP_SCALE = 8;
-
-/**
- * Draws the card's backdrop, `scale` times smaller than the card: the dark,
- * the glow (a wide soft light and a brighter core, as the map's lights glow)
- * and a low light from the foot, so the dark never reads as an empty frame.
- */
-export function drawBackdrop(ctx: CanvasRenderingContext2D, layout: CardLayout, scale = 1): void {
-  const width = layout.width / scale;
-  const height = layout.height / scale;
-  const glow = {
-    ...layout.glow,
-    x: layout.glow.x / scale,
-    y: layout.glow.y / scale,
-    r: layout.glow.r / scale,
-  };
-  ctx.fillStyle = BACKGROUND;
-  ctx.fillRect(0, 0, width, height);
-  // A wide, faint light: the color reaches the frame only as a breath, so the dark stays dark.
-  const wide = ctx.createRadialGradient(glow.x, glow.y, 0, glow.x, glow.y, glow.r);
-  wide.addColorStop(0, rgba(glow.color, 0.3 * glow.strength));
-  wide.addColorStop(0.25, rgba(glow.color, 0.1 * glow.strength));
-  wide.addColorStop(0.6, rgba(glow.color, 0.025 * glow.strength));
-  wide.addColorStop(1, rgba(glow.color, 0));
-  ctx.fillStyle = wide;
-  ctx.fillRect(0, 0, width, height);
-  // And a tight, bright core behind the dot: the school's light, as the map draws one.
-  const core = ctx.createRadialGradient(glow.x, glow.y, 0, glow.x, glow.y, glow.r * 0.3);
-  core.addColorStop(0, rgba(glow.color, 0.42 * glow.strength));
-  core.addColorStop(0.5, rgba(glow.color, 0.12 * glow.strength));
-  core.addColorStop(1, rgba(glow.color, 0));
-  ctx.fillStyle = core;
-  ctx.fillRect(0, 0, width, height);
-}
-
-/**
- * Draws a laid-out card on a 2D context the card's size: its backdrop (drawn
- * small and smoothed up to size where one is given, which keeps the PNG
- * small and quick to make), then the badge, the dots and the words.
- */
-export function drawCard(
-  ctx: CanvasRenderingContext2D,
-  layout: CardLayout,
-  backdrop: CanvasImageSource | null = null,
-): void {
-  const { width, height, glow } = layout;
-  if (backdrop === null) drawBackdrop(ctx, layout);
-  else {
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'low';
-    ctx.drawImage(backdrop, 0, 0, width, height);
-  }
-
-  // The badge: the school's initial on a disc lit faintly in its status's color, where its
-  // logo will stand.
-  const { badge } = layout;
-  const r = badge.size / 2;
-  const bx = badge.x + r;
-  const by = badge.y + r;
-  const disc = ctx.createLinearGradient(bx, badge.y, bx, badge.y + badge.size);
-  disc.addColorStop(0, rgba(glow.color, 0.22));
-  disc.addColorStop(1, rgba(glow.color, 0.06));
-  ctx.beginPath();
-  ctx.arc(bx, by, r, 0, Math.PI * 2);
-  ctx.fillStyle = disc;
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(bx, by, r - 1, 0, Math.PI * 2);
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = rgba(glow.color, 0.35);
-  ctx.stroke();
-  if (badge.letter !== '') {
-    ctx.fillStyle = TEXT_1;
-    ctx.font = fontOf(badge.size * 0.44, 600);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(badge.letter, badge.x + r, badge.y + r + badge.size * 0.02);
-  }
-
-  // Each status's dot, lit like a light on the map.
-  for (const dot of layout.dots) {
-    const halo = ctx.createRadialGradient(dot.x, dot.y, 0, dot.x, dot.y, dot.r * 3);
-    halo.addColorStop(0, rgba(dot.color, 0.55));
-    halo.addColorStop(1, rgba(dot.color, 0));
-    ctx.fillStyle = halo;
-    ctx.fillRect(dot.x - dot.r * 3, dot.y - dot.r * 3, dot.r * 6, dot.r * 6);
-    ctx.beginPath();
-    ctx.arc(dot.x, dot.y, dot.r, 0, Math.PI * 2);
-    ctx.fillStyle = dot.color;
-    ctx.fill();
-  }
-
-  // The foot: a hairline, and under it the site's mark (the logo in one color) beside its wordmark.
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-  ctx.fillRect(
-    layout.rule.left,
-    Math.round(layout.rule.y),
-    layout.rule.right - layout.rule.left,
-    2,
-  );
-  drawMark(ctx, layout.mark.x, layout.mark.y, layout.mark.size / MARK_GRID, TEXT_1);
-
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
   for (const run of layout.runs) {
     ctx.font = fontOf(run.size, run.weight);
     ctx.fillStyle = run.color;
-    ctx.fillText(run.text, run.x, run.y);
+    graphemes(run.text).forEach((letter, i) => {
+      ctx.fillText(letter, run.at[i] ?? run.x, run.y);
+    });
   }
+  drawMark(ctx, mark.x, mark.y, mark.u, colors.type);
 }
 
 /** The weights the card draws in, for the face to be ready in each before drawing. */
-const WEIGHTS = [450, 500, 550, 600, 650, 700];
+const WEIGHTS = [500, 600, 700];
 /** How long to wait for the face before drawing in the fallback. */
 const FONT_WAIT_MS = 1500;
 
@@ -819,26 +1080,22 @@ async function fontsReady(text: string): Promise<void> {
   await Promise.race([loads, new Promise<void>((resolve) => setTimeout(resolve, FONT_WAIT_MS))]);
 }
 
-/** A measure on a canvas context, in the card's face. */
-export function canvasMeasure(ctx: CanvasRenderingContext2D): Measure {
-  return (text, size, weight) => {
-    ctx.font = fontOf(size, weight);
-    return ctx.measureText(text).width;
+/** The card's face as a canvas measures it. */
+export function canvasFace(ctx: CanvasRenderingContext2D): Face {
+  return (text, weight) => {
+    ctx.font = fontOf(100, weight);
+    const box = ctx.measureText(text);
+    return {
+      advance: box.width,
+      left: box.actualBoundingBoxLeft,
+      right: box.actualBoundingBoxRight,
+    };
   };
 }
 
 /** Renders a card to a PNG. */
 export async function renderCard(model: CardModel, kind: CardKind): Promise<Blob> {
-  const all = [
-    model.name,
-    model.campus,
-    model.place,
-    model.asOf,
-    model.wordmark,
-    model.host,
-    model.season,
-    model.initial,
-  ]
+  const all = [model.name, model.campus, model.place, model.asOf, model.host, model.season]
     .concat(
       model.lines.flatMap((line) => [line.headline, line.day, line.detail, line.reason, line.said]),
     )
@@ -849,7 +1106,7 @@ export async function renderCard(model: CardModel, kind: CardKind): Promise<Blob
     )
     .filter((text): text is string => text !== null)
     .join(' ');
-  await fontsReady(all);
+  await fontsReady(all + shareCopy.cut);
   const { width, height } = CARD_SIZES[kind];
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -857,14 +1114,7 @@ export async function renderCard(model: CardModel, kind: CardKind): Promise<Blob
   // Opaque: the card has no see-through part, and its PNG is smaller without an alpha channel.
   const ctx = canvas.getContext('2d', { alpha: false });
   if (ctx === null) throw new Error('share card: no 2D canvas');
-  const layout = layoutCard(model, kind, canvasMeasure(ctx));
-  // The backdrop small, then smoothed up: a smooth glow, a PNG a quarter the size, made faster.
-  const small = document.createElement('canvas');
-  small.width = Math.ceil(width / BACKDROP_SCALE);
-  small.height = Math.ceil(height / BACKDROP_SCALE);
-  const smallCtx = small.getContext('2d', { alpha: false });
-  if (smallCtx !== null) drawBackdrop(smallCtx, layout, BACKDROP_SCALE);
-  drawCard(ctx, layout, smallCtx === null ? null : small);
+  drawCard(ctx, layoutCard(model, kind, canvasFace(ctx)));
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob === null) reject(new Error('share card: no PNG'));

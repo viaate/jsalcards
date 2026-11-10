@@ -1,8 +1,8 @@
 /**
  * Made-up schools and days for the share cards' tests and sample pictures, as
  * the school panel's view (app/school.ts schoolView) gives them: a school
- * closed, one delayed, one remote and one with only a chance, in Kansas on
- * Monday Jan 12, 2026. The schools, their town and county, the statuses, the
+ * closed, one delayed, one remote, one sent home early, one open and one with
+ * only a chance, in Kansas on Monday Jan 12, 2026. The schools, their town and county, the statuses, the
  * storm and the chances are all invented for these tests and the samples
  * alone, so no sample can be taken for a real school's day.
  */
@@ -82,6 +82,15 @@ export const REMOTE: SchoolStatus = {
   today: row(Status.remote, Reason.extreme_cold),
   tomorrow: null,
 };
+/** Sent home two hours early, at 12:30 PM. */
+export const EARLY: SchoolStatus = {
+  today: row(Status.early_dismissal, Reason.winter_storm, { shiftMinutes: 120, clockMinute: 750 }),
+  tomorrow: null,
+};
+/** Checked live this morning, with no closing: open today. */
+export const OPEN: SchoolStatus = { today: 'open', tomorrow: null };
+/** 9:10 AM in Kansas City: the day is under way, so the panel says a school with no closing is open. */
+export const MIDMORNING = new Date('2026-01-12T15:10:00Z');
 /** Closed today, and tomorrow too. */
 export const CLOSED_TWO_DAYS: SchoolStatus = {
   today: row(Status.closed, Reason.winter_storm),
@@ -128,7 +137,10 @@ export function viewOf(overrides: Partial<ViewInput> = {}): SchoolView {
 /** The predictions file of the evening was made at 8:50 PM. */
 export const EVENING_PREDICTIONS_AT = new Date('2026-01-13T02:50:00Z');
 
-/** The four sample schools: closed, delayed, remote, and a chance alone the evening before. */
+/**
+ * The sample schools: closed, delayed, remote, and a chance alone the evening before; then one
+ * sent home early and one open.
+ */
 export function samples(): { name: string; view: SchoolView; now: Date }[] {
   return [
     { name: 'closed', view: viewOf({ status: CLOSED, season: SEASON }), now: MORNING },
@@ -142,6 +154,16 @@ export function samples(): { name: string; view: SchoolView; now: Date }[] {
         outlook: A_OUTLOOK === null ? null : { ...A_OUTLOOK, generatedAt: EVENING_PREDICTIONS_AT },
       }),
       now: A_NOW,
+    },
+    { name: 'early', view: viewOf({ status: EARLY, season: SEASON }), now: MORNING },
+    {
+      name: 'open',
+      view: viewOf({
+        status: OPEN,
+        now: MIDMORNING,
+        closings: { ...A_CLOSINGS, generated_at: '2026-01-12T15:10:00Z' },
+      }),
+      now: MIDMORNING,
     },
   ];
 }

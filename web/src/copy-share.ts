@@ -46,8 +46,8 @@ export const shareCopy = /* @__PURE__ */ deepFreeze({
   failed: 'No image made',
   /** The link option where the device has a share sheet: it opens the sheet with the link. */
   shareLink: 'Share link',
-  /** The card's wordmark. */
-  wordmark: copy.appName,
+  /** Ends a line of a card cut short to fit it. */
+  cut: '…',
 });
 
 /** Which card: a story's, or a post's. */
@@ -103,6 +103,57 @@ function percent(number: string): string {
   return `${number}%`;
 }
 
+/**
+ * Another day's status as one line of a card, under the day the card is for:
+ * "Closed tomorrow too · Tuesday, Jan 13" where it is the same status again,
+ * "Early dismissal tomorrow · Tuesday, Jan 13" where it is another; without
+ * its date where the card has no room for it, or the line names its own day.
+ */
+function secondDay(headline: string, same: boolean, day: string | null): string {
+  const said = same ? `${headline} too` : headline;
+  return day === null ? said : `${said}${DOT}${day}`;
+}
+
+/** The chance as one line of a status card: "64% · Chance of no school Tuesday". */
+function chanceLine(number: string, meaning: string): string {
+  return `${number}${DOT}${meaning}`;
+}
+
+/** A delay's or a dismissal's facts, one to a line: "2-hour delay", "Starts at 10:00 AM". */
+function facts(detail: string): string[] {
+  return detail.split(DOT);
+}
+
+/**
+ * The school's plain details as its sentences, each ending at a word that ends
+ * in a full stop (as copy-details.ts writes them): a card leaves out whole
+ * sentences, never part of one.
+ */
+function sentences(said: string): string[] {
+  const out: string[] = [];
+  let words: string[] = [];
+  for (const word of said.split(' ')) {
+    words.push(word);
+    if (word.endsWith('.')) {
+      out.push(words.join(' '));
+      words = [];
+    }
+  }
+  if (words.length > 0) out.push(words.join(' '));
+  return out;
+}
+
+/** The reason and the school's words as one paragraph: "Ice · Buses run snow routes. No breakfast." */
+function paragraph(reason: string | null, said: readonly string[]): string {
+  const words = said.join(' ');
+  return reason === null ? words : `${reason}${DOT}${words}`;
+}
+
+/** A chance's digits and its sign, set at two sizes: "64" and "%", "<1" and "%". */
+function numberParts(number: string): { digits: string; sign: string } {
+  return { digits: number.slice(0, -1), sign: number.slice(-1) };
+}
+
 /** What a card says, for the share's text (its alt). */
 export interface CardWords {
   readonly name: string;
@@ -152,6 +203,12 @@ export const shareFormat = /* @__PURE__ */ deepFreeze({
   cardDay,
   asOf,
   percent,
+  secondDay,
+  chanceLine,
+  facts,
+  sentences,
+  paragraph,
+  numberParts,
   alt,
   fileName,
 });

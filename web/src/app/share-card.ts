@@ -10,7 +10,7 @@
  */
 
 import type { StatusKey } from '../copy';
-import { shareCopy, shareFormat } from '../copy-share';
+import { shareFormat } from '../copy-share';
 import type { CardKind, CardWords } from '../copy-share';
 import type { StatusLine } from './chance';
 import type { SchoolView } from './school';
@@ -26,7 +26,7 @@ export const CARD_SIZES: Readonly<
   post: Object.freeze({ width: 1080, height: 1350 }),
 });
 
-/** The glow behind a card: a status's own color, the chance's, or none. */
+/** A card's color: a status's own, the chance's, or none. */
 export type CardTone = StatusKey | 'open' | 'chance' | 'none';
 
 /** One status line of the card: the panel's words, with the day it is for. */
@@ -62,8 +62,6 @@ export interface CardModel {
   readonly campus: string | null;
   /** "Kansas City, MO · Jackson County", or null. */
   readonly place: string | null;
-  /** The badge's letter, until a school's logo can stand there. */
-  readonly initial: string;
   readonly tone: CardTone;
   readonly lines: readonly CardLine[];
   readonly chance: CardChance | null;
@@ -71,7 +69,6 @@ export interface CardModel {
   readonly season: string | null;
   /** "As of 6:55 AM": every card says something current (a status or a chance), as of when. */
   readonly asOf: string;
-  readonly wordmark: string;
   /** The site's host, as the link names it: "snowlightmap.com". */
   readonly host: string;
   /** The card's answer in a few words, for the share's text (its alt): who, what, which day, as of when. */
@@ -99,7 +96,7 @@ function cardLine(line: StatusLine): CardLine {
   };
 }
 
-/** The glow: the first decided status's color, else the chance's, else open's. */
+/** The card's color: the first decided status's, else the chance's, else open's. */
 function toneOf(lines: readonly CardLine[], chance: CardChance | null): CardTone {
   const decided = lines.find((line) => line.tone !== 'open');
   if (decided !== undefined) return decided.tone;
@@ -114,17 +111,6 @@ function earliest(times: readonly (Date | null)[]): Date | null {
     if (at !== null && (found === null || at.getTime() < found.getTime())) found = at;
   }
   return found;
-}
-
-/** The first letter of a school's name, for its badge: "P" for "The Pembroke Hill School". */
-function initialOf(name: string): string {
-  const words = name.split(/\s+/u).filter((word) => word.length > 0);
-  const main = words.length > 1 && /^the$/iu.test(words[0] ?? '') ? words[1] : words[0];
-  const letter = Array.from(
-    new Intl.Segmenter('en-US', { granularity: 'grapheme' }).segment(main ?? ''),
-    (part) => part.segment,
-  ).find((char) => /^[\p{L}\p{N}]/u.test(char));
-  return letter === undefined ? '' : letter.toLocaleUpperCase('en-US');
 }
 
 function hostOf(url: string): string {
@@ -176,13 +162,11 @@ export function cardModel(input: CardInput): CardModel | null {
     name: view.name,
     campus: view.campus,
     place: view.place,
-    initial: initialOf(view.name),
     tone: toneOf(lines, chance),
     lines,
     chance,
     season,
     asOf,
-    wordmark: shareCopy.wordmark,
     host: hostOf(url),
     alt: shareFormat.alt(words),
   };

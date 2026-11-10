@@ -29,6 +29,7 @@
     "gen:types": "node scripts/gen-types.mjs",
     "lint:copy": "node scripts/check-copy.mjs && vitest run --root src --no-cache copy.test.ts",
     "build:icons": "node scripts/build-icons.mjs",
+    "cards:samples": "node scripts/share-card-samples.mjs",
     "build:waitlist-art": "node scripts/build-waitlist-art.mjs",
     "build:waitlist-chrome": "node scripts/build-waitlist-chrome.mjs",
     "build:waitlist-font": "node scripts/build-waitlist-font.mjs"
