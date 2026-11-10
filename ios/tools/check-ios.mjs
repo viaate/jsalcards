@@ -4,16 +4,24 @@
 //
 // What it keeps out, under ios/ and in .github/workflows/ios-*.yml:
 //
-//   (a) signing material, secrets and billed machines;
-//   (b) words: any way for a view to draw text that did not come from its screen model;
-//   (c) impurity in SnowlightCore: the device's clock or zone, a formatter, a pattern
-//       engine, a crash path, any import but Foundation;
+//   (a) signing material, secrets and billed machines, in whatever form a workflow or a
+//       settings file writes them;
+//   (b) words: any way for a view to draw text that did not come from its screen model,
+//       and any text SnowlightCore hands out through its public surface;
+//   (c) impurity in SnowlightCore: the device's clock or zone, the process's environment,
+//       the network, a formatter, a pattern engine, a crash path, any import but
+//       Foundation; and in the tests: the clock, the zone, the environment or the network
+//       (but in ThisMachineTests.swift), a skipped test, a test kept from one platform, a
+//       count of tests that is not the committed one, a Swift test run in CI whose zone is
+//       UTC or not stated;
 //   (d) golden families that no test reads, and tests that name a family that is not there;
 //   (e) debug code that a release build would hold: the picture tour's folder is outside
 //       the words rules, so every line of code in it must sit inside `#if DEBUG`.
 //
 // It reads code, not comments. It skips itself and ios/README.md: both must be able to
-// name what is banned.
+// name what is banned. Its lists of names are lists: what a list leaves out passes. The
+// locks that need no list are the compiler's (the word tables, ShownText's initializer and
+// every string form of SnowlightCore are not public) and the public-surface rule below.
 //
 // It tests itself first, on every run: a list of small samples, at least one per rule,
 // each of which must be refused by the rule it is listed under. A sample that passes is
@@ -44,6 +52,8 @@ const TEST_FILES = 'ios/SnowlightCore/Tests/SnowlightCoreTests/';
 const GOLDEN = 'ios/SnowlightCore/Tests/SnowlightCoreTests/Fixtures/golden/';
 const SHOWN = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/Shown.swift';
 const NAMES = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/Names.swift';
+const WINDOW_STYLE = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/WindowStyle.swift';
+const TEST_COUNT = 'ios/tools/test-count.txt';
 const APP_WORDS_SWIFT = 'ios/SnowlightCore/Sources/SnowlightCore/Words/AppWords.swift';
 const APP_WORDS_LIST = 'ios/tools/app-words.txt';
 const LOCAL_CONFIG = 'ios/Local.xcconfig';
@@ -320,35 +330,134 @@ const VIEW_SYSTEM_WORDS = [
   [/(?<![A-Za-z0-9_])NSLocalizedString(?![A-Za-z0-9_])/, 'a localized string'],
   [/(?<![A-Za-z0-9_])AttributedString\s*\(/, 'an attributed string'],
   [/(?<![A-Za-z0-9_])DatePicker(?![A-Za-z0-9_])/, 'a control iOS words for us'],
-  [/(?<![A-Za-z0-9_])Date\s*\(\s*\)/, "a read of the device's clock"],
-  [/(?<![A-Za-z0-9_])Date\s*\.\s*now(?![A-Za-z0-9_])/, "a read of the device's clock"],
 ];
 
-/** Other ways to turn a value into words. (b) */
+/**
+ * Other ways for a view to come by text that its screen model did not hand it: a value's
+ * own description, the text forms SnowlightCore keeps to itself, a binding's raw value,
+ * reflection, the compiler's own literals, a cast to text. (b)
+ */
 const VIEW_VALUE_WORDS = [
   [/\.\s*description(?![A-Za-z0-9_])/, '.description'],
   [/\.\s*debugDescription(?![A-Za-z0-9_])/, '.debugDescription'],
   [/\.\s*localizedDescription(?![A-Za-z0-9_])/, '.localizedDescription'],
   [/\.\s*rawValue(?![A-Za-z0-9_])/, '.rawValue'],
+  [/\.\s*stored(?![A-Za-z0-9_])/, "a choice's stored form"],
+  [/\.\s*hex(?![A-Za-z0-9_])/, "a color's text form"],
+  [/\.\s*wrappedValue(?![A-Za-z0-9_])/, "a binding's raw value"],
+  [/(?<![A-Za-z0-9_])Mirror(?![A-Za-z0-9_])/, 'reflection, which hands out the names of fields'],
+  [/#(?:function|fileID|filePath|file|dsohandle)(?![A-Za-z0-9_])/, "a literal the compiler fills with a name"],
+  [/(?<![A-Za-z0-9_])as\s*[?!]?\s*(?:String|Substring|Character|NSString|StaticString)(?![A-Za-z0-9_])/, 'a cast to text'],
 ];
+
+/** What was typed into search may reach a view only as its binding, `$query.typed`. (b) */
+const TYPED = /\.\s*typed(?![A-Za-z0-9_])/;
+const BINDING_BEFORE = /\$[A-Za-z_][A-Za-z0-9_]*\s*$/;
 
 const WORD_TABLES = /(?<![A-Za-z0-9_])(SiteWords|SiteFormat|AppWords|DetailsWords|SeasonWords)(?![A-Za-z0-9_])/;
 const TEXT_MAKER = /(?<![A-Za-z0-9_])Text\s*(?:\(|\.\s*init(?![A-Za-z0-9_]))/;
 const TEXT_VERBATIM = /^Text\(\s*verbatim\s*:/;
 const DRAWN = /(?<![A-Za-z0-9_])drawnString(?![A-Za-z0-9_])/;
-const SHOWN_MAKER = /(?<![A-Za-z0-9_])ShownText\s*(?:\(|\.\s*init(?![A-Za-z0-9_]))/;
 
-/** The device's clock or zone. (c) */
-const CORE_DEVICE = [
-  [/(?<![A-Za-z0-9_])Date\s*\(\s*\)/, 'Date()'],
-  [/(?<![A-Za-z0-9_])Date\s*\.\s*now(?![A-Za-z0-9_])/, 'Date.now'],
-  [/(?<![A-Za-z0-9_])timeIntervalSinceNow(?![A-Za-z0-9_])/, 'timeIntervalSinceNow'],
-  [/\.\s*current(?![A-Za-z0-9_])/, '.current'],
-  [/(?<![A-Za-z0-9_])(?:let|var|func|case)\s+current(?![A-Za-z0-9_])/, 'something of our own named current'],
-  [/(?<![A-Za-z0-9_])autoupdatingCurrent(?![A-Za-z0-9_])/, 'autoupdatingCurrent'],
-  [/(?<![A-Za-z0-9_])ProcessInfo(?![A-Za-z0-9_])/, 'ProcessInfo'],
-  [/(?<![A-Za-z0-9_])Calendar(?![A-Za-z0-9_])/, 'Calendar'],
+/**
+ * Every way SnowlightCore outside Words/ could make a ShownText: by its name, by an
+ * initializer whose type is left to the compiler, through another name for the type, the
+ * type passed around as a value, or an extension of the type. (b)
+ */
+const SHOWN_MAKERS = [
+  [/(?<![A-Za-z0-9_])ShownText\s*(?:\(|\.\s*init(?![A-Za-z0-9_]))/, 'ShownText( outside Words/'],
+  [/(?<![A-Za-z0-9_)\]>?!])\.\s*init(?![A-Za-z0-9_])/, 'an initializer whose type is left to the compiler (name the type; outside Words/ it could be a ShownText)'],
+  [/(?<![A-Za-z0-9_])ShownText\s*\.\s*self(?![A-Za-z0-9_])/, 'the ShownText type passed around as a value'],
+  [/(?<![A-Za-z0-9_])typealias\s[^\n=]*=\s*(?:SnowlightCore\s*\.\s*)?ShownText(?![A-Za-z0-9_])/, 'another name for ShownText'],
+  [/(?<![A-Za-z0-9_])extension\s+(?:SnowlightCore\s*\.\s*)?ShownText(?![A-Za-z0-9_])/, 'an extension of ShownText outside Words/'],
 ];
+
+/**
+ * The device's clock, zone and languages. Each entry is a pattern, what it is, and an
+ * example: the self-test plants every example in SnowlightCore, in a test and in a view,
+ * and each must be refused in all three. (c)
+ */
+const CLOCK_ZONE = [
+  [/(?<![A-Za-z0-9_])Date\s*\(\s*\)/, 'Date()', 'let now = Date()'],
+  [/(?<![A-Za-z0-9_])Date\s*\.\s*init\s*\(\s*\)/, 'Date.init()', 'let now = Date.init()'],
+  [/(?<![A-Za-z0-9_)\]>?!])\.\s*init\s*\(\s*\)/, 'an empty .init() whose type is left to the compiler (a Date made so reads the clock)', 'let now: Date = .init()'],
+  [/(?<![A-Za-z0-9_])Date\s*\.\s*now(?![A-Za-z0-9_])/, 'Date.now', 'let now = Date.now'],
+  [/(?<![A-Za-z0-9_])\.\s*now(?![A-Za-z0-9_])/, 'a .now with no named value before it', 'let now: Date = .now'],
+  [/(?<![A-Za-z0-9_])timeIntervalSinceNow(?![A-Za-z0-9_])/, 'timeIntervalSinceNow', 'let age = posted.timeIntervalSinceNow'],
+  [/(?<![A-Za-z0-9_])(?:NSDate|Date)\s*\.\s*timeIntervalSinceReferenceDate(?![A-Za-z0-9_])/, 'the clock as seconds since 2001', 'let seconds = Date.timeIntervalSinceReferenceDate'],
+  [/\.\s*current(?![A-Za-z0-9_])/, '.current', 'let zone = TimeZone.current'],
+  [/(?<![A-Za-z0-9_])(?:let|var|func|case)\s+current(?![A-Za-z0-9_])/, 'something of our own named current', 'let current = 3'],
+  [/(?<![A-Za-z0-9_])autoupdatingCurrent(?![A-Za-z0-9_])/, 'autoupdatingCurrent', 'let zone = TimeZone.autoupdatingCurrent'],
+  [/(?<![A-Za-z0-9_])ProcessInfo(?![A-Za-z0-9_])/, 'ProcessInfo', 'let up = ProcessInfo.processInfo.systemUptime'],
+  [/(?<![A-Za-z0-9_])Calendar(?![A-Za-z0-9_])/, 'Calendar', 'let calendar = Calendar(identifier: .gregorian)'],
+  [/(?<![A-Za-z0-9_])NSDate(?![A-Za-z0-9_])/, 'NSDate', 'let now = NSDate()'],
+  [/(?<![A-Za-z0-9_])NSTimeZone(?![A-Za-z0-9_])/, 'NSTimeZone', 'let zone = NSTimeZone.local'],
+  [/(?<![A-Za-z0-9_])NSCalendar(?![A-Za-z0-9_])/, 'NSCalendar', 'let calendar = NSCalendar(identifier: .gregorian)'],
+  [/(?<![A-Za-z0-9_])NSLocale(?![A-Za-z0-9_])/, 'NSLocale', 'let locale = NSLocale(localeIdentifier: name)'],
+  [/(?<![A-Za-z0-9_])preferredLanguages(?![A-Za-z0-9_])/, "the phone's languages", 'let languages = Locale.preferredLanguages'],
+  [/(?<![A-Za-z0-9_])CFAbsoluteTimeGetCurrent(?![A-Za-z0-9_])/, 'CFAbsoluteTimeGetCurrent', 'let now = CFAbsoluteTimeGetCurrent()'],
+  [/(?<![A-Za-z0-9_])CF(?:TimeZone|Calendar|Locale)[A-Za-z0-9_]*/, 'a Core Foundation zone, calendar or locale', 'let zone = CFTimeZoneCopyDefault()'],
+  [/(?<![A-Za-z0-9_])Dispatch(?:Wall)?Time\s*\.\s*now(?![A-Za-z0-9_])/, 'DispatchTime.now', 'let at = DispatchTime.now()'],
+  [/(?<![A-Za-z0-9_])(?:ContinuousClock|SuspendingClock)(?![A-Za-z0-9_])/, 'a system clock', 'let clock = ContinuousClock()'],
+  [/(?<![A-Za-z0-9_])(?:clock_gettime(?:_nsec_np)?|gettimeofday|mach_absolute_time|mach_continuous_time)(?![A-Za-z0-9_])/, "the C library's clock", 'let status = clock_gettime(CLOCK_REALTIME, &spec)'],
+  [/(?<![A-Za-z0-9_.])time\s*\(\s*(?:nil|&)/, "the C library's time()", 'let seconds = time(nil)'],
+  [/(?<![A-Za-z0-9_])(?:localtime(?:_r)?|gmtime(?:_r)?|mktime|timegm|strftime|tzset|tzname)(?![A-Za-z0-9_])/, "the C library's zone", 'let parts = localtime_r(&seconds, &broken)'],
+  [/(?<![A-Za-z0-9_])typealias\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*(?:Foundation\s*\.\s*)?(?:Date|TimeZone|Locale|DispatchTime)(?![A-Za-z0-9_])/, 'another name for a clock or zone type', 'typealias Moment = Date'],
+  [/(?<![A-Za-z0-9_])(?:Date|TimeZone|Locale)\s*\.\s*self(?![A-Za-z0-9_])/, 'a clock or zone type passed around as a value', 'let kind = Date.self'],
+];
+
+/** The process's environment. In SnowlightCore and the tests. (c) */
+const ENVIRONMENT = [
+  [/(?<![A-Za-z0-9_])(?:getenv|secure_getenv|setenv|unsetenv|putenv|environ)(?![A-Za-z0-9_])/, "the process's environment", 'let zone = getenv("TZ")'],
+  [/(?<![A-Za-z0-9_])environment(?![A-Za-z0-9_])/, "the process's environment", 'let all = info.environment'],
+];
+
+/** The network. Nothing in M0 reads it: not SnowlightCore, not a test, not a view. (c) */
+const NETWORK = [
+  [/(?<![A-Za-z0-9_])(?:NS)?URLSession[A-Za-z0-9_]*/, 'URLSession', 'URLSession.shared.dataTask(with: request).resume()'],
+  [/(?<![A-Za-z0-9_])(?:NS)?(?:Mutable)?URLRequest(?![A-Za-z0-9_])/, 'URLRequest', 'let request = URLRequest(url: address)'],
+  [/(?<![A-Za-z0-9_])NSURLConnection(?![A-Za-z0-9_])/, 'NSURLConnection', 'NSURLConnection.sendAsynchronousRequest(request, queue: queue) { _, _, _ in }'],
+  [/(?<![A-Za-z0-9_])URL\s*\(\s*string\s*:/, 'a URL made from text', 'let address = URL(string: text)'],
+  [/(?<![A-Za-z0-9_])URLComponents(?![A-Za-z0-9_])/, 'URLComponents', 'let parts = URLComponents(string: text)'],
+  [/(?<![A-Za-z0-9_])NW(?:Connection|Listener|PathMonitor|Endpoint|Browser)(?![A-Za-z0-9_])/, "Apple's Network framework", 'let link = NWConnection(host: host, port: 443, using: .tls)'],
+  [/(?<![A-Za-z0-9_])CF(?:Stream|Socket|Network|Host|HTTP)[A-Za-z0-9_]*/, 'a Core Foundation socket or stream', 'CFStreamCreatePairWithSocketToHost(nil, host, 443, &input, &output)'],
+  [/(?<![A-Za-z0-9_])getStreamsToHost(?![A-Za-z0-9_])/, 'a stream to a host', 'Stream.getStreamsToHost(withName: host, port: 443, inputStream: &input, outputStream: &output)'],
+];
+/** A string literal that names a place on a network. */
+const ADDRESS_LITERAL = /[A-Za-z][A-Za-z0-9+.-]*:\/\//;
+
+/**
+ * What else of the device a view could read and turn into words: its zone and language,
+ * the app's bundle, the phone's name, the clipboard, the file system, the settings store.
+ * Only Shell/WindowStyle.swift may hold the settings store, and it reads the appearance
+ * through SnowlightCore. (b)
+ */
+const VIEW_DEVICE = [
+  [/(?<![A-Za-z0-9_])TimeZone(?![A-Za-z0-9_])/, 'TimeZone', 'let zone = TimeZone(identifier: name)'],
+  [/(?<![A-Za-z0-9_])Locale(?![A-Za-z0-9_])/, 'Locale', 'let locale = Locale(identifier: name)'],
+  [/(?<![A-Za-z0-9_])Bundle(?![A-Za-z0-9_])/, "the app's bundle", 'let id = Bundle.main.bundleIdentifier'],
+  [/(?<![A-Za-z0-9_])UIDevice(?![A-Za-z0-9_])/, 'UIDevice', 'let phone = UIDevice.current.name'],
+  [/(?<![A-Za-z0-9_])UIApplication(?![A-Za-z0-9_])/, 'UIApplication', 'let icon = UIApplication.shared.alternateIconName'],
+  [/(?<![A-Za-z0-9_])UIPasteboard(?![A-Za-z0-9_])/, 'the clipboard', 'let pasted = UIPasteboard.general.string'],
+  [/(?<![A-Za-z0-9_])FileManager(?![A-Za-z0-9_])/, 'the file system', 'let folder = FileManager.default.temporaryDirectory'],
+  [/(?<![A-Za-z0-9_])NS(?:HomeDirectory|TemporaryDirectory|UserName|FullUserName|OpenStepRootDirectory|StringFrom[A-Za-z]+)(?![A-Za-z0-9_])/, 'a name the system hands out as text', 'let home = NSHomeDirectory()'],
+  [/(?<![A-Za-z0-9_])URL(?![A-Za-z0-9_])/, 'a URL, whose parts are text', 'let folder = URL.documentsDirectory'],
+  [/(?<![A-Za-z0-9_])UserDefaults(?![A-Za-z0-9_])/, 'the settings store (only Shell/WindowStyle.swift holds it)', 'let store = UserDefaults.standard'],
+  [/(?<![A-Za-z0-9_])(?:string|stringArray|object|array|dictionary|value|url)\s*\(\s*forKey\s*:/, 'a stored value read as it is', 'let kept = store.string(forKey: key)'],
+  [/(?<![A-Za-z0-9_])dictionaryRepresentation(?![A-Za-z0-9_])/, 'every stored value at once', 'let all = store.dictionaryRepresentation()'],
+];
+const SETTINGS_STORE = 'the settings store (only Shell/WindowStyle.swift holds it)';
+
+/**
+ * The types that hold text. SnowlightCore's public surface may name one of them in two
+ * places only: the characters of a ShownText, which Shell/Shown.swift alone reads, and what
+ * a person typed into search, which goes back to the system's own field. (b)
+ */
+const STRING_TYPE = /(?<![A-Za-z0-9_])(?:String|Substring|Character|StringProtocol|StaticString|NSString|NSMutableString|NSAttributedString|AttributedString|AttributedSubstring|LocalizedStringKey|LocalizedStringResource|UnicodeScalar|Unicode\s*\.\s*Scalar)(?![A-Za-z0-9_])/;
+const PUBLIC_TEXT = new Set([
+  'ios/SnowlightCore/Sources/SnowlightCore/Words/ShownText.swift drawnString',
+  'ios/SnowlightCore/Sources/SnowlightCore/Screens/ShellModel.swift typed',
+]);
 
 /** A formatter. (c) */
 const CORE_FORMATTER = [
@@ -433,8 +542,10 @@ function checkTree(files, banned) {
       const first = value.split(/\s+/)[0].replace(/^(["'])(.*)\1$/, '$2');
       if (first !== '-') hit('signing.identity', path, found.line, `CODE_SIGN_IDENTITY is given '${value}', not '-'`);
     }
-    for (const found of matches(values, /DEVELOPMENT_TEAM[ \t]*[=:][ \t]*["']?[A-Za-z0-9]{10}(?![A-Za-z0-9_])/)) {
-      hit('signing.team', path, found.line, 'DEVELOPMENT_TEAM is given a team value');
+    // The build setting, for every kit or none, and XcodeGen's target attribute; in a
+    // settings file, a project file, a command line or a property list.
+    for (const found of matches(values, TEAM_VALUE)) {
+      hit('signing.team', path, found.line, `${found.match[1]} is given a team value`);
     }
 
     if (workflow) checkWorkflow(path, values, hit);
@@ -471,6 +582,18 @@ function checkTree(files, banned) {
       for (const [pattern, what] of VIEW_VALUE_WORDS) {
         for (const found of matches(swift.code, pattern)) hit('words.value', path, found.line, `${what} turns a value into words`);
       }
+      for (const found of matches(swift.code, TYPED)) {
+        if (!BINDING_BEFORE.test(swift.code.slice(0, found.match.index))) {
+          hit('words.value', path, found.line, 'what was typed into search, read outside its binding ($query.typed)');
+        }
+      }
+      // (b) The device, its clock, zone, language, files and settings: none of it is a
+      // view's to read, so none of it can be drawn.
+      for (const [pattern, what] of [...CLOCK_ZONE, ...VIEW_DEVICE]) {
+        if (path === WINDOW_STYLE && what === SETTINGS_STORE) continue;
+        for (const found of matches(swift.code, pattern)) hit('view.device', path, found.line, `a view reads the device: ${what}`);
+      }
+      checkNetwork(path, swift, 'view.network', hit);
     }
 
     if (isTourCode(path)) {
@@ -482,10 +605,12 @@ function checkTree(files, banned) {
     if (path.startsWith(CORE)) {
       // (b) Only Words/ makes a ShownText; a screen model types no word.
       if (!path.startsWith(CORE_WORDS)) {
-        for (const found of matches(swift.code, SHOWN_MAKER)) {
-          hit('core.showntext', path, found.line, 'ShownText( outside Words/');
+        for (const [pattern, what] of SHOWN_MAKERS) {
+          for (const found of matches(swift.code, pattern)) hit('core.showntext', path, found.line, what);
         }
       }
+      // (b) No text leaves SnowlightCore but a ShownText's characters and what was typed.
+      checkPublicSurface(path, swift.code, hit);
       if (path.startsWith(CORE_SCREENS)) {
         for (const literal of swift.literals) {
           hit('core.screenliteral', path, literal.line, `a string literal in a screen model: "${literal.value}"`);
@@ -496,9 +621,10 @@ function checkTree(files, banned) {
         const module = found.match[1].trim();
         if (module !== 'Foundation') hit('core.import', path, found.line, `import ${module}`);
       }
-      for (const [pattern, what] of CORE_DEVICE) {
+      for (const [pattern, what] of [...CLOCK_ZONE, ...ENVIRONMENT]) {
         for (const found of matches(swift.code, pattern)) hit('core.device', path, found.line, `the device's clock or zone: ${what}`);
       }
+      checkNetwork(path, swift, 'core.network', hit);
       for (const [pattern, what] of CORE_FORMATTER) {
         for (const found of matches(swift.code, pattern)) hit('core.formatter', path, found.line, `${what}: ${found.text}`);
       }
@@ -510,42 +636,199 @@ function checkTree(files, banned) {
       }
     }
 
-    // (c) In the tests, one file may read this machine's zone and its environment.
-    if (path.startsWith(CORE_TESTS) && !path.endsWith(`/${THIS_MACHINE}`)) {
-      for (const found of matches(swift.code, /\.\s*current(?![A-Za-z0-9_])/)) {
-        hit('tests.device', path, found.line, `.current outside ${THIS_MACHINE}`);
+    if (path.startsWith(CORE_TESTS)) {
+      // (c) In the tests, one file may read this machine's clock, zone and environment.
+      if (!path.endsWith(`/${THIS_MACHINE}`)) {
+        for (const [pattern, what] of [...CLOCK_ZONE, ...ENVIRONMENT]) {
+          for (const found of matches(swift.code, pattern)) hit('tests.device', path, found.line, `${what} outside ${THIS_MACHINE}`);
+        }
       }
-      for (const found of matches(swift.code, /(?<![A-Za-z0-9_])ProcessInfo(?![A-Za-z0-9_])/)) {
-        hit('tests.device', path, found.line, `ProcessInfo outside ${THIS_MACHINE}`);
+      // No test reads the network, ThisMachineTests.swift included.
+      checkNetwork(path, swift, 'tests.network', hit);
+      for (const found of matches(swift.code, /^[ \t]*(?:@[A-Za-z_]+[ \t]+)*import[ \t]+([^\n]*)$/m)) {
+        const module = found.match[1].trim();
+        if (!TEST_IMPORTS.includes(module)) hit('tests.import', path, found.line, `import ${module}: a test imports only ${TEST_IMPORTS.join(', ')}`);
+      }
+      // Every test runs on every machine: none is skipped, none is kept from a platform.
+      for (const found of matches(swift.code, /(?<![A-Za-z0-9_])XCTSkip[A-Za-z]*/)) {
+        hit('tests.skip', path, found.line, `${found.text}: a test that may be skipped`);
+      }
+      for (const found of matches(swift.code, /^[ \t]*#(?:if|elseif)(?![A-Za-z0-9_])/m)) {
+        hit('tests.skip', path, found.line, 'a test file with #if: the same tests must run on Linux and on macOS');
       }
     }
   }
 
   checkAppWords(files, banned, hit);
   checkFamilies(files, hit);
+  checkTestCount(files, hit);
   return hits;
 }
 
-/** (a) An iOS workflow: no secrets, standard runners only, GitHub's own three actions only. */
+/** The modules a test may import. */
+const TEST_IMPORTS = ['XCTest', 'Foundation', 'SnowlightCore'];
+
+/** (c) The network: its types and calls, and any string literal that names an address. */
+function checkNetwork(path, swift, rule, hit) {
+  for (const [pattern, what] of NETWORK) {
+    for (const found of matches(swift.code, pattern)) hit(rule, path, found.line, `the network: ${what}`);
+  }
+  for (const literal of swift.literals) {
+    if (ADDRESS_LITERAL.test(literal.value)) hit(rule, path, literal.line, `the network: an address in a string, "${literal.value}"`);
+  }
+}
+
+/**
+ * (b) SnowlightCore's public surface hands out no text. Every declaration marked public
+ * (or open) is read from the word to the start of its body or its value, across the lines
+ * of its parameters, and must name no type that holds text, but for the two allowed:
+ * `ShownText.drawnString` and `SearchQuery.typed`. A public property states its type, so
+ * the check can read it. A public extension or protocol makes its members public without
+ * the word, so neither is written in SnowlightCore. The cases of a public enum are public
+ * too, so none carries text.
+ */
+function checkPublicSurface(path, code, hit) {
+  const keyword = /(?<![A-Za-z0-9_.])(?:public|open(?=\s+(?:class|func|var|let|subscript|init|override|static|final|extension)(?![A-Za-z0-9_])))(?![A-Za-z0-9_])/g;
+  for (const found of code.matchAll(keyword)) {
+    const start = found.index;
+    const alias = /^(?:public|open)\s+(?:[a-z]+\s+)*typealias(?![A-Za-z0-9_])/.test(code.slice(start, start + 120));
+    let depth = 0;
+    let end = start;
+    for (; end < code.length; end += 1) {
+      const c = code[end];
+      if (c === '(' || c === '[') depth += 1;
+      else if (c === ')' || c === ']') depth = Math.max(0, depth - 1);
+      else if (depth === 0 && (c === '{' || c === '\n')) break;
+      else if (depth === 0 && c === '=' && !alias && code[end + 1] !== '=' && !'!<>='.includes(code[end - 1] ?? '')) break;
+    }
+    const head = code.slice(start, end).replace(/\s+/g, ' ').trim();
+    const line = lineAt(code, start);
+    const kind = /(?:^|\s)(let|var|func|init|subscript|struct|enum|class|protocol|extension|typealias|actor|case|associatedtype)(?![A-Za-z0-9_])/.exec(head);
+    if (kind === null) continue;
+    if (kind[1] === 'extension' || kind[1] === 'protocol') {
+      hit('core.publicstring', path, line, `a public ${kind[1]} makes its members public without the word; write public on each member: ${head}`);
+      continue;
+    }
+    const named = /(?:let|var)\s+([A-Za-z_][A-Za-z0-9_]*)/.exec(head);
+    const name = named === null ? '' : named[1];
+    if ((kind[1] === 'let' || kind[1] === 'var') && !head.slice(named === null ? 0 : named.index).includes(':')) {
+      hit('core.publicstring', path, line, `a public property must state its type, so this check can read it: ${head}`);
+    }
+    if (STRING_TYPE.test(head) && !PUBLIC_TEXT.has(`${path} ${name}`)) {
+      hit('core.publicstring', path, line, `text in SnowlightCore's public surface: ${head}`);
+    }
+    if (kind[1] === 'enum') {
+      const open = code.indexOf('{', end);
+      if (open < 0) continue;
+      let level = 0;
+      let close = code.length;
+      for (let k = open; k < code.length; k += 1) {
+        if (code[k] === '{') level += 1;
+        else if (code[k] === '}') {
+          level -= 1;
+          if (level === 0) {
+            close = k;
+            break;
+          }
+        }
+      }
+      const body = code.slice(open, close);
+      for (const cased of matches(body, /^[ \t]*(?:indirect[ \t]+)?case[ \t]+[A-Za-z_][^\n]*$/m)) {
+        if (STRING_TYPE.test(cased.text)) {
+          hit('core.publicstring', path, lineAt(code, open) + cased.line - 1, `a case of a public enum carries text: ${cased.text.trim()}`);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * (c) The tests counted from their source equal the committed count, so a test that goes
+ * missing is seen. Every XCTest test is an instance method `func test...()`; one marked
+ * private or static is never run, so it is refused.
+ */
+function checkTestCount(files, hit) {
+  let count = 0;
+  let any = false;
+  for (const [path, text] of files) {
+    if (!path.startsWith(TEST_FILES) || !path.endsWith('.swift') || typeof text !== 'string') continue;
+    any = true;
+    const code = readSwift(text).code;
+    count += matches(code, /(?<![A-Za-z0-9_])func\s+test[A-Za-z0-9_]*\s*\(\s*\)/).length;
+    for (const found of matches(code, /(?<![A-Za-z0-9_])(?:private|fileprivate|static|class)\s+(?:@[A-Za-z_]+\s+)*func\s+test[A-Za-z0-9_]*\s*\(/)) {
+      hit('tests.count', path, found.line, `a test method that XCTest never runs: ${found.text}`);
+    }
+  }
+  if (!any) return;
+  const committed = files.get(TEST_COUNT);
+  if (typeof committed !== 'string') {
+    hit('tests.count', TEST_COUNT, 0, `the committed count of tests is missing; the source holds ${count}`);
+    return;
+  }
+  const numbers = committed.split('\n').map((line) => line.trim()).filter((line) => line !== '' && !line.startsWith('#'));
+  if (numbers.length !== 1 || !/^[0-9]+$/.test(numbers[0])) {
+    hit('tests.count', TEST_COUNT, 0, 'the count file must hold one whole number (lines that start with # are notes)');
+  } else if (Number(numbers[0]) !== count) {
+    hit('tests.count', TEST_COUNT, 0, `the committed count is ${numbers[0]} and the source holds ${count} tests`);
+  }
+}
+
+/** A team value given to the build setting or to XcodeGen's attribute. (a) */
+const TEAM_VALUE = /(DEVELOPMENT_TEAM|DevelopmentTeam)(?:\[[^\]\n]*\])?["']?[ \t]*(?:[=:]|<\/key>\s*<string>)[ \t]*["']?[A-Za-z0-9]{10}(?![A-Za-z0-9_])/;
+
+/** Ways a workflow could reach a secret, or run with the rights that hold them. (a) */
+const WORKFLOW_SECRETS = [
+  [/(?<![A-Za-z0-9_-])secrets(?![A-Za-z0-9_-])/, 'the secrets context, in any form'],
+  [/(?<![A-Za-z0-9_-])github\s*(?:\.\s*token|\[\s*["']token)/, "the run's own token"],
+  [/GITHUB_TOKEN/, "the run's own token"],
+  [/(?<![A-Za-z0-9_-])toJSON\s*\(\s*github\s*\)/, 'the whole github context, which holds the token'],
+  [/(?<![A-Za-z0-9_-])pull_request_target(?![A-Za-z0-9_-])/, "a trigger that runs a fork's change with this repository's rights"],
+];
+
+/** The zone names that are UTC by another name. (c) */
+const UTC_NAMES = /^:?(?:UTC|UCT|GMT|GMT0|GMT[+-]0|Zulu|Universal|Greenwich|Z|Etc\/(?:UTC|UCT|GMT|GMT0|GMT[+-]0|Zulu|Universal|Greenwich))$/i;
+
+/**
+ * (a) An iOS workflow: no secrets, standard runners only, GitHub's own three actions only,
+ * read-only permissions. The file is read line by line, so every place the words runs-on,
+ * uses, permissions and secrets appear is checked, wherever and however they are written:
+ * a form this reader does not follow (a quoted key, a flow mapping, the word inside a
+ * value) is refused, never passed. So are the YAML forms that could spell a key or a value
+ * in other characters: an escape by number, and a tag.
+ */
 function checkWorkflow(path, values, hit) {
-  for (const found of matches(values, /(?<![A-Za-z0-9_])secrets[ \t]*[.[:]/)) {
-    hit('workflow.secrets', path, found.line, 'a workflow reads a secret');
+  for (const [pattern, what] of WORKFLOW_SECRETS) {
+    for (const found of matches(values, pattern)) hit('workflow.secrets', path, found.line, `a workflow reaches for a secret: ${what}`);
+  }
+  for (const found of matches(values, /\\[xuU][0-9A-Fa-f]/)) {
+    hit('workflow.syntax', path, found.line, 'an escape by number, which can spell any key or value in other characters');
+  }
+  for (const found of matches(values, /!!|!</)) {
+    hit('workflow.syntax', path, found.line, 'a YAML tag, which can turn a value into another');
   }
   const lines = values.split('\n');
   const plain = (value) => value.trim().replace(/^(["'])(.*)\1$/, '$2');
   let permissions = null;
   lines.forEach((line, index) => {
     const number = index + 1;
-    const runner = /^\s*(?:-\s+)?runs-on\s*:(.*)$/.exec(line);
-    if (runner !== null && !RUNNERS.includes(plain(runner[1]))) {
-      hit('runner.label', path, number, `runs-on '${plain(runner[1])}' is not one of ${RUNNERS.join(', ')}`);
+    for (let k = 0; k < (line.match(/(?<![A-Za-z0-9_-])runs-on(?![A-Za-z0-9_-])/g) ?? []).length; k += 1) {
+      const runner = /^\s*runs-on\s*:(.*)$/.exec(line);
+      if (runner === null) {
+        hit('runner.label', path, number, 'runs-on in a form this guard does not read (a quoted key, a flow mapping, or the word in a value)');
+      } else if (!RUNNERS.includes(plain(runner[1]))) {
+        hit('runner.label', path, number, `runs-on '${plain(runner[1])}' is not one of ${RUNNERS.join(', ')}`);
+      }
     }
-    const action = /^\s*(?:-\s+)?uses\s*:(.*)$/.exec(line);
-    if (action !== null && !ACTIONS.includes(plain(action[1]))) {
-      hit('workflow.uses', path, number, `uses '${plain(action[1])}' is not one of ${ACTIONS.join(', ')}`);
+    for (let k = 0; k < (line.match(/(?<![A-Za-z0-9_-])uses(?![A-Za-z0-9_-])/g) ?? []).length; k += 1) {
+      const action = /^\s*(?:-\s+)?uses\s*:(.*)$/.exec(line);
+      if (action === null) {
+        hit('workflow.uses', path, number, 'uses in a form this guard does not read (a quoted key, a flow mapping, or the word in a value)');
+      } else if (!ACTIONS.includes(plain(action[1]))) {
+        hit('workflow.uses', path, number, `uses '${plain(action[1])}' is not one of ${ACTIONS.join(', ')}`);
+      }
     }
-    if (/^\s+permissions\s*:/.test(line)) {
-      hit('workflow.permissions', path, number, 'a job sets permissions of its own');
+    if (/(?<![A-Za-z0-9_-])permissions(?![A-Za-z0-9_-])/.test(line) && !/^permissions\s*:/.test(line)) {
+      hit('workflow.permissions', path, number, 'permissions set by a job, or written in a form this guard does not read');
     }
     const top = /^permissions\s*:(.*)$/.exec(line);
     if (top !== null) {
@@ -560,6 +843,38 @@ function checkWorkflow(path, values, hit) {
   } else if (permissions.inline !== '' || permissions.block.length !== 1 || permissions.block[0] !== 'contents: read') {
     hit('workflow.permissions', path, permissions.number, 'permissions must be exactly contents: read');
   }
+  checkTestZones(path, lines, hit);
+}
+
+/**
+ * (c) Every Swift test run in an iOS workflow states its zone in its own step: TZ and
+ * SNOWLIGHT_EXPECT_ZONE, the same name, and not UTC by any name. Without the second,
+ * ThisMachineTests has nothing to compare and the run would pass on a UTC clock.
+ */
+function checkTestZones(path, lines, hit) {
+  const indent = (line) => line.length - line.trimStart().length;
+  lines.forEach((line, index) => {
+    if (!/(?<![A-Za-z0-9_-])swift\s+test(?![A-Za-z0-9_-])/.test(line)) return;
+    // The step that holds the line: the nearest list item at or above it, not deeper.
+    let first = index;
+    while (first > 0 && !(/^\s*-\s/.test(lines[first]) && indent(lines[first]) <= indent(line))) first -= 1;
+    let last = first + 1;
+    while (last < lines.length && (lines[last].trim() === '' || indent(lines[last]) > indent(lines[first]))) last += 1;
+    const step = lines.slice(first, last).join('\n');
+    const value = (name) => {
+      const found = new RegExp(`(?:^|[\\s"'{,])${name}["']?\\s*[:=]\\s*["']?([^\\s"',}]*)`, 'm').exec(step);
+      return found === null ? null : found[1];
+    };
+    const zone = value('TZ');
+    const expected = value('SNOWLIGHT_EXPECT_ZONE');
+    if (zone === null || expected === null) {
+      hit('workflow.zone', path, index + 1, 'a Swift test run whose step does not set both TZ and SNOWLIGHT_EXPECT_ZONE');
+    } else if (zone !== expected) {
+      hit('workflow.zone', path, index + 1, `a Swift test run with TZ ${zone} and SNOWLIGHT_EXPECT_ZONE ${expected}: they must be the same zone`);
+    } else if (zone === '' || UTC_NAMES.test(zone)) {
+      hit('workflow.zone', path, index + 1, `a Swift test run under '${zone}', which is UTC: the tests never run on a UTC clock`);
+    }
+  });
 }
 
 /**
@@ -666,6 +981,8 @@ const TOUR = 'ios/SnowlightKit/Sources/SnowlightKit/Tour/Sample.swift';
 const CORE_FILE = 'ios/SnowlightCore/Sources/SnowlightCore/Days/Sample.swift';
 const SCREEN_FILE = 'ios/SnowlightCore/Sources/SnowlightCore/Screens/Sample.swift';
 const TEST_FILE = 'ios/SnowlightCore/Tests/SnowlightCoreTests/SampleTests.swift';
+const CORE_STATE = 'ios/SnowlightCore/Sources/SnowlightCore/State/Sample.swift';
+const SEARCH_VIEW = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/SampleSearch.swift';
 const WORKFLOW = '.github/workflows/ios-sample.yml';
 const PROJECT = 'ios/project.yml';
 /** Ten characters shaped like a team value, made here so that none is ever written down. */
@@ -673,6 +990,10 @@ const TEAM_SHAPE = 'X'.repeat(10);
 
 const view = (body) => `import SwiftUI\nstruct Sample: View {\n    var body: some View {\n        ${body}\n    }\n}\n`;
 const core = (body) => `import Foundation\nfunc sample() {\n    ${body}\n}\n`;
+const test = (body) => `import XCTest\n@testable import SnowlightCore\n\nfinal class SampleTests: XCTestCase {\n    func testIt() throws {\n        _ = try GoldenFile.family("sample")\n        ${body}\n    }\n}\n`;
+/** A Swift test step as the workflows write it: its own zone, stated twice, not UTC. */
+const zonedTests = (tz = 'America/St_Johns', expected = tz) =>
+  `      - name: Core tests\n        env:\n          TZ: ${tz}\n          SNOWLIGHT_EXPECT_ZONE: ${expected}\n        run: swift test --package-path ios/SnowlightCore`;
 const workflow = (changes = {}) =>
   [
     'name: sample',
@@ -684,6 +1005,7 @@ const workflow = (changes = {}) =>
     '    steps:',
     `      - uses: ${changes.uses ?? 'actions/checkout@v7'}`,
     `      - run: ${changes.run ?? 'echo ok'}`,
+    changes.tests ?? zonedTests(),
     '',
   ].join('\n');
 const appWords = (...words) => `enum AppWords {\n${words.map((word, index) => `    static let w${index} = ShownText("${word}")`).join('\n')}\n}\n`;
@@ -697,15 +1019,26 @@ const CLEAN = new Map([
   [VIEW, view('ShownLabel(model.title) // never Text("x"), never Date() or String(x)')],
   [TOUR, '// The tour.\n#if DEBUG\nimport MetalKit\nlet key = "tour.name"\nlet said = String(describing: 3) + "Text(\\"x\\")"\n#if targetEnvironment(simulator)\nlet where = "#endif is only named in this string"\n#else\nlet where = "a phone"\n#endif\n#endif // DEBUG\n'],
   [CORE_FILE, core('let note = "Date() and Calendar.current are only named in this string"\n    if 3 != 4 { _ = note }')],
+  // What SnowlightCore may write: explicit initializers, its own initializer through
+  // self, a zone by its name, a fixed moment, a value's own field named now, a public
+  // surface with no text in it, a switch inside a public enum.
+  [CORE_STATE, 'import Foundation\n\npublic struct Moment: Equatable {\n    public let now: Int64\n    public static let zero: Moment = Moment(0)\n    init(_ value: Int64) {\n        now = value\n    }\n    init(copy other: Moment) {\n        self.init(other.now)\n    }\n    public func later(by step: Int64) -> Moment {\n        Moment.init(now + step)\n    }\n}\n\npublic enum Look: Equatable {\n    case light\n    case dark(Int)\n    var note: String {\n        switch self {\n        case .light:\n            return String()\n        case .dark:\n            return String(repeating: "x", count: 1)\n        }\n    }\n}\n\nfunc moment(_ input: Moment, in name: String) -> Int64? {\n    guard let zone = TimeZone(identifier: name) else {\n        return nil\n    }\n    let start = Date(timeIntervalSince1970: 0)\n    return input.now + Int64(zone.secondsFromGMT(for: start))\n}\n'],
   [SCREEN_FILE, 'struct Sample {\n    let title: ShownText\n}\n'],
+  // The two places SnowlightCore's public surface may hold text.
+  [`${CORE_WORDS}ShownText.swift`, 'public struct ShownText: Equatable {\n    public let drawnString: String\n    init(_ characters: String) {\n        drawnString = characters\n    }\n}\n'],
+  [`${CORE_SCREENS}ShellModel.swift`, 'public struct SearchQuery: Equatable {\n    public var typed: String\n    public init() {\n        typed = String()\n    }\n}\n'],
   [APP_WORDS_SWIFT, appWords('My School', 'Call it')],
   [APP_WORDS_LIST, appList('My School', 'Call it')],
-  [TEST_FILE, 'final class SampleTests: XCTestCase {\n    func testIt() throws { _ = try GoldenFile.family("sample") }\n}\n'],
-  [`ios/SnowlightCore/Tests/SnowlightCoreTests/${THIS_MACHINE}`, 'let zone = TimeZone.current\nlet env = ProcessInfo.processInfo.environment\n'],
+  [TEST_FILE, test('let fixed = Date(timeIntervalSince1970: 1_800_000_000)\n        let zone = TimeZone(identifier: "America/St_Johns")\n        let folder = Bundle.module.resourceURL\n        _ = (fixed, zone, folder)')],
+  [`ios/SnowlightCore/Tests/SnowlightCoreTests/${THIS_MACHINE}`, 'import Foundation\nimport XCTest\nlet zone = TimeZone.current\nlet env = ProcessInfo.processInfo.environment\n'],
+  [TEST_COUNT, '# the tests\n1\n'],
   [`${GOLDEN}sample.json`, '{}\n'],
   [WORKFLOW, workflow()],
   [PROJECT, 'settings:\n  # CODE_SIGN_IDENTITY: Apple Development\n  CODE_SIGN_IDENTITY: "-"\n  DEVELOPMENT_TEAM: $(SNOWLIGHT_TEAM)\n'],
   ['ios/tools/build.sh', 'xcodebuild build CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY=- ONLY_ACTIVE_ARCH=YES\n'],
+  // The search field's binding, and the one view file that may hold the settings store.
+  [SEARCH_VIEW, view('Color.clear.searchable(text: $query.typed, prompt: model.prompt.text)')],
+  [WINDOW_STYLE, 'import SwiftUI\nfinal class AppearanceStore {\n    private let store: UserDefaults\n    init(store: UserDefaults = .standard) {\n        self.store = store\n    }\n}\n'],
 ]);
 
 /**
@@ -737,8 +1070,21 @@ const SAMPLES = [
   { name: 'NSLocalizedString', rules: ['words.system'], files: [[VIEW, view('let t = NSLocalizedString(key, comment: note)')]] },
   { name: 'an attributed string', rules: ['words.system'], files: [[VIEW, view('let t = AttributedString(title)')]] },
   { name: 'a date picker', rules: ['words.system'], files: [[VIEW, view('DatePicker(selection: $when) { ShownLabel(title) }')]] },
-  { name: 'Date() in a view', rules: ['words.system'], files: [[VIEW, view('let now = Date()')]] },
-  { name: 'Date.now in a view', rules: ['words.system'], files: [[VIEW, view('let now = Date.now')]] },
+  { name: 'Date() in a view', rules: ['view.device'], files: [[VIEW, view('let now = Date()')]] },
+  { name: 'Date.now in a view', rules: ['view.device'], files: [[VIEW, view('let now = Date.now')]] },
+  // A plain-string control given text the screen model did not hand over.
+  { name: 'Button(option.choice.stored)', rules: ['words.value'], files: [[VIEW, view('Button(option.choice.stored) { }')]] },
+  { name: "a navigation title that draws the phone's zone", rules: ['view.device'], files: [[VIEW, view('Color.clear.navigationTitle(TimeZone.current.identifier)')]] },
+  { name: "an accessibility label from a color's text form", rules: ['words.value'], files: [[VIEW, view('ShownLabel(title).accessibilityLabel(Tokens.color(.ink, in: .light).hex)')]] },
+  { name: "Button(ProcessInfo.processInfo.processName)", rules: ['view.device'], files: [[VIEW, view('Button(ProcessInfo.processInfo.processName) { }')]] },
+  { name: 'what was typed, read outside its binding', rules: ['words.value'], files: [[VIEW, view('Button(query.typed) { }')]] },
+  { name: 'what was typed, through a longer path than its binding', rules: ['words.value'], files: [[VIEW, view('Color.clear.searchable(text: $model.query.typed)')]] },
+  { name: "a binding's raw value", rules: ['words.value'], files: [[VIEW, view('Button($query.typed.wrappedValue) { }')]] },
+  { name: 'reflection over a model', rules: ['words.value'], files: [[VIEW, view('Button(Mirror(reflecting: model).children.first?.label ?? name) { }')]] },
+  { name: 'the name of the function', rules: ['words.value'], files: [[VIEW, view('Button(#function) { }')]] },
+  { name: 'the name of the file', rules: ['words.value'], files: [[VIEW, view('Button(#fileID) { }')]] },
+  { name: 'a cast to text', rules: ['words.value'], files: [[VIEW, view('Button(value as? String ?? name) { }')]] },
+  { name: 'a stored value read as it is, in the one file that holds the store', rules: ['view.device'], files: [[WINDOW_STYLE, 'import SwiftUI\nfinal class AppearanceStore {\n    private let store: UserDefaults\n    var said: String? {\n        store.string(forKey: name)\n    }\n}\n']] },
   { name: 'a view that names SiteWords', rules: ['words.table'], files: [[VIEW, view('ShownLabel(SiteWords.appName)')]] },
   { name: 'a view that names AppWords', rules: ['words.table'], files: [[APP + 'Sample.swift', view('ShownLabel(AppWords.map)')]] },
   { name: 'a view that names SiteFormat', rules: ['words.table'], files: [[VIEW, view('ShownLabel(SiteFormat.clock(450))')]] },
@@ -754,6 +1100,24 @@ const SAMPLES = [
   // (b) Words in SnowlightCore.
   { name: 'ShownText( outside Words/', rules: ['core.showntext'], files: [[CORE_FILE, core('let t = ShownText("Lit")')]] },
   { name: 'ShownText.init outside Words/', rules: ['core.showntext'], files: [[SCREEN_FILE, 'func sample(_ text: String) -> ShownText {\n    ShownText.init(text)\n}\n']] },
+  { name: 'a ShownText made by .init in State/, with a word of its own', rules: ['core.showntext'], files: [['ios/SnowlightCore/Sources/SnowlightCore/State/Plant.swift', 'enum Plant {\n    static let open: ShownText = .init("Open today")\n}\n']] },
+  { name: 'a ShownText made by .init in a screen model, from a stored form', rules: ['core.showntext'], files: [['ios/SnowlightCore/Sources/SnowlightCore/Screens/Plant.swift', 'struct Plant {\n    var shown: ShownText\n    mutating func set(_ choice: AppearanceOption) {\n        shown = .init(choice.stored)\n    }\n}\n']] },
+  { name: 'ShownText passed around as a type', rules: ['core.showntext'], files: [[CORE_FILE, core('let kind = ShownText.self')]] },
+  { name: 'another name for ShownText', rules: ['core.showntext'], files: [[CORE_FILE, 'typealias Words = ShownText\n']] },
+  { name: 'an extension of ShownText outside Words/', rules: ['core.showntext'], files: [[CORE_FILE, 'extension ShownText {\n    static let lit = Self("Lit")\n}\n']] },
+  // (b) Text in SnowlightCore's public surface.
+  { name: "a choice's stored form made public", rules: ['core.publicstring'], files: [[CORE_STATE, 'public enum AppearanceChoice {\n    case system\n    public var stored: String {\n        switch self {\n        case .system:\n            return "system"\n        }\n    }\n}\n']] },
+  { name: 'a public initializer that takes text', rules: ['core.publicstring'], files: [[CORE_STATE, 'public struct TokenColor {\n    public init?(hex: String) {\n        return nil\n    }\n}\n']] },
+  { name: 'a public function that hands out text', rules: ['core.publicstring'], files: [[CORE_STATE, 'public func label(of value: Int) -> String {\n    String(value)\n}\n']] },
+  { name: 'a public function that takes text over several lines', rules: ['core.publicstring'], files: [[`${CORE_WORDS}Plant.swift`, 'public func shown(\n    _ characters: Substring\n) -> ShownText {\n    ShownText(String(characters))\n}\n']] },
+  { name: 'a public subscript that takes text', rules: ['core.publicstring'], files: [[CORE_STATE, 'public struct Table {\n    public subscript(key: String) -> Int {\n        0\n    }\n}\n']] },
+  { name: 'a public enum whose raw values are text', rules: ['core.publicstring'], files: [[CORE_STATE, 'public enum Kind: String {\n    case lit\n}\n']] },
+  { name: 'a case of a public enum that carries text', rules: ['core.publicstring'], files: [[CORE_STATE, 'public enum Said: Equatable {\n    case none\n    case note(String)\n}\n']] },
+  { name: 'a public property whose type is left to the compiler', rules: ['core.publicstring'], files: [[CORE_STATE, 'public struct Plant {\n    public static let note = "Lit"\n}\n']] },
+  { name: 'another public name for text', rules: ['core.publicstring'], files: [[CORE_STATE, 'public typealias Name = String\n']] },
+  { name: 'a public extension', rules: ['core.publicstring'], files: [[CORE_STATE, 'public extension Look {\n    var name: String { String() }\n}\n']] },
+  { name: 'a public protocol', rules: ['core.publicstring'], files: [[CORE_STATE, 'public protocol Named {\n    var name: String { get }\n}\n']] },
+  { name: 'text kept public in the one file that may hold some', rules: ['core.publicstring'], files: [[`${CORE_SCREENS}ShellModel.swift`, 'public struct SearchQuery {\n    public var typed: String\n    public var said: String\n}\n']] },
   { name: 'a string literal in a screen model', rules: ['core.screenliteral'], files: [[SCREEN_FILE, 'struct Sample {\n    let note = "Not yet"\n}\n']] },
   // (b) The words only the app has.
   { name: 'an app word that is not on the list', rules: ['appwords.list'], files: [[APP_WORDS_SWIFT, appWords('My School', 'Call it', 'Lit')]] },
@@ -811,6 +1175,23 @@ const SAMPLES = [
   { name: 'import of one Foundation type by name', rules: ['core.import'], files: [[CORE_FILE, 'import struct Foundation.Date\n']] },
   { name: '.current in a test that may not read it', rules: ['tests.device'], files: [[TEST_FILE, 'let zone = TimeZone.current\nlet f = try GoldenFile.family("sample")\n']] },
   { name: 'ProcessInfo in a test that may not read it', rules: ['tests.device'], files: [[TEST_FILE, 'let env = ProcessInfo.processInfo.environment\nlet f = try GoldenFile.family("sample")\n']] },
+  { name: 'Date() in a test', rules: ['tests.device'], files: [[TEST_FILE, test('let now = Date()')]] },
+  { name: 'Date.now in a test', rules: ['tests.device'], files: [[TEST_FILE, test('let now = Date.now')]] },
+  { name: 'getenv("TZ") in a test', rules: ['tests.device'], files: [[TEST_FILE, test('let zone = getenv("TZ")')]] },
+  { name: 'NSTimeZone.local in a test', rules: ['tests.device'], files: [[TEST_FILE, test('let zone = NSTimeZone.local')]] },
+  { name: 'a test that reads a web address', rules: ['tests.network'], files: [[TEST_FILE, test('let page = try Data(contentsOf: URL(string: "https://example.invalid/x")!)')]] },
+  { name: 'a test that starts a download', rules: ['tests.network'], files: [[TEST_FILE, test('URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()')]] },
+  { name: 'a network address in ThisMachineTests', rules: ['tests.network'], files: [[`ios/SnowlightCore/Tests/SnowlightCoreTests/${THIS_MACHINE}`, 'let where = "wss://example.invalid/live"\n']] },
+  { name: 'a test that imports the network', rules: ['tests.import'], files: [[TEST_FILE, `import FoundationNetworking\n${test('_ = 1')}`]] },
+  { name: "a test that imports Apple's Network framework", rules: ['tests.import'], files: [[TEST_FILE, `import Network\n${test('_ = 1')}`]] },
+  { name: 'a test that may be skipped', rules: ['tests.skip'], files: [[TEST_FILE, test('throw XCTSkip("later")')]] },
+  { name: 'a test skipped on a condition', rules: ['tests.skip'], files: [[TEST_FILE, test('try XCTSkipIf(true)')]] },
+  { name: 'a test kept from one platform', rules: ['tests.skip'], files: [[TEST_FILE, `#if os(Linux)\n${test('_ = 1')}#endif\n`]] },
+  { name: 'a count of tests that is not the source', rules: ['tests.count'], files: [[TEST_COUNT, '# the tests\n2\n']] },
+  { name: 'no count of tests', rules: ['tests.count'], files: [[TEST_COUNT, null]] },
+  { name: 'a count file that is not one number', rules: ['tests.count'], files: [[TEST_COUNT, '1\n2\n']] },
+  { name: 'a test method that is never run', rules: ['tests.count'], files: [[TEST_FILE, `${test('_ = 1')}extension SampleTests {\n    private func testHidden() {}\n}\n`]] },
+  { name: 'a network address in SnowlightCore', rules: ['core.network'], files: [[CORE_FILE, core('let root = "https://live.invalid/v1/"')]] },
   // (a) Signing, secrets and billed machines.
   { name: 'DEVELOPMENT_TEAM with a team value', rules: ['signing.team'], files: [[PROJECT, `settings:\n  DEVELOPMENT_TEAM: ${TEAM_SHAPE}\n`]] },
   { name: 'DEVELOPMENT_TEAM with a team value, in a config file', rules: ['signing.team'], files: [['ios/Config/Base.xcconfig', `DEVELOPMENT_TEAM = ${TEAM_SHAPE}\n`]] },
@@ -837,6 +1218,28 @@ const SAMPLES = [
   { name: 'permissions with a second line', rules: ['workflow.permissions'], files: [[WORKFLOW, workflow({ permissions: 'permissions:\n  contents: read\n  id-token: write' })]] },
   { name: 'no permissions at all', rules: ['workflow.permissions'], files: [[WORKFLOW, workflow({ permissions: 'env:\n  A: b' })]] },
   { name: 'permissions set by a job', rules: ['workflow.permissions'], files: [[WORKFLOW, workflow({ run: 'echo ok\n    permissions:\n      contents: write' })]] },
+  { name: 'permissions set by a job under a quoted key', rules: ['workflow.permissions'], files: [[WORKFLOW, workflow({ run: 'echo ok\n    "permissions": write-all' })]] },
+  // (a) The same, written in forms a line reader could miss.
+  { name: 'a billed runner under a quoted key', rules: ['runner.label'], files: [[WORKFLOW, workflow().replace('    runs-on: macos-26', '    "runs-on": macos-26-xlarge')]] },
+  { name: 'a billed runner in a flow mapping', rules: ['runner.label'], files: [[WORKFLOW, workflow().replace('    runs-on: macos-26', '    { runs-on: macos-26-xlarge }')]] },
+  { name: 'another action in flow style', rules: ['workflow.uses'], files: [[WORKFLOW, workflow({ run: 'echo ok\n  two:\n    runs-on: ubuntu-24.04\n    steps: [{uses: actions/cache@v4}]' })]] },
+  { name: 'every secret printed at once', rules: ['workflow.secrets'], files: [[WORKFLOW, workflow({ run: "echo '${{ toJSON(secrets) }}'" })]] },
+  { name: "the run's own token", rules: ['workflow.secrets'], files: [[WORKFLOW, workflow({ run: 'echo ${{ github.token }}' })]] },
+  { name: 'the whole github context', rules: ['workflow.secrets'], files: [[WORKFLOW, workflow({ run: "echo '${{ toJSON(github) }}'" })]] },
+  { name: "a trigger with the repository's rights on a fork's change", rules: ['workflow.secrets'], files: [[WORKFLOW, workflow().replace('on: push', 'on: pull_request_target')]] },
+  { name: 'a key spelled by number', rules: ['workflow.syntax'], files: [[WORKFLOW, workflow().replace('    runs-on: macos-26', '    "runs\\x2don": macos-26-xlarge')]] },
+  { name: 'a YAML tag', rules: ['workflow.syntax'], files: [[WORKFLOW, workflow({ run: '!!binary bWFjb3MtMjYteGxhcmdl' })]] },
+  // (c) Swift tests in CI always run in a stated zone that is not UTC.
+  { name: 'a Swift test run that states no zone', rules: ['workflow.zone'], files: [[WORKFLOW, workflow({ tests: '      - run: swift test --package-path ios/SnowlightCore' })]] },
+  { name: 'a Swift test run that states TZ only', rules: ['workflow.zone'], files: [[WORKFLOW, workflow({ tests: '      - name: Core tests\n        env:\n          TZ: America/St_Johns\n        run: swift test --package-path ios/SnowlightCore' })]] },
+  { name: 'a Swift test run whose two zones differ', rules: ['workflow.zone'], files: [[WORKFLOW, workflow({ tests: zonedTests('America/St_Johns', 'Pacific/Kiritimati') })]] },
+  { name: 'a Swift test run under UTC', rules: ['workflow.zone'], files: [[WORKFLOW, workflow({ tests: zonedTests('UTC') })]] },
+  { name: 'a Swift test run under UTC by another name', rules: ['workflow.zone'], files: [[WORKFLOW, workflow({ tests: zonedTests('Etc/GMT') })]] },
+  { name: 'a Swift test run with the zone in its command only', rules: ['workflow.zone'], files: [[WORKFLOW, workflow({ tests: '      - run: TZ=UTC SNOWLIGHT_EXPECT_ZONE=UTC swift test --package-path ios/SnowlightCore' })]] },
+  // (a) A team value in the forms Xcode and XcodeGen also read.
+  { name: 'DEVELOPMENT_TEAM for one kit with a team value', rules: ['signing.team'], files: [[PROJECT, `settings:\n  DEVELOPMENT_TEAM[sdk=iphoneos*]: ${TEAM_SHAPE}\n`]] },
+  { name: "XcodeGen's DevelopmentTeam attribute with a team value", rules: ['signing.team'], files: [[PROJECT, `targets:\n  Snowlight:\n    attributes:\n      DevelopmentTeam: ${TEAM_SHAPE}\n`]] },
+  { name: 'a team value in a property list', rules: ['signing.team'], files: [['ios/App/Signing.plist', `<dict>\n  <key>DevelopmentTeam</key>\n  <string>${TEAM_SHAPE}</string>\n</dict>\n`]] },
   // (e) Debug code that a release build would hold.
   { name: 'tour code with no #if DEBUG at all', rules: ['tour.debug'], files: [[TOUR, 'import SwiftUI\nlet key = "tour.name"\n']] },
   { name: 'an import before the #if DEBUG of a tour file', rules: ['tour.debug'], files: [[TOUR, 'import MetalKit\n#if DEBUG\nlet key = "tour.name"\n#endif\n']] },
@@ -852,14 +1255,45 @@ const SAMPLES = [
   { name: 'a test that names a family that is not there', rules: ['families.missing'], files: [[TEST_FILE, 'let a = try GoldenFile.family("sample")\nlet b = try GoldenFile.family("gone")\n']] },
 ];
 
+// Every entry of the lists of the clock, the zone, the environment, the network and the
+// device is planted, by its own example, everywhere its list applies: in SnowlightCore, in a
+// test, in a view. A pattern that stops matching its example fails the self-test.
+for (const [, what, example] of CLOCK_ZONE) {
+  SAMPLES.push({ name: `in SnowlightCore: ${what}`, rules: ['core.device'], files: [[CORE_FILE, core(example)]] });
+  SAMPLES.push({ name: `in a test: ${what}`, rules: ['tests.device'], files: [[TEST_FILE, test(example)]] });
+  SAMPLES.push({ name: `in a view: ${what}`, rules: ['view.device'], files: [[VIEW, view(example)]] });
+}
+for (const [, what, example] of ENVIRONMENT) {
+  SAMPLES.push({ name: `in SnowlightCore: ${what}`, rules: ['core.device'], files: [[CORE_FILE, core(example)]] });
+  SAMPLES.push({ name: `in a test: ${what}`, rules: ['tests.device'], files: [[TEST_FILE, test(example)]] });
+}
+for (const [, what, example] of NETWORK) {
+  SAMPLES.push({ name: `in SnowlightCore: ${what}`, rules: ['core.network'], files: [[CORE_FILE, core(example)]] });
+  SAMPLES.push({ name: `in a test: ${what}`, rules: ['tests.network'], files: [[TEST_FILE, test(example)]] });
+  SAMPLES.push({ name: `in a view: ${what}`, rules: ['view.network'], files: [[VIEW, view(example)]] });
+}
+for (const [, what, example] of VIEW_DEVICE) {
+  SAMPLES.push({ name: `in a view: ${what}`, rules: ['view.device'], files: [[VIEW, view(example)]] });
+}
+// The forms the first critic of M0a planted in an export and saw pass: each by itself.
+for (const example of [
+  'let now = Date.init()', 'let now = NSDate()', 'let zone = NSTimeZone.local', 'let zone = NSTimeZone.system',
+  'let now = CFAbsoluteTimeGetCurrent()', 'let now = Date.timeIntervalSinceReferenceDate',
+  'let calendar = NSCalendar(identifier: .gregorian)',
+]) {
+  SAMPLES.push({ name: `in SnowlightCore, as planted: ${example}`, rules: ['core.device'], files: [[CORE_FILE, core(example)]] });
+}
+
 /** The rules, each of which at least one sample must hold. */
 const RULES = [
   'signing.file', 'signing.profile', 'signing.identity', 'signing.team',
-  'workflow.secrets', 'runner.label', 'workflow.uses', 'workflow.permissions',
+  'workflow.secrets', 'runner.label', 'workflow.uses', 'workflow.permissions', 'workflow.syntax', 'workflow.zone',
   'words.literal', 'words.names', 'words.text', 'words.table', 'words.drawn', 'words.system', 'words.value',
-  'core.showntext', 'core.screenliteral', 'language.file',
+  'view.device', 'view.network',
+  'core.showntext', 'core.screenliteral', 'core.publicstring', 'language.file',
   'appwords.list', 'appwords.format', 'appwords.banned', 'appwords.style',
-  'core.import', 'core.device', 'core.formatter', 'core.pattern', 'core.crash', 'tests.device',
+  'core.import', 'core.device', 'core.network', 'core.formatter', 'core.pattern', 'core.crash',
+  'tests.device', 'tests.network', 'tests.import', 'tests.skip', 'tests.count',
   'families.unnamed', 'families.missing',
   'tour.debug',
 ];
@@ -994,7 +1428,7 @@ async function main() {
 
   const { files, how } = readTree();
   // The checks mean nothing if they looked in the wrong place.
-  const needed = [SHOWN, NAMES, APP_WORDS_SWIFT, APP_WORDS_LIST, 'ios/project.yml', `${WORKFLOWS}ios-core.yml`, `${WORKFLOWS}ios-app.yml`];
+  const needed = [SHOWN, NAMES, WINDOW_STYLE, APP_WORDS_SWIFT, APP_WORDS_LIST, TEST_COUNT, 'ios/project.yml', `${WORKFLOWS}ios-core.yml`, `${WORKFLOWS}ios-app.yml`];
   const absent = needed.filter((path) => !files.has(path));
   if (absent.length > 0) {
     say(`check-ios: these files were not found, so the tree is not what the guards expect: ${absent.join(', ')}`);

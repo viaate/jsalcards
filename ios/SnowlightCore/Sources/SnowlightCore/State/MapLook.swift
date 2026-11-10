@@ -19,7 +19,7 @@ public enum Pairing: Equatable, Hashable, Sendable, CaseIterable {
     case alwaysDarkMap
 
     /// The pairing the app ships with.
-    public static let standard = Pairing.matched
+    public static let standard: Pairing = Pairing.matched
 }
 
 /// The map to draw under the app's look.

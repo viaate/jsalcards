@@ -136,12 +136,11 @@ struct TourPlan: Sendable {
         guard let value = defaults.string(forKey: key) else {
             return nil
         }
-        let choice = AppearanceChoice(stored: value)
-        guard choice.stored == value else {
-            Tour.note(key + " is not system, light or dark")
-            return nil
+        for choice in AppearanceChoice.allCases where Tour.name(of: choice) == value {
+            return choice
         }
-        return choice
+        Tour.note(key + " is not system, light or dark")
+        return nil
     }
 
     /// Lower-case letters, digits and hyphens only, so a name is safe as a file name.
@@ -189,7 +188,7 @@ struct TourStage: ViewModifier {
                     }
                     // The same call a tap on a Settings tile makes.
                     store.choose(next)
-                    Tour.note("switched the look in code to " + next.stored)
+                    Tour.note("switched the look in code to " + Tour.name(of: next))
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                         Tour.writeWords(for: plan, shownWith: store)
                     }
@@ -213,14 +212,27 @@ enum Tour {
         }
         let defaults = UserDefaults.standard
         if let choice = plan.appearance {
-            DefaultsKey.appearance.keep(choice, in: defaults)
-            Tour.note("kept the look " + choice.stored + " for the picture " + plan.name)
+            choice.keep(in: defaults)
+            Tour.note("kept the look " + Tour.name(of: choice) + " for the picture " + plan.name)
         } else {
-            DefaultsKey.appearance.forget(in: defaults)
+            AppearanceChoice.forget(in: defaults)
             Tour.note("forgot any kept look for the picture " + plan.name)
         }
         return true
     }()
+
+    /// A choice's name in the tour's own launch arguments and notes. The app's stored form
+    /// is SnowlightCore's and is not public; the tour names the three choices itself.
+    static func name(of choice: AppearanceChoice) -> String {
+        switch choice {
+        case .system:
+            return "system"
+        case .light:
+            return "light"
+        case .dark:
+            return "dark"
+        }
+    }
 
     private static var begun = false
 

@@ -19,13 +19,13 @@ final class AppearanceStore: ObservableObject {
 
     init(store: UserDefaults = .standard) {
         self.store = store
-        choice = DefaultsKey.appearance.readAppearance(in: store)
+        choice = AppearanceChoice.kept(in: store)
     }
 
     /// Changes the look of the whole app at once and keeps the choice on the phone. The
     /// one call that does: the Settings tiles make it, and so does the debug tour.
     func choose(_ newChoice: AppearanceChoice) {
-        DefaultsKey.appearance.keep(newChoice, in: store)
+        newChoice.keep(in: store)
         choice = newChoice
     }
 }

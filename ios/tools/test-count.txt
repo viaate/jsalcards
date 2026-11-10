@@ -1,0 +1,8 @@
+# The number of XCTest tests in ios/SnowlightCore/Tests/SnowlightCoreTests.
+#
+# ios/tools/check-ios.mjs counts them from the source (every `func test...()`) and fails
+# when the count differs from the number below, so a test that goes missing is seen. With
+# no test that can be skipped and no test file with an #if (check-ios refuses both), every
+# Swift test run, on Linux under both zones and on macOS, runs exactly this many. Raise it
+# in the same commit as the tests that come with each slice of the port (M0b).
+36

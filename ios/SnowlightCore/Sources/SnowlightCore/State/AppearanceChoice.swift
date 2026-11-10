@@ -1,7 +1,12 @@
 // The app's look: follow the phone, or always light, or always dark.
 //
-// The choice is kept on the phone as one short word. It is turned to and from that stored
-// form here and nowhere else, so no view ever handles the word.
+// The choice is kept on the phone as one short word, under one key of the app's settings
+// store. The word and the key live here and nowhere else: the stored form is not public,
+// and the store is read and written only through the three calls at the end of this file,
+// which deal in choices. So no stored word ever reaches SnowlightKit, and no view can
+// hand one to a control that takes a plain string.
+
+import Foundation
 
 /// The look the app is drawn in once the choice and the phone are both known.
 public enum ResolvedAppearance: Equatable, Hashable, Sendable, CaseIterable {
@@ -16,10 +21,10 @@ public enum AppearanceChoice: Equatable, Hashable, Sendable, CaseIterable {
     case dark
 
     /// The choice of a phone that has never been asked: follow the phone.
-    public static let standard = AppearanceChoice.system
+    public static let standard: AppearanceChoice = AppearanceChoice.system
 
-    /// The form kept on the phone.
-    public var stored: String {
+    /// The form kept on the phone. Not public: it never leaves this package.
+    var stored: String {
         switch self {
         case .system:
             return "system"
@@ -31,8 +36,8 @@ public enum AppearanceChoice: Equatable, Hashable, Sendable, CaseIterable {
     }
 
     /// Reads the stored form. Nothing stored, or anything this build does not know,
-    /// reads as System.
-    public init(stored: String?) {
+    /// reads as System. Not public, like the form itself.
+    init(stored: String?) {
         var found = AppearanceChoice.standard
         if let stored = stored {
             for choice in AppearanceChoice.allCases where choice.stored == stored {
@@ -64,5 +69,26 @@ public enum AppearanceChoice: Equatable, Hashable, Sendable, CaseIterable {
         case .dark:
             return [.dark]
         }
+    }
+}
+
+extension AppearanceChoice {
+    /// The key of the app's settings store that the choice is kept under.
+    static let storeKey = "appearance"
+
+    /// The choice kept in a settings store. Nothing kept, or a value this build does not
+    /// know, reads as System.
+    public static func kept(in store: UserDefaults) -> AppearanceChoice {
+        AppearanceChoice(stored: store.string(forKey: AppearanceChoice.storeKey))
+    }
+
+    /// Keeps this choice in a settings store, in its stored form.
+    public func keep(in store: UserDefaults) {
+        store.set(stored, forKey: AppearanceChoice.storeKey)
+    }
+
+    /// Forgets the choice kept in a settings store, so that the next read is System.
+    public static func forget(in store: UserDefaults) {
+        store.removeObject(forKey: AppearanceChoice.storeKey)
     }
 }

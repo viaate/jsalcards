@@ -44,8 +44,9 @@ public struct TokenColor: Equatable, Hashable, Sendable {
     }
 
     /// Reads "#rrggbb": a number sign and exactly six hexadecimal digits, checked by hand
-    /// over ASCII. Anything else is not a color.
-    public init?(hex: String) {
+    /// over ASCII. Anything else is not a color. Not public: no string crosses from this
+    /// package into SnowlightKit, so the kit reads a color as its three numbers.
+    init?(hex: String) {
         let bytes = Array(hex.utf8)
         guard bytes.count == 7, bytes[0] == 0x23 else {
             return nil
@@ -60,8 +61,8 @@ public struct TokenColor: Equatable, Hashable, Sendable {
         self.init(value)
     }
 
-    /// The color as "#rrggbb", in lower case.
-    public var hex: String {
+    /// The color as "#rrggbb", in lower case. Not public, for the same reason.
+    var hex: String {
         var text = "#"
         for part in [red, green, blue] {
             text += TokenColor.twoDigits(part)
