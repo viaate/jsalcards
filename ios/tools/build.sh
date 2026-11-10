@@ -3,6 +3,12 @@
 # The raw log is kept, and its tail is printed when the build fails. There is no -sdk
 # next to the destination: with -sdk, package plug-ins added later build for the wrong
 # platform.
+#
+# Two builds of the same scheme: Debug, which the picture tour runs, then Release, which
+# nothing runs. The Release build is there so that what a release holds is compiled on
+# every push: the tour (Tour/) is wholly inside #if DEBUG, so a view that named a tour
+# symbol outside it would build in Debug and first fail on the day of a signed build. And
+# the release app must hold no trace of the tour: its launch keys are looked for in it.
 set -euo pipefail
 LOG="$RUNNER_TEMP/xcodebuild.log"
 PRETTY=cat
@@ -26,3 +32,27 @@ fi
 # What was built, for whoever reads the log: its size and the settings file Xcode made.
 du -sh "$APP" || true
 plutil -p "$APP/Info.plist" || true
+
+RLOG="$RUNNER_TEMP/xcodebuild-release.log"
+if ! xcodebuild build \
+  -project ios/Snowlight.xcodeproj -scheme Snowlight -configuration Release \
+  -destination 'generic/platform=iOS Simulator' \
+  -derivedDataPath "$RUNNER_TEMP/dd" \
+  CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO \
+  2>&1 | tee "$RLOG" | "$PRETTY"; then
+  echo "::error::The Release build failed. The last 80 lines of its raw log follow."
+  tail -80 "$RLOG"
+  exit 1
+fi
+RAPP="$RUNNER_TEMP/dd/Build/Products/Release-iphonesimulator/Snowlight.app"
+if [ ! -d "$RAPP" ]; then
+  echo "::error::The Release build passed but left no app at $RAPP."
+  ls -R "$RUNNER_TEMP/dd/Build/Products" | head -60 || true
+  exit 1
+fi
+du -sh "$RAPP" || true
+if grep -r -a -l -F -e tour.screen -e tour.name "$RAPP"; then
+  echo "::error::The Release app holds the picture tour's launch keys (the files above): debug code reached a release build."
+  exit 1
+fi
+echo "The Release app holds no trace of the picture tour."

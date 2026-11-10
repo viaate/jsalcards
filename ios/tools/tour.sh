@@ -52,6 +52,13 @@ xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --
 FAILED=0
 FIRST=1
 MISSES=0
+DATA=""
+app_data() {  # the app's data container, read once: it stays the same for every launch of this install
+  if [ -z "$DATA" ]; then
+    DATA=$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data 2>/dev/null || true)
+    if [ -n "$DATA" ]; then echo "[$SECONDS s] the app's data container: $DATA"; fi
+  fi
+}
 say_why() {  # everything the machine knows about a screen that never came up
   local name=$1 ips
   echo "--- the app's own output for '$name'"
@@ -80,7 +87,7 @@ start_app() {  # start_app <picture name> <screen> [more launch arguments]; 0 wh
 }
 shoot() {  # shoot <light|dark> <picture name> <screen> <diff|nodiff> [more launch arguments]
   local mode=$1 name=$2 screen=$3 check=$4; shift 4
-  local limit=120 tries=0 i data ready=""
+  local limit=120 tries=0 i ready=""
   # The first launch on a cold hosted simulator is slow: up to 120 seconds. Later ones: 60.
   if [ "$FIRST" = 1 ]; then limit=240; FIRST=0; fi
   # If the look cannot be set, the picture is still taken: its pixel line is the judge.
@@ -89,15 +96,15 @@ shoot() {  # shoot <light|dark> <picture name> <screen> <diff|nodiff> [more laun
   while [ $tries -lt 2 ]; do
     tries=$((tries + 1))
     # A words file left by an earlier try must not be taken for this try's.
-    data=$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data 2>/dev/null || true)
-    if [ -n "$data" ]; then rm -f "$data/Documents/tour/$name.txt"; fi
+    app_data
+    if [ -n "$DATA" ]; then rm -f "$DATA/Documents/tour/$name.txt"; fi
     if ! start_app "$name" "$screen" ${1+"$@"}; then
       echo "::warning::simctl launch failed for '$name' (try $tries)."
       sleep 5
       continue
     fi
-    data=$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data 2>/dev/null || true)
-    ready="$data/Documents/tour/$name.txt"
+    app_data
+    ready="$DATA/Documents/tour/$name.txt"
     i=0
     while [ ! -f "$ready" ] && [ $i -lt $limit ]; do sleep 0.5; i=$((i + 1)); done
     if [ -f "$ready" ]; then break; fi
