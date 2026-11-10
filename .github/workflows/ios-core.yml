@@ -1,0 +1,40 @@
+name: iOS core
+
+# The iPhone app's logic package (ios/SnowlightCore), built and tested on Linux.
+# The tests always run under a zone that is not UTC: on a UTC machine, code that
+# leans on the device's zone by mistake gives right answers.
+on:
+  push:
+    paths:
+      - ios/**
+      - .github/workflows/ios-core.yml
+  pull_request:
+    paths:
+      - ios/**
+      - .github/workflows/ios-core.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-core-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core:
+    name: core (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Versions and this machine's zone
+        run: |
+          swift --version
+          date +%Z
+      - name: Core tests in a half-hour zone with clock changes
+        env:
+          TZ: America/St_Johns
+          SNOWLIGHT_EXPECT_ZONE: America/St_Johns
+        run: swift test --package-path ios/SnowlightCore

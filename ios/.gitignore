@@ -1,0 +1,6 @@
+Snowlight.xcodeproj/
+out/
+.build/
+DerivedData/
+.swiftpm/
+Local.xcconfig
