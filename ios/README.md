@@ -125,8 +125,9 @@ left and the top:
 
 The tab and tile places were measured on the small iPhone 17 Pro pictures of iOS app run
 42914332720 (iOS 26.5), and hold the same in run 42898061415: the chosen capsule 20 away
-from the page in light and 37 in dark, the bar 2 and 4. On another device, as on the xcode-27 job, those lines are printed
-and not judged until their places are measured there.
+from the page in light and 37 in dark, the bar 2 and 4. On another device, as on the
+xcode-27 job, those lines are printed and not judged until their places are measured
+there.
 
 ## Making the golden files again
 
