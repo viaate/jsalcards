@@ -1,8 +1,10 @@
 /**
  * Takes the status page's proof pictures from the preview server (`node scripts/preview.mjs`)
  * and checks each state: no layout shift and no box that moved or grew from load to data, no
- * horizontal scroll (at 320 px too), no console error, no request leaving the origin. Fails if
- * any check does.
+ * horizontal scroll (at 320 px too), no console error, no request leaving the origin. Then
+ * three checks of their own: with scripts off only the line that says so is shown; coming back
+ * to the tab with an old answer says its age at once, before any fetch settles; and with text
+ * at 150% on a 320 px screen nothing scrolls sideways. Fails if any check does.
  *
  *   NODE_PATH=../web/node_modules node scripts/shots.cjs [out folder]
  *
@@ -128,9 +130,7 @@ async function one(browser, [file, state, scheme, viewport]) {
     const box = await bars.boundingBox();
     const day = state === 'history' ? 79.5 : 67.5;
     await page.mouse.move(box.x + (box.width * day) / 90, box.y + box.height / 2);
-    await page.waitForFunction(() =>
-      document.querySelector('.note')?.parentElement?.parentElement?.textContent?.includes(':'),
-    );
+    await page.waitForFunction(() => document.querySelector('.note:not(.hint)') !== null);
     change = moved(before, await boxes(page));
     if (change !== null) problems.push(`moved when a day was picked: ${change}`);
     await page.mouse.move(0, 0);
@@ -148,11 +148,110 @@ async function one(browser, [file, state, scheme, viewport]) {
   return problems.length === 0;
 }
 
+function said(good, name, detail) {
+  console.log(`${good ? 'ok  ' : 'FAIL'} ${name}: ${detail}`);
+  return good;
+}
+
+/** With scripts off the boxes cannot fill in: only the header, the line that says so, the footer. */
+async function scriptsOff(browser) {
+  const context = await browser.newContext({
+    viewport: { width: PHONE.width, height: PHONE.height },
+    deviceScaleFactor: PHONE.scale,
+    javaScriptEnabled: false,
+  });
+  const page = await context.newPage();
+  await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
+  const seen = await page.evaluate(() => ({
+    main: document.getElementById('main').getBoundingClientRect().height,
+    line: document.querySelector('.noscript')?.textContent ?? '',
+    checking: [...document.querySelectorAll('.lead, .state')].some(
+      (box) => box.getBoundingClientRect().height > 0,
+    ),
+  }));
+  await page.screenshot({ path: join(out, 'scripts-off-light-phone.png'), fullPage: true });
+  await context.close();
+  return said(
+    seen.main === 0 && !seen.checking && seen.line !== '',
+    'scripts-off-light-phone',
+    `main is ${seen.main} px tall, "${seen.line}" is shown, no "Checking" box is drawn`,
+  );
+}
+
+/** Back on a tab whose answer is 20 minutes old, with the network gone: the age is said at once. */
+async function comingBack(browser) {
+  const context = await browser.newContext({ viewport: NARROW, timezoneId: 'America/New_York' });
+  const page = await context.newPage();
+  await page.clock.install();
+  await (await context.request.get(`${ORIGIN}/__set?state=ok`)).text();
+  await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
+  await page.waitForFunction(() =>
+    document.querySelector('.lead')?.textContent?.includes('Everything is working'),
+  );
+  // From here no fetch ever settles, and the device's clock jumps without any timer firing.
+  await page.route('**/api/status', () => new Promise(() => {}));
+  await page.clock.setSystemTime(Date.now() + 20 * 60 * 1000);
+  const seen = await page.evaluate(() => {
+    const before = document.querySelector('.lead').textContent;
+    window.dispatchEvent(new Event('pageshow'));
+    const shown = document.querySelector('.lead').textContent;
+    document.dispatchEvent(new Event('visibilitychange'));
+    return {
+      before,
+      shown,
+      states: [...document.querySelectorAll('.state')].map((s) => s.textContent),
+    };
+  });
+  await context.close();
+  return said(
+    seen.before === 'Everything is working.' &&
+      seen.shown === 'We have no recent checks.' &&
+      seen.states.every((state) => state === 'Could not check'),
+    'coming back to the tab',
+    `"${seen.before}" became "${seen.shown}" in the same task as pageshow, rows: ${[...new Set(seen.states)].join(', ')}`,
+  );
+}
+
+/** Text at 150% on a 320 px screen: every box wraps, nothing scrolls sideways. */
+async function bigText(browser, state) {
+  // The larger text is set by a style of the test's own, which the page's policy would refuse.
+  const context = await browser.newContext({ viewport: NARROW, bypassCSP: true });
+  const page = await context.newPage();
+  await (await context.request.get(`${ORIGIN}/__set?state=${state}`)).text();
+  await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
+  await page.addStyleTag({ content: 'html { font-size: 150%; }' });
+  await page.waitForFunction(
+    () => !document.querySelector('.lead')?.textContent?.includes('Checking'),
+  );
+  await page.waitForTimeout(200);
+  const seen = await page.evaluate(() => {
+    const width = document.documentElement.clientWidth;
+    const wide = [...document.querySelectorAll('body *')]
+      .filter((box) => box.getBoundingClientRect().right > width + 0.5 && !box.closest('.sr'))
+      .map((box) => `${box.tagName.toLowerCase()}.${box.className}`);
+    return { scroll: document.documentElement.scrollWidth - width, wide: [...new Set(wide)] };
+  });
+  await page.screenshot({ path: join(out, `big-text-${state}-320.png`), fullPage: true });
+  await context.close();
+  return said(
+    seen.scroll <= 0 && seen.wide.length === 0,
+    `big-text-${state}-320`,
+    `horizontal scroll ${Math.max(0, seen.scroll)} px` +
+      (seen.wide.length === 0
+        ? ', no box past the edge'
+        : `; past the edge: ${seen.wide.join(' ')}`),
+  );
+}
+
 (async () => {
   mkdirSync(out, { recursive: true });
   const browser = await chromium.launch();
   let good = true;
   for (const shot of SHOTS) good = (await one(browser, shot)) && good;
+  good = (await scriptsOff(browser)) && good;
+  good = (await comingBack(browser)) && good;
+  for (const state of ['history', 'worst', 'first', 'unreachable'])
+    good = (await bigText(browser, state)) && good;
   await browser.close();
   process.exit(good ? 0 : 1);
 })().catch((error) => {
