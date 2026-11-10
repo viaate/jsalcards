@@ -2274,7 +2274,7 @@ _CACHED = (named_weekdays, _weekday_words, _clocked, _lone_candidates, _ages, _m
         "Closed Thursday · Friday | " + "word " * 400 + "(9 AM - 3 PM)",
     ],
 )
-def test_a_long_row_is_read_in_time_linear_in_its_length(text: str) -> None:
+def test_a_long_row_is_read_in_time_linear_in_its_length_speed(text: str) -> None:
     def took(length: int) -> float:
         words = text[:length]
         best = float("inf")

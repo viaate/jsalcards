@@ -195,12 +195,12 @@ jobs:
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run mypy --strict snowlight tests
-      # Every test outside the two timing modules that -k picks by name
-      # (classify/test_classify_speed.py and match/test_match_perf.py), spread
-      # over every runner CPU.
+      # Every test outside the timing tests that -k picks by name (the modules
+      # classify/test_classify_speed.py and match/test_match_perf.py, and any
+      # test whose own name ends in _speed), spread over every runner CPU.
       - run: uv run pytest -n auto -k "not _perf and not _speed"
-      # Those two timing modules, alone and one at a time so no other test
-      # shares their CPU. The -k above is this one negated, so the two steps
-      # run the whole suite; coverage adds to the step above and the total is
-      # held to fail_under here.
+      # Those timing tests, alone and one at a time so no other test shares
+      # their CPU. The -k above is this one negated, so the two steps run the
+      # whole suite; coverage adds to the step above and the total is held to
+      # fail_under here.
       - run: uv run pytest -k "_perf or _speed" --cov-append
