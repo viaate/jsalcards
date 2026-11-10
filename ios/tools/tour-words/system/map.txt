@@ -1,0 +1,10 @@
+# The words iOS itself draws on the Map screen, kept by hand: one per line.
+# A line that starts with # is a note, not a word. Nothing compares this file yet: the
+# on-screen read that comes with the first real screen will, and it must find the model's
+# words (ios/tools/tour-words/<picture>.txt) plus the words listed here, no more and no fewer.
+#
+# Looked at: light-map and dark-map of iOS app run 42898061415
+# (iPhone 17 Pro on iOS 26.5, Xcode 26.6), on Nov 10, 2026.
+#
+# None. The four names in the bar are the model's. The round search button beside the bar
+# is a magnifier with no word. The status bar above is the phone's, not the app's.

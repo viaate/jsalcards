@@ -1,0 +1,17 @@
+# The words iOS itself draws on the search screen, kept by hand: one per line.
+# A line that starts with # is a note, not a word. Nothing compares this file yet: the
+# on-screen read that comes with the first real screen will, and it must find the model's
+# words (ios/tools/tour-words/<picture>.txt) plus the words listed here, no more and no fewer.
+#
+# Looked at: light-search, dark-search and light-search-es of iOS app run 42898061415
+# (iPhone 17 Pro on iOS 26.5, Xcode 26.6), on Nov 10, 2026.
+#
+# None while the search field is at rest. The words in the field are the model's prompt.
+# On this screen iOS folds the bar into one round button to the left of the field: the
+# first tab's symbol, with no word. The status bar above is the phone's, not the app's.
+# With the simulator set to Spanish and a 24-hour region (light-search-es) the picture is
+# the same as light-search, byte for byte: with no word of its own on this screen, iOS had
+# nothing to translate.
+#
+# Not seen yet: the field in use. Whatever iOS draws then (a way to end the search, say)
+# is written here when a picture shows it.
