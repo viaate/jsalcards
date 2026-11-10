@@ -44,8 +44,8 @@ Each rule is held by a script, a test or the compiler, named beside it.
    (`check-ios`, rules `words.*`, `view.*`, `core.publicstring`.)
 4. **No read of the device's clock or zone, of the process's environment or of the
    phone's own settings store, in SnowlightCore or in a test.** The clock, the zones and
-   the settings store are always parameters. The one
-   test that may read them is `ThisMachineTests.swift`: it proves the odd test zone took
+   the settings store are always parameters. The one test that may read the clock, the
+   zone and the environment is `ThisMachineTests.swift`: it proves the odd test zone took
    hold. From M5, one allow-listed file (`Net/DeviceClock.swift`) will read the clock and
    the phone's zone to hand them to the models; none exists yet. (`core.device`,
    `tests.device`.)
@@ -66,7 +66,9 @@ Each rule is held by a script, a test or the compiler, named beside it.
 
 `check-ios.mjs` reads code, not comments, and skips itself and this file, which both name
 what is banned. It tests itself on every run first: a list of samples, at least one for
-every rule and one for every entry of its lists of names, each of which must be refused.
+every rule and one for every entry of its lists of the clock, the zone, the environment,
+the network and the device (planted in SnowlightCore, in a test and in a view), each of
+which must be refused.
 Its lists are lists: a spelling a list leaves out passes it. The locks that need no list
 are the compiler's (the word tables, `ShownText`'s initializer and every text form of
 SnowlightCore are not public) and the public-surface rule. The screen itself is read from
