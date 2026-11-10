@@ -1,0 +1,162 @@
+# The status page
+
+`https://status.snowlightmap.com` is a page anyone can open to see, in plain words,
+whether Snowlight works right now and how it has done over the last 90 days. It
+looks at four parts:
+
+- **Website**: snowlightmap.com opens.
+- **Live school closings**: the closings and delays on the map are up to date.
+- **Snow-day chances**: each district's chance of no school is up to date.
+- **Accounts**: signing in and saved schools.
+
+For each part it says **Working**, **Slow or late**, **Not working** or **Could not
+check**, and for the two that are files, how long ago they were updated. Below that
+are 90 bars a part, one for each day, and a list of the problems of the last 90
+days with when each began and how long it lasted. A day or a stretch the checker
+did not run is shown as no readings, never as working.
+
+The page and its history live on Cloudflare, apart from GitHub. So the page stays
+up, and the checker keeps recording, when the website (GitHub Pages) or the
+workflows that fill it (GitHub Actions) are down. That is the point of it.
+
+The page uses no cookies, keeps nothing about its visitors, and loads nothing from
+anyone else. Until you say it may be found, it asks search engines not to list it.
+
+## What it costs
+
+Nothing. It runs on the free plans of the Cloudflare account you already have: a
+Pages project for the page, a Worker that checks every 5 minutes, and a small D1
+database. Its day uses about 3,600 of the account's 100,000 free requests when
+1,000 people open the page, and about 2,300 of the database's 100,000 free row
+writes. That daily request limit is shared: the accounts (`snowlight-api`) and the
+timer that starts the live closings and the chance job (`snowlight-timer`, docs/live.md)
+count against the same 100,000. It would take about 33,000 loads of the status
+page in one day to reach it; the page would then say it cannot load until midnight
+UTC, and accounts would stop answering until then too. Nothing is ever charged.
+
+## What you do once
+
+### 1. Let the deploy key manage Pages (only if it cannot yet)
+1. Go to <https://dash.cloudflare.com/profile/api-tokens> (or: your profile icon, top right > **My Profile** > **API
+   Tokens**).
+2. Find the token you made for Snowlight (**Edit Cloudflare Workers** unless you renamed it). Press the three dots at
+   the end of its row > **Edit**.
+3. Under **Permissions**, look for a row **Account / Cloudflare Pages / Edit**. If it is there, you are done here.
+4. If not: press **+ Add more**, set the new row to **Account** / **Cloudflare Pages** / **Edit**, then
+   **Continue to summary** > **Update token**. The token itself does not change, so nothing changes on GitHub. (If
+   Cloudflare does show you a new token, put it in the GitHub secret `CLOUDFLARE_API_TOKEN`, as in docs/accounts.md.)
+5. On GitHub: **Actions** > **Status** > **Run workflow** > **Run workflow**. It takes about five minutes.
+
+### 2. The one DNS record
+The first time, wait for our word that the page has passed its checks at the `.pages.dev` address.
+1. On GitHub: **Actions** > **Status** > the newest run. Its notice says "add this DNS record at GoDaddy: type CNAME,
+   name status, value …". Copy the value. It ends in `.pages.dev` (most likely `snowlight-status.pages.dev`).
+2. Sign in at <https://www.godaddy.com>, open **My Products**, find **snowlightmap.com** and press **DNS**.
+3. Press **Add New Record**. **Type**: CNAME. **Name**: `status`. **Value**: what you copied. **TTL**: leave it.
+   Press **Save**. Change nothing else: the website and email records stay as they are.
+
+### 3. Only if the Status run says it could not attach the name
+At <https://dash.cloudflare.com>: **Workers & Pages** > **snowlight-status** > **Custom domains** > **Set up a
+domain**, type `status.snowlightmap.com`, press **Continue**. If Cloudflare then shows a CNAME record for `status`
+ending in `.pages.dev`, that is the record of step 2: confirm. If Cloudflare offers to move your domain or its
+nameservers to Cloudflare, do not. Choose the option that keeps your DNS where it is (a CNAME record). Anything else:
+stop and send us what the screen says.
+
+### How to tell it worked
+Wait 15 minutes (it can take an hour), then open <https://status.snowlightmap.com>: you see the status page, with a
+padlock. Or run **Actions** > **Status** again: its notice says "https://status.snowlightmap.com is live." Still not
+there after an hour: run **Actions** > **Status** once more (every run asks Cloudflare to look at the record again)
+and send us its notice. An error page with the number 522 means step 3 is still to do. Until then the same page is
+at the `.pages.dev` address.
+
+## What a Status run tells you
+
+Every run of **Actions** > **Status** prints one notice about the checker, whether
+the rest of the run is green or red:
+
+`status checker: 36 of the last 36 checks kept (3 hours), 288 of the last 288 (24 hours); last at 2026-11-11 14:05 UTC: website ok 200, closings ok 200, chances ok 200, accounts ok 200; largest closings file 318 bytes.`
+
+The first two numbers say how many of the 5-minute checks were kept. A few missing
+is normal. Under 34 of 36, or under 280 of 288 once it has run a day: send us the
+line. After the first morning with many closings, run **Status** once and read the
+line again: the largest closings file shows how big the file got, and the first
+number shows whether the checker kept up with it. Under 34: send us the line.
+
+A red run that says "The Cloudflare token cannot manage Pages" is step 1 above.
+The checker is already running and keeping history by then; only the page waits.
+
+## How it fits together (for whoever works on it next)
+
+Everything is in `status/`, and `.github/workflows/status.yml` tests and deploys
+it. A change under `status/` starts that workflow and neither CI nor the Preview.
+
+| Part | On Cloudflare | Code |
+|---|---|---|
+| The page | Pages project `snowlight-status`: static files and one Function, `GET /api/status` | `status/page/` |
+| The checker | Worker `snowlight-status-prober`: cron `*/5 * * * *`, no URL | `status/prober/` |
+| The store | D1 database `snowlight-status`, bound as `DB` in both | `status/prober/migrations/` |
+| | Pure code both use | `status/shared/` |
+
+**The probes** (`prober/src/probe.ts`, `shared/judge.ts`). Each tick asks each part
+once, and once more 1.5 s later on trouble; the second try stands. A request
+waits 8 s at most. A check that fails (no answer, a timeout, HTTP 429) is "Could
+not check", never "Not working".
+
+- **Website**: `HEAD https://snowlightmap.com/`, the status code only. 200 within
+  3 s is working, a slower 200 is slow, anything else is not working. No page is
+  fetched, kept or shown.
+- **Accounts**: `GET` of the accounts API's `/v1/health`, which must answer 200
+  with `{"ok":true}`. The address is the one the API workflow finds; the checker
+  carries the flag `global_fetch_strictly_public` so that Cloudflare lets one
+  Worker ask another by its public address. An answer that reads as Cloudflare's
+  own refusal (error 1042) is "Could not check".
+- **Live school closings**: `GET {live root}live/closings.json`. The file's own
+  `generated_at` is its age: over 15 minutes is late, over 60 is not working, less
+  the CDN's `Age` (10 minutes at most). Of the body only that instant and the
+  body's length are kept; a file over 65,536 bytes gives its instant from its last
+  bytes.
+- **Snow-day chances**: `GET {live root}predictions/stamp.json`, never the chances
+  file, which is megabytes. The stamp is about 80 bytes: the file's `generated_at`
+  and its count of districts, put beside the file in the same commit by every
+  upload of the chance job and by `predict blank` (`predict/publish.py`,
+  `stamp_file`; docs/predict.md, "The two watches and the one issue"). Over 45
+  minutes is late, over 90 is not working, and so is a stamp of no districts. No
+  stamp on the host (404) is "Could not check". Whoever reverts or removes the
+  stamp's writer deletes `v1/predictions/stamp.json` and
+  `v1-shadow/predictions/stamp.json` from the live host in the same step: a stamp
+  left behind would age into a false "Not working".
+
+**A tick** (`prober/src/tick.ts`) reads what the store holds, probes the four
+parts together, and writes the sample, the day's counts, the problems it opened or
+closed and the summary in one D1 batch, which is one transaction. A tick is taken
+in once. A run Cloudflare ends writes nothing, and that tick shows as no readings.
+
+**History** (`shared/history.ts`). A sample adds one to its UTC day's count of
+working, late or down readings for each part. A reading that is not working opens a
+problem or extends the open one; a working reading closes it; more than 15 minutes
+with no known reading closes it where the readings stopped, and the page says so.
+Samples, days and closed problems are kept 90 days.
+
+**The page** (`status/page/`). `GET /api/status` answers the summary the last tick
+wrote, with the server's clock, cached 30 s. The page draws it, counts time from
+the server's clock (never the visitor's), asks again shortly after each tick is
+due, and says it has no fresh readings once the summary is over 15 minutes old.
+Every sentence it shows is in `page/src/copy.ts`.
+
+**The deploy** (`status.yml`, job `deploy`, default branch only) finds or makes the
+database, applies the migrations, deploys the checker, prints the store notice,
+checks that the token can manage Pages, deploys the page, attaches
+`status.snowlightmap.com` to the Pages project (and asks Cloudflare to look again
+while the DNS record is not found), checks that the page answers at its `pages.dev`
+address, and prints either the DNS record to add or that the name is live. The
+record's value is read from Cloudflare, never assumed.
+
+To work on it: `cd status && npm ci && npm run check && npm test && npm run build`.
+`node scripts/preview.mjs` serves the built page on `127.0.0.1:4190` with made-up
+histories (`test/fixtures/made-up.ts`: for tests and pictures only), and
+`NODE_PATH=../web/node_modules node scripts/shots.cjs` takes pictures of each
+state and checks that nothing moves when the page fills in.
+
+The page sends `X-Robots-Tag: noindex` on every address (`page/public/_headers`)
+until the owner says the page may be listed. The commit that takes it off `/*`
+puts it on `https://:project.pages.dev/*`, so only the real name is listed.
