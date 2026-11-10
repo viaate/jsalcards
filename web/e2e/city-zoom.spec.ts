@@ -76,6 +76,15 @@ function watch(page: Page): string[] {
  * failed (every try its worker made) would leave its streets and names out of
  * the reading. The wait goes on until the page has asked for it again and it
  * came (heal.ts), as it does for someone looking at the map.
+ *
+ * It counts a tile asked for again while it was still loading as loaded too,
+ * from its first answer on, with the second still at its worker. The page puts
+ * the street layers on a turn at a time (index.ts addPendingLayers), and a
+ * frame drawn between two turns asks for the street tiles with the layers on
+ * so far, the lines without the names; the turns after ask for them again.
+ * So the map can be at rest, every tile loaded, the streets drawn, and their
+ * names still on the way, for as long as a worker takes to lay a tile out
+ * again. The wait goes on until no tile has an answer on its way either.
  */
 async function openView(page: Page, lat: number, lon: number, zoom: number): Promise<void> {
   await page.goto(`/?at=${String(lat)},${String(lon)},${String(zoom)}`);
@@ -83,14 +92,25 @@ async function openView(page: Page, lat: number, lon: number, zoom: number): Pro
     (linked) => {
       const map = window.snowlightMap;
       if (map === undefined) return false;
+      interface Tile {
+        state?: string;
+        /** Set for as long as a worker has a request for the tile: its load, or a reload. */
+        abortController?: unknown;
+        /** Set while a reload waits on the load before it. */
+        reloadPromise?: unknown;
+      }
       interface Tiles {
         getIds: () => string[];
-        getTileByID: (id: string) => { state?: string } | undefined;
+        getTileByID: (id: string) => Tile | undefined;
       }
       // As heal.ts reads them: the style's tiles in view, by source.
       const { style } = map as unknown as { style?: { tileManagers: Record<string, Tiles> } };
-      const failed = Object.values(style?.tileManagers ?? {}).some((tiles) =>
-        tiles.getIds().some((id) => tiles.getTileByID(id)?.state === 'errored'),
+      const tiles = Object.values(style?.tileManagers ?? {}).flatMap((source) =>
+        source.getIds().map((id) => source.getTileByID(id)),
+      );
+      const failed = tiles.some((tile) => tile?.state === 'errored');
+      const onTheWay = tiles.some(
+        (tile) => tile?.abortController !== undefined || (tile?.reloadPromise ?? null) !== null,
       );
       return (
         // An address store read past its deadline opens the map on the country, then on the link.
@@ -98,6 +118,7 @@ async function openView(page: Page, lat: number, lon: number, zoom: number): Pro
         map.loaded() &&
         map.areTilesLoaded() &&
         !failed &&
+        !onTheWay &&
         !map.isMoving()
       );
     },
