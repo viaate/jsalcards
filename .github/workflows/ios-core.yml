@@ -1,8 +1,12 @@
 name: iOS core
 
-# The iPhone app's logic package (ios/SnowlightCore), built and tested on Linux.
-# The tests always run under a zone that is not UTC: on a UTC machine, code that
-# leans on the device's zone by mistake gives right answers.
+# The iPhone app's logic package (ios/SnowlightCore) and its guards, on Linux: the fast
+# loop. The guards keep signing material, shown words that did not come from a screen
+# model, and reads of the device's clock out of the app. The golden check runs the site's
+# own code and fails when one of its answers no longer matches the golden files the Swift
+# tests are held to. The screens are parsed for syntax only; the Mac compiles them.
+# The tests and the golden check always run under a zone that is not UTC: on a UTC
+# machine, code that leans on the device's zone by mistake gives right answers.
 on:
   push:
     paths:
@@ -29,12 +33,30 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
       - name: Versions and this machine's zone
         run: |
+          node --version
           swift --version
           date +%Z
+      - name: Guards
+        run: node ios/tools/check-ios.mjs
+      - name: Golden answers match the site's code, under two odd zones
+        run: |
+          TZ=America/St_Johns node ios/tools/gen-golden.mjs --check
+          TZ=Pacific/Kiritimati node ios/tools/gen-golden.mjs --check
+      - name: The screens parse (syntax only; the Mac compiles them)
+        run: |
+          find ios/SnowlightKit/Sources ios/App -name '*.swift' -print0 | xargs -0 -n 1 swiftc -frontend -parse
       - name: Core tests in a half-hour zone with clock changes
         env:
           TZ: America/St_Johns
           SNOWLIGHT_EXPECT_ZONE: America/St_Johns
+        run: swift test --package-path ios/SnowlightCore
+      - name: Core tests a day ahead of every US clock
+        env:
+          TZ: Pacific/Kiritimati
+          SNOWLIGHT_EXPECT_ZONE: Pacific/Kiritimati
         run: swift test --package-path ios/SnowlightCore

@@ -1,5 +1,6 @@
 #!/bin/bash
-# The picture tour: one picture per screen, taken from the real simulator screen.
+# The picture tour: one picture per screen, taken from the real simulator screen, in light
+# and in dark.
 #
 # For each picture the app is started with launch arguments that name the screen and the
 # picture. The app (debug builds only) shows that screen and then writes the words of the
@@ -130,5 +131,22 @@ shoot() {  # shoot <light|dark> <picture name> <screen> <diff|nodiff> [more laun
   head -20 "$LOGS/$name.err" 2>/dev/null || true
 }
 
-shoot light light-root root diff
+# Ten pictures: each of the five screens with the simulator in its light look and in its
+# dark look, and the app on System.
+for mode in light dark; do
+  for screen in myschool map callit settings search; do
+    shoot "$mode" "$mode-$screen" "$screen" diff
+  done
+done
+# The stored choice beats the phone: forced Dark on a light simulator, forced Light on a
+# dark one. Only keys that begin with tour. are passed, never the app's own key: a launch
+# argument would shadow the stored value for the whole run.
+shoot light light-settings-forced-dark settings diff -tour.appearance dark
+shoot dark dark-settings-forced-light settings diff -tour.appearance light
+# Started on a stored Dark with the simulator light, then switched back to System in code
+# after the first frame. The picture must be light.
+shoot light light-settings-dark-then-system settings diff -tour.appearance dark -tour.then system
+# The simulator's language set to Spanish and a 24-hour region: do the words iOS itself
+# draws change when the app ships English only? Judged by eye.
+shoot light light-search-es search diff -AppleLanguages "(es)" -AppleLocale es_ES
 exit $FAILED

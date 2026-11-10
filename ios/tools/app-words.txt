@@ -1,0 +1,20 @@
+# The words only the iPhone app has: the site has no tab bar and no appearance setting.
+#
+# One line per word, three parts with a tab between them:
+#   approved or pending, then who approved it and where, then the words exactly as shown.
+#
+# These lines are exactly the words typed in
+# ios/SnowlightCore/Sources/SnowlightCore/Words/AppWords.swift. ios/tools/check-ios.mjs fails
+# when the two differ, and holds every word to the site's list of banned words, with no
+# exclamation mark, no em dash and no emoji. A word marked pending has not been approved by
+# the owner yet: it is shown in builds that stay inside the team and is asked about before
+# any build leaves it.
+approved	owner ruling: the four tabs and their order	My School
+approved	owner ruling: the four tabs and their order	Map
+approved	owner ruling: the four tabs and their order	Call it
+approved	owner ruling: the four tabs and their order	Settings
+approved	owner request, Nov 10 2026: the look can be changed in Settings	Appearance
+approved	owner request, Nov 10 2026: follow the phone by default	System
+approved	owner request, Nov 10 2026: Settings offers System, Light and Dark	Light
+approved	owner request, Nov 10 2026: Settings offers System, Light and Dark	Dark
+pending	PENDING OWNER: from the unfinished light and dark pictures	Follows your iPhone

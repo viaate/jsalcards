@@ -1,20 +1,34 @@
 // The picture tour. Debug builds only: nothing in this folder exists in a release build.
 //
-// A script outside the app (ios/tools/tour.sh) starts the app once per picture with two
-// launch arguments, which arrive in the app's defaults:
+// A script outside the app (ios/tools/tour.sh) starts the app once per picture with launch
+// arguments, which arrive in the app's defaults:
 //
-//     -tour.name <picture>    the picture's name; without it the app runs as usual
-//     -tour.screen <screen>   the screen to show
+//     -tour.name <picture>        the picture's name; without it the app runs as usual
+//     -tour.screen <screen>       the screen to show: myschool, map, callit, settings, search
+//     -tour.appearance <choice>   the look to start with: system, light or dark
+//     -tour.then <choice>         a look to switch to in code, after the first frame
 //
-// The app shows that screen and, a little after it appears, writes the words of the
-// screen's model, one per line, to Documents/tour/<picture>.txt. The script waits for
-// that file and then takes its picture of the simulator's screen.
+// On such a launch the app:
 //
-// What the file is: every string the model offers the view, read off the model itself.
-// It is not a reading of the screen.
+//   1. keeps the choice named by tour.appearance where the app keeps its own choice, or
+//      forgets the kept choice when the argument is absent (the app's data survives from
+//      one picture to the next);
+//   2. shows the named screen, with animations off;
+//   3. about 0.6 seconds after it appears: if tour.then is given, makes that choice
+//      through the same call the Settings tiles make, and waits 0.6 seconds more;
+//   4. writes the words of the screen's model, one per line, to
+//      Documents/tour/<picture>.txt. The script waits for that file and then takes its
+//      picture of the simulator's screen.
+//
+// What the file is: every string the screen's model offers the view, read off the model
+// itself. It is not a reading of the screen.
 //
 // Only keys that begin with "tour." are ever passed. A launch argument shadows a stored
-// value for the whole run, so the app's own settings keys are never given this way.
+// value for the whole run, so the app's own settings keys are never given this way: if
+// they were, the app could keep "system" and still read back "dark", and the picture of
+// the switch would prove nothing.
+//
+// Reserved and not read yet: tour.zone, the viewer's time zone for a picture.
 
 #if DEBUG
 
@@ -27,27 +41,73 @@ import UIKit
 struct TourPlan: Sendable {
     /// The picture's name. The words file is Documents/tour/<name>.txt.
     let name: String
+    /// The screen to show, as the script names it.
+    let screenName: String
     /// The screen to show.
-    let screen: String
+    let screen: ScreenID
+    /// The look to start with, or nil to start as a fresh install does.
+    let appearance: AppearanceChoice?
+    /// A look to switch to in code after the first frame, or nil.
+    let switchTo: AppearanceChoice?
 
-    /// The one screen there is so far.
-    static let rootScreen = "root"
+    /// The plan of this launch, or nil on every ordinary launch. Read once.
+    static let ofThisLaunch: TourPlan? = TourPlan.fromLaunchArguments()
 
-    /// The plan of this launch, or nil on every ordinary launch.
-    static func fromLaunchArguments() -> TourPlan? {
+    private static func fromLaunchArguments() -> TourPlan? {
         let defaults = UserDefaults.standard
         guard let name = defaults.string(forKey: "tour.name") else {
             return nil
         }
-        guard isPlainName(name) else {
+        guard TourPlan.isPlainName(name) else {
             Tour.note("the picture's name is not a plain name")
             return nil
         }
-        guard let screen = defaults.string(forKey: "tour.screen"), isPlainName(screen) else {
+        guard let screenName = defaults.string(forKey: "tour.screen"), TourPlan.isPlainName(screenName) else {
             Tour.note("no screen was named for the picture " + name)
             return nil
         }
-        return TourPlan(name: name, screen: screen)
+        guard let screen = TourPlan.screenID(named: screenName) else {
+            Tour.note("there is no screen named " + screenName)
+            return nil
+        }
+        return TourPlan(
+            name: name,
+            screenName: screenName,
+            screen: screen,
+            appearance: TourPlan.choice(under: "tour.appearance", in: defaults),
+            switchTo: TourPlan.choice(under: "tour.then", in: defaults)
+        )
+    }
+
+    private static func screenID(named name: String) -> ScreenID? {
+        switch name {
+        case "myschool":
+            return .mySchool
+        case "map":
+            return .map
+        case "callit":
+            return .callIt
+        case "settings":
+            return .settings
+        case "search":
+            return .search
+        default:
+            return nil
+        }
+    }
+
+    /// The choice a launch argument names, or nil when the argument is absent. A value
+    /// that is not one of the three is said out loud and read as absent.
+    private static func choice(under key: String, in defaults: UserDefaults) -> AppearanceChoice? {
+        guard let value = defaults.string(forKey: key) else {
+            return nil
+        }
+        let choice = AppearanceChoice(stored: value)
+        guard choice.stored == value else {
+            Tour.note(key + " is not system, light or dark")
+            return nil
+        }
+        return choice
     }
 
     /// Lower-case letters, digits and hyphens only, so a name is safe as a file name.
@@ -69,35 +129,81 @@ struct TourPlan: Sendable {
 }
 
 /// Put on the root view in debug builds. On an ordinary launch it does nothing. On a tour
-/// launch it turns animations off and, about 0.6 seconds after the screen appears, hands
-/// the words of the screen's model to be written.
+/// launch it turns animations off and, a little after the shell appears, makes the switch
+/// the launch asked for, if any, and has the words of the screen's model written.
 struct TourStage: ViewModifier {
-    /// The model the screen draws.
-    let model: ShellModel
+    /// The app's appearance choice: the same object the Settings tiles change.
+    let appearance: AppearanceStore
 
     func body(content: Content) -> some View {
         content.onAppear {
-            guard let plan = TourPlan.fromLaunchArguments() else {
-                return
-            }
-            guard plan.screen == TourPlan.rootScreen else {
-                Tour.note("there is no screen named " + plan.screen)
+            guard let plan = TourPlan.ofThisLaunch, Tour.begin() else {
                 return
             }
             UIView.setAnimationsEnabled(false)
-            Tour.note("showing " + plan.screen + " for the picture " + plan.name)
-            let lines = shownTexts(in: model).map { $0.drawnString }
+            Tour.note("showing " + plan.screenName + " for the picture " + plan.name)
+            let store = appearance
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                Tour.writeWords(lines, for: plan)
+                guard let next = plan.switchTo else {
+                    Tour.writeWords(for: plan, shownWith: store)
+                    return
+                }
+                // The same call a tap on a Settings tile makes.
+                store.choose(next)
+                Tour.note("switched the look in code to " + next.stored)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    Tour.writeWords(for: plan, shownWith: store)
+                }
             }
         }
     }
 }
 
 enum Tour {
-    /// Writes the words file of a picture: a draft first, then a move, so the script
-    /// outside never reads a half-written file.
-    static func writeWords(_ lines: [String], for plan: TourPlan) {
+    /// Step 1 of a tour launch, done before the app reads its own choice: keep the look
+    /// the launch names where the app keeps its choice, or forget what is kept there. On
+    /// an ordinary launch this does nothing. It runs once however often it is called.
+    static func prepare() {
+        _ = Tour.prepared
+    }
+
+    private static let prepared: Bool = {
+        guard let plan = TourPlan.ofThisLaunch else {
+            return false
+        }
+        let defaults = UserDefaults.standard
+        if let choice = plan.appearance {
+            DefaultsKey.appearance.keep(choice, in: defaults)
+            Tour.note("kept the look " + choice.stored + " for the picture " + plan.name)
+        } else {
+            DefaultsKey.appearance.forget(in: defaults)
+            Tour.note("forgot any kept look for the picture " + plan.name)
+        }
+        return true
+    }()
+
+    private static var begun = false
+
+    /// True the first time it is asked, on the main thread: the tour runs once a launch.
+    static func begin() -> Bool {
+        if Tour.begun {
+            return false
+        }
+        Tour.begun = true
+        return true
+    }
+
+    /// Writes the words file of a picture: the words of the screen's model as the screen
+    /// is shown now, one per line.
+    static func writeWords(for plan: TourPlan, shownWith store: AppearanceStore) {
+        let model = ShellModel(appearance: store.choice).screen(plan.screen)
+        let lines = shownTexts(in: model).map { $0.drawnString }
+        Tour.write(lines, for: plan)
+    }
+
+    /// Writes a draft first, then moves it, so the script outside never reads a
+    /// half-written file.
+    static func write(_ lines: [String], for plan: TourPlan) {
         let files = FileManager.default
         guard let documents = files.urls(for: .documentDirectory, in: .userDomainMask).first else {
             note("this app has no Documents folder")
