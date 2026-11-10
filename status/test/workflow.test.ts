@@ -58,7 +58,12 @@ test('the triggers, the permissions and the one-at-a-time rule', () => {
   assert.equal(/schedule:|pull_request|workflow_run/.test(status), false);
   assert.match(status, /\npermissions:\n  contents: read\n/);
   assert.equal((status.match(/permissions:/g) ?? []).length, 1);
-  assert.match(status, /\nconcurrency:\n  group: status\n  cancel-in-progress: false\n/);
+  // A group of the branch's own: a push on another branch cannot displace a waiting deploy.
+  assert.match(
+    status,
+    /\nconcurrency:\n  group: status-\$\{\{ github\.ref \}\}\n  cancel-in-progress: false\n/,
+  );
+  assert.equal(status.match(/^\s*group:/gm)?.length, 1);
   assert.equal((status.match(/WRANGLER_SEND_METRICS: "false"/g) ?? []).length, 2);
   // Actions are pinned as ci.yml pins them.
   const ci = read('ci.yml');

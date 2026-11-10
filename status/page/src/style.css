@@ -42,7 +42,20 @@ body {
     'Segoe UI',
     Roboto,
     sans-serif;
+}
+/* Numbers that change in place keep their width. Only on these lines, which never hold a
+   part's name: in some system typefaces tabular numbers also widen the hyphen of "Snow-day". */
+.more,
+.upd,
+.share,
+.when {
   font-variant-numeric: tabular-nums;
+}
+/* With scripts off the page cannot fill in: only the line that says so is shown. */
+@media (scripting: none) {
+  main {
+    display: none;
+  }
 }
 header,
 main,
@@ -117,7 +130,8 @@ ol {
 }
 .s-unknown,
 .s-wait,
-.s-none {
+.s-none,
+.s-before {
   color: var(--none);
 }
 
@@ -189,18 +203,18 @@ ol {
   column-gap: 1rem;
 }
 .key {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 0.9rem;
+  flex: 1 0 100%;
   color: var(--quiet);
   font-size: 0.8125rem;
   line-height: 1.5rem;
 }
 .key span {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.3rem;
-  white-space: nowrap;
 }
 .key .shape {
   inline-size: 0.75rem;
@@ -270,6 +284,9 @@ ol {
   margin-block-start: 0.25rem;
   font-size: 0.8125rem;
   line-height: 1.125rem;
+}
+.note.hint {
+  color: var(--quiet);
 }
 
 /* Problems. Three slots and the button row are always there. */
@@ -396,6 +413,14 @@ footer p + p {
   .state,
   .upd {
     justify-self: end;
+  }
+  .key {
+    display: flex;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+  }
+  .key span {
+    white-space: nowrap;
   }
   .hist-top {
     grid-template-columns: auto 1fr;

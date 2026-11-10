@@ -62,11 +62,20 @@ export interface View {
     file: boolean;
     updated: string | null;
   }[];
-  history: { part: Part; name: string; share: string; bars: BarView[]; note: string }[];
+  history: {
+    part: Part;
+    name: string;
+    share: string;
+    bars: BarView[];
+    /** The picked bar's name, or the hint to pick one, or empty while no bar has a name. */
+    note: string;
+    /** The note is the hint, not a day. */
+    hint: boolean;
+  }[];
   problems: {
     /** `SLOTS` at least; null: an empty slot. */
     slots: ({ what: string; when: string } | null)[];
-    /** Said when there is no problem to list. */
+    /** Said in the box when no slot is filled: why it is empty. */
     empty: string | null;
     button: string | null;
     expanded: boolean;
@@ -181,26 +190,43 @@ function local(t: number, zone: string | undefined): Local {
   };
 }
 
-function dayText(
-  t: number,
-  counts: readonly [number, number, number],
-  e: number,
-  today: boolean,
-): string {
-  const date = utcDay(t);
+/** What a bar's name is made from. */
+interface DayFacts {
+  /** The first second of the bar's UTC day. */
+  start: number;
+  counts: readonly [number, number, number];
+  /** The checks the day should hold: from the first check ever, and from the day's start. */
+  e: number;
+  whole: number;
+  /** The day is the clock's own. */
+  today: boolean;
+  /** The day began after the last check: nothing can be known of it yet. */
+  yet: boolean;
+}
+
+/**
+ * A bar's name. "All day" is said only of a day checked from its first tick to its last, and
+ * "today" only of the clock's own day: a day the checks began in says so, and its time with
+ * no check is counted from the day's start once there is any to say.
+ */
+function dayText({ start, counts, e, whole, today, yet }: DayFacts): string {
+  const date = utcDay(start);
   const bar = barOf(counts, e);
-  if (bar.e === 0) return fill(copy.day.before, { date });
+  if (bar.e === 0) return fill(yet ? copy.day.yet : copy.day.before, { date });
   if (bar.k === 0) return fill(copy.day.none, { date });
   const [, late, down] = counts;
-  const missing = dur(bar.m * TICK);
+  const began = whole > e;
+  const unchecked = Math.max(0, whole - bar.k);
+  const missing = dur(unchecked * TICK);
   if (late === 0 && down === 0) {
     if (bar.m > 0) return fill(copy.day.okGap, { date, dur: missing });
+    if (began) return fill(copy.day.since, { date });
     return fill(today ? copy.day.today : copy.day.ok, { date });
   }
   const list: string[] = [];
   if (down > 0) list.push(fill(copy.day.down, { dur: dur(down * TICK) }));
   if (late > 0) list.push(fill(copy.day.late, { dur: dur(late * TICK) }));
-  if (bar.m > 0) list.push(fill(copy.day.gap, { dur: missing }));
+  if (unchecked > 0) list.push(fill(copy.day.gap, { dur: missing }));
   return fill(copy.day.mixed, {
     date,
     list: list.reduce((a, b) => fill(copy.list.comma, { a, b })),
@@ -279,13 +305,15 @@ function waiting(input: Input): View {
     history: PARTS.map((part) => ({
       part,
       name: copy.parts[part].name,
-      share: first ? copy.share.none : '',
+      share: first ? copy.share.none : unreachable ? copy.share.unloaded : '',
       bars,
       note: '',
+      hint: false,
     })),
     problems: {
       slots: Array.from({ length: SLOTS }, () => null),
-      empty: null,
+      // An empty box under "Problems" must not read as "there were none".
+      empty: first ? copy.share.none : unreachable ? copy.share.unloaded : null,
       button: null,
       expanded: false,
     },
@@ -343,28 +371,53 @@ export function viewOf(input: Input): View {
     };
   });
 
-  const from = dayStart(summary.from);
+  // The last bar is always the clock's own UTC day, so "Today" and "90 days ago" stay true:
+  // when the summary's last day is behind it, the bars move up and the days since have no check.
+  const at = Math.max(clock, summary.now);
+  const today = Math.floor(at / DAY) * DAY;
+  const behind = Math.min(DAYS_KEPT, (today - Math.floor(summary.now / DAY) * DAY) / DAY);
+  const from = dayStart(summary.from) + behind * DAY;
+  const starts = Array.from({ length: DAYS_KEPT }, (_, i) => from + i * DAY);
+  /**
+   * The instant a day's checks are counted to. A past day: its end. The clock's day: the
+   * summary's own tick (the clock runs up to a tick ahead of it), and the clock once stale.
+   */
+  const until = (start: number): number => (start === today && !stale ? summary.now : at);
   const history = PARTS.map((part) => {
-    const counts = summary.days[part];
-    const expectedByDay = counts.map((_, i) =>
-      expected(from + i * DAY, summary.first, summary.now),
-    );
+    const counts: (readonly [number, number, number])[] = [
+      ...summary.days[part].slice(behind),
+      ...Array.from({ length: behind }, () => [0, 0, 0] as const),
+    ];
     const bars = counts.map((triple, i): BarView => {
-      const e = expectedByDay[i] ?? 0;
+      const start = starts[i]!;
+      const e = expected(start, summary.first, until(start));
       return {
         cls: barOf(triple, e).cls,
-        label: dayText(from + i * DAY, triple, e, i === counts.length - 1),
+        label: dayText({
+          start,
+          counts: triple,
+          e,
+          whole: expected(start, 0, until(start)),
+          today: start === today,
+          yet: start > summary.now,
+        }),
         picked: input.picked !== null && input.picked.part === part && input.picked.day === i,
       };
     });
-    const share = shareOf(counts, expectedByDay);
+    // The share is of the checks made: the days it names end at the summary's own tick.
+    const share = shareOf(
+      counts,
+      starts.map((start) => expected(start, summary.first, summary.now)),
+    );
     const days = count(share.days, copy.dur.day, copy.dur.days);
+    const picked = bars.find((bar) => bar.picked)?.label ?? null;
     return {
       part,
       name: copy.parts[part].name,
       share: share.pct === null ? copy.share.none : fill(copy.share.line, { pct: share.pct, days }),
       bars,
-      note: bars.find((bar) => bar.picked)?.label ?? '',
+      note: picked ?? copy.share.hint,
+      hint: picked === null,
     };
   });
 

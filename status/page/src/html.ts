@@ -13,17 +13,19 @@ export function esc(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
-const SHAPES: Record<Shape | 'none', string> = {
+const SHAPES: Record<Shape | 'none' | 'before', string> = {
   ok: '<circle cx="8" cy="8" r="6.5"/>',
   late: '<path d="M8 1.5 15.2 14H.8Z"/>',
   down: '<rect x="2" y="2" width="12" height="12" rx="1.5"/>',
   unknown: '<circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/>',
   wait: '<circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/>',
-  none: '<rect x="5" y="9" width="6" height="5" rx="1"/>',
+  // The two bars that are not a state, drawn as a run of them looks in the history.
+  none: '<path d="M1 9h4v6H1zM6 9h4v6H6zM11 9h4v6h-4z"/>',
+  before: '<path d="M1 13h4v2H1zM6 13h4v2H6zM11 13h4v2h-4z"/>',
 };
 
 /** A state's shape. The word beside it says the same: color is never alone. */
-export function shape(of: Shape | 'none'): string {
+export function shape(of: Shape | 'none' | 'before'): string {
   return (
     `<svg class="shape s-${of}" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" ` +
     `aria-hidden="true" focusable="false">${SHAPES[of]}</svg>`
@@ -59,7 +61,9 @@ function history(view: View): string {
   const key =
     (['ok', 'late', 'down'] as const)
       .map((state) => `<span>${shape(state)}${esc(copy.state[state])}</span>`)
-      .join('') + `<span>${shape('none')}${esc(copy.share.keyNone)}</span>`;
+      .join('') +
+    `<span>${shape('none')}${esc(copy.share.keyNone)}</span>` +
+    `<span>${shape('before')}${esc(copy.share.keyBefore)}</span>`;
   const blocks = view.history
     .map((block) => {
       const named = block.bars.some((bar) => bar.label !== null);
@@ -76,7 +80,7 @@ function history(view: View): string {
         `<span class="share">${esc(block.share)}</span></p>` +
         `<div class="bars" data-part="${block.part}"${named ? '' : ' aria-hidden="true"'}>${bars}</div>` +
         `<p class="axis" aria-hidden="true"><span>${esc(copy.share.axisStart)}</span><span>${esc(copy.share.axisEnd)}</span></p>` +
-        `<p class="note">${esc(block.note)}</p></li>`
+        `<p class="note${block.hint ? ' hint' : ''}">${esc(block.note)}</p></li>`
       );
     })
     .join('');

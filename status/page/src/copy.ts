@@ -8,15 +8,10 @@ export const copy = {
   description:
     'See whether Snowlight is working right now, and how it has done over the last 90 days.',
   parts: {
-    site: { name: 'Website', says: 'snowlightmap.com opens.' },
-    closings: {
-      name: 'Live school closings',
-      says: 'Closings and delays on the map are up to date.',
-    },
-    chances: {
-      name: 'Snow-day chances',
-      says: 'Each district’s chance of no school is up to date.',
-    },
+    // What each part is, never how it is doing: the state beside it says that.
+    site: { name: 'Website', says: 'Opening snowlightmap.com.' },
+    closings: { name: 'Live school closings', says: 'The closings and delays on the map.' },
+    chances: { name: 'Snow-day chances', says: 'Each district’s chance of no school.' },
     accounts: { name: 'Accounts', says: 'Signing in and saved schools.' },
   },
   state: {
@@ -34,7 +29,7 @@ export const copy = {
     down: 'Not working right now: {parts}.',
     late: 'Slow or late right now: {parts}.',
     unknown: 'We could not check everything just now.',
-    stale: 'We have no fresh readings.',
+    stale: 'We have no recent checks.',
     staleMore: 'The last check was {ago}. Everything below is from then.',
     unreachable: 'We cannot load the status right now.',
     unreachableMore: 'This page tries again every minute.',
@@ -50,27 +45,32 @@ export const copy = {
   updated: 'Updated {ago}.',
   share: {
     line: 'Working in {pct} of our checks over {days}.',
-    none: 'No readings yet.',
+    none: 'No checks yet.',
+    unloaded: 'The history could not be loaded.',
     axisStart: '90 days ago',
     axisEnd: 'Today',
-    keyNone: 'No readings',
+    keyNone: 'Not checked',
+    keyBefore: 'Before checks began',
+    hint: 'Tap a bar to see that day.',
   },
   day: {
     ok: '{date}: working all day.',
     today: '{date}: working so far today.',
-    none: '{date}: no readings.',
+    since: '{date}: working since checks began.',
+    none: '{date}: not checked.',
+    yet: '{date}: not checked yet.',
     before: '{date}: before checks began.',
-    okGap: '{date}: working when checked; no readings for {dur}.',
+    okGap: '{date}: working when checked; not checked for {dur}.',
     mixed: '{date}: {list}.',
     down: 'not working for {dur}',
     late: 'slow or late for {dur}',
-    gap: 'no readings for {dur}',
+    gap: 'not checked for {dur}',
   },
   problem: {
     closed: '{part}: {kind} for {dur}.',
     closedWhen: '{start} to {end}',
     gap: '{part}: {kind} for at least {dur}.',
-    gapWhen: 'From {start}. Our readings stopped while it was going on.',
+    gapWhen: 'From {start}. Our checks stopped while it was going on.',
     open: '{part}: {kind} since {start}.',
     openWhen: '{dur} so far.',
     down: 'not working',
@@ -83,8 +83,8 @@ export const copy = {
   foot: {
     how:
       'Every 5 minutes, a checker that runs apart from the rest of Snowlight looks at each part ' +
-      'and keeps what it finds for 90 days. Each bar is one day on the world clock (UTC), so it ' +
-      'starts the evening before in the US: 7 p.m. Eastern in winter, 8 p.m. in summer. Times ' +
+      'and keeps what it finds for 90 days. Each bar is one day on the world clock, so it ' +
+      'starts the evening before in the US: 7 PM Eastern in winter, 8 PM in summer. Times ' +
       'are shown in your time zone.',
     privacy: 'This page uses no cookies and keeps nothing about its visitors.',
     home: 'Go to Snowlight',

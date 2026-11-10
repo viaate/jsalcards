@@ -27,8 +27,10 @@ on:
 permissions:
   contents: read
 
+# One run at a time on a branch, never cancelled. The group is the branch's own: with one
+# group for every branch, a push elsewhere could displace a deploy that is waiting here.
 concurrency:
-  group: status
+  group: status-${{ github.ref }}
   cancel-in-progress: false
 
 env:

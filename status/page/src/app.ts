@@ -125,9 +125,18 @@ window.setInterval(() => {
   draw();
   refreshIfDue(dueAfter);
 }, REDRAW_MS);
+/**
+ * Back on screen. What is shown is drawn again on the clock first, so an old answer says its
+ * age at once and not only when the fetch settles; then a fetch that is due starts.
+ */
+function back(): void {
+  draw();
+  refreshIfDue(Math.min(dueAfter, RETRY_AFTER));
+}
+
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') refreshIfDue(Math.min(dueAfter, RETRY_AFTER));
+  if (document.visibilityState === 'visible') back();
   else window.clearTimeout(timer);
 });
-window.addEventListener('pageshow', () => refreshIfDue(Math.min(dueAfter, RETRY_AFTER)));
+window.addEventListener('pageshow', back);
 void refresh();

@@ -1,10 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { DAY, PARTS } from '../shared/types.ts';
+import {
+  CHANCES_DOWN,
+  CHANCES_LATE,
+  CLOSINGS_DOWN,
+  CLOSINGS_LATE,
+  judgeFile,
+} from '../shared/judge.ts';
+import { DAY, PARTS, TICK } from '../shared/types.ts';
 import type { Part, State, Summary, SummaryIncident } from '../shared/types.ts';
 import { ago, dur, elapsed, listed, nextDelay, readAnswer, viewOf } from '../page/src/view.ts';
 import type { Input, View } from '../page/src/view.ts';
-import { allOk, history, simulate } from './fixtures/made-up.ts';
+import { allOk, history, simulate, worst } from './fixtures/made-up.ts';
 
 const ZONE = 'America/New_York';
 /** Tue Nov 10 2026, 15:00 UTC (10:00 AM EST). */
@@ -54,12 +61,12 @@ test('while it waits, the same boxes say Checking', () => {
     [false, true, true, false],
   );
   assert.deepEqual(
-    view.history.map((block) => [block.share, block.note, block.bars.length]),
+    view.history.map((block) => [block.share, block.note, block.hint, block.bars.length]),
     [
-      ['', '', 90],
-      ['', '', 90],
-      ['', '', 90],
-      ['', '', 90],
+      ['', '', false, 90],
+      ['', '', false, 90],
+      ['', '', false, 90],
+      ['', '', false, 90],
     ],
   );
   assert.equal(
@@ -89,9 +96,10 @@ test('before the first check, and when the status cannot be loaded', () => {
   );
   assert.deepEqual(
     first.history.map((block) => block.share),
-    Array.from({ length: 4 }, () => 'No readings yet.'),
+    Array.from({ length: 4 }, () => 'No checks yet.'),
   );
-  assert.equal(first.problems.empty, null);
+  // The box under "Problems" is never left blank: blank would read as "there were none".
+  assert.equal(first.problems.empty, 'No checks yet.');
   const unreachable = viewOf({ kind: 'unreachable' });
   assert.deepEqual(unreachable.banner, {
     shape: 'unknown',
@@ -102,6 +110,47 @@ test('before the first check, and when the status cannot be loaded', () => {
     unreachable.parts.map((row) => row.word),
     Array.from({ length: 4 }, () => 'Could not check'),
   );
+  assert.deepEqual(
+    unreachable.history.map((block) => block.share),
+    Array.from({ length: 4 }, () => 'The history could not be loaded.'),
+  );
+  assert.equal(unreachable.problems.empty, 'The history could not be loaded.');
+  // No bar has a name in either, so nothing invites a tap.
+  for (const view of [first, unreachable]) {
+    assert.deepEqual(
+      view.history.map((block) => [block.note, block.hint]),
+      Array.from({ length: 4 }, () => ['', false]),
+    );
+    assert.deepEqual(view.problems.slots, [null, null, null]);
+  }
+});
+
+test("the line under a part's name says what the part is, never how it is doing", () => {
+  const states: State[] = ['ok', 'late', 'down', 'unknown'];
+  const views = [
+    viewOf({ kind: 'wait' }),
+    viewOf({ kind: 'unreachable' }),
+    data(null),
+    data(summaryWith({}), { clock: NOW + 3 * DAY }),
+    ...states.map((s) => data(summaryWith({ site: s, closings: s, chances: s, accounts: s }))),
+  ];
+  for (const view of views) {
+    assert.deepEqual(
+      view.parts.map((row) => row.says),
+      [
+        'Opening snowlightmap.com.',
+        'The closings and delays on the map.',
+        'Each district’s chance of no school.',
+        'Signing in and saved schools.',
+      ],
+    );
+    // No verb that could claim health beside "Not working" or "Could not check".
+    for (const row of view.parts)
+      assert.equal(
+        /\b(?:is|are|opens?|works?|working|up to date|fine|ok)\b/i.test(row.says),
+        false,
+      );
+  }
 });
 
 test('the banner says the worst first', () => {
@@ -186,7 +235,7 @@ test('stale: after 900 s with no newer summary nothing is said to work', () => {
     const stale = data(summary, { clock: NOW + 901, kept });
     assert.deepEqual(stale.banner, {
       shape: 'unknown',
-      lead: ['We have no fresh readings.'],
+      lead: ['We have no recent checks.'],
       more: 'The last check was 15 minutes ago. Everything below is from then.',
     });
     assert.deepEqual(
@@ -196,11 +245,145 @@ test('stale: after 900 s with no newer summary nothing is said to work', () => {
     // The open problem is drawn as one whose readings stopped, a tick after its last.
     assert.deepEqual(stale.problems.slots[0], {
       what: 'Snow-day chances: slow or late for at least 1 hour 5 minutes.',
-      when: 'From Nov 10, 9:00 AM EST. Our readings stopped while it was going on.',
+      when: 'From Nov 10, 9:00 AM EST. Our checks stopped while it was going on.',
     });
-    // History stays.
+    // History stays, and today's bar says the time since the last check.
     assert.equal(stale.history[0]!.share, 'Working in 100% of our checks over 4 days.');
+    assert.equal(
+      stale.history[0]!.bars[89]!.label,
+      'Tue, Nov 10: working when checked; not checked for 15 minutes.',
+    );
   }
+  assert.equal(fresh.history[0]!.bars[89]!.label, 'Tue, Nov 10: working so far today.');
+});
+
+test('the day checks began is never said to be working all day', () => {
+  const at = (iso: string): number => Date.parse(iso) / 1000;
+  const first = at('2026-11-10T20:40:00Z');
+  const last = (view: View, n: number): (string | null)[] =>
+    view.history[0]!.bars.slice(-n).map((bar) => bar.label);
+  // Clean from the first check on, read two days later.
+  const clean = simulate(first, at('2026-11-12T09:00:00Z'), () => OK);
+  assert.deepEqual(last(data(clean, { clock: clean.now + 130 }), 4), [
+    'Mon, Nov 9: before checks began.',
+    'Tue, Nov 10: working since checks began.',
+    'Wed, Nov 11: working all day.',
+    'Thu, Nov 12: working so far today.',
+  ]);
+  assert.deepEqual(
+    data(clean, { clock: clean.now + 130 })
+      .history[0]!.bars.slice(-4)
+      .map((bar) => bar.cls),
+    ['before', 'ok', 'ok', 'ok'],
+  );
+  // The same day while it is still today.
+  const young = simulate(first, at('2026-11-10T22:00:00Z'), () => OK);
+  assert.deepEqual(last(data(young, { clock: young.now + 130 }), 2), [
+    'Mon, Nov 9: before checks began.',
+    'Tue, Nov 10: working since checks began.',
+  ]);
+  // A later gap on that day: its time with no check is counted from the day's start
+  // (20 h 40 min before the first check, and the 30 minutes missed).
+  const gap = simulate(first, at('2026-11-11T09:00:00Z'), (t) =>
+    t >= at('2026-11-10T22:00:00Z') && t < at('2026-11-10T22:30:00Z') ? null : OK,
+  );
+  assert.deepEqual(last(data(gap, { clock: gap.now + 130 }), 2), [
+    'Tue, Nov 10: working when checked; not checked for 21 hours 10 minutes.',
+    'Wed, Nov 11: working so far today.',
+  ]);
+  // Trouble on that day, with every check since the first kept.
+  const bad = simulate(first, at('2026-11-11T09:00:00Z'), (t) =>
+    t >= at('2026-11-10T21:00:00Z') && t < at('2026-11-10T22:00:00Z')
+      ? { ...OK, site: 'down' }
+      : OK,
+  );
+  assert.equal(
+    data(bad, { clock: bad.now + 130 }).history[0]!.bars[88]!.label,
+    'Tue, Nov 10: not working for 1 hour, not checked for 20 hours 40 minutes.',
+  );
+  // Checks that began on a day's first tick did check all of it.
+  const whole = simulate(at('2026-11-10T00:00:00Z'), at('2026-11-11T09:00:00Z'), () => OK);
+  assert.equal(
+    data(whole, { clock: whole.now + 130 }).history[0]!.bars[88]!.label,
+    'Tue, Nov 10: working all day.',
+  );
+});
+
+test('"today" is the clock\'s day: an old summary never names its last day today', () => {
+  const summary = summaryWith({});
+  const tail = (view: View, n: number): [string, string | null][] =>
+    view.history[0]!.bars.slice(-n).map((bar) => [bar.cls, bar.label]);
+  // One day old: the checks stopped at 15:00 UTC on Nov 10, and nothing is known of Nov 11.
+  const one = data(summary, { clock: NOW + DAY + 2 * 3600 });
+  assert.equal(one.banner.more, 'The last check was 26 hours ago. Everything below is from then.');
+  assert.deepEqual(tail(one, 3), [
+    ['ok', 'Mon, Nov 9: working all day.'],
+    ['ok', 'Tue, Nov 10: working when checked; not checked for 8 hours 55 minutes.'],
+    ['none', 'Wed, Nov 11: not checked.'],
+  ]);
+  // Three days old: the bars moved up three days, so the last one is the clock's day.
+  const three = data(summary, { clock: NOW + 3 * DAY + 2 * 3600 });
+  assert.equal(three.banner.more, 'The last check was 3 days ago. Everything below is from then.');
+  assert.deepEqual(tail(three, 5), [
+    ['ok', 'Mon, Nov 9: working all day.'],
+    ['ok', 'Tue, Nov 10: working when checked; not checked for 8 hours 55 minutes.'],
+    ['none', 'Wed, Nov 11: not checked.'],
+    ['none', 'Thu, Nov 12: not checked.'],
+    ['none', 'Fri, Nov 13: not checked.'],
+  ]);
+  for (const view of [one, three]) {
+    assert.equal(view.history[0]!.bars.length, 90);
+    for (const block of view.history)
+      for (const bar of block.bars) assert.equal(/today/i.test(bar.label ?? ''), false);
+    // The share is of the checks that were made.
+    assert.equal(view.history[0]!.share, 'Working in 100% of our checks over 4 days.');
+  }
+  // A picked bar is counted on the bars as drawn.
+  assert.equal(
+    data(summary, { clock: NOW + 3 * DAY, picked: { part: 'site', day: 86 } }).history[0]!.note,
+    'Tue, Nov 10: working when checked; not checked for 8 hours 55 minutes.',
+  );
+  // Checks that stopped early in a day: under half of it was checked, so it is not drawn working.
+  const early = simulate(NOW - 3 * DAY, NOW - 9 * 3600, () => OK);
+  assert.deepEqual(tail(data(early, { clock: NOW + DAY }), 2), [
+    ['none', 'Tue, Nov 10: working when checked; not checked for 17 hours 55 minutes.'],
+    ['none', 'Wed, Nov 11: not checked.'],
+  ]);
+  // Older than the 90 days kept: nothing is left to draw as checked.
+  const gone = data(summary, { clock: NOW + 200 * DAY });
+  assert.equal(
+    gone.history[0]!.bars.every((bar) => bar.cls === 'none'),
+    true,
+  );
+  assert.equal(gone.history[0]!.bars.length, 90);
+});
+
+test('just after midnight the new day waits for its first check', () => {
+  const midnight = Math.floor(NOW / DAY) * DAY;
+  // The last tick of Nov 9 is in; the clock is two minutes into Nov 10.
+  const summary = simulate(midnight - 2 * DAY, midnight - TICK, () => OK);
+  const view = data(summary, { clock: midnight + 120 });
+  assert.equal(view.banner.more, 'Last checked 7 minutes ago.');
+  assert.deepEqual(
+    view.history[0]!.bars.slice(-3).map((bar) => [bar.cls, bar.label]),
+    [
+      ['ok', 'Sun, Nov 8: working all day.'],
+      ['ok', 'Mon, Nov 9: working all day.'],
+      ['before', 'Tue, Nov 10: not checked yet.'],
+    ],
+  );
+  // The day before, with its last tick not in yet, is not said to be whole.
+  const short = simulate(midnight - 2 * DAY, midnight - 2 * TICK, () => OK);
+  assert.equal(
+    data(short, { clock: midnight + 120 }).history[0]!.bars[88]!.label,
+    'Mon, Nov 9: working when checked; not checked for 5 minutes.',
+  );
+  // With the first tick of the day in, it is today again.
+  const next = simulate(midnight - 2 * DAY, midnight, () => OK);
+  assert.equal(
+    data(next, { clock: midnight + 120 }).history[0]!.bars[89]!.label,
+    'Tue, Nov 10: working so far today.',
+  );
 });
 
 test('the clock is the larger of the two differences', () => {
@@ -294,21 +477,26 @@ test("a bar's name, for each class and for a gap", () => {
     [
       ['before', 'Wed, Nov 4: before checks began.'],
       // Checks began at 06:00 UTC that day: every check since then was kept.
-      ['ok', 'Thu, Nov 5: working all day.'],
-      ['ok', 'Fri, Nov 6: working when checked; no readings for 6 hours.'],
-      ['none', 'Sat, Nov 7: no readings.'],
+      ['ok', 'Thu, Nov 5: working since checks began.'],
+      ['ok', 'Fri, Nov 6: working when checked; not checked for 6 hours.'],
+      ['none', 'Sat, Nov 7: not checked.'],
       [
         'down',
-        'Sun, Nov 8: not working for 1 hour, slow or late for 2 hours, no readings for 2 hours.',
+        'Sun, Nov 8: not working for 1 hour, slow or late for 2 hours, not checked for 2 hours.',
       ],
-      // Under half the day's readings: drawn as no readings, never as working.
-      ['none', 'Mon, Nov 9: working when checked; no readings for 20 hours.'],
+      // Under half the day's checks: drawn as not checked, never as working.
+      ['none', 'Mon, Nov 9: working when checked; not checked for 20 hours.'],
       ['ok', 'Tue, Nov 10: working so far today.'],
     ],
   );
-  assert.equal(site.note, 'Sat, Nov 7: no readings.');
+  assert.equal(site.note, 'Sat, Nov 7: not checked.');
+  assert.equal(site.hint, false);
   assert.deepEqual(site.bars.map((bar) => bar.picked).indexOf(true), 86);
-  assert.equal(view.history[1]!.note, '');
+  // A block with no bar picked says how to pick one.
+  assert.deepEqual(
+    [view.history[1]!.note, view.history[1]!.hint],
+    ['Tap a bar to see that day.', true],
+  );
   // 889 of the 925 checks that gave a reading.
   assert.equal(site.share, 'Working in 96.1% of our checks over 6 days.');
   const late = simulate(NOW - DAY, NOW, (t) =>
@@ -359,7 +547,7 @@ test('problems: closed, closed by a gap, open, and across a change of clocks', (
     },
     {
       what: 'Live school closings: not working for at least 10 minutes.',
-      when: 'From Oct 30, 9:50 PM EDT. Our readings stopped while it was going on.',
+      when: 'From Oct 30, 9:50 PM EDT. Our checks stopped while it was going on.',
     },
     {
       what: 'Website: slow or late for 2 hours 45 minutes.',
@@ -418,8 +606,55 @@ test('the made-up history reads as the pictures show it', () => {
   assert.equal(view.history[0]!.bars.filter((bar) => bar.cls === 'before').length, 30);
   assert.equal(
     view.history[1]!.bars[79]!.label,
-    'Sat, Oct 31: not working for 15 minutes, no readings for 6 hours.',
+    'Sat, Oct 31: not working for 15 minutes, not checked for 6 hours.',
   );
   assert.equal(view.history[3]!.share, 'Working in 100% of our checks over 60 days.');
   assert.equal(view.problems.button, 'Show all 4');
 });
+
+test('a made-up file part is as old as the real judge needs for its state', () => {
+  const limits = {
+    closings: [CLOSINGS_LATE, CLOSINGS_DOWN],
+    chances: [CHANCES_LATE, CHANCES_DOWN],
+  } as const;
+  let seen = 0;
+  for (const summary of [history(NOW), worst(NOW), allOk(NOW), summaryFrom()]) {
+    for (const part of ['closings', 'chances'] as const) {
+      const { s, made } = summary.parts[part];
+      assert.notEqual(made, undefined);
+      const age = summary.now - made!;
+      const [late, down] = limits[part];
+      const wanted: State = age > down ? 'down' : age > late ? 'late' : 'ok';
+      assert.equal(s, wanted, `${part} ${s} at ${age} s`);
+      // And by the judge itself, from a stamp of that age.
+      const generated_at = new Date(made! * 1000).toISOString().replace('.000Z', 'Z');
+      const body = new TextEncoder().encode(
+        JSON.stringify(part === 'closings' ? { generated_at } : { generated_at, districts: 9 }),
+      );
+      assert.equal(judgeFile(part, { code: 200, age: null, body, now: summary.now }).s, s);
+      seen += 1;
+    }
+  }
+  assert.equal(seen, 8);
+  // The pictures' two troubled files: late for an hour, and down for days.
+  assert.equal(data(history(NOW)).parts[2]!.updated, 'Updated 1 hour ago.');
+  assert.deepEqual(
+    data(worst(NOW)).parts.map((row) => [row.word, row.updated]),
+    [
+      ['Not working', null],
+      // Late for a day before it stopped: its file is older than the outage.
+      ['Not working', 'Updated 3 days ago.'],
+      ['Not working', 'Updated 2 days ago.'],
+      ['Slow or late', null],
+    ],
+  );
+});
+
+/** A made-up run where both files go late, then down, and are read while down. */
+function summaryFrom(): Summary {
+  return simulate(NOW - DAY, NOW, (t) => {
+    if (t >= NOW - 3600) return { ...OK, closings: 'down', chances: 'down' };
+    if (t >= NOW - 7200) return { ...OK, closings: 'late', chances: 'late' };
+    return OK;
+  });
+}

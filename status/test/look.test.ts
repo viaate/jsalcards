@@ -91,5 +91,29 @@ test('nothing in the stylesheet comes from elsewhere', () => {
     css.replace(/\s+/g, ' '),
     /font: 1rem\/1\.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;/,
   );
-  assert.match(css, /font-variant-numeric: tabular-nums;/);
+});
+
+/** The selectors of each rule that sets a property, media rules flattened. */
+function rulesWith(property: string): string[] {
+  const found: string[] = [];
+  for (const [, selectors, body] of css
+    .replace(/\/\*[^]*?\*\//g, '')
+    .matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (body!.includes(property)) found.push(selectors!.trim().replace(/\s+/g, ' '));
+  }
+  return found;
+}
+
+test('tabular numbers are only on the lines whose numbers change in place', () => {
+  // Never on the body or on a line that holds a part's name: in some system fonts tabular
+  // numbers also widen the hyphen, and "Snow-day" was drawn "Snow - day".
+  assert.deepEqual(rulesWith('font-variant-numeric'), ['.more, .upd, .share, .when']);
+  assert.deepEqual(rulesWith('font-feature-settings'), []);
+});
+
+test('with scripts off only the line that says so is shown', () => {
+  assert.match(
+    css.replace(/\s+/g, ' '),
+    /@media \(scripting: none\) \{ main \{ display: none; \} \}/,
+  );
 });

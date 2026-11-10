@@ -84,6 +84,8 @@ test('the first paint is the same boxes saying Checking', () => {
     assert.equal(ids.includes(id), true, id);
 });
 
+const OK_ALL = { site: 'ok', closings: 'ok', chances: 'ok', accounts: 'ok' } as const;
+
 /** Every leaf of the copy, as [key, text]. */
 function leaves(node: unknown, path = ''): [string, string][] {
   if (typeof node === 'string') return [[path, node]];
@@ -192,13 +194,19 @@ test('in every state each text of the page is made from the copy, and all of the
     data(odd, { picked: { part: 'site', day: 51 } }),
   );
   // Checks that began an hour ago, read a minute after the last one.
-  const hour = simulate(NOW - 3600, NOW, () => ({
-    site: 'ok',
-    closings: 'ok',
-    chances: 'ok',
-    accounts: 'ok',
-  }));
-  inputs.push(data(hour, { clock: NOW + 70 }));
+  const hour = simulate(NOW - 3600, NOW, () => OK_ALL);
+  inputs.push(
+    data(hour, { clock: NOW + 70 }),
+    data(hour, { clock: NOW + 70, picked: { part: 'site', day: 89 } }),
+  );
+  // Two minutes into a new UTC day, before its first check is in; and summaries days old.
+  const midnight = Math.floor(NOW / DAY) * DAY;
+  const eve = simulate(midnight - 2 * DAY, midnight - 300, () => OK_ALL);
+  inputs.push(
+    data(eve, { clock: midnight + 120, picked: { part: 'site', day: 89 } }),
+    data(young, { clock: NOW + DAY + 7200, picked: { part: 'chances', day: 89 } }),
+    data(bad, { clock: NOW + 3 * DAY + 7200, picked: { part: 'closings', day: 86 } }),
+  );
 
   const all = leaves(copy);
   const patterns = all.map(([key, text]) => [key, pattern(text)] as const);
@@ -229,7 +237,7 @@ test('in every state each text of the page is made from the copy, and all of the
     ['ago.days', /\d days ago/],
     ['day.down', /: not working for |, not working for /],
     ['day.late', /slow or late for \d/],
-    ['day.gap', /, no readings for /],
+    ['day.gap', /, not checked for /],
     ['problem.down', /: not working (?:for|since)/],
     ['problem.late', /: slow or late (?:for|since)/],
   ]);
@@ -241,6 +249,60 @@ test('in every state each text of the page is made from the copy, and all of the
     all.map(([key]) => key).filter((key) => !used.has(key)),
     [],
   );
+
+  // In every state: the lines drawn with tabular numbers never hold a hyphen (those numbers
+  // widen it), no state leaves the box under "Problems" blank once the page has its answer,
+  // and no sentence says "today" of a day that is not the clock's.
+  for (const input of inputs) {
+    const html = mainHtml(viewOf(input));
+    const tabular = [...html.matchAll(/<(?:p|span) class="(?:more|upd|share|when)">([^<]*)</g)];
+    assert.equal(tabular.length > 0, true);
+    for (const [, text] of tabular) assert.equal(/[-‐‑]/.test(text!), false, text);
+    const names = [...html.matchAll(/<span class="(?:name|what)">([^<]*)</g)].map((m) => m[1]);
+    assert.equal(names.includes('Snow-day chances'), true);
+    if (input.kind !== 'wait') {
+      const box = /<(?:div class="probs none"><p>|span class="what">)([^<]+)</.exec(html);
+      assert.notEqual(box, null, 'an empty box under Problems');
+    }
+    if (input.kind === 'data' && input.summary !== null) {
+      const clockDay = new Date(Math.max(input.clock, input.summary.now) * 1000)
+        .toUTCString()
+        .slice(0, 11)
+        .replace(/^(\w+), 0?(\d+) (\w+)$/, '$1, $3 $2');
+      for (const [, label] of html.matchAll(/aria-label="([^"]*today[^"]*)"/g))
+        assert.equal(label!.startsWith(`${clockDay}:`), true, `${label} on ${clockDay}`);
+    }
+  }
+});
+
+test('the key names every kind of bar, and a bar that is not a state has its own drawing', () => {
+  const html = mainHtml(viewOf({ kind: 'wait' }));
+  const key = /<p class="key">([^]*?)<\/p>/.exec(html)![1]!;
+  assert.deepEqual(
+    [...key.matchAll(/<svg class="shape s-(\w+)"[^]*?<\/svg>([^<]*)</g)].map((m) => [m[1], m[2]]),
+    [
+      ['ok', 'Working'],
+      ['late', 'Slow or late'],
+      ['down', 'Not working'],
+      ['none', 'Not checked'],
+      ['before', 'Before checks began'],
+    ],
+  );
+  const css = file('style.css');
+  for (const cls of ['b-ok', 'b-late', 'b-down', 'b-none', 'b-before', 'b-wait'])
+    assert.equal(css.includes(`.${cls}`), true, cls);
+});
+
+test('coming back to the page draws on the clock before it fetches', () => {
+  const source = readFileSync(join(root, 'page/src/app.ts'), 'utf8');
+  // One function for both ways back, and its first act is to draw.
+  assert.match(source, /function back\(\): void \{\n  draw\(\);\n  refreshIfDue\(/);
+  assert.match(
+    source,
+    /addEventListener\('visibilitychange', \(\) => \{\n  if \(document\.visibilityState === 'visible'\) back\(\);/,
+  );
+  assert.match(source, /window\.addEventListener\('pageshow', back\);/);
+  assert.equal(source.match(/refreshIfDue\(/g)?.length, 3);
 });
 
 test('every value is escaped', () => {
