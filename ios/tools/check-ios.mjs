@@ -406,10 +406,16 @@ const CLOCK_ZONE = [
   [/(?<![A-Za-z0-9_])(?:Date|TimeZone|Locale)\s*\.\s*self(?![A-Za-z0-9_])/, 'a clock or zone type passed around as a value', 'let kind = Date.self'],
 ];
 
-/** The process's environment. In SnowlightCore and the tests. (c) */
+/**
+ * The process's environment, and the phone's own settings store: SnowlightCore is handed
+ * a store (AppearanceChoice.kept(in:)) and never takes the phone's. In SnowlightCore and
+ * the tests. (c)
+ */
 const ENVIRONMENT = [
   [/(?<![A-Za-z0-9_])(?:getenv|secure_getenv|setenv|unsetenv|putenv|environ)(?![A-Za-z0-9_])/, "the process's environment", 'let zone = getenv("TZ")'],
   [/(?<![A-Za-z0-9_])environment(?![A-Za-z0-9_])/, "the process's environment", 'let all = info.environment'],
+  [/(?<![A-Za-z0-9_])UserDefaults\s*(?:\.\s*standard|\(\s*\))/, "the phone's own settings store", 'let store = UserDefaults.standard'],
+  [/(?<![A-Za-z0-9_])\.\s*standard(?![A-Za-z0-9_])/, 'a .standard with no named type before it (the phone\'s own settings store, say)', 'let store: UserDefaults = .standard'],
 ];
 
 /** The network. Nothing in M0 reads it: not SnowlightCore, not a test, not a view. (c) */
