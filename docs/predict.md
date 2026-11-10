@@ -214,7 +214,10 @@ often districts close. The days with no alert (`none`, `none_after`) stay on the
   sensitivity: `P(unnamed) = 1 - s (p + (1 - p) q)`, `s_A` from Beta(9, 1) and `s_B` from Beta(4,
   2) updated by the closed co-listing trials; tier B rows enter only once `s_B` is at least 0.7
   over 20 trials on 5 dates. With 30 live market-days `tau` is chosen from 1, 1.5, 2 and 2.5 by
-  marginal likelihood. With no record (L1 not on the head, or no day labeled) the level is the
+  marginal likelihood, and with the ramp below only once the class's ramp is full: until then
+  it is the registered 1.5 (at an unchanged `alpha` another `tau` alone would move the advisory
+  level from 10.0% to 7.2% or 16.7%, and one date of 30 markets would free it). With no
+  record (L1 not on the head, or no day labeled) the level is the
   prior's, which is correct. The record is kept forever, so the adapter skips a day file
   before 2026-10-27 by its name, unread (its trials too): a process reads only the days the
   fit can use, and a test holds a winter-sized record (100 days, 60,000 rows) to the 10 s bar,
@@ -264,6 +267,126 @@ often districts close. The days with no alert (`none`, `none_after`) stay on the
     list sensitivity of 0.9; at 0.7 it covered about 20 of 30 at advisory 10% over 60
     market-days, with the point estimate still unbiased (mean 0.100, `q` 0.102). L4 should
     read it as a guide, not a calibrated interval.
+- **The ramp, the storm and the cap** (predict-next ONE-STORM, `live_update.ramp:
+  "capped_storms"`). One storm is far too little to know a class's level (3 market-days cannot
+  tell a true 45% warning level from anything between 20% and 71%), so one storm cannot move a
+  level far, and each later storm adds to it.
+  - *A storm* is a class's mornings with at most one weekday between them
+    (`ramp_storm_gap: 1`). Monday, Tuesday and Wednesday are one storm. Monday and Wednesday
+    are one: a morning the record lost, or one taken back, does not split a storm. Friday and
+    Monday are one, and so are Friday and Tuesday, and Thursday and the next Monday. Monday
+    and Thursday are two. A weekday with no school counts as a day between, so a holiday
+    between makes two: a storm on the Wednesday before Thanksgiving and one on the Monday
+    after are two storms, as are the last day before the winter break and the first after it.
+    A storm is the class's own (a warning on Monday and one on Thursday are two warning
+    storms even with advisory rows between), and mornings in different markets on
+    neighbouring days are one storm, as markets on one date are.
+  - *What a storm may count for.* Each market-day counts its information about the level,
+    from its row count alone, never from a label: `n / (n + c)` whole market-days for `n`
+    rows (`c` 6.50 for advisory and cold, 2.58 for warning). A lone row counts 0.13 (0.28
+    for warning); a market-day of hundreds of rows counts almost 1, because it fixes the
+    level only to that day's own spread. The start (the level with no live row) counts 3.11
+    market-days for advisory, 1.56 for warning and 2.25 for cold. No storm may hold more than
+    the class's registered share (`supply.<class>.max_date_share`: 25% advisory, 40% warning
+    and cold) of all of it, the start counted in: a storm over its share is tempered to it,
+    whether it has one morning or five. Because the start is counted the cap acts from the
+    first storm on, and it never lowers an earlier storm when a storm is added. The delay
+    share has the same cap of its own: a storm's rows not labeled closed against that
+    start's 10 rows, so a first storm's open rows count 3.33 rows (advisory) or 6.67
+    (warning, cold) there, however many they are.
+  - *The ramp.* The served level, both ends of its band and the delay share go from the
+    start toward that tempered posterior by a weight `w`: the least of the class's rows,
+    storms and market-days over their registered full counts (`ramp_advisory: {rows: 300,
+    storms: 8, market_days: 15}`, `ramp_warning` and `ramp_cold: {rows: 100, storms: 8}`),
+    never over 1. A storm counts as one once it holds a whole market-day of information
+    after the cap (a lone-row storm counts 0.13 or 0.28), and the market-days are counted by
+    their information. With no row in use the served numbers are the start itself, the same
+    as before this piece; at `w` 1 they are the tempered posterior itself, with `tau` chosen
+    as built.
+  - *What it does.* A first storm, whatever it holds (1 to 5 mornings, 1 to 1,000 rows a
+    market, 1 to 100 markets, any labels), moves a warning from 45% to at most about 52% or
+    down to about 38%, an advisory or cold level by at most 6 points, and the chance of a
+    delay by at most 5. As built, one storm of 3 markets of 100 rows moved a warning to 6%
+    (none closed) or 91% (all closed). Counted as one storm, three mornings of such a storm
+    serve what one morning serves (49.3% all closed, 41.0% none closed). Later storms that
+    agree are not bounded: storms of 3 markets all closed, a week apart, move a warning 45.0%
+    to 49.3%, 61.9%, 70.7% (as built 90.6%, 93.9%, 94.7%), and two storms labeled in one
+    refit move a level by both (a warning by up to about 17 points).
+  - *What lowers the weight.* While the newest date's rows are the only change to the rows
+    in use, `w` cannot fall, and `tau`, once free, stays free. It can fall when rows leave
+    or storms join: a take-back ("To drop a misread day"), tier B leaving (it is judged anew
+    from all trials at every fit, so a newest date of misses can take every tier B row
+    out), a day file that stops reading, a lost labels cache, and rows that join two storms
+    into one (a morning labeled between a Monday storm and a Thursday storm). The level is
+    then the ramped fit of the rows in use, as defined, and the line says the lower count.
+  - *The price is slower learning when the start is far off.* Mean error of the served
+    level in points after 1, 3, 8 and 16 storms, on 200 made-up winters a case (storms a week
+    apart, each of 1 to 3 markets of 60 to 100 rows a morning; seeded, in memory).
+
+    One morning a storm:
+
+    | Class, true level | As built | With the ramp |
+    |---|---|---|
+    | advisory 10 (the start is right) | 2.3, 2.3, 1.9, 1.8 | 0.2, 0.8, 1.8, 1.8 |
+    | advisory 5 | 3.3, 2.1, 1.4, 1.4 | 4.8, 3.7, 1.5, 1.4 |
+    | advisory 25 | 10.7, 6.4, 4.0, 2.8 | 14.8, 12.5, 4.6, 2.8 |
+    | warning 45 (the start is right) | 8.5, 6.5, 4.5, 3.5 | 0.8, 2.4, 4.5, 3.5 |
+    | warning 25 | 11.1, 6.7, 3.9, 3.0 | 19.0, 13.8, 3.9, 3.0 |
+    | warning 65 | 11.9, 8.0, 4.8, 3.5 | 19.1, 14.3, 4.8, 3.5 |
+    | cold 10 (the start is right) | 2.9, 2.7, 2.1, 1.8 | 0.3, 1.0, 2.1, 1.8 |
+    | cold 5 | 3.0, 1.8, 1.3, 1.1 | 4.7, 3.4, 1.3, 1.1 |
+    | cold 25 | 9.6, 6.6, 4.0, 3.2 | 14.6, 11.8, 4.1, 3.2 |
+
+    One to three mornings a storm, a market's effect shared by the storm's mornings (what a
+    real storm does):
+
+    | Class, true level | As built | With the ramp |
+    |---|---|---|
+    | advisory 10 (the start is right) | 3.3, 3.2, 2.5, 1.9 | 0.2, 1.0, 2.4, 1.9 |
+    | advisory 5 | 3.1, 2.0, 1.6, 1.2 | 4.8, 3.5, 1.6, 1.2 |
+    | advisory 25 | 8.8, 6.5, 4.3, 3.1 | 14.7, 12.2, 4.4, 3.1 |
+    | warning 45 (the start is right) | 10.8, 7.6, 5.3, 3.6 | 0.9, 2.8, 5.3, 3.6 |
+    | warning 25 | 10.2, 6.7, 4.6, 3.4 | 18.9, 12.9, 4.7, 3.4 |
+    | warning 65 | 11.2, 7.8, 5.2, 3.9 | 18.9, 13.3, 5.1, 3.9 |
+    | cold 10 (the start is right) | 4.1, 3.4, 2.5, 1.9 | 0.3, 1.2, 2.3, 1.9 |
+    | cold 5 | 2.7, 2.1, 1.8, 1.3 | 4.7, 3.0, 1.7, 1.3 |
+    | cold 25 | 9.1, 6.7, 4.4, 3.3 | 14.5, 11.6, 4.4, 3.3 |
+
+    In plain numbers: if the true warning level were 25% or 65% and not 45%, we would be
+    about 19 points off after the first storm where the fit as built would be 10 to 12,
+    about 13 to 14 against 7 to 8 after three, and the same from eight on (about 4 to 5, then
+    3 to 4). Where the start is right it is the other way round: under 1 point off after the
+    first storm against 8 to 11. The largest one-storm step among a winter's first 6 storms
+    is, at the 95th percentile of winters, 5.2 to 8.1 points for warning with the ramp (21.9
+    to 33.9 as built), 1.8 to 5.4 for advisory (5.1 to 20.3) and 1.9 to 5.8 for cold (6.0 to
+    22.3).
+  - *The morning the ramp fills* (`w` first reaches 1, and `tau` may be chosen anew) is the
+    9th storm at the median of such winters (60 a case, 14 storms of one to three
+    mornings). The step that morning is, for warning, 1.8 to 2.0 points on average, 4.7 to
+    5.6 at the 95th percentile and 8.3 at most, with `tau` chosen anew in 16 to 19 of 60
+    winters; for cold 0.9 to 1.7, 2.1 to 3.7 and 6.7; for advisory 0.9 to 1.6, 2.1 to 4.4 and
+    6.5.
+  - *The fit as built is made on every run* beside the served one (one more fit a class),
+    for the log line and `anchor.json` only: it is what `ramp: "off"` would serve. If that
+    fit raises, the served fit is untouched, the line says `built unavailable` and the run
+    warns `anchor: the fit as built of <class>: <error type>: not in the line`.
+- **To turn the ramp off** (a reviewed change on the default branch, by the lead's word).
+  Three edits in one commit: (1) `config/predict.yaml`: `ramp: "off"`, quotes kept (a bare
+  `off` is YAML's false: the config loads, the settings refuse it with the way to write it,
+  and every predict run would stop at its start); (2) `predict/config.py`: `LIVE_SCORE_SHA256`
+  recomputed, with a dated sentence in its docstring (with nothing else changed since landing
+  it is `e69d3c72...`), and its sentence in the dated history below; (3)
+  `tests/predict/test_retention.py`: the one assert of the committed `ramp`. Before pushing,
+  `cd pipeline && uv run python -c "from snowlight.predict.config import PredictConfig as C;
+  from snowlight.predict.anchor import AnchorSettings as A; print(A.of(C.load()).ramp)"`
+  prints `off`. It acts at the next process start. What families see on the first file
+  after: each class with rows goes from its ramped level to its as-built one, the `built`
+  figure of the last line before (after a first warning storm of 3 markets of 100 rows, all
+  closed, 49.3% to 90.6%), with no new "Up from" on those days on that file; a chance carried
+  across a person's 30, 50 or 70% line sends that push. A class with no row does not move.
+  The line then says `ramp off`, the take-back still works, the bus switch does not restart,
+  and the frozen rows after it carry the new sha256. Turning it on again is the same three
+  edits back.
 - **Deferred** (Addendum B2 makes the live update a pure posterior over per-class label
   counts): the registered live region and state deviations (`standing.live_region_sd` 0.5,
   `live_state_sd` 0.4, from 5 live dates) and the warning split by alert kind (`split`, from 5
@@ -362,6 +485,23 @@ often districts close. The days with no alert (`none`, `none_after`) stay on the
   day), and so does a storm day whose alert has passed. A day counts as stormy when its
   forecast named weather (a quiet outlook day with forecast snow counts too, so it drops a true
   previous chance rather than show a false one).
+- **Previous chances on the morning a level moves** (predict-next ONE-STORM). A class's
+  level moves at a process start: a refit on a newly labeled date, a take-back, tier B
+  entering or leaving, or a deploy that changes the levels. That is no change in the
+  weather, so on the first file after it no day served from that class in both files makes
+  a new previous chance ("Up from 45%" beside 47% would read as the storm worsening), the
+  days the forecast moved and the private schools included. A previous chance the last file
+  already carried ("Up from 3% at 5 PM", made when the alert came) stays while the chance
+  now shown is on the same side of it, and is dropped where the level took the chance to it
+  or across it. A district whose class changed keeps its previous chance, and the next file
+  compares as before. A pass reads this from the last public file only (a class has moved
+  when some district's class base points differ between the two files), so a refit too small
+  to move any district's whole point is not seen. If the forecast read fails on that first
+  pass, an adjusted day shows its bare class level for that one pass, with no previous
+  chance, and the next pass that reads the forecast shows the forecast's chance again. One
+  thing this does not hold back: a refit can carry a chance across a person's 30, 50 or 70%
+  alert line (a warning day going from 45% to 50%), and that sends the person's "high chance"
+  push once, with no change in the weather.
 - **Learning.** `predict learn` builds the models it scores and compares with the class anchor
   too, as the passes build them (`cli.learn_builder`), so its no-worse decision scores every
   storm-class cell on the class level that serves it, the same in the committed and the
@@ -381,10 +521,27 @@ often districts close. The days with no alert (`none`, `none_after`) stay on the
   never reaches a pass (the committed one passes with nothing beyond the registered pull). A
   file without the tropical list does not read (the pass then serves the class levels alone,
   with no standing). A pass logs one line, `predict: anchor: advisory 0.100 (0.043-0.206) q 0.110 rows
-  0 on 0 dates; ...`, and keeps the private report `out/internal/predict/anchor.json` (never
+  0 on 0 dates; warning 0.450 (0.212-0.710) q 0.110 rows 0 on 0 dates; cold 0.100 (0.036-0.231)
+  q 0.110 rows 0 on 0 dates; ramp advisory w 0.000 no rows, warning w 0.000 no rows, cold w
+  0.000 no rows; tempered none; take-back none listed; 9 labeled days` (counts and numbers
+  only). After a first advisory storm of two mornings of 3 markets of 100 rows it reads
+  `...; ramp advisory w 0.125 by storms 1.00 of 8 raw 0.114 q 0.124 built 0.138 q 0.166,
+  warning w 0.000 no rows, cold w 0.000 no rows; tempered advisory 2026-12-02 x2 level 0.644
+  to 0.250 delays 0.982 to 0.250; take-back 1 day listed (1 in the record), 3 rows listed (2
+  in the record); 11 labeled days`: per class the ramp weight and the count that holds it
+  under 1 (`by rows 212 of 300`, `by storms 1.00 of 8`, `by market_days 0.94 of 15`, or
+  `full`), `raw` the tempered posterior's level and delay share, and `built` the fit as
+  built's (what `ramp: "off"` would serve); each storm held to its share with its first
+  date, its mornings (`x2`) and its share before and after, in the level and in the delay
+  share (six are named, then `and N more`); and each take-back list with what it names and
+  what of it the record holds. With `ramp: "off"` the two segments read `ramp off`. The
+  pass keeps the private report `out/internal/predict/anchor.json` (never
   published; per class the level, the prior's and the predictive, the band, `q`, `tau`, the
-  sensitivities, rows, market-days, dates, `k_eff` and `multi_list`; the labels' days and the
-  last labeled day, `through`; the plausibility outcome). An exposure file that does not read
+  sensitivities, rows, market-days, dates, `k_eff` and `multi_list`, and `ramp`: the weight,
+  its three counts and their full counts, the start, the tempered posterior, the fit as
+  built and every tempered storm; the rule's name, `ramp`; the take-back counts, `left_out`;
+  the labels' days and the last labeled day, `through`; the plausibility outcome). An exposure
+  file that does not read
   leaves every unit at its class level. `anchor.json` is not kept after the job: no workflow
   caches or stores it. Until L4 stores the score history (L4 is the next piece but one in this
   lane), the two log lines of each pass (`predict: anchor:` and `predict: anchor
@@ -783,6 +940,12 @@ before the bus hour (7 AM) against snow after it in place of 10 PM to 9 AM. Revi
 (predict-next TIMING-AUTO, "The live switch" below), for rows after it: `timing_after_bus` 1.0 (no
 timing) and `switch_bus_timing` added, `LIVE_SCORE_SHA256` ce2a224e...: the bus term's 0.95 is
 the live switch's on arm, served only once it is consistently better on live storm mornings.
+Revised Nov 10, 2026 (predict-next ONE-STORM, "The storm-class levels" above):
+`live_update.ramp` ("capped_storms"), `ramp_storm_gap` (1) and each class's `ramp_<class>`
+added, `LIVE_SCORE_SHA256` 7707b6ec...: the served level and delay share ramp from the start
+by the class's rows, storms and market-days, no storm holds more than its registered share,
+and `tau` stays registered until the ramp is full; no served value changed: no class row was
+in use, so it is for every row there will be.
 Turning it off (`serve.forecast_adjust: "off"`) serves the class levels alone, as L3 did, with
 no previous chance on a day the forecast had moved.
 
@@ -1612,9 +1775,13 @@ is its first term; CALL-TIME-2 plugs in later with its own block and code ("Swit
   February, and a quiet November cannot flip it: it adds no informative date.
 - **The replay.** The served arm, both streaks and the evaluations are always the replay of the
   ledger with the committed rule (`switches` is the term's history, kept over restarts and
-  exclusions; it is never served or said). A date later added to `learn.excluded_days` is
+  exclusions; it is never served or said). A date later added to `learn.excluded_days`, or
+  one a pair of `learn.excluded_rows` names (the ledger keeps sums per date and no district,
+  so one row cannot be taken out of a counted date: the date is dropped whole), is
   dropped and the rest replayed in the next `predict read-labels`, as if it had never been
-  counted (for a term with a fitted arm, the later dates keep the fits made with it, so the
+  counted; its line names the list (`excluded (learn.excluded_rows)`, or both lists for days
+  of both kinds), and the switch never counts that date again, even if the pair is later
+  removed (for a term with a fitted arm, the later dates keep the fits made with it, so the
   remedy that removes it fully is a restart: a revision bump); serving takes the default while
   the ledger holds it, and, with a warning, whenever the stored arm, a streak or an evaluation is
   not the replay (a hand edit, a bug, a numpy change in the draws), so the serving line never
@@ -2982,14 +3149,57 @@ minute) and the passes run anyway. A learned file that is missing, does not vali
 made over another committed model or does not build is ignored, and the committed model
 serves alone. Settings are in `config/predict.yaml` under `learn`.
 
-**To drop a misread day.** Add the day to `learn.excluded_days` in `config/predict.yaml`
-(for example `excluded_days: [2026-01-06]`) and commit it on the default branch. The next run
-never labels, fits or holds out that day. When the served learned file counted it, that file
-(the file lists the days it counted, so this holds even if `learn.json` was lost) is judged
-again against the committed model: the refit without the day replaces it if it
-passes the check, and otherwise a file that re-anchors nothing does, so the committed model's
-chances serve until newer days pass. To return to the committed model at once, also delete
-`predictions/learned.json` on the live host.
+**To drop a misread day, or one district's row of a day.** This is for a morning or a
+district we read wrong (a list that named the wrong district, a page read from the wrong
+day), never for a true closing that only looks unusual. In `config/predict.yaml` under
+`learn`, add the day to `excluded_days` (`excluded_days: [2026-12-02]`) or the pair of the day
+and the district's 7-digit id, the id in quotes, to `excluded_rows` (`excluded_rows:
+[["2026-12-02", "2502790"]]`), with a dated reason in a comment beside the entry (`# Dec 3: the
+list named the wrong district`), and commit it on the default branch. Neither list is part
+of the pre-registered rules: a take-back needs no registered change. It acts at the next
+process start (a predict run starts about every 5.4 hours), and removing the entry brings
+the day or the row back to the class levels.
+
+What each reader does:
+
+- **The class levels** ("The storm-class levels"). An excluded day's files are skipped by
+  name, unread. A listed row is dropped from its day as read, with that district's trial
+  lines of the day. The record's files are never rewritten, and the fit is the fit of a
+  record that never held them. The pass's line says `take-back 1 day listed (1 in the
+  record), 0 rows listed (0 in the record)`; `(0 in the record)` means the record does not
+  hold it (not labeled yet, never labeled, or a district with no labeled row that day):
+  nothing was there to take out.
+- **The labeling.** An excluded day is never labeled. A listed row is still written with
+  its day and left out by the readers: listing it before or after the day is labeled gives
+  the same fit. The live reader's own counts and the public audit keep every labeled day
+  and row.
+- **The live switch** ("The live switch") drops a day in either list whole and replays the
+  rest; it never counts that day again.
+- **The learner below** drops a day in either list whole: the next run never fits or holds
+  out that day. When the served learned file counted it, that file (the file lists the
+  days it counted, so this holds even if `learn.json` was lost) is judged again against the
+  committed model: the refit without the day replaces it if it passes the check, and
+  otherwise a file that re-anchors nothing does, so the committed model's chances serve
+  until newer days pass. The file that replaces it no longer counts the day, so the run
+  after says `unchanged`. To return to the committed model at once, also delete
+  `predictions/learned.json` on the live host.
+
+**Before pushing, load the config**: `cd pipeline && uv run python -c "from
+snowlight.predict.config import PredictConfig as C; c = C.load().learn;
+print(c.excluded_days, c.excluded_rows)"`. A list that does not read (the usual slip is a
+district id without quotes, which YAML reads as a number) stops every predict command from
+the next run on: the chances go stale and no morning is labeled until it is fixed. The live
+reader does not stop (it does not load this config), so the mornings are still recorded and
+are labeled after the fix, oldest first. The issues that say so are the workflow's own for a
+failed learn step and `Snow-day chances are stale` ("Staying on air").
+
+**A take-back can split a storm.** One middle morning taken back does not (a storm allows
+one weekday between its mornings). Two weekdays in a row taken back from the middle of a
+longer storm make it two storms: the line goes from `by storms 1.00 of 8` to `by storms 2.00
+of 8`, and the level moves by the two-storm amount toward what the mornings left say (a
+Monday to Thursday warning storm of 3 markets of 100 rows, all closed, with Tuesday and
+Wednesday taken back: 49.3% to 61.9%). Read the line's `by storms` before and after, and
+tell the lead when it rose.
 
 The live state reaches the workflow through the Actions cache: the live loop keeps it with
 the `cache` state store (`config/live.yaml`, folder `out/internal/live/store`), and the
