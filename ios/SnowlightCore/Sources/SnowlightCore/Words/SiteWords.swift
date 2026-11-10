@@ -5,5 +5,5 @@
 
 enum SiteWords {
     /// `copy.appName`
-    static let appName = "Snowlight"
+    static let appName = ShownText("Snowlight")
 }

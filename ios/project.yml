@@ -1,0 +1,43 @@
+# The only definition of the Xcode project. XcodeGen (pinned in
+# .github/workflows/ios-app.yml) turns this file into ios/Snowlight.xcodeproj, which is
+# never committed. No team, no signing identity and no profile belongs in this file.
+name: Snowlight
+options:
+  bundleIdPrefix: com.snowlightmap
+  developmentLanguage: en
+  deploymentTarget:
+    iOS: "26.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  SnowlightCore:
+    path: SnowlightCore
+  SnowlightKit:
+    path: SnowlightKit
+targets:
+  Snowlight:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    dependencies:
+      - package: SnowlightKit
+      - package: SnowlightCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.snowlightmap.app
+        PRODUCT_NAME: Snowlight
+        GENERATE_INFOPLIST_FILE: "YES"
+        INFOPLIST_KEY_CFBundleDisplayName: Snowlight
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: "1"
+schemes:
+  Snowlight:
+    build:
+      targets:
+        Snowlight: all

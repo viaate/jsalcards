@@ -1,0 +1,70 @@
+name: iOS app
+
+# The iPhone app (ios/), built on one of GitHub's standard hosted Macs: the core tests
+# on Apple's Foundation, then an unsigned build for the simulator from a project that
+# XcodeGen makes from ios/project.yml. No signing identity, no account and no secret is
+# involved. Logic lives in the ios/tools scripts so this file changes rarely: every
+# change to it also runs the normal CI.
+on:
+  push:
+    paths:
+      - ios/**
+      - .github/workflows/ios-app.yml
+  pull_request:
+    paths:
+      - ios/**
+      - .github/workflows/ios-app.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-app-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  XCODEGEN_VERSION: "2.46.0"
+  XCODEGEN_SHA256: "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806"
+
+jobs:
+  app:
+    name: app (macos-26, Xcode 26.6)
+    # A standard runner: free for this public repository.
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: What this machine has
+        run: |
+          set -euo pipefail
+          if [ ! -d "$DEVELOPER_DIR" ]; then
+            echo "::error::The pinned Xcode is gone from this image. Bump DEVELOPER_DIR in this workflow."
+            ls /Applications | grep -i xcode || true
+            exit 1
+          fi
+          sw_vers
+          uname -m
+          xcodebuild -version
+          swift --version
+          date +%Z
+          xcrun simctl list runtimes
+          xcrun simctl list devicetypes | grep -i iphone || true
+          xcrun simctl help launch || true
+          xcbeautify --version || true
+          df -h /
+      - name: Core tests on macOS, in a half-hour zone with clock changes
+        env:
+          TZ: America/St_Johns
+          SNOWLIGHT_EXPECT_ZONE: America/St_Johns
+        run: swift test --package-path ios/SnowlightCore
+      - name: XcodeGen, pinned and checked
+        run: bash ios/tools/get-xcodegen.sh
+      - name: Generate the project
+        run: |
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate --spec ios/project.yml
+      - name: Build for the simulator, unsigned
+        run: bash ios/tools/build.sh

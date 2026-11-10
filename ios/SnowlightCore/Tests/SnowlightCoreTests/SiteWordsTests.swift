@@ -6,6 +6,6 @@ import XCTest
 /// the generator that makes that file exists.
 final class SiteWordsTests: XCTestCase {
     func testAppName() {
-        XCTAssertEqual(SiteWords.appName, "Snowlight")
+        XCTAssertEqual(SiteWords.appName.drawnString, "Snowlight")
     }
 }
