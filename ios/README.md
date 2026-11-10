@@ -42,8 +42,9 @@ Each rule is held by a script, a test or the compiler, named beside it.
    person typed into search (`SearchQuery.typed`, reachable in a view only as the binding
    `$query.typed`). So no other text can reach a control that takes a plain string.
    (`check-ios`, rules `words.*`, `view.*`, `core.publicstring`.)
-4. **No read of the device's clock or zone, or of the process's environment, in
-   SnowlightCore or in a test.** The clock and the zones are always parameters. The one
+4. **No read of the device's clock or zone, of the process's environment or of the
+   phone's own settings store, in SnowlightCore or in a test.** The clock, the zones and
+   the settings store are always parameters. The one
    test that may read them is `ThisMachineTests.swift`: it proves the odd test zone took
    hold. From M5, one allow-listed file (`Net/DeviceClock.swift`) will read the clock and
    the phone's zone to hand them to the models; none exists yet. (`core.device`,
