@@ -722,7 +722,8 @@ def answering(answer: Any, seen: list[httpx.Request]) -> httpx.Client:
     return httpx.Client(transport=httpx.MockTransport(handle))
 
 
-def test_the_branch_head_question(capsys: Any) -> None:
+def test_the_branch_head_question(capsys: Any, monkeypatch: Any) -> None:
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     seen: list[httpx.Request] = []
     good = httpx.Response(200, json={"ref": f"refs/heads/{BRANCH}", "object": {"sha": NEWER}})
     with answering(good, seen) as http:
@@ -845,7 +846,8 @@ def test_start_up_fails_cleanly_without_any_boundaries() -> None:
         cli.load_boundaries(Catalog(KeyError("x")), today)  # type: ignore[arg-type]
 
 
-def test_a_saved_zone_map_is_reported(capsys: Any, tmp_path: Path) -> None:
+def test_a_saved_zone_map_is_reported(capsys: Any, tmp_path: Path, monkeypatch: Any) -> None:
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     now = datetime(2026, 11, 10, 12, 0, tzinfo=UTC)
     output = tmp_path / "output"
     env = {"GITHUB_OUTPUT": str(output)}

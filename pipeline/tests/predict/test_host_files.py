@@ -173,7 +173,8 @@ def test_what_todays_writers_produce_reads_as_it_does_strictly(capsys: Any) -> N
     assert warnings_of(capsys) == []
 
 
-def test_an_unknown_key_at_every_level_is_dropped(capsys: Any) -> None:
+def test_an_unknown_key_at_every_level_is_dropped(capsys: Any, monkeypatch: Any) -> None:
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     parents = {
         "closings": "(top), days[], directory",
         "opens": "(top), directory, opens[]",
