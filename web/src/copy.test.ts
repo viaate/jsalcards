@@ -17,6 +17,7 @@ import { format } from './copy-format';
 const NBSP_CHAR = '\u00a0';
 import { diagCopy } from './copy-diag';
 import { themesCopy } from './copy-themes';
+import { shareCopy } from './copy-share';
 import { waitlistCopy } from './copy-waitlist';
 
 // The house-style rules and the lint live in scripts/check-copy.mjs, a plain
@@ -770,6 +771,8 @@ describe('format', () => {
       expect(allProblems(copyLeaves(diagCopy).map(([, text]) => text))).toEqual([]);
       expect(Object.isFrozen(themesCopy)).toBe(true);
       expect(allProblems(copyLeaves(themesCopy).map(([, text]) => text))).toEqual([]);
+      expect(Object.isFrozen(shareCopy)).toBe(true);
+      expect(allProblems(copyLeaves(shareCopy).map(([, text]) => text))).toEqual([]);
       expect(chanceFormat.weekday('2026-01-13')).toBe('Tuesday');
       expect(chanceFormat.chanceOn('2026-01-14')).toBe('Chance of no school Wednesday');
       // Under it where the chance is the nation's record for want of local days (owner, Oct 24).
@@ -4434,7 +4437,8 @@ ${aliases}
     // copy.ts's strings, the chance section's fixed words (src/copy-chance.ts), the waitlist's
     // (src/copy-waitlist.ts), the account controls' and admin view's (src/copy-account.ts) and
     // the notifications' (src/copy-notify.ts), the plain details' (src/copy-details.ts), the
-    // screen check's (src/copy-diag.ts) and the themes' (src/copy-themes.ts).
+    // screen check's (src/copy-diag.ts), the themes' (src/copy-themes.ts) and the share cards'
+    // (src/copy-share.ts).
     expect(scanned.strings).toBe(
       strings.length +
         copyLeaves(chanceCopy).length +
@@ -4444,7 +4448,8 @@ ${aliases}
         copyLeaves(notifyCopy).length +
         copyLeaves(detailsCopy).length +
         copyLeaves(diagCopy).length +
-        copyLeaves(themesCopy).length,
+        copyLeaves(themesCopy).length +
+        copyLeaves(shareCopy).length,
     );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s

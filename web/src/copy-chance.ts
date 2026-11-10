@@ -1397,6 +1397,8 @@ export const chanceFormat = /* @__PURE__ */ deepFreeze({
   points,
   shortTime,
   clock,
+  zoneAfter,
+  zoneName,
   hourSpan,
   moved,
   countdown,

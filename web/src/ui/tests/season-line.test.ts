@@ -33,7 +33,7 @@ describe('the panel’s season line', () => {
     document.body.append(target);
     component = mount(DetailPanel, {
       target,
-      props: { view, pinned: false, copied: false, onclose: vi.fn(), onpin: vi.fn() },
+      props: { view, pinned: false, onclose: vi.fn(), onpin: vi.fn() },
     });
     flushSync();
     const panel = target.querySelector('aside.detail');

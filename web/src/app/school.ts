@@ -71,6 +71,7 @@ import type { Outlook, SchoolStatus, StatusRow } from '../data/school-day';
 import type { Directory } from '../data/directory';
 import type { ReplayOn } from '../data/replay';
 import { readSeason, schoolSeason } from '../data/season';
+import { parseInstant } from '../state/instant';
 import { casedName, displayName } from '../text/names';
 import { stateOfId } from '../text/school-names';
 import { PUBLISHED_PATHS, Reason, Status } from '../types/generated';
@@ -106,6 +107,14 @@ export interface StatusLineView {
   readonly note: string | null;
   /** "Students and staff. Buses run snow routes. No breakfast.", or null (src/copy-details.ts). */
   readonly said: string | null;
+  /**
+   * The school's own day the line is for, by the clock its status was read by; null for a
+   * line with no day of the school's clock to name (a past day's, which names its own).
+   * The share cards (app/share-card.ts) name it.
+   */
+  readonly day?: LocalDate | null;
+  /** The reason in the note ("Winter storm"), or null: the share cards show it alone. */
+  readonly reason?: string | null;
 }
 
 /** A school near this one, as the panel lists it. */
@@ -160,6 +169,21 @@ export interface SchoolView {
    * file counts none for it, or does not speak for now.
    */
   readonly season?: string | null;
+  /**
+   * What the share cards (app/share-card.ts) need beyond the panel's words, from the same
+   * files at the same moment: absent or null where the panel offers no card (a past day).
+   */
+  readonly share?: ShareFacts | null;
+}
+
+/** When the panel's day was current, and by which clock, for the share cards. */
+export interface ShareFacts {
+  /** The school's own clock, the one its status lines and chance are told by; null without one. */
+  readonly zone: string | null;
+  /** When the live closings file the status lines come from was made; null without one. */
+  readonly statusAt: Date | null;
+  /** When the predictions file the chance comes from was made; null without a chance. */
+  readonly chanceAt: Date | null;
 }
 
 /** Where a name's campus starts: after a spaced dash, as the map's labels break it (schools.ts). */
@@ -263,6 +287,7 @@ function statusLine(
   now: Date,
   timeZone: string,
   nearby: string | null = null,
+  date: LocalDate | null = null,
 ): StatusLineView {
   const key = statusKey(row.status);
   const detail =
@@ -283,6 +308,8 @@ function statusLine(
     detail,
     note: notes.length > 0 ? notes.join(DOT) : null,
     said: detailsFormat.said(row.details),
+    day: date,
+    reason,
   };
 }
 
@@ -301,6 +328,7 @@ function replayLines(id: SchoolId, replay: ReplayOn): StatusLineView[] {
       detail: null,
       note: found.reason === null ? null : reasonName(found.reason as Reason),
       said: null,
+      day: null,
     },
   ];
 }
@@ -318,15 +346,25 @@ function statusLines(
   now: Date,
   timeZone: string,
   said: NearbySaid = NOTHING_SAID,
+  today: LocalDate | null = null,
 ): StatusLineView[] {
   const lines: StatusLineView[] = [];
   if (status.today === 'open') {
-    lines.push({ tone: 'open', headline: copy.open.today, detail: null, note: null, said: null });
+    lines.push({
+      tone: 'open',
+      headline: copy.open.today,
+      detail: null,
+      note: null,
+      day: today,
+      reason: null,
+      said: null,
+    });
   } else if (status.today !== null) {
-    lines.push(statusLine(status.today, 'today', now, timeZone, said.today));
+    lines.push(statusLine(status.today, 'today', now, timeZone, said.today, today));
   }
   if (status.tomorrow !== null) {
-    lines.push(statusLine(status.tomorrow, 'tomorrow', now, timeZone, said.tomorrow));
+    const next = today === null ? null : nextDay(today);
+    lines.push(statusLine(status.tomorrow, 'tomorrow', now, timeZone, said.tomorrow, next));
   }
   return lines;
 }
@@ -639,6 +677,9 @@ export function schoolView(input: ViewInput): SchoolView | null {
   const town = townOf(record) ?? (hint === null || hint.sub === '' ? null : hint.sub);
   const place = [town, record.county].filter((part): part is string => part !== null);
   const replay = input.replay ?? null;
+  // The school's today by the clock its status was read by, which each line names.
+  const zone = viewZone(input);
+  const today = schoolToday(now, zone);
   let status: StatusLineView[] = [];
   try {
     status =
@@ -648,6 +689,7 @@ export function schoolView(input: ViewInput): SchoolView | null {
             now,
             timeZone,
             nearbySaid(input, record.district?.index ?? null),
+            today,
           )
         : replayLines(id, replay);
   } catch {
@@ -661,11 +703,27 @@ export function schoolView(input: ViewInput): SchoolView | null {
   };
   // Before today is under way on the school's clock it is not called yet: no "Open today".
   if (replay === null && input.status.today === 'open') {
-    const today = schoolToday(now, viewZone(input));
     if (today === null || !todayUnderWay(today, input.outlook, latestZone(record.state), now)) {
       status = status.filter((line) => line.tone !== 'open');
     }
   }
+  // A private school has no district: its own chance, its own short name where the
+  // district's would stand (contract C3). A past day gives no chance.
+  const chance =
+    replay !== null
+      ? null
+      : chanceView({
+          outlook: input.outlook,
+          decided,
+          status,
+          ...(record.district === null
+            ? { district: ownSchool(name), state: record.state }
+            : ownDistrict(record.district.id, record.district.name)),
+          closings: input.closings ?? null,
+          names: input.names ?? null,
+          now,
+          timeZone,
+        });
   return {
     id,
     name,
@@ -673,29 +731,27 @@ export function schoolView(input: ViewInput): SchoolView | null {
     kind: kindOf(record),
     place: place.length > 0 ? place.join(DOT) : null,
     status,
-    // A private school has no district: its own chance, its own short name where the
-    // district's would stand (contract C3). A past day gives no chance.
-    chance:
-      replay !== null
-        ? null
-        : chanceView({
-            outlook: input.outlook,
-            decided,
-            status,
-            ...(record.district === null
-              ? { district: ownSchool(name), state: record.state }
-              : ownDistrict(record.district.id, record.district.name)),
-            closings: input.closings ?? null,
-            names: input.names ?? null,
-            now,
-            timeZone,
-          }),
+    chance,
     facts: factsOf(record),
     nearby: nearbyOf(record, input.closings ?? null, now, replay, input.nearbyZones ?? NO_ZONES),
     loading: false,
     // A past day on the map is that day's: the season so far is not.
     season: replay === null ? seasonLine(input.season ?? null, record, now) : null,
+    // A past day's card is not offered: the cards say what is current, as of when.
+    share:
+      replay === null
+        ? {
+            zone,
+            statusAt: status.length > 0 ? closingsAt(input.closings ?? null) : null,
+            chanceAt: chance === null ? null : (input.outlook?.generatedAt ?? null),
+          }
+        : null,
   };
+}
+
+/** When a live closings file was made, or null without one or a time it can be read by. */
+function closingsAt(closings: ClosingsFile | null): Date | null {
+  return closings === null ? null : parseInstant(closings.generated_at);
 }
 
 function loadingView(id: SchoolId): SchoolView {

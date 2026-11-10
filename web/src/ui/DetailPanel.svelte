@@ -1,19 +1,28 @@
 <script lang="ts">
   import type { NearbyView, SchoolView } from '../app/school';
+  import { cardOffered } from '../app/share-offer';
   import { copy } from '../copy';
+  import { shareCopy } from '../copy-share';
+  import type { CardKind } from '../copy-share';
   import ChanceSection from './ChanceSection.svelte';
   import PanelShell from './PanelShell.svelte';
+  import { COPIED_MS } from './share';
+  import type * as ShareCards from './share-cards';
+  import type { CardSharer, ShareOutcome } from './share-cards';
 
   interface Props {
     view: SchoolView;
     /** Whether this school is the pinned one ("My school"). */
     pinned: boolean;
-    /** True for a moment after the link was copied. */
-    copied: boolean;
     onclose: () => void;
     onpin: () => void;
-    /** None while the page cannot write a link yet: the panel has no Share then. */
-    onshare?: (() => void) | undefined;
+    /**
+     * The link to the school (`?school=ID`), for Copy link and the share cards; none while the
+     * page cannot write a link yet: the panel has no Share then.
+     */
+    link?: (() => string | null) | undefined;
+    /** Loads the share cards' code (ui/share-cards.ts), on the first press of Share. */
+    loadCards?: () => Promise<typeof ShareCards>;
     /** Opens a school from the nearby list. */
     onnearby?: (school: NearbyView) => void;
     /** Back to the area whose list opened the school ("Back to 64112"), or none. */
@@ -27,10 +36,10 @@
   let {
     view,
     pinned,
-    copied,
     onclose,
     onpin,
-    onshare,
+    link,
+    loadCards = () => import('./share-cards'),
     onnearby = () => undefined,
     back = null,
     onsettle = () => undefined,
@@ -45,6 +54,162 @@
     earlyDismissal: 'is-early-dismissal',
     open: 'is-open',
   } as const;
+
+  /** A share that ended without the sheet, said on its button: the outcomes, and the link instead. */
+  type Said = Exclude<ShareOutcome, 'shared' | 'cancelled'> | 'linkInstead';
+  /** The school whose share options are open under the Share button, or null. */
+  let sharingFor = $state<string | null>(null);
+  /** The options are open, for the school the panel shows. */
+  const sharing = $derived(sharingFor !== null && sharingFor === view.id);
+  /** The share cards' code, once loaded (on the first press of Share). */
+  let sharer = $state<CardSharer | null>(null);
+  /** What the last card's share did, said on its button for a moment. */
+  let shared = $state<{ id: string; kind: CardKind; outcome: Said } | null>(null);
+  /** The feedback, for the school the panel shows. */
+  const done = $derived(shared !== null && shared.id === view.id ? shared : null);
+  let sharedTimer: ReturnType<typeof setTimeout> | undefined;
+  /** A share under way: a second tap waits for it. */
+  let busy = false;
+  /** The school whose link was just copied, for a moment, or null. */
+  let copiedFor = $state<string | null>(null);
+  const copied = $derived(copiedFor !== null && copiedFor === view.id);
+  let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+  /**
+   * The device shares through a sheet for a thumb (a phone's): the link option opens it with
+   * the link, as Share did before the cards, rather than copying it.
+   */
+  let sheet = $state(false);
+
+  function hasSheet(): boolean {
+    try {
+      return (
+        typeof navigator.share === 'function' && window.matchMedia('(pointer: coarse)').matches
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /** Copies the link to the school; whether it was copied. */
+  async function writeLink(url: string): Promise<boolean> {
+    try {
+      await navigator.clipboard.writeText(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * The link option: on a phone, the share sheet with the link; elsewhere (or where the sheet
+   * will not open) the link copied, and said so on its button for a moment.
+   */
+  async function shareLink(): Promise<void> {
+    const url = link?.() ?? null;
+    if (url === null) return;
+    const id = view.id;
+    if (hasSheet()) {
+      try {
+        await navigator.share({ title: view.name, url });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        // A sheet that would not open: the link copied instead.
+      }
+    }
+    if (!(await writeLink(url))) return;
+    copiedFor = id;
+    clearTimeout(copiedTimer);
+    copiedTimer = setTimeout(() => {
+      copiedFor = null;
+    }, COPIED_MS);
+  }
+
+  /**
+   * Cards for a school's current day, offered only where a tap makes one (app/share-offer.ts):
+   * none while it loads, for a past day, with nothing to say of its day, or without a link;
+   * once the cards' code is here, its own model decides too.
+   */
+  const cardable = $derived(
+    link !== undefined && cardOffered(view) && (sharer === null || sharer.available()),
+  );
+
+  function toggleShare(): void {
+    sharingFor = sharing ? null : view.id;
+    shared = null;
+    sheet = hasSheet();
+    if (sharingFor === null || !cardable || link === undefined) return;
+    if (sharer !== null) {
+      sharer.prepare();
+      return;
+    }
+    const linkOf = link;
+    void loadCards()
+      .then((cards) => {
+        sharer = cards.createCardSharer({ view: () => view, url: linkOf });
+        if (sharingFor !== null) sharer.prepare();
+      })
+      .catch(() => undefined);
+  }
+
+  // A panel that changes while its options are open (a newer file, the day turning): its cards
+  // are made again, so a tap shares what it shows.
+  $effect(() => {
+    if (sharing && sharer !== null && view.share !== undefined) sharer.prepare();
+  });
+
+  $effect(() => () => {
+    clearTimeout(sharedTimer);
+    clearTimeout(copiedTimer);
+  });
+
+  async function shareCard(kind: CardKind): Promise<void> {
+    if (busy) return;
+    busy = true;
+    try {
+      const id = view.id;
+      let outcome: ShareOutcome | 'linkInstead';
+      try {
+        const cards = sharer ?? (link === undefined ? null : await loadAndMake(link));
+        outcome = cards === null ? 'failed' : await cards.share(kind);
+      } catch {
+        outcome = 'failed';
+      }
+      if (outcome === 'failed') {
+        // No image: the link copied in its place, and said so, never a tap that does nothing.
+        const url = link?.() ?? null;
+        outcome = url !== null && (await writeLink(url)) ? 'linkInstead' : 'failed';
+      }
+      if (outcome === 'shared' || outcome === 'cancelled') return;
+      shared = { id, kind, outcome };
+      clearTimeout(sharedTimer);
+      sharedTimer = setTimeout(() => {
+        shared = null;
+      }, COPIED_MS);
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function loadAndMake(linkOf: () => string | null): Promise<CardSharer> {
+    const cards = await loadCards();
+    sharer ??= cards.createCardSharer({ view: () => view, url: linkOf });
+    return sharer;
+  }
+
+  /** What a card's button says once its share has ended without the sheet. */
+  const OUTCOME_WORDS = {
+    saved: shareCopy.saved,
+    imageSaved: shareCopy.imageSaved,
+    linkInstead: shareCopy.linkInstead,
+    failed: shareCopy.failed,
+  } as const;
+
+  /** A card's button's words: its kind, or what its share just did. */
+  function cardLabel(kind: CardKind): string {
+    if (done?.kind !== kind) return shareCopy[kind];
+    return OUTCOME_WORDS[done.outcome];
+  }
 </script>
 
 <!--
@@ -111,20 +276,69 @@
         </svg>
         {pinned ? copy.pin.mySchool : copy.actions.pin}
       </button>
-      {#if onshare !== undefined}
-        <button class="action" class:is-on={copied} type="button" onclick={onshare}>
+      {#if link !== undefined}
+        <button
+          class="action"
+          class:is-on={sharing}
+          type="button"
+          aria-expanded={sharing}
+          aria-controls="detail-share"
+          onclick={toggleShare}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M8 2.5v7.25M5.25 5.25L8 2.5l2.75 2.75" />
+            <path d="M4.75 7.75h-.5v5.75h7.5V7.75h-.5" />
+          </svg>
+          {copy.actions.share}
+        </button>
+      {/if}
+    </div>
+    {#if sharing && link !== undefined}
+      <!-- The share options: a Story card, a Post card (ui/share-cards.ts), and the link. -->
+      <div class="share-options" id="detail-share" role="group" aria-label={shareCopy.options}>
+        {#if cardable}
+          {#each ['story', 'post'] as const as kind (kind)}
+            <button
+              class="option"
+              class:is-done={done?.kind === kind && done.outcome !== 'failed'}
+              type="button"
+              data-card={kind}
+              onclick={() => void shareCard(kind)}
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                {#if done?.kind === kind && done.outcome !== 'failed'}
+                  <path d="M3.5 8.5l3 3 6-6.5" />
+                {:else if kind === 'story'}
+                  <rect x="4.75" y="1.75" width="6.5" height="12.5" rx="1.5" />
+                {:else}
+                  <rect x="3" y="3" width="10" height="11" rx="1.5" />
+                {/if}
+              </svg>
+              {cardLabel(kind)}
+            </button>
+          {/each}
+        {/if}
+        <button
+          class="option"
+          class:is-done={copied}
+          type="button"
+          data-link
+          onclick={() => void shareLink()}
+        >
           <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
             {#if copied}
               <path d="M3.5 8.5l3 3 6-6.5" />
             {:else}
-              <path d="M8 2.5v7.25M5.25 5.25L8 2.5l2.75 2.75" />
-              <path d="M4.75 7.75h-.5v5.75h7.5V7.75h-.5" />
+              <path d="M6.75 9.25l2.5-2.5" />
+              <path
+                d="M7.25 4.75l1-1a2.47 2.47 0 013.5 3.5l-1 1M8.75 11.25l-1 1a2.47 2.47 0 01-3.5-3.5l1-1"
+              />
             {/if}
           </svg>
-          {copied ? copy.share.copied : copy.actions.share}
+          {copied ? copy.share.copied : sheet ? shareCopy.shareLink : shareCopy.copyLink}
         </button>
-      {/if}
-    </div>
+      </div>
+    {/if}
   {/if}
 
   {#if view.chance !== null}
@@ -369,6 +583,51 @@
     fill: currentColor;
   }
 
+  /* The share options under the buttons: words with their marks, as the buttons are. */
+  .share-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 24px;
+    margin: 4px 0 -5px;
+  }
+
+  .option {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    height: 32px;
+    padding: 0;
+    font: var(--type-body);
+    color: var(--text-2);
+    white-space: nowrap;
+    cursor: pointer;
+    background: transparent;
+    border: 0;
+    border-radius: 4px;
+    transition: color 120ms linear;
+  }
+
+  .option:hover,
+  .option.is-done {
+    color: var(--text-1);
+  }
+
+  .option:focus-visible {
+    outline: 1px solid var(--text-2);
+    outline-offset: 2px;
+  }
+
+  .option svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
   /* The day's status, when there is no chance to give: its line first, then the details. */
   .status {
     display: flex;
@@ -561,6 +820,25 @@
       order: 2;
     }
 
+    /* The options after the buttons, as pills of their own in a row. */
+    .share-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+      gap: 8px;
+      order: 1;
+      margin: 8px 0 0;
+    }
+
+    .option {
+      justify-content: center;
+      height: 44px;
+      padding: 0 12px;
+      color: var(--text-1);
+      background: var(--surface-1);
+      border: 1px solid var(--border-2);
+      border-radius: 999px;
+    }
+
     .action {
       justify-content: center;
       height: 44px;
@@ -589,7 +867,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .back,
-    .action {
+    .action,
+    .option {
       transition: none;
     }
   }

@@ -281,6 +281,9 @@ describe('schoolView', () => {
         note: `${copy.reason.ice} · ${format.posted(new Date('2026-01-12T11:12:00Z'), 'America/Chicago', NOON)}`,
         // The plain details its listings state, in the site's own words, below the status.
         said: detailsFormat.said([3, 8]),
+        // The day each line is for on the school's clock, and its reason alone, for the share cards.
+        day: '2026-01-12',
+        reason: copy.reason.ice,
       },
       {
         tone: 'closed',
@@ -288,10 +291,20 @@ describe('schoolView', () => {
         detail: null,
         note: null,
         said: null,
+        day: '2026-01-13',
+        reason: null,
       },
     ]);
     expect(schoolView(input({ status: { today: 'open', tomorrow: null } }))?.status).toEqual([
-      { tone: 'open', headline: copy.open.today, detail: null, note: null, said: null },
+      {
+        tone: 'open',
+        headline: copy.open.today,
+        detail: null,
+        note: null,
+        said: null,
+        day: '2026-01-12',
+        reason: null,
+      },
     ]);
   });
 
@@ -320,6 +333,9 @@ describe('schoolView', () => {
         detail: null,
         note: `${copy.detail.confirmed} · ${format.posted(posted, 'America/Chicago', NOON)}`,
         said: null,
+        day: '2026-01-12',
+        // Confirmed by the team is no reason: the share cards say none.
+        reason: null,
       },
     ]);
   });
@@ -1656,6 +1672,8 @@ describe('a school on a past day', () => {
         detail: null,
         note: copy.reason.winterStorm,
         said: null,
+        // A past day's line names its own day.
+        day: null,
       },
     ]);
     expect(lit?.chance).toBeNull();

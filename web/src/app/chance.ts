@@ -67,6 +67,10 @@ export interface StatusLine {
   readonly detail: string | null;
   readonly note: string | null;
   readonly said: string | null;
+  /** The school's day the line is for (StatusLineView.day), for the share cards. */
+  readonly day?: LocalDate | null;
+  /** The reason in the note (StatusLineView.reason), for the share cards. */
+  readonly reason?: string | null;
 }
 
 /** How the directory names a district, for its short name and for telling it from another. */

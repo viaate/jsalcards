@@ -35,7 +35,6 @@
   import { pinnedSchool } from './state/pin';
   import type { Selection, UrlState } from './state/url';
   import type { LocalDate, SchoolId, UtcInstant } from './types/generated';
-  import { COPIED_MS } from './ui/share';
 
   interface Props {
     /** The inline still from index.html, handed over by main.ts. */
@@ -60,10 +59,9 @@
   interface DetailProps {
     view: SchoolView;
     pinned: boolean;
-    copied: boolean;
     onclose: () => void;
     onpin: () => void;
-    onshare?: (() => void) | undefined;
+    link?: (() => string | null) | undefined;
     onnearby?: (school: NearbyView) => void;
     onsettle?: () => void;
     element?: HTMLElement | undefined;
@@ -159,9 +157,6 @@
   let detailElement = $state<HTMLElement>();
   /** The pinned school, once the pin is read. */
   let pinnedId = $state<SchoolId | null>(null);
-  /** True for a moment after the panel's link was copied. */
-  let copied = $state(false);
-  let copiedTimer: ReturnType<typeof setTimeout> | undefined;
   /** What the last pick knew about the school it opened, shown until its record is read. */
   let pickedHint: SchoolHint | null = null;
   /** The open ZIP code's panel, loaded the first time a ZIP code opens. */
@@ -583,29 +578,9 @@
     });
   }
 
-  /**
-   * Shares a link to the open school: the share sheet where the device has
-   * one for a thumb, else the link copied, and said so on the button.
-   */
-  function shareSchool(): void {
-    if (urls?.read !== true || schoolView === null) return;
-    const url = urls.shareUrl();
-    const title = schoolView.name;
-    const touch = window.matchMedia('(pointer: coarse)').matches;
-    if (touch && typeof navigator.share === 'function') {
-      navigator.share({ title, url }).catch(() => undefined);
-      return;
-    }
-    navigator.clipboard.writeText(url).then(
-      () => {
-        copied = true;
-        clearTimeout(copiedTimer);
-        copiedTimer = setTimeout(() => {
-          copied = false;
-        }, COPIED_MS);
-      },
-      () => undefined,
-    );
+  /** The link to the open school, for the panel's Share (`?school=ID`); null while there is none. */
+  function schoolLink(): string | null {
+    return urls?.read === true && schoolView !== null ? urls.shareUrl() : null;
   }
 
   function onKeydown(event: KeyboardEvent): void {
@@ -947,7 +922,6 @@
       stopAccount();
       stopSelection();
       stopPins();
-      clearTimeout(copiedTimer);
       controller.abort();
       links.destroy();
     };
@@ -1099,10 +1073,9 @@
     <Detail
       view={schoolView}
       pinned={pinnedId === schoolView.id}
-      {copied}
       onclose={closePanel}
       onpin={togglePin}
-      onshare={shareable ? shareSchool : undefined}
+      link={shareable ? schoolLink : undefined}
       onnearby={openNearby}
       back={cameFrom?.id === schoolView.id ? { label: cameFrom.label, onback: backToArea } : null}
       onsettle={() => basemap?.controlsChanged()}

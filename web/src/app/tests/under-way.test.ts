@@ -247,7 +247,15 @@ describe('a day under way on the school’s own clock', () => {
     const under = panel('2026-10-28T14:30:00Z', { covered: true });
     expect(under?.status.map((line) => line.headline)).toEqual([copy.open.today]);
     expect(under?.chance?.status).toEqual([
-      { tone: 'open', headline: copy.open.today, detail: null, note: null, said: null },
+      {
+        tone: 'open',
+        headline: copy.open.today,
+        detail: null,
+        note: null,
+        said: null,
+        day: '2026-10-28',
+        reason: null,
+      },
     ]);
     expect(under?.chance).toMatchObject({ day: '2026-10-29', number: '12' });
   });
@@ -305,7 +313,15 @@ describe('a day under way on the school’s own clock', () => {
   it('says Open today only for a school the live check reached with no row', () => {
     const open = panel('2026-10-28T15:05:00Z', { covered: true });
     expect(open?.chance?.status).toEqual([
-      { tone: 'open', headline: copy.open.today, detail: null, note: null, said: null },
+      {
+        tone: 'open',
+        headline: copy.open.today,
+        detail: null,
+        note: null,
+        said: null,
+        day: '2026-10-28',
+        reason: null,
+      },
     ]);
     expect(open?.chance?.day).toBe('2026-10-29');
     // Not reached: nothing about today, and never "open".

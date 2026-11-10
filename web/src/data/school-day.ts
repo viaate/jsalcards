@@ -274,6 +274,8 @@ export type Outlook = {
   readonly tomorrow: DayOutlook | null;
   readonly neighbors?: readonly number[];
   readonly timeZone: string;
+  /** When the predictions file it is read from was made. */
+  readonly generatedAt?: Date;
 } | null;
 
 export interface OutlookInput {
@@ -379,5 +381,7 @@ export function schoolOutlook(input: OutlookInput): Outlook {
     tomorrow: second === undefined ? null : dayOutlook(second, secondDay, predictions, context),
     neighbors,
     timeZone,
+    // When the file was made: the share cards say the chance as of then (app/share-card.ts).
+    ...(generated === null ? {} : { generatedAt: generated }),
   };
 }

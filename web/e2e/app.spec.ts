@@ -50,6 +50,7 @@ import { STATUS_KEYS, copy } from '../src/copy';
 import { chanceCopy, chanceFormat } from '../src/copy-chance';
 import { diagCopy, diagFormat } from '../src/copy-diag';
 import { format } from '../src/copy-format';
+import { shareCopy } from '../src/copy-share';
 import { OPEN_SETTLE_ZOOM } from '../src/map/basemap/flight';
 import { COPIED_MS } from '../src/ui/share';
 
@@ -59,6 +60,7 @@ const WEB = fileURLToPath(new URL('..', import.meta.url));
 const GLOW_LAYER = 'snowlight-glow';
 const FIRST_LABEL_LAYER = 'ofm-label-neighbourhood';
 const PEMBROKE_HILL = 'A1902690';
+const BORDER_STAR_ID = '291640000557';
 const BORDER_STAR = { lon: -94.592692, lat: 39.013304 };
 /** Where Pembroke Hill is, as the directory has it. */
 const PEMBROKE_HILL_PLACE = { lon: -94.593001, lat: 39.03606 };
@@ -3320,13 +3322,17 @@ test.describe('with data staged', () => {
     expect(await page.evaluate((key) => localStorage.getItem(key), PIN_KEY)).toBe(
       JSON.stringify({ v: 1, school: PEMBROKE_HILL }),
     );
+    // Share opens its options; Copy link copies the link, and says so for a moment.
     await share.click();
-    await expect(share).toHaveText(copy.share.copied);
+    await expect(share).toHaveAttribute('aria-expanded', 'true');
+    const copyLink = panel.locator('.option[data-link]');
+    await copyLink.click();
+    await expect(copyLink).toHaveText(copy.share.copied);
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
       `${site}?school=${PEMBROKE_HILL}`,
     );
-    // Back to Share once the button's own time is up, with a moment's slack for a busy page.
-    await expect(share).toHaveText(copy.actions.share, { timeout: COPIED_MS + 3000 });
+    // Back to Copy link once the button's own time is up, with a moment's slack for a busy page.
+    await expect(copyLink).toHaveText(shareCopy.copyLink, { timeout: COPIED_MS + 3000 });
 
     // Escape closes it: the school leaves the address.
     await page.keyboard.press('Escape');
@@ -3350,6 +3356,242 @@ test.describe('with data staged', () => {
     await panel.locator('.close').click();
     await expect(panel).toHaveCount(0);
     expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('share cards on a computer: Story and Post save their PNG at its size and copy the link', async ({
+    browser,
+  }) => {
+    test.setTimeout(180_000);
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      timezoneId: 'America/Chicago',
+      permissions: ['clipboard-read', 'clipboard-write'],
+      acceptDownloads: true,
+    });
+    const page = await context.newPage();
+    await fixDate(page, SYNTHETIC_NOW);
+    const { problems, requests } = watch(page);
+    await page.goto(`${site}?school=${BORDER_STAR_ID}`);
+    const panel = page.locator('aside.detail');
+    await expect(panel.locator('h2')).toHaveText('Border Star Montessori');
+    await expect(panel.locator('.status .headline')).toHaveText([copy.statusLine.closed.today]);
+    // The cards' code is not loaded until Share is pressed.
+    expect(requests.filter((url) => /share-cards?-[\w-]+\.js/.test(url))).toEqual([]);
+    const share = panel.locator('.action').nth(1);
+    await share.click();
+    const options = panel.locator('.option');
+    await expect(options).toHaveText([shareCopy.story, shareCopy.post, shareCopy.copyLink]);
+    await expect.poll(() => requests.some((url) => /share-cards?-[\w-]+\.js/.test(url))).toBe(true);
+
+    for (const [kind, size] of [
+      ['story', { width: 1080, height: 1920 }],
+      ['post', { width: 1080, height: 1350 }],
+    ] as const) {
+      await page.evaluate(() => navigator.clipboard.writeText(''));
+      const button = panel.locator(`.option[data-card="${kind}"]`);
+      const [download] = await Promise.all([page.waitForEvent('download'), button.click()]);
+      expect(download.suggestedFilename()).toBe(`snowlight-291640000557-${kind}.png`);
+      const png = readFileSync(await download.path());
+      // A PNG's signature, then its header's width and height.
+      expect(png.subarray(1, 4).toString('latin1')).toBe('PNG');
+      expect({ width: png.readUInt32BE(16), height: png.readUInt32BE(20) }).toEqual(size);
+      await expect(button).toHaveText(shareCopy.saved);
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+        `${site}?school=${BORDER_STAR_ID}`,
+      );
+    }
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('share cards on a phone: the share sheet gets the Story’s PNG, its words and the link, made in under 500 ms at a quarter of the CPU', async ({
+    browser,
+  }) => {
+    test.setTimeout(180_000);
+    const context = await browser.newContext({
+      ...devices['Pixel 7'],
+      timezoneId: 'America/Chicago',
+    });
+    const page = await context.newPage();
+    await fixDate(page, SYNTHETIC_NOW);
+    // The phone's share sheet, stubbed: what it is handed, and the image's own size.
+    await page.addInitScript(() => {
+      const shared: unknown[] = [];
+      Object.assign(window, { __shared: shared });
+      Object.defineProperty(navigator, 'canShare', {
+        configurable: true,
+        value: (data: ShareData) => (data.files ?? []).every((file) => file.type === 'image/png'),
+      });
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        value: async (data: ShareData) => {
+          const files = await Promise.all(
+            (data.files ?? []).map(async (file) => {
+              const bitmap = await createImageBitmap(file);
+              return {
+                name: file.name,
+                type: file.type,
+                width: bitmap.width,
+                height: bitmap.height,
+              };
+            }),
+          );
+          shared.push({ title: data.title, text: data.text, url: data.url, files });
+        },
+      });
+    });
+    const { problems } = watch(page);
+    await page.goto(`${site}?school=${PEMBROKE_HILL}`);
+    const panel = page.locator('aside.detail');
+    await expect(panel.locator('h2')).toHaveText('The Pembroke Hill SchoolWornall Campus');
+    await expect(panel.locator('.status .headline')).toHaveText([copy.statusLine.delayed.today]);
+    // The page at rest (the map landed on the school), so the time is the card's own.
+    await waitForMap(page);
+    let last = '';
+    await expect
+      .poll(
+        async () => {
+          const now = JSON.stringify(await mapView(page));
+          const still = now === last;
+          last = now;
+          return still;
+        },
+        { timeout: FIRST_FLIGHT_MS, intervals: [1000] },
+      )
+      .toBe(true);
+    // A mid phone: the CPU at a quarter of its speed while the cards are made.
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    await panel.locator('.action').nth(1).click();
+    await panel.locator('.option[data-card="story"]').click();
+    await expect
+      .poll(() =>
+        page.evaluate(() => (window as unknown as { __shared: unknown[] }).__shared.length),
+      )
+      .toBe(1);
+    const made = await page.evaluate(() =>
+      performance
+        .getEntriesByType('measure')
+        .filter((entry) => entry.name.startsWith('share-card '))
+        .map((entry) => ({ name: entry.name, ms: entry.duration })),
+    );
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    test
+      .info()
+      .annotations.push({ type: 'share card ms (CPU / 4)', description: JSON.stringify(made) });
+    const story = made.find((entry) => entry.name === 'share-card story');
+    expect(story).toBeDefined();
+    expect(story?.ms ?? Infinity).toBeLessThan(500);
+    const [sheet] = (await page.evaluate(
+      () => (window as unknown as { __shared: unknown[] }).__shared,
+    )) as {
+      title: string;
+      text: string;
+      url: string;
+      files: { name: string; type: string; width: number; height: number }[];
+    }[];
+    expect(sheet?.url).toBe(`${site}?school=${PEMBROKE_HILL}`);
+    expect(sheet?.title).toBe('The Pembroke Hill School');
+    expect(sheet?.files).toEqual([
+      {
+        name: `snowlight-${PEMBROKE_HILL}-story.png`,
+        type: 'image/png',
+        width: 1080,
+        height: 1920,
+      },
+    ]);
+    // Its words are the panel's, short for a message: the school, the status, the day it is
+    // for and its times, as of when; the reason and the rest stay on the card's face. The made-up
+    // chances file gives Pembroke Hill no clock of its own: as of when on the viewer's, named.
+    expect(sheet?.text).toBe(
+      `The Pembroke Hill School · Wornall Campus: ${copy.statusLine.delayed.today} · Monday, Jan 12 · ${format.delay(120, null) ?? ''}. As of ${format.time(new Date('2026-01-12T12:42:00Z'), 'America/Chicago')}\u00a0CT.`,
+    );
+    expect(sheet?.text).not.toContain(copy.detail.posted);
+    // Nothing saved, nothing said on the button: the sheet took it.
+    await expect(panel.locator('.option[data-card="story"]')).toHaveText(shareCopy.story);
+    // The link alone, through the same sheet, as Share gave it before the cards.
+    const link = panel.locator('.option[data-link]');
+    await expect(link).toHaveText(shareCopy.shareLink);
+    await link.click();
+    await expect
+      .poll(() =>
+        page.evaluate(() => (window as unknown as { __shared: unknown[] }).__shared.length),
+      )
+      .toBe(2);
+    const [, linkSheet] = (await page.evaluate(
+      () => (window as unknown as { __shared: unknown[] }).__shared,
+    )) as { title: string; url: string; files: unknown[] }[];
+    expect(linkSheet).toMatchObject({
+      title: 'The Pembroke Hill School',
+      url: `${site}?school=${PEMBROKE_HILL}`,
+      files: [],
+    });
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  test('share cards before the school’s clock is read: the card is made, as of when on the viewer’s clock, named', async ({
+    browser,
+  }) => {
+    test.setTimeout(180_000);
+    const context = await browser.newContext({
+      ...devices['Pixel 7'],
+      timezoneId: 'America/New_York',
+      // The predictions file comes from the route below, not a worker's cache.
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await fixDate(page, SYNTHETIC_NOW);
+    await page.addInitScript(() => {
+      const shared: unknown[] = [];
+      Object.assign(window, { __shared: shared });
+      Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        value: (data: ShareData) => {
+          shared.push({ text: data.text, files: (data.files ?? []).length });
+          return Promise.resolve();
+        },
+      });
+    });
+    const { problems } = watch(page);
+    // The predictions file refused, as in a predictions outage or a failed fetch: the school's
+    // clock cannot be read (UNREAD_ZONE), and its panel still says its status.
+    let refused = 0;
+    await page.route('**/data/predictions/latest.json*', async (route) => {
+      refused++;
+      await route.abort();
+    });
+    await page.goto(`${site}?school=${PEMBROKE_HILL}`);
+    const panel = page.locator('aside.detail');
+    await expect(panel.locator('.status .headline')).toHaveText([copy.statusLine.delayed.today]);
+    await panel.locator('.action').nth(1).click();
+    await expect(panel.locator('.option')).toHaveText([
+      shareCopy.story,
+      shareCopy.post,
+      shareCopy.shareLink,
+    ]);
+    await panel.locator('.option[data-card="post"]').click();
+    await expect
+      .poll(() =>
+        page.evaluate(() => (window as unknown as { __shared: unknown[] }).__shared.length),
+      )
+      .toBe(1);
+    const [sheet] = (await page.evaluate(
+      () => (window as unknown as { __shared: unknown[] }).__shared,
+    )) as { text: string; files: number }[];
+    expect(sheet?.files).toBe(1);
+    // 6:42 AM in Kansas City, told on the viewer's clock and named: a true time either way.
+    expect(sheet?.text).toContain(`${copy.statusLine.delayed.today} · Monday, Jan 12`);
+    expect(sheet?.text).toMatch(/ As of 7:42\u00a0AM\u00a0ET\.$/u);
+    expect(refused).toBeGreaterThan(0);
+    // The refused file's own failures, and nothing else.
+    const refusal = (line: string): boolean =>
+      line.includes('/data/predictions/latest.json') ||
+      line === 'console.error: Failed to load resource: net::ERR_FAILED';
+    expect(problems.filter((line) => !refusal(line))).toEqual([]);
+    expect(problems.filter(refusal).length).toBeLessThanOrEqual(refused * 2);
     await context.close();
   });
 

@@ -357,6 +357,8 @@ describe('a school’s outlook', () => {
       tomorrow: { state: 'no_threat' },
       neighbors: [],
       timeZone: ZONE,
+      // When the file was made, for the share cards' "As of".
+      generatedAt: new Date(GENERATED),
     });
     // The file's last day is today: tomorrow has none.
     expect(schoolOutlook(madeBefore(new Date('2026-01-13T18:00:00Z')))).toEqual({
@@ -364,6 +366,7 @@ describe('a school’s outlook', () => {
       tomorrow: null,
       neighbors: [],
       timeZone: ZONE,
+      generatedAt: new Date('2026-01-13T17:40:00Z'),
     });
   });
 

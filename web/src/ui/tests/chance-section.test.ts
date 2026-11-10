@@ -92,10 +92,9 @@ describe('the chance section', () => {
       props: {
         view: schoolView(section),
         pinned: false,
-        copied: false,
         onclose: vi.fn(),
         onpin: vi.fn(),
-        onshare: vi.fn(),
+        link: () => 'https://snow.test/',
       },
     });
     flushSync();

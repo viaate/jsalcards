@@ -95,6 +95,7 @@ export const COPY_MODULES = [
   'src/copy-diag.ts',
   'src/copy-themes.ts',
   'src/copy-season.ts',
+  'src/copy-share.ts',
 ];
 
 /** The waitlist page's words (src/copy-waitlist.ts), filled into pages under copy.waitlist. */

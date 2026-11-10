@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { SchoolView } from '../../app/school';
 import { copy } from '../../copy';
+import { shareCopy } from '../../copy-share';
 import DetailPanel from '../DetailPanel.svelte';
+import type * as ShareCards from '../share-cards';
 
 /** A school's view as app/school.ts makes one, made up for these tests. */
 const VIEW: SchoolView = {
@@ -23,6 +25,26 @@ const VIEW: SchoolView = {
   loading: false,
 };
 
+/** When the live file the closed line below comes from was made. */
+const STATUS_AT = new Date('2026-01-12T12:55:00Z');
+
+/** The school closed today, with what its share cards need. */
+const CLOSED_VIEW: SchoolView = {
+  ...VIEW,
+  status: [
+    {
+      tone: 'closed',
+      headline: copy.statusLine.closed.today,
+      detail: null,
+      note: null,
+      said: null,
+      day: '2026-01-12',
+      reason: null,
+    },
+  ],
+  share: { zone: 'America/Chicago', statusAt: STATUS_AT, chanceAt: null },
+};
+
 describe('DetailPanel', () => {
   let component: ReturnType<typeof mount> | undefined;
 
@@ -32,16 +54,15 @@ describe('DetailPanel', () => {
     document.body.innerHTML = '';
   });
 
-  function show(view: SchoolView, extra: { pinned?: boolean; copied?: boolean } = {}) {
+  function show(view: SchoolView, extra: { pinned?: boolean } = {}) {
     const target = document.createElement('div');
     document.body.append(target);
     const props = {
       view,
       pinned: extra.pinned ?? false,
-      copied: extra.copied ?? false,
       onclose: vi.fn(),
       onpin: vi.fn(),
-      onshare: vi.fn(),
+      link: vi.fn(() => 'https://snow.test/?school=ZZ000001'),
     };
     component = mount(DetailPanel, { target, props });
     flushSync();
@@ -133,10 +154,8 @@ describe('DetailPanel', () => {
       props: {
         view: { ...VIEW, nearby },
         pinned: false,
-        copied: false,
         onclose: vi.fn(),
         onpin: vi.fn(),
-        onshare: vi.fn(),
         onnearby,
       },
     });
@@ -163,27 +182,244 @@ describe('DetailPanel', () => {
     expect(onnearby).toHaveBeenCalledWith(nearby[1]);
   });
 
-  it('pins, shares and closes, and says when it is pinned or the link was copied', () => {
+  it('pins, shares and closes, and says when it is pinned or the link was copied', async () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
     const { panel, props } = show(VIEW);
     const [pin, share] = [...panel.querySelectorAll<HTMLButtonElement>('.action')];
     expect(pin?.textContent.trim()).toBe(copy.actions.pin);
     expect(pin?.getAttribute('aria-pressed')).toBe('false');
     expect(share?.textContent.trim()).toBe(copy.actions.share);
+    expect(share?.getAttribute('aria-expanded')).toBe('false');
     pin?.click();
+    // Share opens its options; without a day to put on a card (no share facts here), the link alone.
     share?.click();
+    flushSync();
+    expect(share?.getAttribute('aria-expanded')).toBe('true');
+    const options = panel.querySelector('.share-options');
+    expect(options?.getAttribute('aria-label')).toBe(shareCopy.options);
+    const buttons = [...panel.querySelectorAll<HTMLButtonElement>('.option')];
+    expect(buttons.map((button) => button.textContent.trim())).toEqual([shareCopy.copyLink]);
+    buttons[0]?.click();
+    expect(writeText).toHaveBeenCalledWith('https://snow.test/?school=ZZ000001');
+    await vi.waitFor(() => {
+      flushSync();
+      expect(panel.querySelector('.option')?.textContent.trim()).toBe(copy.share.copied);
+    });
     panel.querySelector<HTMLButtonElement>('.close')?.click();
     expect(props.onpin).toHaveBeenCalledTimes(1);
-    expect(props.onshare).toHaveBeenCalledTimes(1);
     expect(props.onclose).toHaveBeenCalledTimes(1);
     expect(panel.querySelector('.close')?.getAttribute('aria-label')).toBe(copy.detail.close);
+    // Share again closes them.
+    share?.click();
+    flushSync();
+    expect(panel.querySelector('.share-options')).toBeNull();
 
     if (component !== undefined) void unmount(component);
     component = undefined;
-    const again = show(VIEW, { pinned: true, copied: true });
-    const [pinned, copied] = [...again.panel.querySelectorAll('.action')];
+    const again = show(VIEW, { pinned: true });
+    const [pinned] = [...again.panel.querySelectorAll<HTMLButtonElement>('.action')];
     expect(pinned?.textContent.trim()).toBe(copy.pin.mySchool);
     expect(pinned?.getAttribute('aria-pressed')).toBe('true');
-    expect(copied?.textContent.trim()).toBe(copy.share.copied);
+  });
+
+  it('has no Share while the page cannot write a link yet', () => {
+    const target = document.createElement('div');
+    document.body.append(target);
+    component = mount(DetailPanel, {
+      target,
+      props: { view: VIEW, pinned: false, onclose: vi.fn(), onpin: vi.fn() },
+    });
+    flushSync();
+    expect([...target.querySelectorAll('.action')].map((b) => b.textContent.trim())).toEqual([
+      copy.actions.pin,
+    ]);
+  });
+
+  it('offers a Story card and a Post card of the school’s day, loaded with the first press', async () => {
+    const share = vi.fn(() => Promise.resolve('saved' as const));
+    const prepare = vi.fn();
+    const sharer = { prepare, available: () => true, share };
+    const createCardSharer = vi.fn(() => sharer);
+    const loadCards = vi.fn(() =>
+      Promise.resolve({ createCardSharer } as unknown as typeof ShareCards),
+    );
+    const target = document.createElement('div');
+    document.body.append(target);
+    const view = CLOSED_VIEW;
+    const link = vi.fn(() => 'https://snow.test/?school=ZZ000001');
+    component = mount(DetailPanel, {
+      target,
+      props: {
+        view,
+        pinned: false,
+        onclose: vi.fn(),
+        onpin: vi.fn(),
+        link,
+        loadCards,
+      },
+    });
+    flushSync();
+    const panel = target.querySelector('aside.detail');
+    if (!(panel instanceof HTMLElement)) throw new Error('no panel');
+    // Nothing of the cards is loaded until Share is pressed.
+    expect(loadCards).not.toHaveBeenCalled();
+    panel.querySelectorAll<HTMLButtonElement>('.action')[1]?.click();
+    flushSync();
+    const options = [...panel.querySelectorAll<HTMLButtonElement>('.option')];
+    expect(options.map((button) => button.textContent.trim())).toEqual([
+      shareCopy.story,
+      shareCopy.post,
+      shareCopy.copyLink,
+    ]);
+    await vi.waitFor(() => {
+      expect(prepare).toHaveBeenCalled();
+    });
+    expect(loadCards).toHaveBeenCalledTimes(1);
+    expect(createCardSharer).toHaveBeenCalledTimes(1);
+    options[0]?.click();
+    await vi.waitFor(() => {
+      expect(share).toHaveBeenCalledWith('story');
+    });
+    // Saved, with the link copied: said on the card's button.
+    await vi.waitFor(() => {
+      flushSync();
+      expect(panel.querySelector('[data-card="story"]')?.textContent.trim()).toBe(shareCopy.saved);
+    });
+    options[1]?.click();
+    await vi.waitFor(() => {
+      expect(share).toHaveBeenCalledWith('post');
+    });
+  });
+
+  /** Mounts the panel with the share cards' code stubbed; its share options opened. */
+  async function withCards(
+    view: SchoolView,
+    sharer: { prepare: () => void; available: () => boolean; share: (kind: string) => unknown },
+  ) {
+    const loadCards = vi.fn(() =>
+      Promise.resolve({ createCardSharer: () => sharer } as unknown as typeof ShareCards),
+    );
+    const target = document.createElement('div');
+    document.body.append(target);
+    component = mount(DetailPanel, {
+      target,
+      props: {
+        view,
+        pinned: false,
+        onclose: vi.fn(),
+        onpin: vi.fn(),
+        link: () => 'https://snow.test/?school=ZZ000001',
+        loadCards,
+      },
+    });
+    flushSync();
+    const panel = target.querySelector('aside.detail');
+    if (!(panel instanceof HTMLElement)) throw new Error('no panel');
+    panel.querySelectorAll<HTMLButtonElement>('.action')[1]?.click();
+    flushSync();
+    // The cards' code, where it loads, is here a turn later.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    flushSync();
+    const labels = (): string[] =>
+      [...panel.querySelectorAll<HTMLButtonElement>('.option')].map((b) => b.textContent.trim());
+    return { panel, loadCards, labels };
+  }
+
+  it('offers no card where none can be made: the link alone, before and after the cards load', async () => {
+    const share = vi.fn(() => Promise.resolve('saved' as const));
+    // A nameplate alone: the school, with no status and no chance.
+    const nameplate = await withCards(
+      { ...VIEW, share: { zone: 'America/Chicago', statusAt: STATUS_AT, chanceAt: null } },
+      { prepare: vi.fn(), available: () => false, share },
+    );
+    expect(nameplate.labels()).toEqual([shareCopy.copyLink]);
+    // Nothing of the cards is loaded for a panel that offers none.
+    expect(nameplate.loadCards).not.toHaveBeenCalled();
+    if (component !== undefined) void unmount(component);
+    component = undefined;
+    document.body.innerHTML = '';
+    // A status whose card's model the cards' own code does not make: no buttons once it is here.
+    const refused = await withCards(CLOSED_VIEW, {
+      prepare: vi.fn(),
+      available: () => false,
+      share,
+    });
+    expect(refused.loadCards).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => {
+      flushSync();
+      expect(refused.labels()).toEqual([shareCopy.copyLink]);
+    });
+    expect(share).not.toHaveBeenCalled();
+  });
+
+  it('says so when no card could be made, and copies the link in its place', async () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    const share = vi.fn(() => Promise.resolve('failed' as const));
+    const { panel } = await withCards(CLOSED_VIEW, {
+      prepare: vi.fn(),
+      available: () => true,
+      share,
+    });
+    panel.querySelector<HTMLButtonElement>('[data-card="story"]')?.click();
+    await vi.waitFor(() => {
+      flushSync();
+      expect(panel.querySelector('[data-card="story"]')?.textContent.trim()).toBe(
+        shareCopy.linkInstead,
+      );
+    });
+    expect(writeText).toHaveBeenCalledWith('https://snow.test/?school=ZZ000001');
+    // And where the link cannot be copied either: said all the same.
+    writeText.mockImplementation(() => Promise.reject(new Error('denied')));
+    panel.querySelector<HTMLButtonElement>('[data-card="post"]')?.click();
+    await vi.waitFor(() => {
+      flushSync();
+      expect(panel.querySelector('[data-card="post"]')?.textContent.trim()).toBe(shareCopy.failed);
+    });
+  });
+
+  it('shares the link through the phone’s share sheet, as Share did before the cards', async () => {
+    const query = { matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() };
+    Object.defineProperty(window, 'matchMedia', { configurable: true, value: vi.fn(() => query) });
+    const sheet = vi.fn<(data: ShareData) => Promise<void>>(() => Promise.resolve());
+    Object.defineProperty(navigator, 'share', { configurable: true, value: sheet });
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    try {
+      const { panel, labels } = await withCards(CLOSED_VIEW, {
+        prepare: vi.fn(),
+        available: () => true,
+        share: vi.fn(),
+      });
+      expect(labels()).toEqual([shareCopy.story, shareCopy.post, shareCopy.shareLink]);
+      panel.querySelector<HTMLButtonElement>('[data-link]')?.click();
+      await vi.waitFor(() => {
+        expect(sheet).toHaveBeenCalledWith({
+          title: CLOSED_VIEW.name,
+          url: 'https://snow.test/?school=ZZ000001',
+        });
+      });
+      // Called off in the sheet: nothing copied, nothing said.
+      sheet.mockImplementation(() => Promise.reject(new DOMException('no', 'AbortError')));
+      panel.querySelector<HTMLButtonElement>('[data-link]')?.click();
+      await vi.waitFor(() => {
+        expect(sheet).toHaveBeenCalledTimes(2);
+      });
+      await Promise.resolve();
+      expect(writeText).not.toHaveBeenCalled();
+      // A sheet that will not open: the link copied instead, and said so.
+      sheet.mockImplementation(() => Promise.reject(new Error('not allowed')));
+      panel.querySelector<HTMLButtonElement>('[data-link]')?.click();
+      await vi.waitFor(() => {
+        flushSync();
+        expect(panel.querySelector('[data-link]')?.textContent.trim()).toBe(copy.share.copied);
+      });
+      expect(writeText).toHaveBeenCalledTimes(1);
+    } finally {
+      Reflect.deleteProperty(window, 'matchMedia');
+      Reflect.deleteProperty(navigator, 'share');
+    }
   });
 
   it('is a sheet on a phone: it opens part way, and its grip takes it up and back down', () => {

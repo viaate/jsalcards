@@ -301,7 +301,7 @@ describe('a school opened from an area', () => {
       nearby: [],
       loading: false,
     };
-    const props = { view, pinned: false, copied: false, onclose: vi.fn(), onpin: vi.fn() };
+    const props = { view, pinned: false, onclose: vi.fn(), onpin: vi.fn() };
     const panel = mount(DetailPanel, {
       target,
       props: { ...props, back: { label: 'Back to 64112', onback } },
