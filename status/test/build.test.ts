@@ -1,0 +1,289 @@
+import assert from 'node:assert/strict';
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { after, before, test } from 'node:test';
+import { build } from '../page/build.mjs';
+import { CANONICAL_URL, HOME_URL, copy } from '../page/src/copy.ts';
+import { mainHtml, pageHtml } from '../page/src/html.ts';
+import { viewOf } from '../page/src/view.ts';
+import type { Input } from '../page/src/view.ts';
+import { DAY } from '../shared/types.ts';
+import type { Summary } from '../shared/types.ts';
+import { allOk, history, simulate, worst } from './fixtures/made-up.ts';
+import { root } from './harness.ts';
+
+let out: string;
+const file = (name: string): string => readFileSync(join(out, name), 'utf8');
+
+before(async () => {
+  out = mkdtempSync(join(tmpdir(), 'snowlight-status-build-'));
+  await build(out);
+});
+after(() => {
+  rmSync(out, { recursive: true, force: true });
+});
+
+test('the built folder holds the page and nothing else', () => {
+  assert.deepEqual(readdirSync(out).sort(), [
+    '_headers',
+    '_routes.json',
+    'app.js',
+    'favicon-16.png',
+    'favicon-32.png',
+    'index.html',
+    'style.css',
+  ]);
+  for (const icon of ['favicon-16.png', 'favicon-32.png']) {
+    assert.deepEqual([...readFileSync(join(out, icon)).subarray(0, 4)], [0x89, 0x50, 0x4e, 0x47]);
+  }
+  assert.equal(file('style.css'), readFileSync(join(root, 'page/src/style.css'), 'utf8'));
+});
+
+test('index.html has no inline script or style and asks no other host', () => {
+  const html = file('index.html');
+  assert.deepEqual(html.match(/<script[^>]*>/g), ['<script src="/app.js" defer>']);
+  assert.equal(/<script[^>]*>[^<]/.test(html), false);
+  assert.equal(/<style|\sstyle=|\son[a-z]+=/.test(html), false);
+  assert.deepEqual(html.match(/https?:\/\/[^"'\s<>]+/g), [CANONICAL_URL, HOME_URL]);
+  assert.match(html, /<link rel="canonical" href="https:\/\/status\.snowlightmap\.com\/">/);
+  assert.match(html, /<a class="home" href="https:\/\/snowlightmap\.com\/">/);
+  assert.deepEqual(html.match(/<link[^>]*>/g), [
+    '<link rel="canonical" href="https://status.snowlightmap.com/">',
+    '<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">',
+    '<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">',
+    '<link rel="stylesheet" href="/style.css">',
+  ]);
+  assert.equal(/font-face|woff|fonts\./.test(html + file('style.css')), false);
+  assert.equal(/<img|<iframe|<object|<embed|<form/.test(html), false);
+});
+
+test('the first paint is the same boxes saying Checking', () => {
+  const html = file('index.html');
+  const wait = mainHtml(viewOf({ kind: 'wait' }));
+  assert.equal(html.includes(`<main id="main">${wait}</main>`), true);
+  assert.equal(html, pageHtml(wait));
+  assert.match(
+    html,
+    /<h1><svg class="tile"[^]*<\/svg><span class="brand">Snowlight<\/span> <span class="page">Status<\/span><\/h1>/,
+  );
+  assert.deepEqual(html.match(/<h2[^>]*>[^<]*<\/h2>/g), [
+    '<h2 id="h-now">Right now</h2>',
+    '<h2 id="h-history">Last 90 days</h2>',
+    '<h2 id="h-problems">Problems in the last 90 days</h2>',
+  ]);
+  assert.match(html, /<p class="sr" id="said" role="status"><\/p>/);
+  assert.match(
+    html,
+    /<noscript><p class="noscript">Turn on JavaScript to see the status\.<\/p><\/noscript>/,
+  );
+  // The lockup's ids are kept, and each id is on the page once.
+  const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+  assert.equal(new Set(ids).size, ids.length);
+  for (const id of ['lk-tile', 'lk-sky', 'lk-snow', 'lk-arm', 'lk-foot', 'lk-above'])
+    assert.equal(ids.includes(id), true, id);
+});
+
+/** Every leaf of the copy, as [key, text]. */
+function leaves(node: unknown, path = ''): [string, string][] {
+  if (typeof node === 'string') return [[path, node]];
+  return Object.entries(node as Record<string, unknown>).flatMap(([key, value]) =>
+    leaves(value, path === '' ? key : `${path}.${key}`),
+  );
+}
+
+const escaped = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** A sentence of the copy as a pattern: each `{…}` is some filled-in text. */
+const pattern = (text: string): RegExp =>
+  new RegExp(
+    `^${text
+      .split(/\{\w+\}/)
+      .map(escaped)
+      .join('.+')}$`,
+  );
+
+/** The text a reader meets: text nodes, and the names given to pictures. */
+function texts(html: string): string[] {
+  const found: string[] = [];
+  for (const [, value] of html.matchAll(/\s(?:aria-label|title|content)="([^"]*)"/g))
+    found.push(value!);
+  const body = html.replace(/<svg[^]*?<\/svg>/g, '').replace(/<(script|style)[^]*?<\/\1>/g, '');
+  for (const piece of body.split(/<[^>]*>/)) found.push(piece);
+  return found
+    .map((text) =>
+      text
+        .replace(/&quot;/g, '"')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .trim(),
+    )
+    .filter(
+      (text) =>
+        text !== '' && text !== 'width=device-width, initial-scale=1' && text !== 'light dark',
+    );
+}
+
+test('in every state each text of the page is made from the copy, and all of the copy is used', () => {
+  const NOW = Date.UTC(2026, 10, 10, 15, 0, 0) / 1000;
+  const data = (summary: Summary | null, more: object = {}): Input => ({
+    kind: 'data',
+    summary,
+    clock: NOW + 130,
+    kept: false,
+    expanded: true,
+    picked: null,
+    zone: 'America/New_York',
+    ...more,
+  });
+  const bad = worst(NOW);
+  const unknown: Summary = {
+    ...allOk(NOW),
+    parts: {
+      site: { s: 'unknown' },
+      closings: { s: 'ok' },
+      chances: { s: 'ok' },
+      accounts: { s: 'ok' },
+    },
+  };
+  const young = history(NOW);
+  const quiet: Summary = { ...young, incidents: [], parts: allOk(NOW).parts };
+  const hourOld: Summary = {
+    ...quiet,
+    parts: {
+      ...quiet.parts,
+      closings: { s: 'ok', made: NOW - 3700 },
+      chances: { s: 'ok', made: NOW - 2 * 3600 - 300 },
+    },
+  };
+  const daysOld: Summary = {
+    ...quiet,
+    parts: { ...quiet.parts, chances: { s: 'down', made: NOW - 3 * DAY } },
+  };
+  const inputs: Input[] = [
+    { kind: 'wait' },
+    { kind: 'unreachable' },
+    data(null),
+    data(allOk(NOW)),
+    data(young, { picked: { part: 'closings', day: 79 } }),
+    data(young, { expanded: false, kept: true }),
+    data(young, { clock: NOW + 2000 }),
+    data(bad, { picked: { part: 'closings', day: 67 } }),
+    data(bad, { picked: { part: 'chances', day: 66 } }),
+    data(unknown),
+    data(quiet, { picked: { part: 'site', day: 10 } }),
+    data(quiet, { picked: { part: 'site', day: 89 } }),
+    data(quiet, { picked: { part: 'site', day: 60 } }),
+    data(hourOld, { clock: NOW + 40 }),
+    data(daysOld),
+    data({ ...quiet, first: NOW - 60 * DAY + 3600 }, { picked: { part: 'site', day: 30 } }),
+  ];
+  // A made-up day with no readings at all, one late for a minute's worth, and long problems.
+  const odd: Summary = structuredClone(quiet);
+  odd.days.site[50] = [0, 0, 0];
+  odd.days.site[51] = [287, 1, 0];
+  odd.incidents = [
+    { p: 'site', k: 'down', s: NOW - 3 * DAY - 3600, e: NOW - 300, g: 0 },
+    { p: 'site', k: 'late', s: NOW - 3660, e: NOW - 3600, g: 0 },
+    { p: 'site', k: 'late', s: NOW - 5 * DAY, e: NOW - 5 * DAY + DAY, g: 1 },
+  ];
+  inputs.push(
+    data(odd, { picked: { part: 'site', day: 50 } }),
+    data(odd, { picked: { part: 'site', day: 51 } }),
+  );
+  // Checks that began an hour ago, read a minute after the last one.
+  const hour = simulate(NOW - 3600, NOW, () => ({
+    site: 'ok',
+    closings: 'ok',
+    chances: 'ok',
+    accounts: 'ok',
+  }));
+  inputs.push(data(hour, { clock: NOW + 70 }));
+
+  const all = leaves(copy);
+  const patterns = all.map(([key, text]) => [key, pattern(text)] as const);
+  const used = new Set<string>();
+  for (const input of inputs) {
+    for (const text of texts(pageHtml(mainHtml(viewOf(input))))) {
+      const hits = patterns.filter(([, made]) => made.test(text));
+      assert.equal(hits.length > 0, true, `not from the copy: "${text}"`);
+      for (const [key] of hits) used.add(key);
+    }
+  }
+  // The pieces a sentence is filled with are used when a sentence that holds them is.
+  const pieces = new Map([
+    ['list.and', / and /],
+    ['list.comma', /, /],
+    ['dur.two', /\d (?:hours?|days?) \d/],
+    ['dur.minute', /\b1 minute\b/],
+    ['dur.minutes', /\d minutes\b/],
+    ['dur.hour', /\b1 hour\b/],
+    ['dur.hours', /\d hours\b/],
+    ['dur.day', /\b1 day\b/],
+    ['dur.days', /\d days\b/],
+    ['ago.now', /just now/],
+    ['ago.minute', /\b1 minute ago/],
+    ['ago.minutes', /\d minutes ago/],
+    ['ago.hour', /\b1 hour ago/],
+    ['ago.hours', /\d hours ago/],
+    ['ago.days', /\d days ago/],
+    ['day.down', /: not working for |, not working for /],
+    ['day.late', /slow or late for \d/],
+    ['day.gap', /, no readings for /],
+    ['problem.down', /: not working (?:for|since)/],
+    ['problem.late', /: slow or late (?:for|since)/],
+  ]);
+  const everything = inputs
+    .map((input) => texts(pageHtml(mainHtml(viewOf(input)))).join('\n'))
+    .join('\n');
+  for (const [key, shows] of pieces) if (shows.test(everything)) used.add(key);
+  assert.deepEqual(
+    all.map(([key]) => key).filter((key) => !used.has(key)),
+    [],
+  );
+});
+
+test('every value is escaped', () => {
+  const summary = allOk(Date.UTC(2026, 10, 10, 15, 0, 0) / 1000);
+  const view = viewOf({
+    kind: 'data',
+    summary,
+    clock: summary.now,
+    kept: false,
+    expanded: false,
+    picked: null,
+  });
+  view.banner.lead = ['<img src=x onerror=alert(1)> & "quotes"'];
+  view.history[0]!.bars[0]!.label = '"><script>alert(1)</script>';
+  const html = mainHtml(view);
+  assert.equal(html.includes('<img'), false);
+  assert.equal(html.includes('<script>'), false);
+  assert.equal(html.includes('&lt;img src=x onerror=alert(1)&gt; &amp; &quot;quotes&quot;'), true);
+});
+
+test('the headers and the routes are the ones the page needs', () => {
+  assert.equal(
+    file('_headers'),
+    "/*\n  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'\n" +
+      '  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  X-Robots-Tag: noindex\n',
+  );
+  assert.deepEqual(JSON.parse(file('_routes.json')), {
+    version: 1,
+    include: ['/api/*'],
+    exclude: [],
+  });
+});
+
+test('the script is small, asks only its own origin, and keeps nothing', () => {
+  const script = file('app.js');
+  assert.equal(Buffer.byteLength(script) <= 20000, true, String(Buffer.byteLength(script)));
+  assert.deepEqual(script.match(/fetch\(("[^"]*")/g), ['fetch("/api/status"']);
+  assert.match(script, /credentials:"omit"/);
+  assert.equal(
+    /localStorage|sessionStorage|document\.cookie|indexedDB|sendBeacon|XMLHttpRequest|WebSocket|eval\(|new Function/.test(
+      script,
+    ),
+    false,
+  );
+  assert.deepEqual(script.match(/https?:\/\/[a-z0-9.-]+/g) ?? [], []);
+});

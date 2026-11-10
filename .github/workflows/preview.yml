@@ -44,6 +44,9 @@ on:
       # The iPhone app and its own workflows change nothing the site deploys.
       - ios/**
       - .github/workflows/ios-*.yml
+      # The status page and its own workflow change nothing the site deploys.
+      - status/**
+      - .github/workflows/status.yml
   workflow_dispatch:
     inputs:
       date_past_mismatch:

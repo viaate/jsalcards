@@ -9,9 +9,12 @@ on:
       # The iPhone app has its own workflows, and no job here reads it. Its workflow
       # files are not listed: tests in the pipeline and web jobs read every workflow.
       - ios/**
+      # The status page has its own workflow (status.yml), which tests and deploys it.
+      - status/**
   pull_request:
     paths-ignore:
       - ios/**
+      - status/**
 
 permissions:
   contents: read

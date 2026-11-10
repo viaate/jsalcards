@@ -1,0 +1,278 @@
+name: Status
+
+# Tests and deploys the status page (status/, docs/status.md), all on the owner's
+# Cloudflare account and the free plan: the checker (the cron Worker
+# snowlight-status-prober, which has no URL), its D1 database snowlight-status, and
+# the page (the Pages project snowlight-status, with one Function that reads the
+# database). The page and its history live apart from GitHub, so they stay up and
+# keep recording when the website or these workflows do not.
+#
+# The deploy goes in this order on purpose: the database and the checker first,
+# then a notice of what the checker has kept, and only then the page. The first two
+# need only what the accounts API's deploy needs; the page needs the token to manage
+# Pages as well, and the run says so in plain words when it cannot.
+#
+# Fails dark: without the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets the
+# deploy prints one notice and succeeds. Nothing here prints a secret: every request
+# to Cloudflare carries the token in a header from the environment, and only named
+# fields of an answer are printed.
+
+on:
+  push:
+    paths:
+      - status/**
+      - .github/workflows/status.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: status
+  cancel-in-progress: false
+
+env:
+  WRANGLER_SEND_METRICS: "false"
+
+jobs:
+  # Types, the tests (the store runs in Miniflare with a local D1 database) and the build.
+  test:
+    name: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: status
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: status/package-lock.json
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+
+  deploy:
+    name: deploy
+    needs: test
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: status
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - id: secrets
+        name: Are the Cloudflare secrets set
+        working-directory: .
+        env:
+          HAVE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          HAVE_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          if [ "${HAVE_TOKEN}" != "true" ] || [ "${HAVE_ACCOUNT}" != "true" ]; then
+            echo "::notice::The status page is not set up yet: add the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repository secrets (docs/accounts.md). Skipping the deploy."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.secrets.outputs.enabled == 'true'
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - if: steps.secrets.outputs.enabled == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: status/package-lock.json
+      - if: steps.secrets.outputs.enabled == 'true'
+        run: npm ci --prefer-offline --no-audit --no-fund
+      - if: steps.secrets.outputs.enabled == 'true'
+        run: npm run build
+
+      # The database's id, by name; made on the first run. The checker and the page's
+      # Function both bind it.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Find or make the database
+        run: |
+          find_id() {
+            npx wrangler d1 list --json | node -e '
+              let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
+                const db = JSON.parse(s).find((d) => d.name === "snowlight-status");
+                process.stdout.write(db ? db.uuid : "");
+              });'
+          }
+          id="$(find_id)"
+          if [ -z "${id}" ]; then
+            npx wrangler d1 create snowlight-status > /dev/null
+            id="$(find_id)"
+          fi
+          if ! printf '%s' "${id}" | grep -Eq '^[0-9a-f-]{36}$'; then
+            echo "::error::Could not find or create the D1 database snowlight-status."
+            exit 1
+          fi
+          sed -i "s/^database_id = .*/database_id = \"${id}\"/" prober/wrangler.toml page/wrangler.toml
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Apply the migrations
+        working-directory: status/prober
+        run: npx wrangler d1 migrations apply snowlight-status --remote
+
+      # The checker. It asks accounts by its public address, found as the API workflow
+      # finds it; the live files by the root the site is built with.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Deploy the checker
+        working-directory: status/prober
+        env:
+          API_ROOT_OVERRIDE: ${{ vars.SNOWLIGHT_API_ROOT }}
+          LIVE_ROOT: ${{ vars.SNOWLIGHT_LIVE_ROOT || 'https://viaate.github.io/snowlight-live/v1/' }}
+        run: |
+          root="${API_ROOT_OVERRIDE}"
+          if [ -z "${root}" ]; then
+            sub="$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/subdomain" \
+              | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let sub="";try{sub=JSON.parse(s).result?.subdomain??""}catch{}process.stdout.write(/^[a-z0-9-]+$/.test(sub)?sub:"")})' || true)"
+            if [ -n "${sub}" ]; then
+              root="https://snowlight-api.${sub}.workers.dev"
+            fi
+          fi
+          if [ -n "${root}" ]; then
+            npx wrangler deploy --var "ACCOUNTS_HEALTH_URL:${root%/}/v1/health" --var "LIVE_ROOT:${LIVE_ROOT}"
+          else
+            echo "::notice::The accounts address was not found: the status checker does not ask accounts, and the page says Could not check for them."
+            npx wrangler deploy --var "LIVE_ROOT:${LIVE_ROOT}"
+          fi
+
+      # The store notice. It needs the database alone, which the token already has, so
+      # every run prints it, whatever happens to the page below. A run that cannot read
+      # the store warns and goes on.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Say what the checker has kept
+        working-directory: status/prober
+        run: |
+          sql="SELECT (SELECT COUNT(*) FROM samples WHERE t > unixepoch() - 10800) AS n3, (SELECT COUNT(*) FROM samples WHERE t > unixepoch() - 86400) AS n24, (SELECT MAX(closings_bytes) FROM samples WHERE t > unixepoch() - 86400) AS bytes, s.t AS t, s.site AS site, s.site_code AS site_code, s.closings AS closings, s.closings_code AS closings_code, s.chances AS chances, s.chances_code AS chances_code, s.accounts AS accounts, s.accounts_code AS accounts_code FROM (SELECT 1) LEFT JOIN samples s ON s.t = (SELECT MAX(t) FROM samples)"
+          answer="$(npx wrangler d1 execute snowlight-status --remote --json --command "${sql}" 2> /dev/null || true)"
+          printf '%s' "${answer}" | node -e '
+            let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
+              let row;
+              try {
+                row = JSON.parse(s)[0].results[0];
+                if (typeof row.n3 !== "number" || typeof row.n24 !== "number") throw new Error("no counts");
+              } catch {
+                console.log("::warning::The status checker store could not be read, so this run cannot say what it has kept. The deploy goes on.");
+                return;
+              }
+              const kept = `status checker: ${row.n3} of the last 36 checks kept (3 hours), ${row.n24} of the last 288 (24 hours)`;
+              if (row.t === null) {
+                console.log(`::notice::${kept}; none yet.`);
+                return;
+              }
+              const at = new Date(row.t * 1000).toISOString().slice(0, 16).replace("T", " ");
+              const word = (v) => (/^(ok|late|down|unknown)$/.test(String(v)) ? v : "?");
+              const code = (v) => (Number.isInteger(v) ? v : "?");
+              const bytes = Number.isInteger(row.bytes) ? row.bytes : 0;
+              console.log(`::notice::${kept}; last at ${at} UTC: website ${word(row.site)} ${code(row.site_code)}, closings ${word(row.closings)} ${code(row.closings_code)}, chances ${word(row.chances)} ${code(row.chances_code)}, accounts ${word(row.accounts)} ${code(row.accounts_code)}; largest closings file ${bytes} bytes.`);
+            });'
+
+      # The Pages check. The token the accounts API deploys with may not be allowed to
+      # manage Pages: the run then stops here and says which permission to add. The
+      # checker above is already running and keeping history.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Can the token manage Pages
+        working-directory: status/page
+        run: |
+          code="$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/snowlight-status" || true)"
+          case "${code}" in
+            200) ;;
+            404) npx wrangler pages project create snowlight-status --production-branch main ;;
+            401 | 403)
+              echo "::error::The Cloudflare token cannot manage Pages (HTTP ${code}). Add the permission Account / Cloudflare Pages / Edit to it, then run this workflow again (docs/status.md, step 1). The checker is deployed and is already keeping history."
+              exit 1
+              ;;
+            *)
+              echo "::error::Cloudflare's API answered HTTP ${code} for the Pages project. Run this workflow again."
+              exit 1
+              ;;
+          esac
+
+      # The page: the built files, and the functions folder beside them goes up with
+      # them. The Pages production branch is named main whatever this branch is called.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Deploy the page
+        working-directory: status/page
+        run: >-
+          npx wrangler pages deploy dist --project-name snowlight-status --branch main
+          --commit-hash "$GITHUB_SHA" --commit-message "status ${GITHUB_SHA::7}" --commit-dirty=true
+
+      # The name. Asked for once; while Cloudflare has not found the DNS record yet,
+      # every run asks it to look again.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Attach status.snowlightmap.com
+        working-directory: .
+        run: |
+          domains="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/snowlight-status/domains"
+          state="$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${domains}" \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let out="unread";try{const found=(JSON.parse(s).result??[]).find((d)=>d.name==="status.snowlightmap.com");out=found?(found.status==="active"?"active":"waiting"):"absent"}catch{}process.stdout.write(out)})' || true)"
+          if [ "${state}" = "absent" ] || [ "${state}" = "unread" ] || [ -z "${state}" ]; then
+            code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data '{"name":"status.snowlightmap.com"}' "${domains}" || true)"
+            case "${code}" in
+              2??) ;;
+              *) echo "::warning::Could not attach status.snowlightmap.com to the Pages project (HTTP ${code}). Attach it by hand (docs/status.md, step 3)." ;;
+            esac
+          elif [ "${state}" = "waiting" ]; then
+            code="$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              "${domains}/status.snowlightmap.com" || true)"
+            case "${code}" in
+              2??) ;;
+              *) echo "::warning::Cloudflare did not take the request to look at status.snowlightmap.com again (HTTP ${code}). Run this workflow again." ;;
+            esac
+          fi
+
+      # The page check and the DNS notice. The record's value is read from Cloudflare,
+      # never assumed: if the short name was taken on pages.dev, it differs.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Check the page and say where it is
+        working-directory: .
+        run: |
+          project="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/snowlight-status"
+          sub="$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${project}" \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let sub="";try{sub=JSON.parse(s).result?.subdomain??""}catch{}process.stdout.write(/^[a-z0-9.-]+\.pages\.dev$/.test(sub)?sub:"")})' || true)"
+          if [ -z "${sub}" ]; then
+            echo "::error::Cloudflare did not say where the status page is. Run this workflow again."
+            exit 1
+          fi
+          answered=false
+          for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            if curl -sS --max-time 10 "https://${sub}/api/status" 2> /dev/null \
+              | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let ok=false;try{ok=typeof JSON.parse(s).served==="number"}catch{}process.exit(ok?0:1)})'; then
+              answered=true
+              break
+            fi
+            sleep 15
+          done
+          if [ "${answered}" != "true" ]; then
+            echo "::error::The status page did not answer at https://${sub}/api/status. Run this workflow again."
+            exit 1
+          fi
+          state="$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${project}/domains" \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let out="";try{out=(JSON.parse(s).result??[]).find((d)=>d.name==="status.snowlightmap.com")?.status??""}catch{}process.stdout.write(out==="active"?"active":"waiting")})' || true)"
+          if [ "${state}" = "active" ]; then
+            echo "::notice::https://status.snowlightmap.com is live."
+          else
+            echo "::notice::The status page is live at https://${sub}. To put it on status.snowlightmap.com, add this DNS record at GoDaddy: type CNAME, name status, value ${sub} (docs/status.md, step 2)."
+          fi

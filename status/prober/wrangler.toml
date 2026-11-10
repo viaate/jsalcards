@@ -1,0 +1,26 @@
+# Snowlight's status checker: a cron Worker with no URL. Every 5 minutes it looks at the four
+# parts and writes what it found to the D1 database the status page reads. Deployed by
+# .github/workflows/status.yml, which fills in the database id (found or created by name), the
+# live root and the accounts health URL. See docs/status.md.
+name = "snowlight-status-prober"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+# Accounts is another Worker on the same account: without this flag Cloudflare refuses a
+# Worker's request to it by its public URL (error 1042).
+compatibility_flags = ["global_fetch_strictly_public"]
+workers_dev = false
+preview_urls = false
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+SITE_URL = "https://snowlightmap.com/"
+LIVE_ROOT = "https://viaate.github.io/snowlight-live/v1/"
+ACCOUNTS_HEALTH_URL = ""
+
+[[d1_databases]]
+binding = "DB"
+database_name = "snowlight-status"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
