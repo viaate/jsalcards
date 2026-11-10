@@ -6,26 +6,39 @@ format); none comes from a real list or a real storm.
 
 import argparse
 import gzip
+import hashlib
+import itertools
 import json
+import sys
 import time
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import replace
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import polars as pl
 import pytest
+import yaml  # type: ignore[import-untyped, unused-ignore]
+
+# threadpoolctl comes with scikit-learn, which the pipeline depends on.
+from threadpoolctl import (  # type: ignore[import-untyped, unused-ignore]
+    threadpool_info,
+    threadpool_limits,
+)
 
 from predict import world
 from snowlight.predict import anchor as an
 from snowlight.predict import anchor_labels, exposure, live_read
 from snowlight.predict.anchor_labels import read_labels, serving_anchor
-from snowlight.predict.config import CONFIG_PATH
+from snowlight.predict.config import CONFIG_PATH, LearnSettings, PredictConfig
 from snowlight.predict.exposure import CLASSES, Exposure, Tally
 from snowlight.predict.serve import SITUATION_POSITION, ServeModel, build_model, forecast_file
 from snowlight.predict.situations import SITUATIONS, Situation, WeatherClass
 from snowlight.predict.why import class_base
-from snowlight.schemas.predictions import ClassBase, Forecast, PredictionsFile
+from snowlight.schemas.predictions import ClassBase, Forecast, PredictionsFile, PreviousChance
 from snowlight.schemas.stats import ReadAuditDay
 
 SETTINGS = an.AnchorSettings.of(world.CONFIG)
@@ -1132,8 +1145,17 @@ def test_a_chance_from_before_the_class_level_is_no_previous_chance() -> None:
     )  # fmt: skip
     later = forecast_file(lifted_built, classes, days, world.utc("2026-11-03T03:00:00"),
                           closed_on=lambda _d: None, last=first)  # fmt: skip
+    # predict-next ONE-STORM (decision 7): the level itself moved (a refit), with no change in
+    # the weather: no previous chance on the first file after the level moved.
     moved = [item for entry in later.districts for item in entry.days]
-    assert all(isinstance(item, Forecast) and item.previous is not None for item in moved)
+    assert all(isinstance(item, Forecast) and item.previous is None for item in moved)
+    assert chances(later) != chances(first)
+    # A third file at the same level with the class changed shows one: the weather changed.
+    warned = np.full((len(world.DISTRICTS), 2), int(WeatherClass.SNOW_WARNING), dtype=np.int64)
+    third = forecast_file(lifted_built, warned, days, world.utc("2026-11-03T04:00:00"),
+                          closed_on=lambda _d: None, last=later)  # fmt: skip
+    pairs = list(zip(chances(later), chances(third), strict=True))
+    assert all(previous == was for (was, _), (_shown, previous) in pairs)
 
 
 def chances(found: PredictionsFile) -> list[tuple[float, float | None]]:
@@ -1183,6 +1205,219 @@ def test_a_quiet_evening_that_turns_stormy_keeps_its_previous_chance() -> None:
                  if round(was * 100) != round(shown * 100)]  # fmt: skip
         assert moved
         assert all(previous == was for was, previous in moved)
+
+
+# --- the morning a level moves (predict-next ONE-STORM, decision 7) -----------------------------
+
+TWO_DAYS = (date(2026, 11, 3), date(2026, 11, 4))
+
+
+def model_at(**levels: float) -> ServeModel:
+    """The test world's serving model with classes' levels set, as a refit could set them."""
+    anchor = lifted(an.fit(SETTINGS, EMPTY, an.NO_LABELS, {}), **levels)
+    return build_model(
+        world.directory(), world.model(), world.CONFIG, lambda _x, _y: None, anchor=anchor
+    )
+
+
+def file_at(
+    model: ServeModel,
+    weather: WeatherClass | np.ndarray,
+    at: str,
+    last: PredictionsFile | None,
+    *,
+    schools: bool = False,
+) -> PredictionsFile:
+    """One pass's file: every district (and, with ``schools``, every private school) in
+    ``weather`` on both days."""
+    classes = (
+        weather
+        if isinstance(weather, np.ndarray)
+        else np.full((len(world.DISTRICTS), 2), int(weather), dtype=np.int64)
+    )
+    private = None
+    if schools:
+        assert model.private is not None
+        private = np.full((len(model.private), 2), int(classes[0, 0]), dtype=np.int64)
+    return forecast_file(
+        model, classes, TWO_DAYS, world.utc(at), closed_on=lambda _d: None, last=last,
+        private_classes=private,
+    )  # fmt: skip
+
+
+def carrying(found: PredictionsFile, p: float, at: str) -> PredictionsFile:
+    """``found`` with every district-day carrying a previous chance of ``p`` made at ``at``."""
+    previous = PreviousChance(p_no_school=p, at=world.utc(at))
+    return found.model_copy(
+        update={
+            "districts": tuple(
+                entry.model_copy(
+                    update={
+                        "days": tuple(
+                            item.model_copy(update={"previous": previous})
+                            if isinstance(item, Forecast)
+                            else item
+                            for item in entry.days
+                        )
+                    }
+                )
+                for entry in found.districts
+            )
+        }
+    )
+
+
+def test_a_refit_that_moves_no_level_keeps_the_previous_chance() -> None:
+    # (guard) A process start that refits to the same levels changes nothing: "Up from 3% at
+    # 5 PM" is carried, and a change of the class is still said.
+    five = file_at(model_at(), WeatherClass.NONE, "2026-11-02T23:00:00", None)
+    nine = file_at(model_at(), WeatherClass.ADVISORY, "2026-11-03T03:00:00", five)
+    up = [previous for _, previous in chances(nine)]
+    assert any(previous is not None for previous in up)
+    ten = file_at(model_at(), WeatherClass.ADVISORY, "2026-11-03T04:00:00", nine)
+    assert chances(ten) == chances(nine)
+    warned = file_at(model_at(), WeatherClass.SNOW_WARNING, "2026-11-03T05:00:00", ten)
+    pairs = list(zip(chances(ten), chances(warned), strict=True))
+    assert all(previous == was for (was, _), (_shown, previous) in pairs)
+
+
+def test_a_take_back_shows_no_down_from() -> None:
+    # A level that fell (a take-back, a refit) shows no "Down from": the weather did not ease.
+    high = file_at(model_at(advisory=0.2), WeatherClass.ADVISORY, "2026-11-03T01:00:00", None)
+    low = file_at(model_at(), WeatherClass.ADVISORY, "2026-11-03T02:00:00", high)
+    assert {p for p, _ in chances(high)} == {0.2}
+    assert {p for p, _ in chances(low)} == {0.1}
+    assert all(previous is None for _, previous in chances(low))
+    # A warning day at 45% that carried "Up from 44% at 3 AM": kept while the chance stays
+    # above it, dropped where the level took the chance to it or across it ("Down from 44%"
+    # would read as the storm easing).
+    at45 = file_at(model_at(), WeatherClass.SNOW_WARNING, "2026-11-03T08:00:00", None)
+    assert {p for p, _ in chances(at45)} == {0.45}
+    carried = carrying(at45, 0.44, "2026-11-03T07:00:00")
+    for level, kept in ((0.47, 0.44), (0.38, None), (0.44, None), (0.45, 0.44)):
+        now = file_at(
+            model_at(warning=level), WeatherClass.SNOW_WARNING, "2026-11-03T09:00:00", carried
+        )
+        assert set(chances(now)) == {(level, kept)}, level
+    # ... and one carried from above ("Down from 52%") the other way round.
+    carried = carrying(at45, 0.52, "2026-11-03T07:00:00")
+    for level, kept in ((0.47, 0.52), (0.52, None), (0.60, None)):
+        now = file_at(
+            model_at(warning=level), WeatherClass.SNOW_WARNING, "2026-11-03T09:00:00", carried
+        )
+        assert set(chances(now)) == {(level, kept)}, level
+    # The next file compares as before: a change in the weather after the refit is said.
+    moved = file_at(model_at(warning=0.38), WeatherClass.SNOW_WARNING, "2026-11-03T09:00:00",
+                    carried)  # fmt: skip
+    eased = file_at(model_at(warning=0.38), WeatherClass.ADVISORY, "2026-11-03T10:00:00", moved)
+    assert set(chances(eased)) == {(0.1, 0.38)}
+
+
+def test_a_day_with_forecast_lines_makes_no_new_previous_chance_when_its_level_moved() -> None:
+    from predict.test_forecast_adjust import NATION, adjusting_model, forecast  # noqa: PLC0415
+    from snowlight.predict.forecast_values import Forecasts  # noqa: PLC0415
+
+    built, anchor = adjusting_model(NATION)
+    refit = build_model(
+        world.directory(), world.model(), world.CONFIG, lambda _x, _y: None,
+        anchor=lifted(anchor, advisory=0.2),
+    )  # fmt: skip
+    days = (date(2026, 1, 14), date(2026, 1, 15))
+    classes = np.full((len(world.DISTRICTS), 2), int(WeatherClass.ADVISORY), dtype=np.int64)
+    later = world.utc("2026-01-14T03:07:00")  # after the day's class snapshot
+    read = frozenset({(1, days[0])})
+
+    def made(
+        model: ServeModel, at: datetime, inches: float, last: PredictionsFile | None
+    ) -> Forecast:
+        file = forecast_file(
+            model, classes, days, at, closed_on=lambda _d: None, last=last,
+            forecasts=Forecasts({days[0]: {1: forecast(inches)}}), adjust=True, read_last=read,
+        )  # fmt: skip
+        made_files.append(file)
+        found = file.districts[1].days[0]
+        assert isinstance(found, Forecast)
+        return found
+
+    made_files: list[PredictionsFile] = []
+    on = made(built, later, 6.0, None)
+    assert on.why.reasons  # the forecast's lines, on a class base
+    first = made_files[-1]
+    # (guard) Two reads at the same level: a real change in the forecast, said.
+    more = made(built, later + timedelta(hours=1), 9.0, first)
+    assert more.previous is not None
+    assert more.previous.p_no_school == on.p_no_school
+    # The same two reads with the level moved between them: no new previous chance.
+    moved = made(refit, later + timedelta(hours=1), 9.0, first)
+    assert moved.why.reasons
+    assert isinstance(moved.why.base, ClassBase)
+    assert (moved.why.base.points, moved.p_no_school > on.p_no_school) == (20, True)
+    assert moved.previous is None
+    # From the next file on previous chances are back.
+    after = made(refit, later + timedelta(hours=2), 6.0, made_files[-1])
+    assert after.previous is not None
+    assert after.previous.p_no_school == moved.p_no_school
+
+
+def test_an_earlier_line_is_carried_across_the_morning_a_level_moves() -> None:
+    # "Up from 3% at 5 PM", made when the alert came, is true of the weather: it is on the
+    # first file after a refit and on the next.
+    five = file_at(model_at(), WeatherClass.NONE, "2026-11-02T23:00:00", None)
+    nine = file_at(model_at(), WeatherClass.ADVISORY, "2026-11-03T03:00:00", five)
+    came = [previous for _, previous in chances(nine)]
+    assert any(previous is not None and previous < 0.1 for previous in came)
+    refit = file_at(model_at(advisory=0.2), WeatherClass.ADVISORY, "2026-11-03T09:00:00", nine)
+    assert [shown for shown, _ in chances(refit)] == [0.2] * len(came)
+    assert [previous for _, previous in chances(refit)] == came
+    again = file_at(model_at(advisory=0.2), WeatherClass.ADVISORY, "2026-11-03T10:00:00", refit)
+    assert chances(again) == chances(refit)
+    # It is dropped where the chance now shown equals it or has crossed it.
+    ten = file_at(model_at(), WeatherClass.ADVISORY, "2026-11-03T04:00:00", None)
+    carried = carrying(ten, 0.03, "2026-11-02T23:00:00")
+    for level, kept in ((0.2, 0.03), (0.04, 0.03), (0.03, None), (0.02, None)):
+        now = file_at(model_at(advisory=level), WeatherClass.ADVISORY, "2026-11-03T09:00:00",
+                      carried)  # fmt: skip
+        assert set(chances(now)) == {(level, kept)}, level
+
+
+def test_a_district_whose_class_changed_keeps_its_previous_chance_though_a_level_moved() -> None:
+    # (guard) The advisory level moved, and one district's alert became a warning: its change
+    # is a change in the weather, said as before.
+    first = file_at(model_at(), WeatherClass.ADVISORY, "2026-11-03T01:00:00", None)
+    classes = np.full((len(world.DISTRICTS), 2), int(WeatherClass.ADVISORY), dtype=np.int64)
+    classes[0, :] = int(WeatherClass.SNOW_WARNING)
+    later = file_at(model_at(advisory=0.2), classes, "2026-11-03T02:00:00", first)
+    for entry in later.districts:
+        for item in entry.days:
+            assert isinstance(item, Forecast)
+            if entry.district == 0:
+                assert (item.p_no_school, item.previous is not None) == (0.45, True)
+                assert item.previous is not None
+                assert item.previous.p_no_school == 0.1
+            else:
+                assert (item.p_no_school, item.previous) == (0.2, None)
+
+
+def test_private_schools_use_the_districts_moved_classes() -> None:
+    def schools(found: PredictionsFile) -> list[tuple[float, float | None]]:
+        return [
+            (item.p_no_school, item.previous.p_no_school if item.previous else None)
+            for entry in found.schools
+            for item in found.outlook_of(entry)
+            if isinstance(item, Forecast)
+        ]
+
+    first = file_at(model_at(), WeatherClass.ADVISORY, "2026-11-03T01:00:00", None, schools=True)
+    assert schools(first)
+    moved = file_at(model_at(advisory=0.2), WeatherClass.ADVISORY, "2026-11-03T02:00:00", first,
+                    schools=True)  # fmt: skip
+    assert [shown for shown, _ in schools(moved)] != [shown for shown, _ in schools(first)]
+    assert all(previous is None for _, previous in schools(moved))
+    # (guard) at the same level a change of the class is said for a school too
+    warned = file_at(model_at(), WeatherClass.SNOW_WARNING, "2026-11-03T02:00:00", first,
+                     schools=True)  # fmt: skip
+    pairs = list(zip(schools(first), schools(warned), strict=True))
+    assert all(previous == was for (was, _), (_shown, previous) in pairs)
 
 
 # --- the edges -----------------------------------------------------------------------------------
@@ -1379,7 +1614,7 @@ def lifted_world(heavy: int) -> tuple[ServeModel, tuple[float, float, float]]:
         },
     )
     closed = [
-        an.LiveRow(DAY + timedelta(days=j), f"98{j:02d}{i:03d}", f"m{j}", "A",
+        an.LiveRow(DAY + timedelta(days=7 * j), f"98{j:02d}{i:03d}", f"m{j}", "A",
                    "no_school" if i < 15 else "unnamed", "snow_warning")
         for j in range(20)
         for i in range(20)
@@ -1499,3 +1734,984 @@ def test_only_the_advisory_class_takes_an_archive_region_delta() -> None:
     assert anchor.deltas["cold"] == {}
     ohio = known.regions["warning"]["ohio_valley"]
     assert an.region_delta(ohio, known.nation["warning"], SETTINGS) > 0  # supported, not used
+
+
+# --- the ramp, the storm and the cap (predict-next ONE-STORM) ------------------------------------
+#
+# Every storm below is made up. These tests carry their own rule (RAMPED or AS_BUILT), so none
+# reads the committed ``live_update.ramp``: one assert in test_retention.py pins that value.
+
+RAMPED = replace(SETTINGS, ramp="capped_storms")
+AS_BUILT = replace(SETTINGS, ramp="off")
+MONDAY = date(2026, 11, 30)
+WEATHER_OF = {"advisory": "advisory", "warning": "snow_warning", "cold": "cold"}
+WEATHER_CODE = {"advisory": 1, "warning": 5, "cold": 3}
+NO_TRIALS: dict[an.Tier, an.Trials] = {}
+LEVEL_BOUND = {"advisory": 6.0, "warning": 9.0, "cold": 6.0}
+"""The most a first storm may move a class's reference level, in points."""
+DELAY_BOUND = 5.0
+"""The most it may move the chance of a delay at the reference district, in points."""
+SERVED = (
+    "alpha", "alpha_band", "q", "tau", "s_a", "s_b", "tier_b", "rows", "closed", "delayed",
+    "unnamed", "market_days", "dates", "k_eff", "predictive", "multi_list",
+)  # fmt: skip
+
+
+def market_day(  # noqa: PLR0913, PLR0917 - one made-up market-day's class, day and labels
+    key: str,
+    day: date,
+    market: str,
+    count: int,
+    closed: int = 0,
+    delayed: int = 0,
+    *,
+    offset: float = 0.0,
+    tier: an.Tier = "A",
+) -> list[an.LiveRow]:
+    """``count`` made-up rows of one market on one day, ``closed`` of them closed and
+    ``delayed`` delayed, each at ``offset`` (the district id carries it: :func:`offset_in`)."""
+    labels: tuple[an.LabelKind, ...] = ("no_school", "delayed", "unnamed")
+    return [
+        an.LiveRow(
+            day,
+            f"{offset}|{day.toordinal()}|{market}|{i}",
+            market,
+            tier,
+            labels[0 if i < closed else 1 if i < closed + delayed else 2],
+            WEATHER_OF[key],
+        )
+        for i in range(count)
+    ]
+
+
+def offset_in(district: str) -> float:
+    return float(district.split("|", 1)[0])
+
+
+def storm(  # noqa: PLR0913, PLR0917 - one made-up storm's class, mornings and labels
+    key: str,
+    start: int,
+    markets: int,
+    count: int,
+    closed: int = 0,
+    delayed: int = 0,
+    *,
+    mornings: int = 1,
+    offset: float = 0.0,
+    tier: an.Tier = "A",
+) -> list[an.LiveRow]:
+    """``mornings`` mornings in a row from ``start`` days after a Monday, each of ``markets``
+    markets of ``count`` rows (``closed`` closed and ``delayed`` delayed in each)."""
+    return [
+        made
+        for d in range(mornings)
+        for m in range(markets)
+        for made in market_day(
+            key, MONDAY + timedelta(days=start + d), f"M{m:03d}", count, closed, delayed,
+            offset=offset, tier=tier,
+        )
+    ]  # fmt: skip
+
+
+def ramp_fit(
+    key: str,
+    found: list[an.LiveRow],
+    trials: dict[an.Tier, an.Trials] = SURE,
+    settings: an.AnchorSettings = RAMPED,
+) -> an.ClassFit:
+    return an.ramped(key, found, offset_in, trials, settings)
+
+
+def built_fit(
+    key: str, found: list[an.LiveRow], trials: dict[an.Tier, an.Trials] = SURE
+) -> an.ClassFit:
+    return an.fit_class(key, found, offset_in, trials, SETTINGS)
+
+
+def points(fitted: an.ClassFit) -> float:
+    """The reference district's level, in points."""
+    return 100 * float(fitted.level(0.0))
+
+
+def delay_points(fitted: an.ClassFit) -> float:
+    """The chance of a delay at the reference district, in points."""
+    return 100 * (1 - float(fitted.level(0.0))) * fitted.q
+
+
+def served(fitted: an.ClassFit) -> tuple[object, ...]:
+    return tuple(getattr(fitted, name) for name in SERVED)
+
+
+def ramp_of(fitted: an.ClassFit) -> an.Ramp:
+    assert fitted.ramp is not None
+    return fitted.ramp
+
+
+def weekdays_on(day: date, count: int) -> date:
+    """The weekday ``count`` weekdays after ``day``."""
+    while count:
+        day += timedelta(days=1)
+        count -= day.weekday() < 5
+    return day
+
+
+@contextmanager
+def quiet() -> Iterator[None]:
+    """Run the work inside with no trace function and on one BLAS thread; restore both after.
+
+    Under the coverage tracer the fit's own Python loops run several times slower (the storms
+    of a record some 30 times), and BLAS's worker threads spin through process time while
+    they wait. So a timing read under either is not the fit's cost, and a sweep of hundreds
+    of fits costs every CI worker several times its own work. The timed blocks and the
+    sweeps below run in here; the lines they run are covered by the single fits around them.
+    """
+    tracer = sys.gettrace()
+    sys.settrace(None)
+    try:
+        with threadpool_limits(limits=1):
+            yield
+    finally:
+        sys.settrace(tracer)
+
+
+@pytest.fixture
+def sweep() -> Iterator[None]:
+    """A sweep of hundreds of made-up fits, run :func:`quiet`."""
+    with quiet():
+        yield
+
+
+def blas_threads() -> list[int]:
+    return [pool["num_threads"] for pool in threadpool_info() if pool["user_api"] == "blas"]
+
+
+def test_quiet_work_runs_untraced_on_one_blas_thread_and_restores_both() -> None:
+    def tracer(*_args: object) -> None:
+        return None
+
+    np.ones((2, 2)) @ np.ones((2, 2))  # BLAS is loaded
+    threads = blas_threads()
+    assert threads
+    previous = sys.gettrace()
+    sys.settrace(tracer)
+    try:
+        with quiet():
+            assert sys.gettrace() is None
+            assert set(blas_threads()) == {1}
+        assert sys.gettrace() is tracer
+        assert blas_threads() == threads
+        with pytest.raises(ZeroDivisionError), quiet():
+            1 / 0  # noqa: B018 - the error is the test
+        assert sys.gettrace() is tracer
+        assert blas_threads() == threads
+    finally:
+        sys.settrace(previous)
+
+
+def test_with_no_class_row_the_ramped_fit_is_the_fit_as_built_bit_for_bit(tmp_path: Path) -> None:
+    # (guard) Landing day: with no used row every served number is the same float as before.
+    early = SETTINGS.fit_from - timedelta(days=3)
+    chain = [
+        an.LiveRow(DAY, f"29{i:05d}", "m", "A", "no_school" if i < 9 else "unnamed", "none")
+        for i in range(40)
+    ]
+    before = [replace(made, day=early) for made in storm("warning", 0, 3, 40, 40)]
+    unused = storm("cold", 0, 2, 30, 30, tier="B")  # tier B with too few trials: not used
+    for labels in (
+        an.NO_LABELS,
+        an.LiveLabels(rows=(*chain, *before, *unused), trials={}, days=3, found=True),
+    ):
+        ramped = an.fit(RAMPED, EMPTY, labels, {})
+        off = an.fit(AS_BUILT, EMPTY, labels, {})
+        for key in CLASSES:
+            start = an.fit_class(key, [], lambda _d: 0.0, labels.trials, SETTINGS)
+            assert served(ramped.fits[key]) == served(start) == served(off.fits[key])
+            ramp = ramp_of(ramped.fits[key])
+            assert (ramp.w, ramp.bound, ramp.rows) == (0.0, "none", 0)
+            assert off.fits[key].ramp is None
+    path = tmp_path / "a.json"
+    anchor_labels.write_report(an.fit(RAMPED, EMPTY, an.NO_LABELS, {}), path)
+    assert json.loads(path.read_text())["classes"]["warning"]["level"] == 0.4498
+
+
+def test_one_lone_closed_row_barely_moves_a_level() -> None:
+    for key, most, as_built in (("advisory", 0.1, 4.0), ("warning", 0.2, 8.6), ("cold", 0.1, 5.7)):
+        found = storm(key, 0, 1, 1, 1)
+        base = points(ramp_fit(key, []))
+        assert 0 < points(ramp_fit(key, found)) - base < most
+        assert points(built_fit(key, found)) - base == pytest.approx(as_built, abs=0.1)
+
+
+GRID_SIZES = ((1, 1), (100, 1), (100, 4), (1000, 4), (30, 100))
+"""Rows a market and markets a morning."""
+GRID_PINS = {
+    "advisory": (2.58, -1.13, 2.66),
+    "warning": (6.62, -6.59, 3.47),
+    "cold": (4.46, -1.82, 4.29),
+}
+"""The design's largest rise and fall of the level and rise of the delay chance over the grid."""
+
+
+def grid_storm(  # noqa: PLR0913, PLR0917 - one made-up first storm of the grid
+    key: str,
+    count: int,
+    markets: int,
+    mornings: int,
+    closed: float,
+    delayed: float,
+    offsets: tuple[float, ...],
+) -> list[an.LiveRow]:
+    """A first storm: each market's rows split evenly over ``offsets``, the share ``closed``
+    of each part closed and the share ``delayed`` of its open rows delayed."""
+    found: list[an.LiveRow] = []
+    for d in range(mornings):
+        for m in range(markets):
+            for i, offset in enumerate(offsets):
+                part = count // len(offsets) + (1 if i < count % len(offsets) else 0)
+                shut = round(part * closed)
+                found += market_day(
+                    key, MONDAY + timedelta(days=d), f"M{m:03d}", part, shut,
+                    round((part - shut) * delayed), offset=offset,
+                )  # fmt: skip
+    return found
+
+
+@pytest.mark.usefixtures("sweep")
+@pytest.mark.parametrize("key", CLASSES)
+def test_the_first_storm_whatever_it_holds_stays_inside_the_bound(key: str) -> None:
+    start = ramp_fit(key, [])
+    base, base_delay = points(start), delay_points(start)
+    up = down = late = 0.0
+    every = ((0.0,), (-1.5,), (1.5,), (-1.5, 1.5))
+    for trials, offsets in ((SURE, every), (NO_TRIALS, every[:1])):
+        for (count, markets), mornings, closed, delayed, offset in itertools.product(
+            GRID_SIZES, (1, 3), (1.0, 0.0, 0.5), (0.0, 1.0), offsets
+        ):
+            found = grid_storm(key, count, markets, mornings, closed, delayed, offset)
+            fitted = ramp_fit(key, found, trials)
+            moved = points(fitted) - base
+            delay = delay_points(fitted) - base_delay
+            assert abs(moved) <= LEVEL_BOUND[key], (count, markets, mornings, closed, delayed)
+            assert abs(delay) <= DELAY_BOUND, (count, markets, mornings, closed, delayed)
+            assert ramp_of(fitted).storm_count == 1
+            up, down, late = max(up, moved), min(down, moved), max(late, delay)
+    # so that a change which doubled a move cannot pass: the grid's largest moves are the
+    # design's
+    assert (up, down, late) == pytest.approx(GRID_PINS[key], abs=0.3)
+
+
+def test_the_worst_first_storms_of_the_wide_grid_move_a_level_as_designed() -> None:
+    def moved(key: str, found: list[an.LiveRow], trials: dict[an.Tier, an.Trials]) -> float:
+        return points(ramp_fit(key, found, trials)) - points(ramp_fit(key, [], trials))
+
+    lone = {key: storm(key, 0, 100, 1, 1, offset=-3.0) for key in ("advisory", "cold")}
+    assert moved("advisory", lone["advisory"], SURE) == pytest.approx(3.79, abs=0.1)
+    assert moved("cold", lone["cold"], SURE) == pytest.approx(5.62, abs=0.1)
+    closed = storm("warning", 0, 2, 1000, 1000, offset=-3.0)
+    assert moved("warning", closed, NO_TRIALS) == pytest.approx(7.30, abs=0.1)
+    late = storm("warning", 0, 4, 1000, 0, 1000, mornings=5, offset=2.0)
+    assert moved("warning", late, SURE) == pytest.approx(-6.95, abs=0.1)
+
+
+def test_mornings_of_one_storm_are_one_storm() -> None:
+    def count(*days: date, gap: int = 1) -> int:
+        return len(set(an.storms_of(days, gap).values()))
+
+    monday, friday, thursday = MONDAY, MONDAY + timedelta(days=4), MONDAY + timedelta(days=3)
+    assert count(monday, monday + timedelta(days=1), monday + timedelta(days=2)) == 1
+    assert count(monday, monday + timedelta(days=2)) == 1  # a morning lost between
+    assert count(friday, friday + timedelta(days=3)) == 1  # Friday and Monday
+    assert count(friday, friday + timedelta(days=4)) == 1  # Friday and Tuesday
+    assert count(thursday, thursday + timedelta(days=4)) == 1  # Thursday and the next Monday
+    assert count(monday, thursday) == 2
+    assert count(thursday, thursday + timedelta(days=5)) == 2
+    # Thanksgiving Thursday and Friday between: two storms
+    assert count(date(2026, 11, 25), date(2026, 11, 30)) == 2
+    assert count(monday, monday + timedelta(days=2), gap=0) == 2
+    assert an.storms_of([thursday, monday, thursday], 1) == {monday: monday, thursday: thursday}
+    # However many mornings it lasts, one storm serves the same level.
+    for closed, level in ((100, 0.493), (0, 0.410)):
+        levels = [
+            float(ramp_fit("warning", storm("warning", 0, 3, 100, closed, mornings=n)).level(0.0))
+            for n in (1, 2, 3, 5)
+        ]
+        assert levels[0] == pytest.approx(level, abs=5e-4)
+        assert levels[1:] == pytest.approx(levels[:1] * 3, abs=1e-9)
+    # A first morning with none closed and a second with all closed is still one storm.
+    for key in CLASSES:
+        mixed = [*storm(key, 0, 3, 100, 0), *storm(key, 1, 3, 100, 100)]
+        fitted = ramp_fit(key, mixed)
+        assert ramp_of(fitted).storm_count == 1
+        assert abs(points(fitted) - points(ramp_fit(key, []))) <= LEVEL_BOUND[key]
+
+
+@pytest.mark.usefixtures("sweep")
+@pytest.mark.parametrize("key", CLASSES)
+def test_seeded_first_storms_of_one_to_five_mornings_stay_inside_the_bound(key: str) -> None:
+    rng = np.random.default_rng(20261110 + CLASSES.index(key))
+    start = ramp_fit(key, [], NO_TRIALS)
+    for trial in range(200):
+        found: list[an.LiveRow] = []
+        markets = int(rng.integers(1, 5))
+        for d in range(int(rng.integers(1, 6))):
+            for m in range(markets):
+                count = int(rng.choice([1, 5, 30, 100, 300]))
+                shut = int(rng.binomial(count, float(rng.choice([0.0, 0.1, 0.5, 0.9, 1.0]))))
+                late = int(rng.binomial(count - shut, float(rng.choice([0.0, 0.5, 1.0]))))
+                found += market_day(
+                    key, MONDAY + timedelta(days=d), f"M{m}", count, shut, late,
+                    offset=float(rng.choice([-1.5, 0.0, 1.5])),
+                )  # fmt: skip
+        fitted = ramp_fit(key, found, SURE if trial % 2 else NO_TRIALS)
+        assert ramp_of(fitted).storm_count == 1
+        assert abs(points(fitted) - points(start)) <= LEVEL_BOUND[key]
+        assert abs(delay_points(fitted) - delay_points(start)) <= DELAY_BOUND
+
+
+def drawn_date(
+    rng: np.random.Generator, key: str, day: date, sizes: Sequence[int]
+) -> list[an.LiveRow]:
+    """One made-up date: 1 to 4 markets, each of a size drawn from ``sizes``, labels mixed."""
+    found: list[an.LiveRow] = []
+    for m in range(int(rng.integers(1, 5))):
+        count = int(rng.choice(sizes))
+        shut = int(rng.binomial(count, float(rng.choice([0.0, 0.1, 0.5, 1.0]))))
+        late = int(rng.binomial(count - shut, float(rng.choice([0.0, 0.3, 1.0]))))
+        found += market_day(key, day, f"M{m}", count, shut, late)
+    return found
+
+
+@pytest.mark.usefixtures("sweep")
+@pytest.mark.parametrize("key", CLASSES)
+def test_the_newest_date_never_lowers_the_ramp_weight(key: str) -> None:
+    # Every row tier A: tier B is held fixed here (what it does is pinned in
+    # test_what_can_lower_the_ramp_weight).
+    rng = np.random.default_rng(20261111 + CLASSES.index(key))
+    a0 = ramp_fit(key, []).alpha
+    cap, full = RAMPED.date_cap[key], RAMPED.ramps[key]
+    for _ in range(500):
+        day = MONDAY
+        found: list[an.LiveRow] = []
+        before: an.Storms | None = None
+        weight = 0.0
+        for _ in range(int(rng.integers(1, 13))):
+            day = weekdays_on(day, int(rng.choice([1, 1, 2, 3, 5, 9])))  # in a row, or apart
+            found += drawn_date(rng, key, day, (1, 2, 5, 30, 100, 300))
+            table = an.storm_table(key, found, RAMPED, a0)
+            now, _bound = an.ramp_weight(len(found), table, full)
+            assert now >= weight
+            joined = table.of[day]
+            for name, was in (before.information if before is not None else {}).items():
+                assert before is not None
+                # no storm's information after the cap fell...
+                assert table.weight[name] * table.information[name] >= (
+                    before.weight[name] * was - 1e-12
+                )
+                if name != joined:  # ...and no storm the date did not join lost weight
+                    assert table.weight[name] >= before.weight[name] - 1e-12
+                    assert table.delay_weight[name] >= before.delay_weight[name] - 1e-12
+            for sizes, weights, start in (
+                (table.information, table.weight, table.start),
+                (table.open_rows, table.delay_weight, table.delay_start),
+            ):  # no storm is over the cap after tempering, in either cap
+                whole = start + sum(weights[name] * size for name, size in sizes.items())
+                assert all(
+                    weights[name] * size <= cap * whole + 1e-9 for name, size in sizes.items()
+                )
+                assert all(0 < value <= 1 for value in weights.values())
+            before, weight = table, now
+
+
+@pytest.mark.parametrize("key", CLASSES)
+def test_tau_once_free_stays_free_while_dates_are_added(key: str) -> None:
+    rng = np.random.default_rng(20261112 + CLASSES.index(key))
+    a0 = ramp_fit(key, []).alpha
+    found = [made for j in range(10) for made in storm(key, 7 * j, 3, 100, 20, 10)]
+    table = an.storm_table(key, found, RAMPED, a0)
+    assert len({made.market_day for made in found}) == 30
+    assert an.ramp_weight(len(found), table, RAMPED.ramps[key]) == (1.0, "full")
+    day = MONDAY + timedelta(days=70)
+    for _ in range(20):
+        day = weekdays_on(day, int(rng.choice([1, 2, 4, 8])))
+        found += drawn_date(rng, key, day, (1, 5, 100, 1000))
+        table = an.storm_table(key, found, RAMPED, a0)
+        assert an.ramp_weight(len(found), table, RAMPED.ramps[key]) == (1.0, "full")
+    fitted = ramp_fit(key, found)
+    assert ramp_of(fitted).bound == "full"
+    assert fitted.tau in SETTINGS.tau_choices
+
+
+def test_what_can_lower_the_ramp_weight() -> None:
+    def weight(found: list[an.LiveRow], settings: an.AnchorSettings = RAMPED) -> float:
+        return ramp_of(ramp_fit("warning", found, settings=settings)).w
+
+    first, second = storm("warning", 0, 3, 100, 100), storm("warning", 7, 3, 100, 100)
+    assert weight([*first, *second]) == pytest.approx(0.250)
+    assert weight(first) == pytest.approx(0.125)  # a take-back of a whole storm
+    # A morning added between two storms joins them: Monday and Thursday, then Tuesday.
+    thursday = storm("warning", 3, 3, 100, 100)
+    assert weight([*first, *thursday]) == pytest.approx(0.250)
+    assert weight([*first, *storm("warning", 1, 3, 100, 100), *thursday]) == pytest.approx(0.125)
+    # One middle morning of three taken back leaves one storm (two with no gap allowed).
+    ends = [*first, *storm("warning", 2, 3, 100, 100)]
+    assert weight(ends) == pytest.approx(0.125)
+    assert weight(ends, replace(RAMPED, storm_gap=0)) == pytest.approx(0.250)
+
+
+def test_tier_b_leaving_on_the_newest_date_lowers_the_ramp_weight() -> None:
+    # Three warning storms a week apart, the first tier A and two tier B, with tier B in.
+    found = [
+        *storm("warning", 0, 3, 100, 50),
+        *storm("warning", 7, 3, 100, 50, tier="B"),
+        *storm("warning", 14, 3, 100, 50, tier="B"),
+    ]
+    held: dict[an.Tier, an.Trials] = {"B": an.Trials(hits=15, trials=20, dates=5)}
+    fitted = ramp_fit("warning", found, held)
+    ramp = ramp_of(fitted)
+    assert (fitted.tier_b, fitted.rows, ramp.bound) == (True, 900, "storms")
+    assert ramp.w == pytest.approx(0.375, abs=1e-3)
+    assert ramp.storms == pytest.approx(3.0)
+    # A fourth date whose tier B trials are misses takes tier B out: every tier B row leaves.
+    found += storm("warning", 21, 1, 100, 50)
+    gone: dict[an.Tier, an.Trials] = {"B": an.Trials(hits=15, trials=23, dates=6)}
+    fitted = ramp_fit("warning", found, gone)
+    ramp = ramp_of(fitted)
+    assert (fitted.tier_b, fitted.rows, ramp.bound) == (False, 400, "storms")
+    assert ramp.w == pytest.approx(0.247, abs=1e-3)
+    assert ramp.storms == pytest.approx(1.97, abs=5e-3)
+    assert "w 0.247 by storms 1.97 of 8" in anchor_labels._ramp_said("warning", ramp)
+
+
+def test_two_days_taken_back_from_the_middle_split_a_storm() -> None:
+    for closed, whole, split in ((100, 0.493, 0.619), (0, 0.410, 0.271)):
+        found = storm("warning", 0, 3, 100, closed, mornings=4)  # Monday to Thursday
+        fitted = ramp_fit("warning", found)
+        assert ramp_of(fitted).w == pytest.approx(0.125)
+        assert float(fitted.level(0.0)) == pytest.approx(whole, abs=1e-3)
+        kept = [made for made in found if made.day in {MONDAY, MONDAY + timedelta(days=3)}]
+        fitted = ramp_fit("warning", kept)
+        assert ramp_of(fitted).storm_count == 2
+        assert ramp_of(fitted).w == pytest.approx(0.250)
+        assert float(fitted.level(0.0)) == pytest.approx(split, abs=1e-3)
+
+
+def test_the_ramp_weight_is_the_smallest_of_rows_storms_and_market_days() -> None:
+    for mornings in (1, 3):
+        ramp = ramp_of(ramp_fit("advisory", storm("advisory", 0, 3, 100, 10, mornings=mornings)))
+        assert (ramp.w, ramp.bound, ramp.storms) == (0.125, "storms", 1.0)
+    ramp = ramp_of(ramp_fit("advisory", storm("advisory", 0, 1, 100, 10)))
+    assert ramp.bound == "market_days"
+    assert ramp.w == pytest.approx(0.0626, abs=1e-4)
+    assert ramp.market_days == pytest.approx(0.939, abs=1e-3)
+    ramp = ramp_of(ramp_fit("warning", storm("warning", 0, 1, 1, 1)))
+    assert (ramp.w, ramp.bound) == (0.01, "rows")
+    # A full ramp serves the fit as built itself: no arithmetic, no weight under 1.
+    eight = [made for j in range(8) for made in storm("advisory", 7 * j, 3, 100, 12, 10)]
+    fitted = ramp_fit("advisory", eight)
+    ramp = ramp_of(fitted)
+    assert (ramp.w, ramp.bound, ramp.tempered) == (1.0, "full", ())
+    assert served(fitted) == served(built_fit("advisory", eight))
+    assert ramp.built == ramp.raw
+    # Part of the way: the three formulas, from the no-row fit toward the tempered posterior.
+    found = storm("advisory", 0, 3, 100, 60, 20)
+    fitted, start = ramp_fit("advisory", found), ramp_fit("advisory", [])
+    ramp = ramp_of(fitted)
+    table = an.storm_table("advisory", found, RAMPED, start.alpha)
+    raw = an.fit_class(
+        "advisory", found, offset_in, SURE, SETTINGS, weights=table.by_day(table.weight),
+        delay_weights=table.by_day(table.delay_weight), tau_free=False,
+    )  # fmt: skip
+    assert ramp.w == 0.125
+    assert fitted.alpha == pytest.approx(start.alpha + 0.125 * (raw.alpha - start.alpha), abs=1e-12)
+    assert fitted.q == pytest.approx(start.q + 0.125 * (raw.q - start.q), abs=1e-12)
+    for end in (0, 1):
+        assert fitted.alpha_band[end] == pytest.approx(
+            start.alpha_band[end] + 0.125 * (raw.alpha_band[end] - start.alpha_band[end]),
+            abs=1e-12,
+        )
+    assert (fitted.tau, fitted.rows, fitted.closed, fitted.delayed) == (1.5, 300, 180, 60)
+    assert (ramp.raw.alpha, ramp.raw.q, fitted.predictive) == (raw.alpha, raw.q, raw.predictive)
+
+
+def test_a_storm_over_its_share_is_tempered_to_the_cap_and_no_other() -> None:
+    a0 = ramp_fit("advisory", []).alpha
+
+    def shares(found: list[an.LiveRow]) -> tuple[an.Storms, list[float], list[float]]:
+        table = an.storm_table("advisory", found, RAMPED, a0)
+        names = sorted(table.information)
+        after = [table.weight[name] * table.information[name] for name in names]
+        whole = table.start + sum(after)
+        return table, [table.weight[name] for name in names], [part / whole for part in after]
+
+    small = [*storm("advisory", 7, 1, 100), *storm("advisory", 14, 1, 100)]
+    _table, weights, after = shares([*storm("advisory", 0, 3, 100), *small])
+    assert weights == pytest.approx([0.5907, 1.0, 1.0], abs=1e-4)
+    assert after == pytest.approx([0.2500, 0.1411, 0.1411], abs=1e-4)
+    _table, weights, after = shares(storm("advisory", 0, 3, 100))
+    assert weights == pytest.approx([0.3685], abs=1e-4)
+    assert after == pytest.approx([0.25])
+    table, weights, after = shares([*storm("advisory", 0, 3, 100, mornings=2), *small])
+    assert table.information[MONDAY] == pytest.approx(5.6338, abs=1e-4)
+    known = table.start + sum(table.information.values())
+    assert table.information[MONDAY] / known == pytest.approx(0.5302, abs=1e-4)
+    assert weights == pytest.approx([0.2954, 1.0, 1.0], abs=1e-4)
+    assert after == pytest.approx([0.2500, 0.1411, 0.1411], abs=1e-4)
+    # the weights are found from the row counts alone: no label moves them
+    assert an.storm_weights({MONDAY: 0.0}, 3.0, 0.25) == {MONDAY: 1.0}
+    assert an.storm_weights({}, 3.0, 0.25) == {}
+
+
+def test_lone_row_storms_do_not_buy_a_full_ramp_for_one_big_storm() -> None:
+    for key, most, step in (("warning", 0.5, 10.0), ("cold", 0.35, 7.0)):
+        lone = [made for j in range(7) for made in storm(key, 7 * j, 1, 1)]
+        before = ramp_fit(key, lone)
+        after = ramp_fit(key, [*lone, *storm(key, 49, 3, 100, 100)])
+        assert ramp_of(before).w < ramp_of(after).w < most
+        assert 0 < points(after) - points(before) < step
+        assert ramp_of(after).w == pytest.approx({"warning": 0.369, "cold": 0.242}[key], abs=2e-3)
+
+
+def test_the_delay_share_is_held_to_its_own_cap() -> None:
+    for key, open_rows, was, now in (
+        ("advisory", 3.3333, 9.9, 12.5),
+        ("cold", 6.6667, 9.9, 14.0),
+        ("warning", 6.6667, 6.0, 9.1),
+    ):
+        found = storm(key, 0, 3, 100, 0, 100)
+        start, fitted = ramp_fit(key, []), ramp_fit(key, found)
+        table = an.storm_table(key, found, RAMPED, start.alpha)
+        assert table.delay_weight[MONDAY] * table.open_rows[MONDAY] == pytest.approx(
+            open_rows, abs=1e-4
+        )
+        assert delay_points(start) == pytest.approx(was, abs=0.1)
+        assert delay_points(fitted) == pytest.approx(now, abs=0.1)
+        quiet = ramp_fit(key, storm(key, 0, 3, 100, 0, 0))
+        assert abs(delay_points(quiet) - delay_points(start)) < 0.5
+        eight = [made for j in range(8) for made in storm(key, 7 * j, 3, 100, 20, 10)]
+        assert ramp_fit(key, eight).q == built_fit(key, eight).q
+
+
+def test_tau_stays_registered_until_the_ramp_is_full() -> None:
+    # 40 market-days on one date would free tau as built; one storm does not.
+    found = storm("advisory", 0, 40, 30, 3)
+    fitted = ramp_fit("advisory", found)
+    assert built_fit("advisory", found).tau != SETTINGS.tau
+    assert (fitted.tau, ramp_of(fitted).w) == (SETTINGS.tau, 0.125)
+    assert abs(points(fitted) - points(ramp_fit("advisory", []))) <= LEVEL_BOUND["advisory"]
+    # At a full ramp it is chosen as built.
+    ten = [made for j in range(10) for made in storm("advisory", 7 * j, 3, 30, 3)]
+    fitted, built = ramp_fit("advisory", ten), built_fit("advisory", ten)
+    assert (ramp_of(fitted).w, fitted.market_days) == (1.0, 30)
+    assert built.tau != SETTINGS.tau
+    assert served(fitted) == served(built)
+
+
+def test_the_ramp_off_serves_the_fit_as_built() -> None:
+    found = [*storm("warning", 0, 3, 100, 100), *storm("advisory", 0, 2, 50, 5, 5)]
+    labels = an.LiveLabels(rows=tuple(found), trials=SURE, days=1, found=True)
+    off = an.fit(AS_BUILT, EMPTY, labels, {})
+    on = an.fit(RAMPED, EMPTY, labels, {})
+    for key in CLASSES:
+        mine = [made for made in found if made.weather == WEATHER_OF[key]]
+        built = an.fit_class(key, mine, lambda _d: 0.0, SURE, SETTINGS)
+        assert off.fits[key].ramp is None
+        assert served(off.fits[key]) == served(built)
+    assert float(off.fits["warning"].level(0.0)) == pytest.approx(0.906, abs=1e-3)
+    assert float(on.fits["warning"].level(0.0)) == pytest.approx(0.493, abs=1e-3)
+    assert off.summary()["ramp"] == "off"
+    assert off.summary()["classes"]["warning"]["ramp"] is None  # type: ignore[index]
+
+
+def ramp_config(**changed: object) -> PredictConfig:
+    """The test world's config with ``live_score.live_update`` keys set (``None``: removed)."""
+    score = world.CONFIG.live_score
+    update = {**score["live_update"], **changed}
+    update = {key: value for key, value in update.items() if value is not None}
+    return world.CONFIG.model_copy(update={"live_score": {**score, "live_update": update}})
+
+
+def test_the_settings_refuse_a_ramp_that_is_not_registered() -> None:
+    def refused(why: str, **changed: object) -> None:
+        with pytest.raises(ValueError, match=why):
+            an.AnchorSettings.of(ramp_config(**changed))
+
+    assert an.AnchorSettings.of(ramp_config(ramp="off")).ramp == "off"
+    assert an.AnchorSettings.of(ramp_config(ramp="capped_storms")).ramp == "capped_storms"
+    refused("live_score live_update ramp is missing", ramp=None)
+    refused(r"ramp is a bare YAML word \(read as False\): write the value in quotes", ramp=False)
+    refused(r"ramp is a bare YAML word \(read as True\): write the value in quotes", ramp=True)
+    refused('ramp is not "capped_storms" or "off": \'capped\'', ramp="capped")
+    refused('ramp is not "capped_storms" or "off": 1', ramp=1)
+    refused("live_score live_update ramp_warning is missing", ramp_warning=None)
+    refused("live_score live_update ramp_cold is missing", ramp_cold=8)
+    refused(
+        "ramp_advisory has a key that is not rows, storms or market_days: dates",
+        ramp_advisory={"rows": 300, "storms": 8, "dates": 8},
+    )
+    refused("ramp_cold has no rows or no storms", ramp_cold={"rows": 100})
+    refused("ramp_cold has no rows or no storms", ramp_cold={"storms": 8})
+    refused("ramp_warning storms is under 1: 0", ramp_warning={"rows": 100, "storms": 0})
+    refused("ramp_warning rows is under 1: 0.5", ramp_warning={"rows": 0.5, "storms": 8})
+    for gap in (6, -1, 1.5, True, None):
+        refused("ramp_storm_gap is not a whole number from 0 to 5", ramp_storm_gap=gap)
+    score = world.CONFIG.live_score
+    for share in (0, 1, 1.5):
+        supply = {**score["supply"], "cold": {"rows": 100, "max_date_share": share}}
+        config = world.CONFIG.model_copy(update={"live_score": {**score, "supply": supply}})
+        with pytest.raises(ValueError, match="supply cold max_date_share is not between 0 and 1"):
+            an.AnchorSettings.of(config)
+    settings = an.AnchorSettings.of(ramp_config(ramp_storm_gap=0))
+    assert (settings.storm_gap, settings.date_cap) == (
+        0,
+        {"advisory": 0.25, "warning": 0.40, "cold": 0.40},
+    )
+    assert settings.ramps == {
+        "advisory": an.RampFull(300.0, 8.0, 15.0),
+        "warning": an.RampFull(100.0, 8.0),
+        "cold": an.RampFull(100.0, 8.0),
+    }
+
+
+def test_a_bare_off_is_refused_with_the_way_to_write_it() -> None:
+    # Through the YAML text: the committed file with the value of its ramp line replaced by
+    # the bare word, whatever it was. YAML reads a bare off as false, and the config loads.
+    text = CONFIG_PATH.read_text(encoding="utf-8")
+    line = next(found for found in text.splitlines() if found.startswith("    ramp: "))
+
+    def with_value(value: str) -> PredictConfig:
+        body = yaml.safe_load(text.replace(line, f"    ramp: {value}"))
+        return PredictConfig.model_validate(body)
+
+    for word in ("off", "no", "on"):
+        config = with_value(word)
+        assert isinstance(config.live_score["live_update"]["ramp"], bool)
+        with pytest.raises(ValueError, match="in quotes"):
+            an.AnchorSettings.of(config)
+    assert an.AnchorSettings.of(with_value('"off"')).ramp == "off"
+    assert an.AnchorSettings.of(with_value('"capped_storms"')).ramp == "capped_storms"
+
+
+def test_the_fit_as_built_is_reported_beside_the_served_one() -> None:
+    found = storm("warning", 0, 3, 100, 100)
+    fitted = ramp_fit("warning", found)
+    ramp = ramp_of(fitted)
+    built = built_fit("warning", found)
+    assert ramp.built is not None
+    assert ramp.built.level == float(built.level(0.0)) == pytest.approx(0.906, abs=1e-3)
+    assert (ramp.built.q, ramp.built.tau, ramp.built_error) == (built.q, built.tau, None)
+    assert ramp.raw.level == pytest.approx(0.772, abs=1e-3)  # the tempered posterior: not that
+    assert float(fitted.level(0.0)) == pytest.approx(0.493, abs=1e-3)
+    empty = ramp_of(ramp_fit("warning", []))
+    assert empty.built == empty.raw == empty.start
+    assert empty.start.level == pytest.approx(0.4498, abs=1e-4)
+
+
+def record_row(
+    district: str, label: str, key: str, market: str, tier: str = "A"
+) -> dict[str, object]:
+    """One made-up row of the record, as L1 writes it."""
+    return {**row(district, label, tier, weather=WEATHER_CODE[key], lists=1), "market": market}
+
+
+def record_storm(  # noqa: PLR0913, PLR0917 - one made-up day of the record
+    folder: Path,
+    day: date,
+    key: str,
+    markets: int,
+    count: int,
+    closed: int,
+    trials: list[dict[str, object]] | None = None,
+) -> None:
+    """A made-up day of the record: ``markets`` markets of ``count`` rows of the class,
+    ``closed`` of each closed, with its trial lines."""
+    found = [
+        record_row(f"{m:02d}{i:05d}", "no_school" if i < closed else "unnamed", key, f"M{m}")
+        for m in range(markets)
+        for i in range(count)
+    ]
+    write_day(folder, day, found, trials or [])
+
+
+def test_a_fit_as_built_that_raises_leaves_the_served_fit_and_says_so(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    folder = tmp_path / "reads"
+    record_storm(folder, MONDAY, "warning", 3, 100, 100)
+    config = ramp_config(ramp="capped_storms")
+    whole = serving_anchor(config, world.model(), folder=folder)
+    real = an.fit_class
+
+    def as_built_raises(*args: Any, **keywords: Any) -> an.ClassFit:
+        if args[1] and not keywords:  # rows and no weights: the fit as built
+            raise ArithmeticError("made up")
+        return real(*args, **keywords)
+
+    monkeypatch.setattr(an, "fit_class", as_built_raises)
+    said: list[str] = []
+    found = serving_anchor(config, world.model(), folder=folder, warn=said.append)
+    assert whole is not None
+    assert found is not None
+    for key in CLASSES:
+        assert served(found.fits[key]) == served(whole.fits[key])
+    ramp = ramp_of(found.fits["warning"])
+    assert (ramp.built, ramp.built_error) == (None, "ArithmeticError")
+    assert ramp_of(whole.fits["warning"]).built is not None
+    assert said == ["anchor: the fit as built of warning: ArithmeticError: not in the line"]
+    line = anchor_labels.anchor_line(found)
+    assert "warning w 0.125 by storms 1.00 of 8 raw 0.771 q 0.110 built unavailable, cold" in line
+    report = found.summary()["classes"]["warning"]["ramp"]  # type: ignore[index]
+    assert (report["built"], report["built_error"]) == (None, "ArithmeticError")
+
+
+def test_the_plausibility_check_judges_the_ramped_level() -> None:
+    # (guard) the plausibility backstop reads the ramped alpha, with its code unchanged
+    found = storm("warning", 0, 3, 100, 100)
+    labels = an.LiveLabels(rows=tuple(found), trials=SURE, days=1, found=True)
+    anchor = an.fit(RAMPED, EMPTY, labels, {})
+    rates = anchor.rates([an.Unit(None, None, None)], grid=None)
+    for j, key in enumerate(CLASSES):
+        level = float(anchor.fits[key].level(0.0))
+        assert rates.plausible.levels[key] == pytest.approx(level, abs=1e-12)
+        assert rates.p[0, j] == pytest.approx(level, abs=1e-12)
+        assert rates.q[j] == anchor.fits[key].q
+    assert rates.plausible.levels["warning"] == pytest.approx(0.493, abs=1e-3)
+
+
+# --- the take-back ---------------------------------------------------------------------------
+
+
+def sums(folder: Path) -> dict[str, str]:
+    """Every record file's sha256."""
+    return {
+        str(path.relative_to(folder)): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in sorted(folder.rglob("*"))
+        if path.is_file()
+    }
+
+
+def learn_with(
+    days: tuple[date, ...] = (), pairs: tuple[tuple[date, str], ...] = ()
+) -> LearnSettings:
+    return world.CONFIG.learn.model_copy(update={"excluded_days": days, "excluded_rows": pairs})
+
+
+def same_fit(one: an.LiveLabels, other: an.LiveLabels) -> None:
+    """Both labels, the take-back's own counts apart, are equal and fit the same."""
+    assert replace(one, left_out=an.LeftOut()) == replace(other, left_out=an.LeftOut())
+    first, second = (an.fit(RAMPED, EMPTY, labels, {}).summary() for labels in (one, other))
+    first.pop("left_out")
+    second.pop("left_out")
+    assert json.dumps(first, sort_keys=True) == json.dumps(second, sort_keys=True)
+    assert first["classes"]["warning"]["rows"] > 0  # type: ignore[index]
+
+
+def test_an_excluded_day_reads_as_if_it_was_never_labeled(tmp_path: Path) -> None:
+    one, two, three = MONDAY, MONDAY + timedelta(days=1), MONDAY + timedelta(days=8)
+    lost = MONDAY + timedelta(days=9)
+    trial = {"district": "0000001", "source": "s", "tier": "A", "named": True, "weather": 5}
+    held, never = tmp_path / "held", tmp_path / "never"
+    for folder in (held, never):
+        record_storm(folder, one, "warning", 2, 40, 10, [trial, {**trial, "named": False}])
+        record_storm(folder, three, "warning", 3, 40, 30, [trial])
+    record_storm(held, two, "warning", 3, 100, 100, [trial] * 4)
+    (held / "rows" / f"{lost.isoformat()}.json").write_text("not JSON")  # never opened
+    before = sums(held)
+    said: list[str] = []
+    excluded = learn_with(days=(two, lost, MONDAY - timedelta(days=300)))
+    taken = read_labels(held, since=SETTINGS.fit_from, warn=said.append, excluded=excluded)
+    plain = read_labels(never, since=SETTINGS.fit_from, warn=said.append)
+    assert said == []
+    assert sums(held) == before
+    same_fit(taken, plain)
+    assert (taken.days, len(taken.rows), taken.trials["A"].trials) == (2, 200, 3)
+    assert taken.left_out == an.LeftOut(days_listed=3, days=2, rows_listed=0, rows=0, trials=0)
+    assert plain.left_out == an.LeftOut()
+    # without the take-back the day is in the fit (and the file that is not JSON is said)
+    every = read_labels(held, since=SETTINGS.fit_from, warn=said.append, excluded=learn_with())
+    assert (every.days, len(every.rows), len(said)) == (3, 500, 1)
+    # with no record at all the listed counts are still there
+    none = read_labels(tmp_path / "none", excluded=excluded)
+    assert (none.found, none.left_out) == (False, an.LeftOut(days_listed=3))
+
+
+def test_an_excluded_row_reads_as_if_its_district_was_never_labeled_that_day(
+    tmp_path: Path,
+) -> None:
+    one, two, three = MONDAY, MONDAY + timedelta(days=1), MONDAY + timedelta(days=8)
+    taken_back = "0000003"  # a closed row of the first market
+    trials = [
+        {"district": taken_back, "source": "s", "tier": "A", "named": True, "weather": 5},
+        {"district": taken_back, "source": "t", "tier": "A", "named": False, "weather": 5},
+        {"district": "0000004", "source": "s", "tier": "A", "named": True, "weather": 5},
+        {"tier": "A", "named": False},  # no district (a test fixture's line): kept
+    ]
+    held, never = tmp_path / "held", tmp_path / "never"
+    record_storm(held, one, "warning", 2, 40, 10, trials)
+    record_storm(held, two, "warning", 3, 100, 100, trials)
+    record_storm(held, three, "warning", 3, 40, 30, trials)  # the same district, another day
+    for folder in (held, never):
+        (folder / "rows").mkdir(parents=True, exist_ok=True)
+    body = json.loads((held / "rows" / f"{one.isoformat()}.json").read_text())
+    body["rows"] = [made for made in body["rows"] if made["district"] != taken_back]
+    write_day(never, one, body["rows"], trials[2:])
+    record_storm(never, three, "warning", 3, 40, 30, trials)
+    before = sums(held)
+    excluded = learn_with(
+        days=(two,),
+        pairs=(
+            (one, taken_back),
+            (two, "0000001"),  # a day in both lists: the day wins, the pair is not held
+            (one, "9999999"),  # no labeled row that day
+            (MONDAY + timedelta(days=30), taken_back),  # listed before its day is labeled
+        ),
+    )
+    said: list[str] = []
+    taken = read_labels(held, since=SETTINGS.fit_from, warn=said.append, excluded=excluded)
+    plain = read_labels(never, since=SETTINGS.fit_from)
+    assert said == []
+    assert sums(held) == before
+    same_fit(taken, plain)
+    assert (taken.days, len(taken.rows)) == (2, 199)
+    assert taken.trials["A"] == an.Trials(hits=3, trials=6, dates=2)
+    assert sum(made.district == taken_back for made in taken.rows) == 1  # the other day's stays
+    assert taken.left_out == an.LeftOut(days_listed=1, days=1, rows_listed=4, rows=1, trials=2)
+    # through the serving path: the lists come from the config, and the line says them
+    config = ramp_config(ramp="capped_storms").model_copy(update={"learn": excluded})
+    anchor = serving_anchor(config, world.model(), folder=held)
+    assert anchor is not None
+    assert anchor.fits["warning"].rows == 199
+    assert "; take-back 1 day listed (1 in the record), 4 rows listed (1 in the record); 2 la" in (
+        anchor_labels.anchor_line(anchor)
+    )
+    assert anchor.summary()["left_out"] == {
+        "days_listed": 1, "days": 1, "rows_listed": 4, "rows": 1, "trials": 2,
+    }  # fmt: skip
+
+
+# --- the lines -------------------------------------------------------------------------------
+
+
+def test_the_log_line_says_the_ramp_the_tempered_storms_and_the_take_back() -> None:
+    # The only storm is advisory: Wednesday and Thursday, Dec 2 and 3, of 3 markets of 100
+    # rows, 10 closed and 15 delayed in each.
+    found = storm("advisory", 2, 3, 100, 10, 15, mornings=2)
+    left_out = an.LeftOut(days_listed=1, days=1, rows_listed=3, rows=2, trials=0)
+    labels = an.LiveLabels(rows=tuple(found), trials=SURE, days=11, found=True, left_out=left_out)
+    anchor = an.fit(RAMPED, EMPTY, labels, {})
+    assert anchor_labels.anchor_line(anchor) == (
+        "anchor: advisory 0.102 (0.044-0.207) q 0.112 rows 600 on 2 dates; "
+        "warning 0.450 (0.212-0.710) q 0.110 rows 0 on 0 dates; "
+        "cold 0.100 (0.036-0.231) q 0.110 rows 0 on 0 dates; "
+        "ramp advisory w 0.125 by storms 1.00 of 8 raw 0.114 q 0.124 built 0.138 q 0.166, "
+        "warning w 0.000 no rows, cold w 0.000 no rows; "
+        "tempered advisory 2026-12-02 x2 level 0.644 to 0.250 delays 0.982 to 0.250; "
+        "take-back 1 day listed (1 in the record), 3 rows listed (2 in the record); "
+        "11 labeled days"
+    )
+    quiet = an.LiveLabels(rows=(), trials={}, days=9, found=True)
+    assert anchor_labels.anchor_line(an.fit(RAMPED, EMPTY, quiet, {})) == (
+        "anchor: advisory 0.100 (0.043-0.206) q 0.110 rows 0 on 0 dates; "
+        "warning 0.450 (0.212-0.710) q 0.110 rows 0 on 0 dates; "
+        "cold 0.100 (0.036-0.231) q 0.110 rows 0 on 0 dates; "
+        "ramp advisory w 0.000 no rows, warning w 0.000 no rows, cold w 0.000 no rows; "
+        "tempered none; take-back none listed; 9 labeled days"
+    )
+    off = anchor_labels.anchor_line(an.fit(AS_BUILT, EMPTY, labels, {}))
+    assert off.startswith("anchor: advisory 0.138 (")
+    assert off.endswith(
+        "rows 0 on 0 dates; ramp off; take-back 1 day listed (1 in the record), 3 rows listed "
+        "(2 in the record); 11 labeled days"
+    )
+    listed = replace(quiet, left_out=an.LeftOut(days_listed=2, days=0, rows_listed=1, rows=0))
+    assert "; take-back 2 days listed (0 in the record), 1 row listed (0 in the record); " in (
+        anchor_labels.anchor_line(an.fit(RAMPED, EMPTY, listed, {}))
+    )
+    only_days = replace(quiet, left_out=an.LeftOut(days_listed=1, days=1))
+    assert "; take-back 1 day listed (1 in the record), 0 rows listed (0 in the record); " in (
+        anchor_labels.anchor_line(an.fit(RAMPED, EMPTY, only_days, {}))
+    )
+    # Seven tempered storms: six are named, by class then first date, and the rest counted.
+    many = [
+        *(made for j in range(3) for made in storm("advisory", 14 * j, 50, 1, 1)),
+        *(made for j in range(3) for made in storm("advisory", 14 * j + 7, 1, 100)),
+        *storm("warning", 0, 3, 100, 100),
+    ]
+    busy = an.fit(RAMPED, EMPTY, replace(labels, rows=tuple(many)), {})
+    line = anchor_labels.anchor_line(busy)
+    tempered = line.split("; ")[4]
+    assert tempered.startswith("tempered advisory 2026-11-30 x1 level 0.")
+    assert tempered.count("advisory 202") == 6
+    assert ", advisory 2026-12-07 x1 delays 0.323 to 0.250, advisory 2026-12-14 x1 level 0." in (
+        tempered
+    )
+    assert tempered.endswith(", advisory 2027-01-04 x1 delays 0.323 to 0.250 and 1 more")
+    assert "warning" not in tempered
+    report = busy.summary()
+    assert (report["ramp"], report["left_out"]) == ("capped_storms", left_out.summary())
+    assert set(report["labels"]) == {"found", "days", "rows", "through"}  # type: ignore[call-overload]
+    ramp = report["classes"]["advisory"]["ramp"]  # type: ignore[index]
+    assert set(ramp) == {
+        "w", "bound", "rows", "rows_full", "storms", "storms_full", "market_days",
+        "market_days_full", "gap", "cap", "storm_count", "start", "raw", "built", "built_error",
+        "tempered",
+    }  # fmt: skip
+    assert set(ramp["start"]) == {"level", "band", "alpha", "q"}
+    assert set(ramp["raw"]) == {"level", "band", "alpha", "q", "tau", "predictive"}
+    assert set(ramp["built"]) == {"level", "band", "q", "tau"}
+    assert len(ramp["tempered"]) == 6
+    assert set(ramp["tempered"][0]) == {
+        "storm", "dates", "share", "weight", "delay_share", "delay_weight",
+    }  # fmt: skip
+    assert (ramp["gap"], ramp["cap"], ramp["storm_count"]) == (1, 0.25, 6)
+    assert (ramp["rows_full"], ramp["storms_full"], ramp["market_days_full"]) == (300, 8, 15)
+    warning = report["classes"]["warning"]["ramp"]  # type: ignore[index]
+    assert (warning["market_days_full"], len(warning["tempered"])) == (None, 1)
+    assert warning["tempered"][0]["dates"] == ["2026-11-30"]
+
+
+def test_the_ramped_fit_and_the_storm_weights_speed() -> None:
+    # (guard) On the season record of test_the_fit_is_deterministic_and_fast, in process time:
+    # each class's ramped fit (the served fit and the fit as built) and its storms with both
+    # sets of weights. Named _speed so CI times it alone in its serial step, which runs under
+    # coverage: each timed block is quiet(), so it reads the fit's cost and not the tracer's
+    # or BLAS's waiting threads'.
+    rng = np.random.default_rng(11)
+    found = [
+        *season(rng, "advisory", 150, 60),
+        *season(rng, "snow_warning", 60, 60),
+        *season(rng, "cold", 30, 40),
+    ]
+    known = replace(
+        EMPTY,
+        districts={
+            made.district: (
+                float(rng.uniform(0, 20)), float(rng.uniform(0, 10)), float(rng.uniform(0, 3))
+            )
+            for made in found
+        },
+        f_ref={"advisory": 4.0, "warning": 1.4, "cold": 0.3},
+    )  # fmt: skip
+    stub = an.Anchor(RAMPED, known, {}, {}, an.NO_LABELS)
+    for j, key in enumerate(CLASSES):
+        mine = [made for made in found if RAMPED.class_of[made.weather] == key]
+
+        def offset_of(leaid: str, j: int = j) -> float:
+            return stub.offsets(an.Unit(leaid, None, None))[0][j]
+
+        fits = []
+        fitted = an.ramped(key, [], offset_of, SURE, RAMPED)
+        for _ in range(3):
+            with quiet():
+                started = time.process_time()
+                fitted = an.ramped(key, mine, offset_of, SURE, RAMPED)
+                fits.append(time.process_time() - started)
+        assert ramp_of(fitted).built is not None
+        assert fitted.rows == len(mine)
+        assert min(fits) < 1.0, (key, fits)
+        tables = []
+        for _ in range(5):
+            with quiet():
+                started = time.process_time()
+                an.storm_table(key, mine, RAMPED, fitted.alpha)
+                tables.append(time.process_time() - started)
+        assert min(tables) < 0.010, (key, tables)

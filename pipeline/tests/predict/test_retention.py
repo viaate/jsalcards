@@ -215,6 +215,69 @@ def test_predict_evidence_keeps_the_finished_snapshots_their_district_table_and_
     assert cli.snapshots_of(Path("/nonexistent/state.json")) == {}
 
 
+def test_the_take_back_lists_are_outside_the_pre_registration() -> None:
+    # A take-back never needs a registered change: neither list moves the sha256.
+    from snowlight.predict.config import LIVE_SCORE_SHA256, live_score_sha256  # noqa: PLC0415
+
+    learn = CONFIG.learn.model_copy(
+        update={
+            "excluded_days": (date(2026, 12, 2),),
+            "excluded_rows": ((date(2026, 12, 3), "2502790"),),
+        }
+    )
+    assert live_score_sha256(CONFIG.model_copy(update={"learn": learn})) == LIVE_SCORE_SHA256
+    assert CONFIG.learn.excluded_days == ()
+    assert CONFIG.learn.excluded_rows == ()
+
+
+def test_excluded_rows_are_pairs_of_a_day_and_a_district_id() -> None:
+    import yaml  # type: ignore[import-untyped, unused-ignore]  # noqa: PLC0415
+    from pydantic import ValidationError  # noqa: PLC0415
+
+    from snowlight.predict.config import CONFIG_PATH, PredictConfig  # noqa: PLC0415
+
+    text = CONFIG_PATH.read_text(encoding="utf-8")
+    assert text.count("excluded_days: []") == text.count("excluded_rows: []") == 1
+
+    def loaded(days: str, rows: str) -> PredictConfig:
+        changed = text.replace("excluded_days: []", f"excluded_days: {days}")
+        changed = changed.replace("excluded_rows: []", f"excluded_rows: {rows}")
+        return PredictConfig.model_validate(yaml.safe_load(changed))
+
+    for refused in (
+        '[["2026-12-02", 2502790]]',  # an id without quotes: YAML reads a number
+        '[["2026-12-02", "250279"]]',  # six digits
+        '[["2026-12-02", "25027901"]]',
+        '[["2026-12-02", "25O2790"]]',
+        '[["2026-13-02", "2502790"]]',  # not a day
+        '[["2026-12-02"]]',
+        '["2026-12-02", "2502790"]',
+    ):
+        with pytest.raises(ValidationError):
+            loaded("[]", refused)
+    one, two, three = date(2026, 12, 2), date(2026, 12, 3), date(2026, 12, 9)
+    learn = loaded(
+        "[2026-12-03]",
+        '[["2026-12-09", "2502790"], [2026-12-02, "0600001"], ["2026-12-03", "2502790"], '
+        '["2026-12-02", "2502790"]]',
+    ).learn
+    assert learn.excluded_days == (two,)
+    assert len(learn.excluded_rows) == 4
+    assert (learn.excludes_day(two), learn.excludes_day(one)) == (True, False)
+    assert learn.excludes_row(one, "2502790")
+    assert learn.excludes_row(two, "9999999")  # any row of an excluded day
+    assert not learn.excludes_row(one, "9999999")
+    assert not learn.excludes_row(date(2026, 12, 4), "2502790")
+    assert learn.districts_left_out(one) == {"0600001", "2502790"}
+    assert learn.districts_left_out(date(2026, 12, 4)) == frozenset()
+    assert learn.left_out_days() == (one, two, three)
+    assert learn.left_out_by(two) == "learn.excluded_days"  # in both lists: the day's
+    assert learn.left_out_by(one) == learn.left_out_by(three) == "learn.excluded_rows"
+    assert learn.left_out_by(date(2026, 12, 4)) is None
+    empty = loaded("[]", "[]").learn
+    assert (empty.left_out_days(), empty.left_out_by(one)) == ((), None)
+
+
 def test_the_live_scoring_rules_are_pre_registered() -> None:
     from snowlight.predict.config import LIVE_SCORE_SHA256, live_score_sha256  # noqa: PLC0415
 
@@ -252,6 +315,22 @@ def test_the_live_scoring_rules_are_pre_registered() -> None:
     assert score["scoring"]["horizons"] == [1, 0]
     assert score["calibration"]["bin_interval"] == 0.95
     assert score["live_update"]["prior_weight"] == "alpha_sd"
+    # predict-next ONE-STORM: the ramp of the class levels. This is the one assert of the
+    # committed rule (a switch back to "off" edits this line, the value in the yaml and the
+    # sha256, and nothing else).
+    assert score["live_update"]["ramp"] == "capped_storms"
+    assert score["live_update"]["ramp_storm_gap"] == 1
+    assert score["live_update"]["ramp_advisory"] == {"rows": 300, "storms": 8, "market_days": 15}
+    assert score["live_update"]["ramp_warning"] == {"rows": 100, "storms": 8}
+    assert score["live_update"]["ramp_cold"] == {"rows": 100, "storms": 8}
+    assert score["supply"] == {
+        "advisory": {
+            "rows": 300, "dates": 8, "states": 3, "regions": 2, "max_date_share": 0.25,
+            "k_eff": 15,
+        },
+        "warning": {"rows": 100, "dates": 4, "states": 2, "max_date_share": 0.40},
+        "cold": {"rows": 100, "dates": 4, "states": 2, "max_date_share": 0.40},
+    }  # fmt: skip
     # fitted on every label the morning record holds (Oct 27 on), scored only from Nov 1 on
     assert score["live_update"]["fit_from"] == "2026-10-27"
     assert score["live_update"]["score_from"] == "2026-11-01"

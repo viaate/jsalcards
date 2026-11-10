@@ -1041,6 +1041,60 @@ def replace_learn(config: PredictConfig, days: tuple[date, ...]) -> Any:
     return config.learn.model_copy(update={"excluded_days": days})
 
 
+def test_a_day_with_an_excluded_row_is_dropped_whole_and_replayed(tmp_path: Path) -> None:
+    # predict-next ONE-STORM: the ledger keeps sums per date, so a day a pair of
+    # learn.excluded_rows names is dropped whole, by the excluded-day code, and its line names
+    # the list.
+    host = Host(tmp_path / "host")
+    started(tmp_path, host)
+    days = school_days(12)
+    for day in days[:10]:
+        storm_day(tmp_path / "reads", tmp_path / "frozen", day, 0.05)
+    run(step_inputs(tmp_path, host))
+    assert state_of(host)["bus_timing"].served == "on"
+    held = host.read(f"v1/{live_switch.SWITCH_PATH}")
+
+    def with_lists(days_out: tuple[date, ...], pairs: tuple[tuple[date, str], ...]) -> Any:
+        learned = CONFIG.learn.model_copy(
+            update={"excluded_days": days_out, "excluded_rows": pairs}
+        )
+        return CONFIG.model_copy(update={"learn": learned})
+
+    # serving refuses a state whose ledger holds the day, and names the list
+    row_out = with_lists((), ((days[8], "2900001"),))
+    found = live_switch.served_arms(row_out, held, MODEL, today=TODAY)
+    assert found.arms == {"bus_timing": "off"}
+    assert f"its ledger holds {days[8].isoformat()}, in learn.excluded_rows" in found.lines[0]
+    both = with_lists((days[8],), ((days[8], "2900001"),))  # in both lists: the day's list
+    found = live_switch.served_arms(both, held, MODEL, today=TODAY)
+    assert f"its ledger holds {days[8].isoformat()}, in learn.excluded_days" in found.lines[0]
+    # the step drops the day whole and replays the rest
+    out = run(step_inputs(tmp_path, host, config=row_out))
+    assert (
+        f"predict read-labels: switch bus_timing: SWITCHED off: {days[8]} excluded "
+        "(learn.excluded_rows); the ledger without it ends off"
+    ) in out
+    state = state_of(host)["bus_timing"]
+    assert state.served == "off"
+    assert days[8] not in {e.day for e in state.ledger}
+    assert len(state.ledger) == 9
+    assert live_switch.served_arms(
+        row_out, host.read(f"v1/{live_switch.SWITCH_PATH}"), MODEL, today=TODAY
+    ).arms == {"bus_timing": "off"}
+    # it is never counted again while listed: a second run says nothing of it
+    out = run(step_inputs(tmp_path, host, config=row_out))
+    assert not any("excluded" in line for line in out), out
+    # a run with a day of each kind names both lists
+    mixed = with_lists((days[2],), ((days[8], "2900001"), (days[5], "2900002")))
+    out = run(step_inputs(tmp_path, host, config=mixed))
+    assert any(
+        f"switch bus_timing: {days[2]}, {days[5]} excluded (learn.excluded_days, "
+        "learn.excluded_rows): dropped from the ledger; served off, " in line
+        for line in out
+    ), out
+    assert len(state_of(host)["bus_timing"].ledger) == 7
+
+
 def test_an_on_reached_on_a_day_later_excluded_replays_off_and_a_robust_on_stays(
     tmp_path: Path,
 ) -> None:

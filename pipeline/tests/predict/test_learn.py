@@ -1109,6 +1109,46 @@ def test_an_excluded_day_is_never_learned_and_a_file_that_counted_it_is_replaced
     assert done.skipped["excluded from learning (learn.excluded_days)"] == 1
 
 
+def test_a_day_with_an_excluded_row_is_never_fit_or_held_out_and_a_file_that_counted_it_is_judged_anew_once() -> (  # noqa: E501
+    None
+):
+    # predict-next ONE-STORM: this learner cannot take one row out of a day, so a day a pair
+    # of learn.excluded_rows names is dropped whole, and the file that replaces a tainted one
+    # no longer counts it: the next run finds nothing tainted.
+    store = store_of([honest(j) for j in range(30)])
+    first = run_decide(store)
+    assert first.learned is not None
+    bad = sorted(store.labeled())[3]
+    excluded = CFG.model_copy(update={"learn": CFG.learn.model_copy(
+        update={"excluded_rows": ((bad, "2900001"),)})})  # fmt: skip
+    assert learn.tainted(first.learned, excluded) == [bad]
+    again = run_decide(store, first.learned, excluded)
+    assert again.kind == "swap", again.why
+    assert again.learned is not None
+    assert again.learned.labeled_days == first.learned.labeled_days - len(world.DISTRICTS)
+    assert bad not in again.learned.days
+    assert f"it replaces a file that counted {bad}" in again.why
+    # The second run, on the replaced file: nothing is tainted, nothing is judged anew.
+    assert learn.tainted(again.learned, excluded) == []
+    third = run_decide(store, again.learned, excluded)
+    assert third.kind == "unchanged", third.why
+    # Where nothing is left to anchor it is reset, and the reset file is not judged anew.
+    strict = excluded.model_copy(update={"learn": excluded.learn.model_copy(
+        update={"anchor_min_days": 10_000})})  # fmt: skip
+    reset = run_decide(store, first.learned, strict)
+    assert reset.kind == "reset"
+    assert reset.learned is not None
+    assert learn.tainted(reset.learned, strict) == []
+    assert run_decide(store, reset.learned, strict).kind == "unchanged"
+    # The day is still labeled (only a whole excluded day is never labeled).
+    source = Source({bad: world.timeline().model_copy(update={"day": bad})})
+    done = learn.label_new_days(
+        LearnStore.empty(), source, learn.directory_of(built()), {}, excluded,
+        datetime.combine(bad + timedelta(days=2), datetime.min.time(), tzinfo=UTC),
+    )  # fmt: skip
+    assert "excluded from learning (learn.excluded_days)" not in done.skipped
+
+
 def test_the_no_worse_guard() -> None:
     current = Score(rows=100, brier=0.2, delay_brier=0.1, ece=0.05, out_of_bound=1)
     assert no_worse(current, current, 0.01) is None

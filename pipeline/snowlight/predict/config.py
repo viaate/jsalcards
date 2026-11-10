@@ -4,7 +4,7 @@ import hashlib
 import json
 from datetime import date, time
 from pathlib import Path
-from typing import Final, Literal
+from typing import Annotated, Final, Literal
 
 import yaml  # type: ignore[import-untyped, unused-ignore]
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -201,9 +201,42 @@ class LearnSettings(_Settings):
     excluded_days: tuple[date, ...] = ()
     """Live days never learned from (a day found misread): never labeled, never fit or held
     out, and a learned file that counted one is no longer served."""
+    excluded_rows: tuple[tuple[date, Annotated[str, Field(pattern=r"^\d{7}$")]], ...] = ()
+    """One district's row of one live day found misread (predict-next ONE-STORM): pairs of a
+    school day and a 7-digit district id, the id a quoted string. The row is still written by
+    the live reader and left out when read: the class levels drop the row and its trials, the
+    live switch and the older learner drop the whole day. Outside the pre-registered rules, as
+    ``excluded_days`` is: a take-back never needs a registered change."""
+
+    def excludes_day(self, day: date) -> bool:
+        """Whether ``day`` is in ``excluded_days``."""
+        return day in self.excluded_days
+
+    def excludes_row(self, day: date, district: str) -> bool:
+        """Whether a district's row of ``day`` is left out: a listed pair, or any row of an
+        excluded day."""
+        return self.excludes_day(day) or (day, district) in self.excluded_rows
+
+    def districts_left_out(self, day: date) -> frozenset[str]:
+        """The districts a pair of ``excluded_rows`` names on ``day``."""
+        return frozenset(district for listed, district in self.excluded_rows if listed == day)
+
+    def left_out_days(self) -> tuple[date, ...]:
+        """The excluded days and every day a pair names, oldest first: the days a reader that
+        cannot take one row out of a day drops whole."""
+        return tuple(sorted({*self.excluded_days, *(day for day, _ in self.excluded_rows)}))
+
+    def left_out_by(self, day: date) -> str | None:
+        """The list that leaves ``day`` out: ``learn.excluded_days`` (also when a pair names
+        it too), ``learn.excluded_rows`` for a day only pairs name, or ``None``."""
+        if self.excludes_day(day):
+            return "learn.excluded_days"
+        if any(listed == day for listed, _ in self.excluded_rows):
+            return "learn.excluded_rows"
+        return None
 
 
-LIVE_SCORE_SHA256: Final = "ce2a224eb22eba39d5d8c8b331d916417f866f1211ffa41fe22fac756af45e02"
+LIVE_SCORE_SHA256: Final = "7707b6ecb032e780e893cc48e40a7f985f17d71104c623ea47eba2a347b062a1"
 """The sha256 of the pre-registered scoring rules (:func:`live_score_sha256`: the
 ``live_score`` block, the ``labels`` and ``weather`` blocks and ``learn.snapshot_slack_minutes``),
 as S7 addendum h records it (and addendum i, for the forecast adjustment of advisory-sane L5;
@@ -217,7 +250,11 @@ added, for rows after it; revised Nov 3, 2026 by predict-next CALL-TIME: values 
 term off, no served value changed: ``call_time`` added; revised Nov 4, 2026 by predict-next
 TIMING-AUTO: ``timing_after_bus`` 1.0, no timing served, for rows after it, and
 ``switch_bus_timing``, the live switch that serves the bus term's 0.95 only once it is
-consistently better on live storm mornings, added).
+consistently better on live storm mornings, added; revised Nov 10, 2026 by predict-next
+ONE-STORM: ``live_update.ramp``, ``ramp_storm_gap`` and each class's ``ramp_<class>`` added; the
+served level and delay share ramp from the start by the class's rows, storms and market-days, no
+storm holds more than its registered share, and tau stays registered until the ramp is full; no
+served value changed: no class row was in use, so it is for every row there will be).
 A test holds the two equal, so none of them changes without this."""
 
 

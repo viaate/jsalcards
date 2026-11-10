@@ -41,6 +41,19 @@ record of the class has level support, the list sensitivities and the plausibili
   (``standing.live_region_sd``, ``live_state_sd``) and the warning split by alert kind
   (``split``) are deferred: Addendum B2 makes the live update a pure posterior over per-class
   label counts (docs/predict.md, "The storm-class levels").
+* The **ramp** (predict-next ONE-STORM, ``live_update.ramp`` ``"capped_storms"``; ``"off"``
+  serves the posterior as built): one storm cannot move a level far. A class's mornings with
+  at most ``ramp_storm_gap`` weekdays between them are one storm. Each market-day counts its
+  information about ``alpha`` (``n / (n + c)`` whole market-days for ``n`` rows, from the row
+  counts alone), and no storm may hold more than the class's registered share
+  (``supply.<class>.max_date_share``) of the information, the start's counted in: a storm over
+  it is tempered to it (:func:`storm_weights`), and so are a storm's open rows in the delay
+  share, against that prior's own weight. The level, its band and the delay share then go from
+  the no-row fit toward that tempered posterior by ``w``, the least of the class's rows,
+  storms and market-days over their registered full counts (``ramp_<class>``), and ``tau``
+  stays registered until ``w`` is 1 (:func:`ramped`). With no used row the fit is the no-row
+  fit itself; at ``w`` 1 it is the tempered posterior itself. The fit as built is made beside
+  it for the log line only.
 * The **plausibility pull** (G6, item 5): a district whose implied closures a winter (its days
   of each class times its chance) are over ``district_max`` is pulled toward its class level on
   the log-odds scale until they are not; then while the national clauses fail, the districts with
@@ -50,8 +63,10 @@ Nothing here reads a closure share of the archive: the region deltas take only t
 nation tallies the exposure file holds (:func:`region_delta`).
 """
 
-from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+import math
+from collections import Counter
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import Final, Literal
 
@@ -67,6 +82,7 @@ type Floats = npt.NDArray[np.float64]
 type Tier = Literal["A", "B"]
 type Standing = Literal["usual", "more", "fewer"]
 type LabelKind = Literal["no_school", "delayed", "unnamed"]
+type RampRule = Literal["capped_storms", "off"]
 
 CHAIN: Final = "chain"
 """A situation ``live_score.classes`` leaves on the served chain."""
@@ -139,6 +155,21 @@ PUBLISHED: Final = Grid(0.01, 0.99)
 
 
 @dataclass(frozen=True, slots=True)
+class RampFull:
+    """The counts a class's ramp is full at (``live_update.ramp_<class>``): its used rows, its
+    storms and (where registered) its market-days, the last two counted by information."""
+
+    rows: float
+    storms: float
+    market_days: float | None = None
+
+
+RAMP_RULES: Final[tuple[RampRule, ...]] = ("capped_storms", "off")
+RAMP_KEYS: Final = ("rows", "storms", "market_days")
+STORM_GAP_MOST: Final = 5
+
+
+@dataclass(frozen=True, slots=True)
 class AnchorSettings:
     """``live_score`` as the anchor reads it."""
 
@@ -163,6 +194,16 @@ class AnchorSettings:
     tier_b_min_dates: int
     plausibility: Plausibility
     fit_from: date
+    ramp: RampRule
+    """``live_update.ramp``: ``capped_storms`` (:func:`ramped`), or ``off`` (the fit as
+    built, :func:`fit_class`)."""
+    ramps: Mapping[str, RampFull]
+    """Each class's full counts (``live_update.ramp_<class>``)."""
+    storm_gap: int
+    """``live_update.ramp_storm_gap``: mornings of a class with at most this many weekdays
+    between them are one storm."""
+    date_cap: Mapping[str, float]
+    """Each class's ``supply.<class>.max_date_share``, read as the most one storm may hold."""
 
     @classmethod
     def of(cls, config: PredictConfig) -> "AnchorSettings":
@@ -204,6 +245,7 @@ class AnchorSettings:
             raise ValueError("live_score prior alpha_grid and tau_choices are lists")
         if update["prior_weight"] != "alpha_sd":
             raise ValueError("live_score live_update prior_weight is not alpha_sd")
+        ramp, ramps, storm_gap, date_cap = _ramp_settings(update, score["supply"])
         return cls(
             class_of={str(k): str(v) for k, v in score["classes"].items()},
             priors=priors,
@@ -231,7 +273,68 @@ class AnchorSettings:
                 step=number(plaus, "pull_step"),
             ),
             fit_from=date.fromisoformat(str(update["fit_from"])),
+            ramp=ramp,
+            ramps=ramps,
+            storm_gap=storm_gap,
+            date_cap=date_cap,
         )
+
+
+def _ramp_settings(
+    update: Mapping[str, object], supply: Mapping[str, object]
+) -> tuple[RampRule, dict[str, RampFull], int, dict[str, float]]:
+    """The ramp's registered values (``live_update.ramp``, ``ramp_<class>``,
+    ``ramp_storm_gap``) and each class's ``supply.<class>.max_date_share``.
+
+    Raises:
+        ValueError: one is missing or not the registered kind.
+    """
+    if "ramp" not in update:
+        raise ValueError("live_score live_update ramp is missing")
+    ramp = update["ramp"]
+    if isinstance(ramp, bool):
+        raise ValueError(
+            f"live_score live_update ramp is a bare YAML word (read as {ramp!r}): write the "
+            'value in quotes, "capped_storms" or "off"'
+        )
+    if ramp not in RAMP_RULES:
+        raise ValueError(f'live_score live_update ramp is not "capped_storms" or "off": {ramp!r}')
+    ramps: dict[str, RampFull] = {}
+    for klass in CLASSES:
+        name = f"ramp_{klass}"
+        entry = update.get(name)
+        if not isinstance(entry, dict):
+            raise ValueError(f"live_score live_update {name} is missing")
+        for key, value in entry.items():
+            if key not in RAMP_KEYS:
+                raise ValueError(
+                    f"live_score live_update {name} has a key that is not rows, storms or "
+                    f"market_days: {key}"
+                )
+            if isinstance(value, bool) or not isinstance(value, int | float) or value < 1:
+                raise ValueError(f"live_score live_update {name} {key} is under 1: {value!r}")
+        if "rows" not in entry or "storms" not in entry:
+            raise ValueError(f"live_score live_update {name} has no rows or no storms")
+        ramps[klass] = RampFull(
+            rows=float(entry["rows"]),
+            storms=float(entry["storms"]),
+            market_days=float(entry["market_days"]) if "market_days" in entry else None,
+        )
+    gap = update.get("ramp_storm_gap")
+    if isinstance(gap, bool) or not isinstance(gap, int) or not 0 <= gap <= STORM_GAP_MOST:
+        raise ValueError(
+            f"live_score live_update ramp_storm_gap is not a whole number from 0 to 5: {gap!r}"
+        )
+    date_cap: dict[str, float] = {}
+    for klass in CLASSES:
+        entry = supply.get(klass)
+        share = entry.get("max_date_share") if isinstance(entry, dict) else None
+        if isinstance(share, bool) or not isinstance(share, int | float) or not 0 < share < 1:
+            raise ValueError(
+                f"live_score supply {klass} max_date_share is not between 0 and 1: {share!r}"
+            )
+        date_cap[klass] = float(share)
+    return ramp, ramps, gap, date_cap
 
 
 TIER_B_MIN_DATES: Final = 5
@@ -275,6 +378,33 @@ class Trials:
 
 
 @dataclass(frozen=True, slots=True)
+class LeftOut:
+    """What the take-back lists (``learn.excluded_days``, ``learn.excluded_rows``) name and
+    what of it the record held when it was read (counts only)."""
+
+    days_listed: int = 0
+    """Distinct days of ``learn.excluded_days``."""
+    days: int = 0
+    """Those whose rows file the record holds from the fit's first day on: skipped unread."""
+    rows_listed: int = 0
+    """Distinct pairs of ``learn.excluded_rows``."""
+    rows: int = 0
+    """Labeled rows a pair dropped from a day that was read."""
+    trials: int = 0
+    """Trial lines dropped with them."""
+
+    def summary(self) -> dict[str, int]:
+        """The private report's counts (``anchor.json``)."""
+        return {
+            "days_listed": self.days_listed,
+            "days": self.days,
+            "rows_listed": self.rows_listed,
+            "rows": self.rows,
+            "trials": self.trials,
+        }
+
+
+@dataclass(frozen=True, slots=True)
 class LiveLabels:
     """What the outcome-blind record holds (empty: no record on this head)."""
 
@@ -284,12 +414,123 @@ class LiveLabels:
     """Labeled days read."""
     found: bool = False
     """Whether a record was found at all."""
+    left_out: LeftOut = LeftOut()
+    """What the take-back lists name and what of it the record held (a row or a day left out
+    is in none of the counts above: the labels are those of a record that never held it)."""
 
 
 NO_LABELS: Final = LiveLabels()
 
 
 # --- the fit -------------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class Told:
+    """A fit of the class as the ramp reports it: the reference district's level and 80% band,
+    and the ``alpha``, delay share and ``tau`` they are made from."""
+
+    level: float
+    band: tuple[float, float]
+    alpha: float
+    q: float
+    tau: float
+    predictive: float
+
+    def summary(self, *keys: str) -> dict[str, object]:
+        """The private report's numbers, the named keys only."""
+        found: dict[str, object] = {
+            "level": round(self.level, 4),
+            "band": [round(self.band[0], 4), round(self.band[1], 4)],
+            "alpha": round(self.alpha, 4),
+            "q": round(self.q, 4),
+            "tau": self.tau,
+            "predictive": round(self.predictive, 4),
+        }
+        return {key: found[key] for key in keys}
+
+
+@dataclass(frozen=True, slots=True)
+class Tempered:
+    """A storm held to the class's registered share: in the level, in the delay share, or in
+    both (a weight of 1: not in that one)."""
+
+    storm: date
+    """Its first date."""
+    dates: tuple[date, ...]
+    share: float
+    """Its share of the information about the level before the cap, the start counted in."""
+    weight: float
+    """What its market-days count for in the level's likelihood (after: the cap exactly)."""
+    delay_share: float
+    """Its open rows' share of the delay share's rows before the cap, the start counted in."""
+    delay_weight: float
+
+    def summary(self) -> dict[str, object]:
+        """The private report's numbers."""
+        return {
+            "storm": self.storm.isoformat(),
+            "dates": [day.isoformat() for day in self.dates],
+            "share": round(self.share, 4),
+            "weight": round(self.weight, 5),
+            "delay_share": round(self.delay_share, 4),
+            "delay_weight": round(self.delay_weight, 5),
+        }
+
+
+type Bound = Literal["none", "rows", "storms", "market_days", "full"]
+
+
+@dataclass(frozen=True, slots=True)
+class Ramp:
+    """How a class's served fit was ramped from its start (:func:`ramped`)."""
+
+    w: float
+    """The ramp weight: 0 with no used row, 1 at full."""
+    bound: Bound
+    """The count that holds ``w`` under 1 (``full`` at 1, ``none`` with no row)."""
+    rows: int
+    storms: float
+    """Its storms, each counted as ``min(1, its information after the cap)``."""
+    market_days: float
+    """Its market-days' information, summed."""
+    full: RampFull
+    gap: int
+    cap: float
+    storm_count: int
+    start: Told
+    """The no-row fit."""
+    raw: Told
+    """The tempered posterior at the ``tau`` the ramp allows: what ``w`` 1 serves."""
+    built: Told | None
+    """The fit as built (what ``ramp: "off"`` would serve); ``None`` where it raised."""
+    built_error: str | None = None
+    """The type of the error that fit raised."""
+    tempered: tuple[Tempered, ...] = ()
+    """The storms with a weight under 1, by first date."""
+
+    def summary(self) -> dict[str, object]:
+        """The private report's numbers (``anchor.json``)."""
+        return {
+            "w": round(self.w, 5),
+            "bound": self.bound,
+            "rows": self.rows,
+            "rows_full": self.full.rows,
+            "storms": round(self.storms, 4),
+            "storms_full": self.full.storms,
+            "market_days": round(self.market_days, 4),
+            "market_days_full": self.full.market_days,
+            "gap": self.gap,
+            "cap": self.cap,
+            "storm_count": self.storm_count,
+            "start": self.start.summary("level", "band", "alpha", "q"),
+            "raw": self.raw.summary("level", "band", "alpha", "q", "tau", "predictive"),
+            "built": None
+            if self.built is None
+            else self.built.summary("level", "band", "q", "tau"),
+            "built_error": self.built_error,
+            "tempered": [storm.summary() for storm in self.tempered],
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -326,6 +567,9 @@ class ClassFit:
     """Unnamed rows read by two lists or more (R2-S4, :attr:`LiveRow.lists`): the rows whose
     hidden closings the one-list sensitivity may overstate (the lead's ruling of Oct 31 keeps
     the registered one-list form and revisits once L1's real record shows this share)."""
+    ramp: Ramp | None = None
+    """How the fit was ramped from its start (:func:`ramped`); ``None`` from :func:`fit_class`
+    (the posterior of the rows it is given, as with ``live_update.ramp`` ``"off"``)."""
 
     def level(self, offset: Floats | float, alpha: float | None = None) -> Floats:
         """``E_e[sigmoid(alpha + offset + e)]`` at the posterior mean (or ``alpha``)."""
@@ -366,6 +610,7 @@ class ClassFit:
             "dates": self.dates,
             "k_eff": round(self.k_eff, 2),
             "multi_list": self.multi_list,
+            "ramp": None if self.ramp is None else self.ramp.summary(),
         }
 
 
@@ -428,6 +673,8 @@ class _Cluster:
     closed: _Cells
     delayed: _Cells
     unnamed: _Cells
+    day: date | None = None
+    """Its school day (its storm's weight is looked up by it; ``None``: it weighs 1)."""
 
     @property
     def size(self) -> float:
@@ -461,8 +708,8 @@ def _clusters(
         )
 
     return [
-        _Cluster(part(cells, 0), part(cells, 1), part(cells, 2))
-        for _, cells in sorted(grouped.items())
+        _Cluster(part(cells, 0), part(cells, 1), part(cells, 2), day)
+        for (day, _), cells in sorted(grouped.items())
     ]
 
 
@@ -527,12 +774,14 @@ def _profiles(alpha: Floats, clusters: Sequence[_Cluster], q: float, reach: int)
     return _Profiles(first, values, values.max(axis=1) if len(clusters) else np.zeros(0))
 
 
-def _log_likelihood(
+def _log_likelihood(  # noqa: PLR0913 - the grid, the rows' profiles and the ramp's weights
     index: npt.NDArray[np.intp],
     alpha: Floats,
     profiles: _Profiles,
     tau: float,
     scaled: Floats | None = None,
+    *,
+    weights: Floats | None = None,
 ) -> Floats:
     """``sum_j log int exp(l_j(alpha + e)) dN(e; 0, tau^2)`` at the grid points ``index`` of
     ``alpha``: each market-day's effect is integrated on the grid's own points (the
@@ -540,7 +789,9 @@ def _log_likelihood(
     likelihood is wider than one grid step: under about 4,000 closings' worth of rows), so
     a market-day of hundreds of rows, whose likelihood is far narrower than ``tau``, is
     integrated as exactly as one of a few (a fixed Gauss-Hermite rule on ``N(0, tau^2)`` is
-    not). ``scaled``: :attr:`_Profiles.scaled`, when already found."""
+    not). ``scaled``: :attr:`_Profiles.scaled`, when already found. ``weights``: each
+    market-day's log marginal likelihood is multiplied by its own (its storm's weight under
+    the cap, :func:`ramped`); ``None``: each counts whole."""
     step = float(alpha[1] - alpha[0])
     reach = int(np.ceil(KERNEL_SD * tau / step))
     lo = max(int(index.min()) - reach, profiles.first)
@@ -554,13 +805,18 @@ def _log_likelihood(
         :, lo - profiles.first : hi - profiles.first + 1
     ]
     mass = shown @ kernel
-    return np.asarray(
-        (np.log(np.maximum(mass, _TINY)) + profiles.top[:, None]).sum(axis=0), dtype=np.float64
-    )
+    each = np.log(np.maximum(mass, _TINY)) + profiles.top[:, None]
+    if weights is not None:
+        each = weights[:, None] * each
+    return np.asarray(each.sum(axis=0), dtype=np.float64)
 
 
 def _log_posterior(
-    alpha: Floats, log_prior: Floats, profiles: _Profiles | None, tau: float
+    alpha: Floats,
+    log_prior: Floats,
+    profiles: _Profiles | None,
+    tau: float,
+    weights: Floats | None = None,
 ) -> Floats:
     """The unnormalized log posterior on the ``alpha`` grid: found on every :data:`COARSE`
     th point, then in full only where that is within :data:`WINDOW_LOG` of its top (one coarse
@@ -571,25 +827,31 @@ def _log_posterior(
     coarse = np.arange(0, alpha.size, COARSE)
     if coarse[-1] != alpha.size - 1:
         coarse = np.append(coarse, alpha.size - 1)
-    rough = log_prior[coarse] + _log_likelihood(coarse, alpha, profiles, tau, scaled)
+    rough = log_prior[coarse] + _log_likelihood(
+        coarse, alpha, profiles, tau, scaled, weights=weights
+    )
     kept = coarse[rough >= rough.max() - WINDOW_LOG]
     window = np.arange(
         max(0, int(kept.min()) - COARSE), min(alpha.size, int(kept.max()) + COARSE + 1)
     )
     found = np.full(alpha.size, -np.inf)
-    found[window] = log_prior[window] + _log_likelihood(window, alpha, profiles, tau, scaled)
+    found[window] = log_prior[window] + _log_likelihood(
+        window, alpha, profiles, tau, scaled, weights=weights
+    )
     return found
 
 
-def _unnamed_cells(clusters: Sequence[_Cluster]) -> tuple[npt.NDArray[np.intp], Floats, Floats]:
+def _unnamed_cells(
+    clusters: Sequence[_Cluster], weights: Sequence[float] | None = None
+) -> tuple[npt.NDArray[np.intp], Floats, Floats]:
     """Every unnamed row of the class, as (offset in grid steps, count, list sensitivity) per
-    distinct cell."""
+    distinct cell; ``weights``: each market-day's rows count its own (``None``: whole)."""
     found: dict[tuple[int, float], float] = {}
-    for cluster in clusters:
+    for j, cluster in enumerate(clusters):
         cells = cluster.unnamed
         for k, n, s in zip(cells.steps.tolist(), cells.counts.tolist(), cells.s.tolist(),
                            strict=True):  # fmt: skip
-            found[(k, s)] = found.get((k, s), 0.0) + n
+            found[(k, s)] = found.get((k, s), 0.0) + (n if weights is None else weights[j] * n)
     keys = sorted(found)
     return (
         np.array([k for k, _ in keys], dtype=np.intp),
@@ -598,23 +860,28 @@ def _unnamed_cells(clusters: Sequence[_Cluster]) -> tuple[npt.NDArray[np.intp], 
     )
 
 
-def _posterior(
+def _posterior(  # noqa: PLR0913 - the grid, the prior, the rows and the ramp's keywords
     alpha: Floats,
     log_prior: Floats,
     profiles: _Profiles,
     settings: AnchorSettings,
     market_days: int,
+    *,
+    weights: Floats | None = None,
+    tau_free: bool = True,
 ) -> tuple[float, Floats]:
     """``tau`` and the log posterior of ``alpha`` at it: the registered ``tau``, or, once the
-    class has ``tau_free_market_days`` market-days, the choice with the most marginal
-    likelihood."""
-    log = _log_posterior(alpha, log_prior, profiles, settings.tau)
-    if market_days < settings.tau_free_market_days:
+    class has ``tau_free_market_days`` market-days (and ``tau_free``: the ramp holds it
+    registered until it is full), the choice with the most marginal likelihood."""
+    log = _log_posterior(alpha, log_prior, profiles, settings.tau, weights)
+    if not tau_free or market_days < settings.tau_free_market_days:
         return settings.tau, log
     best = (settings.tau, -np.inf, log)
     for choice in settings.tau_choices:
         found = (
-            log if choice == settings.tau else _log_posterior(alpha, log_prior, profiles, choice)
+            log
+            if choice == settings.tau
+            else _log_posterior(alpha, log_prior, profiles, choice, weights)
         )
         top = float(found.max())
         evidence = top + float(np.log(np.exp(found - top).sum()))
@@ -623,15 +890,11 @@ def _posterior(
     return best[0], best[2]
 
 
-def fit_class(
-    key: str,
-    rows: Sequence[LiveRow],
-    offset_of: Callable[[str], float],
-    trials: Mapping[Tier, Trials],
-    settings: AnchorSettings,
-) -> ClassFit:
-    """The class's posterior from its live rows (none: the prior alone)."""
-    prior = settings.priors[key]
+def _used(
+    rows: Sequence[LiveRow], trials: Mapping[Tier, Trials], settings: AnchorSettings
+) -> tuple[list[LiveRow], float, float, bool]:
+    """The rows the fit takes (tier A, and tier B only under the tier B rule, Addendum B1.5),
+    each tier's list sensitivity, and whether tier B entered."""
     s_a = sensitivity(trials.get("A", Trials()), settings.tier_a_prior)
     found_b = trials.get("B", Trials())
     s_b = sensitivity(found_b, settings.tier_b_prior)
@@ -640,7 +903,31 @@ def fit_class(
         and found_b.trials >= settings.tier_b_min_trials
         and found_b.dates >= settings.tier_b_min_dates
     )
-    used = [row for row in rows if row.tier == "A" or tier_b]
+    return [row for row in rows if row.tier == "A" or tier_b], s_a, s_b, tier_b
+
+
+def fit_class(  # noqa: PLR0913 - the class, its rows, their lookups and the ramp's keywords
+    key: str,
+    rows: Sequence[LiveRow],
+    offset_of: Callable[[str], float],
+    trials: Mapping[Tier, Trials],
+    settings: AnchorSettings,
+    *,
+    weights: Mapping[date, float] | None = None,
+    delay_weights: Mapping[date, float] | None = None,
+    tau_free: bool = True,
+) -> ClassFit:
+    """The class's posterior from its live rows (none: the prior alone).
+
+    The ramp's keywords (:func:`ramped`); with the two maps ``None`` and ``tau_free`` true
+    this is the fit as built, bit for bit. ``weights``: a school day to its storm's weight;
+    each market-day's log marginal likelihood is multiplied by its day's (a day not in the
+    map weighs 1). ``delay_weights``: the same for the delay share's likelihood: each
+    market-day's delayed rows and unnamed cells count their day's weight there (the rows'
+    part in ``alpha``'s likelihood is under ``weights``, like every row). ``tau_free`` false:
+    ``tau`` is the registered one and no choice is tried."""
+    prior = settings.priors[key]
+    used, s_a, s_b, tier_b = _used(rows, trials, settings)
     s_of = {"A": s_a, "B": s_b}
     closed = sum(1 for row in used if row.label == "no_school")
     delayed = sum(1 for row in used if row.label == "delayed")
@@ -652,18 +939,34 @@ def fit_class(
     clusters = _clusters(used, offset_of, s_of, step)
     reach = int(np.ceil(KERNEL_SD * max(settings.tau, *settings.tau_choices) / step))
     log_prior = -0.5 * ((alpha - prior.alpha_mean) / prior.alpha_sd) ** 2
-    hidden = _unnamed_cells(clusters)
+
+    def of_days(weight: Mapping[date, float] | None) -> list[float] | None:
+        if weight is None:
+            return None
+        return [1.0 if c.day is None else weight.get(c.day, 1.0) for c in clusters]
+
+    lam = of_days(weights)
+    mu = of_days(delay_weights)
+    weighted = None if lam is None else np.array(lam, dtype=np.float64)
+    hidden = _unnamed_cells(clusters, mu)
+    late: float = (
+        delayed
+        if mu is None
+        else float(
+            sum(m * float(c.delayed.counts.sum()) for m, c in zip(mu, clusters, strict=True))
+        )
+    )
 
     def delay_at(at: float, tau: float) -> float:
         steps, counts, s = hidden
         p = sigmoid(at + step * steps[:, None] + np.sqrt(2.0) * tau * nodes[0][None, :]) @ nodes[1]
-        return _delay(settings.delay_prior, settings.delay_grid, delayed, (counts, s, p))
+        return _delay(settings.delay_prior, settings.delay_grid, late, (counts, s, p))
 
     q = delay_at(prior.alpha_mean, settings.tau)
     tau, log = settings.tau, log_prior.copy()
     for _ in range(DELAY_ROUNDS if clusters else 0):
         tau, log = _posterior(alpha, log_prior, _profiles(alpha, clusters, q, reach), settings,
-                              len(clusters))  # fmt: skip
+                              len(clusters), weights=weighted, tau_free=tau_free)  # fmt: skip
         weight = np.exp(log - log.max())
         moved = delay_at(float(weight @ alpha) / float(weight.sum()), tau)
         if abs(moved - q) < DELAY_TOL:
@@ -700,6 +1003,261 @@ def fit_class(
             weight @ (sigmoid(alpha[:, None] + np.sqrt(2.0) * tau * nodes[0][None, :]) @ nodes[1])
         ),
     )
+
+
+# --- the ramp: storms, the cap and the weight ----------------------------------------------------
+
+
+def weekday_index(day: date) -> int:
+    """The weekdays counted up to ``day``: a Friday and the next Monday differ by 1 (a
+    Saturday or Sunday counts as its Friday; ordinal 1 is a Monday)."""
+    ordinal = day.toordinal() - 1
+    return 5 * (ordinal // 7) + min(ordinal % 7, 4)
+
+
+def storms_of(days: Iterable[date], gap: int) -> dict[date, date]:
+    """Each day's storm, named by its first day: a run of the days with at most ``gap``
+    weekdays between two of them. With the registered gap of 1, Monday and Wednesday are one
+    storm (a morning the record lost, or one taken back, does not split it) and so are Friday
+    and Tuesday; Monday and Thursday are two. A weekday with no school counts as a day
+    between, so no storm runs across a break."""
+    found: dict[date, date] = {}
+    first: date | None = None
+    last: date | None = None
+    for day in sorted(set(days)):
+        if first is None or last is None or weekday_index(day) - weekday_index(last) > 1 + gap:
+            first = day
+        found[day] = first
+        last = day
+    return found
+
+
+def storm_weights(sizes: Mapping[date, float], start: float, cap: float) -> dict[date, float]:
+    """Each storm's weight in (0, 1], the largest for which no storm holds more than ``cap``
+    of the whole, the start counted in: ``weight_s x_s <= cap (start + sum_e weight_e x_e)``.
+
+    The storms over their share end level with each other (the ``m`` largest, at ``T_m = cap
+    U_m / (1 - m cap)``, ``U_m`` the start and every other storm); every other storm keeps 1,
+    and so does a storm of size 0. Because the start is counted, the cap is met from the first
+    storm on, and it never lowers an earlier storm's size when a storm is added."""
+    order = sorted(sizes, key=lambda storm: (-sizes[storm], storm))
+    values = [sizes[storm] for storm in order]
+    found = dict.fromkeys(order, 1.0)
+    most = min(math.ceil(1 / cap) - 1, len(order))
+    for m in range(most + 1):
+        left = 1 - m * cap
+        level = cap * (start + sum(values[m:])) / left if left > 0 else math.inf
+        if m == most or values[m] <= level:
+            for storm, value in zip(order[:m], values[:m], strict=True):
+                found[storm] = min(1.0, level / value) if value > 0 else 1.0
+            break
+    return found
+
+
+@dataclass(frozen=True, slots=True)
+class Storms:
+    """A class's storms and what each may count for (:func:`storm_table`): from the used
+    rows' days, markets and counts alone (the delay share's from the rows not labeled closed);
+    no chance is read."""
+
+    of: Mapping[date, date]
+    """Each of the class's dates to its storm (its first date)."""
+    information: Mapping[date, float]
+    """Each storm's information about ``alpha``, in whole market-days (``I_s``)."""
+    open_rows: Mapping[date, float]
+    """Each storm's rows not labeled closed (``O_s``)."""
+    weight: Mapping[date, float]
+    """Each storm's weight in the level's likelihood (``lambda``)."""
+    delay_weight: Mapping[date, float]
+    """Each storm's weight in the delay share's likelihood (``mu``)."""
+    start: float
+    """What the start counts for in the level (``I_0 = (tau / alpha_sd)^2``)."""
+    delay_start: float
+    """What the start counts for in the delay share, in rows (the sum of ``delay_beta``)."""
+    market_days: float
+    """Every used market-day's information, summed (not weighted)."""
+
+    @property
+    def counted(self) -> float:
+        """The storms, each counted as ``min(1, its information after the cap)``."""
+        return float(
+            sum(min(1.0, self.weight[storm] * info) for storm, info in self.information.items())
+        )
+
+    def by_day(self, weight: Mapping[date, float]) -> dict[date, float] | None:
+        """A storm weight per school day, or ``None`` where every storm weighs 1."""
+        if all(value >= 1 for value in weight.values()):
+            return None
+        return {day: weight[storm] for day, storm in self.of.items()}
+
+
+def row_information(alpha: float, settings: AnchorSettings) -> float:
+    """``c``: a market-day of ``n`` rows counts ``n / (n + c)`` whole market-days of
+    information about ``alpha``. A lone row counts exactly its Fisher information at the
+    level of ``alpha`` (``I_1 = tau^2 L'(alpha)^2 / (L (1 - L))``, ``L`` the marginal level
+    over the market-day effect), and a market-day of endless rows fixes ``alpha`` only to the
+    day's own spread: one whole market-day."""
+    z, w = _nodes(settings.nodes)
+    s = sigmoid(alpha + np.sqrt(2.0) * settings.tau * z)
+    level = float(s @ w)
+    slope = float((s * (1 - s)) @ w)
+    one = settings.tau**2 * slope**2 / (level * (1 - level))
+    return 1.0 / one - 1.0
+
+
+def storm_table(
+    key: str, used: Sequence[LiveRow], settings: AnchorSettings, start_alpha: float
+) -> Storms:
+    """The class's storms from its used rows, with both sets of weights under the class's
+    registered share (``start_alpha``: the no-row fit's ``alpha``)."""
+    c = row_information(start_alpha, settings)
+    sizes = Counter(row.market_day for row in used)
+    closed = Counter(row.market_day for row in used if row.label == "no_school")
+    of = storms_of({day for day, _ in sizes}, settings.storm_gap)
+    information = dict.fromkeys(dict.fromkeys(of.values()), 0.0)
+    open_rows = dict.fromkeys(information, 0.0)
+    total = 0.0
+    for market_day, n in sorted(sizes.items()):
+        storm = of[market_day[0]]
+        each = n / (n + c)
+        information[storm] += each
+        open_rows[storm] += n - closed.get(market_day, 0)
+        total += each
+    cap = settings.date_cap[key]
+    start = (settings.tau / settings.priors[key].alpha_sd) ** 2
+    delay_start = float(sum(settings.delay_prior))
+    return Storms(
+        of=of,
+        information=information,
+        open_rows=open_rows,
+        weight=storm_weights(information, start, cap),
+        delay_weight=storm_weights(open_rows, delay_start, cap),
+        start=start,
+        delay_start=delay_start,
+        market_days=total,
+    )
+
+
+def _told(found: ClassFit) -> Told:
+    return Told(
+        level=float(found.level(0.0)),
+        band=found.band,
+        alpha=found.alpha,
+        q=found.q,
+        tau=found.tau,
+        predictive=found.predictive,
+    )
+
+
+def ramp_weight(rows: int, table: Storms, full: RampFull) -> tuple[float, Bound]:
+    """``w = min(1, rows / R, storms / D, market_days / K)`` (the last only where the class
+    registers ``market_days``) and the count that binds it (ties: rows, then storms, then
+    market-days; ``full`` at 1). While the newest date's rows are the only change to the used
+    rows none of the three counts can fall, so neither does ``w``."""
+    parts: dict[Bound, float] = {"rows": rows / full.rows, "storms": table.counted / full.storms}
+    if full.market_days is not None:
+        parts["market_days"] = table.market_days / full.market_days
+    bound = min(parts, key=lambda name: parts[name])
+    if parts[bound] >= 1:
+        return 1.0, "full"
+    return parts[bound], bound
+
+
+def ramped(
+    key: str,
+    rows: Sequence[LiveRow],
+    offset_of: Callable[[str], float],
+    trials: Mapping[Tier, Trials],
+    settings: AnchorSettings,
+) -> ClassFit:
+    """The class's served fit under ``live_update.ramp`` ``"capped_storms"`` (the module
+    docstring's ramp): the tempered posterior, part of the way from the no-row fit.
+
+    With no used row it is the no-row fit itself, bit for bit the fit as built. With ``0 < w <
+    1`` its ``alpha``, both ends of its band and its delay share are ``start + w (raw -
+    start)`` at the registered ``tau``. At ``w`` 1 it is the tempered posterior itself, with
+    ``tau`` chosen as built. The counts (``rows``, ``closed``, ``market_days``, ``dates``...)
+    are the used rows', as built, and ``predictive`` is the tempered posterior's (not served).
+    The fit as built is made after the served one for the log line and the private report
+    only (:attr:`Ramp.built`): if it raises, the served fit is untouched and the error's type
+    is kept (:attr:`Ramp.built_error`)."""
+    known: dict[str, float] = {}
+
+    def offset(district: str) -> float:
+        # the served fit and the fit as built place the same rows: each offset is found once
+        found = known.get(district)
+        if found is None:
+            found = known[district] = offset_of(district)
+        return found
+
+    start = fit_class(key, [], offset, trials, settings)
+    used = _used(rows, trials, settings)[0]
+    full = settings.ramps[key]
+    cap = settings.date_cap[key]
+    told = _told(start)
+    if not used:
+        return replace(
+            start,
+            ramp=Ramp(
+                w=0.0, bound="none", rows=0, storms=0.0, market_days=0.0, full=full,
+                gap=settings.storm_gap, cap=cap, storm_count=0, start=told, raw=told, built=told,
+            ),
+        )  # fmt: skip
+    table = storm_table(key, used, settings, start.alpha)
+    w, bound = ramp_weight(len(used), table, full)
+    weights = table.by_day(table.weight)
+    delay_weights = table.by_day(table.delay_weight)
+    raw = fit_class(
+        key, rows, offset, trials, settings,
+        weights=weights, delay_weights=delay_weights, tau_free=w >= 1,
+    )  # fmt: skip
+    served = raw
+    if w < 1:
+        low, high = start.alpha_band
+        served = replace(
+            raw,
+            alpha=start.alpha + w * (raw.alpha - start.alpha),
+            alpha_band=(
+                low + w * (raw.alpha_band[0] - low),
+                high + w * (raw.alpha_band[1] - high),
+            ),
+            q=start.q + w * (raw.q - start.q),
+        )
+    built: Told | None = _told(raw)
+    error: str | None = None
+    whole = weights is None and delay_weights is None
+    if not (whole and (w >= 1 or raw.market_days < settings.tau_free_market_days)):
+        # the fit as built is another fit (a weight under 1, or a tau as built would choose)
+        try:
+            built = _told(fit_class(key, rows, offset, trials, settings))
+        except Exception as raised:  # for the line only: it never stops a run
+            built, error = None, type(raised).__name__
+    dates: dict[date, list[date]] = {}
+    for day, storm in table.of.items():
+        dates.setdefault(storm, []).append(day)
+    whole_level = table.start + sum(table.information.values())
+    whole_delay = table.delay_start + sum(table.open_rows.values())
+    tempered = tuple(
+        Tempered(
+            storm=storm,
+            dates=tuple(sorted(dates[storm])),
+            share=table.information[storm] / whole_level,
+            weight=table.weight[storm],
+            delay_share=table.open_rows[storm] / whole_delay,
+            delay_weight=table.delay_weight[storm],
+        )
+        for storm in sorted(table.information)
+        if table.weight[storm] < 1 or table.delay_weight[storm] < 1
+    )
+    return replace(
+        served,
+        ramp=Ramp(
+            w=w, bound=bound, rows=len(used), storms=table.counted,
+            market_days=table.market_days, full=full, gap=settings.storm_gap, cap=cap,
+            storm_count=len(table.information), start=told, raw=_told(raw), built=built,
+            built_error=error, tempered=tempered,
+        ),
+    )  # fmt: skip
 
 
 # --- a unit's standing -------------------------------------------------------------------------
@@ -979,6 +1537,8 @@ class Anchor:
             "classes": {k: fit.summary() for k, fit in self.fits.items()},
             "deltas": {k: dict(v) for k, v in self.deltas.items()},
             "f_ref": dict(self.exposure.f_ref),
+            "ramp": self.settings.ramp,
+            "left_out": self.labels.left_out.summary(),
             "labels": {
                 "found": self.labels.found,
                 "days": self.labels.days,
@@ -1216,7 +1776,8 @@ def fit(
     places: Mapping[str, tuple[str | None, str | None]],
 ) -> Anchor:
     """The anchor: each class fitted on its live rows (``places``: LEAID to its county and
-    region, for each row's offset)."""
+    region, for each row's offset), ramped from its start (:func:`ramped`) unless
+    ``live_update.ramp`` is ``"off"`` (then the fit as built, :func:`fit_class`)."""
     deltas: dict[str, dict[str, float]] = {}
     for klass in CLASSES:
         nation = exposure.nation.get(klass)
@@ -1240,5 +1801,9 @@ def fit(
             county, region = places.get(leaid, (None, None))
             return stub.offsets(Unit(leaid, county, region))[0][j]
 
-        fits[klass] = fit_class(klass, rows, offset_of, labels.trials, settings)
+        fits[klass] = (
+            ramped(klass, rows, offset_of, labels.trials, settings)
+            if settings.ramp == "capped_storms"
+            else fit_class(klass, rows, offset_of, labels.trials, settings)
+        )
     return Anchor(settings, exposure, fits, deltas, labels)

@@ -47,7 +47,7 @@ from snowlight.predict.artifact import (
 )
 from snowlight.predict.calendar import forecast_days, is_school_day, previous_school_day
 from snowlight.predict.config import PredictConfig
-from snowlight.predict.exposure import CLASSES
+from snowlight.predict.exposure import CLASS_OF_WEATHER, CLASSES
 from snowlight.predict.forecast_values import NO_FORECASTS, Forecasts
 from snowlight.predict.geography import REGION_OF, districts_near, neighbors, state_of_leaid
 from snowlight.predict.labels import NO_SCHOOL, WEATHER_REASONS
@@ -91,6 +91,7 @@ from snowlight.predict.why import (
     WEATHER_NAME,
     Of,
     Standing,
+    percent,
     reasons_for,
     record_for,
     sayable,
@@ -102,6 +103,7 @@ from snowlight.schemas.predictions import (
     MAX_OUTLOOKS,
     MAX_SCHOOL_NEIGHBORS,
     MAX_ZONES,
+    ClassBase,
     DistrictForecast,
     Forecast,
     NoThreat,
@@ -1402,41 +1404,104 @@ whether that chance was served from its storm class's level (a ``class`` base), 
 day was stormy then (it named forecast weather), and whether lines moved it off its base (on a
 ``class`` base only the forecast adjustment's do)."""
 
+type LastBases = dict[tuple[int, date], tuple[str, int]]
+"""Each unit-day the last file served from a storm class's level: that class and the base's
+points (the unit's class-level chance in whole percent)."""
 
-def _previous(last: PredictionsFile | None) -> dict[tuple[int, date], Earlier]:
-    if last is None:
-        return {}
+_WEATHER_OF_ALERT: Final = {alert: weather for weather, alert in ALERT_KIND.items()}
+_WEATHER_OF_NAME: Final = {name: weather for weather, name in WEATHER_NAME.items()}
+
+
+def _class_base(item: Forecast) -> tuple[str, int] | None:
+    """The storm class a forecast's class base names (by its alert or its weather) and the
+    base's points; ``None`` for any other base."""
+    base = item.why.base
+    if not isinstance(base, ClassBase):
+        return None
+    weather = (
+        _WEATHER_OF_ALERT.get(base.alert)
+        if base.alert is not None
+        else _WEATHER_OF_NAME.get(base.weather)
+        if base.weather is not None
+        else None
+    )
+    klass = None if weather is None else CLASS_OF_WEATHER.get(int(weather))
+    return None if klass is None else (klass, base.points)
+
+
+def _earlier(item: Forecast, at: datetime) -> Earlier:
+    return (
+        item.p_no_school,
+        item.previous,
+        at,
+        item.why.base.kind == "class",
+        bool(item.reasons),
+        bool(item.why.reasons),
+    )
+
+
+def _previous(last: PredictionsFile | None) -> tuple[dict[tuple[int, date], Earlier], LastBases]:
+    """Each district-day's chance in the last file, and the class bases it served."""
     found: dict[tuple[int, date], Earlier] = {}
+    bases: LastBases = {}
+    if last is None:
+        return found, bases
     for entry in last.districts:
         for day, item in zip(last.days, entry.days, strict=True):
             if isinstance(item, Forecast):
-                found[(entry.district, day)] = (
-                    item.p_no_school,
-                    item.previous,
-                    last.generated_at,
-                    item.why.base.kind == "class",
-                    bool(item.reasons),
-                    bool(item.why.reasons),
-                )
-    return found
+                found[(entry.district, day)] = _earlier(item, last.generated_at)
+                base = _class_base(item)
+                if base is not None:
+                    bases[(entry.district, day)] = base
+    return found, bases
 
 
-def _previous_schools(last: PredictionsFile | None) -> dict[tuple[int, date], Earlier]:
-    if last is None:
-        return {}
+def _moved_classes(
+    model: ServeModel,
+    classes: npt.NDArray[np.int64],
+    days: Sequence[date],
+    after_sets: Mapping[date, frozenset[int]],
+    bases: LastBases,
+) -> frozenset[str]:
+    """The storm classes whose level moved since the last file (predict-next ONE-STORM): a
+    class some district-day holds a class base of in the last file and in this pass, with
+    base points that differ (lines on either base or not). Within a process the base never
+    changes, so this names a class only on the first file after a refit moved its level (a
+    new labeled date, a take-back, tier B entering or leaving) or after a deploy changed the
+    levels. It reads the last public file only."""
+    if not bases or not model.classed:
+        return frozenset()
+    position = {day: d for d, day in enumerate(days)}
+    moved: set[str] = set()
+    for (index, day), (klass, points) in bases.items():
+        d = position.get(day)
+        if d is None or klass in moved:
+            continue
+        weather = WeatherClass(int(classes[index, d]))
+        if CLASS_OF_WEATHER.get(int(weather)) != klass:
+            continue
+        k = SITUATION_POSITION[Situation.of(weather, index in after_sets[day]).key]
+        if model.classed[k] and percent(float(model.p[index, k])) != points:
+            moved.add(klass)
+    return frozenset(moved)
+
+
+def _previous_schools(
+    last: PredictionsFile | None,
+) -> tuple[dict[tuple[int, date], Earlier], LastBases]:
+    """Each private school's days in the last file, as :func:`_previous`."""
     found: dict[tuple[int, date], Earlier] = {}
+    bases: LastBases = {}
+    if last is None:
+        return found, bases
     for entry in last.schools:
         for day, item in zip(last.days, last.outlook_of(entry), strict=True):
             if isinstance(item, Forecast):
-                found[(entry.school, day)] = (
-                    item.p_no_school,
-                    item.previous,
-                    last.generated_at,
-                    item.why.base.kind == "class",
-                    bool(item.reasons),
-                    bool(item.why.reasons),
-                )
-    return found
+                found[(entry.school, day)] = _earlier(item, last.generated_at)
+                base = _class_base(item)
+                if base is not None:
+                    bases[(entry.school, day)] = base
+    return found, bases
 
 
 def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the lookups
@@ -1492,12 +1557,19 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     not a change in the weather). ``noted``: where given, each adjusted district-day's class
     order cap and terms are noted in it (the frozen record reads it; nothing served does).
 
+    The morning a level moves (predict-next ONE-STORM): where a storm class's level itself
+    moved since ``last`` (:func:`_moved_classes`: a refit on a new labeled date, a take-back,
+    a deploy that changes the levels), no day served from that class in both files makes a
+    new previous chance from ``last``, a private school's neither: the level moving is not a
+    change in the weather. A previous chance ``last`` already carried stays only while the
+    chance now shown is on the same side of it. The next file compares as before.
+
     Raises:
         TableError: the private schools' outlooks are more than the file may hold.
     """
     generated = now.astimezone(UTC).replace(microsecond=0)
     same = last if last is not None and last.directory == model.directory.stamp else None
-    earlier = _previous(same) if fit.previous else {}
+    earlier, bases = _previous(same) if fit.previous else ({}, {})
     kept = _kept(same, model) if adjust else {}
     after_sets = {
         day: (closed_on(previous_school_day(day)) or frozenset())
@@ -1505,6 +1577,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
         else frozenset()
         for day in days
     }
+    moved = _moved_classes(model, classes, days, after_sets, bases)
     entries: list[DistrictForecast] = []
     carried = 0
     for index in range(len(model.directory.district_ids)):
@@ -1566,6 +1639,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
                     forecast_read=forecast_read,
                     last_read=read_last is not None and (index, day) in read_last,
                     snapshot=snapshot,
+                    level_moved=_level_moved(moved, bases.get((index, day)), weather),
                 )
             )
             night = nights.get(day, index) if fit.nights else None
@@ -1585,15 +1659,18 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     table: tuple[Forecast | NoThreat, ...] = ()
     zones: tuple[str, ...] = ()
     if fit.schools and model.private is not None and private_classes is not None:
+        last_schools, school_bases = _previous_schools(same) if fit.private_previous else ({}, {})
         schools, table, zones = _schools(
             model.private,
             private_classes,
             days,
             generated,
-            earlier=_previous_schools(same) if fit.private_previous else {},
+            earlier=last_schools,
             closed_on=closed_schools,
             said=said,
             records=fit.records,
+            bases=school_bases,
+            moved=moved,
         )
     return PredictionsFile(
         schema_version=SCHEMA_VERSION,
@@ -1974,14 +2051,20 @@ def _schools(  # noqa: PLR0913 - the private schools, their classes, the days an
     closed_on: ClosedOn | None,
     said: SaidOpen,
     records: bool = True,
+    bases: LastBases | None = None,
+    moved: frozenset[str] = frozenset(),
 ) -> tuple[tuple[SchoolForecast, ...], tuple[Forecast | NoThreat, ...], tuple[str, ...]]:
     """Every served private school's days, and the distinct outlooks and time zones they name,
-    each in the order first named; ``records``: with the record days under own bases.
+    each in the order first named; ``records``: with the record days under own bases;
+    ``bases``: the class bases the last file served the schools from (with ``earlier``,
+    :func:`_previous_schools`); ``moved``: the storm classes whose level moved since the last
+    file (the districts', :func:`_moved_classes`).
 
     Raises:
         TableError: more outlooks or time zones than the file may hold, found before any
             school's entry is made (its index would not validate).
     """
+    last_bases = bases or {}
     after_sets = {
         day: (closed_on(previous_school_day(day)) if closed_on is not None else None) or frozenset()
         if is_school_day(day)
@@ -2023,6 +2106,7 @@ def _schools(  # noqa: PLR0913 - the private schools, their classes, the days an
                     earlier.get((position, day)),
                     generated,
                     said_open=said.school(day, position),
+                    level_moved=_level_moved(moved, last_bases.get((position, day)), weather),
                 )
             named.append(table.setdefault(outlook, len(table)))
         if len(table) > MAX_OUTLOOKS:
@@ -2120,6 +2204,14 @@ class _Cell:
     base says so: :func:`~snowlight.predict.why.class_base`)."""
 
 
+def _level_moved(
+    moved: frozenset[str], last: tuple[str, int] | None, weather: WeatherClass
+) -> bool:
+    """Whether the last file served the unit-day from the storm class ``weather`` is in now,
+    and that class's level moved since (:func:`_moved_classes`)."""
+    return last is not None and last[0] in moved and last[0] == CLASS_OF_WEATHER.get(int(weather))
+
+
 def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     cell: _Cell,
     situation: Situation,
@@ -2137,6 +2229,7 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     forecast_read: bool = False,
     snapshot: datetime | None = None,
     last_read: bool = False,
+    level_moved: bool = False,
 ) -> Forecast:
     """One unit's forecast for one school day. ``said_open``: the unit said school is on that
     day, so its chance of no school is the floor and of a delay 0 (:mod:`snowlight.predict.
@@ -2148,7 +2241,9 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     the day's chance and lines with the forecast on its class level (advisory-sane L5), never
     on a day said open; ``forecast_read``: its forecast was read for that (moved or not);
     ``snapshot``: its class snapshot, where the adjustment is on for it; ``last_read``: the
-    pass that made the last file read its forecast too."""
+    pass that made the last file read its forecast too; ``level_moved``: the last file served
+    the day from the same storm class's level, and that level moved since
+    (:func:`_level_moved`)."""
     p, q = cell.p, cell.q
     floor = FLOOR if said_open else None
     lines = None
@@ -2203,6 +2298,18 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
             # as it worsening. A quiet day's chance before an alert came, or a storm day's
             # before it passed, is one: "Up from 3% at 5 PM" stays.
             previous = None
+        elif level_moved and cell.classed:
+            # The class level itself moved since the last file (a refit on a newly labeled
+            # date, a take-back, a deploy): not a change in the weather, so no new "Up from"
+            # is made from the last file. A previous chance that file already carried stays
+            # only where it was made before this file and the chance now shown is on the same
+            # side of it as the last file's chance was, in whole percents: "Up from 44%",
+            # carried at 45%, stays at 47% and goes at 38% or 44%.
+            if last_previous is not None and last_previous.at < generated:
+                was = round(last_previous.p_no_school * 100)
+                before, now = round(last_p * 100), round(shown * 100)
+                if (before > was and now > was) or (before < was and now < was):
+                    previous = last_previous
         elif round(last_p * 100) != round(shown * 100):
             previous = PreviousChance(p_no_school=last_p, at=last_at)
         elif last_previous is not None and last_previous.at < generated:

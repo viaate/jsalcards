@@ -32,7 +32,8 @@ informative group (the arms' frozen values differ on a row), on the ledger throu
 date (:func:`evaluate`); a date-class is a distinct (date, class); the truth table
 (:func:`step`) moves the streaks and the arm. The served arm, both streaks and the
 evaluations are always the replay of the ledger (:func:`replay`): a day later in
-``learn.excluded_days`` is dropped and the rest replayed, and serving refuses a state that is
+``learn.excluded_days``, or one a pair of ``learn.excluded_rows`` names, is dropped whole and
+the rest replayed, and serving refuses a state that is
 not its own replay, or whose ``through`` is after the run's date (:func:`served_arms`); the
 step writes the replay and repairs such a ``through``.
 
@@ -1319,9 +1320,10 @@ def why_not_served(  # noqa: PLR0911 - each reason said
         return "another key"
     if state.through is not None and state.through > today:
         return f"::warning::through {state.through.isoformat()} is after the run's date"
-    excluded = sorted(set(config.learn.excluded_days) & {e.day for e in state.ledger})
+    excluded = sorted(set(config.learn.left_out_days()) & {e.day for e in state.ledger})
     if excluded:
-        return f"its ledger holds {excluded[0].isoformat()}, in learn.excluded_days"
+        named = config.learn.left_out_by(excluded[0])
+        return f"its ledger holds {excluded[0].isoformat()}, in {named}"
     term = TERMS.get(rule.name)
     if term is None:
         return "no such term"
@@ -1756,22 +1758,33 @@ def _streak_text(served: Arm, on_streak: int, off_streak: int) -> str:
     return f"ON streak {on_streak}" if served == "off" else f"OFF streak {off_streak}"
 
 
-def _excluded_line(rule: Rule, excluded: Sequence[date], was: Replay, now: Replay) -> _Said:
-    """The line of days dropped as ``learn.excluded_days`` (a switch line when the arm the
-    rest replays to differs)."""
+def _excluded_line(
+    rule: Rule, excluded: Sequence[date], was: Replay, now: Replay, named: str
+) -> _Said:
+    """The line of days dropped as left out (a switch line when the arm the rest replays to
+    differs); ``named``: the list or lists that leave them out (``learn.excluded_days``,
+    ``learn.excluded_rows``, or both: :func:`_left_out_named`)."""
     listed = ", ".join(d.isoformat() for d in excluded)
     if now.served != was.served:
         return _Said.of(
             f"switch {rule.name}: SWITCHED {now.served}: {listed} excluded "
-            f"(learn.excluded_days); the ledger without it ends {now.served}"
+            f"({named}); the ledger without it ends {now.served}"
         )
     before = _streak_text(was.served, was.on_streak, was.off_streak)
     after = _streak_text(now.served, now.on_streak, now.off_streak)
     moved = f"{before} to {after.split()[-1]}" if before != after else f"{after} unchanged"
     return _Said.of(
-        f"switch {rule.name}: {listed} excluded (learn.excluded_days): dropped from the ledger; "
+        f"switch {rule.name}: {listed} excluded ({named}): dropped from the ledger; "
         f"served {now.served}, {moved}"
     )
+
+
+def _left_out_named(config: PredictConfig, days: Sequence[date]) -> str:
+    """The take-back list that leaves ``days`` out: ``learn.excluded_days`` when every one is
+    in that list, ``learn.excluded_rows`` when every one is named only by pairs, both names
+    when the days are of both kinds."""
+    names = sorted({config.learn.left_out_by(day) or "learn.excluded_days" for day in days})
+    return ", ".join(names)
 
 
 @dataclass(slots=True)
@@ -1813,7 +1826,8 @@ def _step_term(  # noqa: PLR0912, PLR0913, PLR0915 - one term's whole step
     config = inputs.config
     today = inputs.now.date()
     every = [d for d in live_read.labeled_days(inputs.reads) if d <= today]
-    labeled = [d for d in every if d not in config.learn.excluded_days]
+    left_out = set(config.learn.left_out_days())
+    labeled = [d for d in every if d not in left_out]
     said: list[_Said] = []
     state = held
     if state is None or state.key != key:
@@ -1828,9 +1842,11 @@ def _step_term(  # noqa: PLR0912, PLR0913, PLR0915 - one term's whole step
             f"{state.through.isoformat()} is after L1's newest labeled date, "
             f"{every[-1].isoformat()}"
         )
-    # A day later in learn.excluded_days: dropped, and the rest replayed (Decision 9).
-    excluded = sorted({e.day for e in state.ledger} & set(config.learn.excluded_days))
-    ledger = [e for e in state.ledger if e.day not in config.learn.excluded_days]
+    # A day later in learn.excluded_days, or named by a pair of learn.excluded_rows (the
+    # ledger keeps sums per date, so one row cannot be taken out of a counted date): dropped
+    # whole, and the rest replayed (Decision 9).
+    excluded = sorted({e.day for e in state.ledger} & left_out)
+    ledger = [e for e in state.ledger if e.day not in left_out]
     switches = list(state.switches)
     stored = replay(rule, state.ledger, term, config)
     if not is_replay(state, stored):
@@ -1843,7 +1859,9 @@ def _step_term(  # noqa: PLR0912, PLR0913, PLR0915 - one term's whole step
         said.append(_Said(f"{text} is written", f"{text} would be written (not written)"))
     before = replay(rule, ledger, term, config) if excluded else stored
     if excluded:
-        said.append(_excluded_line(rule, excluded, stored, before))
+        said.append(
+            _excluded_line(rule, excluded, stored, before, _left_out_named(config, excluded))
+        )
         if before.served != stored.served:
             switches.append(
                 {"date": excluded[0].isoformat(), "to": before.served, "why": "excluded"}

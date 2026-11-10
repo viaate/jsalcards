@@ -12,7 +12,9 @@ takes the day in). Each run:
    and waits. The store (``predictions/learn.json`` on the live host, :class:`LearnStore`)
    keeps every labeled live district-day as the district's position in its LEAID table, by
    situation and by what the district did. Unknown district-days are counted, never kept as
-   labels. A day in ``excluded_days`` (found misread) is never labeled, fit or held out.
+   labels. A day in ``excluded_days`` (found misread) is never labeled, fit or held out; a
+   day one row of which is taken back (``excluded_rows``) is labeled, and never fit or held
+   out here: this learner drops it whole.
    A day waits while its previous school day waits (not labeled yet but still able to be):
    which districts it follows a closing of is told only from that day's labels, so a day
    is never frozen with its day-after districts missing. A previous school day that can
@@ -51,7 +53,8 @@ takes the day in). Each run:
    committed model it was made over (and the committed model alone when it is missing, made
    over another committed model, or does not build). Or **keeps** the model served now,
    says why, and exits :data:`EXIT_KEPT` (the workflow then opens one issue, if none is
-   open). A served learned file that counted a day now in ``excluded_days`` (its own list of
+   open). A served learned file that counted a day now in ``excluded_days``, or one a pair of
+   ``excluded_rows`` names (its own list of
    the days it counted says so, whatever became of the store) is judged anew
    against the committed model, and replaced by the refit only when it passes, else by a
    file that re-anchors nothing (the committed model's chances).
@@ -657,11 +660,14 @@ type Builder = Callable[[Learned | None], ServeModel]
 
 
 def tainted(current: Learned | None, config: PredictConfig) -> list[date]:
-    """The excluded days a served learned file counted (its own list of the days)."""
+    """The left-out days a served learned file counted (its own list of the days): the
+    excluded days, and every day a pair of ``learn.excluded_rows`` names (this learner drops
+    such a day whole, so the file that replaces a tainted one no longer counts it and the
+    next run finds nothing tainted)."""
     if current is None or not current.anchored:
         return []
     counted = set(current.days)
-    return sorted(d for d in config.learn.excluded_days if d in counted)
+    return sorted(d for d in config.learn.left_out_days() if d in counted)
 
 
 def decide(  # noqa: PLR0913, PLR0917 - the store, the models, the settings
@@ -673,8 +679,7 @@ def decide(  # noqa: PLR0913, PLR0917 - the store, the models, the settings
     now: datetime,
 ) -> Decision:
     """Whether to swap in a refit on the store's live days (see the module docstring)."""
-    excluded = set(config.learn.excluded_days)
-    rows = store.rows().filter(~pl.col("day").is_in(sorted(excluded)))
+    rows = store.rows().filter(~pl.col("day").is_in(list(config.learn.left_out_days())))
     bad = tainted(current, config)
     if bad:
         decision = _decide(rows, None, build, archive_sha256, config, now)

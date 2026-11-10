@@ -14,10 +14,15 @@ owner's O5) with a tier enter; ``unknown`` and ``not_read`` rows do not. With no
 labeled yet, or the reads cache lost it) the labels are empty and the anchor serves its prior's
 level, which is correct. A day that does not read is left out and said, never fatal: a broken
 day must not darken a pass.
+
+The take-back (predict-next ONE-STORM, ``learn.excluded_days`` and ``learn.excluded_rows``): a
+day found misread is skipped by its name, unread; one district's row of a day is dropped, with
+its trials, from the day as read. The record's files are never rewritten, and the labels are
+those of a record that never held them, so the fit is too.
 """
 
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import replace
 from datetime import date
 from pathlib import Path
@@ -28,16 +33,18 @@ from snowlight.predict.anchor import (
     Anchor,
     AnchorSettings,
     LabelKind,
+    LeftOut,
     LiveLabels,
     LiveRow,
     Plausible,
+    Ramp,
     Tier,
     Trials,
     fit,
 )
 from snowlight.predict.artifact import ModelArtifact
-from snowlight.predict.config import PIPELINE_ROOT, PredictConfig
-from snowlight.predict.exposure import EXPOSURE_PATH, Exposure
+from snowlight.predict.config import PIPELINE_ROOT, LearnSettings, PredictConfig
+from snowlight.predict.exposure import CLASSES, EXPOSURE_PATH, Exposure
 from snowlight.predict.exposure import load as load_exposure
 from snowlight.predict.forecast_adjust import CLIMATE_PATH, AdjustSettings
 from snowlight.predict.forecast_adjust import load as load_climate
@@ -109,17 +116,27 @@ def day_rows(day: date, body: object) -> list[LiveRow]:
 
 
 def _trials(
-    path: Path, day: date, tally: dict[str, list[int]], dates: dict[str, set[date]]
-) -> None:
-    """Add one day's closed co-listing trials (hits, trials) per tier.
+    path: Path,
+    day: date,
+    tally: dict[str, list[int]],
+    dates: dict[str, set[date]],
+    left_out: frozenset[str] = frozenset(),
+) -> int:
+    """Add one day's closed co-listing trials (hits, trials) per tier, less the lines of the
+    districts ``left_out`` that day (a line with no ``district`` is kept); returns how many
+    lines were left out.
 
     Raises:
         ValueError: a line does not read.
     """
+    dropped = 0
     for line in path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
         trial = json.loads(line)
+        if left_out and isinstance(trial, dict) and trial.get("district") in left_out:
+            dropped += 1
+            continue
         tier = trial.get("tier") if isinstance(trial, dict) else None
         named = trial.get("named") if isinstance(trial, dict) else None
         if tier not in TIERS or not isinstance(named, bool):
@@ -128,6 +145,7 @@ def _trials(
         found[0] += int(named)
         found[1] += 1
         dates.setdefault(str(tier), set()).add(day)
+    return dropped
 
 
 def read_labels(
@@ -135,33 +153,55 @@ def read_labels(
     *,
     since: date | None = None,
     warn: Callable[[str], None] = lambda _line: None,
+    excluded: LearnSettings | None = None,
 ) -> LiveLabels:
     """The record's labeled rows and trials (empty, ``found`` false, when there is none).
 
     ``since``: the first day the fit reads (``live_update.fit_from``); a day file before it is
     skipped by its name, unread, with its trials, so a record kept forever costs each process
-    only the days the fit can use (R3-S4)."""
+    only the days the fit can use (R3-S4). ``excluded``: the take-back lists (``config.learn``):
+    an excluded day's rows file and trials file are skipped by name, unread and not counted in
+    ``days``; in a day that is read, each listed pair's row is dropped, and each trial line
+    of a listed pair's district that day. What was listed and what of it the record held is
+    counted (``left_out``); nothing is warned and no file is written."""
+    listed = (
+        LeftOut()
+        if excluded is None
+        else LeftOut(
+            days_listed=len(set(excluded.excluded_days)),
+            rows_listed=len(set(excluded.excluded_rows)),
+        )
+    )
     root = folder / "rows"
     if not root.is_dir():
-        return LiveLabels()
+        return LiveLabels(left_out=listed)
     rows: list[LiveRow] = []
     tally: dict[str, list[int]] = {}
     dates: dict[str, set[date]] = {}
     days = 0
+    skipped = gone_rows = gone_trials = 0
     for path in sorted(root.glob("*.json")):
         day = _day_of(path)
         if day is None or (since is not None and day < since):
             continue
+        if excluded is not None and excluded.excludes_day(day):
+            skipped += 1
+            continue
+        gone = excluded.districts_left_out(day) if excluded is not None else frozenset()
         try:
             found = _rows(day, json.loads(path.read_text(encoding="utf-8")))
             trials = folder / "trials" / f"{day.isoformat()}.jsonl"
             mine: dict[str, list[int]] = {}
             mine_dates: dict[str, set[date]] = {}
-            if trials.is_file():
-                _trials(trials, day, mine, mine_dates)
+            dropped = _trials(trials, day, mine, mine_dates, gone) if trials.is_file() else 0
         except (OSError, ValueError, KeyError) as error:
             warn(f"anchor: the live labels of {day}: {type(error).__name__}: left out")
             continue
+        if gone:
+            kept = [row for row in found if row.district not in gone]
+            gone_rows += len(found) - len(kept)
+            gone_trials += dropped
+            found = kept
         rows.extend(found)
         for tier, (hits, count) in mine.items():
             total = tally.setdefault(tier, [0, 0])
@@ -178,6 +218,7 @@ def read_labels(
         },
         days=days,
         found=True,
+        left_out=replace(listed, days=skipped, rows=gone_rows, trials=gone_trials),
     )
 
 
@@ -201,7 +242,10 @@ def serving_anchor(  # noqa: PLR0913 - the config, the model and where each file
     term, no region delta) and says so: never back to an archive closure share. With
     ``serve.forecast_adjust`` on it carries the forecast climate and the registered adjustment
     (:mod:`snowlight.predict.forecast_adjust`); a climate file that does not read leaves every
-    day at its class level, and says so."""
+    day at its class level, and says so. The take-back lists (``config.learn``) are honored
+    when the record is read (:func:`read_labels`). A class whose fit as built raised (made
+    for the log line only, :func:`snowlight.predict.anchor.ramped`) is said once; what it
+    serves is untouched."""
     if not config.serve.anchor:
         return None
     settings = AnchorSettings.of(config)
@@ -210,12 +254,15 @@ def serving_anchor(  # noqa: PLR0913 - the config, the model and where each file
     except (OSError, ValueError, KeyError) as error:
         warn(f"anchor: the exposure file: {type(error).__name__}: serving the class levels alone")
         exposure = Exposure((), {}, {}, {}, {}, {})
-    labels = read_labels(folder, since=settings.fit_from, warn=warn)
+    labels = read_labels(folder, since=settings.fit_from, warn=warn, excluded=config.learn)
     places = {
         leaid: (entry.county, REGION_OF.get(entry.state) if entry.state else None)
         for leaid, entry in artifact.districts.items()
     }
     anchor = fit(settings, exposure, labels, places)
+    for key, found in anchor.fits.items():
+        if found.ramp is not None and found.ramp.built_error is not None:
+            warn(f"anchor: the fit as built of {key}: {found.ramp.built_error}: not in the line")
     if config.serve.forecast_adjust != "on":
         return anchor
     try:
@@ -227,9 +274,69 @@ def serving_anchor(  # noqa: PLR0913 - the config, the model and where each file
     return replace(anchor, climate=climate, adjust=adjust)
 
 
+TEMPERED_SAID: Final = 6
+"""The log line names this many tempered storms, then counts the rest (``anchor.json`` holds
+every one)."""
+
+
+def _ramp_said(key: str, ramp: Ramp) -> str:
+    """One class's ramp: its weight, what binds it, and the tempered posterior's and the fit
+    as built's level and delay share."""
+    said = f"{key} w {ramp.w:.3f}"
+    if ramp.bound == "none":
+        return f"{said} no rows"
+    full = ramp.full
+    if ramp.bound == "rows":
+        said += f" by rows {ramp.rows} of {full.rows:g}"
+    elif ramp.bound == "storms":
+        said += f" by storms {ramp.storms:.2f} of {full.storms:g}"
+    elif ramp.bound == "market_days":
+        said += f" by market_days {ramp.market_days:.2f} of {full.market_days or 0:g}"
+    else:
+        said += " full"
+    said += f" raw {ramp.raw.level:.3f} q {ramp.raw.q:.3f}"
+    if ramp.built is None:
+        return f"{said} built unavailable"
+    return f"{said} built {ramp.built.level:.3f} q {ramp.built.q:.3f}"
+
+
+def _tempered_said(ramps: Sequence[tuple[str, Ramp]]) -> str:
+    """The storms held to their class's share, by class then first date."""
+    found: list[str] = []
+    for key, ramp in ramps:
+        for storm in ramp.tempered:
+            said = f"{key} {storm.storm.isoformat()} x{len(storm.dates)}"
+            if storm.weight < 1:
+                said += f" level {storm.share:.3f} to {ramp.cap:.3f}"
+            if storm.delay_weight < 1:
+                said += f" delays {storm.delay_share:.3f} to {ramp.cap:.3f}"
+            found.append(said)
+    if not found:
+        return "tempered none"
+    more = len(found) - TEMPERED_SAID
+    return (
+        "tempered " + ", ".join(found[:TEMPERED_SAID]) + (f" and {more} more" if more > 0 else "")
+    )
+
+
+def _take_back_said(left_out: LeftOut) -> str:
+    """Both take-back lists, each with what it names and what of it the record held."""
+    if not left_out.days_listed and not left_out.rows_listed:
+        return "take-back none listed"
+    days = "day" if left_out.days_listed == 1 else "days"
+    rows = "row" if left_out.rows_listed == 1 else "rows"
+    return (
+        f"take-back {left_out.days_listed} {days} listed ({left_out.days} in the record), "
+        f"{left_out.rows_listed} {rows} listed ({left_out.rows} in the record)"
+    )
+
+
 def anchor_line(anchor: Anchor) -> str:
-    """One log line: each class's level at the reference district with its 80% band, its
-    delay share and the live rows it rests on."""
+    """One log line (counts and numbers only): each class's level at the reference district
+    with its 80% band, its delay share and the live rows it rests on; each class's ramp (its
+    weight, the count that binds it, the tempered posterior's level and the fit as built's:
+    what ``ramp: "off"`` would serve); the storms held to their share; what the take-back
+    lists name and what of it the record held; and the labeled days read."""
     parts = []
     for key, found in anchor.fits.items():
         low, high = found.band
@@ -237,6 +344,14 @@ def anchor_line(anchor: Anchor) -> str:
             f"{key} {float(found.level(0.0)):.3f} ({low:.3f}-{high:.3f}) q {found.q:.3f} "
             f"rows {found.rows} on {found.dates} dates"
         )
+    ramps = [(key, anchor.fits[key].ramp) for key in CLASSES if key in anchor.fits]
+    told = [(key, ramp) for key, ramp in ramps if ramp is not None]
+    if anchor.settings.ramp == "off" or not told:
+        parts.append("ramp off")
+    else:
+        parts.append("ramp " + ", ".join(_ramp_said(key, ramp) for key, ramp in told))
+        parts.append(_tempered_said(told))
+    parts.append(_take_back_said(anchor.labels.left_out))
     record = f"{anchor.labels.days} labeled days" if anchor.labels.found else "no read record"
     return f"anchor: {'; '.join(parts)}; {record}"
 
