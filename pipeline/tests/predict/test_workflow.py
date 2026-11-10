@@ -265,3 +265,52 @@ def test_the_frozen_record_has_its_own_cache_restored_before_the_passes_saved_af
         assert int(str(step["timeout-minutes"])) <= 1
         assert step["with"]["path"] == "pipeline/out/internal/predict/frozen"  # type: ignore[index]
     assert str(frozen.FOLDER).endswith("pipeline/out/internal/predict/frozen")
+
+
+def test_the_python_steps_print_as_they_go() -> None:
+    """Predict-next ON-AIR: every line is stamped when it is written, not when the run ends."""
+    env = job()["env"]
+    assert isinstance(env, dict)
+    assert env["PYTHONUNBUFFERED"] == "1"
+    commands = [str(step.get("run", "")) for step in steps()]
+    for command in (
+        "uv run snowlight predict learn",
+        'READ_LABELS_STARTED="$(date +%s)" uv run snowlight predict read-labels',
+        "uv run snowlight predict run --until +320m",
+        "uv run snowlight predict evidence",
+        "uv run snowlight predict check --max-age 45m",
+    ):
+        assert commands.count(command) == 1, command
+    # The head question uses the job's own token, which may read the repository and no more.
+    assert env["GITHUB_TOKEN"] == "${{ github.token }}"  # noqa: S105 - an expression, no token
+    permissions = load()["permissions"]
+    assert isinstance(permissions, dict)
+    assert permissions["contents"] == "read"
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "chances-watch.yml" in text
+    assert "may end early" in text
+
+
+def test_the_zone_map_issue_step() -> None:
+    title = "The weather service's zone map is not refreshing"
+    found = [step for step in steps() if f"TITLE: {title}" in yaml.safe_dump(step.get("env"))]
+    assert len(found) == 1
+    issue = found[0]
+    assert issue["if"] == (
+        "always() && steps.token.outputs.ready == 'true' && steps.run.outputs.boundaries == 'held'"
+    )
+    run = next(step for step in steps() if step.get("id") == "run")
+    assert run["run"] == "uv run snowlight predict run --until +320m"
+    script = str(issue["run"])
+    assert script.index("gh issue list") < script.index("gh issue create")
+    assert '[ "$open" = "0" ]' in script
+    assert "See docs/predict.md, Staying on air." in script
+    assert "$GITHUB_RUN_ID" in script
+    # After the learning step's issue step, and no existing step moved.
+    names = [str(step.get("name", "")) for step in steps()]
+    assert names.index("Open an issue when the zone map is not refreshing") == (
+        names.index("Open an issue when the model did not learn") + 1
+    )
+    assert names[-1] == "Open an issue when the zone map is not refreshing"
+    # What the run writes is what the step reads.
+    assert 'handle.write("boundaries=held\\n")' in Path(cli.__file__).read_text(encoding="utf-8")

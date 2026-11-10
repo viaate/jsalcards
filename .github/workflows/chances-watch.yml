@@ -1,0 +1,177 @@
+# The watch on the served snow-day chances (docs/predict.md, "Staying on air").
+#
+# What starts it: every run of live-ingest.yml. The owner's Cloudflare timer dispatches that
+# workflow every 5 minutes on the dot, and each of its runs, as it is requested, also starts one
+# run of this workflow (workflow_run). There is no cron here (GitHub's schedule on this
+# repository is hours late), no workflow_dispatch and no owner step. A watch run still waiting
+# for a runner at the next tick is replaced by that tick's.
+#
+# What it reads: the public file families get, v1/predictions/latest.json on the live host's
+# Pages, with the runner's own curl, jq and date. No checkout, no setup, no install, no secret:
+# only the built-in token, for the one issue. It judges the file by its own generated_at:
+# fresh, or stale (over 45 minutes old, less the time the CDN has held its copy, 10 minutes at
+# most), ahead, blank, unreadable, missing or unreachable. Anything but fresh opens one issue
+# titled "Snow-day chances are stale" (the title the Watchdog step of predict.yml uses, so the
+# two share it), comments on it at most once an hour, and closes it with "recovered at" once a
+# file 45 minutes old or less is served. A stop made on purpose (`predict blank` sets the hold)
+# and PREDICT_PUBLISH shadow or off keep it quiet. It never cancels, reruns or dispatches
+# anything.
+#
+# It bounds itself by its own clock: every request waits 15 s at most, and before each one the
+# script ends, saying so, once 135 s have passed, so it is over within 150 s whatever answers.
+# timeout-minutes is a backstop it never leans on. It always ends green.
+#
+# NEVER make this a job of live-ingest.yml. A job inside that workflow can hold the timer's
+# 5-minute tick: on Nov 2 2026 one job there was given a runner, ran no step and ended
+# cancelled 31 minutes later, its timeout-minutes notwithstanding, and six ticks had no run,
+# the reader's keeper and the manual statuses included. As a workflow of its own, in a
+# concurrency group of its own, this watch cannot change a live-ingest run's result or keep
+# the timer from starting the next one, whatever happens to its runner.
+name: chances-watch
+
+on:
+  workflow_run:
+    workflows: [live-ingest]
+    types: [requested]
+
+concurrency:
+  group: chances-watch
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write # the one stale issue
+
+jobs:
+  chances:
+    if: github.event.workflow_run.head_branch == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check the served chances
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREDICT_PUBLISH: ${{ vars.PREDICT_PUBLISH || 'on' }}
+          LIVE_ROOT: https://viaate.github.io/snowlight-live/
+        run: |
+          set +e
+          budget=${CHANCES_BUDGET:-135}
+          pause=${CHANCES_RETRY_WAIT:-20}
+          line="no verdict"
+          left() { # only ever on a line of its own in the main shell: an exit inside $( ) ends that subshell alone
+            if [ "$SECONDS" -lt "$budget" ]; then return 0; fi
+            echo "::notice::chances watch: out of time after $SECONDS s ($line): the next tick goes on"
+            exit 0
+          }
+          fetch() { # URL OUT: prints the HTTP status (000: nothing answered); the headers go to OUT.headers
+            curl -sS --compressed --max-time 15 -D "$2.headers" -o "$2" -w '%{http_code}' "$1" 2>/dev/null
+          }
+          call() { # METHOD URL OUT [BODY]: prints the HTTP status (000: nothing answered)
+            curl -sS --max-time 15 -o "$3" -w '%{http_code}' -X "$1" -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" ${4:+-d "$4"} "$2" 2>/dev/null
+          }
+          status() { # the last three characters printed are the status
+            local found=${1: -3}
+            case "$found" in [0-9][0-9][0-9]) echo "$found" ;; *) echo 000 ;; esac
+          }
+          case "${PREDICT_PUBLISH:-}" in shadow | off)
+            echo "chances watch: publishing is not on: nothing to watch"
+            exit 0 ;;
+          esac
+
+          # The file: three tries when nothing answers or the host is busy.
+          code=000
+          for try in 1 2 3; do
+            left
+            code=$(fetch "${LIVE_ROOT}v1/predictions/latest.json" served.json)
+            code=$(status "$code")
+            case "$code" in
+              000 | 429 | 5??) if [ "$try" -lt 3 ]; then sleep "$pause"; fi ;;
+              *) break ;;
+            esac
+          done
+          now=$(date +%s)
+          # The CDN's own Age: how long ago it took its copy from the host, 600 s at most.
+          allow=$(awk 'tolower($1) == "age:" { sub(/^[^:]*:[ \t]*/, ""); sub(/[ \t\r]+$/, ""); print }' served.json.headers 2>/dev/null | tail -n 1)
+          if ! [[ "$allow" =~ ^[0-9]{1,9}$ ]]; then allow=0; fi
+          if [ "$allow" -gt 600 ]; then allow=600; fi
+          plain=""
+          stamp=""
+          count=0
+          if [ "$code" = 000 ]; then
+            verdict="unreachable (no answer in 3 tries)"
+          elif [ "$code" != 200 ]; then
+            verdict="missing (HTTP $code)"
+          elif ! stamp=$(jq -er 'if type == "object" then .generated_at else empty end | strings | select(test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"))' served.json 2>/dev/null) ||
+            ! made=$(date -u -d "$stamp" +%s 2>/dev/null); then
+            verdict=unreadable
+          else
+            plain=$((now - made))
+            count=$(jq -r 'if (.districts | type) == "array" then (.districts | length) else 0 end' served.json 2>/dev/null)
+            if ! [[ "$count" =~ ^[0-9]+$ ]]; then count=0; fi
+            if [ "$plain" -lt -900 ]; then
+              verdict="ahead (made $stamp)"
+            elif [ $((plain - allow)) -gt 2700 ]; then
+              verdict="stale (made $stamp, $((plain / 60)) min old)"
+            elif [ "$count" -lt 1 ]; then
+              verdict="blank (made $stamp, no districts)"
+            else
+              verdict=fresh
+            fi
+          fi
+          line=$verdict
+
+          # A stop on purpose: the hold `predict blank` sets.
+          if [ "$verdict" != fresh ]; then
+            left
+            code=$(fetch "${LIVE_ROOT}v1/predictions/hold.json" hold.json)
+            code=$(status "$code")
+            if [ "$code" = 200 ] && [ "$(jq -r 'if type == "object" then .held == true else false end' hold.json 2>/dev/null)" = true ]; then
+              since=$(jq -r '.held_at | strings | select(test("^[0-9T:Z.+-]+$"))' hold.json 2>/dev/null)
+              echo "chances watch: held on purpose since ${since:-an unknown time}: $verdict is expected; nothing reported"
+              exit 0
+            fi
+          fi
+
+          # The one issue, found by its title: the Watchdog step of predict.yml shares it.
+          repo="${GITHUB_API_URL:-https://api.github.com}/repos/${GITHUB_REPOSITORY:-}"
+          title="Snow-day chances are stale"
+          left
+          code=$(call GET "$repo/issues?state=open&per_page=100" issues.json)
+          code=$(status "$code")
+          if [ "$code" != 200 ] ||
+            ! open=$(jq -r --arg t "$title" '[.[] | select(.pull_request == null and .title == $t)] | sort_by(.created_at) | reverse | .[] | [.number, .updated_at] | @tsv' issues.json 2>/dev/null); then
+            echo "::notice::chances watch: $line; the issues could not be listed (HTTP $code)"
+            exit 0
+          fi
+          if [ "$verdict" = fresh ]; then
+            echo "chances watch: fresh (made $stamp, $((plain / 60)) min old, the CDN's copy $allow s old, $count districts)"
+            if [ "$plain" -le 2700 ]; then
+              while IFS=$'\t' read -r number _updated; do
+                if [ -z "$number" ]; then continue; fi
+                body=$(jq -cn --arg b "recovered at $(date -u +%H:%MZ): the public file made $stamp is $((plain / 60)) min old" '{body: $b}')
+                left
+                call POST "$repo/issues/$number/comments" out.json "$body" > /dev/null
+                left
+                call PATCH "$repo/issues/$number" out.json '{"state":"closed","state_reason":"completed"}' > /dev/null
+              done <<< "$open"
+            fi
+            exit 0
+          fi
+          echo "::warning::chances watch: $verdict"
+          if [ -z "$open" ]; then
+            run="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-}/actions/runs/${GITHUB_RUN_ID:-}"
+            body=$(jq -cn --arg t "$title" --arg b "<!-- predict-alert:chances -->"$'\n'"The public snow-day chances file is not fresh: $verdict at $(date -u +%Y-%m-%dT%H:%M:%SZ)."$'\n'"The page stops showing it once it is 90 minutes old. This issue closes by itself when a fresh file is served."$'\n'"run: $run"$'\n'"See docs/predict.md, Staying on air." '{title: $t, body: $b}')
+            left
+            code=$(call POST "$repo/issues" out.json "$body")
+            code=$(status "$code")
+            if [ "$code" != 201 ]; then echo "::notice::chances watch: the issue could not be opened (HTTP $code)"; fi
+          else
+            IFS=$'\t' read -r number updated <<< "$(head -n 1 <<< "$open")"
+            last=$(date -u -d "$updated" +%s 2>/dev/null)
+            if [[ "$last" =~ ^[0-9]+$ ]] && [ $((now - last)) -ge 3600 ]; then
+              body=$(jq -cn --arg b "still $verdict at $(date -u +%H:%MZ)" '{body: $b}')
+              left
+              call POST "$repo/issues/$number/comments" out.json "$body" > /dev/null
+            fi
+          fi
+          exit 0

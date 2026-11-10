@@ -824,3 +824,359 @@ def test_the_drill_landing_value_none_runs_no_drill(tmp_path: Path, stub: Stub) 
     assert not stub.seen
     ran = run_script(script, tmp_path, stub, {"DRILL": "fire"})
     assert ran.code == 1
+
+
+# --- chances-watch.yml: the watch on the served chances (predict-next ON-AIR) -------------------
+
+CHANCES = "/live/v1/predictions/latest.json"
+HOLD = "/live/v1/predictions/hold.json"
+ISSUES = "/api/repos/viaate/synthetic/issues"
+STALE_TITLE = "Snow-day chances are stale"
+STAMP = "%Y-%m-%dT%H:%M:%SZ"
+
+
+def _chances_script() -> str:
+    return str(steps(load("chances-watch.yml"), "chances")[0]["run"])
+
+
+def test_the_chances_watch_is_a_workflow_of_its_own() -> None:
+    from snowlight.predict import cli as predict_cli  # noqa: PLC0415
+
+    workflow = load("chances-watch.yml")
+    assert workflow["name"] == "chances-watch"
+    ingest = load("live-ingest.yml")
+    # PyYAML reads the key `on` as true.
+    assert workflow[True] == {
+        "workflow_run": {"workflows": [ingest["name"]], "types": ["requested"]}
+    }
+    assert workflow["concurrency"] == {"group": "chances-watch", "cancel-in-progress": True}
+    assert workflow["permissions"] == {"contents": "read", "issues": "write"}
+    assert list(workflow["jobs"]) == ["chances"]
+    job = workflow["jobs"]["chances"]
+    assert set(job) == {"if", "runs-on", "timeout-minutes", "steps"}  # no needs, no environment
+    assert (
+        job["if"]
+        == "github.event.workflow_run.head_branch == github.event.repository.default_branch"
+    )
+    assert (job["runs-on"], job["timeout-minutes"]) == ("ubuntu-latest", 5)
+    text = (WORKFLOWS / "chances-watch.yml").read_text(encoding="utf-8")
+    assert "secrets." not in text
+    assert "uses:" not in text  # no checkout, no setup, no install
+    [only] = job["steps"]
+    assert set(only) == {"name", "env", "run"}
+    assert only["name"] == "Check the served chances"
+    assert only["env"] == {
+        "GH_TOKEN": "${{ github.token }}",
+        "PREDICT_PUBLISH": "${{ vars.PREDICT_PUBLISH || 'on' }}",
+        "LIVE_ROOT": predict_cli.LIVE_ROOT,
+    }
+    script = _chances_script()
+    lines = script.splitlines()
+    assert "${{" not in script
+    assert "set -e" not in script
+    assert "set -o errexit" not in script
+    for banned in ("gh workflow", "gh run", "/dispatches", "/rerun", "/cancel", "git "):
+        assert banned not in script, banned
+    calls = [line for line in lines if "curl" in line]
+    assert len(calls) == 2
+    assert all("--max-time 15" in line for line in calls)
+    assert lines[-1] == "exit 0"
+    assert "sleep" in script
+    assert sum("sleep" in line for line in lines) == 1  # the only wait: between tries
+    assert '"${LIVE_ROOT}v1/predictions/latest.json"' in script
+    assert predict_cli.LIVE_ROOT + "v1/predictions/latest.json" == (
+        "https://viaate.github.io/snowlight-live/v1/predictions/latest.json"
+    )
+    watchdog = next(
+        item
+        for item in steps(load("predict.yml"), "predict")
+        if item.get("if") == "always() && steps.check.outcome == 'failure'"
+    )
+    assert watchdog["env"]["TITLE"] == STALE_TITLE
+    assert f'title="{STALE_TITLE}"' in script
+    # Every request is behind the script's own clock, on a line of its own.
+    for index, line in enumerate(lines):
+        if ("$(fetch " in line or "$(call " in line or line.strip().startswith("call ")) and (
+            "()" not in line
+        ):
+            assert lines[index - 1].strip() == "left", line
+    # It is not a job of live-ingest.yml, and that workflow is as it was.
+    assert "chances" not in ingest["jobs"]
+    assert "chances watch" not in (WORKFLOWS / "live-ingest.yml").read_text(encoding="utf-8")
+    assert len(_live_files()) == 4
+    assert "chances-watch.yml" not in _live_files()
+
+
+def _made(stub: Stub, age: timedelta, districts: int = 3) -> str:
+    stamp = (datetime.now(UTC) - age).strftime(STAMP)
+    stub.answer("GET", CHANCES, 200, {"districts": [{}] * districts, "generated_at": stamp})
+    return stamp
+
+
+def _chances(tmp_path: Path, stub: Stub, publish: str = "on", **env: str) -> Ran:
+    ran = run_script(
+        _chances_script(),
+        tmp_path,
+        stub,
+        {
+            "PREDICT_PUBLISH": publish,
+            "LIVE_ROOT": f"{stub.url}/live/",
+            "CHANCES_RETRY_WAIT": "0",
+            **env,
+        },
+    )
+    assert ran.code == 0, ran.out
+    for line in ran.out.splitlines():
+        assert line.startswith(
+            ("chances watch: ", "::warning::chances watch: ", "::notice::chances watch: ")
+        ), ran.out
+    return ran
+
+
+def _asked(stub: Stub, path: str) -> int:
+    return sum(1 for _verb, seen, _body in stub.seen if seen.split("?", 1)[0] == path)
+
+
+@needs_tools
+def test_the_chances_watch_judges_the_served_file(tmp_path: Path, stub: Stub) -> None:
+    stub.answer("GET", ISSUES, 200, [])
+    stub.answer("POST", ISSUES, 201, {"number": 9})
+    stamp = _made(stub, timedelta(minutes=43))
+    ran = _chances(tmp_path, stub)
+    assert ran.out == (
+        f"chances watch: fresh (made {stamp}, 43 min old, the CDN's copy 0 s old, 3 districts)\n"
+    )
+    assert [path.split("?")[0] for _verb, path, _body in stub.seen] == [CHANCES, ISSUES]
+    assert stub.seen[1][1] == f"{ISSUES}?state=open&per_page=100"
+    stamp = _made(stub, timedelta(minutes=47))
+    assert f"::warning::chances watch: stale (made {stamp}, 47 min old)\n" in (
+        _chances(tmp_path, stub).out
+    )
+    # The CDN's own Age is allowed for, 600 s at most.
+    stamp = _made(stub, timedelta(minutes=54))
+    stub.headers = {"Age": "600"}
+    assert _chances(tmp_path, stub).out == (
+        f"chances watch: fresh (made {stamp}, 54 min old, the CDN's copy 600 s old, 3 districts)\n"
+    )
+    _made(stub, timedelta(minutes=57))
+    stub.headers = {"Age": "5000"}
+    assert "chances watch: stale (made " in _chances(tmp_path, stub).out
+    _made(stub, timedelta(minutes=47))
+    for age in ("soon", "-600", "6e2", "600 600", "99999999999999999999"):
+        stub.headers = {"Age": age}
+        assert "chances watch: stale (made " in _chances(tmp_path, stub).out, age
+    stub.headers = {}
+    stamp = _made(stub, timedelta(minutes=-16))
+    assert f"::warning::chances watch: ahead (made {stamp})\n" in _chances(tmp_path, stub).out
+    _made(stub, timedelta(minutes=-14))
+    assert "chances watch: fresh (made " in _chances(tmp_path, stub).out
+    stamp = _made(stub, timedelta(minutes=5), districts=0)
+    assert f"::warning::chances watch: blank (made {stamp}, no districts)\n" in (
+        _chances(tmp_path, stub).out
+    )
+    now = datetime.now(UTC).strftime(STAMP)
+    not_rows: tuple[object, ...] = ({}, None, "many", 3)
+    for rows in not_rows:
+        stub.answer("GET", CHANCES, 200, {"districts": rows, "generated_at": now})
+        assert "chances watch: blank (made " in _chances(tmp_path, stub).out
+    stub.seen.clear()
+    stub.answer("GET", CHANCES, 404, b"not here")
+    assert "::warning::chances watch: missing (HTTP 404)\n" in _chances(tmp_path, stub).out
+    assert _asked(stub, CHANCES) == 1  # at once: no second try
+    unreadable: tuple[object, ...] = (
+        b"<html>not JSON</html>",
+        b"",
+        [1, 2],
+        {"districts": [{}]},
+        {"districts": [{}], "generated_at": None},
+        {"districts": [{}], "generated_at": 1762776000},
+        {"districts": [{}], "generated_at": "2026-11-10T12:00:00+00:00"},
+        {"districts": [{}], "generated_at": "2026-11-10 12:00:00Z"},
+        {"districts": [{}], "generated_at": "2026-13-45T12:00:00Z"},
+    )
+    for body in unreadable:
+        stub.answer("GET", CHANCES, 200, body)
+        assert "::warning::chances watch: unreadable\n" in _chances(tmp_path, stub).out, body
+    stub.seen.clear()
+    stub.answer("GET", CHANCES, 503, b"busy")
+    assert "::warning::chances watch: missing (HTTP 503)\n" in _chances(tmp_path, stub).out
+    assert _asked(stub, CHANCES) == 3
+    stub.seen.clear()
+    nowhere = _chances(tmp_path, stub, LIVE_ROOT="http://127.0.0.1:1/")
+    assert "::warning::chances watch: unreachable (no answer in 3 tries)\n" in nowhere.out
+
+
+@needs_tools
+def test_the_chances_watch_ends_by_its_own_clock(tmp_path: Path, stub: Stub) -> None:
+    stub.answer("GET", CHANCES, 503, b"busy")
+    # Its own clock: out of time before any request, and between two tries.
+    stub.seen.clear()
+    ran = _chances(tmp_path, stub, CHANCES_BUDGET="0")
+    assert ran.out == (
+        "::notice::chances watch: out of time after 0 s (no verdict): the next tick goes on\n"
+    )
+    assert stub.seen == []
+    ran = _chances(tmp_path, stub, CHANCES_BUDGET="1", CHANCES_RETRY_WAIT="2")
+    assert ran.out.startswith("::notice::chances watch: out of time after ")
+    assert ran.out.endswith(" s (no verdict): the next tick goes on\n")
+    assert [path for _verb, path, _body in stub.seen] == [CHANCES]
+
+
+def _open(number: int, minutes: int, **more: object) -> dict[str, object]:
+    updated = datetime.now(UTC) - timedelta(minutes=minutes)
+    return {
+        "number": number,
+        "title": STALE_TITLE,
+        "created_at": f"2026-11-0{number % 9 + 1}T00:00:00Z",
+        "updated_at": updated.strftime(STAMP),
+        **more,
+    }
+
+
+@needs_tools
+def test_the_chances_watch_opens_comments_on_and_closes_one_issue(
+    tmp_path: Path, stub: Stub
+) -> None:
+    def posted() -> list[tuple[str, Any]]:
+        return [
+            (path, json.loads(body)) for verb, path, body in stub.seen if verb in {"POST", "PATCH"}
+        ]
+
+    others = [
+        _open(3, 500, title="Snow-day chances are stale again"),
+        _open(4, 500, pull_request={"url": "synthetic"}),
+        _open(6, 500, title="The live evidence is not kept"),
+    ]
+    stamp = _made(stub, timedelta(minutes=47))
+    stub.answer("GET", ISSUES, 200, others)
+    stub.answer("POST", ISSUES, 201, {"number": 5})
+    _chances(tmp_path, stub)
+    [(path, created)] = posted()
+    assert path == ISSUES
+    assert created["title"] == STALE_TITLE
+    assert set(created) == {"title", "body"}
+    lines = created["body"].splitlines()
+    assert lines[0] == "<!-- predict-alert:chances -->"
+    assert lines[1].startswith(
+        f"The public snow-day chances file is not fresh: stale (made {stamp}, 47 min old) at 20"
+    )
+    assert lines[2] == (
+        "The page stops showing it once it is 90 minutes old. This issue closes by itself "
+        "when a fresh file is served."
+    )
+    assert lines[3].startswith("run: https://github.com/viaate/synthetic/actions/runs/")
+    assert lines[4] == "See docs/predict.md, Staying on air."
+    # One open, updated 10 minutes ago: nothing posted.
+    stub.seen.clear()
+    stub.answer("GET", ISSUES, 200, [*others, _open(5, 10, body=created["body"])])
+    assert "::warning::chances watch: stale" in _chances(tmp_path, stub).out
+    assert posted() == []
+    # Updated 61 minutes ago: one comment on it, and still no second issue.
+    stub.answer("GET", ISSUES, 200, [*others, _open(5, 61), _open(2, 300)])
+    _chances(tmp_path, stub)
+    [(path, comment)] = posted()
+    assert path == f"{ISSUES}/5/comments"  # the newest of the two
+    assert comment["body"].startswith(f"still stale (made {stamp}, 47 min old) at ")
+    assert comment["body"].endswith("Z")
+    # Fresh at 30 minutes and two open, one of them the step inside predict.yml made (no
+    # marker): both get "recovered at" and are closed. Nothing else is touched.
+    stub.seen.clear()
+    stamp = _made(stub, timedelta(minutes=30))
+    _chances(tmp_path, stub)
+    found = posted()
+    assert [path for path, _body in found] == [
+        f"{ISSUES}/5/comments",
+        f"{ISSUES}/5",
+        f"{ISSUES}/2/comments",
+        f"{ISSUES}/2",
+    ]
+    assert found[1][1] == found[3][1] == {"state": "closed", "state_reason": "completed"}
+    assert found[0][1]["body"].startswith("recovered at ")
+    assert found[0][1]["body"].endswith(f"Z: the public file made {stamp} is 30 min old")
+    # Fresh by the CDN's allowance but 50 minutes old on the plain clock: neither.
+    stub.seen.clear()
+    _made(stub, timedelta(minutes=50))
+    stub.headers = {"Age": "600"}
+    assert "chances watch: fresh (made " in _chances(tmp_path, stub).out
+    assert posted() == []
+    stub.headers = {}
+
+
+@needs_tools
+def test_the_chances_watch_stays_green_when_github_does_not_answer(
+    tmp_path: Path, stub: Stub
+) -> None:
+    def posted() -> list[str]:
+        return [path for verb, path, _body in stub.seen if verb in {"POST", "PATCH"}]
+
+    # The list does not answer: one notice, nothing posted, whatever the verdict.
+    for age in (47, 30):
+        stub.seen.clear()
+        _made(stub, timedelta(minutes=age))
+        stub.answer("GET", ISSUES, 500, b"down")
+        ran = _chances(tmp_path, stub)
+        assert ran.out.count("the issues could not be listed (HTTP 500)") == 1
+        assert ran.out.count("::notice::") == 1
+        assert posted() == []
+    stub.answer("GET", ISSUES, 200, {"message": "not a list"})
+    assert "the issues could not be listed" in _chances(tmp_path, stub).out
+    assert posted() == []
+    # The issue cannot be opened: one notice, and the run is still green.
+    _made(stub, timedelta(minutes=47))
+    stub.answer("GET", ISSUES, 200, [])
+    stub.answer("POST", ISSUES, 403, {"message": "no"})
+    assert "::notice::chances watch: the issue could not be opened (HTTP 403)" in (
+        _chances(tmp_path, stub).out
+    )
+
+
+@needs_tools
+def test_the_chances_watch_is_quiet_when_held_or_not_on(tmp_path: Path, stub: Stub) -> None:
+    stub.answer("GET", ISSUES, 200, [])
+    stub.answer("POST", ISSUES, 201, {"number": 5})
+    held = {"schema_version": 1, "held": True, "at": "2026-11-10T01:00:00Z"}
+    for age, districts, verdict in ((5, 0, "blank"), (47, 3, "stale")):
+        stamp = _made(stub, timedelta(minutes=age), districts=districts)
+        stub.seen.clear()
+        stub.answer("GET", HOLD, 200, {**held, "held_at": "2026-11-10T01:00:00Z"})
+        ran = _chances(tmp_path, stub)
+        assert ran.out.startswith(
+            f"chances watch: held on purpose since 2026-11-10T01:00:00Z: {verdict} (made {stamp}"
+        )
+        assert ran.out.endswith(" is expected; nothing reported\n")
+        assert [path for _verb, path, _body in stub.seen] == [CHANCES, HOLD]
+        stub.answer("GET", HOLD, 200, held)
+        assert "held on purpose since an unknown time: " in _chances(tmp_path, stub).out
+        # Not held, no hold file, or one that does not read: reported (the safe side).
+        for code, body in (
+            (200, {**held, "held": False}),
+            (200, {**held, "held": "true"}),
+            (200, [True]),
+            (200, b"<html>"),
+            (404, b""),
+            (503, b""),
+        ):
+            stub.seen.clear()
+            stub.answer("GET", HOLD, code, body)
+            ran = _chances(tmp_path, stub)
+            assert f"::warning::chances watch: {verdict} (made " in ran.out, body
+            assert _asked(stub, HOLD) == 1  # one try
+            assert [verb for verb, path, _body in stub.seen if path == ISSUES] == ["POST"]
+    # A fresh file never asks for the hold.
+    stub.seen.clear()
+    _made(stub, timedelta(minutes=5))
+    _chances(tmp_path, stub)
+    assert _asked(stub, HOLD) == 0
+    # Shadow and off: one line and no request at all.
+    _made(stub, timedelta(minutes=300))
+    for mode in ("shadow", "off"):
+        stub.seen.clear()
+        assert _chances(tmp_path, stub, publish=mode).out == (
+            "chances watch: publishing is not on: nothing to watch\n"
+        )
+        assert stub.seen == []
+    # Any other value is watched, a value the chance job itself refuses included.
+    for mode in ("on", "ON", "Shadow", "", "of"):
+        assert "::warning::chances watch: stale (made " in (
+            _chances(tmp_path, stub, publish=mode).out
+        ), mode

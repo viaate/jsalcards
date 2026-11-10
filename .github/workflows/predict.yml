@@ -34,6 +34,17 @@
 # After each pass whose file is the one the site shows, the chance notifier sends the chance
 # and night-before notifications that are due (docs/notify.md), from the accounts database
 # over the Cloudflare API; with no browser to send to it says so in one line.
+#
+# Staying on air (docs/predict.md, "Staying on air"). Every Python step prints each line as it
+# is written (PYTHONUNBUFFERED), so the pass lines are live: `predict: pass 3 (grid) ok in 41.2
+# s, the live view 6.0 s more` is stamped when that pass ended, not when the run did. A run
+# says at its start which commit it is on beside the branch head, and it may end early, long
+# before its 320 minutes: after 3 dark passes since the last good one whose cause newer code may
+# cure (a file of our other chains this code cannot read, an unforeseen error), it asks for the
+# branch head after each such pass and ends when that is no longer its own commit, so the
+# successor it starts runs the head. The served file is watched from outside this job too, every
+# 5 minutes, by chances-watch.yml, which shares the Watchdog step's issue by its title and closes
+# it when a fresh file is served.
 name: predict
 
 on:
@@ -69,6 +80,8 @@ jobs:
       # proves itself on real storms and the owner approves its words; the lead sets on.
       PREDICT_OUTLOOK: ${{ vars.PREDICT_OUTLOOK || 'shadow' }}
       GITHUB_TOKEN: ${{ github.token }}
+      # Every Python step prints each line as it is written, so a line's time is its own.
+      PYTHONUNBUFFERED: "1"
     steps:
       - id: token
         name: Stay dark without the live host token
@@ -305,4 +318,19 @@ jobs:
           if [ "$open" = "0" ]; then
             gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" \
               --body "predict learn kept the served model (the refit was worse on the held-out live days) or failed in run $GITHUB_RUN_ID; the chances kept serving. Its log line says why. See docs/predict.md."
+          fi
+
+      # The run started on a saved copy of the weather service's zone and county map, and the
+      # copy is over 7 days old or has been in use for over a day (`predict run` wrote
+      # boundaries=held; docs/predict.md, "Staying on air"). One issue at a time.
+      - if: always() && steps.token.outputs.ready == 'true' && steps.run.outputs.boundaries == 'held'
+        name: Open an issue when the zone map is not refreshing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: The weather service's zone map is not refreshing
+        run: |
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$TITLE\"" --json title --jq "[.[] | select(.title == env.TITLE)] | length")
+          if [ "$open" = "0" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" \
+              --body "The chance job is running on a saved copy of the weather service's zone and county map (run $GITHUB_RUN_ID): the service's page did not answer or did not read, and the copy is over 7 days old or has been in use for over a day. The run's log names the newest release the copy lists: compare it with the service's page. The chances keep publishing on the saved map. Close this once a run starts without the warning. See docs/predict.md, Staying on air."
           fi
