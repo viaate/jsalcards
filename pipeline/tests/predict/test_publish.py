@@ -28,6 +28,7 @@ from snowlight.predict.publish import (
     content_digest,
     due,
     mode_of,
+    stamp_file,
     upload,
 )
 from snowlight.predict.serve import DeployedDirectory
@@ -148,7 +149,11 @@ def test_off_and_shadow() -> None:
     assert cli.one_pass(make_pass(host, mode=Mode.OFF, directory=world.directory())) == 0
     assert host.files == {}
     assert cli.one_pass(make_pass(host, mode=Mode.SHADOW, directory=world.directory())) == 0
-    assert list(host.files) == ["v1-shadow/predictions/latest.json"]
+    # The shadow folder only: the file and the stamp every upload puts beside it.
+    assert sorted(host.files) == [
+        "v1-shadow/predictions/latest.json",
+        "v1-shadow/predictions/stamp.json",
+    ]
     assert mode_of(None) is Mode.OFF
     assert mode_of("on") is Mode.ON
     with pytest.raises(ValueError, match="maybe"):
@@ -285,3 +290,76 @@ def test_a_pass_reads_the_day_after_from_the_hosts_day_timeline() -> None:
     assert closed(date(2026, 1, 2)) is None  # none published
     assert cli._closed_on(make_pass(None, mode=Mode.OFF), built)(date(2026, 1, 6)) is None
     assert cli.one_pass(run) == 0
+
+
+def test_the_stamp_is_made_from_the_file_s_own_bytes() -> None:
+    days = (date(2026, 1, 7), date(2026, 1, 8))
+    empty = blank_file(world.STAMP, days, NOW)
+    assert stamp_file(empty) == (
+        b'{"districts":0,"generated_at":"2026-01-07T02:00:00Z","schema_version":1}\n'
+    )
+    host = MemoryHost()
+    assert cli.one_pass(make_pass(host, directory=world.directory())) == 0
+    assert stamp_file(host.files["v1/predictions/latest.json"]) == (
+        b'{"districts":5,"generated_at":"2026-01-07T02:00:00Z","schema_version":1}\n'
+    )
+    for cut in (b"", b"{"):
+        with pytest.raises(json.JSONDecodeError):
+            stamp_file(cut)
+    for other in (
+        b"[]",
+        b'{"districts":[]}',
+        b'{"generated_at":7,"districts":[]}',
+        b'{"generated_at":"2026-01-07T02:00:00Z","districts":5}',
+    ):
+        with pytest.raises(ValueError, match="not a predictions file"):
+            stamp_file(other)
+    with pytest.raises(ValueError, match="does not parse"):
+        stamp_file(b"[" * 200_000)
+
+
+def test_an_upload_gives_the_host_the_file_and_its_stamp_in_one_write() -> None:
+    key, beside_it = "v1/predictions/latest.json", "v1/predictions/stamp.json"
+    host = MemoryHost()
+    run = make_pass(host, directory=world.directory())
+    assert cli.one_pass(run) == 0
+    assert host.writes == 1
+    assert set(host.files) == {key, beside_it}
+    assert host.files[beside_it] == stamp_file(host.files[key])
+    first = json.loads(host.files[beside_it])
+    assert first == {"districts": 5, "generated_at": "2026-01-07T02:00:00Z", "schema_version": 1}
+    # The heartbeat: a new file and a new stamp, again in one write, with the same instant.
+    run.now = lambda: NOW + timedelta(minutes=31)
+    run.alerts = lambda: (feed(updated="2026-01-07T02:30:00+00:00"), True)
+    assert cli.one_pass(run) == 0
+    assert host.writes == 2
+    served = json.loads(host.files[key])
+    assert json.loads(host.files[beside_it])["generated_at"] == served["generated_at"]
+    assert served["generated_at"] == "2026-01-07T02:31:00Z"
+    # The shadow folder gets its own stamp beside its own file.
+    shadow = MemoryHost()
+    assert cli.one_pass(make_pass(shadow, mode=Mode.SHADOW, directory=world.directory())) == 0
+    assert set(shadow.files) == {
+        "v1-shadow/predictions/latest.json",
+        "v1-shadow/predictions/stamp.json",
+    }
+
+
+def test_a_stamp_that_cannot_be_made_never_touches_the_pass(
+    monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    assert cli._stamp("v1/predictions/latest.json", b"not a file") == {}
+    assert capsys.readouterr().err.count("no stamp this pass (JSONDecodeError)") == 1
+    plain = MemoryHost()
+    assert cli.one_pass(make_pass(plain, directory=world.directory())) == 0
+
+    def broken(_data: bytes) -> bytes:
+        raise ZeroDivisionError
+
+    monkeypatch.setattr(cli, "stamp_file", broken)
+    host = MemoryHost()
+    assert cli.one_pass(make_pass(host, directory=world.directory())) == 0
+    assert set(host.files) == {"v1/predictions/latest.json"}  # the file went up, with no stamp
+    assert host.files == {"v1/predictions/latest.json": plain.files["v1/predictions/latest.json"]}
+    assert host.writes == 1
+    assert capsys.readouterr().err.count("no stamp this pass (ZeroDivisionError)") == 1

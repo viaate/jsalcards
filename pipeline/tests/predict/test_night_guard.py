@@ -33,6 +33,7 @@ from snowlight.predict.situations import WeatherClass
 from snowlight.schemas.predictions import NightSnow, PredictionsFile
 
 KEY = "v1/predictions/latest.json"
+STAMP = "v1/predictions/stamp.json"  # goes up beside the file in every upload (docs/status.md)
 CYCLE = datetime(2026, 1, 7, 0, tzinfo=UTC)  # 120 min before the pass
 DAY = date(2026, 1, 7)
 
@@ -753,7 +754,8 @@ def test_the_summary_goes_up_beside_the_file_in_the_same_write() -> None:
 
     run, host, _calls = _pass("shadow", fault="rotate")
     assert cli.one_pass(run) == 0
-    assert set(host.files) == {KEY}  # nothing recorded yet when the first file went up
+    # Nothing recorded yet when the first file went up: the file and its stamp, no summary.
+    assert set(host.files) == {KEY, STAMP}
     writes = host.writes
     run.state.uploaded_at = NOW - timedelta(hours=1)  # the heartbeat is due
     assert cli.one_pass(run) == 0
@@ -773,7 +775,7 @@ def test_no_summary_and_no_records_unless_shadow(chart: str) -> None:
     assert cli.one_pass(run) == 0
     run.state.uploaded_at = NOW - timedelta(hours=1)
     assert cli.one_pass(run) == 0
-    assert set(host.files) == {KEY}
+    assert set(host.files) == {KEY, STAMP}  # the file and its stamp: no summary
     assert run.state.chart_shadow == []
     assert "chart_shadow" not in run.state.as_json()
 
@@ -791,7 +793,7 @@ def test_a_broken_summary_never_touches_the_pass(
     assert cli.one_pass(run) == 0
     run.state.uploaded_at = NOW - timedelta(hours=1)
     assert cli.one_pass(run) == 0
-    assert set(host.files) == {KEY}
+    assert set(host.files) == {KEY, STAMP}  # the file and its stamp: no summary
     assert host.files[KEY] == _off()
     assert "no summary this pass (ZeroDivisionError)" in capsys.readouterr().err
 

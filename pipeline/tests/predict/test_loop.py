@@ -377,6 +377,16 @@ def test_blank_holds_every_chance_dark_until_release() -> None:
     assert PredictionsFile.from_json_bytes(host.files[KEY]).districts == ()
     assert "v1/predictions/hold.json" in host.files
     assert "v1-shadow/predictions/hold.json" in host.files
+    # Each empty file has its stamp beside it, written with it: no districts, the file's instant.
+    for folder in ("v1", "v1-shadow"):
+        stamp = json.loads(host.files[f"{folder}/predictions/stamp.json"])
+        served = json.loads(host.files[f"{folder}/predictions/latest.json"])
+        assert stamp == {
+            "districts": 0,
+            "generated_at": served["generated_at"],
+            "schema_version": 1,
+        }
+    assert host.writes == 3  # the pass, the holds, then both empty files with both stamps
     # The heartbeat and an alert change both find the hold: nothing uploads.
     run.now = lambda: NOW + timedelta(minutes=31)
     run.alerts = lambda: (feed(updated="2026-01-07T02:30:00+00:00", alerts=2), True)

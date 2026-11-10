@@ -2989,6 +2989,14 @@ ends green, and it is a workflow of its own so that nothing that happens to it c
 `live-ingest` run or hold the timer's next tick. It must never be made a job of
 `live-ingest.yml`.
 
+Every upload also puts a stamp beside the file in the file's own commit, and so does `predict
+blank`: `v1/predictions/stamp.json`, which holds the file's `generated_at` and its count of
+districts and nothing else, about 80 bytes. Only the status page's checker reads it
+(docs/status.md); neither watch does, and a stamp that cannot be made is one warning, never a
+dark pass. Whoever reverts or removes the stamp's writer deletes `v1/predictions/stamp.json` and
+`v1-shadow/predictions/stamp.json` from the live host in the same step: a stamp left behind
+ages into a false "Not working" on the status page, while with none it reads "Could not check".
+
 What each setting does to each watch:
 
 | Setting | The watch every 5 minutes | The Watchdog step after a run |

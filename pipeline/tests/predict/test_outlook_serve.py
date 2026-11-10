@@ -40,7 +40,8 @@ def test_off_publishes_the_pass_before_s7f_byte_for_byte() -> None:
 def test_shadow_publishes_as_off_and_keeps_a_private_record(capsys: Any) -> None:
     files, run, host = night.run_night(prepare=night.with_outlook(OutlookMode.SHADOW))
     assert night.digests(files) == GOLDEN
-    assert list(host.files) == [night.KEY]  # nothing new is published
+    # Nothing new is published: the file and the stamp every upload puts beside it.
+    assert sorted(host.files) == [night.KEY, "v1/predictions/stamp.json"]
     out = capsys.readouterr().out
     assert "predict (shadow): outlook record:" in out
     content = learn.content_key(world.directory())

@@ -51,6 +51,9 @@ from snowlight.schemas.predictions import PredictionsFile
 
 PATH: Final = "predictions/latest.json"
 HOLD_NAME: Final = "hold.json"
+STAMP_NAME: Final = "stamp.json"
+"""The stamp beside the file (``predictions/stamp.json``): the file's own ``generated_at`` and its
+count of districts, about 80 bytes. Only the status page's checker reads it (docs/status.md)."""
 
 
 class Host(Protocol):
@@ -408,8 +411,8 @@ def beside(key: str, name: str) -> str:
 
 def upload(host: Host, key: str, data: bytes, *, extra: Mapping[str, bytes] | None = None) -> None:
     """Write the file, guarded by the hold (read in the very commit on GitHub), and read it
-    back. ``extra``: files written in the same commit (the night chart's shadow summary), never
-    the predictions file itself.
+    back. ``extra``: files written in the same commit (the night chart's shadow summary, the
+    stamp), never the predictions file itself.
 
     Raises:
         DarkError: the hold is set, or the read-back differs.
@@ -422,6 +425,25 @@ def upload(host: Host, key: str, data: bytes, *, extra: Mapping[str, bytes] | No
         raise DarkError(Dark.HELD, hold_key(key)) from error
     if host.read(key) != data:
         raise DarkError(Dark.READ_BACK, key)
+
+
+def stamp_file(data: bytes) -> bytes:
+    """The stamp of a predictions file, made from the very bytes that go up: its own
+    ``generated_at`` and how many districts it holds (compact, sorted keys, one newline).
+
+    Raises:
+        ValueError: the bytes are not a predictions file's (no such instant, no district list).
+    """
+    try:
+        document = json.loads(data)
+    except RecursionError as error:
+        raise ValueError("the file does not parse") from error
+    made = document.get("generated_at") if isinstance(document, dict) else None
+    districts = document.get("districts") if isinstance(document, dict) else None
+    if not isinstance(made, str) or not isinstance(districts, list):
+        raise ValueError("not a predictions file")
+    stamp = {"districts": len(districts), "generated_at": made, "schema_version": 1}
+    return (json.dumps(stamp, sort_keys=True, separators=(",", ":")) + "\n").encode()
 
 
 def hold_file(now: datetime, *, set_hold: bool, began: datetime | None) -> bytes:

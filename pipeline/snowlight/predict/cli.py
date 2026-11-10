@@ -164,6 +164,7 @@ from snowlight.predict.outlook_serve import (
 )
 from snowlight.predict.outlook_states import slot_at
 from snowlight.predict.publish import (
+    STAMP_NAME,
     Dark,
     DarkError,
     Host,
@@ -181,6 +182,7 @@ from snowlight.predict.publish import (
     hold_file,
     hold_key,
     mode_of,
+    stamp_file,
     upload,
 )
 from snowlight.predict.serve import (
@@ -1799,7 +1801,8 @@ def _publish_pass(  # noqa: PLR0913, PLR0917 - the pass, its file and what its l
         _after_publish(run, made, directory, now)
         return 0
     try:
-        upload(run.host, key, data, extra=_shadow_summary(run, key, now))
+        extra = {**(_shadow_summary(run, key, now) or {}), **_stamp(key, data)}
+        upload(run.host, key, data, extra=extra)
     except (DarkError, PublishError) as error:
         _err(f"predict: dark ({error})")
         return EXIT_DARK
@@ -1810,6 +1813,17 @@ def _publish_pass(  # noqa: PLR0913, PLR0917 - the pass, its file and what its l
     _out(f"predict: uploaded {key}")
     _after_publish(run, made, directory, now)
     return 0
+
+
+def _stamp(key: str, data: bytes) -> dict[str, bytes]:
+    """The stamp to go up beside the file in the same commit (``predictions/stamp.json``: the
+    file's own ``generated_at`` and its count of districts, which only the status page reads);
+    nothing, and one warning, on any failure here (it never touches the pass or its file)."""
+    try:
+        return {beside(key, STAMP_NAME): stamp_file(data)}
+    except Exception as error:  # the stamp only: never the pass
+        _warn(f"predict: no stamp this pass ({type(error).__name__})")
+        return {}
 
 
 def _shadow_summary(run: Pass, key: str, now: datetime) -> dict[str, bytes] | None:
@@ -3819,7 +3833,10 @@ def blank(host: Host, stamp: Any, config: PredictConfig, now: datetime) -> int:
     host.write({hold_key(key): hold_file(now, set_hold=True, began=None) for key in keys})
     _out("predict blank: hold set")
     data = blank_file(stamp, pass_days(now, config), now)
-    host.write(dict.fromkeys(keys, data))
+    files = dict.fromkeys(keys, data)
+    for key in keys:
+        files.update(_stamp(key, data))
+    host.write(files)
     for key in keys:
         if host.read(key) != data:
             raise PublishError(f"read back {key}")
