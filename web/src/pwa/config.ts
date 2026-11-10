@@ -158,8 +158,29 @@ export const RETIRE_FILE = 'sw-retire.js';
  */
 export const PUSH_FILE = 'sw-push.js';
 
+/**
+ * The icon set's version, in the address of every icon the page, the
+ * manifest and the worker name (scripts/build-icons.mjs writes the files;
+ * docs/live.md, "The logo and the icons"). A redrawn logo bumps it, so every
+ * address is new and no cache answers with the earlier picture. The names
+ * below are written out whole, not built from it, so the page's first script
+ * carries nothing more for them; a test holds each to this version.
+ */
+export const ICON_SET = 'v2';
+
+/**
+ * The tab icons index.html and privacy.html link, in the order they link
+ * them: 16 and 32 real pixels, each drawn for its size, and the app icon's
+ * tile at 48. The 32 goes last, for a browser that ignores `sizes`.
+ */
+export const FAVICONS: readonly string[] = Object.freeze([
+  'favicon-16.v2.png',
+  'favicon-48.v2.png',
+  'favicon-32.v2.png',
+]);
+
 /** The icon a notification shows, under the site base. */
-export const NOTIFY_ICON = 'icons/icon-192.png';
+export const NOTIFY_ICON = 'icons/icon-192.v2.png';
 
 /** The source of RETIRE_FILE: on the worker's activate, it deletes `names`. */
 export function retireCachesScript(names: readonly string[] = RETIRED_CACHES): string {
@@ -179,11 +200,12 @@ export const LIVE_TIMEOUT_SECONDS = 4;
 /**
  * Precached files, as globs in the build output. Scripts and styles are
  * content-hashed; only the Latin font subsets are taken, the rest load on
- * demand. Source maps, icons, robots.txt and data/ stay out.
+ * demand. The tab icons are in; source maps, the app icons under icons/,
+ * robots.txt and data/ stay out.
  */
 export const PRECACHE_GLOBS: readonly string[] = Object.freeze([
   'index.html',
-  'favicon.svg',
+  'favicon-*.png',
   MANIFEST_FILE,
   'assets/*.{js,css}',
   'assets/geist-*latin*.woff2',
@@ -448,7 +470,7 @@ export function isCacheUpdatedMessage(data: unknown): data is CacheUpdatedMessag
 export const SKIP_WAITING_MESSAGE = Object.freeze({ type: 'SKIP_WAITING' });
 
 /** The home-screen icon iOS reads from a <link>. */
-export const APPLE_TOUCH_ICON = 'icons/apple-touch-icon.png';
+export const APPLE_TOUCH_ICON = 'icons/apple-touch-icon.v2.png';
 
 type WorkboxOptions = NonNullable<VitePWAOptions['workbox']>;
 

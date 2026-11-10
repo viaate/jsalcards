@@ -39,12 +39,20 @@ import { fileURLToPath } from 'node:url';
 
 import { chromium, expect, test } from '@playwright/test';
 import type { BrowserContext, Page } from '@playwright/test';
+import sharp from 'sharp';
 import { build } from 'vite';
 
 import { copy } from '../src/copy';
 import { format } from '../src/copy-format';
 import { hashedOnStaging, hashedPath } from '../src/data/paths';
-import { CACHE_NAMES, MANIFEST_FILE, PUSH_FILE, SW_FILE } from '../src/pwa/config';
+import {
+  APPLE_TOUCH_ICON,
+  CACHE_NAMES,
+  FAVICONS,
+  MANIFEST_FILE,
+  PUSH_FILE,
+  SW_FILE,
+} from '../src/pwa/config';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const ZONE = 'America/Chicago';
@@ -425,12 +433,12 @@ function precacheList(siteRoot: string): string[] {
 
 /**
  * Whether a file the build wrote belongs to the app shell, judged by what it
- * is: the page, its icon and manifest, every script and style (the MapLibre
+ * is: the page, its tab icons and manifest, every script and style (the MapLibre
  * chunks and its worker among them), the Latin font subsets and the bundled
  * US lines. Source maps, app icons, other font subsets and data are not.
  */
 function isShellFile(file: string): boolean {
-  if (file === 'index.html' || file === 'favicon.svg' || file === MANIFEST_FILE) return true;
+  if (file === 'index.html' || FAVICONS.includes(file) || file === MANIFEST_FILE) return true;
   // The notifications' part of the worker (src/pwa/push.ts): precached so its revision is in the
   // worker, which a new version of it then updates.
   if (file === PUSH_FILE) return true;
@@ -859,7 +867,7 @@ for (const base of [ROOT_BASE, PROJECT_BASE]) {
     // Latin fonts and the US lines; no maps, data, icons or other subsets.
     expect(listed.length).toBeGreaterThan(0);
     expect(listed).toEqual(written.filter(isShellFile));
-    expect(listed).toEqual(expect.arrayContaining(['index.html', 'favicon.svg', MANIFEST_FILE]));
+    expect(listed).toEqual(expect.arrayContaining(['index.html', ...FAVICONS, MANIFEST_FILE]));
     expect(listed.some((file) => file.startsWith('geo/'))).toBe(true);
     for (const file of listed) {
       expect(file).not.toMatch(/\.map$|^data\/|^icons\/|cyrillic|vietnamese|symbols/);
@@ -897,6 +905,80 @@ for (const base of [ROOT_BASE, PROJECT_BASE]) {
         .filter((file) => file.startsWith('assets/'))
         .filter((file) => site.hits(file) > 1);
       expect(twice).toEqual([]);
+    } finally {
+      await context.close();
+      await site.stop();
+    }
+  });
+}
+
+for (const base of [ROOT_BASE, PROJECT_BASE]) {
+  test(`every icon the page and the manifest name is the logo, at its stated size (base ${base})`, async ({
+    browser,
+  }) => {
+    const siteRoot = siteRootFor(base);
+    const context = await browser.newContext();
+    const { site, page } = await openSite(context, base);
+    try {
+      // The tab icons: 16 and 32 real pixels drawn for their size and the tile at 48, the 32
+      // last for a browser that ignores sizes.
+      const links = await page
+        .locator('link[rel~="icon"]')
+        .evaluateAll((nodes) =>
+          nodes.map((node) => [
+            node.getAttribute('href') ?? '',
+            node.getAttribute('type'),
+            node.getAttribute('sizes') ?? '',
+          ]),
+        );
+      expect(links).toEqual(
+        FAVICONS.map((name) => {
+          const size = /^favicon-(\d+)\./.exec(name)?.[1] ?? '';
+          return [`${base}${name}`, 'image/png', `${size}x${size}`];
+        }),
+      );
+      expect(links.map(([, , sizes]) => sizes)).toEqual(['16x16', '48x48', '32x32']);
+      const touch = await page.locator('link[rel="apple-touch-icon"]').getAttribute('href');
+      expect(touch).toBe(`${base}${APPLE_TOUCH_ICON}`);
+      const manifest = JSON.parse(readFileSync(path.join(siteRoot, MANIFEST_FILE), 'utf8')) as {
+        icons: { src: string; sizes: string }[];
+      };
+      expect(manifest.icons).toHaveLength(3);
+
+      // Each answers as a PNG of the size it is named for.
+      const stated: [string, string][] = [
+        ...links.map(([href, , sizes]): [string, string] => [href ?? '', sizes ?? '']),
+        [touch ?? '', '180x180'],
+        ...manifest.icons.map((icon): [string, string] => [`${base}${icon.src}`, icon.sizes]),
+      ];
+      for (const [href, sizes] of stated) {
+        const response = await page.request.get(`${site.origin}${href}`);
+        expect([href, response.status(), response.headers()['content-type']]).toEqual([
+          href,
+          200,
+          'image/png',
+        ]);
+        const meta = await sharp(await response.body()).metadata();
+        expect([href, `${String(meta.width)}x${String(meta.height)}`, meta.format]).toEqual([
+          href,
+          sizes,
+          'png',
+        ]);
+      }
+
+      // The icons they replaced are gone, not kept beside them.
+      for (const gone of ['favicon.svg', 'icons/glyph.svg']) {
+        expect([gone, (await page.request.get(site.url(gone))).status()]).toEqual([gone, 404]);
+      }
+
+      // The worker keeps the tab icons with the shell, and no app icon.
+      const listed = precacheList(siteRoot);
+      expect(listed.filter((file) => file.startsWith('favicon'))).toEqual([...FAVICONS].sort());
+      expect(listed.filter((file) => file.startsWith('icons/'))).toEqual([]);
+      await waitForOfflineReady(page, site);
+      const kept = await precached(page, base);
+      expect(kept.filter((file) => file.startsWith('favicon'))).toEqual([...FAVICONS].sort());
+      expect(kept.filter((file) => file.startsWith('icons/'))).toEqual([]);
     } finally {
       await context.close();
       await site.stop();

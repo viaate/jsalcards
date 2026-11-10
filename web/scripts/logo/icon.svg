@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Snowlight, logo 8 "Snowflake Sunrise", tuned. A snow crystal comes up over a snowy hill the way the sun would.
+       Crystal: centre 512,604; six arms 80 wide and 456 long, 60 degrees apart, meeting in a point (no hub). The three upper arms carry one pair
+       of branches each, the same weight as the arm (they leave the arm at 262, reach 134 to each side, 80 thick): this is the arm of the logo as picked, unchanged.
+       The three lower arms go behind the hill; they are short (170), so the foot ends in an upright edge where the hub of the picked logo had its sides. Hill: crest at 716, 792 at the tile's sides.
+       A breath of 50 of sky separates crystal and snow. Full square artwork: the phone rounds the corners itself.
+       Light look. Snow: white at the crest, shading to pale ice at the foot of the tile, so the tile keeps its bottom edge on a white page. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b0f17"/><stop offset="1" stop-color="#04060a"/></linearGradient>
+    <linearGradient id="snow" gradientUnits="userSpaceOnUse" x1="0" y1="732.4" x2="0" y2="1024"><stop offset="0" stop-color="#ffffff"/><stop offset="0.3" stop-color="#f3f9fd"/><stop offset="1" stop-color="#bdd9ee"/></linearGradient>
+    <path id="arm" d="M-40 0V-262L-134 -316.3V-396.3L-40 -342V-432.9L0 -456L40 -432.9V-342L134 -396.3V-316.3L40 -262V0Z"/>
+    <path id="foot" d="M-40 0V-146.9L0 -170L40 -146.9V0Z"/>
+    <!-- everything above the snow line, less the breath of sky between crystal and snow -->
+    <clipPath id="above"><path d="M0 742Q512 590 1024 742V0H0Z"/></clipPath>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#sky)"/>
+  <g clip-path="url(#above)">
+    <g transform="translate(512 604)" fill="#7fd4ff">
+      <use href="#arm"/>
+      <use href="#arm" transform="rotate(60)"/>
+      <use href="#arm" transform="rotate(-60)"/>
+      <use href="#foot" transform="rotate(120)"/>
+      <use href="#foot" transform="rotate(-120)"/>
+      <use href="#foot" transform="rotate(180)"/>
+    </g>
+  </g>
+  <path d="M0 792Q512 640 1024 792V1024H0Z" fill="url(#snow)"/>
+</svg>

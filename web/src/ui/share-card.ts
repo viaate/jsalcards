@@ -18,6 +18,8 @@
 import { CARD_SIZES } from '../app/share-card';
 import type { CardKind, CardModel, CardTone } from '../app/share-card';
 
+import { MARK_GRID, drawMark } from './share-card-art';
+
 /** The site's face, as the page's style sheet names it. */
 export const CARD_FONT = '"Geist Variable", system-ui, sans-serif';
 
@@ -37,8 +39,6 @@ const TEXT_2 = '#a3a3a3';
 const TEXT_3 = '#6b6b6b';
 /** The dark: the map's, a breath off black so the glow has something to fall into. */
 const BACKGROUND = '#050607';
-/** The site's mark, the Snowlight bloom (public/icons/glyph.svg): a white core in Closed blue. */
-const BLOOM = { core: '#f4fbff', color: '#7fd4ff' } as const;
 
 /** The room kept clear each side of the words, in pixels. */
 const SIDE = 96;
@@ -727,24 +727,6 @@ export function drawBackdrop(ctx: CanvasRenderingContext2D, layout: CardLayout, 
   ctx.fillRect(0, 0, width, height);
 }
 
-/** Draws the site's mark, the Snowlight bloom, in a square at (x, y). */
-function drawMark(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
-  const r = size / 2;
-  const cx = x + r;
-  const cy = y + r;
-  const bloom = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-  bloom.addColorStop(0, rgba(BLOOM.core, 1));
-  bloom.addColorStop(0.1, rgba(BLOOM.core, 0.98));
-  bloom.addColorStop(0.22, rgba(BLOOM.color, 0.81));
-  bloom.addColorStop(0.44, rgba(BLOOM.color, 0.41));
-  bloom.addColorStop(0.7, rgba(BLOOM.color, 0.14));
-  bloom.addColorStop(1, rgba(BLOOM.color, 0));
-  ctx.fillStyle = bloom;
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fill();
-}
-
 /**
  * Draws a laid-out card on a 2D context the card's size: its backdrop (drawn
  * small and smoothed up to size where one is given, which keeps the PNG
@@ -802,7 +784,7 @@ export function drawCard(
     ctx.fill();
   }
 
-  // The foot: a hairline, and under it the site's mark beside its wordmark.
+  // The foot: a hairline, and under it the site's mark (the logo in one color) beside its wordmark.
   ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
   ctx.fillRect(
     layout.rule.left,
@@ -810,7 +792,7 @@ export function drawCard(
     layout.rule.right - layout.rule.left,
     2,
   );
-  drawMark(ctx, layout.mark.x, layout.mark.y, layout.mark.size);
+  drawMark(ctx, layout.mark.x, layout.mark.y, layout.mark.size / MARK_GRID, TEXT_1);
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
