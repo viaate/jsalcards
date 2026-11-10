@@ -15,6 +15,17 @@ public struct RootView: View {
     }
 
     public var body: some View {
+        // In debug builds the picture tour (Tour/) watches the screen appear, so that it
+        // can write the words of this model for the picture being taken. A release build
+        // holds none of it.
+        #if DEBUG
+        screen.modifier(TourStage(model: model))
+        #else
+        screen
+        #endif
+    }
+
+    private var screen: some View {
         ShownLabel(model.appName)
     }
 }

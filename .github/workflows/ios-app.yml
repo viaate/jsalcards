@@ -2,9 +2,12 @@ name: iOS app
 
 # The iPhone app (ios/), built on one of GitHub's standard hosted Macs: the core tests
 # on Apple's Foundation, then an unsigned build for the simulator from a project that
-# XcodeGen makes from ios/project.yml. No signing identity, no account and no secret is
-# involved. Logic lives in the ios/tools scripts so this file changes rarely: every
-# change to it also runs the normal CI.
+# XcodeGen makes from ios/project.yml, then pictures of the app taken from the real
+# simulator screen. The pictures come back as one small artifact, ios-shots; the color
+# at a named point of each picture is printed in the log, so the log alone tells a light
+# screen from a dark one. No signing identity, no account and no secret is involved.
+# Logic lives in the ios/tools scripts so this file changes rarely: every change to it
+# also runs the normal CI.
 on:
   push:
     paths:
@@ -34,6 +37,8 @@ jobs:
     timeout-minutes: 30
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      SIM_OS_PREFIX: "iOS 26."
+      SIM_DEVICE: "iPhone 17 Pro"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -68,3 +73,27 @@ jobs:
           "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate --spec ios/project.yml
       - name: Build for the simulator, unsigned
         run: bash ios/tools/build.sh
+      - name: Picture tour
+        run: bash ios/tools/tour.sh
+      - name: Colors at named points in the pictures
+        if: always()
+        run: |
+          xcrun swiftc -O ios/tools/pixels.swift -o "$RUNNER_TEMP/pixels"
+          "$RUNNER_TEMP/pixels" ios/out/full
+      - name: Small pictures
+        if: always()
+        run: bash ios/tools/shots.sh
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ios-shots
+          path: ios/out/small/
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ios-screens-full
+          path: ios/out/full/
+          if-no-files-found: ignore
+          retention-days: 7
