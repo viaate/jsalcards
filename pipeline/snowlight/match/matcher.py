@@ -1106,15 +1106,28 @@ class Matcher:
 
         Its words as spelled, bar the words that link them (``"The Learning
         Center"`` is ``"Learning Center"``), and its levels
-        (:func:`~snowlight.match.index.levels_said`) and numbers.
+        (:func:`~snowlight.match.index.levels_said`) and numbers. The record's
+        name is NCES's whole, or the one a dba or a formerly says it goes by
+        (:meth:`~snowlight.match.index.NameIndex.goes_by`: ``"THE HEBREW
+        ACADEMY"`` of ``"SSDS OF GMC D/B/A THE HEBREW ACADEMY"``), never its
+        legal name before a dba nor an old name.
         """
         district = self.index.is_district[index]
         form = forms.district if district else forms.school
         other = self.index.forms[index]
-        if not levels_said(form.levels, other) or form.numbers != other.numbers:
-            return False
         said = tuple(w for w in spelled_name(text, district=district).words if w not in _LINKING)
-        return said == tuple(w for w in self.index.spelled(index) if w not in _LINKING)
+        if (
+            levels_said(form.levels, other)
+            and form.numbers == other.numbers
+            and said == tuple(w for w in self.index.spelled(index) if w not in _LINKING)
+        ):
+            return True
+        goes_by = self.index.goes_by(index)
+        if goes_by is None:
+            return False
+        # Its words say its levels and numbers too: the name is read as a listing is.
+        spelled = spelled_name(goes_by[0], district=district).words
+        return said == tuple(w for w in spelled if w not in _LINKING)
 
     def _named_whole(self, outcome: _Outcome, forms: ListingForms) -> bool:
         """True when ``outcome``'s best school is named by the whole listing, word for word.
@@ -2766,19 +2779,21 @@ class Matcher:
         """Pick the best of ``scored`` for a listing read as ``forms`` and say how sure that is.
 
         Names that tie go to the one much nearer ``point`` (:meth:`_break_tie`),
-        or, among districts of one town, to the one whose legal form the
-        listing says (:meth:`_legal_form_tie`), or, among districts, to the one
-        whose name the listing says exactly (:meth:`_exact_tie`). A school that says more than the
-        listing gives way to its own district when the district's name is the
-        listing's, word for word (:meth:`_exact_reading`); when that district
-        does not fit the listing's words well enough to be taken (``"Allen
-        Village School"`` for ``"ALLEN VILLAGE"`` and its ``"ALLEN VILLAGE HIGH
-        SCHOOL"``), neither is, and the listing goes to the queue. A district
-        gives way to its own school when a listing that reads as one school is
-        that school's name, word for word (:meth:`_school_reading`). A rival
-        within the margin costs confidence. Before all of it, a listing that
-        names a school system NCES splits into several districts names every one
-        of them (:meth:`_as_system`).
+        or to the record whose own name the listing is, over names a dba gives
+        others (:meth:`_read_name_tie`), or, among districts of one town, to the
+        one whose legal form the listing says (:meth:`_legal_form_tie`), or,
+        among districts, to the one whose name the listing says exactly
+        (:meth:`_exact_tie`), tried in that order, the first that picks one
+        deciding. A school that says more than the listing gives way to its own
+        district when the district's name is the listing's, word for word
+        (:meth:`_exact_reading`); when that district does not fit the listing's
+        words well enough to be taken (``"Allen Village School"`` for ``"ALLEN
+        VILLAGE"`` and its ``"ALLEN VILLAGE HIGH SCHOOL"``), neither is, and the
+        listing goes to the queue. A district gives way to its own school when a
+        listing that reads as one school is that school's name, word for word
+        (:meth:`_school_reading`). A rival within the margin costs confidence.
+        Before all of it, a listing that names a school system NCES splits into
+        several districts names every one of them (:meth:`_as_system`).
         """
         settings = self.settings
         if not scored:
@@ -2798,10 +2813,96 @@ class Matcher:
         if tie is None and across:
             return self._undecided_across(best, tied, scored, distances, point)
         if tie is None and len(tied) > 1:
-            tie = self._legal_form_tie(tied, forms) or self._exact_tie(tied, forms)
+            tie = (
+                self._read_name_tie(tied, forms, home=home)
+                or self._legal_form_tie(tied, forms)
+                or self._exact_tie(tied, forms)
+            )
         elif tie is not None and self._apart(tied):
             tie = self._nearest_forgiven(tie, forms)
         return self._settled(best, tie, scored, distances, point, forms, home=home)
+
+    def _read_name_tie(
+        self, tied: Sequence[Scored], forms: ListingForms, *, home: frozenset[str] | None
+    ) -> _Tie | None:
+        """The one of ``tied`` whose own name the listing is, over names a dba gives others.
+
+        A name that says ``dba``, ``aka`` or ``formerly`` gives its record more
+        names than NCES's whole (:func:`~snowlight.match.normalize.also_known_as`),
+        each as good as its own (:data:`~snowlight.match.index.ALSO_NAME`). They
+        tie with other records' names, and some ties they should not win:
+
+        1. a listing that is a record's whole name that says the word, word for
+           word and in order (:meth:`~snowlight.match.index.NameIndex.whole_spelled_as`),
+           names that record: ``"AVAIL ACADEMY DBA CALVIN CHRISTIAN SCHOOL"`` is
+           not ``"CALVIN CHRISTIAN SCHOOL (DBA: AVAIL ACADEMY)"``;
+        2. a record whose own name, NCES's whole, the listing says exactly
+           (:meth:`~snowlight.match.index.NameIndex.whole_says_exactly`) wins
+           over every other tied record that says it only as its legal name,
+           before a dba (:meth:`~snowlight.match.index.NameIndex.legal_says_exactly`),
+           in the listing's market (``home``, its own counties): ``"Edkey Inc."``
+           is ``"Edkey Inc. (85749)"``, the operator's own district, not
+           ``"Edkey Inc. dba Sequoia Charter School (6446)"``; and over records
+           at the same point that say it only as the name they go by
+           (:meth:`~snowlight.match.index.NameIndex.goes_by_says_exactly`), one
+           place NCES lists under several names: ``"Academia Private School"``
+           is ``"ACADEMIA PRIVATE SCHOOL"``, not ``"HOUSE OF ACADEMIA, DBA
+           ACADEMIA PRIVATE SCHL"`` at its address, and ``"Intelli-School
+           Inc."`` is the charter holder ``"Intelli-School Inc. (4352)"``, not
+           the two holders at its address that go by ``"Intelli-School"``. A
+           name a dba gives a record elsewhere ties with another's own name:
+           ``"Summit High School"`` names Flagstaff's and the one ``"Kaizen
+           Education Foundation dba Summit High School"`` goes by in Phoenix,
+           and goes to the queue.
+
+        Only NCES's whole name is a record's own here, not the name a dba says
+        it goes by: ``"CALVIN CHRISTIAN SCHOOL"`` is the legal name of one
+        campus and the dba name of the other, and names neither.
+
+        A legal name no other record says as its own still names its record
+        (``"KENMORE PREPARATORY ACADEMY"``); two records that say it so tie.
+        The listing's counties have already ruled out the names a dba gives a
+        record past them (:meth:`~snowlight.match.index.NameIndex.search`). A
+        listing with no counties has no market to tell the operator's own
+        record from the schools that carry its legal name where the list is
+        (``"CPLC Community Schools"``, Phoenix's district, and two Tucson
+        schools that say it, on a Tucson station whose counties the registry
+        does not give): its legal names tie with the record's own, and the
+        listing goes to the queue.
+        """
+        index = self.index
+        whole = [s for s in tied if index.whole_spelled_as(forms.spelled, s.index)]
+        if len(whole) == 1:
+            return _Tie(
+                whole[0],
+                frozenset(s.index for s in tied),
+                f"of {len(tied)} names that tie, the one NCES gives, word for word",
+                Reason.NAME,
+            )
+
+        def form_of(s: Scored) -> NameForm:
+            return forms.district if index.is_district[s.index] else forms.school
+
+        own = [s for s in tied if index.whole_says_exactly(form_of(s), s.index)]
+        if len(own) != 1:
+            return None
+        chosen = own[0]
+        record = index.records[chosen.index]
+        place = (record.lat, record.lon) if record.lat is not None else None
+        for s in tied:
+            if s is chosen or (home is not None and index.legal_says_exactly(form_of(s), s.index)):
+                continue
+            other = index.records[s.index]
+            if place is None or (other.lat, other.lon) != place:
+                return None
+            if not index.goes_by_says_exactly(form_of(s), s.index):
+                return None
+        return _Tie(
+            chosen,
+            frozenset(s.index for s in tied),
+            f"of {len(tied)} names that tie, the only one that is the record's own",
+            Reason.NAME,
+        )
 
     def _nearest_forgiven(self, tie: _Tie, forms: ListingForms) -> _Tie:
         """A tie that a point broke between districts apart, its winner's municipal word forgiven.

@@ -155,6 +155,7 @@ from snowlight.match.normalize import (
     county_words,
     directory_name,
     fold,
+    gives_legal_name,
     legal_words,
     record_form,
     spelled_name,
@@ -375,16 +376,19 @@ CODE_ONLY: Final = 0.3
 """The least a district scores whose code a listing names, whatever else it says
 (``"RSU 13 - Adult Education"``): never accepted, but shown in the unmatched queue."""
 ALSO_NAME: Final = 1.0
-"""The share of its score a record keeps when a listing names it by a name a dba of
-its NCES name gives (:func:`~snowlight.match.normalize.also_known_as`): all of it.
+"""The share of its score a record keeps when a listing names it by a name a dba or
+a formerly of its NCES name gives (:func:`~snowlight.match.normalize.also_known_as`):
+all of it.
 
 ``"Kenmore Preparatory Academy dba Toledo Preparatory Academy"`` goes by both its
 names now, as fully as by NCES's whole name, so two campuses NCES names the other
 way round (``"AVAIL ACADEMY DBA CALVIN CHRISTIAN SCHOOL"``, ``"CALVIN CHRISTIAN
 SCHOOL (DBA: AVAIL ACADEMY)"``) tie for either name, and a legal name several
-records share (``"Edkey Inc."``) names none of them over the rest. Past a
-listing's counties a record answers to NCES's whole name alone
-(:meth:`NameIndex.search`)."""
+records share (``"Kaizen Education Foundation"``) names none of them over the rest. The
+matcher breaks some of those ties (:meth:`~snowlight.match.Matcher._read_name_tie`:
+a record's own name over another's legal name). Past a listing's counties a
+record answers to NCES's whole name and its other second names, never to a name a
+dba, an aka or a formerly gives (:meth:`NameIndex.search`)."""
 SECOND_NAME: Final = 0.95
 """The share of its score a district keeps when a listing names it by its second name.
 
@@ -533,9 +537,9 @@ class Scope:
             listing read again with the counties around its market's); ``None``
             when ``counties`` are its own. A tie between names reads it, which a
             point may break only when every other name lies outside them (see
-            :attr:`market`); and the search, which reads a record past them by
-            NCES's whole name alone when that name says dba
-            (:meth:`NameIndex._score`).
+            :attr:`market`); and the search, which scores a record past them by
+            NCES's whole name and its other second names, never by a name a dba,
+            an aka or a formerly gives (:meth:`NameIndex.search`).
     """
 
     states: frozenset[str]
@@ -1269,17 +1273,21 @@ class NameIndex:
         schools are (a charter network's ``"QUILLON ACADEMY - HARBOR CAMPUS"``,
         see :meth:`campuses`).
 
-        A school's or district's name that says ``dba`` or ``aka`` (outside a
-        bracket, or opening the bracket that ends it) keeps NCES's whole name and
-        gives one or two more (:func:`~snowlight.match.normalize.also_known_as`),
-        each worth :data:`ALSO_NAME`: ``"Kenmore Preparatory Academy dba Toledo
-        Preparatory Academy"`` is matched by itself, by ``"Toledo Preparatory
-        Academy"`` and by ``"Kenmore Preparatory Academy"``; ``"DBA ELIZABETH
-        SETON CHILDRENS SCHOOL"`` by itself and by the rest. A side that names
-        only a church, a faith or a child care chain gives none, nor does a name
-        NCES may have cut off (:func:`_cut_off`) unless the name after the word
-        ends whole, nor an old name (``formerly``, ``fka``). NCES's name itself
-        is shown as it is.
+        A school's or district's name that says ``dba``, ``aka`` or ``formerly``
+        (outside a bracket, or opening the bracket that ends it) keeps NCES's
+        whole name and gives one or two more
+        (:func:`~snowlight.match.normalize.also_known_as`), each worth
+        :data:`ALSO_NAME`: ``"Kenmore Preparatory Academy dba Toledo Preparatory
+        Academy"`` is matched by itself, by the name it goes by, ``"Toledo
+        Preparatory Academy"`` (:meth:`goes_by`), and by its legal name,
+        ``"Kenmore Preparatory Academy"`` (:meth:`legal_says_exactly`); ``"DBA
+        ELIZABETH SETON CHILDRENS SCHOOL"`` by itself and by the rest; ``"Maya
+        Angelou Academy at New Beginnings formerly Oak Hill"`` by itself and by
+        the name before the word, never by the old name. A side that names only
+        a church, a faith, a child care chain or a kind of school gives none
+        (but a current name before formerly that says a chain's brand does),
+        nor does a name NCES may have cut off (:func:`_cut_off`) unless the name
+        after the word ends whole. NCES's name itself is shown as it is.
         """
         self.names: list[str] = []
         self._optional: dict[int, frozenset[str]] = {}
@@ -1290,8 +1298,13 @@ class NameIndex:
         self._entities: dict[int, str] = {}
         self._bracketed: dict[int, int] = {}
         self._also: dict[int, frozenset[int]] = {}
-        """For a record whose name says dba (:func:`~snowlight.match.normalize.also_known_as`),
-        where among its second names are the two that gives."""
+        """For a record whose name says dba or formerly
+        (:func:`~snowlight.match.normalize.also_known_as`), where among its second
+        names are the one or two that gives."""
+        self._goes_by: dict[int, int] = {}
+        """Of those, where the name the record goes by is (:meth:`goes_by`)."""
+        self._legal_name: dict[int, int] = {}
+        """And where its legal name, before a dba, is (:meth:`legal_says_exactly`)."""
         for i, (record, district) in enumerate(zip(self.records, self.is_district, strict=True)):
             name = record.name
             campus = None if district or record.district_id else _CAMPUS.search(name)
@@ -1335,6 +1348,9 @@ class NameIndex:
                 more = tuple(said for said in known if said is not None)
                 held = len(self._seconds.get(i, ()))
                 self._also[i] = frozenset(range(held, held + len(more)))
+                self._goes_by[i] = held
+                if known[1] is not None and gives_legal_name(name):
+                    self._legal_name[i] = held + 1
                 self._second_names[i] = (*self._second_names.get(i, ()), *more)
                 self._seconds[i] = (
                     *self._seconds.get(i, ()),
@@ -1892,6 +1908,51 @@ class NameIndex:
         seconds = self._seconds[index]
         return any(not seconds[at].one_school and _says_exactly(form, seconds[at]) for at in also)
 
+    def goes_by(self, index: int) -> tuple[str, NameForm] | None:
+        """The name a dba or a formerly says record ``index`` goes by, and its form.
+
+        ``"Toledo Preparatory Academy"`` of ``"Kenmore Preparatory Academy dba
+        Toledo Preparatory Academy"``, ``"AVAIL ACADEMY"`` of ``"CALVIN CHRISTIAN
+        SCHOOL (DBA: AVAIL ACADEMY)"``, ``"Maya Angelou Academy at New
+        Beginnings"`` of ``"Maya Angelou Academy at New Beginnings formerly Oak
+        Hill"`` (:func:`~snowlight.match.normalize.also_known_as`); ``None`` for
+        a name that says none. Its legal name, before a dba, is not one.
+        """
+        at = self._goes_by.get(index)
+        if at is None:
+            return None
+        return (self._second_names[index][at], self._seconds[index][at])
+
+    def legal_says_exactly(self, form: NameForm, index: int) -> bool:
+        """True when the legal name a dba gives record ``index``, before the word, says
+        ``form`` exactly: ``"Edkey Inc."`` of ``"Edkey Inc. dba Sequoia Charter School
+        (6446)"``. The first name of an aka is no legal name
+        (:func:`~snowlight.match.normalize.gives_legal_name`)."""
+        at = self._legal_name.get(index)
+        return at is not None and _says_exactly(form, self._seconds[index][at])
+
+    def goes_by_says_exactly(self, form: NameForm, index: int) -> bool:
+        """True when the name record ``index`` goes by (:meth:`goes_by`) says ``form``
+        exactly: ``"ACADEMIA PRIVATE SCHL"`` of ``"HOUSE OF ACADEMIA, DBA ACADEMIA
+        PRIVATE SCHL"``."""
+        own = self.goes_by(index)
+        return own is not None and _says_exactly(form, own[1])
+
+    def whole_says_exactly(self, form: NameForm, index: int) -> bool:
+        """True when record ``index``'s own name, NCES's whole name bar the brackets
+        :func:`~snowlight.match.normalize.directory_name` reads, says ``form``
+        exactly: ``"Edkey Inc."`` of ``"Edkey Inc. (85749)"``. No second name counts."""
+        return _says_exactly(form, self.forms[index])
+
+    def whole_spelled_as(self, words: tuple[str, ...], index: int) -> bool:
+        """True when ``words`` (a listing's, :func:`spelled_name` as a district's) are
+        record ``index``'s whole name that says dba or formerly, word for word and
+        in order: a list's ``"AVAIL ACADEMY DBA CALVIN CHRISTIAN SCHOOL"`` for that
+        name, not for ``"CALVIN CHRISTIAN SCHOOL (DBA: AVAIL ACADEMY)"``."""
+        if index not in self._also:
+            return False
+        return words == spelled_name(self.names[index], district=True).words
+
     def word_sets(self, index: int) -> tuple[frozenset[str], ...]:
         """The identifying words of every name record ``index`` answers to (:meth:`forms_of`)."""
         return tuple(form.token_set for form in self.forms_of(index))
@@ -1954,11 +2015,7 @@ class NameIndex:
 
     def legal_words(self, index: int) -> frozenset[str]:
         """The words of record ``index``'s name that say its legal form: see :func:`legal_words`."""
-        also = self._also.get(index)
-        if also is None:
-            return legal_words(self.names[index])
-        # "Jensmoor Holdings Inc. dba Brightmoor-School": the Inc. is its holder's.
-        return legal_words(self._second_names[index][min(also)])
+        return legal_words(self.names[index])
 
     # -- query ---------------------------------------------------------------
 
@@ -2143,10 +2200,8 @@ class NameIndex:
                 return (DISTRICT_NUMBER_DIFFERS, False)
         return (1.0, False)
 
-    def _type_mismatch(
-        self, types: frozenset[str], index: int, other: NameForm | None = None
-    ) -> bool:
-        """True when school ``index``, named ``other``, is not the kind the listing's ``types`` say.
+    def _type_mismatch(self, types: frozenset[str], index: int) -> bool:
+        """True when school ``index`` is not the kind of school the listing's ``types`` say.
 
         ``"St. Johnsbury Academy"`` is not ``"St. Johnsbury School"``, and
         ``"Robert Frost Charter School"`` is not the ``"Robert Frost"``
@@ -2158,12 +2213,10 @@ class NameIndex:
         a charter school's own district is often named without the word
         (``"Guadalupe Centers Schools"``).
         """
-        if other is None:
-            other = self.forms[index]
-        missing = types - other.token_set
+        missing = types - self.token_sets[index]
         if not missing:
             return False
-        if other.names_kind:
+        if self.forms[index].names_kind:
             return bool(missing - self.district_types[index])
         return _CHARTER in missing and _CHARTER not in self.district_types[index]
 
@@ -2622,12 +2675,12 @@ class NameIndex:
     ) -> tuple[float, float]:
         """``(score, plausibility)`` of record ``index`` for one reading of a listing.
 
-        The better of its own name's and, at :data:`SECOND_NAME`, its second names'.
+        The best of its own name's, its second names' at :data:`SECOND_NAME`, and
+        the names a dba or a formerly gives at :data:`ALSO_NAME`.
         ``placed``: the listing named the record's town beside its name.
         ``forgive``: a municipal qualifier only one side says costs nothing
-        (:meth:`_forgive_municipal`). ``past``: the record lies past the
-        listing's own counties, where it answers to NCES's whole name, not to the
-        two a dba gives (:meth:`search`).
+        (:meth:`_forgive_municipal`). ``past``: the names a dba or a formerly
+        gives are not scored (:meth:`search`).
         """
         score, plausibility = self._score_name(
             query, index, self.forms[index], self.totals[index], placed=placed, forgive=forgive
@@ -2635,7 +2688,7 @@ class NameIndex:
         variants = self._variants.get(index)
         if variants is not None:
             # Past the listing's counties a record answers to NCES's name, not to
-            # the two a dba of it gives.
+            # the names a dba or a formerly of it gives.
             also = self._also.get(index, _NO_POSITIONS)
             for at, variant in enumerate(variants):
                 if past and at in also:
@@ -2788,9 +2841,9 @@ class NameIndex:
         if _place_word_not_said(form, other):
             factor *= PLACE_WORD_NOT_SAID
         if query.types and not self.is_district[index]:
-            if self._type_mismatch(query.types, index, other):
+            if self._type_mismatch(query.types, index):
                 factor *= TYPE_NOT_SAID
-            elif not other.names_kind and not query.types <= other.token_set:
+            elif not other.names_kind and not query.types <= self.token_sets[index]:
                 factor *= TYPE_NOT_SHOWN
         return factor
 
@@ -2820,6 +2873,17 @@ class NameIndex:
         A district whose name and the listing differ only in a municipal word
         one of them says is scored again without it when no other record in
         ``scope`` shares the rest of its name (:meth:`_forgive_municipal`).
+
+        With :attr:`Scope.home` (a listing read again with the counties around
+        its own, :meth:`~snowlight.match.Matcher._past_counties`), a record that
+        lies past the home counties (a district: touches none of them) is scored
+        by NCES's whole name and its other second names only, never by a name
+        a dba or a formerly gives it (``past``, :meth:`_score`): the name it goes
+        by, its legal name and its current name. So such a name never ties with
+        or beats a name of a record in the counties, and every tie the matcher
+        breaks among names past the counties (:meth:`~snowlight.match.Matcher._decide`)
+        is among NCES's whole and second names. A listing with no counties has no home and
+        no such rule: the whole state is its market.
         """
         states = scope.states
         district_query = self._query(forms.district, states)

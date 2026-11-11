@@ -1780,6 +1780,8 @@ def test_a_child_care_chain_is_named_by_its_brand() -> None:
     assert chains_of(["goddard", "school", "of", "dallas"]) == {"goddard school"}
     assert chains_of(["goddard", "middle", "school"]) == frozenset()
     assert chains_of(["kids", "r", "kids"]) == {"kids r kids"}
+    assert chains_of(["cadence", "academy", "preschool"]) == {"cadence academy"}
+    assert chains_of(["cadence", "middle", "academy"]) == frozenset()
     assert listing_forms("The Goddard School").school.affiliations == {"goddard school"}
     assert listing_forms("Children's Lighthouse").school.affiliations == {"childrens lighthouse"}
     assert not record_form("Goddard High", district=False).affiliations

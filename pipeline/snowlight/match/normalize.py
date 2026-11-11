@@ -2126,13 +2126,14 @@ def directory_name(name: str, *, district: bool, county: str | None = None) -> D
 
 
 _ALSO_KNOWN: Final = re.compile(
-    r"(?<![\w./'\u2018\u2019\u02bb])(?:(?P<also>dba|d/b/a|d\.b\.a|doing\s+business\s+as"
-    r"|aka|a/k/a|also\s+known\s+as)|(?P<former>formerly|fka|f/k/a))(?![\w/])\.?",
+    r"(?<![\w./'\u2018\u2019\u02bb])(?:(?P<dba>dba|d/b/a|d\.b\.a|doing\s+business\s+as)"
+    r"|(?P<aka>aka|a/k/a|also\s+known\s+as)|(?P<former>formerly|fka|f/k/a))(?![\w/])\.?",
     re.IGNORECASE,
 )
 """A word in a directory name that says the rest of it is another name the record
-is known by: ``dba`` (the name the record goes by follows) or ``formerly`` (the
-name it went by follows). Whole words only: not the end of ``"Sewanhaka"`` nor
+is known by: ``dba`` (the name the record goes by follows, after its legal name),
+``aka`` (another name it goes by follows) or ``formerly`` (the name it went by
+follows). Whole words only: not the end of ``"Sewanhaka"`` nor
 of ``"Ka\u2018aka"`` (after an apostrophe or an okina), nor the start of a word."""
 _ALSO_KNOWN_EDGES: Final = " \t,;:-"
 _BRACKETS: Final = {"(": ")", "[": "]"}
@@ -2164,38 +2165,69 @@ def also_known_as(name: str, *, district: bool, cut: bool = False) -> tuple[str,
       goes by ``"CALVIN CHRISTIAN SCHOOL"``; the word elsewhere in a bracket is
       :func:`directory_name`'s to read.
 
-    A name the record went by (``"Maya Angelou Academy at New Beginnings
-    formerly Oak Hill"``, or ``fka``, ``f/k/a``) is not read: an old name never
-    names the record, so the name stays NCES's whole.
+    * a name that says the name the record went by (``formerly``, ``fka``,
+      ``f/k/a``, inline or opening the bracket that ends it) goes by the name
+      before the word: ``"Maya Angelou Academy at New Beginnings formerly Oak
+      Hill"`` goes by ``"Maya Angelou Academy at New Beginnings"`` and has no
+      other name. The old name is dropped: it never names the record. A
+      current name that says a child care chain's brand goes by it, even when it
+      names nothing else, as a record NCES names by the brand does:
+      ``"CADENCE ACADEMY PRESCHOOL FORMERLY FLANAGAN'S PRES"`` goes by
+      ``"CADENCE ACADEMY PRESCHOOL"``.
 
     ``cut`` says NCES may have cut the name off at its length limit: then the name
     after the word must end with a word a school's or district's name ends with
     (:data:`_WHOLE_ENDINGS`), or it may be only the start of the name
     (``"American Charter Schools Foundation d.b.a. Peoria"``).
 
-    Returns ``(name, other)``; ``None`` when the name says no such word, says two
-    (``"... dba ... formerly ..."``), says an old name, a side names nothing that
-    identifies or only a church, a faith or a child care chain (``"MITTAS DAY
-    CARE LLC DBA THE LEARNING EXPERIENCE"``, ``"AKA Academy"``), or a cut name
-    may end in the middle of one.
+    Returns ``(name, other)``: the name the record goes by, and the name before
+    a dba or an aka (a dba's is its legal name: :func:`gives_legal_name`).
+    ``None`` when the name says no such word, says two (``"... dba ... formerly
+    ..."``), a side names nothing that identifies, or only a church, a faith or
+    a child care chain (``"MITTAS DAY CARE LLC DBA THE LEARNING EXPERIENCE"``;
+    a formerly's current name aside, as above), or only what kind of school it
+    is (``"AKA Academy"``, ``"Learning Academy dba ..."``), or a cut name may
+    end in the middle of one.
     """
     found = list(_ALSO_KNOWN.finditer(name))
-    if len(found) != 1 or found[0].group("also") is None:
-        return None
-    sides = _sides(name[: found[0].start()], name[found[0].end() :])
+    sides = _sides(name[: found[0].start()], name[found[0].end() :]) if len(found) == 1 else None
     if sides is None:
         return None
     first, other, closed = sides
-    if not _names_something(other, district) or (
+    if found[0].group("former") is not None:
+        # "... formerly Oak Hill": the name before the word, and the old one dropped.
+        chain = record_form(first, district=district).affiliations & lexicon.CHAIN_BRANDS
+        current = _a_name(first, district) or bool(chain)
+        return (first, None) if current and _a_name(other, district) else None
+    if not _a_name(other, district) or (
         not closed and cut and _folded_words(other)[-1] not in _WHOLE_ENDINGS
     ):
         return None
     if not first:
         # "DBA ELIZABETH SETON CHILDRENS SCHOOL" is the rest; "AKA Academy" no name.
         return (other, None) if _names_something(other, district, alone=True) else None
-    if not _names_something(first, district):
+    if not _a_name(first, district):
         return None
     return (other, first)
+
+
+def gives_legal_name(name: str) -> bool:
+    """True when the word of :func:`also_known_as` in ``name`` is a dba, so the name
+    before it is a legal name (``"Edkey Inc. dba Sequoia Charter School"``), not an
+    aka, whose first name is the school's own too (``"GREATER TRINITY ACADEMY (AKA
+    RISE UP ACADEMY)"``)."""
+    found = _ALSO_KNOWN.search(name)
+    return found is not None and found.group("dba") is not None
+
+
+def _a_name(side: str, district: bool) -> bool:
+    """True when one side of the word of :func:`also_known_as` is a name: it names
+    something (:func:`_names_something`), and more than what kind of school it is
+    (``"ACADEMY SCHOOL"`` is none, ``"Academy 21"`` is one)."""
+    if not _names_something(side, district):
+        return False
+    form = record_form(side, district=district)
+    return bool(form.numbers or form.codes) or not set(form.tokens) <= _KIND_ONLY
 
 
 def _sides(before: str, after: str) -> tuple[str, str, bool] | None:

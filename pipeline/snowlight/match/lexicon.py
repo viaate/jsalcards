@@ -817,6 +817,7 @@ CHAINS: Final[dict[tuple[str, ...], str]] = {
     ("celebree", "school"): "celebree school",
     ("creative", "world", "school"): "creative world school",
     ("guidepost", "montessori"): "guidepost montessori",
+    ("cadence", "academy"): "cadence academy",
 }
 """Child care chains' names, as canonical words, and the brand each says."""
 CHAIN_BRANDS: Final[frozenset[str]] = frozenset(CHAINS.values())
