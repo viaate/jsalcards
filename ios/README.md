@@ -197,56 +197,84 @@ changes to `project.yml`'s keys. It is a workflow change, as above.
 ## What the first runs proved
 
 M0a's answers to what nobody could confirm without a Mac, each with the run it was read
-from (Nov 10, 2026; all runs are on `viaate/jsalcards`).
+from (Nov 10 and 11, 2026; all runs are on `viaate/jsalcards`). The last runs read here
+are those of commit 66549a8, both green on the first attempt: iOS core 42946510117 and
+iOS app 42946510032.
 
 - **P1, Liquid Glass in the pictures:** for the lead's eyes. The tab bar reads as the
-  system's own floating bar with a darker capsule on the chosen tab and a round search
-  button apart at the right; the probe's glass button and glass label show translucent,
-  rimmed and shadowed over the Metal teal. Best seen in `light-myschool.jpg`,
-  `dark-settings.jpg` and `dark-probe.jpg` of `ios-shots` from iOS app run 42914332720.
+  system's own floating bar: a rounded pill with a soft shadow, a darker capsule on the
+  chosen tab, and a round search button apart at the right. Over the plain page the
+  bar's glass is only a faint tint (`#fdfdfd` over `#ffffff`, `#17181b` over `#131418`),
+  so those pictures cannot show glass bending what lies behind it. Over the probe's
+  Metal teal, the glass button and the glass label take on a darker teal of their own,
+  with a light rim and a soft shadow. Best seen in `light-myschool.jpg`,
+  `dark-settings.jpg` and `dark-probe.jpg` of `ios-shots` from iOS app run 42946510032.
 - **P2, the status bar time override:** yes on the iOS 26.5 simulator: 9:41, full bars, a
-  charging battery (run 42880463735, and every picture since).
+  charging battery (run 42880463735, and every picture since, last in run 42946510032).
+  On the xcode-27 job's iOS 27.2 simulator the override was accepted with no refusal; its
+  pictures are in `ios-shots-27`, for the lead.
 - **P3, does a Metal view draw in a simulator picture:** yes on both jobs (run
-  42914332720): "dark-probe 10% 25% #12a594 ... yes" on `macos-26` and on `xcode-27`, the
-  exact teal; the probe's file said "metal device: Apple iOS simulator GPU" and "drawable
-  presented: yes".
-- **P4, minutes:** Linux 25 to 95 seconds a run (first 54 s in run 42862198695; 62 s in run
-  42914332788 with the guards, the golden check, the parse and two test runs). macOS 83 s
-  for the first build-only run (42870517150) up to 689 s with 15 pictures (42914332720:
-  machine facts 86 s, core tests 43 s, build 40 s, tour 484 s, colors 14 s); the xcode-27
-  job 728 s in the same run. A cold hosted simulator takes about 2 minutes to boot and 1.5
-  to 2 to install the app; then a picture every 7 to 18 seconds.
+  42914332720, again in run 42946510032): "dark-probe 10% 25% #12a594 ... yes" on
+  `macos-26` and on `xcode-27`, the exact teal; the probe's file said "metal device:
+  Apple iOS simulator GPU" and "drawable presented: yes", and the app's own log "one
+  drawable of 1206 x 1311 pixels was sent to be presented" and "the frame's commands
+  completed".
+- **P4, minutes,** whole job and its main steps, in seconds:
+
+  | Job | First run | The last run |
+  |---|---|---|
+  | `core (Linux)` | 54 (run 42862198695, two tests: versions 17, tests 32) | 64 (run 42946510117: versions 19, guards 0, golden check 1, parse 1, tests 36 and 2 in the second zone) |
+  | `app (macos-26, Xcode 26.6)` | 83, build only (run 42870517150: machine facts 11, core tests 32, XcodeGen 1, build 27); 359 with the first picture (run 42880463735, tour 244) | 633 (run 42946510032: machine facts 43, core tests 33, XcodeGen 1, Debug and Release builds 48, tour 462, colors 18, small pictures 4, uploads 6) |
+  | `app (xcode-27, may fail)` | 728 (run 42914332720: machine facts 15, core tests 58, build 34, tour 588, colors 16) | 575 (run 42946510032: machine facts 7, core tests 34, both builds 34, tour 465, colors 20, uploads 4) |
+
+  The two macOS jobs run side by side: the whole iOS app run took 10 min 33 s
+  (42946510032). In the tour, a cold hosted simulator takes about 1.5 to 2.5 minutes to
+  boot and 1 to 2 more to install the app; then a picture every 5 to 30 seconds, with
+  now and then one picture that takes one to two minutes.
 - **P6, can a lane fetch the pictures:** yes (run 42880463735): `ios-shots` came by plain
-  `curl` of the artifact's zip, with no token, its sha256 equal to the upload's digest. No
-  fallback is in use.
-- **P7, does `simctl ui appearance` reach the app:** yes for both looks (run 42898061415):
-  the light pictures read `#ffffff` and the dark ones `#131418` at 50%, 60%, the `page`
-  token exactly.
-- **P8, the xcode-27 leg:** green (job 130172715589 of run 42914332720), 728 s: Xcode 27.1
-  (27A9275), Apple Swift 6.4, the iOS 27.2 runtime with iPhone 18 Pro, 36 tests, every
-  shell pixel line ok, the words of 14 pictures equal. In run 42939935001 it stopped before
-  the first picture: that image has two iOS 27.2 runtimes, one of them made for one new
-  phone only, and the tour took that one ("Incompatible device"). `tools/tour.sh` now
-  makes the device on each runtime in turn, newest first, and keeps the first that
-  accepts it.
+  `curl` of the artifact's zip, with no token, its sha256 equal to the upload's digest;
+  again for runs 42898061415, 42914332720 and 42946510032, once each. No fallback is in
+  use.
+- **P7, does `simctl ui appearance` reach the app:** yes for both looks (run 42898061415,
+  and every run since): the light pictures read `#ffffff` and the dark ones `#131418` at
+  50%, 60%, the `page` token exactly.
+- **P8, the xcode-27 leg:** green in its first run (job 130172715589 of run 42914332720,
+  728 s) and in the last (job 130280510033 of run 42946510032, 575 s): image
+  xcode-27-arm64 20261104.0337.1, macOS 27.0.1, Xcode 27.1 (27A9275), Apple Swift 6.4,
+  the iOS 27.2 runtime with iPhone 18 Pro; 36 tests with the St. John's line; Debug and
+  Release built with no warning and the Release app clean; the page line of all 14 shell
+  pictures ok and the words of 14 pictures equal; the probe's teal read back exactly. In
+  run 42939935001 it stopped before the first picture: that image has two iOS 27.2
+  runtimes, one of them made for one new phone only, and the tour took that one
+  ("Incompatible device"). `tools/tour.sh` now makes the device on each matching
+  runtime in turn, newest first, and keeps the first that accepts it. In run 42946510032
+  the ordinary runtime came first, so that fallback has been walked only on Linux, with
+  stand-ins for `xcrun`. The tab and tile points, measured on iPhone 17 Pro, are printed
+  there and not judged: all 10 tile lines say yes, and 20 of the 44 tab lines say no. On
+  iPhone 18 Pro with iOS 27.2 the chosen tab's point and the point of the tab to its
+  right read alike (`#ebebeb` light, `#191a20` dark), and in dark the rest of the bar
+  reads `#323338`, lighter than the chosen tab: the reverse of iOS 26.5 (bar `#17181b`,
+  capsule `#38393d`). Both the places and the rule must be measured on that device
+  before they are judged.
 - **P9, does XcodeGen 2.46.0's project build:** yes with Xcode 26.6 (run 42870517150) and
-  with Xcode 27.1 (run 42914332720), with no warning. **Xcode 26.6 printed Swift 6.3.3**
-  ("Apple Swift version 6.3.3 (swiftlang-6.3.3.1.3 clang-2100.1.1.101)"); Linux has Swift
-  6.4.2; the same source compiles on both.
+  with Xcode 27.1 (run 42914332720), with no warning, and again in run 42946510032.
+  **Xcode 26.6 printed Swift 6.3.3** ("Apple Swift version 6.3.3 (swiftlang-6.3.3.1.3
+  clang-2100.1.1.101)"); Linux has Swift 6.4.2; the same source compiles on both.
 - **P10, the zones:** both machines' own zone is UTC (`date +%Z`). The odd test zone took
   hold through `TZ` alone, no fallback: "ThisMachineTests: this machine's zone is
-  America/St_Johns, -12600 seconds from GMT on 2027-01-15" and "... Pacific/Kiritimati,
-  50400 seconds from GMT on 2027-01-15" on Linux (run 42914332788), and the St. John's line
-  on macOS (run 42914332720, both jobs).
+  America/St_Johns, -12600 seconds from GMT on 2027-01-15" and "ThisMachineTests: this
+  machine's zone is Pacific/Kiritimati, 50400 seconds from GMT on 2027-01-15" on Linux
+  (run 42946510117), and the St. John's line on macOS (run 42946510032, both jobs).
 - **P11, the Spanish picture:** no change: `light-search-es` is byte for byte
-  `light-search` (run 42898061415). That proves nothing yet: the search screen at rest
-  shows no word of iOS's own (the bar's search button is a symbol), so iOS had nothing to
-  translate. A picture that would show such a word needs the field in use or another
-  system control.
-- **P12, Dark back to System at once:** yes, no fallback (run 42898061415): started on a
-  stored Dark with the simulator light and switched to System in code after the first
-  frame, the picture is light ("light-settings-dark-then-system 50% 60% #ffffff ... ok")
-  and its words have "Follows your iPhone" back.
+  `light-search` (run 42898061415, and again in run 42946510032). That proves nothing
+  yet: the search screen at rest shows no word of iOS's own (the bar's search button is a
+  symbol), so iOS had nothing to translate. A picture that would show such a word needs
+  the field in use or another system control.
+- **P12, Dark back to System at once:** yes, no fallback (run 42898061415, and every run
+  since): started on a stored Dark with the simulator light and switched to System in
+  code after the first frame, the picture is light ("light-settings-dark-then-system
+  50% 60% #ffffff ... ok"), System is chosen, and its words have "Follows your iPhone"
+  back.
 - **P13, `simctl launch --stdout --stderr`:** yes on Xcode 26.6 (run 42880463735): the two
   files landed at exactly the host paths given, and the app's own lines were in the
   stderr file.
@@ -256,9 +284,12 @@ from (Nov 10, 2026; all runs are on `viaate/jsalcards`).
   beside `macos-26` ("free and unlimited on public repositories"); the image list still
   marks Xcode 27 a preview, so `continue-on-error` stays. **For the lead:** look at the
   account's billing page once; the first xcode-27 run was 42914332720.
-- **P15, the Linux parse step:** yes (run 42898061484): `swiftc -frontend -parse` read
-  every kit and app source without resolving its imports, in about a second.
+- **P15, the Linux parse step:** yes (run 42898061484, and every run since):
+  `swiftc -frontend -parse` read every kit and app source without resolving its imports,
+  in about a second.
 
-Also measured: 36 XCTest tests pass in each of the three required runs (Linux under two
-zones, macOS under one), none skipped; `ios-shots` is 482 KB with 15 pictures and 15 words
-files (run 42914332720), against a budget of 4 MB.
+Also measured, in the last runs: 36 XCTest tests pass in each of the three required runs
+(Linux under two zones, macOS under one) and on the xcode-27 job, none skipped. The
+guard's self-test refused 349 samples across 43 rules. On the `app` job all 68 judged
+pixel lines are ok and none is WRONG. `ios-shots` is 482,467 bytes with 15 pictures and
+15 words files, kept 14 days, against a budget of 4 MB; `ios-shots-27` is 509,295 bytes.
