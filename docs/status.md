@@ -24,8 +24,10 @@ those days read "not checked" and no old day is called today. In the first minut
 of a new day on the world clock, before its first check is due, today has no bar
 yet and reads "not checked yet".
 
-Under a day after the checks began, a part's share says how long they have run
-("Working in 100% of our checks over 2 hours."), not "over 1 day". While a part's
+A part's share never names more time than the checks it counts span. Under a day
+after the checks began, it says how long they have run ("Working in 100% of our
+checks over 2 hours."), not "over 1 day"; after that, the whole days they span (25
+hours of checks read "over 1 day", not the 2 bars they are drawn on). While a part's
 newest check could not tell, an open problem's length stops at its last reading.
 
 A part the checker has not once been able to read says "Could not check so far."
@@ -39,8 +41,14 @@ checked in the last 90 days." when every day shown is later than the last check.
 No line breaks inside a part's name, a date, a time or a count ("Live school
 closings", "Snow-day chances", "at least", "Nov 10", "2:35 PM EST", "5 minutes"): they
 are tied in the words themselves (`page/src/copy.ts`, `page/src/view.ts`), so it holds
-in every typeface. `scripts/shots.cjs` checks each part's name as the copy has it, at
-nine widths and with text at 150%.
+in every typeface. A length of two parts ("23 hours 55 minutes") is one box of two:
+where very large text makes it wider than the line, it breaks between its parts,
+never between a number and its unit. `scripts/shots.cjs` checks every visible text at
+nine widths, at text of 100%, 150% and 200%, in every state.
+
+Whatever sits side by side (a row's state, a part's share, a problem's time) asks how
+much room the page has in text units, not how wide the screen is, so with larger text
+a tablet lays out like a phone. The side gutters stay 16 px at every text size.
 
 The page and its history live on Cloudflare, apart from GitHub. So the page stays
 up, and the checker keeps recording, when the website (GitHub Pages) or the
@@ -237,18 +245,19 @@ To work on it: `cd status && npm ci && npm run check && npm test && npm run buil
 `node scripts/preview.mjs` serves the built page on `127.0.0.1:4190` with made-up
 histories (`test/fixtures/made-up.ts`: for tests and pictures only), and
 `NODE_PATH=../web/node_modules node scripts/shots.cjs` takes pictures of each
-state and checks that nothing moves when the page fills in, that at nine widths
-from 320 to 1280 px no line breaks inside a name, a date, a time or a count and
-the headline does not end in a line of one word, that scripts off shows no
-"Checking" box, that a page whose script never loads says so after 10 seconds,
-that coming back to the tab says an old answer's age at once, that text at
-150% on a 320 px screen does not scroll sideways, and that at nine widths and at
-text of 100%, 150% and 200% the headline is never smaller than the body text or
-its usual size and always larger than the line under it. The headline never
-shrinks to fit: a part's name that does not fit at the end of a line moves to the
-next whole, and breaks between its words only when it is wider than a whole line. At 150% on 320 px the boxes do
-grow when the page fills in: the room kept for them holds the longest words at
-the usual text size only.
+state and checks that nothing moves when the page fills in, that scripts off shows
+no "Checking" box, that a page whose script never loads says so after 10 seconds,
+that coming back to the tab says an old answer's age at once, that the banner's
+kept room holds its longest words at every 2 px of room from 8rem to 43rem (so it
+does not grow at any text size), and that in every state, at nine widths from 320
+to 1280 px and at text of 100%, 150% and 200%: the headline is never smaller than
+the body text or its usual size and always larger than the line under it; nothing
+scrolls sideways or reaches past its box; the axis labels keep half a line apart
+or "Today" goes down a line under the last bar; no line breaks inside a name, a
+date, a time, a length or a count; and no text ends in a line of one word where
+wrapping could avoid it. The headline never shrinks to fit: a part's name that
+does not fit at the end of a line moves to the next whole, and breaks between its
+words only when it is wider than a whole line.
 
 The page sends `X-Robots-Tag: noindex` on every address (`page/public/_headers`)
 until the owner says the page may be listed. The commit that takes it off `/*`
