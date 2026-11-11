@@ -172,6 +172,9 @@ test('the messages, word for word', () => {
   ]) {
     assert.equal(status.includes(message), true, message);
   }
+  // Both store warnings end where they say they end: neither goes on to claim the deploy goes on.
+  assert.equal(status.split('so this run cannot say what it has kept."').length - 1, 2);
+  assert.doesNotMatch(status, /The deploy goes on/);
   assert.match(deploy, /401 \| 403\)\n\s+echo "::error::The Cloudflare token cannot manage Pages/);
   // A 404 for a token without Pages: making the project fails, and the run names the permission.
   assert.match(

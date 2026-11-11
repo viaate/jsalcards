@@ -79,13 +79,15 @@ the top. A green run means the token already can: skip to step 2.
    Tokens**).
 2. Find the token you made for Snowlight (**Edit Cloudflare Workers** unless you renamed it). Press the three dots at
    the end of its row > **Edit**.
-3. Under **Permissions**, look for a row **Account / Cloudflare Pages / Edit**. If it is there, you are done here.
+3. Under **Permissions**, look for a row **Account / Cloudflare Pages / Edit**. If it is there, go to point 5.
 4. If not: press **+ Add more**, set the new row to **Account** / **Cloudflare Pages** / **Edit**, then
    **Continue to summary** > **Update token**. The token itself does not change, so nothing changes on GitHub. (If
    Cloudflare does show you a new token, put it in the GitHub secret `CLOUDFLARE_API_TOKEN`, as in docs/accounts.md.)
 5. Open the repository on GitHub, press the **Actions** tab, pick **Status** in the list on the left, press **Run
    workflow** (a grey button on the right), leave the branch as it is, and press the green **Run workflow**. It takes
    about five minutes.
+   If that run is red again with the same message, the token GitHub uses is a different one: send us the run's
+   message (under **Annotations**).
 
 ### 2. The one DNS record
 The first time, wait for our word that the page has passed its checks at the `.pages.dev` address.
