@@ -37,8 +37,8 @@ const SHOTS = [
   ['history-light-320', 'history', 'light', NARROW],
   [null, 'ok', 'light', NARROW],
   [null, 'first', 'light', NARROW],
-  [null, 'stale', 'light', NARROW],
-  [null, 'unreachable', 'light', NARROW],
+  ['stale-light-320', 'stale', 'light', NARROW],
+  ['unreachable-light-320', 'unreachable', 'light', NARROW],
   ['worst-light-320', 'worst', 'light', NARROW],
   ['worst-light-phone', 'worst', 'light', PHONE],
   [null, 'worst', 'light', DESKTOP],
@@ -191,8 +191,8 @@ function looked() {
       if (tops(node, match.index, match.index + match[0].length).length > 1)
         split.push(`"${match[0]}" in "${node.data}"`);
     }
-    // A word as the browser breaks it: no-break spaces and joiners keep a run whole.
-    const words = [...node.data.matchAll(/[^ \n]+/g)];
+    // A word as the reader counts it: "60 days." on a line is two words, held together.
+    const words = [...node.data.matchAll(/[^ \n\u00a0]+/g)];
     const lines = new Map();
     for (const word of words) {
       const top = tops(node, word.index, word.index + word[0].length)[0];

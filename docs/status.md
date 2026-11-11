@@ -57,10 +57,10 @@ UTC, and accounts would stop answering until then too. Nothing is ever charged.
 
 ## What you do once
 
-### 1. Let the deploy key manage Pages (only if it cannot yet)
-Do this when the newest Status run is red and its message says "The Cloudflare token cannot manage Pages". To look:
+### 1. Let the token manage Pages (only if it cannot yet)
+Do this when the newest Status run is red and its message (on the run's page, under **Annotations**) says "The Cloudflare token cannot manage Pages". To look:
 open the repository on GitHub, press the **Actions** tab, pick **Status** in the list on the left and open the run at
-the top. A green run means the key already can: skip to step 2.
+the top. A green run means the token already can: skip to step 2.
 1. Go to <https://dash.cloudflare.com/profile/api-tokens> (or: your profile icon, top right > **My Profile** > **API
    Tokens**).
 2. Find the token you made for Snowlight (**Edit Cloudflare Workers** unless you renamed it). Press the three dots at
@@ -172,6 +172,12 @@ goes wrong and right for weeks never makes a tick read the whole table), probes
 the four parts together, and writes the sample, the day's counts, the problems it opened or
 closed and the summary in one D1 batch, which is one transaction. A tick is taken
 in once. A run Cloudflare ends writes nothing, and that tick shows as no readings.
+Two runs can overlap when one is slow. The batch's first write is a compare-and-set:
+it moves `processed` to its tick only while `processed` is still what the tick read
+when it began, and otherwise the whole batch is undone. The loser reads the store
+again: if a tick as new or newer is in, it writes nothing; if not, it makes its
+writes again from what it now reads (three tries at most). So an older tick never
+overwrites a newer tick's summary, and no summary is made from a store it did not read.
 
 **History** (`shared/history.ts`). A sample adds one to its UTC day's count of
 working, late or down readings for each part. A reading that is not working opens a
@@ -188,9 +194,13 @@ was "not checked for 5 minutes" although the checker did run, until its next
 refresh.
 
 **The page** (`status/page/`). `GET /api/status` answers the summary the last tick
-wrote, with the server's clock, cached 30 s. The page draws it, counts time from
+wrote, with the server's clock, never from a cache (`no-store`, and the page asks
+with `cache: 'no-store'`): an answer kept in the browser would carry an old clock,
+and a reload would set the page's clock back. The page draws it, counts time from
 the server's clock (never the visitor's), asks again shortly after each tick is
 due, and says it has no recent checks once the summary is over 15 minutes old. It
+then says only when the last check was, and every part's row reads "Could not
+check": nothing old is shown as what is true now. It
 draws again at once when its tab comes back to the screen, before the fetch that
 follows settles. With scripts off it shows only the line that says to turn them on.
 If its script has not started 10 seconds after the page opened (it did not load, or
