@@ -2126,14 +2126,16 @@ def directory_name(name: str, *, district: bool, county: str | None = None) -> D
 
 
 _ALSO_KNOWN: Final = re.compile(
-    r"(?<![\w./])(?:(?P<also>dba|d/b/a|d\.b\.a|doing\s+business\s+as|aka|a/k/a"
-    r"|also\s+known\s+as)|(?P<former>formerly|fka|f/k/a))(?![\w/])\.?",
+    r"(?<![\w./'\u2018\u2019\u02bb])(?:(?P<also>dba|d/b/a|d\.b\.a|doing\s+business\s+as"
+    r"|aka|a/k/a|also\s+known\s+as)|(?P<former>formerly|fka|f/k/a))(?![\w/])\.?",
     re.IGNORECASE,
 )
 """A word in a directory name that says the rest of it is another name the record
 is known by: ``dba`` (the name the record goes by follows) or ``formerly`` (the
-name it went by follows)."""
+name it went by follows). Whole words only: not the end of ``"Sewanhaka"`` nor
+of ``"Ka\u2018aka"`` (after an apostrophe or an okina), nor the start of a word."""
 _ALSO_KNOWN_EDGES: Final = " \t,;:-"
+_BRACKETS: Final = {"(": ")", "[": "]"}
 _WHOLE_ENDINGS: Final = (
     lexicon.LEVELS
     | lexicon.SCHOOL_NOUNS
@@ -2149,54 +2151,100 @@ def also_known_as(name: str, *, district: bool, cut: bool = False) -> tuple[str,
     """The name a list uses for a directory name that gives two, and the other.
 
     NCES gives some schools and districts, many of them charter schools under a
-    legal operator, both names with a word between them, outside any bracket
-    (:func:`directory_name` reads brackets):
+    legal operator, both names with a word between them:
 
     * ``"Kenmore Preparatory Academy dba Toledo Preparatory Academy"`` (or
       ``d/b/a``, ``d.b.a.``, ``doing business as``, ``aka``, ``a/k/a``, ``also
       known as``) goes by ``"Toledo Preparatory Academy"``, and its legal name
-      ``"Kenmore Preparatory Academy"`` is a second name; ``"DBA ELIZABETH SETON
-      CHILDRENS SCHOOL"`` goes by the rest and has no second name;
-    * ``"Maya Angelou Academy at New Beginnings formerly Oak Hill"`` (or ``fka``,
-      ``f/k/a``) keeps its name, and ``"Oak Hill"`` is a second name.
+      ``"Kenmore Preparatory Academy"`` is its other name; ``"DBA ELIZABETH
+      SETON CHILDRENS SCHOOL"`` goes by the rest and has no other name;
+    * a bracket that begins with the word, round or square, closing the name,
+      reads the same: ``"CALVIN CHRISTIAN SCHOOL (DBA: AVAIL ACADEMY)"`` goes by
+      ``"AVAIL ACADEMY"``, as ``"AVAIL ACADEMY DBA CALVIN CHRISTIAN SCHOOL"``
+      goes by ``"CALVIN CHRISTIAN SCHOOL"``; the word elsewhere in a bracket is
+      :func:`directory_name`'s to read.
+
+    A name the record went by (``"Maya Angelou Academy at New Beginnings
+    formerly Oak Hill"``, or ``fka``, ``f/k/a``) is not read: an old name never
+    names the record, so the name stays NCES's whole.
 
     ``cut`` says NCES may have cut the name off at its length limit: then the name
     after the word must end with a word a school's or district's name ends with
     (:data:`_WHOLE_ENDINGS`), or it may be only the start of the name
     (``"American Charter Schools Foundation d.b.a. Peoria"``).
 
-    Returns ``(name, second)``; ``None`` when the name says no such word outside a
-    bracket, a side names nothing that identifies or only a church, a faith or a
-    child care chain (``"MITTAS DAY CARE LLC DBA THE LEARNING EXPERIENCE"``), or a
-    cut name may end in the middle of one.
+    Returns ``(name, other)``; ``None`` when the name says no such word, says two
+    (``"... dba ... formerly ..."``), says an old name, a side names nothing that
+    identifies or only a church, a faith or a child care chain (``"MITTAS DAY
+    CARE LLC DBA THE LEARNING EXPERIENCE"``, ``"AKA Academy"``), or a cut name
+    may end in the middle of one.
     """
-    for found in _ALSO_KNOWN.finditer(name):
-        before = name[: found.start()]
-        if before.count("(") > before.count(")"):
-            continue
-        first = before.strip(_ALSO_KNOWN_EDGES)
-        other = name[found.end() :].strip(_ALSO_KNOWN_EDGES)
-        if not _names_something(other, district) or (
-            cut and _folded_words(other)[-1] not in _WHOLE_ENDINGS
-        ):
-            return None
-        also = found.group("also") is not None
-        if not first:
-            return (other, None) if also else None
-        if not _names_something(first, district):
-            return None
-        return (other, first) if also else (first, other)
-    return None
+    found = list(_ALSO_KNOWN.finditer(name))
+    if len(found) != 1 or found[0].group("also") is None:
+        return None
+    sides = _sides(name[: found[0].start()], name[found[0].end() :])
+    if sides is None:
+        return None
+    first, other, closed = sides
+    if not _names_something(other, district) or (
+        not closed and cut and _folded_words(other)[-1] not in _WHOLE_ENDINGS
+    ):
+        return None
+    if not first:
+        # "DBA ELIZABETH SETON CHILDRENS SCHOOL" is the rest; "AKA Academy" no name.
+        return (other, None) if _names_something(other, district, alone=True) else None
+    if not _names_something(first, district):
+        return None
+    return (other, first)
 
 
-def _names_something(name: str, district: bool) -> bool:
+def _sides(before: str, after: str) -> tuple[str, str, bool] | None:
+    """The names before and after the word of :func:`also_known_as`, and whether a bracket
+    closes the second; ``None`` when the word is in a bracket it does not begin, or
+    begins one that does not close the name."""
+    opened = _open_bracket(before)
+    if opened is None:
+        return (before.strip(_ALSO_KNOWN_EDGES), after.strip(_ALSO_KNOWN_EDGES), False)
+    # "CALVIN CHRISTIAN SCHOOL (DBA: AVAIL ACADEMY)": the bracket is the other name.
+    close = _BRACKETS[before[opened]]
+    after = after.rstrip()
+    if before[opened + 1 :].strip(_ALSO_KNOWN_EDGES) or not after.endswith(close):
+        return None
+    after = after[:-1]
+    if _open_bracket(after) is not None or close in after:
+        return None
+    return (before[:opened].strip(_ALSO_KNOWN_EDGES), after.strip(_ALSO_KNOWN_EDGES), True)
+
+
+def _open_bracket(text: str) -> int | None:
+    """Where the bracket ``text`` leaves open begins, round or square; ``None``: none open."""
+    opened: list[int] = []
+    for at, char in enumerate(text):
+        if char in _BRACKETS:
+            opened.append(at)
+        elif char in _BRACKETS.values() and opened:
+            opened.pop()
+    return opened[0] if opened else None
+
+
+def _names_something(name: str, district: bool, *, alone: bool = False) -> bool:
     """True when ``name`` holds a word that identifies, besides a church's, a faith's or
-    a child care chain's (:data:`~snowlight.match.lexicon.CHAINS`)."""
+    a child care chain's (:data:`~snowlight.match.lexicon.CHAINS`).
+
+    ``alone``: the name is all a record goes by, and a word that says only what kind
+    of school it is (``"Academy"``) does not count.
+    """
     if not name:
         return False
     form = record_form(name, district=district)
     brands = {word for brand in form.affiliations for word in brand.split()}
+    if alone:
+        brands |= _KIND_ONLY
     return _has_name([token for token in form.tokens if token not in brands])
+
+
+_KIND_ONLY: Final = lexicon.SCHOOL_NOUNS | lexicon.TYPE_NOUNS | lexicon.GENERIC_WORDS
+"""Words that say what kind of school a name is, not which (see :func:`_names_something`)."""
 
 
 _ENTITY_DIGITS: Final = 4

@@ -1483,9 +1483,15 @@ class Matcher:
         :meth:`~snowlight.match.index.NameIndex.says_exactly`, but a district of
         one school named as it (``"Youngstown Community School"``, whose legal
         form leaves ``Youngstown``) is only the name of a listing that says
-        ``School`` too.
+        ``School`` too, unless a name a dba gives it says the listing
+        (``"Kaizen Education Foundation"``, the legal name of ``"Kaizen
+        Education Foundation dba Summit High School"``).
         """
-        if self._one_school(index) and not forms.district.one_school:
+        if (
+            self._one_school(index)
+            and not forms.district.one_school
+            and not self.index.also_says_exactly(forms.district, index)
+        ):
             return False
         return self.index.says_exactly(forms.district, index)
 
