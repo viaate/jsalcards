@@ -3530,6 +3530,12 @@ test.describe('with data staged', () => {
       await page.evaluate(() => navigator.clipboard.writeText(''));
       const button = panel.locator(`.option[data-card="${kind}"]`);
       const [download] = await Promise.all([page.waitForEvent('download'), button.click()]);
+      // The button says so for COPIED_MS from the save on (DetailPanel.svelte), and it says so
+      // only once the link is copied: read both now, before the slower checks of the file.
+      await expect(button).toHaveText(shareCopy.saved);
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+        `${site}?school=${BORDER_STAR_ID}`,
+      );
       expect(download.suggestedFilename()).toBe(`snowlight-291640000557-${kind}.png`);
       const png = readFileSync(await download.path());
       // A PNG's signature, then its header's width and height.
@@ -3537,10 +3543,6 @@ test.describe('with data staged', () => {
       expect({ width: png.readUInt32BE(16), height: png.readUInt32BE(20) }).toEqual(size);
       // The school is closed today: the Closed poster, in the real face, inside its measure.
       await expectPoster(png, card, 'closed');
-      await expect(button).toHaveText(shareCopy.saved);
-      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-        `${site}?school=${BORDER_STAR_ID}`,
-      );
     }
 
     // The cards' code is its own small file, and none of it is in the page's first script.
