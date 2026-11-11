@@ -3,10 +3,12 @@
  * and checks each state: no layout shift and no box that moved or grew from load to data, no
  * horizontal scroll (at 320 px too), no console error, no request leaving the origin. Then
  * checks of their own: at nine widths from 320 to 1280 px, in every state, no line breaks
- * inside a name, a date, a time or a count, and no visible text ends in a line of one word;
- * with scripts off only the line that says so is shown; a page whose script never loads stops saying "Checking" after 10 s and moves nothing; coming back to the tab with
- * an old answer says its age at once, before any fetch settles; and with text at 150% on a
- * 320 px screen nothing scrolls sideways. Fails if any check does.
+ * inside a part's name (read from the copy, whatever its spaces), a date, a time or a count,
+ * and no visible text ends in a line of one word; with scripts off only the line that says so
+ * is shown; a page whose script never loads stops saying "Checking" after 10 s and moves
+ * nothing; coming back to the tab with an old answer says its age at once, before any fetch
+ * settles; and with text at 150% on a 320 px screen nothing scrolls sideways and the same line
+ * checks hold. Fails if any check does.
  *
  *   NODE_PATH=../web/node_modules node scripts/shots.cjs [out folder]
  *
@@ -41,7 +43,8 @@ const SHOTS = [
   ['unreachable-light-320', 'unreachable', 'light', NARROW],
   ['worst-light-320', 'worst', 'light', NARROW],
   ['worst-light-phone', 'worst', 'light', PHONE],
-  [null, 'worst', 'light', DESKTOP],
+  ['worst-light-desktop', 'worst', 'light', DESKTOP],
+  [null, 'worst', 'dark', { width: 768, height: 1024, scale: 1 }],
   ['launch-light-phone', 'launch', 'light', PHONE],
   ['ok-light-phone', 'ok', 'light', PHONE],
   [null, 'launch', 'light', NARROW],
@@ -163,12 +166,24 @@ function said(good, name, detail) {
 }
 
 /**
- * What one look at the page finds: each tied run (a joiner or a no-break space and no breaking
- * space) drawn on more than one line, and each text of more than one line whose last line is a
- * word alone. Every visible text is looked at: the banner, the rows, the shares, the notes, the
- * problems, the key and the footer.
+ * The runs that must sit on one line however the copy spells their spaces: each part's name,
+ * as `page/src/copy.ts` has it, and the few words that read wrong apart. Filled in at start.
  */
-function looked() {
+let WHOLE = [];
+async function wholeRuns() {
+  const { copy } = await import('../page/src/copy.ts');
+  const plain = (text) => text.replace(/\u00a0/g, ' ').replace(/\u2060/g, '');
+  return [...Object.values(copy.parts).map((part) => plain(part.name)), 'at least', 'right now'];
+}
+
+/**
+ * What one look at the page finds: each tied run (a joiner or a no-break space and no breaking
+ * space) and each of `whole` (with any spaces) drawn on more than one line, and each text of
+ * more than one line whose last line is a word alone (with `big`, of three words or more).
+ * Every visible text is looked at: the banner, the rows, the shares, the notes, the problems,
+ * the key and the footer.
+ */
+function looked({ whole, big }) {
   const split = [];
   const lone = [];
   let tied = 0;
@@ -191,6 +206,17 @@ function looked() {
       if (tops(node, match.index, match.index + match[0].length).length > 1)
         split.push(`"${match[0]}" in "${node.data}"`);
     }
+    for (const run of whole) {
+      const spaced = run
+        .split(' ')
+        .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/-/g, '-\u2060?'))
+        .join('[ \u00a0\n]+');
+      for (const match of node.data.matchAll(new RegExp(spaced, 'g'))) {
+        tied += 1;
+        if (tops(node, match.index, match.index + match[0].length).length > 1)
+          split.push(`"${run}" in "${node.data}"`);
+      }
+    }
     // A word as the reader counts it: "60 days." on a line is two words, held together.
     const words = [...node.data.matchAll(/[^ \n\u00a0]+/g)];
     const lines = new Map();
@@ -199,6 +225,8 @@ function looked() {
       lines.set(top, (lines.get(top) ?? 0) + 1);
     }
     const counts = [...lines.values()];
+    // With large text a text of two words that cannot share a line has a word on each.
+    if (big && words.length <= 2) continue;
     if (counts.length > 1 && counts[counts.length - 1] === 1)
       lone.push(`"${node.data}" (${parent.className || parent.tagName.toLowerCase()})`);
   }
@@ -227,14 +255,14 @@ async function lineBreaks(browser, state) {
       () => !document.querySelector('.lead')?.textContent?.includes('Checking'),
     );
     if ((await page.locator('#more').count()) > 0) await page.locator('#more').click();
-    const seen = [await page.evaluate(looked)];
+    const seen = [await page.evaluate(looked, { whole: WHOLE, big: false })];
     const bars = page.locator('.bars[data-part="closings"]:not([aria-hidden="true"])');
     if ((await bars.count()) > 0) {
       await bars.scrollIntoViewIfNeeded();
       const box = await bars.boundingBox();
       await page.mouse.move(box.x + (box.width * 79.5) / 90, box.y + box.height / 2);
       await page.waitForFunction(() => document.querySelector('.note:not(.hint)') !== null);
-      seen.push(await page.evaluate(looked));
+      seen.push(await page.evaluate(looked, { whole: WHOLE, big: false }));
     }
     await context.close();
     if (seen.every((one) => one.tied === 0)) found.push(`${width} px: nothing tied was found`);
@@ -360,7 +388,7 @@ async function comingBack(browser) {
   );
 }
 
-/** Text at 150% on a 320 px screen: every box wraps, nothing scrolls sideways. */
+/** Text at 150% on a 320 px screen: every box wraps, nothing scrolls sideways, no line splits. */
 async function bigText(browser, state) {
   // The larger text is set by a style of the test's own, which the page's policy would refuse.
   const context = await browser.newContext({ viewport: NARROW, bypassCSP: true });
@@ -379,20 +407,30 @@ async function bigText(browser, state) {
       .map((box) => `${box.tagName.toLowerCase()}.${box.className}`);
     return { scroll: document.documentElement.scrollWidth - width, wide: [...new Set(wide)] };
   });
+  if ((await page.locator('#more').count()) > 0) await page.locator('#more').click();
+  const lines = await page.evaluate(looked, { whole: WHOLE, big: true });
   await page.screenshot({ path: join(out, `big-text-${state}-320.png`), fullPage: true });
   await context.close();
+  const words = [
+    ...lines.split.map((text) => `split ${text}`),
+    ...lines.lone.map((text) => `a last line of one word in ${text}`),
+  ];
   return said(
-    seen.scroll <= 0 && seen.wide.length === 0,
+    seen.scroll <= 0 && seen.wide.length === 0 && words.length === 0,
     `big-text-${state}-320`,
     `horizontal scroll ${Math.max(0, seen.scroll)} px` +
       (seen.wide.length === 0
         ? ', no box past the edge'
-        : `; past the edge: ${seen.wide.join(' ')}`),
+        : `; past the edge: ${seen.wide.join(' ')}`) +
+      (words.length === 0
+        ? `; ${lines.texts} texts, none split and no one-word last line`
+        : `; ${words.join('; ')}`),
   );
 }
 
 (async () => {
   mkdirSync(out, { recursive: true });
+  WHOLE = await wholeRuns();
   const browser = await chromium.launch();
   let good = true;
   for (const shot of SHOTS) good = (await one(browser, shot)) && good;
@@ -401,7 +439,7 @@ async function bigText(browser, state) {
   good = (await scriptsOff(browser)) && good;
   good = (await scriptMissing(browser)) && good;
   good = (await comingBack(browser)) && good;
-  for (const state of ['history', 'worst', 'first', 'unreachable'])
+  for (const state of ['history', 'worst', 'stale', 'first', 'unreachable'])
     good = (await bigText(browser, state)) && good;
   await browser.close();
   process.exit(good ? 0 : 1);

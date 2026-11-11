@@ -225,9 +225,10 @@ test('the banner says the worst first', () => {
     ],
   );
   assert.equal(listed(['A']), 'A');
-  assert.equal(listed(['A', 'B']), 'A and B');
-  assert.equal(listed(['A', 'B', 'C']), 'A, B and C');
-  assert.equal(listed(['A', 'B', 'C', 'D']), 'A, B, C and D');
+  // "and" is tied to the name before it, so it never starts a line or stands on its own.
+  assert.equal(listed(['A', 'B']), 'A\u00a0and B');
+  assert.equal(listed(['A', 'B', 'C']), 'A, B\u00a0and C');
+  assert.equal(listed(['A', 'B', 'C', 'D']), 'A, B, C\u00a0and D');
 });
 
 test('a failed refresh keeps what is shown and says so', () => {

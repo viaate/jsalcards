@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { CLOSED_READ, CLOSED_SQL, MOVE_SQL, OPEN_SQL, tick } from '../prober/src/tick.ts';
+import { CLOSED_READ, CLOSED_SQL, MOVE_SQL, OPEN_SQL, TRIES, tick } from '../prober/src/tick.ts';
 import type { Deps } from '../prober/src/probe.ts';
 import { INCIDENTS_MAX, dayOf, summarize, windowStart } from '../shared/history.ts';
 import { DAY, PARTS, TICK } from '../shared/types.ts';
@@ -40,9 +40,9 @@ function counted(db: D1Database): { db: D1Database; statements: () => number } {
 
 const T = Date.UTC(2026, 10, 10, 12, 0, 0) / 1000;
 const net = (t: number): Net => healthy(new Net(t * 1000 + 2000));
-const summaryOf = async (): Promise<Summary> =>
+const summaryOf = async (from: Store = store): Promise<Summary> =>
   JSON.parse(
-    (await store.sql<{ v: string }>("SELECT v FROM meta WHERE k = 'summary'"))[0]!.v,
+    (await from.sql<{ v: string }>("SELECT v FROM meta WHERE k = 'summary'"))[0]!.v,
   ) as Summary;
 
 test('a first tick on an empty store', async () => {
@@ -380,21 +380,44 @@ test('overlapping ticks: an older tick that ends last never overwrites a newer o
   }
 });
 
-test('overlapping ticks: a newer tick that ends last reads the store again and keeps both', async () => {
+/**
+ * A store whose `n`th batch waits for `meanwhile(n)` before it is sent, counting the statements
+ * prepared on it. A tick's batches are its reads, then its writes; then the same again on a retry.
+ */
+function between(
+  db: D1Database,
+  meanwhile: (n: number) => Promise<void>,
+): { db: D1Database; statements: () => number } {
+  let statements = 0;
+  let batches = 0;
+  const wrapped = {
+    prepare(query: string) {
+      statements += 1;
+      return db.prepare(query);
+    },
+    async batch(list: D1PreparedStatement[]) {
+      batches += 1;
+      await meanwhile(batches);
+      return db.batch(list);
+    },
+  };
+  return { db: wrapped as unknown as D1Database, statements: () => statements };
+}
+
+test('overlapping ticks: a newer tick whose store moved under it reads again and keeps both', async () => {
   const fresh = await startStore();
   try {
     const t0 = Math.floor(T / DAY) * DAY + 60 * DAY;
     const [t1, t2] = [t0 + TICK, t0 + 2 * TICK];
     const env = { ...WHERE, DB: fresh.db };
     assert.equal(await tick(env, t0, net(t0)), 'taken');
-    // t2 reads the store before t1 commits, so the summary it would write lacks t1's sample.
-    const slow = held(healthy(new Net(t2 * 1000 + 2000)));
-    const second = tick(env, t2, slow.deps);
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // t2 has read the store and made its writes; t1 commits before t2's writes are sent, so
+    // what t2 would write lacks t1's sample. Without the compare-and-set it would be kept.
     const bad = healthy(new Net(t1 * 1000 + 2000)).on(WHERE.SITE_URL, { status: 500 });
-    assert.equal(await tick(env, t1, bad), 'taken');
-    slow.open();
-    assert.equal(await second, 'taken');
+    const moved = between(fresh.db, async (n) => {
+      if (n === 2) assert.equal(await tick(env, t1, bad), 'taken');
+    });
+    assert.equal(await tick({ ...env, DB: moved.db }, t2, net(t2)), 'taken');
     const summary = await fresh.sql<{ v: string }>("SELECT v FROM meta WHERE k = 'summary'");
     const parsed = JSON.parse(summary[0]!.v) as Summary;
     assert.equal(parsed.now, t2);
@@ -412,6 +435,69 @@ test('overlapping ticks: a newer tick that ends last reads the store again and k
     ]);
   } finally {
     await fresh.close();
+  }
+});
+
+/** Every part has an open problem whose readings stopped: a bad tick then sends the most. */
+async function worstStore(): Promise<{ store: Store; t0: number }> {
+  const store = await startStore();
+  const t0 = Math.floor(T / DAY) * DAY + 30 * DAY + 600;
+  await tick({ ...WHERE, DB: store.db }, t0, net(t0));
+  await store.sql(
+    "INSERT INTO incidents (part, kind, start, last, ended, gap) VALUES ('site','down',?1,?1,NULL,0), ('closings','down',?1,?1,NULL,0), ('chances','down',?1,?1,NULL,0), ('accounts','down',?1,?1,NULL,0)",
+    t0 - 900,
+  );
+  return { store, t0 };
+}
+const allBad = (t: number): Net =>
+  new Net(t * 1000 + 2000)
+    .on(WHERE.SITE_URL, { status: 500 })
+    .on(WHERE.ACCOUNTS_HEALTH_URL, { status: 500 })
+    .on(CLOSINGS_URL, { status: 500 })
+    .on(STAMP_URL, { status: 500 });
+
+test('a tick that loses the compare-and-set once still sends 50 statements at most', async () => {
+  const { store, t0 } = await worstStore();
+  try {
+    const env = { ...WHERE, DB: store.db };
+    const t2 = t0 + DAY;
+    const watch = between(store.db, async (n) => {
+      if (n === 2) assert.equal(await tick(env, t2 - TICK, allBad(t2 - TICK)), 'taken');
+    });
+    assert.equal(await tick({ ...env, DB: watch.db }, t2, allBad(t2)), 'taken');
+    assert.equal(watch.statements() <= 50, true, String(watch.statements()));
+    assert.equal(watch.statements() > 25, true, 'the retry was made');
+    assert.deepEqual(await store.sql("SELECT v FROM meta WHERE k = 'processed'"), [
+      { v: String(t2) },
+    ]);
+  } finally {
+    await store.close();
+  }
+});
+
+test('a tick that loses the compare-and-set twice writes nothing and throws', async () => {
+  const { store, t0 } = await worstStore();
+  try {
+    const env = { ...WHERE, DB: store.db };
+    const t3 = t0 + DAY;
+    const [t1, t2] = [t3 - 2 * TICK, t3 - TICK];
+    const watch = between(store.db, async (n) => {
+      if (n === 2) assert.equal(await tick(env, t1, allBad(t1)), 'taken');
+      if (n === 4) assert.equal(await tick(env, t2, allBad(t2)), 'taken');
+    });
+    await assert.rejects(tick({ ...env, DB: watch.db }, t3, allBad(t3)), /NOT NULL/);
+    assert.equal(TRIES, 2);
+    assert.equal(watch.statements() <= 50, true, String(watch.statements()));
+    // The two that won are kept whole; the loser left no sample, no count and no summary.
+    assert.deepEqual(await store.sql("SELECT v FROM meta WHERE k = 'processed'"), [
+      { v: String(t2) },
+    ]);
+    assert.equal((await summaryOf(store)).now, t2);
+    assert.deepEqual(await store.sql('SELECT COUNT(*) AS n FROM samples WHERE t = ?', t3), [
+      { n: 0 },
+    ]);
+  } finally {
+    await store.close();
   }
 });
 

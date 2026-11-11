@@ -120,13 +120,31 @@ test('with scripts off only the line that says so is shown', () => {
 });
 
 test('no text of the page ends in a line of one word', () => {
-  // The headline, the banner's second line and the one line of an empty problems box are
-  // balanced: short lines of near one length.
-  assert.deepEqual(rulesWith('text-wrap: balance'), ['.lead', '.more', '.probs.none']);
+  // The headline, the banner's second line, the line under each part's name and the one line
+  // of an empty problems box are balanced: short lines of near one length.
+  assert.deepEqual(rulesWith('text-wrap: balance'), ['.lead', '.more', '.says', '.probs.none']);
   // The longer texts keep their own breaks and only pull a word down to the last line: a
   // problem's heading reads better broken late ("… not working for" / "25 minutes.") than in
   // the middle. The pictures script checks every visible text at nine widths.
   assert.deepEqual(rulesWith('text-wrap: pretty'), ['.note', '.what', '.when', 'footer p']);
+});
+
+test('large text on a narrow phone: the banner keeps its words whole and its key wraps', () => {
+  const flat = css.replace(/\/\*[^]*?\*\//g, '').replace(/\s+/g, ' ');
+  // The shape goes above the words when they would have under 12rem beside it.
+  assert.match(flat, /\.banner \{ display: flex; flex-wrap: wrap; [^}]*align-content: center;/);
+  assert.match(
+    flat,
+    /\.banner > div \{ flex: 1 1 12rem; min-inline-size: 0; container-type: inline-size; \}/,
+  );
+  // The headline grows no further than "Live school closings and" fits in its column; a
+  // browser without container units keeps the first size.
+  assert.match(flat, /\.lead \{ font-size: 1\.125rem; font-size: min\(1\.125rem, 8\.5cqi\);/);
+  // The key has two columns, or one where a name would not fit in half.
+  assert.match(
+    flat,
+    /\.key \{ display: grid; grid-template-columns: repeat\(auto-fit, minmax\(min\(100%, 7rem\), 1fr\)\);/,
+  );
 });
 
 test('a page whose script never starts stops saying Checking, by the stylesheet alone', () => {

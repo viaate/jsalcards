@@ -11,6 +11,7 @@
     "noUnusedParameters": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
+    "allowJs": true,
     "isolatedModules": true,
     "skipLibCheck": true
   },

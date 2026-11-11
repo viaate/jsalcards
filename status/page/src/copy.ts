@@ -2,8 +2,9 @@
  * Every sentence the status page shows is written here and nowhere else. `{…}` is filled in.
  *
  * A line never breaks inside a name, a date or a count: a number is tied to the word after it
- * with a no-break space (`\u00a0`), and a hyphen inside a name is followed by a word joiner
- * (`\u2060`). The dates and times `view.ts` writes are tied the same way.
+ * with a no-break space (`\u00a0`), the words of a part's name and "at least" are tied the
+ * same way, and a hyphen inside a name is followed by a word joiner (`\u2060`). The dates and
+ * times `view.ts` writes are tied the same way.
  */
 
 export const copy = {
@@ -16,10 +17,14 @@ export const copy = {
   description:
     'See whether Snowlight is working right now, and how it has done over the last 90\u00a0days.',
   parts: {
-    // What each part is, never how it is doing: the state beside it says that.
+    // What each part is, never how it is doing: the state beside it says that. A name is one
+    // run on a line wherever it is drawn: "Website, Live" must never end a line.
     site: { name: 'Website', says: 'Opening snowlightmap.com.' },
-    closings: { name: 'Live school closings', says: 'The closings and delays on the map.' },
-    chances: { name: 'Snow-\u2060day chances', says: 'Each district’s chance of no school.' },
+    closings: {
+      name: 'Live\u00a0school\u00a0closings',
+      says: 'The closings and delays on the map.',
+    },
+    chances: { name: 'Snow-\u2060day\u00a0chances', says: 'Each district’s chance of no school.' },
     accounts: { name: 'Accounts', says: 'Signing in and saved schools.' },
   },
   state: {
@@ -46,7 +51,8 @@ export const copy = {
     checked: 'Last checked {ago}.',
     kept: 'Could not refresh. This is the check from {ago}.',
   },
-  list: { and: '{a} and {b}', comma: '{a}, {b}' },
+  // "and" stays on the line of the name before it, never on a line of its own.
+  list: { and: '{a}\u00a0and {b}', comma: '{a}, {b}' },
   heads: {
     now: 'Right now',
     history: 'Last 90\u00a0days',
@@ -83,10 +89,10 @@ export const copy = {
   problem: {
     closed: '{part}: {kind} for {dur}.',
     closedWhen: '{start} to {end}',
-    gap: '{part}: {kind} for at least {dur}.',
+    gap: '{part}: {kind} for at\u00a0least {dur}.',
     gapWhen: 'From {start}. Our checks stopped while it was going on.',
     open: '{part}: {kind} since {start}.',
-    openWhen: '{dur} so far.',
+    openWhen: '{dur} so\u00a0far.',
     down: 'not working',
     late: 'slow or late',
     none: 'No problems in the last 90\u00a0days.',

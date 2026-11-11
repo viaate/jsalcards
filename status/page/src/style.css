@@ -139,13 +139,22 @@ ol {
   color: var(--none);
 }
 
-/* The banner. Its block size holds its longest copy at 320 px, so nothing moves when it fills. */
+/* The banner. Its block size holds its longest copy at 320 px, so nothing moves when it fills.
+   Its words keep at least 12rem: where that and the shape do not fit side by side (large text
+   on a narrow phone), the shape goes above the words instead of squeezing them. */
 .banner {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
+  align-content: center;
   padding: 1rem;
   min-block-size: 14.5rem;
+}
+.banner > div {
+  flex: 1 1 12rem;
+  min-inline-size: 0;
+  container-type: inline-size;
 }
 .banner .shape {
   inline-size: 1.75rem;
@@ -153,8 +162,12 @@ ol {
 }
 .lead {
   font-size: 1.125rem;
+  /* A part's name and the "and" before the last one never break, so the text grows only as far
+     as "Live school closings and" still fits its column (large text on a narrow phone). */
+  font-size: min(1.125rem, 8.5cqi);
   font-weight: 600;
-  line-height: 1.5rem;
+  /* 1.5rem at the usual size, and in step with the text when it is held smaller. */
+  line-height: 1.3333;
   /* No last line of one word. */
   text-wrap: balance;
 }
@@ -231,6 +244,10 @@ main:not(.on) .state {
   font-size: 0.875rem;
   line-height: 1.25rem;
 }
+.says {
+  /* One short line, or two of near one length (large text on a narrow phone). */
+  text-wrap: balance;
+}
 .upd {
   min-block-size: 1.25rem;
   white-space: nowrap;
@@ -246,7 +263,8 @@ main:not(.on) .state {
 }
 .key {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Two columns, or one when large text would wrap a name in two. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr));
   column-gap: 0.9rem;
   flex: 1 0 100%;
   color: var(--quiet);

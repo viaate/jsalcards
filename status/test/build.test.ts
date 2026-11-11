@@ -20,12 +20,13 @@ const plain = (text: string): string => text.replace(/\u00a0/g, ' ').replace(/\u
  * The places a line must never break, in a text of the page: after a number and before its
  * word ("5 minutes", "7 PM"), inside a date ("Nov 10"), between a time and its zone
  * ("PM EST"), after the hyphen of a name ("Snow-day"), between a count and its "ago"
- * ("2 minutes ago", "just now"), and inside a length of two parts ("1 hour 10 minutes").
+ * ("2 minutes ago", "just now"), inside a length of two parts ("1 hour 10 minutes"), inside a
+ * part's name ("Live school closings") and inside "at least".
  */
 function breaks(text: string): string[] {
   return [
     ...text.matchAll(
-      /\d [A-Za-z]+|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d+|[AP]M [A-Z]\w*|\w+-[A-Za-z]+|\b(?:minutes?|hours?|days?) (?:ago|\d+)|just now/g,
+      /\d [A-Za-z]+|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d+|[AP]M [A-Z]\w*|\w+-[A-Za-z]+|\b(?:minutes?|hours?|days?) (?:ago|\d+)|just now|at least|Live school|school closings|day chances/g,
     ),
   ].map((m) => m[0]);
 }
@@ -317,7 +318,13 @@ test('in every state each text of the page is made from the copy, and all of the
 test('no line of the page can break inside a name, a date, a time or a count', () => {
   // The copy itself: every number is tied to its word and every hyphen in a name to the next.
   for (const [key, text] of leaves(copy)) assert.deepEqual(breaks(text), [], key);
-  assert.equal(copy.parts.chances.name, 'Snow-\u2060day chances');
+  assert.equal(copy.parts.chances.name, 'Snow-\u2060day\u00a0chances');
+  // A part's name holds no space a line may break at, wherever it is drawn.
+  for (const part of Object.values(copy.parts)) assert.doesNotMatch(part.name, /[ \t\n]/);
+  assert.deepEqual(breaks('Website, Live school closings, for at least 5\u00a0minutes'), [
+    'Live school',
+    'at least',
+  ]);
   assert.deepEqual(breaks('5 minutes, Nov 10, 2:35\u00a0PM EST, Snow-day'), [
     '5 minutes',
     'Nov 10',
@@ -368,11 +375,31 @@ test('no line of the page can break inside a name, a date, a time or a count', (
       zone: 'America/New_York',
     }),
   );
-  assert.match(html, /<p class="lead">Slow or late right\u00a0now: Snow-\u2060day chances\.<\/p>/);
   assert.match(
     html,
-    /Snow-\u2060day chances: slow or late since Nov\u00a010, 8:55\u00a0AM\u00a0EST\./,
+    /<p class="lead">Slow or late right\u00a0now: Snow-\u2060day\u00a0chances\.<\/p>/,
   );
+  assert.match(
+    html,
+    /Snow-\u2060day\u00a0chances: slow or late since Nov\u00a010, 8:55\u00a0AM\u00a0EST\./,
+  );
+  // At its worst, the banner names three parts, and each name is drawn whole.
+  const worstHtml = mainHtml(
+    viewOf({
+      kind: 'data',
+      summary: worst(NOW),
+      clock: NOW + 130,
+      kept: false,
+      expanded: true,
+      picked: null,
+      zone: 'America/New_York',
+    }),
+  );
+  assert.match(
+    worstHtml,
+    /<p class="lead">Not working right\u00a0now: Website, Live\u00a0school\u00a0closings\u00a0and Snow-\u2060day\u00a0chances\.<\/p>/,
+  );
+  assert.match(worstHtml, /for at\u00a0least \d/);
   assert.match(html, /aria-label="Sat, Oct\u00a031: [^"]*not checked for 6\u00a0hours\."/);
 });
 

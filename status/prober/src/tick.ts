@@ -51,8 +51,13 @@ export const MOVE_SQL =
   "CASE WHEN (SELECT v FROM meta WHERE k = 'processed') IS ? THEN ? END) " +
   'ON CONFLICT (k) DO UPDATE SET v = excluded.v';
 
-/** How many times a tick that lost the compare-and-set reads the store again and retries. */
-export const TRIES = 3;
+/**
+ * How many times a tick makes its writes: once, and once more after losing the compare-and-set.
+ * One try is at most 24 statements and each read of the stored values one more, so a run stays
+ * at 50 or fewer, the free plan's queries for one run. A tick that loses twice throws and shows
+ * as a tick with no readings.
+ */
+export const TRIES = 2;
 
 /**
  * Take the tick `t` (Unix seconds, a multiple of 300) in. A tick is taken in once: a second call

@@ -32,9 +32,11 @@ the page says so at the top, lists only problems of the 90 days its bars show, a
 says nothing of the time since: "No problems up to the last check.", or "Not
 checked in the last 90 days." when every day shown is later than the last check.
 
-No line breaks inside a part's name, a date, a time or a count ("Snow-day", "Nov
-10", "2:35 PM EST", "5 minutes"): they are tied in the words themselves
-(`page/src/copy.ts`, `page/src/view.ts`), so it holds in every typeface.
+No line breaks inside a part's name, a date, a time or a count ("Live school
+closings", "Snow-day chances", "at least", "Nov 10", "2:35 PM EST", "5 minutes"): they
+are tied in the words themselves (`page/src/copy.ts`, `page/src/view.ts`), so it holds
+in every typeface. `scripts/shots.cjs` checks each part's name as the copy has it, at
+nine widths and with text at 150%.
 
 The page and its history live on Cloudflare, apart from GitHub. So the page stays
 up, and the checker keeps recording, when the website (GitHub Pages) or the
@@ -79,7 +81,8 @@ The first time, wait for our word that the page has passed its checks at the `.p
    at the top and scroll down to **Annotations**. A run prints two or
    three notices there. The one you want starts "The status page is live at" and goes on "add this DNS record at
    GoDaddy: type CNAME, name status, value …". Copy only the value: the one name that ends in `.pages.dev` (most likely
-   `snowlight-status.pages.dev`), without `https://` and without the bracket after it.
+   `snowlight-status.pages.dev`), without `https://` and without the words in brackets after it:
+   copy `snowlight-status.pages.dev`, not `(docs/status.md, step 2)`.
 2. Sign in at <https://www.godaddy.com>, open **My Products**, find **snowlightmap.com** and press **DNS**.
 3. Press **Add New Record**. **Type**: CNAME. **Name**: `status`. **Value** (GoDaddy may call it **Points to**): what
    you copied. **TTL**: leave it. Press **Save**. Change nothing else: the website and email records stay as they are.
@@ -107,9 +110,10 @@ run's page, under **Annotations**), whether the rest of the run is green or red:
 `status checker: 36 of the last 36 checks kept (3 hours), 288 of the last 288 (24 hours); last at 2026-11-11 14:05 UTC: website ok 200, closings ok 200, chances ok 200, accounts ok 200; largest closings file 318 bytes.`
 
 The first two numbers say how many of the 5-minute checks were kept. A few missing
-is normal. Under 34 of 36, or under 280 of 288 once it has run a day: send us the
-line. After the first morning with many closings, run **Status** once and read the
-line again: the largest closings file shows how big the file got, and the first
+is normal. In the checker's first 3 hours the first number is low, and in its first
+day the second is: that is normal too. Under 34 of 36 once it has run 3 hours, or under
+280 of 288 once it has run a day: send us the line. After the first morning with
+many closings, run **Status** once and read the line again: the largest closings file shows how big the file got, and the first
 number shows whether the checker kept up with it. Under 34: send us the line.
 
 A red run that says "The Cloudflare token cannot manage Pages" is step 1 above.
@@ -176,8 +180,10 @@ Two runs can overlap when one is slow. The batch's first write is a compare-and-
 it moves `processed` to its tick only while `processed` is still what the tick read
 when it began, and otherwise the whole batch is undone. The loser reads the store
 again: if a tick as new or newer is in, it writes nothing; if not, it makes its
-writes again from what it now reads (three tries at most). So an older tick never
-overwrites a newer tick's summary, and no summary is made from a store it did not read.
+writes again from what it now reads (two tries at most, so a run sends 50 statements
+or fewer, the free plan's queries for one run; a tick that loses twice writes nothing
+and shows as a tick with no readings). So an older tick never overwrites a newer
+tick's summary, and no summary is made from a store it did not read.
 
 **History** (`shared/history.ts`). A sample adds one to its UTC day's count of
 working, late or down readings for each part. A reading that is not working opens a
