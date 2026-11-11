@@ -91,6 +91,7 @@ serve:
   heartbeat_minutes: 30       # an unchanged file is uploaded at least this often
   heartbeat_skip_minutes: 4   # ... and by every grid pass, unless an upload went out this recently
   memory_gap_minutes: 20      # the alert memory is whole only if the feed was read this often
+  memory_checks: true         # a history error no longer darkens a pass whose memory the 5-minute checks kept whole (off: dark, as before)
   history_lead_hours: 48      # a rebuilt memory reads NWS alert products from this long before
   check_minutes: 5            # the alerts are checked this often between passes
   min_gap_minutes: 10         # at most one extra pass per this many minutes

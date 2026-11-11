@@ -144,6 +144,13 @@ def alerts_digest(events: Iterable[LiveEvent]) -> str:
     return hashlib.sha256("\n".join(keys).encode()).hexdigest()
 
 
+def memory_digest(events: Iterable[LiveEvent], taken: Iterable[tuple[str, frozenset[str]]]) -> str:
+    """What the memory takes from a feed: the events' change keys and what CAN/UPG take back."""
+    keys = sorted({event.change_key for event in events})
+    gone = sorted({f"{key}|{','.join(sorted(zones))}" for key, zones in taken})
+    return hashlib.sha256("\n".join([*keys, "", *gone]).encode()).hexdigest()
+
+
 @dataclass(frozen=True, slots=True)
 class Remembered:
     """An event as last seen."""

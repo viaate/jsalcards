@@ -188,9 +188,15 @@ class State:
     memory: list[dict[str, object]] = field(default_factory=list)
     memory_since: datetime | None = None
     """Since when the memory holds every alert of the feed (it was read at least every
-    ``memory_gap_minutes`` since then, or rebuilt from the NWS alert history)."""
+    ``memory_gap_minutes`` since then, or rebuilt from the NWS alert history, or, when a rebuild
+    failed, proved whole by the 5-minute checks (``memory_checked``))."""
     observed_at: datetime | None = None
     """The last time the memory took in the feed."""
+    memory_taken: str | None = None
+    """The ``memory_digest`` of the feed the memory last took in, while the chain of reads since
+    its last rebuild holds (``serve.memory_checks``); ``None``: the chain is broken."""
+    checked_at: datetime | None = None
+    """The last 5-minute check that proved the memory whole (``memory_checked``)."""
     snapshots: dict[str, object] = field(default_factory=dict)
     """Each district's weather class per school day as the passes up to its training snapshot
     saw it (:func:`snowlight.predict.live_labels.record_snapshots`): what the live days'
@@ -270,6 +276,10 @@ class State:
             found["chart_shadow"] = self.chart_shadow
         if self.boundaries_held_since is not None:
             found["boundaries_held_since"] = when(self.boundaries_held_since)
+        if self.memory_taken is not None:
+            found["memory_taken"] = self.memory_taken
+        if self.checked_at is not None:
+            found["checked_at"] = when(self.checked_at)
         return found
 
     @classmethod
@@ -293,6 +303,7 @@ class State:
         tables = value.get("tables")
         chart = value.get("chart_health")
         shadow = value.get("chart_shadow")
+        taken = value.get("memory_taken")
         held_since: datetime | None = None
         try:
             text = value.get("boundaries_held_since")
@@ -300,6 +311,13 @@ class State:
             held_since = moment if moment is not None and moment.tzinfo is not None else None
         except ValueError:
             held_since = None
+        checked_at: datetime | None = None
+        try:
+            text = value.get("checked_at")
+            moment = datetime.fromisoformat(text) if isinstance(text, str) else None
+            checked_at = moment if moment is not None and moment.tzinfo is not None else None
+        except ValueError:
+            checked_at = None
         return cls(
             digest=digest if isinstance(digest, str) else None,
             uploaded_at=datetime.fromisoformat(uploaded) if isinstance(uploaded, str) else None,
@@ -309,6 +327,8 @@ class State:
             memory=list(memory) if isinstance(memory, list) else [],
             memory_since=datetime.fromisoformat(since) if isinstance(since, str) else None,
             observed_at=datetime.fromisoformat(observed) if isinstance(observed, str) else None,
+            memory_taken=taken if isinstance(taken, str) and taken else None,
+            checked_at=checked_at,
             snapshots=dict(snapshots) if isinstance(snapshots, dict) else {},
             products=list(products) if isinstance(products, list) else [],
             products_since=datetime.fromisoformat(products_since)

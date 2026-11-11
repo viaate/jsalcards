@@ -2765,7 +2765,13 @@ A pass publishes nothing, and the page hides the old file within 90 minutes, whe
    published, and cannot be rebuilt: after a lost or stale state (the feed unread for more
    than 20 minutes) the pass reads every class-making alert product issued since 48 hours
    before that from `api.weather.gov/alerts`, as the live feed would have shown them, and
-   only then publishes;
+   only then publishes. With `serve.memory_checks` on, a failed history read is a warning,
+   not a dark pass, when the 5-minute checks kept the memory whole: each check within 20
+   minutes of the last read or check found the feed fresh and holding nothing the memory had
+   not taken, every read since the memory was last rebuilt from the history (each check's,
+   and each pass's own) held nothing it had not taken or exactly what the pass of that same
+   check (for a pass's own read, that pass) took in, and the last check was within 20 minutes
+   of the pass (see "The 5-minute checks and the history" below);
 9. the hold is set (`predict blank`).
 
 A dark pass leaves the alerts it saw unhandled, so the loop tries again at its next
@@ -2853,7 +2859,8 @@ Read this before changing the shape of any of the six.
      `points.bin`): a running chance job refuses it until the early end restarts it, about 24
      minutes after the deploy. The directory is read before the alerts are taken into the
      memory, so no dark pass of that stretch counted the feed as read, and the successor's
-     first pass must read the alert history once; each failed read adds 10 minutes.
+     first pass must read the alert history once; each failed read adds 10 minutes, unless
+     the 5-minute checks kept the memory whole (the alerts did not change during the stretch).
    - The chance job first, on code that needs what the deployed files do not hold yet: refused
      on every pass and **not cured by a restart**, until the site's deploy lands, or for good
      if that deploy fails. The stored forms stop this order in CI too.
@@ -2936,7 +2943,8 @@ nothing: the next counted dark pass asks again.
   old at the successor's first upload as measured, and 84 with every step at its limit: under
   the page's 90. Both figures assume the successor's first pass publishes. After a stretch of
   directory refusals it must first read the alert history once, and each failed read adds 10
-  minutes.
+  minutes, unless the 5-minute checks kept the memory whole (the alerts did not change during
+  the stretch).
 
 ### Each pass's line, as it happens
 
@@ -3035,14 +3043,73 @@ run's log names the newest release the copy lists: compare it with the service's
 close the issue once a run starts without the warning. The chances keep publishing on the
 saved map meanwhile.
 
-### Found on the way: the 20-minute memory rule
+### The 5-minute checks and the history (predict-next MEMORY-GAP)
 
 Item 8 above rebuilds the alert memory when the feed went unread for more than 20 minutes.
 Grid passes are 30 minutes apart, so every grid pass with no extra pass in the 20 minutes
-before it already rebuilds the memory from the alert history, and an error from that history
-darkens a routine pass: two of the 22 dark passes on record were exactly that. It is a rule
-about when a pass may publish, so it is not changed here. It has a piece of its own,
-`memory-gap`, right after this one.
+before it rebuilds the memory from the alert history: 48 history reads on a quiet day. Before
+this piece an error from that history darkened a routine pass: two of the 22 dark passes on
+record were exactly that (9:37 and 9:47 PM Eastern on Nov 8, when the public file waited 50
+minutes for a fresh copy and the 9:30 PM freeze was taken 27 minutes late).
+
+**What a check proves.** Between passes the loop reads the feed every 5 minutes. A check
+proves the memory whole at its minute when the memory reached back far enough at its last
+rebuild, the feed is at most 20 minutes old, it holds exactly what the memory last took in
+(the same class-making alerts and the same `CAN` and `UPG` take-backs), and the last read or
+check was at most 20 minutes before. A check never takes the feed into the memory; it only
+records its minute (`checked_at` in the state).
+
+**What breaks the chain.** Any read, a check's or a pass's own, fresh or stale, that sees
+something the memory has not taken breaks the chain, unless the pass of that same check (for
+a pass's own read, that pass) takes exactly that in. A check whose feed answered but could
+not be read for its alerts breaks it too. No check proves anything after a break
+until a pass rebuilds the memory from the history and that rebuild answers; only such a
+rebuild mends a broken chain. A break is saved to the runner's state at the read that found
+it, so a run that dies after it hands its successor no chain.
+
+**When a failed read is a warning.** A pass that must rebuild and whose history read fails
+goes on from the memory it kept when the memory reached back far enough at the gap, the chain
+holds, the last proving check was at most 20 minutes before the pass, and the check of the
+pass's own loop round, if any, read exactly what the pass takes in. Every other failure is
+dark as before. The run saves its state once more at the end of its window, so the next run
+starts from the last check: a run's first pass is covered when it comes within 20 minutes of
+that check (the handover takes about 3.5 minutes).
+
+**The lines.** Such a pass prints `predict: alert_memory: alert history: HTTP 500; the memory
+was whole at the 03:32Z check: the pass goes on from it` as a warning, and its line ends `ok`.
+With the outlook in shadow, the record step then backs off instead of asking the history that
+just failed: `outlook shadow: DarkError: nothing recorded this pass (alert_memory: the product
+log's history read failed; no new try before 04:07Z)`. A quiet grid pass that instead shows
+`dark (alert_memory: alert history: ...)` had a broken chain: look for an alert change between
+passes (an extra pass, a cancel), an unread or stale feed at the checks, or a run before it
+that failed.
+
+**What such a pass serves.** Exactly what any pass within 20 minutes of a read serves: the
+memory as the last pass left it, with this pass's feed taken in. While the history answers,
+nothing changes: every uploaded byte and the 48 history reads a quiet day are as before.
+While it is down, a pass makes the one history read a dark pass made, and while the chain
+holds the history is asked once per 30 minutes instead of three times.
+
+**What stays dark.** A lost or stale state, a memory that did not reach back far enough, a
+chain broken by an unread or stale feed or by a read that saw what the memory had not taken
+(until a rebuild answers), a check whose own pass read something else, a run that died after
+such a read, and any pass with the switch off. A break save the disk refuses only warns, as
+every save does, so a run that then dies before a save works hands the old chain on.
+
+**The switch.** `serve.memory_checks` in `config/predict.yaml`, on. Off restores the dark
+pass, and the state then holds neither of the checks' keys from the run's first save.
+
+**Found on the way: two answers for an alert that leaves the feed early.** The routine rebuild
+stays, because the rebuild and the kept memory do not serve the same numbers. An alert that
+leaves the feed before its stated end (an early `EXP`, or a feed that drops it) counts to its
+stated end after a rebuild, and only to the last pass that saw it without one. With an advisory
+for the Missouri zone, 12:00 to 18:30 CST, expired at 17:45 CST, the next day's chance for one
+district at five uploads from 5:37 PM to 7:07 PM CST is 57%, 1%, 1%, 57%, 57% today; stopping
+the rebuild would make it 1% from the second upload on, on healthy passes. A `CAN` for an event
+already gone from the feed is a second case: it reaches the memory only through a rebuild. The
+piece `one-memory` is queued to make the passes agree on one answer, so the routine rebuild can
+stop. Until then a pass that goes on from its checks serves the kept memory's answer, the one
+the page already showed.
 
 ## Retraining
 
@@ -4330,8 +4397,9 @@ dates) and the owner approves its words; the lead then sets it `on`.
   skipped sample, never imputed). A rebuild that fails in the record step is not tried again
   for 30 minutes (`cli.PRODUCTS_RETRY`), and those passes record nothing (a warning that says
   why). With the outlook on, the file's classes come from the product log, so a log that cannot
-  be rebuilt within that time darkens the pass (`alert_memory`, as the alert memory's own
-  rebuild does) and the next pass tries again: never a class from a log with a gap. Its inputs (the v3 file, the
+  be rebuilt within that time darkens the pass (`alert_memory`, as a failed
+  alert-memory rebuild does when the 5-minute checks did not keep the memory whole) and the
+  next pass tries again: never a class from a log with a gap. Its inputs (the v3 file, the
   learned files on the host) are read before the first pass: any that fails turns the outlook
   off for the run with a warning, never a dark run.
 - **on**: every chance from the v3 rates (`data/predict/model-f.json.gz`, the 05:00 record's),

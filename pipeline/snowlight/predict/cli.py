@@ -91,6 +91,7 @@ from snowlight.predict.alerts_live import (
     alerts_digest,
     live_events,
     live_heads_ups,
+    memory_digest,
     withdrawn,
 )
 from snowlight.predict.anchor import Anchor
@@ -1124,6 +1125,13 @@ class Pass:
     before that."""
     _products_retry: datetime | None = None
     """After the record step's product log rebuild failed: no new try before this time."""
+    _feed_seen: str | None = None
+    """With ``serve.memory_checks`` on: the ``seen_in`` of the last pass's own read."""
+    _check_seen: str | None = None
+    """What the check of the loop iteration this pass runs in saw (``None``: no check read)."""
+    _save: Callable[[State], None] | None = None
+    """The loop's save, for a break a check's or a pass's own read finds (``keep_break``);
+    ``None``: none (``predict once``)."""
     _built: tuple[object, ServeModel] | None = None
     _outlook: tuple[object, OutlookServe] | None = None
     _record_names: Record | None = None
@@ -1308,7 +1316,14 @@ def remember(
 
     The memory is whole since ``state.memory_since`` while the feed was read at least every
     ``memory_gap_minutes``. When it does not reach back to ``reach`` (a lost, stale or first
-    state), it is rebuilt from the NWS alert history first.
+    state), it is rebuilt from the NWS alert history first. With ``serve.memory_checks`` on, a
+    failed history read is a warning, not a dark pass, when the 5-minute checks kept the memory
+    whole: it reached back to ``reach`` at the gap, every read since its last rebuild held
+    nothing it had not taken (``chain_after``), the last check that proved it
+    (``memory_checked``) is within ``memory_gap_minutes``, and this pass's own check, if any,
+    read exactly what the pass takes in. The pass then counts from the kept memory and backs off
+    the record step's product history read. ``state.memory_taken`` is set from this feed only
+    when the pass rebuilt or the chain held as it began, so only a rebuild mends a broken chain.
 
     Raises:
         DarkError: it must be rebuilt and cannot be (``alert_memory``).
@@ -1322,18 +1337,105 @@ def remember(
             "reach their whole zones"
         )
     gap = timedelta(minutes=config.serve.memory_gap_minutes)
+    since = state.memory_since
+    armed = state.memory_taken is not None
+    rebuilt = False
     if state.observed_at is None or now - state.observed_at > gap:
         state.memory_since = None
     if state.memory_since is None or state.memory_since > reach:
         if run.history is None:
             raise DarkError(Dark.MEMORY, "the alert memory has a gap and no history to fill it")
         lead = timedelta(hours=config.serve.history_lead_hours)
-        memory.rebuild(run.alert_history(reach - lead, now), now)
-        state.memory_since = reach
-    counted = memory.update(events, now, withdrawn(feed.alerts))
+        try:
+            alerts = run.alert_history(reach - lead, now)
+        except DarkError as error:
+            checked = state.checked_at
+            if not (
+                config.serve.memory_checks
+                and since is not None
+                and state.memory_taken is not None
+                and since <= reach
+                and checked is not None
+                and timedelta(0) <= now - checked <= gap
+                and (
+                    run._check_seen is None
+                    or run._check_seen == memory_digest(events, withdrawn(feed.alerts))
+                )
+            ):
+                raise
+            _warn(
+                f"predict: {error}; the memory was whole at the {checked:%H:%MZ} check: "
+                "the pass goes on from it"
+            )
+            state.memory_since = since
+            run._products_retry = now + PRODUCTS_RETRY
+        else:
+            memory.rebuild(alerts, now)
+            state.memory_since = reach
+            rebuilt = True
+    taken = withdrawn(feed.alerts)
+    counted = memory.update(events, now, taken)
     state.memory = memory.as_json()
     state.observed_at = now
+    if config.serve.memory_checks and (rebuilt or armed):
+        state.memory_taken = memory_digest(events, taken)
     return counted
+
+
+def memory_checked(state: State, feed: Any, now: datetime, serve: ServeSettings) -> str:
+    """Judge a 5-minute check's feed and return its ``seen_in``.
+
+    The check proves the memory whole at ``now`` (``state.checked_at = now``) only when the
+    memory has a ``memory_since``, the feed holds exactly what the memory last took in
+    (``state.memory_taken``), the feed is at most ``alerts_max_age_minutes`` old, and the later
+    of the last read and the last check is at most ``memory_gap_minutes`` before ``now``. It
+    changes no other field: a check never takes the feed into the memory."""
+    seen = seen_in(feed)
+    fresh = feed.updated is not None and now - feed.updated <= timedelta(
+        minutes=serve.alerts_max_age_minutes
+    )
+    last = max((t for t in (state.observed_at, state.checked_at) if t is not None), default=None)
+    if (
+        state.memory_since is not None
+        and seen == state.memory_taken
+        and fresh
+        and last is not None
+        and timedelta(0) <= now - last <= timedelta(minutes=serve.memory_gap_minutes)
+    ):
+        state.checked_at = now
+    return seen
+
+
+def seen_in(feed: Any) -> str:
+    """The ``memory_digest`` of a feed's live events and take-backs; ``""``, which no digest
+    equals, when that raises."""
+    try:
+        return memory_digest(live_events(feed), withdrawn(feed.alerts))
+    except Exception:
+        return ""
+
+
+def chain_after(state: State, *seen: str | None) -> None:
+    """A read that saw what the memory has not taken breaks the chain: both of the checks' keys
+    go, and no check proves until a pass rebuilds the memory from the history. ``None``: no
+    read."""
+    if any(one is not None and one != state.memory_taken for one in seen):
+        state.memory_taken = None
+        state.checked_at = None
+
+
+def keep_break(run: Pass, seen: str | None) -> None:
+    """Save a copy of the state with the chain broken when a read saw what the memory has not
+    taken, before the pass that may take it in: a run that dies first hands on no chain."""
+    state = run.state
+    if run._save is None or seen is None or seen == state.memory_taken:
+        return
+    if state.memory_taken is None and state.checked_at is None:
+        return
+    try:
+        run._save(replace(state, memory_taken=None, checked_at=None))
+    except OSError as error:
+        _warn(f"the state did not save: {error}")
 
 
 PRODUCTS_RETRY: Final = timedelta(minutes=30)
@@ -1465,6 +1567,10 @@ def _serve_pass(run: Pass, *, grid: bool) -> int:
     window = Window(weather.window_from, weather.window_until, weather.snapshot_hour)
     try:
         feed, _changed = run.alerts()
+        if config.serve.memory_checks:
+            run._feed_seen = seen_in(feed)
+            if run._check_seen in (None, run.state.memory_taken):  # else its check kept it
+                keep_break(run, run._feed_seen)
         check_alert_age(feed.updated, now, config.serve)
         directory = run.directory()
         model = run.serve_model(directory)
@@ -3330,15 +3436,19 @@ def served_switch(  # noqa: PLR0913 - the config, the host, the mode, the key, t
 def run_once(
     args: argparse.Namespace, env: Mapping[str, str] | None = None
 ) -> int:  # pragma: no cover
-    """Run ``predict once``."""
+    """Run ``predict once``. With ``serve.memory_checks`` on, the pass's own read judges the
+    chain before the state is saved (``chain_after``), as a loop's pass does."""
     environment = dict(os.environ) if env is None else env
     try:
         run = make_pass(args, environment)
     except (ConfigError, ValueError, OSError) as error:
         _err(f"predict once: error: {error}")
         return 1
+    if not run.config.serve.memory_checks:
+        run.state.memory_taken = run.state.checked_at = None
     try:
         code = safe_pass(run, grid=True)
+        chain_after(run.state, run._feed_seen)
         save_state(args.state, run.state)
     finally:
         if run.live_reads is not None:
@@ -3504,7 +3614,9 @@ def _ends_early(serve: ServeSettings, row: int, clock: Loop) -> bool:
     return True
 
 
-def loop(run: Pass, until: datetime, clock: Loop, save: Callable[[State], None]) -> int:
+def loop(  # noqa: PLR0912, PLR0915 - the passes, the checks and their saves, in one loop
+    run: Pass, until: datetime, clock: Loop, save: Callable[[State], None]
+) -> int:
     """Passes on the grid and when the alerts change, until ``until``.
 
     * A pass on every grid minute (:07 and :37): the loop sleeps until the next check or the
@@ -3524,6 +3636,15 @@ def loop(run: Pass, until: datetime, clock: Loop, save: Callable[[State], None])
       (:attr:`Loop.head`); when it answers and is not this run's commit, the loop ends, and
       the workflow's successor step starts the next run on the head. The same head, no answer
       or a state that did not save change nothing: the next counted dark pass asks again.
+    * **The checks' proof** (predict-next MEMORY-GAP, ``serve.memory_checks``). Each check
+      that read the feed may prove the memory whole (``memory_checked``), so a pass whose
+      history read fails can go on from it (``remember``). A read, a check's or a pass's own,
+      that saw what the memory has not taken, or a check's read whose digest raised, breaks
+      the chain (``chain_after``) unless the pass of that same check (for a pass's own read,
+      that pass) took exactly that in, and the break is saved at the read (``keep_break``), so
+      a run that dies after it hands on no chain. With the switch on, the state is saved once
+      more at ``until``, so the successor starts from the last check; off, the run starts
+      without either of the checks' keys.
 
     Returns the number of dark passes (each printed as it happens); the watchdog
     (``predict check``) judges whether the public file stayed fresh.
@@ -3535,23 +3656,39 @@ def loop(run: Pass, until: datetime, clock: Loop, save: Callable[[State], None])
     retry = False
     last_pass: datetime | None = None
     grid_at = clock.now()
+    run._save = save
+    if not serve.memory_checks:
+        run.state.memory_taken = run.state.checked_at = None
     while clock.now() < until:
         now = clock.now()
         on_grid = now >= grid_at
         changed = False
+        seen: str | None = None
         if not on_grid:
             try:
                 feed, _fresh = run.alerts()
+                if serve.memory_checks:
+                    seen = ""  # the read answered: a digest that raises breaks the chain
                 changed = alerts_digest(live_events(feed)) != run.state.alerts_digest
             except Exception:
                 changed = False
+            else:
+                if serve.memory_checks:
+                    try:
+                        seen = memory_checked(run.state, feed, now, serve)
+                    except Exception:
+                        seen = ""
+            keep_break(run, seen)
         if not on_grid and not changed:
             changed = outlook_changed(run, last_pass, now)
         gap_ok = last_pass is None or now - last_pass >= timedelta(minutes=serve.min_gap_minutes)
         if on_grid or ((changed or retry) and gap_ok):
             began = clock.now()
+            run._feed_seen = None
+            run._check_seen = seen
             code = safe_pass(run, grid=on_grid)
             ended = clock.now()
+            chain_after(run.state, seen, run._feed_seen)
             passes += 1
             retry = code == EXIT_DARK
             said = _pass_times(run, passes, began, ended, grid=on_grid, dark=retry)
@@ -3574,11 +3711,18 @@ def loop(run: Pass, until: datetime, clock: Loop, save: Callable[[State], None])
             if on_grid:
                 grid_at = next_grid(clock.now(), serve.grid_minutes)
             if counted and saved and _ends_early(serve, row, clock):
-                break
+                return dark
+        else:
+            chain_after(run.state, seen)
         # The next check counts from this one's start, so a pass's time (and a shadow chart's
         # tail after it publishes) never moves the alert checks later (critic r2 S3).
         wake = min(now + timedelta(minutes=serve.check_minutes), grid_at, until)
         clock.sleep(max(1.0, (wake - clock.now()).total_seconds()))
+    if serve.memory_checks:
+        try:
+            save(run.state)
+        except OSError as error:
+            _warn(f"the state did not save: {error}")
     return dark
 
 

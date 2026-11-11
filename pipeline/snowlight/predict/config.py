@@ -108,6 +108,10 @@ class ServeSettings(_Settings):
     (a file of ours this code cannot read, an unforeseen error), ``predict run`` asks for the
     branch head after each such pass and ends early when it is not the commit it runs, so its
     successor starts on the head (predict-next ON-AIR). 0: it never asks."""
+    memory_checks: bool = False
+    """When the alert history read fails, a pass goes on from the memory the 5-minute checks
+    kept whole since it was last rebuilt (predict-next MEMORY-GAP); off: that pass is dark, as
+    before, and the state keeps neither of the checks' keys."""
     grid_minutes: tuple[int, ...] = Field(min_length=1)
     opens_max_age_minutes: int = Field(ge=1)
     elevation_margin_feet: float = Field(ge=0, le=5000)
