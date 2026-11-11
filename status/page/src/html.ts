@@ -5,12 +5,20 @@ import { MARK } from './mark.ts';
 import { TILE } from './tile.ts';
 import type { Shape, View } from './view.ts';
 
-export function esc(text: string): string {
+/** The join between the two parts of a length (`copy.dur.two`). */
+const PART = /\u202f/g;
+
+function escaped(text: string): string {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/** A text as HTML: escaped, and a length's two parts tied by a no-break space. */
+export function esc(text: string): string {
+  return escaped(text).replace(PART, '\u00a0');
 }
 
 const SHAPES: Record<Shape | 'none' | 'before', string> = {
@@ -48,7 +56,11 @@ const NAMED = new RegExp(`(\u00a0and )?((?:${NAMES})[,.:]?)`, 'g');
  * and never runs off the side. "and" goes in the box of the name after it, never alone.
  */
 export function named(line: string): string {
-  return esc(line).replace(
+  return nameBoxes(esc(line));
+}
+
+function nameBoxes(html: string): string {
+  return html.replace(
     NAMED,
     (_, and: string | undefined, name: string) =>
       `${and === undefined ? '' : ' '}<span class="nm">${and === undefined ? '' : 'and '}` +
@@ -60,12 +72,27 @@ export function named(line: string): string {
  * A text with each part's name in its box, and every other run the copy or the view ties with
  * no-break spaces (a date, a time, a length: "1 hour 10 minutes.") in a box of its own, with
  * the stop or comma after it. Like a name's, the box moves to the next line whole and breaks
- * between its words only when it is wider than the whole line.
+ * between its words only when it is wider than the whole line. A length of two parts is a box
+ * of two boxes, so where it is wider than the line it breaks between its parts ("23 hours" and
+ * "55 minutes."), never between a number and its unit.
  */
 export function boxed(line: string): string {
-  return named(line).replace(
-    /[^ \n<>\u00a0]*\u00a0[^ \n<>]*/g,
-    (run) => `<span class="nb">${run.replace(/\u00a0/g, ' ')}</span>`,
+  const box = (words: string): string => `<span class="nb">${words.replace(/\u00a0/g, ' ')}</span>`;
+  return nameBoxes(escaped(line)).replace(/[^ \n<>\u00a0\u202f]*[\u00a0\u202f][^ \n<>]*/g, (run) =>
+    run.includes('\u202f')
+      ? `<span class="nb">${run.split('\u202f').map(box).join(' ')}</span>`
+      : box(run),
+  );
+}
+
+/**
+ * A row's line, with an address ("snowlightmap.com.") in a box that breaks only at its dot,
+ * and only where it is wider than the whole line.
+ */
+function addressed(line: string): string {
+  return esc(line).replace(
+    /([A-Za-z0-9-]+)(\.[a-z]{2,}[.,]?)(?=\s|$)/g,
+    '<span class="nb">$1<wbr>$2</span>',
   );
 }
 
@@ -87,7 +114,7 @@ function now(view: View): string {
       (row) =>
         `<li class="row"><span class="name">${named(row.name)}</span>` +
         `<span class="state">${shape(row.shape)}${esc(row.word)}</span>` +
-        `<span class="says">${esc(row.says)}</span>` +
+        `<span class="says">${addressed(row.says)}</span>` +
         (row.file
           ? `<span class="upd">${row.updated === null ? '' : esc(row.updated)}</span>`
           : '') +

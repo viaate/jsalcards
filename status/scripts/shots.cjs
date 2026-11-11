@@ -2,15 +2,17 @@
  * Takes the status page's proof pictures from the preview server (`node scripts/preview.mjs`)
  * and checks each state: no layout shift and no box that moved or grew from load to data, no
  * horizontal scroll (at 320 px too), no console error, no request leaving the origin. Then
- * checks of their own: at nine widths from 320 to 1280 px, in every state, no line breaks
- * inside a part's name (read from the copy, whatever its spaces), a date, a time or a count,
- * and no visible text ends in a line of one word; with scripts off only the line that says so
- * is shown; a page whose script never loads stops saying "Checking" after 10 s and moves
- * nothing; coming back to the tab with an old answer says its age at once, before any fetch
- * settles; with text at 150% on a 320 px screen nothing scrolls sideways and the same line
- * checks hold; and in every state, at nine widths and at text of 100%, 150% and 200%, the
- * banner's headline is never smaller than the body text or its usual size and always larger
- * than the line under it. Fails if any check does.
+ * checks of their own: with scripts off only the line that says so is shown; a page whose
+ * script never loads stops saying "Checking" after 10 s and moves nothing; coming back to the
+ * tab with an old answer says its age at once, before any fetch settles; and in every state,
+ * at nine widths from 320 to 1280 px and at text of 100%, 150% and 200%, with every problem
+ * shown and with a bar picked: the banner's headline is never smaller than the body text or
+ * its usual size and always larger than the line under it; nothing scrolls sideways and no
+ * element or text reaches past the box it is in; the axis labels keep half a line apart or
+ * "Today" goes down a line under the last bar; the banner holds its words in its reserve; no
+ * line breaks inside a part's name (read from the copy, whatever its spaces), a date, a time,
+ * a length or a count, except a box wider than its whole line, which breaks between its parts;
+ * and no visible text ends in a line of one word. Fails if any check does.
  *
  *   NODE_PATH=../web/node_modules node scripts/shots.cjs [out folder]
  *
@@ -179,20 +181,35 @@ async function wholeRuns() {
 }
 
 /**
- * What one look at the page finds: each tied run (a joiner or a no-break space and no breaking
- * space) and each of `whole` (with any spaces) drawn on more than one line, and each text of
- * more than one line whose last line is a word alone (with `big`, of three words or more).
+ * What one look at the page finds.
+ *
+ * - split: a box (a part's name, a date, a time, a length, an address) drawn on more than one
+ *   line though it fits on one, and a tied run (a joiner or a no-break space) or one of `whole`
+ *   (with any spaces) drawn on more than one line. A box wider than its whole line may break:
+ *   between its parts where it has parts ("23 hours" and "55 minutes."), and that is counted.
+ * - lone: a text of more than one line whose last line is a word alone (with `big`, of three
+ *   words or more), across its boxes.
+ * - spill: an element, or a text, that reaches past the sides of the box it is in.
+ * - axis: the two labels under the bars closer than half a line, or "Today" not ending under
+ *   the last bar.
+ * - grew: the banner taller than its reserve, which would move the page when it fills.
+ *
  * Every visible text is looked at: the banner, the rows, the shares, the notes, the problems,
  * the key and the footer.
  */
 function looked({ whole, big }) {
   const split = [];
   const lone = [];
+  const spill = [];
+  const axis = [];
   let tied = 0;
   let texts = 0;
   let wider = 0;
-  /** Each element whose text is looked at as one, with the boxes in it. */
-  const owners = new Set();
+  const BOX = '.nm, .nb';
+  const shown = (el) =>
+    el.getClientRects().length > 0 &&
+    getComputedStyle(el).visibility === 'visible' &&
+    el.closest('.sr, script, style, noscript') === null;
   /** The tops of the lines a stretch of a text node is drawn on. */
   const tops = (node, from, to) => {
     const range = document.createRange();
@@ -200,12 +217,26 @@ function looked({ whole, big }) {
     range.setEnd(node, to);
     return [...new Set([...range.getClientRects()].map((rect) => Math.round(rect.top)))];
   };
+  /** The text nodes in an element, in order. */
+  const textsIn = (el) => {
+    const found = [];
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node !== null; node = walker.nextNode())
+      if (node.data.length > 0) found.push(node);
+    return found;
+  };
+  const linesOf = (el) => [...new Set(textsIn(el).flatMap((n) => tops(n, 0, n.data.length)))];
+  /** The outermost box an element is in, or null. */
+  const outer = (el) => {
+    let box = el.closest(BOX);
+    while (box?.parentElement?.closest(BOX)) box = box.parentElement.closest(BOX);
+    return box;
+  };
   /**
-   * In a name's box that cannot fit on one line: on one line it would be wider than the box is,
-   * and the box already takes its whole line.
+   * A box that cannot fit on one line: on one line it would be wider than it is, and it already
+   * takes its whole line (the width of what it is in).
    */
-  const wide = (parent) => {
-    const box = parent.closest('.nm, .nb');
+  const wide = (box) => {
     if (box === null || box.parentElement === null) return false;
     const width = box.getBoundingClientRect().width;
     const line = box.parentElement.getBoundingClientRect().width;
@@ -214,11 +245,11 @@ function looked({ whole, big }) {
     box.style.whiteSpace = '';
     return whole - width > 0.05 && width >= line - 1;
   };
+  const owners = new Set();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
     const parent = node.parentElement;
-    if (parent === null || parent.closest('.sr, script, style, noscript') !== null) continue;
-    if (parent.getClientRects().length === 0 || node.data.trim() === '') continue;
+    if (parent === null || !shown(parent) || node.data.trim() === '') continue;
     texts += 1;
     for (const match of node.data.matchAll(/[^ \n]*[\u2060\u00a0][^ \n]*/g)) {
       tied += 1;
@@ -233,21 +264,36 @@ function looked({ whole, big }) {
       for (const match of node.data.matchAll(new RegExp(spaced, 'g'))) {
         tied += 1;
         if (tops(node, match.index, match.index + match[0].length).length <= 1) continue;
-        // A name's box in the headline breaks only when it is wider than the whole line: that
-        // is the one split allowed, and it is counted. Anywhere else, a split is a fault.
-        if (wide(parent)) wider += 1;
+        // A name's box breaks only when it is wider than the whole line: that is the one split
+        // allowed, and it is counted. Anywhere else, a split is a fault.
+        if (wide(parent.closest(BOX))) wider += 1;
         else split.push(`"${run}" in "${node.data}"`);
       }
     }
-    // A box (a name, a date, a time, a length) is drawn on one line unless it is wider than it.
-    const box = parent.closest('.nm, .nb');
-    if (box !== null && !wide(parent) && tops(node, 0, node.data.length).length > 1)
-      split.push(`"${node.data}" (${box.className})`);
-    owners.add(box === null ? parent : box.parentElement);
+    // A text drawn past the sides of its element.
+    const box = parent.getBoundingClientRect();
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    for (const rect of range.getClientRects())
+      if (rect.width > 0 && (rect.left < box.left - 0.5 || rect.right > box.right + 0.5))
+        spill.push(
+          `text "${node.data.trim()}" past its ${parent.tagName.toLowerCase()}.${parent.className}`,
+        );
+    const top = outer(parent);
+    owners.add(top === null ? parent : top.parentElement);
+  }
+  // Every box, the outer and the inner: on one line unless it is wider than its whole line.
+  for (const box of document.querySelectorAll(BOX)) {
+    if (!shown(box)) continue;
+    tied += 1;
+    if (linesOf(box).length <= 1) continue;
+    if (wide(box)) wider += 1;
+    else split.push(`"${box.textContent}" (${box.className})`);
   }
   // A last line of one word, per text as the reader sees it, across its boxes. A word as the
   // reader counts it: "60 days." on a line is two words held together, in a box or not. A box
-  // wider than its whole line breaks between its words and may leave one alone: that is allowed.
+  // wider than its whole line breaks between its words or parts and may leave one alone: that
+  // is allowed.
   for (const owner of owners) {
     const lines = new Map();
     let words = 0;
@@ -259,18 +305,19 @@ function looked({ whole, big }) {
     // With large text the headline may set a part's name on a line of its own.
     const apart = big && owner.matches('.lead');
     for (const child of owner.childNodes) {
-      const text = child.nodeType === Node.TEXT_NODE ? child : null;
-      if (text !== null) {
-        for (const word of text.data.matchAll(/[^ \n\u00a0]+/g))
-          add(tops(text, word.index, word.index + word[0].length)[0], false);
+      if (child.nodeType === Node.TEXT_NODE) {
+        for (const word of child.data.matchAll(/[^ \n\u00a0]+/g))
+          add(tops(child, word.index, word.index + word[0].length)[0], false);
         continue;
       }
-      if (child.matches?.('.nm, .nb') !== true || child.firstChild === null) continue;
-      const inner = child.firstChild;
+      if (child.matches?.(BOX) !== true) continue;
+      const inner = textsIn(child);
+      if (inner.length === 0) continue;
       const free = wide(child) || (apart && child.matches('.nm'));
-      const top = tops(inner, 0, inner.data.length)[0];
-      for (const word of inner.data.matchAll(/[^ \n]+/g))
-        add(free ? tops(inner, word.index, word.index + word[0].length)[0] : top, free);
+      const first = tops(inner[0], 0, inner[0].data.length)[0];
+      for (const text of inner)
+        for (const word of text.data.matchAll(/[^ \n]+/g))
+          add(free ? tops(text, word.index, word.index + word[0].length)[0] : first, free);
     }
     const counts = [...lines.entries()].sort((a, b) => a[0] - b[0]).map(([, line]) => line);
     // With large text a text of two words that cannot share a line has a word on each.
@@ -279,54 +326,154 @@ function looked({ whole, big }) {
     if (counts.length > 1 && last.n === 1 && !last.free)
       lone.push(`"${owner.textContent}" (${owner.className || owner.tagName.toLowerCase()})`);
   }
-  return { split, lone, tied, texts, wider };
+  // No element reaches past the sides of the element it is in.
+  for (const el of document.querySelectorAll('body *')) {
+    if (el.closest('svg') !== null && el.tagName.toLowerCase() !== 'svg') continue;
+    if (el.parentElement === null || !shown(el)) continue;
+    const rect = el.getBoundingClientRect();
+    const box = el.parentElement.getBoundingClientRect();
+    if (rect.width > 0 && (rect.left < box.left - 0.5 || rect.right > box.right + 0.5))
+      spill.push(
+        `${el.tagName.toLowerCase()}.${el.getAttribute('class') ?? ''} "${el.textContent.trim().slice(0, 40)}" past ` +
+          `${el.parentElement.tagName.toLowerCase()}.${el.parentElement.className} by ` +
+          `${Math.round(Math.max(box.left - rect.left, rect.right - box.right))} px`,
+      );
+  }
+  // The axis: half a line apart on one line, or "Today" on the next, still under the last bar.
+  const half = parseFloat(getComputedStyle(document.documentElement).fontSize) / 2;
+  for (const p of document.querySelectorAll('.axis')) {
+    if (!shown(p)) continue;
+    const [start, end] = [...p.children].map((span) => span.getBoundingClientRect());
+    const bars = p.previousElementSibling.getBoundingClientRect();
+    const gap = end.left - start.right;
+    if (Math.round(start.top) === Math.round(end.top) && gap < half - 0.5)
+      axis.push(`labels ${Math.round(gap * 10) / 10} px apart`);
+    if (Math.abs(end.right - bars.right) > 1)
+      axis.push(`"Today" ends ${Math.round(end.right - bars.right)} px from the last bar`);
+  }
+  const banner = document.querySelector('.banner');
+  const reserve = parseFloat(getComputedStyle(banner).minHeight);
+  const height = banner.getBoundingClientRect().height;
+  const grew = height > reserve + 0.5 ? `banner ${height} px over its ${reserve} px reserve` : null;
+  return {
+    split,
+    lone,
+    spill: [...new Set(spill)],
+    axis: [...new Set(axis)],
+    grew,
+    tied,
+    texts,
+    wider,
+  };
 }
 
+/** The text sizes every look is taken at: the usual size, and larger text a reader sets. */
+const SIZES = [100, 150, 200];
+
 /**
- * At each width, in a state: a name, a date, a time or a count is drawn on one line (each is
- * tied in the words themselves, with a word joiner or a no-break space), and no visible text
- * ends in a line of one word. Looked at as it opens, with every problem shown, and again with a
- * bar picked where there are bars to pick.
+ * In a state, at each of nine widths and at text of 100%, 150% and 200%: the banner's headline
+ * is the largest text of the page's answer (never smaller than the body text or its usual size,
+ * always larger than the line under it); nothing scrolls sideways or reaches past its box; the
+ * axis labels keep apart; the banner holds its words in its reserve; and the line checks of
+ * `looked` hold. Looked at as it opens with every problem shown, and again with a bar picked
+ * where there are bars to pick.
  */
-async function lineBreaks(browser, state) {
+async function looks(browser, state) {
   const found = [];
+  let count = 0;
   let texts = 0;
-  for (const width of WIDTHS) {
-    const context = await browser.newContext({
-      viewport: { width, height: 900 },
-      timezoneId: 'America/New_York',
-      locale: 'en-US',
-    });
-    const page = await context.newPage();
-    await (await context.request.get(`${ORIGIN}/__set?state=${state}`)).text();
-    await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
-    await page.waitForFunction(
-      () => !document.querySelector('.lead')?.textContent?.includes('Checking'),
-    );
-    if ((await page.locator('#more').count()) > 0) await page.locator('#more').click();
-    const seen = [await page.evaluate(looked, { whole: WHOLE, big: false })];
-    const bars = page.locator('.bars[data-part="closings"]:not([aria-hidden="true"])');
-    if ((await bars.count()) > 0) {
-      await bars.scrollIntoViewIfNeeded();
-      const box = await bars.boundingBox();
-      await page.mouse.move(box.x + (box.width * 79.5) / 90, box.y + box.height / 2);
-      await page.waitForFunction(() => document.querySelector('.note:not(.hint)') !== null);
-      seen.push(await page.evaluate(looked, { whole: WHOLE, big: false }));
-    }
-    await context.close();
-    if (seen.every((one) => one.tied === 0)) found.push(`${width} px: nothing tied was found`);
-    for (const one of seen) {
-      texts += one.texts;
-      for (const text of one.split) found.push(`${width} px: split ${text}`);
-      for (const text of one.lone) found.push(`${width} px: a last line of one word in ${text}`);
+  let wider = 0;
+  const usual = new Map();
+  for (const size of SIZES) {
+    for (const width of WIDTHS) {
+      // The larger text is set by a style of the test's own, which the page's policy would refuse.
+      const context = await browser.newContext({
+        viewport: { width, height: 900 },
+        timezoneId: 'America/New_York',
+        locale: 'en-US',
+        bypassCSP: true,
+      });
+      const page = await context.newPage();
+      await (await context.request.get(`${ORIGIN}/__set?state=${state}`)).text();
+      await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
+      if (size !== 100) await page.addStyleTag({ content: `html { font-size: ${size}%; }` });
+      await page.waitForFunction(
+        () => !document.querySelector('.lead')?.textContent?.includes('Checking'),
+      );
+      await page.waitForTimeout(50);
+      const sizes = await page.evaluate(() => {
+        const px = (box) => (box === null ? null : parseFloat(getComputedStyle(box).fontSize));
+        const leads = [...document.querySelectorAll('.lead')].filter(
+          (box) =>
+            box.getClientRects().length > 0 && getComputedStyle(box).visibility === 'visible',
+        );
+        return {
+          body: px(document.body),
+          leads: leads.map(px),
+          more: px(document.querySelector('.more')),
+          others: [...document.querySelectorAll('.name, .state, h2')].map(px),
+          scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+      if (width === 320 && size === 200 && (state === 'history' || state === 'worst'))
+        await page.screenshot({
+          path: join(out, `big-text-200-${state}-320.png`),
+          fullPage: true,
+        });
+      if ((await page.locator('#more').count()) > 0) await page.locator('#more').click();
+      if (width === 768 && size === 150 && (state === 'history' || state === 'stale'))
+        await page.screenshot({
+          path: join(out, `big-text-150-${state}-768.png`),
+          fullPage: true,
+        });
+      const seen = [await page.evaluate(looked, { whole: WHOLE, big: size !== 100 })];
+      const bars = page.locator('.bars[data-part="closings"]:not([aria-hidden="true"])');
+      if ((await bars.count()) > 0) {
+        await bars.scrollIntoViewIfNeeded();
+        const box = await bars.boundingBox();
+        await page.mouse.move(box.x + (box.width * 79.5) / 90, box.y + box.height / 2);
+        await page.waitForFunction(() => document.querySelector('.note:not(.hint)') !== null);
+        seen.push(await page.evaluate(looked, { whole: WHOLE, big: size !== 100 }));
+      }
+      await context.close();
+      count += 1;
+      const at = `${width} px at ${size}%`;
+      if (sizes.leads.length === 0) found.push(`${at}: no headline`);
+      else {
+        const lead = Math.min(...sizes.leads);
+        if (size === 100) usual.set(width, lead);
+        if (lead < sizes.body)
+          found.push(`${at}: headline ${lead} px under the body's ${sizes.body}`);
+        if (sizes.more !== null && lead <= sizes.more)
+          found.push(`${at}: headline ${lead} px not over the line under it (${sizes.more})`);
+        const bigger = sizes.others.filter((other) => other > lead);
+        if (bigger.length > 0) found.push(`${at}: headline ${lead} px under ${bigger.join(', ')}`);
+        if (lead < (usual.get(width) ?? 0))
+          found.push(`${at}: headline ${lead} px under its usual ${usual.get(width)}`);
+      }
+      if (sizes.scroll > 0) found.push(`${at}: scrolls sideways ${sizes.scroll} px`);
+      if (seen.every((one) => one.tied === 0)) found.push(`${at}: nothing tied was found`);
+      for (const one of seen) {
+        texts += one.texts;
+        wider += one.wider;
+        for (const text of one.split) found.push(`${at}: split ${text}`);
+        for (const text of one.lone) found.push(`${at}: a last line of one word in ${text}`);
+        for (const text of one.spill) found.push(`${at}: ${text}`);
+        for (const text of one.axis) found.push(`${at}: axis ${text}`);
+        if (one.grew !== null) found.push(`${at}: ${one.grew}`);
+      }
     }
   }
   return said(
     found.length === 0,
-    `line breaks ${state}`,
+    `looks ${state}`,
     found.length === 0
-      ? `${texts} texts: no name, date, time or count split and no one-word last line at ` +
-          `${WIDTHS.join(', ')} px`
+      ? `${count} looks at ${WIDTHS.join(', ')} px and ${SIZES.join('%, ')}% (${texts} texts): ` +
+          'the headline is never under the body, the names, the states or the headings, always ' +
+          'over the line under it and never under its usual size; nothing scrolls sideways or ' +
+          'reaches past its box; the axis labels keep apart; the banner holds its words; no ' +
+          `name, date, time, length or count split (${wider} boxes wider than their line broke ` +
+          'between their parts) and no one-word last line'
       : found.join('; '),
   );
 }
@@ -437,77 +584,6 @@ async function comingBack(browser) {
   );
 }
 
-/** The text sizes the hierarchy is checked at: the usual size, and larger text a reader sets. */
-const SIZES = [100, 150, 200];
-
-/**
- * In a state, at each width and text size: the banner's headline is the largest text of the
- * page's answer. It is never smaller than the body text, always larger than the line under it,
- * and never smaller than it is at the usual size: larger text only ever makes it larger.
- */
-async function hierarchy(browser, state) {
-  const found = [];
-  let looks = 0;
-  const usual = new Map();
-  for (const size of SIZES) {
-    for (const width of WIDTHS) {
-      const context = await browser.newContext({
-        viewport: { width, height: 900 },
-        bypassCSP: true,
-      });
-      const page = await context.newPage();
-      await (await context.request.get(`${ORIGIN}/__set?state=${state}`)).text();
-      await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
-      await page.addStyleTag({ content: `html { font-size: ${size}%; }` });
-      await page.waitForFunction(
-        () => !document.querySelector('.lead')?.textContent?.includes('Checking'),
-      );
-      const seen = await page.evaluate(() => {
-        const px = (box) => (box === null ? null : parseFloat(getComputedStyle(box).fontSize));
-        const leads = [...document.querySelectorAll('.lead')].filter(
-          (box) => box.getClientRects().length > 0,
-        );
-        const others = [...document.querySelectorAll('.name, .state, h2')].map(px);
-        return {
-          body: px(document.body),
-          leads: leads.map(px),
-          more: px(document.querySelector('.more')),
-          others,
-          scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        };
-      });
-      if (width === 320 && size === 200 && (state === 'history' || state === 'worst'))
-        await page.screenshot({ path: join(out, `big-text-200-${state}-320.png`), fullPage: true });
-      await context.close();
-      looks += 1;
-      const at = `${width} px at ${size}%`;
-      if (seen.leads.length === 0) {
-        found.push(`${at}: no headline`);
-        continue;
-      }
-      const lead = Math.min(...seen.leads);
-      if (size === 100) usual.set(width, lead);
-      if (lead < seen.body) found.push(`${at}: headline ${lead} px under the body's ${seen.body}`);
-      if (seen.more !== null && lead <= seen.more)
-        found.push(`${at}: headline ${lead} px not over the line under it (${seen.more})`);
-      const bigger = seen.others.filter((other) => other > lead);
-      if (bigger.length > 0) found.push(`${at}: headline ${lead} px under ${bigger.join(', ')}`);
-      if (lead < (usual.get(width) ?? 0))
-        found.push(`${at}: headline ${lead} px under its usual ${usual.get(width)}`);
-      if (seen.scroll > 0) found.push(`${at}: scrolls sideways ${seen.scroll} px`);
-    }
-  }
-  return said(
-    found.length === 0,
-    `text sizes ${state}`,
-    found.length === 0
-      ? `${looks} looks at ${SIZES.join('%, ')}%: the headline is never under the body, the ` +
-          'names, the states or the headings, always over the line under it, never under its ' +
-          'usual size, and nothing scrolls sideways'
-      : found.join('; '),
-  );
-}
-
 /** Text at 150% on a 320 px screen: every box wraps, nothing scrolls sideways, no line splits. */
 async function bigText(browser, state) {
   // The larger text is set by a style of the test's own, which the page's policy would refuse.
@@ -554,15 +630,13 @@ async function bigText(browser, state) {
   const browser = await chromium.launch();
   let good = true;
   for (const shot of SHOTS) good = (await one(browser, shot)) && good;
-  for (const state of ['history', 'worst', 'launch', 'ok', 'stale', 'first', 'unreachable'])
-    good = (await lineBreaks(browser, state)) && good;
   good = (await scriptsOff(browser)) && good;
   good = (await scriptMissing(browser)) && good;
   good = (await comingBack(browser)) && good;
   for (const state of ['history', 'worst', 'stale', 'first', 'unreachable'])
     good = (await bigText(browser, state)) && good;
   for (const state of ['history', 'worst', 'launch', 'ok', 'stale', 'first', 'unreachable'])
-    good = (await hierarchy(browser, state)) && good;
+    good = (await looks(browser, state)) && good;
   await browser.close();
   process.exit(good ? 0 : 1);
 })().catch((error) => {

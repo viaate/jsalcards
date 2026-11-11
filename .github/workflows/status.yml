@@ -167,7 +167,7 @@ jobs:
           DB_ID: ${{ steps.db.outputs.id }}
         run: |
           if [ -z "${DB_ID}" ]; then
-            echo "::warning::The status checker store could not be read, so this run cannot say what it has kept. The deploy goes on."
+            echo "::warning::The status checker store could not be read, so this run cannot say what it has kept."
             exit 0
           fi
           sql="SELECT (SELECT COUNT(*) FROM samples WHERE t > unixepoch() - 10800) AS n3, (SELECT COUNT(*) FROM samples WHERE t > unixepoch() - 86400) AS n24, (SELECT MAX(closings_bytes) FROM samples WHERE t > unixepoch() - 86400) AS bytes, s.t AS t, s.site AS site, s.site_code AS site_code, s.closings AS closings, s.closings_code AS closings_code, s.chances AS chances, s.chances_code AS chances_code, s.accounts AS accounts, s.accounts_code AS accounts_code FROM (SELECT 1) LEFT JOIN samples s ON s.t = (SELECT MAX(t) FROM samples)"
@@ -179,7 +179,7 @@ jobs:
                 row = JSON.parse(s)[0].results[0];
                 if (typeof row.n3 !== "number" || typeof row.n24 !== "number") throw new Error("no counts");
               } catch {
-                console.log("::warning::The status checker store could not be read, so this run cannot say what it has kept. The deploy goes on.");
+                console.log("::warning::The status checker store could not be read, so this run cannot say what it has kept.");
                 return;
               }
               const kept = `status checker: ${row.n3} of the last 36 checks kept (3 hours), ${row.n24} of the last 288 (24 hours)`;

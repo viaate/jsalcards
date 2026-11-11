@@ -4,7 +4,8 @@
  * A line never breaks inside a name, a date or a count: a number is tied to the word after it
  * with a no-break space (`\u00a0`), the words of a part's name and "at least" are tied the
  * same way, and a hyphen inside a name is followed by a word joiner (`\u2060`). The dates and
- * times `view.ts` writes are tied the same way.
+ * times `view.ts` writes are tied the same way. The two parts of a length are joined by a
+ * narrow no-break space (`\u202f`): see `dur.two`.
  */
 
 export const copy = {
@@ -64,7 +65,7 @@ export const copy = {
     line: 'Working in {pct} of our checks over {days}.',
     none: 'No checks yet.',
     // The checks have begun, and none of this part's has given an answer.
-    unknown: 'Could not check so far.',
+    unknown: 'Could not check so\u00a0far.',
     // The last check is older than every day shown.
     old: 'Not checked in the last 90\u00a0days.',
     unloaded: 'The history could not be loaded.',
@@ -128,8 +129,10 @@ export const copy = {
     hours: '{n}\u00a0hours',
     day: '1\u00a0day',
     days: '{n}\u00a0days',
-    // "1 hour 10 minutes" is one length and never splits.
-    two: '{a}\u00a0{b}',
+    // "1 hour 10 minutes" is one length: its two parts are joined by a narrow no-break space,
+    // which the page draws as a no-break space. Where the whole length is wider than the line
+    // (very large text on a narrow phone), it breaks there, between its parts, and nowhere else.
+    two: '{a}\u202f{b}',
   },
 } as const;
 

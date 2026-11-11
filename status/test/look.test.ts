@@ -126,7 +126,13 @@ test('no text of the page ends in a line of one word', () => {
   // The longer texts keep their own breaks and only pull a word down to the last line: a
   // problem's heading reads better broken late ("… not working for" / "25 minutes.") than in
   // the middle. The pictures script checks every visible text at nine widths.
-  assert.deepEqual(rulesWith('text-wrap: pretty'), ['.note', '.what', '.when', 'footer p']);
+  assert.deepEqual(rulesWith('text-wrap: pretty'), [
+    '.share',
+    '.note',
+    '.what',
+    '.when',
+    'footer p',
+  ]);
 });
 
 test('large text on a narrow phone: the banner keeps its words whole and its key wraps', () => {
@@ -148,7 +154,9 @@ test('large text on a narrow phone: the banner keeps its words whole and its key
     /\.state \{ display: flex; align-items: center; gap: 0\.4rem; min-block-size: 1\.5rem; \}/,
   );
   assert.match(flat, /\.upd \{ min-block-size: 1\.25rem; \}/);
-  assert.match(flat, /\.says \{ text-wrap: balance; overflow-wrap: anywhere; \}/);
+  // A word wider than the line breaks inside it, and only then: never to balance two lines.
+  assert.match(flat, /\.says \{ text-wrap: balance; overflow-wrap: break-word; \}/);
+  assert.equal(flat.includes('anywhere'), false);
   assert.equal(
     /cq[iwhb]|vw|vmin|clamp\(|min\(\d/.test(flat.replace(/minmax\(min\(100%/g, '')),
     false,
@@ -157,6 +165,32 @@ test('large text on a narrow phone: the banner keeps its words whole and its key
   assert.match(
     flat,
     /\.key \{ display: grid; grid-template-columns: repeat\(auto-fit, minmax\(min\(100%, 7rem\), 1fr\)\);/,
+  );
+});
+
+test('large text on a tablet: what goes side by side asks for room in text units', () => {
+  const flat = css.replace(/\/\*[^]*?\*\//g, '').replace(/\s+/g, ' ');
+  // Every wide layout asks <main> how much room it has in rem, never the screen in pixels: at
+  // 150% text a 768 px tablet has the room of a 512 px phone, and lays out as one.
+  assert.match(flat, /main \{ container-type: inline-size; \}/);
+  assert.equal(/@media \([a-z-]*width/.test(flat), false);
+  assert.deepEqual(
+    [...flat.matchAll(/@container \(([^)]*)\)/g)].map((m) => m[1]),
+    ['min-width: 21.75rem', 'min-width: 38rem'],
+  );
+  // One column grows no wider than its row, so a long word or box wraps instead.
+  assert.match(flat, /\.row \{ display: grid; grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(flat, /\.slot \{ display: grid; grid-template-columns: minmax\(0, 1fr\);/);
+  // Side by side, the time column never takes more than 45% of a problem's row.
+  assert.match(
+    flat,
+    /\.slot \{ grid-template-columns: minmax\(0, 1fr\) fit-content\(45%\); column-gap: 1\.5rem;/,
+  );
+  // The axis labels keep half a line apart, or "Today" goes down a line and ends under the
+  // last bar.
+  assert.match(
+    flat,
+    /\.axis \{ display: flex; flex-wrap: wrap; column-gap: 0\.5rem;[^}]*\} \.axis span:last-child \{ margin-inline-start: auto; \}/,
   );
 });
 

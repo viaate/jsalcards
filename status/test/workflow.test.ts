@@ -158,7 +158,7 @@ test('the messages, word for word', () => {
     'const kept = `status checker: ${row.n3} of the last 36 checks kept (3 hours), ${row.n24} of the last 288 (24 hours)`;',
     'console.log(`::notice::${kept}; none yet.`);',
     'console.log(`::notice::${kept}; last at ${at} UTC: website ${word(row.site)} ${code(row.site_code)}, closings ${word(row.closings)} ${code(row.closings_code)}, chances ${word(row.chances)} ${code(row.chances_code)}, accounts ${word(row.accounts)} ${code(row.accounts_code)}; largest closings file ${bytes} bytes.`);',
-    '::warning::The status checker store could not be read, so this run cannot say what it has kept. The deploy goes on.',
+    '::warning::The status checker store could not be read, so this run cannot say what it has kept.',
     // Step 5, the Pages check.
     '::error::The Cloudflare token cannot manage Pages (HTTP ${code}). Add the permission Account / Cloudflare Pages / Edit to it, then run this workflow again (docs/status.md, step 1). The checker is deployed and is already keeping history.',
     "::error::Cloudflare's API answered HTTP ${code} for the Pages project. Run this workflow again.",

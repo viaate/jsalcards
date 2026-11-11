@@ -14,7 +14,7 @@ import { allOk, history, launch, simulate, worst } from './fixtures/made-up.ts';
 import { root } from './harness.ts';
 
 /** The words as a reader sees them: a no-break space as a space, the word joiner gone. */
-const plain = (text: string): string => text.replace(/\u00a0/g, ' ').replace(/\u2060/g, '');
+const plain = (text: string): string => text.replace(/[\u00a0\u202f]/g, ' ').replace(/\u2060/g, '');
 
 /**
  * The places a line must never break, in a text of the page: after a number and before its
@@ -145,12 +145,20 @@ function texts(html: string): string[] {
     found.push(value!);
   // A name's box in the headline is part of the headline's text. The box keeps its words on
   // one line wherever they fit on one (it is an inline block), so its spaces are read as tied.
-  const body = html
-    .replace(/<svg[^]*?<\/svg>/g, '')
-    .replace(/<(script|style)[^]*?<\/\1>/g, '')
-    .replace(/<span class="n[mb]">([^<]*)<\/span>/g, (_, words: string) =>
+  // A length of two parts is a box of two boxes, read the same way; an address's <wbr> is in
+  // its box.
+  const unbox = (text: string): string =>
+    text.replace(/<span class="n[mb]">([^<]*)<\/span>/g, (_, words: string) =>
       words.replace(/ /g, '\u00a0'),
     );
+  const body = unbox(
+    unbox(
+      html
+        .replace(/<svg[^]*?<\/svg>/g, '')
+        .replace(/<(script|style)[^]*?<\/\1>/g, '')
+        .replace(/<wbr>/g, ''),
+    ),
+  );
   for (const piece of body.split(/<[^>]*>/)) found.push(piece);
   return found
     .map((text) =>
@@ -411,7 +419,22 @@ test('no line of the page can break inside a name, a date, a time or a count', (
     worstHtml,
     /<p class="lead">Not working right\u00a0now: <span class="nm">Website,<\/span> <span class="nm">Live school closings<\/span> <span class="nm">and Snow-\u2060day chances\.<\/span><\/p>/,
   );
-  assert.match(worstHtml, /for <span class="nb">at least<\/span> <span class="nb">\d/);
+  assert.match(
+    worstHtml,
+    /for <span class="nb">at least<\/span> <span class="nb">(?:<span class="nb">)?\d/,
+  );
+  // A length of two parts is a box of two boxes: where it is wider than the line it breaks
+  // between its parts, never between a number and its unit.
+  assert.match(
+    worstHtml,
+    /<span class="nb"><span class="nb">\d+ hours?<\/span> <span class="nb">\d+ minutes?\.<\/span><\/span>/,
+  );
+  assert.doesNotMatch(worstHtml, /\u202f/);
+  // The address is a box that breaks only at its dot.
+  assert.match(
+    worstHtml,
+    /<span class="says">Opening <span class="nb">snowlightmap<wbr>\.com\.<\/span><\/span>/,
+  );
   // The same boxes hold each name in the rows, over the bars and in the problems.
   assert.match(
     worstHtml,

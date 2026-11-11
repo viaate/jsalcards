@@ -445,11 +445,15 @@ export function viewOf(input: Input): View {
       counts,
       starts.map((start) => expected(start, summary.first, summary.now)),
     );
-    // Under a day since checks began, the share says how long they have run, not "1 day".
-    const young = summary.now - summary.first < DAY;
-    const days = young
-      ? dur(Math.max(TICK, summary.now - summary.first))
-      : count(share.days, copy.dur.day, copy.dur.days);
+    // The share never names more time than the checks it counts span: from the first check,
+    // or the first bar's start, to the summary's tick. Under a day, it says how long that is,
+    // not "1 day"; after that, the whole days of it, never the bars that hold a check (the
+    // first and the last bar are partly checked, so counting bars would add up to a day).
+    const ran = Math.max(TICK, summary.now - Math.max(summary.first, from));
+    const days =
+      ran < DAY
+        ? dur(ran)
+        : count(Math.min(share.days, Math.floor(ran / DAY)), copy.dur.day, copy.dur.days);
     // No reading to take a share of: either no check of this part gave an answer, or the last
     // check is older than every day shown. "No checks yet" is said only before the first check.
     let line: string = share.days === 0 ? copy.share.old : copy.share.unknown;

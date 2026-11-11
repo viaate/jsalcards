@@ -67,6 +67,13 @@ footer,
   margin-inline: auto;
   padding-inline: 1rem;
 }
+/* Every layout below that sets things side by side asks how much room <main> has in text
+   units, not how wide the screen is: with larger text the same screen holds fewer words, so
+   the rows, the history's heads and the problems go back to one column as they would on a
+   narrower phone. */
+main {
+  container-type: inline-size;
+}
 header {
   padding-block: 1.25rem 1rem;
 }
@@ -223,7 +230,7 @@ main:not(.on) .state {
 /* Right now. A row's own sentence never changes; only the "Updated" line fills in. */
 .row {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   padding: 0.75rem 1rem;
   border-block-start: 1px solid var(--border);
 }
@@ -250,8 +257,9 @@ main:not(.on) .state {
 .says {
   /* One short line, or two of near one length (large text on a narrow phone). */
   text-wrap: balance;
-  /* "snowlightmap.com." breaks inside only where it is wider than the whole line. */
-  overflow-wrap: anywhere;
+  /* An address is a box (see .nb) that breaks only at its dot, and only where it is wider
+     than the whole line; a word wider than the line breaks inside rather than run off. */
+  overflow-wrap: break-word;
 }
 .upd {
   min-block-size: 1.25rem;
@@ -303,6 +311,8 @@ main:not(.on) .state {
   color: var(--quiet);
   font-size: 0.875rem;
   line-height: 1.25rem;
+  /* No last line of one word. */
+  text-wrap: pretty;
 }
 .bars {
   display: grid;
@@ -343,13 +353,20 @@ main:not(.on) .state {
   outline: 2px solid var(--text);
   outline-offset: 1px;
 }
+/* "90 days ago" under the first bar and "Today" under the last, at least half a line apart.
+   Where both do not fit on one line (very large text on a narrow phone), "Today" goes to the
+   next line and still ends under the last bar. */
 .axis {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  column-gap: 0.5rem;
   margin-block-start: 0.25rem;
   color: var(--quiet);
   font-size: 0.75rem;
   line-height: 1.125rem;
+}
+.axis span:last-child {
+  margin-inline-start: auto;
 }
 .note {
   min-block-size: 4.5rem;
@@ -366,6 +383,7 @@ main:not(.on) .state {
 /* Problems. Three slots and the button row are always there. */
 .slot {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   row-gap: 0.125rem;
   min-block-size: 9rem;
@@ -464,7 +482,8 @@ footer p + p {
   white-space: nowrap;
 }
 
-@media (min-width: 380px) {
+/* 21.75rem of room is a 380 px screen at the usual text size; 38rem is 640 px. */
+@container (min-width: 21.75rem) {
   .banner {
     min-block-size: 13rem;
   }
@@ -481,14 +500,14 @@ footer p + p {
     min-block-size: 22.5rem;
   }
 }
-@media (min-width: 640px) {
+@container (min-width: 38rem) {
   .banner {
     gap: 1rem;
     padding: 1.25rem;
     min-block-size: 9rem;
   }
   .row {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     column-gap: 1rem;
   }
   .state,
@@ -517,8 +536,10 @@ footer p + p {
   .note {
     min-block-size: 2.25rem;
   }
+  /* The time column takes what it needs up to 19rem and never more than 45% of the row, so
+     the problem's own sentence always keeps the larger part. */
   .slot {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) fit-content(45%);
     column-gap: 1.5rem;
     min-block-size: 4.5rem;
   }

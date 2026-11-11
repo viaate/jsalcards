@@ -20,7 +20,7 @@ import { allOk, history, launch, simulate, worst } from './fixtures/made-up.ts';
  */
 function plain<T>(value: T): T {
   if (typeof value === 'string') {
-    return value.replace(/\u00a0/g, ' ').replace(/\u2060/g, '') as unknown as T;
+    return value.replace(/[\u00a0\u202f]/g, ' ').replace(/\u2060/g, '') as unknown as T;
   }
   if (Array.isArray(value)) return value.map((item) => plain(item)) as unknown as T;
   if (typeof value === 'object' && value !== null) {
@@ -301,7 +301,7 @@ test('stale: after 900 s with no newer summary nothing is said to work', () => {
       when: 'From Nov 10, 9:00 AM EST. Our checks stopped while it was going on.',
     });
     // History stays, and today's bar says the time since the last check.
-    assert.equal(stale.history[0]!.share, 'Working in 100% of our checks over 4 days.');
+    assert.equal(stale.history[0]!.share, 'Working in 100% of our checks over 3 days.');
     assert.equal(
       stale.history[0]!.bars[89]!.label,
       'Tue, Nov 10: working when checked; not checked for 15 minutes.',
@@ -388,8 +388,8 @@ test('"today" is the clock\'s day: an old summary never names its last day today
     assert.equal(view.history[0]!.bars.length, 90);
     for (const block of view.history)
       for (const bar of block.bars) assert.equal(/today/i.test(bar.label ?? ''), false);
-    // The share is of the checks that were made.
-    assert.equal(view.history[0]!.share, 'Working in 100% of our checks over 4 days.');
+    // The share is of the checks that were made, over the whole days they span.
+    assert.equal(view.history[0]!.share, 'Working in 100% of our checks over 3 days.');
   }
   // A picked bar is counted on the bars as drawn.
   assert.equal(
@@ -551,7 +551,7 @@ test("a bar's name, for each class and for a gap", () => {
     ['Pick a bar to see that day.', true],
   );
   // 889 of the 925 checks that gave a reading.
-  assert.equal(site.share, 'Working in 96.1% of our checks over 6 days.');
+  assert.equal(site.share, 'Working in 96.1% of our checks over 5 days.');
   const late = simulate(NOW - DAY, NOW, (t) =>
     t === NOW - 600 ? { ...OK, accounts: 'late' } : OK,
   );
@@ -730,7 +730,27 @@ test('a part no check could reach says so, and an old summary says nothing of th
     edge.history[0]!.bars[0]!.label,
     'Tue, Nov 10: working when checked; not checked for 8 hours 55 minutes.',
   );
-  assert.equal(edge.history[0]!.share, 'Working in 100% of our checks over 1 day.');
+  // Its checks shown span the 15 hours from the first bar's start to the last check.
+  assert.equal(edge.history[0]!.share, 'Working in 100% of our checks over 15 hours.');
+});
+
+test('the share never names more time than its checks span', () => {
+  const first = Date.UTC(2026, 10, 10, 18, 0, 0) / 1000;
+  const share = (hours: number): string => {
+    const now = first + Math.round(hours * 60) * 60;
+    return data(
+      simulate(first, now, () => OK),
+      { clock: now + 60 },
+    ).history[0]!.share;
+  };
+  assert.equal(share(23 + 55 / 60), 'Working in 100% of our checks over 23 hours 55 minutes.');
+  // A day of checks is drawn on two bars, and is still one day.
+  assert.equal(share(24), 'Working in 100% of our checks over 1 day.');
+  assert.equal(share(25), 'Working in 100% of our checks over 1 day.');
+  assert.equal(share(47.9), 'Working in 100% of our checks over 1 day.');
+  assert.equal(share(48), 'Working in 100% of our checks over 2 days.');
+  // Older than the bars: the 90 days they show, as before.
+  assert.equal(share(100 * 24), 'Working in 100% of our checks over 89 days.');
 });
 
 test('a day whose first check is not due has a bar of its own kind', () => {
@@ -759,7 +779,7 @@ test('the made-up history reads as the pictures show it', () => {
     view.history[1]!.bars[79]!.label,
     'Sat, Oct 31: not working for 15 minutes, not checked for 6 hours.',
   );
-  assert.equal(view.history[3]!.share, 'Working in 100% of our checks over 60 days.');
+  assert.equal(view.history[3]!.share, 'Working in 100% of our checks over 59 days.');
   assert.equal(view.problems.button, 'Show all 4');
 });
 
