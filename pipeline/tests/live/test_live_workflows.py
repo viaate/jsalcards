@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import tarfile
 import threading
+import time
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -1007,15 +1008,24 @@ def test_the_chances_watch_judges_the_served_file(tmp_path: Path, stub: Stub) ->
 
 
 @needs_tools
+def _at_a_second_start() -> None:
+    # bash's $SECONDS counts the wall clock's whole seconds since the shell began, so a shell begun
+    # at x.9 s already reads 1 s a tenth of a second later. Begin just after a whole second, so the
+    # watch's first look at its clock falls in its shell's first second on however busy a machine.
+    time.sleep(1 - time.time() % 1)
+
+
 def test_the_chances_watch_ends_by_its_own_clock(tmp_path: Path, stub: Stub) -> None:
     stub.answer("GET", CHANCES, 503, b"busy")
     # Its own clock: out of time before any request, and between two tries.
     stub.seen.clear()
+    _at_a_second_start()
     ran = _chances(tmp_path, stub, CHANCES_BUDGET="0")
     assert ran.out == (
         "::notice::chances watch: out of time after 0 s (no verdict): the next tick goes on\n"
     )
     assert stub.seen == []
+    _at_a_second_start()
     ran = _chances(tmp_path, stub, CHANCES_BUDGET="1", CHANCES_RETRY_WAIT="2")
     assert ran.out.startswith("::notice::chances watch: out of time after ")
     assert ran.out.endswith(" s (no verdict): the next tick goes on\n")
