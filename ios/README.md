@@ -224,7 +224,11 @@ from (Nov 10, 2026; all runs are on `viaate/jsalcards`).
   token exactly.
 - **P8, the xcode-27 leg:** green (job 130172715589 of run 42914332720), 728 s: Xcode 27.1
   (27A9275), Apple Swift 6.4, the iOS 27.2 runtime with iPhone 18 Pro, 36 tests, every
-  shell pixel line ok, the words of 14 pictures equal.
+  shell pixel line ok, the words of 14 pictures equal. In run 42939935001 it stopped before
+  the first picture: that image has two iOS 27.2 runtimes, one of them made for one new
+  phone only, and the tour took that one ("Incompatible device"). `tools/tour.sh` now
+  makes the device on each runtime in turn, newest first, and keeps the first that
+  accepts it.
 - **P9, does XcodeGen 2.46.0's project build:** yes with Xcode 26.6 (run 42870517150) and
   with Xcode 27.1 (run 42914332720), with no warning. **Xcode 26.6 printed Swift 6.3.3**
   ("Apple Swift version 6.3.3 (swiftlang-6.3.3.1.3 clang-2100.1.1.101)"); Linux has Swift

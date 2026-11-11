@@ -27,18 +27,35 @@ if [ ! -d "$APP" ]; then
 fi
 
 # Our own device, from what this image has, addressed by id (a name can be missing or doubled).
-RUNTIME=$(xcrun simctl list runtimes -j | jq -r --arg p "$SIM_OS_PREFIX" \
-  '[.runtimes[] | select(.isAvailable and ((.name // "") | startswith($p)))]
-   | sort_by(.version | split(".") | map(tonumber)) | last | .identifier // empty')
 DEVTYPE=$(xcrun simctl list devicetypes -j | jq -r --arg d "$SIM_DEVICE" \
   '[.devicetypes[] | select(.name == $d) | .identifier] | first // empty')
-if [ -z "$RUNTIME" ] || [ -z "$DEVTYPE" ]; then
-  echo "::error::No '$SIM_OS_PREFIX' runtime or no '$SIM_DEVICE' on this image."
+if [ -z "$DEVTYPE" ]; then
+  echo "::error::No '$SIM_DEVICE' on this image."
+  xcrun simctl list devicetypes; exit 1
+fi
+echo "device type: $DEVTYPE"
+# The runtimes whose name starts with the prefix, newest first. Two can share a version
+# (the xcode-27 image has an iOS 27.2 made for one new phone only, beside the ordinary
+# iOS 27.2), and a runtime refuses a device it was not made for ("Incompatible device").
+# So the device is made on each in turn, and the first runtime that accepts it is used.
+RUNTIMES=$(xcrun simctl list runtimes -j | jq -r --arg p "$SIM_OS_PREFIX" \
+  '[.runtimes[] | select(.isAvailable and ((.name // "") | startswith($p)))]
+   | sort_by(.version | split(".") | map(tonumber)) | reverse | .[].identifier')
+RUNTIME=""
+UDID=""
+for CANDIDATE in $RUNTIMES; do
+  if UDID=$(xcrun simctl create snowlight-ci "$DEVTYPE" "$CANDIDATE" 2>"$LOGS/simctl-create.txt"); then
+    RUNTIME=$CANDIDATE
+    break
+  fi
+  UDID=""
+  echo "runtime $CANDIDATE did not make a '$SIM_DEVICE': $(tr '\n' ' ' < "$LOGS/simctl-create.txt")"
+done
+if [ -z "$RUNTIME" ] || [ -z "$UDID" ]; then
+  echo "::error::No '$SIM_OS_PREFIX' runtime on this image makes a '$SIM_DEVICE'."
   xcrun simctl list runtimes; exit 1
 fi
 echo "runtime: $RUNTIME"
-echo "device type: $DEVTYPE"
-UDID=$(xcrun simctl create snowlight-ci "$DEVTYPE" "$RUNTIME")
 trap 'xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true; xcrun simctl delete "$UDID" >/dev/null 2>&1 || true' EXIT
 echo "device: $UDID"
 xcrun simctl boot "$UDID"
