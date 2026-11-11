@@ -1265,7 +1265,11 @@ test.describe('the admin view with a directory', () => {
     await expect(tomorrow).toBeChecked();
     await expect(page.getByLabel(`Today (${tue ?? ''})`, { exact: true })).toBeVisible();
     // The school's midnight passes with the form open: Wednesday is now its today, still
-    // picked, and Thursday is never sent in its place.
+    // picked, and Thursday is never sent in its place. The time is set past it (12:01 AM
+    // Wednesday in Portland) before the fast-forward that runs the form's timers: Playwright's
+    // clock (1.56) can finish a real-time step that was under way when a fast-forward landed
+    // and take the page's time back by the whole jump, but no further back than a time set.
+    await page.clock.setSystemTime(new Date('2026-10-21T07:01:00Z'));
     await page.clock.fastForward('03:00');
     const today = page.getByLabel(`Today (${wed ?? ''})`, { exact: true });
     await expect(today).toBeChecked();
