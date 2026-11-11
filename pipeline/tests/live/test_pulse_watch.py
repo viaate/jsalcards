@@ -82,8 +82,11 @@ def test_a_reader_that_ignores_term_is_killed_after_the_grace(tmp_path: Path) ->
 
 
 def test_a_pulse_that_stops_mid_run_ends_the_reader(tmp_path: Path) -> None:
+    # The watcher counts the pulse's age in whole seconds (`date +%s` less the mtime's second),
+    # so it can read 2 s after only just over 1 s: the last beat lands at least 2.3 s in, and
+    # the reader can end no sooner than 3.3 s, above the 3.0 s floor on any machine.
     pulse = tmp_path / "pulse"
-    child = _beating(pulse, 1.5, 0).replace("raise SystemExit(0)", "time.sleep(30)")
+    child = _beating(pulse, 2.5, 0).replace("raise SystemExit(0)", "time.sleep(30)")
     code, took, _ = _watch(tmp_path, child, max_age=2)
     assert code == 124
     assert 3.0 <= took < 12
