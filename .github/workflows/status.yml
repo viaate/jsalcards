@@ -104,7 +104,8 @@ jobs:
 
       # The database's id, by name; made on the first run. The checker and the page's
       # Function both bind it.
-      - if: steps.secrets.outputs.enabled == 'true'
+      - id: db
+        if: steps.secrets.outputs.enabled == 'true'
         name: Find or make the database
         run: |
           find_id() {
@@ -124,6 +125,7 @@ jobs:
             exit 1
           fi
           sed -i "s/^database_id = .*/database_id = \"${id}\"/" prober/wrangler.toml page/wrangler.toml
+          echo "id=${id}" >> "$GITHUB_OUTPUT"
       - if: steps.secrets.outputs.enabled == 'true'
         name: Apply the migrations
         working-directory: status/prober
@@ -155,12 +157,19 @@ jobs:
           fi
 
       # The store notice. It needs the database alone, which the token already has, so
-      # every run prints it, whatever happens to the page below. A run that cannot read
-      # the store warns and goes on.
-      - if: steps.secrets.outputs.enabled == 'true'
+      # every run prints it, green or red: after a failed migration or checker deploy
+      # too, whatever happens to the page below. A run that cannot read the store, or
+      # did not find the database, warns and goes on.
+      - if: always() && steps.secrets.outputs.enabled == 'true'
         name: Say what the checker has kept
         working-directory: status/prober
+        env:
+          DB_ID: ${{ steps.db.outputs.id }}
         run: |
+          if [ -z "${DB_ID}" ]; then
+            echo "::warning::The status checker store could not be read, so this run cannot say what it has kept. The deploy goes on."
+            exit 0
+          fi
           sql="SELECT (SELECT COUNT(*) FROM samples WHERE t > unixepoch() - 10800) AS n3, (SELECT COUNT(*) FROM samples WHERE t > unixepoch() - 86400) AS n24, (SELECT MAX(closings_bytes) FROM samples WHERE t > unixepoch() - 86400) AS bytes, s.t AS t, s.site AS site, s.site_code AS site_code, s.closings AS closings, s.closings_code AS closings_code, s.chances AS chances, s.chances_code AS chances_code, s.accounts AS accounts, s.accounts_code AS accounts_code FROM (SELECT 1) LEFT JOIN samples s ON s.t = (SELECT MAX(t) FROM samples)"
           answer="$(npx wrangler d1 execute snowlight-status --remote --json --command "${sql}" 2> /dev/null || true)"
           printf '%s' "${answer}" | node -e '
@@ -197,7 +206,13 @@ jobs:
             "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/snowlight-status" || true)"
           case "${code}" in
             200) ;;
-            404) npx wrangler pages project create snowlight-status --production-branch main ;;
+            404)
+              # A token without Pages may be told 404 here: making the project then fails.
+              if ! npx wrangler pages project create snowlight-status --production-branch main; then
+                echo "::error::The Cloudflare token cannot manage Pages (HTTP ${code}). Add the permission Account / Cloudflare Pages / Edit to it, then run this workflow again (docs/status.md, step 1). The checker is deployed and is already keeping history."
+                exit 1
+              fi
+              ;;
             401 | 403)
               echo "::error::The Cloudflare token cannot manage Pages (HTTP ${code}). Add the permission Account / Cloudflare Pages / Edit to it, then run this workflow again (docs/status.md, step 1). The checker is deployed and is already keeping history."
               exit 1

@@ -270,6 +270,7 @@ function problemText(
   clock: number,
   stale: boolean,
   zone: string | undefined,
+  unknownNow: boolean,
 ): { what: string; when: string } {
   const part = copy.parts[incident.p].name;
   const kind = incident.k === 'down' ? copy.problem.down : copy.problem.late;
@@ -279,7 +280,11 @@ function problemText(
   if (end === null) {
     return {
       what: fill(copy.problem.open, { part, kind, start: zoned(from) }),
-      when: fill(copy.problem.openWhen, { dur: dur(clock - incident.s) }),
+      // While the part's newest check could not tell, the length stops at its last reading:
+      // no time the checker did not see is counted as part of the problem.
+      when: fill(copy.problem.openWhen, {
+        dur: dur((unknownNow ? (incident.l ?? incident.s) + TICK : clock) - incident.s),
+      }),
     };
   }
   if (gap) {
@@ -440,7 +445,11 @@ export function viewOf(input: Input): View {
       counts,
       starts.map((start) => expected(start, summary.first, summary.now)),
     );
-    const days = count(share.days, copy.dur.day, copy.dur.days);
+    // Under a day since checks began, the share says how long they have run, not "1 day".
+    const young = summary.now - summary.first < DAY;
+    const days = young
+      ? dur(Math.max(TICK, summary.now - summary.first))
+      : count(share.days, copy.dur.day, copy.dur.days);
     // No reading to take a share of: either no check of this part gave an answer, or the last
     // check is older than every day shown. "No checks yet" is said only before the first check.
     let line: string = share.days === 0 ? copy.share.old : copy.share.unknown;
@@ -462,7 +471,9 @@ export function viewOf(input: Input): View {
       const { end } = ending(incident, stale);
       return end === null || end >= from;
     })
-    .map((incident) => problemText(incident, clock, stale, zone));
+    .map((incident) =>
+      problemText(incident, clock, stale, zone, summary.parts[incident.p].s === 'unknown'),
+    );
   const shown: View['problems']['slots'] = input.expanded ? [...all] : all.slice(0, SLOTS);
   while (shown.length < SLOTS) shown.push(null);
   let empty: string | null = null;

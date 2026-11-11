@@ -143,7 +143,14 @@ function texts(html: string): string[] {
   const found: string[] = [];
   for (const [, value] of html.matchAll(/\s(?:aria-label|title|content)="([^"]*)"/g))
     found.push(value!);
-  const body = html.replace(/<svg[^]*?<\/svg>/g, '').replace(/<(script|style)[^]*?<\/\1>/g, '');
+  // A name's box in the headline is part of the headline's text. The box keeps its words on
+  // one line wherever they fit on one (it is an inline block), so its spaces are read as tied.
+  const body = html
+    .replace(/<svg[^]*?<\/svg>/g, '')
+    .replace(/<(script|style)[^]*?<\/\1>/g, '')
+    .replace(/<span class="nm">([^<]*)<\/span>/g, (_, words: string) =>
+      words.replace(/ /g, '\u00a0'),
+    );
   for (const piece of body.split(/<[^>]*>/)) found.push(piece);
   return found
     .map((text) =>
@@ -238,6 +245,8 @@ test('in every state each text of the page is made from the copy, and all of the
   const eve = simulate(midnight - 2 * DAY, midnight - 300, () => OK_ALL);
   inputs.push(
     data(eve, { clock: midnight + 120, picked: { part: 'site', day: 89 } }),
+    // 88 days later only the second of its two days is still a bar: "over 1 day".
+    data(eve, { clock: midnight + 88 * DAY + 3600 }),
     data(young, { clock: NOW + DAY + 7200, picked: { part: 'chances', day: 89 } }),
     data(bad, { clock: NOW + 3 * DAY + 7200, picked: { part: 'closings', day: 86 } }),
   );
@@ -377,13 +386,14 @@ test('no line of the page can break inside a name, a date, a time or a count', (
   );
   assert.match(
     html,
-    /<p class="lead">Slow or late right\u00a0now: Snow-\u2060day\u00a0chances\.<\/p>/,
+    /<p class="lead">Slow or late right\u00a0now: <span class="nm">Snow-\u2060day chances\.<\/span><\/p>/,
   );
   assert.match(
     html,
     /Snow-\u2060day\u00a0chances: slow or late since Nov\u00a010, 8:55\u00a0AM\u00a0EST\./,
   );
-  // At its worst, the banner names three parts, and each name is drawn whole.
+  // At its worst, the banner names three parts, each in a box of its own that moves to the next
+  // line whole, with its comma or full stop, and "and" in the box of the last name.
   const worstHtml = mainHtml(
     viewOf({
       kind: 'data',
@@ -397,7 +407,7 @@ test('no line of the page can break inside a name, a date, a time or a count', (
   );
   assert.match(
     worstHtml,
-    /<p class="lead">Not working right\u00a0now: Website, Live\u00a0school\u00a0closings\u00a0and Snow-\u2060day\u00a0chances\.<\/p>/,
+    /<p class="lead">Not working right\u00a0now: <span class="nm">Website,<\/span> <span class="nm">Live school closings<\/span> <span class="nm">and Snow-\u2060day chances\.<\/span><\/p>/,
   );
   assert.match(worstHtml, /for at\u00a0least \d/);
   assert.match(html, /aria-label="Sat, Oct\u00a031: [^"]*not checked for 6\u00a0hours\."/);

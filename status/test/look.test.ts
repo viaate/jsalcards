@@ -131,15 +131,21 @@ test('no text of the page ends in a line of one word', () => {
 
 test('large text on a narrow phone: the banner keeps its words whole and its key wraps', () => {
   const flat = css.replace(/\/\*[^]*?\*\//g, '').replace(/\s+/g, ' ');
-  // The shape goes above the words when they would have under 12rem beside it.
-  assert.match(flat, /\.banner \{ display: flex; flex-wrap: wrap; [^}]*align-content: center;/);
+  // The shape goes above the words when they would have under 12rem beside it, and both sit at
+  // the top of the banner's reserved size.
   assert.match(
     flat,
-    /\.banner > div \{ flex: 1 1 12rem; min-inline-size: 0; container-type: inline-size; \}/,
+    /\.banner \{ display: flex; flex-wrap: wrap; gap: 0\.75rem; align-items: flex-start; align-content: flex-start;/,
   );
-  // The headline grows no further than "Live school closings and" fits in its column; a
-  // browser without container units keeps the first size.
-  assert.match(flat, /\.lead \{ font-size: 1\.125rem; font-size: min\(1\.125rem, 8\.5cqi\);/);
+  assert.match(flat, /\.banner > div \{ flex: 1 1 12rem; min-inline-size: 0; \}/);
+  // The headline grows with the reader's text and is never held to its column's width: a name
+  // that does not fit at the end of a line moves down whole in its own box.
+  assert.match(flat, /\.lead \{ font-size: 1\.125rem; font-weight: 600; line-height: 1\.5rem;/);
+  assert.match(flat, /\.nm \{ display: inline-block; \}/);
+  assert.equal(
+    /cq[iwhb]|vw|vmin|clamp\(|min\(\d/.test(flat.replace(/minmax\(min\(100%/g, '')),
+    false,
+  );
   // The key has two columns, or one where a name would not fit in half.
   assert.match(
     flat,

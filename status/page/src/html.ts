@@ -32,8 +32,32 @@ export function shape(of: Shape | 'none' | 'before'): string {
   );
 }
 
+/** Each part's name as the copy spells it, longest first, as a pattern. */
+const NAMES = Object.values(copy.parts)
+  .map((part) => part.name)
+  .sort((a, b) => b.length - a.length)
+  .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  .join('|');
+/** A name, with the "and" before it and the comma or full stop after it. */
+const NAMED = new RegExp(`(\u00a0and )?((?:${NAMES})[,.]?)`, 'g');
+
+/**
+ * A headline with each part's name in a box of its own. A box moves to the next line whole
+ * when it does not fit at the end of one, and breaks between its words only when it is wider
+ * than the whole line (very large text on a narrow phone), so the text never has to shrink
+ * and never runs off the side. "and" goes in the box of the name after it, never alone.
+ */
+export function named(line: string): string {
+  return esc(line).replace(
+    NAMED,
+    (_, and: string | undefined, name: string) =>
+      `${and === undefined ? '' : ' '}<span class="nm">${and === undefined ? '' : 'and '}` +
+      `${name.replace(/\u00a0/g, ' ')}</span>`,
+  );
+}
+
 function banner(view: View): string {
-  const lead = view.banner.lead.map((line) => `<p class="lead">${esc(line)}</p>`).join('');
+  const lead = view.banner.lead.map((line) => `<p class="lead">${named(line)}</p>`).join('');
   const more = view.banner.more === null ? '' : `<p class="more">${esc(view.banner.more)}</p>`;
   // Drawn in the lead's place by the stylesheet alone, when the script has not started in time.
   const stuck =

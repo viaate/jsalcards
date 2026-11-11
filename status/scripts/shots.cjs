@@ -7,8 +7,10 @@
  * and no visible text ends in a line of one word; with scripts off only the line that says so
  * is shown; a page whose script never loads stops saying "Checking" after 10 s and moves
  * nothing; coming back to the tab with an old answer says its age at once, before any fetch
- * settles; and with text at 150% on a 320 px screen nothing scrolls sideways and the same line
- * checks hold. Fails if any check does.
+ * settles; with text at 150% on a 320 px screen nothing scrolls sideways and the same line
+ * checks hold; and in every state, at nine widths and at text of 100%, 150% and 200%, the
+ * banner's headline is never smaller than the body text or its usual size and always larger
+ * than the line under it. Fails if any check does.
  *
  *   NODE_PATH=../web/node_modules node scripts/shots.cjs [out folder]
  *
@@ -188,6 +190,7 @@ function looked({ whole, big }) {
   const lone = [];
   let tied = 0;
   let texts = 0;
+  let wider = 0;
   /** The tops of the lines a stretch of a text node is drawn on. */
   const tops = (node, from, to) => {
     const range = document.createRange();
@@ -213,8 +216,13 @@ function looked({ whole, big }) {
         .join('[ \u00a0\n]+');
       for (const match of node.data.matchAll(new RegExp(spaced, 'g'))) {
         tied += 1;
-        if (tops(node, match.index, match.index + match[0].length).length > 1)
-          split.push(`"${run}" in "${node.data}"`);
+        if (tops(node, match.index, match.index + match[0].length).length <= 1) continue;
+        // A name's box in the headline breaks only when it is wider than the whole line: that
+        // is the one split allowed, and it is counted. Anywhere else, a split is a fault.
+        const box = parent.closest('.nm');
+        const line = box?.parentElement?.getBoundingClientRect().width ?? Infinity;
+        if (box !== null && box.getBoundingClientRect().width >= line - 1) wider += 1;
+        else split.push(`"${run}" in "${node.data}"`);
       }
     }
     // A word as the reader counts it: "60 days." on a line is two words, held together.
@@ -230,7 +238,7 @@ function looked({ whole, big }) {
     if (counts.length > 1 && counts[counts.length - 1] === 1)
       lone.push(`"${node.data}" (${parent.className || parent.tagName.toLowerCase()})`);
   }
-  return { split, lone, tied, texts };
+  return { split, lone, tied, texts, wider };
 }
 
 /**
@@ -388,6 +396,75 @@ async function comingBack(browser) {
   );
 }
 
+/** The text sizes the hierarchy is checked at: the usual size, and larger text a reader sets. */
+const SIZES = [100, 150, 200];
+
+/**
+ * In a state, at each width and text size: the banner's headline is the largest text of the
+ * page's answer. It is never smaller than the body text, always larger than the line under it,
+ * and never smaller than it is at the usual size: larger text only ever makes it larger.
+ */
+async function hierarchy(browser, state) {
+  const found = [];
+  let looks = 0;
+  const usual = new Map();
+  for (const size of SIZES) {
+    for (const width of WIDTHS) {
+      const context = await browser.newContext({
+        viewport: { width, height: 900 },
+        bypassCSP: true,
+      });
+      const page = await context.newPage();
+      await (await context.request.get(`${ORIGIN}/__set?state=${state}`)).text();
+      await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
+      await page.addStyleTag({ content: `html { font-size: ${size}%; }` });
+      await page.waitForFunction(
+        () => !document.querySelector('.lead')?.textContent?.includes('Checking'),
+      );
+      const seen = await page.evaluate(() => {
+        const px = (box) => (box === null ? null : parseFloat(getComputedStyle(box).fontSize));
+        const leads = [...document.querySelectorAll('.lead')].filter(
+          (box) => box.getClientRects().length > 0,
+        );
+        const others = [...document.querySelectorAll('.name, .state, h2')].map(px);
+        return {
+          body: px(document.body),
+          leads: leads.map(px),
+          more: px(document.querySelector('.more')),
+          others,
+          scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+      await context.close();
+      looks += 1;
+      const at = `${width} px at ${size}%`;
+      if (seen.leads.length === 0) {
+        found.push(`${at}: no headline`);
+        continue;
+      }
+      const lead = Math.min(...seen.leads);
+      if (size === 100) usual.set(width, lead);
+      if (lead < seen.body) found.push(`${at}: headline ${lead} px under the body's ${seen.body}`);
+      if (seen.more !== null && lead <= seen.more)
+        found.push(`${at}: headline ${lead} px not over the line under it (${seen.more})`);
+      const bigger = seen.others.filter((other) => other > lead);
+      if (bigger.length > 0) found.push(`${at}: headline ${lead} px under ${bigger.join(', ')}`);
+      if (lead < (usual.get(width) ?? 0))
+        found.push(`${at}: headline ${lead} px under its usual ${usual.get(width)}`);
+      if (seen.scroll > 0) found.push(`${at}: scrolls sideways ${seen.scroll} px`);
+    }
+  }
+  return said(
+    found.length === 0,
+    `text sizes ${state}`,
+    found.length === 0
+      ? `${looks} looks at ${SIZES.join('%, ')}%: the headline is never under the body, the ` +
+          'names, the states or the headings, always over the line under it, never under its ' +
+          'usual size, and nothing scrolls sideways'
+      : found.join('; '),
+  );
+}
+
 /** Text at 150% on a 320 px screen: every box wraps, nothing scrolls sideways, no line splits. */
 async function bigText(browser, state) {
   // The larger text is set by a style of the test's own, which the page's policy would refuse.
@@ -441,6 +518,8 @@ async function bigText(browser, state) {
   good = (await comingBack(browser)) && good;
   for (const state of ['history', 'worst', 'stale', 'first', 'unreachable'])
     good = (await bigText(browser, state)) && good;
+  for (const state of ['history', 'worst', 'launch', 'ok', 'stale', 'first', 'unreachable'])
+    good = (await hierarchy(browser, state)) && good;
   await browser.close();
   process.exit(good ? 0 : 1);
 })().catch((error) => {

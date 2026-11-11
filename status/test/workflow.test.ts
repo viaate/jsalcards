@@ -123,7 +123,22 @@ test('the deploy goes in order: the store notice comes before the Pages check', 
   assert.equal(steps.length, 13);
   assert.match(steps[0]!, /^id: secrets\n/);
   for (const step of steps.slice(1))
-    assert.match(step, /^if: steps\.secrets\.outputs\.enabled == 'true'\n/);
+    assert.match(
+      step,
+      /^(id: db\n {8})?if: (always\(\) && )?steps\.secrets\.outputs\.enabled == 'true'\n/,
+    );
+  // Only the store notice runs after a failed step, so every run says what is kept; without
+  // the database's id it says it could not read the store.
+  const always = steps.filter((step) => step.includes('always()'));
+  assert.equal(always.length, 1);
+  assert.match(always[0]!, /name: Say what the checker has kept\n/);
+  assert.match(always[0]!, /DB_ID: \$\{\{ steps\.db\.outputs\.id \}\}/);
+  assert.match(
+    always[0]!,
+    /if \[ -z "\$\{DB_ID\}" \]; then\n\s+echo "::warning::The status checker store could not be read/,
+  );
+  assert.match(deploy, /id: db\n\s+if: [^\n]+\n\s+name: Find or make the database\n/);
+  assert.match(deploy, /echo "id=\$\{id\}" >> "\$GITHUB_OUTPUT"/);
   assert.match(
     deploy,
     /--commit-hash "\$GITHUB_SHA" --commit-message "status \$\{GITHUB_SHA::7\}" --commit-dirty=true/,
@@ -158,6 +173,11 @@ test('the messages, word for word', () => {
     assert.equal(status.includes(message), true, message);
   }
   assert.match(deploy, /401 \| 403\)\n\s+echo "::error::The Cloudflare token cannot manage Pages/);
+  // A 404 for a token without Pages: making the project fails, and the run names the permission.
+  assert.match(
+    deploy,
+    /if ! npx wrangler pages project create snowlight-status --production-branch main; then\n\s+echo "::error::The Cloudflare token cannot manage Pages \(HTTP \$\{code\}\)\. Add the permission Account \/ Cloudflare Pages \/ Edit to it, then run this workflow again \(docs\/status\.md, step 1\)\. The checker is deployed and is already keeping history\."\n\s+exit 1\n/,
+  );
   assert.match(deploy, /for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do\n[^]*?sleep 15\n/);
   // The store notice counts 3 hours and 24 hours, and reads the newest sample and the largest file.
   assert.match(deploy, /WHERE t > unixepoch\(\) - 10800\) AS n3/);

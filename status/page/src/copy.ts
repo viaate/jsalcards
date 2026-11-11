@@ -60,6 +60,7 @@ export const copy = {
   },
   updated: 'Updated {ago}.',
   share: {
+    // {days} is the days the bars count, or under a day after checks began, how long they ran.
     line: 'Working in {pct} of our checks over {days}.',
     none: 'No checks yet.',
     // The checks have begun, and none of this part's has given an answer.

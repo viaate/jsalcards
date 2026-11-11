@@ -255,6 +255,25 @@ test('a file part says when it was updated, counted from its own stamp', () => {
   );
 });
 
+test('an open problem whose part could not be checked just now counts only to its last reading', () => {
+  const open: SummaryIncident = {
+    p: 'chances',
+    k: 'late',
+    s: NOW - 3600,
+    e: null,
+    g: 0,
+    l: NOW - 900,
+  };
+  const unknown = data(summaryWith({ chances: 'unknown' }, [open]), { clock: NOW + 600 });
+  assert.deepEqual(unknown.problems.slots[0], {
+    what: 'Snow-day chances: slow or late since Nov 10, 9:00 AM EST.',
+    when: '50 minutes so far.',
+  });
+  // Seen late just now: the length runs to the page's clock.
+  const late = data(summaryWith({ chances: 'late' }, [{ ...open, l: NOW }]), { clock: NOW + 600 });
+  assert.equal(late.problems.slots[0]!.when, '1 hour 10 minutes so far.');
+});
+
 test('stale: after 900 s with no newer summary nothing is said to work', () => {
   const open: SummaryIncident = { p: 'chances', k: 'late', s: NOW - 3600, e: null, g: 0, l: NOW };
   const summary = summaryWith({ chances: 'late' }, [open]);
@@ -641,10 +660,10 @@ test('a part no check could reach says so, and an old summary says nothing of th
   assert.deepEqual(
     first.history.map((block) => block.share),
     [
-      'Working in 100% of our checks over 1 day.',
-      'Working in 100% of our checks over 1 day.',
+      'Working in 100% of our checks over 2 hours.',
+      'Working in 100% of our checks over 2 hours.',
       'Could not check so far.',
-      'Working in 100% of our checks over 1 day.',
+      'Working in 100% of our checks over 2 hours.',
     ],
   );
   assert.equal(first.problems.empty, 'No problems since checks began on Nov 10.');

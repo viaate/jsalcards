@@ -24,6 +24,10 @@ those days read "not checked" and no old day is called today. In the first minut
 of a new day on the world clock, before its first check is due, today has no bar
 yet and reads "not checked yet".
 
+Under a day after the checks began, a part's share says how long they have run
+("Working in 100% of our checks over 2 hours."), not "over 1 day". While a part's
+newest check could not tell, an open problem's length stops at its last reading.
+
 A part the checker has not once been able to read says "Could not check so far."
 That is what **Snow-day chances** says on the first day, until the chance job has
 put its stamp on the host (its next run after this lands); the top of the page
@@ -96,7 +100,8 @@ stop and send us what the screen says.
 
 ### How to tell it worked
 Wait 15 minutes (it can take an hour), then open <https://status.snowlightmap.com>: you see the status page, with a
-padlock. Or run **Status** again, as in step 1.5: under **Annotations**, a notice says
+padlock. Or run **Status** again (the **Actions** tab > **Status** > **Run workflow** > the green **Run workflow**,
+as in step 1, point 5); on that run's page, under **Annotations**, a notice says
 "https://status.snowlightmap.com is live." Still not
 there after an hour: run **Status** once more (every run asks Cloudflare to look at the record again)
 and send us its notice. An error page with the number 522 means step 3 is still to do. Until then the same page is
@@ -105,7 +110,9 @@ at the `.pages.dev` address.
 ## What a Status run tells you
 
 Every run of **Status** (the repository's **Actions** tab, **Status** in the list on the left) prints one notice about the checker (on the
-run's page, under **Annotations**), whether the rest of the run is green or red:
+run's page, under **Annotations**), whether the rest of the run is green or red, even when the
+checker's own deploy failed. If the run could not find the database, the notice says the store
+could not be read:
 
 `status checker: 36 of the last 36 checks kept (3 hours), 288 of the last 288 (24 hours); last at 2026-11-11 14:05 UTC: website ok 200, closings ok 200, chances ok 200, accounts ok 200; largest closings file 318 bytes.`
 
@@ -234,8 +241,12 @@ state and checks that nothing moves when the page fills in, that at nine widths
 from 320 to 1280 px no line breaks inside a name, a date, a time or a count and
 the headline does not end in a line of one word, that scripts off shows no
 "Checking" box, that a page whose script never loads says so after 10 seconds,
-that coming back to the tab says an old answer's age at once, and that text at
-150% on a 320 px screen does not scroll sideways. At 150% on 320 px the boxes do
+that coming back to the tab says an old answer's age at once, that text at
+150% on a 320 px screen does not scroll sideways, and that at nine widths and at
+text of 100%, 150% and 200% the headline is never smaller than the body text or
+its usual size and always larger than the line under it. The headline never
+shrinks to fit: a part's name that does not fit at the end of a line moves to the
+next whole, and breaks between its words only when it is wider than a whole line. At 150% on 320 px the boxes do
 grow when the page fills in: the room kept for them holds the longest words at
 the usual text size only.
 
