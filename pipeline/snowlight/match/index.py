@@ -1254,6 +1254,13 @@ class NameIndex:
         of it alone goes to the queue. A district's campuses are read as its
         schools are (a charter network's ``"QUILLON ACADEMY - HARBOR CAMPUS"``,
         see :meth:`campuses`).
+
+        A school's or district's name that says ``dba``, ``aka`` or ``formerly``
+        outside a bracket gives two names
+        (:func:`~snowlight.match.normalize.also_known_as`): ``"Kenmore Preparatory
+        Academy dba Toledo Preparatory Academy"`` is matched by ``"Toledo
+        Preparatory Academy"``, with ``"Kenmore Preparatory Academy"`` its second
+        name. NCES's name itself is shown as it is.
         """
         self.names: list[str] = []
         self._optional: dict[int, frozenset[str]] = {}
