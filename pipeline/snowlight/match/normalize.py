@@ -2125,6 +2125,80 @@ def directory_name(name: str, *, district: bool, county: str | None = None) -> D
     )
 
 
+_ALSO_KNOWN: Final = re.compile(
+    r"(?<![\w./])(?:(?P<also>dba|d/b/a|d\.b\.a|doing\s+business\s+as|aka|a/k/a"
+    r"|also\s+known\s+as)|(?P<former>formerly|fka|f/k/a))(?![\w/])\.?",
+    re.IGNORECASE,
+)
+"""A word in a directory name that says the rest of it is another name the record
+is known by: ``dba`` (the name the record goes by follows) or ``formerly`` (the
+name it went by follows)."""
+_ALSO_KNOWN_EDGES: Final = " \t,;:-"
+_WHOLE_ENDINGS: Final = (
+    lexicon.LEVELS
+    | lexicon.SCHOOL_NOUNS
+    | lexicon.TYPE_NOUNS
+    | lexicon.STRONG_DESIGNATORS
+    | lexicon.GENERIC_WORDS
+)
+"""Words a name of a school or district ends with: a name NCES cut off that ends with
+one (``"... dba Northside Preparatory Academy"``) still says its last word whole."""
+
+
+def also_known_as(name: str, *, district: bool, cut: bool = False) -> tuple[str, str | None] | None:
+    """The name a list uses for a directory name that gives two, and the other.
+
+    NCES gives some schools and districts, many of them charter schools under a
+    legal operator, both names with a word between them, outside any bracket
+    (:func:`directory_name` reads brackets):
+
+    * ``"Kenmore Preparatory Academy dba Toledo Preparatory Academy"`` (or
+      ``d/b/a``, ``d.b.a.``, ``doing business as``, ``aka``, ``a/k/a``, ``also
+      known as``) goes by ``"Toledo Preparatory Academy"``, and its legal name
+      ``"Kenmore Preparatory Academy"`` is a second name; ``"DBA ELIZABETH SETON
+      CHILDRENS SCHOOL"`` goes by the rest and has no second name;
+    * ``"Maya Angelou Academy at New Beginnings formerly Oak Hill"`` (or ``fka``,
+      ``f/k/a``) keeps its name, and ``"Oak Hill"`` is a second name.
+
+    ``cut`` says NCES may have cut the name off at its length limit: then the name
+    after the word must end with a word a school's or district's name ends with
+    (:data:`_WHOLE_ENDINGS`), or it may be only the start of the name
+    (``"American Charter Schools Foundation d.b.a. Peoria"``).
+
+    Returns ``(name, second)``; ``None`` when the name says no such word outside a
+    bracket, a side names nothing that identifies or only a church, a faith or a
+    child care chain (``"MITTAS DAY CARE LLC DBA THE LEARNING EXPERIENCE"``), or a
+    cut name may end in the middle of one.
+    """
+    for found in _ALSO_KNOWN.finditer(name):
+        before = name[: found.start()]
+        if before.count("(") > before.count(")"):
+            continue
+        first = before.strip(_ALSO_KNOWN_EDGES)
+        other = name[found.end() :].strip(_ALSO_KNOWN_EDGES)
+        if not _names_something(other, district) or (
+            cut and _folded_words(other)[-1] not in _WHOLE_ENDINGS
+        ):
+            return None
+        also = found.group("also") is not None
+        if not first:
+            return (other, None) if also else None
+        if not _names_something(first, district):
+            return None
+        return (other, first) if also else (first, other)
+    return None
+
+
+def _names_something(name: str, district: bool) -> bool:
+    """True when ``name`` holds a word that identifies, besides a church's, a faith's or
+    a child care chain's (:data:`~snowlight.match.lexicon.CHAINS`)."""
+    if not name:
+        return False
+    form = record_form(name, district=district)
+    brands = {word for brand in form.affiliations for word in brand.split()}
+    return _has_name([token for token in form.tokens if token not in brands])
+
+
 _ENTITY_DIGITS: Final = 4
 """The fewest digits of an entity number (Arizona's run from four to seven)."""
 

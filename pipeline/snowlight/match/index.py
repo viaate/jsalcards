@@ -151,6 +151,7 @@ from snowlight.match.normalize import (
     Level,
     ListingForms,
     NameForm,
+    also_known_as,
     county_words,
     directory_name,
     fold,
@@ -835,6 +836,19 @@ def _is_weak(token: str) -> bool:
     return len(token) == 1 or token in _WEAK_TOKENS
 
 
+_CUT_LENGTHS: Final = frozenset({48, 49, 50, 58, 59, 60})
+"""The lengths of a name NCES may have cut off: it cuts names at 50 characters
+(private schools, Arizona's districts before the entity number) or 60 (the rest),
+and a space or two of the cut name may since have gone."""
+
+
+def _cut_off(name: str) -> bool:
+    """True when NCES may have cut ``name`` off: it, or its words before a bracket
+    NCES added, are about as long as NCES lets a name be (:data:`_CUT_LENGTHS`)."""
+    head = name.split("(", 1)[0]
+    return len(name) in _CUT_LENGTHS or len(head.removesuffix(" ")) in _CUT_LENGTHS
+
+
 def _second_form(second: str, base: str) -> NameForm:
     """A district's second name read as a district's name, with its own name's kind.
 
@@ -1276,6 +1290,17 @@ class NameIndex:
                     self._seconds[i] = (
                         *self._seconds.get(i, ()),
                         *(_second_form(second, name) for second in read.second),
+                    )
+            known = also_known_as(name, district=district, cut=_cut_off(record.name))
+            if known is not None:
+                # "Kenmore Preparatory Academy dba Toledo Preparatory Academy" is
+                # "Toledo Preparatory Academy", and "Kenmore Preparatory Academy" too.
+                name, second = known
+                if second is not None:
+                    self._second_names[i] = (*self._second_names.get(i, ()), second)
+                    self._seconds[i] = (
+                        *self._seconds.get(i, ()),
+                        record_form(second, district=district),
                     )
             self.names.append(name)
 
