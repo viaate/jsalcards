@@ -108,8 +108,8 @@ let tabBarY = 94
 /// The page color a picture's screen is in: the forced pictures are in the look opposite
 /// to the one their name begins with.
 func pageShade(for picture: String) -> (shade: Shade, name: String)? {
-    let light = (Wanted.pageLight, "page light " + Wanted.pageLight.hex)
-    let dark = (Wanted.pageDark, "page dark " + Wanted.pageDark.hex)
+    let light: (shade: Shade, name: String) = (Wanted.pageLight, "page light " + Wanted.pageLight.hex)
+    let dark: (shade: Shade, name: String) = (Wanted.pageDark, "page dark " + Wanted.pageDark.hex)
     if picture == "light-settings-forced-dark" {
         return dark
     }
