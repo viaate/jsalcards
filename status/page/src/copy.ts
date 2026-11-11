@@ -30,12 +30,13 @@ export const copy = {
     wait: 'Checking',
   },
   banner: {
+    // "right now" stays on one line.
     wait: 'Checking…',
     first: 'The first check is on its way.',
     firstMore: 'This page fills in within 5\u00a0minutes.',
     ok: 'Everything is working.',
-    down: 'Not working right now: {parts}.',
-    late: 'Slow or late right now: {parts}.',
+    down: 'Not working right\u00a0now: {parts}.',
+    late: 'Slow or late right\u00a0now: {parts}.',
     unknown: 'We could not check everything just now.',
     stale: 'We have no recent checks.',
     staleMore: 'The last check was {ago}. Everything below is from then.',

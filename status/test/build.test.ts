@@ -362,7 +362,7 @@ test('no line of the page can break inside a name, a date, a time or a count', (
       zone: 'America/New_York',
     }),
   );
-  assert.match(html, /<p class="lead">Slow or late right now: Snow-\u2060day chances\.<\/p>/);
+  assert.match(html, /<p class="lead">Slow or late right\u00a0now: Snow-\u2060day chances\.<\/p>/);
   assert.match(
     html,
     /Snow-\u2060day chances: slow or late since Nov\u00a010, 8:55\u00a0AM\u00a0EST\./,
