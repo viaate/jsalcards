@@ -268,7 +268,7 @@ test('stale: after 900 s with no newer summary nothing is said to work', () => {
     assert.deepEqual(stale.banner, {
       shape: 'unknown',
       lead: ['We have no recent checks.'],
-      more: 'The last check was 15 minutes ago. Everything below is from then.',
+      more: 'The last check was 15 minutes ago.',
       stuck: null,
     });
     assert.deepEqual(
@@ -348,7 +348,7 @@ test('"today" is the clock\'s day: an old summary never names its last day today
     view.history[0]!.bars.slice(-n).map((bar) => [bar.cls, bar.label]);
   // One day old: the checks stopped at 15:00 UTC on Nov 10, and nothing is known of Nov 11.
   const one = data(summary, { clock: NOW + DAY + 2 * 3600 });
-  assert.equal(one.banner.more, 'The last check was 26 hours ago. Everything below is from then.');
+  assert.equal(one.banner.more, 'The last check was 26 hours ago.');
   assert.deepEqual(tail(one, 3), [
     ['ok', 'Mon, Nov 9: working all day.'],
     ['ok', 'Tue, Nov 10: working when checked; not checked for 8 hours 55 minutes.'],
@@ -356,7 +356,7 @@ test('"today" is the clock\'s day: an old summary never names its last day today
   ]);
   // Three days old: the bars moved up three days, so the last one is the clock's day.
   const three = data(summary, { clock: NOW + 3 * DAY + 2 * 3600 });
-  assert.equal(three.banner.more, 'The last check was 3 days ago. Everything below is from then.');
+  assert.equal(three.banner.more, 'The last check was 3 days ago.');
   assert.deepEqual(tail(three, 5), [
     ['ok', 'Mon, Nov 9: working all day.'],
     ['ok', 'Tue, Nov 10: working when checked; not checked for 8 hours 55 minutes.'],

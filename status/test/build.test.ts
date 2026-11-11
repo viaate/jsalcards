@@ -19,12 +19,13 @@ const plain = (text: string): string => text.replace(/\u00a0/g, ' ').replace(/\u
 /**
  * The places a line must never break, in a text of the page: after a number and before its
  * word ("5 minutes", "7 PM"), inside a date ("Nov 10"), between a time and its zone
- * ("PM EST"), and after the hyphen of a name ("Snow-day").
+ * ("PM EST"), after the hyphen of a name ("Snow-day"), between a count and its "ago"
+ * ("2 minutes ago", "just now"), and inside a length of two parts ("1 hour 10 minutes").
  */
 function breaks(text: string): string[] {
   return [
     ...text.matchAll(
-      /\d [A-Za-z]+|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d+|[AP]M [A-Z]\w*|\w+-[A-Za-z]+/g,
+      /\d [A-Za-z]+|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d+|[AP]M [A-Z]\w*|\w+-[A-Za-z]+|\b(?:minutes?|hours?|days?) (?:ago|\d+)|just now/g,
     ),
   ].map((m) => m[0]);
 }
@@ -323,6 +324,11 @@ test('no line of the page can break inside a name, a date, a time or a count', (
     'PM EST',
     'Snow-day',
   ]);
+  assert.deepEqual(breaks('42\u00a0minutes ago, just now, 1\u00a0hour 10\u00a0minutes'), [
+    'minutes ago',
+    'just now',
+    'hour 10',
+  ]);
 
   // And every text the page draws, in every state, in zones whose times are written apart.
   const NOW = Date.UTC(2026, 10, 10, 15, 0, 0) / 1000;
@@ -436,6 +442,8 @@ test('the script is small, asks only its own origin, and keeps nothing', () => {
   assert.equal(Buffer.byteLength(script) <= 20000, true, String(Buffer.byteLength(script)));
   assert.deepEqual(script.match(/fetch\(("[^"]*")/g), ['fetch("/api/status"']);
   assert.match(script, /credentials:"omit"/);
+  // A reload is never answered from the browser's cache, which would set the clock back.
+  assert.match(script, /fetch\("\/api\/status",\{cache:"no-store",credentials:"omit"/);
   assert.equal(
     /localStorage|sessionStorage|document\.cookie|indexedDB|sendBeacon|XMLHttpRequest|WebSocket|eval\(|new Function/.test(
       script,

@@ -1,6 +1,8 @@
 /**
  * GET /api/status: the checker's summary as it is in the store, with this server's clock. It
- * reads nothing of the request, logs nothing and sets no cookie.
+ * reads nothing of the request, logs nothing and sets no cookie. It is never answered from a
+ * cache: an answer kept for a while would carry an old `served`, and the page, which counts
+ * from `served`, would read its clock as that much behind.
  */
 
 interface Env {
@@ -31,7 +33,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
     status: 200,
     headers: {
       'content-type': JSON_TYPE,
-      'cache-control': 'public, max-age=30',
+      'cache-control': 'no-store',
       'x-content-type-options': 'nosniff',
     },
   });

@@ -63,7 +63,9 @@ async function refresh(): Promise<void> {
   busy = true;
   let good: ReturnType<typeof readAnswer> = null;
   try {
+    // Never from the browser's cache: the page's clock counts from the answer's `served`.
     const response = await fetch('/api/status', {
+      cache: 'no-store',
       credentials: 'omit',
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });

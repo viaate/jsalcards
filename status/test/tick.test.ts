@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { CLOSED_READ, CLOSED_SQL, OPEN_SQL, tick } from '../prober/src/tick.ts';
+import { CLOSED_READ, CLOSED_SQL, MOVE_SQL, OPEN_SQL, tick } from '../prober/src/tick.ts';
+import type { Deps } from '../prober/src/probe.ts';
 import { INCIDENTS_MAX, dayOf, summarize, windowStart } from '../shared/history.ts';
 import { DAY, PARTS, TICK } from '../shared/types.ts';
 import type { Incident, Sample, Summary } from '../shared/types.ts';
@@ -325,6 +326,115 @@ test('a part that went wrong for weeks costs a tick a bounded read, and the summ
       assert.match(said, new RegExp(`USING INDEX ${index}`), said);
       assert.equal(/TEMP B-TREE/.test(said), false, said);
     }
+  } finally {
+    await fresh.close();
+  }
+});
+
+/** A network that holds every answer until `open()` is called: a tick that probes slowly. */
+function held(web: Net): { deps: Deps; open: () => void } {
+  let open = (): void => {};
+  const gate = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  const deps: Deps = {
+    fetch: async (url, init) => {
+      await gate;
+      return web.fetch(url, init);
+    },
+    now: () => web.now(),
+    wait: (ms) => web.wait(ms),
+  };
+  return { deps, open };
+}
+
+test('overlapping ticks: an older tick that ends last never overwrites a newer one', async () => {
+  const fresh = await startStore();
+  try {
+    const t0 = Math.floor(T / DAY) * DAY + 50 * DAY;
+    const [t1, t2] = [t0 + TICK, t0 + 2 * TICK];
+    const env = { ...WHERE, DB: fresh.db };
+    assert.equal(await tick(env, t0, net(t0)), 'taken');
+    // t1 reads the store and probes slowly; t2 starts, probes and commits while t1 waits.
+    const slow = held(healthy(new Net(t1 * 1000 + 2000)).on(WHERE.SITE_URL, { status: 500 }));
+    const first = tick(env, t1, slow.deps);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.equal(await tick(env, t2, net(t2)), 'taken');
+    slow.open();
+    // t1 loses the compare-and-set, reads the store again, finds t2 and writes nothing.
+    assert.equal(await first, 'skipped');
+    const meta = await fresh.sql<{ k: string; v: string }>('SELECT k, v FROM meta ORDER BY k');
+    const values = new Map(meta.map((row) => [row.k, row.v]));
+    assert.equal(values.get('processed'), String(t2));
+    const summary = JSON.parse(values.get('summary')!) as Summary;
+    assert.equal(summary.now, t2);
+    assert.equal(summary.parts.site.s, 'ok');
+    assert.deepEqual(await fresh.sql('SELECT t FROM samples ORDER BY t'), [{ t: t0 }, { t: t2 }]);
+    assert.deepEqual(await fresh.sql('SELECT COUNT(*) AS n FROM incidents'), [{ n: 0 }]);
+    assert.deepEqual(
+      await fresh.sql('SELECT ok, down FROM days WHERE day = ? AND part = ?', dayOf(t2), 'site'),
+      [{ ok: 2, down: 0 }],
+    );
+  } finally {
+    await fresh.close();
+  }
+});
+
+test('overlapping ticks: a newer tick that ends last reads the store again and keeps both', async () => {
+  const fresh = await startStore();
+  try {
+    const t0 = Math.floor(T / DAY) * DAY + 60 * DAY;
+    const [t1, t2] = [t0 + TICK, t0 + 2 * TICK];
+    const env = { ...WHERE, DB: fresh.db };
+    assert.equal(await tick(env, t0, net(t0)), 'taken');
+    // t2 reads the store before t1 commits, so the summary it would write lacks t1's sample.
+    const slow = held(healthy(new Net(t2 * 1000 + 2000)));
+    const second = tick(env, t2, slow.deps);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const bad = healthy(new Net(t1 * 1000 + 2000)).on(WHERE.SITE_URL, { status: 500 });
+    assert.equal(await tick(env, t1, bad), 'taken');
+    slow.open();
+    assert.equal(await second, 'taken');
+    const summary = await fresh.sql<{ v: string }>("SELECT v FROM meta WHERE k = 'summary'");
+    const parsed = JSON.parse(summary[0]!.v) as Summary;
+    assert.equal(parsed.now, t2);
+    // t1's problem is in the summary t2 wrote, closed at t2: t2 was made from t1's store.
+    assert.deepEqual(
+      parsed.incidents.map((i) => [i.p, i.s, i.e]),
+      [['site', t1, t2]],
+    );
+    assert.deepEqual(
+      await fresh.sql('SELECT ok, down FROM days WHERE day = ? AND part = ?', dayOf(t2), 'site'),
+      [{ ok: 2, down: 1 }],
+    );
+    assert.deepEqual(await fresh.sql("SELECT v FROM meta WHERE k = 'processed'"), [
+      { v: String(t2) },
+    ]);
+  } finally {
+    await fresh.close();
+  }
+});
+
+test('the compare-and-set refuses a tick whose store moved, and the batch is undone whole', async () => {
+  const fresh = await startStore();
+  try {
+    const t0 = Math.floor(T / DAY) * DAY + 70 * DAY;
+    await tick({ ...WHERE, DB: fresh.db }, t0, net(t0));
+    const db = fresh.db;
+    await assert.rejects(
+      db.batch([
+        db.prepare("INSERT INTO meta (k, v) VALUES ('probe', '1')"),
+        db.prepare(MOVE_SQL).bind(String(t0 - TICK), String(t0 + TICK)),
+      ]),
+      /NOT NULL/,
+    );
+    assert.deepEqual(await fresh.sql("SELECT v FROM meta WHERE k IN ('probe', 'processed')"), [
+      { v: String(t0) },
+    ]);
+    await db.batch([db.prepare(MOVE_SQL).bind(String(t0), String(t0 + TICK))]);
+    assert.deepEqual(await fresh.sql("SELECT v FROM meta WHERE k = 'processed'"), [
+      { v: String(t0 + TICK) },
+    ]);
   } finally {
     await fresh.close();
   }

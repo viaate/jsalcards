@@ -33,7 +33,8 @@ test('the summary as the checker wrote it, with the headers and no cookie', asyn
   const response = await call(onRequestGet, store.db);
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('content-type'), 'application/json; charset=utf-8');
-  assert.equal(response.headers.get('cache-control'), 'public, max-age=30');
+  // Never kept: a reload answered from the browser's cache would set the page's clock back.
+  assert.equal(response.headers.get('cache-control'), 'no-store');
   assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
   assert.equal(response.headers.get('set-cookie'), null);
   assert.deepEqual([...response.headers.keys()].sort(), [

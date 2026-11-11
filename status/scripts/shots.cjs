@@ -2,10 +2,9 @@
  * Takes the status page's proof pictures from the preview server (`node scripts/preview.mjs`)
  * and checks each state: no layout shift and no box that moved or grew from load to data, no
  * horizontal scroll (at 320 px too), no console error, no request leaving the origin. Then
- * checks of their own: at nine widths from 320 to 1280 px no line breaks inside a name, a date,
- * a time or a count, and neither the headline nor the line in an empty problems box ends in a
- * line of one word; with scripts off only the line that says so is shown; a page whose script
- * never loads stops saying "Checking" after 10 s and moves nothing; coming back to the tab with
+ * checks of their own: at nine widths from 320 to 1280 px, in every state, no line breaks
+ * inside a name, a date, a time or a count, and no visible text ends in a line of one word;
+ * with scripts off only the line that says so is shown; a page whose script never loads stops saying "Checking" after 10 s and moves nothing; coming back to the tab with
  * an old answer says its age at once, before any fetch settles; and with text at 150% on a
  * 320 px screen nothing scrolls sideways. Fails if any check does.
  *
@@ -164,12 +163,57 @@ function said(good, name, detail) {
 }
 
 /**
- * At each width: a name, a date, a time or a count is drawn on one line (each is tied in the
- * words themselves, with a word joiner or a no-break space), and the lines read first do not
- * end in a line of one word.
+ * What one look at the page finds: each tied run (a joiner or a no-break space and no breaking
+ * space) drawn on more than one line, and each text of more than one line whose last line is a
+ * word alone. Every visible text is looked at: the banner, the rows, the shares, the notes, the
+ * problems, the key and the footer.
+ */
+function looked() {
+  const split = [];
+  const lone = [];
+  let tied = 0;
+  let texts = 0;
+  /** The tops of the lines a stretch of a text node is drawn on. */
+  const tops = (node, from, to) => {
+    const range = document.createRange();
+    range.setStart(node, from);
+    range.setEnd(node, to);
+    return [...new Set([...range.getClientRects()].map((rect) => Math.round(rect.top)))];
+  };
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    const parent = node.parentElement;
+    if (parent === null || parent.closest('.sr, script, style, noscript') !== null) continue;
+    if (parent.getClientRects().length === 0 || node.data.trim() === '') continue;
+    texts += 1;
+    for (const match of node.data.matchAll(/[^ \n]*[\u2060\u00a0][^ \n]*/g)) {
+      tied += 1;
+      if (tops(node, match.index, match.index + match[0].length).length > 1)
+        split.push(`"${match[0]}" in "${node.data}"`);
+    }
+    // A word as the browser breaks it: no-break spaces and joiners keep a run whole.
+    const words = [...node.data.matchAll(/[^ \n]+/g)];
+    const lines = new Map();
+    for (const word of words) {
+      const top = tops(node, word.index, word.index + word[0].length)[0];
+      lines.set(top, (lines.get(top) ?? 0) + 1);
+    }
+    const counts = [...lines.values()];
+    if (counts.length > 1 && counts[counts.length - 1] === 1)
+      lone.push(`"${node.data}" (${parent.className || parent.tagName.toLowerCase()})`);
+  }
+  return { split, lone, tied, texts };
+}
+
+/**
+ * At each width, in a state: a name, a date, a time or a count is drawn on one line (each is
+ * tied in the words themselves, with a word joiner or a no-break space), and no visible text
+ * ends in a line of one word. Looked at as it opens, with every problem shown, and again with a
+ * bar picked where there are bars to pick.
  */
 async function lineBreaks(browser, state) {
   const found = [];
+  let texts = 0;
   for (const width of WIDTHS) {
     const context = await browser.newContext({
       viewport: { width, height: 900 },
@@ -183,56 +227,29 @@ async function lineBreaks(browser, state) {
       () => !document.querySelector('.lead')?.textContent?.includes('Checking'),
     );
     if ((await page.locator('#more').count()) > 0) await page.locator('#more').click();
-    const bars = page.locator('.bars[data-part="closings"]');
-    await bars.scrollIntoViewIfNeeded();
-    const box = await bars.boundingBox();
-    await page.mouse.move(box.x + (box.width * 79.5) / 90, box.y + box.height / 2);
-    await page.waitForFunction(() => document.querySelector('.note:not(.hint)') !== null);
-    const seen = await page.evaluate(() => {
-      const split = [];
-      const lone = [];
-      let tied = 0;
-      /** The tops of the lines a stretch of a text node is drawn on. */
-      const tops = (node, from, to) => {
-        const range = document.createRange();
-        range.setStart(node, from);
-        range.setEnd(node, to);
-        return [...new Set([...range.getClientRects()].map((rect) => Math.round(rect.top)))];
-      };
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
-        const parent = node.parentElement;
-        if (parent === null || parent.closest('.sr, script, style, noscript') !== null) continue;
-        if (parent.getClientRects().length === 0) continue;
-        // A run with no breaking space that holds a joiner or a no-break space is tied.
-        for (const match of node.data.matchAll(/[^ \n]*[\u2060\u00a0][^ \n]*/g)) {
-          tied += 1;
-          if (tops(node, match.index, match.index + match[0].length).length > 1)
-            split.push(`"${match[0]}" in "${node.data}"`);
-        }
-        if (parent.matches('.lead, .probs.none p')) {
-          const words = [...node.data.matchAll(/[^ ]+/g)];
-          const lines = new Map();
-          for (const word of words) {
-            const top = tops(node, word.index, word.index + word[0].length)[0];
-            lines.set(top, (lines.get(top) ?? 0) + 1);
-          }
-          const counts = [...lines.values()];
-          if (counts.length > 1 && counts[counts.length - 1] === 1) lone.push(`"${node.data}"`);
-        }
-      }
-      return { split, lone, tied };
-    });
+    const seen = [await page.evaluate(looked)];
+    const bars = page.locator('.bars[data-part="closings"]:not([aria-hidden="true"])');
+    if ((await bars.count()) > 0) {
+      await bars.scrollIntoViewIfNeeded();
+      const box = await bars.boundingBox();
+      await page.mouse.move(box.x + (box.width * 79.5) / 90, box.y + box.height / 2);
+      await page.waitForFunction(() => document.querySelector('.note:not(.hint)') !== null);
+      seen.push(await page.evaluate(looked));
+    }
     await context.close();
-    if (seen.tied === 0) found.push(`${width} px: nothing tied was found to check`);
-    for (const text of seen.split) found.push(`${width} px: split ${text}`);
-    for (const text of seen.lone) found.push(`${width} px: a last line of one word in ${text}`);
+    if (seen.every((one) => one.tied === 0)) found.push(`${width} px: nothing tied was found`);
+    for (const one of seen) {
+      texts += one.texts;
+      for (const text of one.split) found.push(`${width} px: split ${text}`);
+      for (const text of one.lone) found.push(`${width} px: a last line of one word in ${text}`);
+    }
   }
   return said(
     found.length === 0,
     `line breaks ${state}`,
     found.length === 0
-      ? `no name, date, time or count split and no one-word last line at ${WIDTHS.join(', ')} px`
+      ? `${texts} texts: no name, date, time or count split and no one-word last line at ` +
+          `${WIDTHS.join(', ')} px`
       : found.join('; '),
   );
 }
@@ -379,7 +396,7 @@ async function bigText(browser, state) {
   const browser = await chromium.launch();
   let good = true;
   for (const shot of SHOTS) good = (await one(browser, shot)) && good;
-  for (const state of ['history', 'worst', 'launch', 'ok', 'stale'])
+  for (const state of ['history', 'worst', 'launch', 'ok', 'stale', 'first', 'unreachable'])
     good = (await lineBreaks(browser, state)) && good;
   good = (await scriptsOff(browser)) && good;
   good = (await scriptMissing(browser)) && good;

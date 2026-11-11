@@ -166,6 +166,8 @@ ol {
   color: var(--quiet);
   font-size: 0.875rem;
   line-height: 1.25rem;
+  /* Two short lines of near one length, never a word alone. */
+  text-wrap: balance;
 }
 
 /* The script marks <main> "on" when it starts. If it has not 10 seconds after the page opened
@@ -332,6 +334,8 @@ main:not(.on) .state {
   margin-block-start: 0.25rem;
   font-size: 0.8125rem;
   line-height: 1.125rem;
+  /* No last line of one word. */
+  text-wrap: pretty;
 }
 .note.hint {
   color: var(--quiet);
@@ -353,11 +357,13 @@ main:not(.on) .state {
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.375rem;
+  text-wrap: pretty;
 }
 .when {
   color: var(--quiet);
   font-size: 0.875rem;
   line-height: 1.25rem;
+  text-wrap: pretty;
 }
 .probs.none {
   display: grid;
@@ -403,6 +409,10 @@ footer {
   padding-block: 0 2.5rem;
   color: var(--quiet);
   font-size: 0.875rem;
+}
+footer p {
+  /* No last line of one word. */
+  text-wrap: pretty;
 }
 footer p + p {
   margin-block-start: 0.75rem;

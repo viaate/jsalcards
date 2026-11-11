@@ -37,9 +37,10 @@ export const copy = {
     ok: 'Everything is working.',
     down: 'Not working right\u00a0now: {parts}.',
     late: 'Slow or late right\u00a0now: {parts}.',
-    unknown: 'We could not check everything just now.',
+    unknown: 'We could not check everything just\u00a0now.',
     stale: 'We have no recent checks.',
-    staleMore: 'The last check was {ago}. Everything below is from then.',
+    // Said with the rows' "Could not check": nothing old is shown as what is true now.
+    staleMore: 'The last check was {ago}.',
     unreachable: 'We cannot load the status right now.',
     unreachableMore: 'This page tries again every minute.',
     checked: 'Last checked {ago}.',
@@ -60,7 +61,7 @@ export const copy = {
     // The last check is older than every day shown.
     old: 'Not checked in the last 90\u00a0days.',
     unloaded: 'The history could not be loaded.',
-    axisStart: '90\u00a0days ago',
+    axisStart: '90\u00a0days\u00a0ago',
     axisEnd: 'Today',
     keyNone: 'Not checked',
     keyBefore: 'Before checks began',
@@ -105,12 +106,13 @@ export const copy = {
     home: 'Go to Snowlight',
   },
   ago: {
-    now: 'just now',
-    minute: '1\u00a0minute ago',
-    minutes: '{n}\u00a0minutes ago',
-    hour: '1\u00a0hour ago',
-    hours: '{n}\u00a0hours ago',
-    days: '{n}\u00a0days ago',
+    now: 'just\u00a0now',
+    // "ago" stays on the line of its count.
+    minute: '1\u00a0minute\u00a0ago',
+    minutes: '{n}\u00a0minutes\u00a0ago',
+    hour: '1\u00a0hour\u00a0ago',
+    hours: '{n}\u00a0hours\u00a0ago',
+    days: '{n}\u00a0days\u00a0ago',
   },
   dur: {
     minute: '1\u00a0minute',
@@ -119,7 +121,8 @@ export const copy = {
     hours: '{n}\u00a0hours',
     day: '1\u00a0day',
     days: '{n}\u00a0days',
-    two: '{a} {b}',
+    // "1 hour 10 minutes" is one length and never splits.
+    two: '{a}\u00a0{b}',
   },
 } as const;
 

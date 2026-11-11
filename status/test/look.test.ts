@@ -119,10 +119,14 @@ test('with scripts off only the line that says so is shown', () => {
   );
 });
 
-test('the lines read first are balanced, so none ends in a line of one word', () => {
-  // The headline and the one line of an empty problems box. A problem's heading is not: it
-  // reads better broken late ("… not working for" / "25 minutes.") than in the middle.
-  assert.deepEqual(rulesWith('text-wrap: balance'), ['.lead', '.probs.none']);
+test('no text of the page ends in a line of one word', () => {
+  // The headline, the banner's second line and the one line of an empty problems box are
+  // balanced: short lines of near one length.
+  assert.deepEqual(rulesWith('text-wrap: balance'), ['.lead', '.more', '.probs.none']);
+  // The longer texts keep their own breaks and only pull a word down to the last line: a
+  // problem's heading reads better broken late ("… not working for" / "25 minutes.") than in
+  // the middle. The pictures script checks every visible text at nine widths.
+  assert.deepEqual(rulesWith('text-wrap: pretty'), ['.note', '.what', '.when', 'footer p']);
 });
 
 test('a page whose script never starts stops saying Checking, by the stylesheet alone', () => {
