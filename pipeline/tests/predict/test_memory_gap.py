@@ -44,7 +44,8 @@ check's read is 0, the extra pass it starts reads 1)."""
 
 
 @pytest.fixture(autouse=True)
-def _forgotten() -> Iterator[None]:
+def _forgotten(monkeypatch: Any) -> Iterator[None]:
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)  # the warnings as a run off CI says them
     host_files.forget()
     yield
     host_files.forget()
