@@ -38,11 +38,11 @@ const NAMES = Object.values(copy.parts)
   .sort((a, b) => b.length - a.length)
   .map((name) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   .join('|');
-/** A name, with the "and" before it and the comma or full stop after it. */
-const NAMED = new RegExp(`(\u00a0and )?((?:${NAMES})[,.]?)`, 'g');
+/** A name, with the "and" before it and the comma, colon or full stop after it. */
+const NAMED = new RegExp(`(\u00a0and )?((?:${NAMES})[,.:]?)`, 'g');
 
 /**
- * A headline with each part's name in a box of its own. A box moves to the next line whole
+ * A text with each part's name in a box of its own, wherever a name is drawn. A box moves to the next line whole
  * when it does not fit at the end of one, and breaks between its words only when it is wider
  * than the whole line (very large text on a narrow phone), so the text never has to shrink
  * and never runs off the side. "and" goes in the box of the name after it, never alone.
@@ -53,6 +53,19 @@ export function named(line: string): string {
     (_, and: string | undefined, name: string) =>
       `${and === undefined ? '' : ' '}<span class="nm">${and === undefined ? '' : 'and '}` +
       `${name.replace(/\u00a0/g, ' ')}</span>`,
+  );
+}
+
+/**
+ * A text with each part's name in its box, and every other run the copy or the view ties with
+ * no-break spaces (a date, a time, a length: "1 hour 10 minutes.") in a box of its own, with
+ * the stop or comma after it. Like a name's, the box moves to the next line whole and breaks
+ * between its words only when it is wider than the whole line.
+ */
+export function boxed(line: string): string {
+  return named(line).replace(
+    /[^ \n<>\u00a0]*\u00a0[^ \n<>]*/g,
+    (run) => `<span class="nb">${run.replace(/\u00a0/g, ' ')}</span>`,
   );
 }
 
@@ -72,7 +85,7 @@ function now(view: View): string {
   const rows = view.parts
     .map(
       (row) =>
-        `<li class="row"><span class="name">${esc(row.name)}</span>` +
+        `<li class="row"><span class="name">${named(row.name)}</span>` +
         `<span class="state">${shape(row.shape)}${esc(row.word)}</span>` +
         `<span class="says">${esc(row.says)}</span>` +
         (row.file
@@ -96,7 +109,7 @@ function history(view: View): string {
     `<span>${shape('before')}${esc(copy.share.keyBefore)}</span>`;
   const blocks = view.history
     .map((block) => {
-      const named = block.bars.some((bar) => bar.label !== null);
+      const labelled = block.bars.some((bar) => bar.label !== null);
       const bars = block.bars
         .map((bar, i) => {
           const cls = `bar b-${bar.cls}${bar.picked ? ' on' : ''}`;
@@ -106,9 +119,9 @@ function history(view: View): string {
         })
         .join('');
       return (
-        `<li class="hist"><p class="hist-top"><span class="name">${esc(block.name)}</span>` +
+        `<li class="hist"><p class="hist-top"><span class="name">${named(block.name)}</span>` +
         `<span class="share">${esc(block.share)}</span></p>` +
-        `<div class="bars" data-part="${block.part}"${named ? '' : ' aria-hidden="true"'}>${bars}</div>` +
+        `<div class="bars" data-part="${block.part}"${labelled ? '' : ' aria-hidden="true"'}>${bars}</div>` +
         `<p class="axis" aria-hidden="true"><span>${esc(copy.share.axisStart)}</span><span>${esc(copy.share.axisEnd)}</span></p>` +
         `<p class="note${block.hint ? ' hint' : ''}">${esc(block.note)}</p></li>`
       );
@@ -130,7 +143,7 @@ function problems(view: View): string {
       .map((slot) =>
         slot === null
           ? '<li class="slot" aria-hidden="true"></li>'
-          : `<li class="slot"><span class="what">${esc(slot.what)}</span><span class="when">${esc(slot.when)}</span></li>`,
+          : `<li class="slot"><span class="what">${boxed(slot.what)}</span><span class="when">${boxed(slot.when)}</span></li>`,
       )
       .join('');
     list = `<ol class="probs">${items}</ol>`;

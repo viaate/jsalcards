@@ -141,7 +141,14 @@ test('large text on a narrow phone: the banner keeps its words whole and its key
   // The headline grows with the reader's text and is never held to its column's width: a name
   // that does not fit at the end of a line moves down whole in its own box.
   assert.match(flat, /\.lead \{ font-size: 1\.125rem; font-weight: 600; line-height: 1\.5rem;/);
-  assert.match(flat, /\.nm \{ display: inline-block; \}/);
+  assert.match(flat, /\.nm, \.nb \{ display: inline-block; \}/);
+  // The rows' words wrap where they do not fit, so nothing pushes the page wider than the screen.
+  assert.match(
+    flat,
+    /\.state \{ display: flex; align-items: center; gap: 0\.4rem; min-block-size: 1\.5rem; \}/,
+  );
+  assert.match(flat, /\.upd \{ min-block-size: 1\.25rem; \}/);
+  assert.match(flat, /\.says \{ text-wrap: balance; overflow-wrap: anywhere; \}/);
   assert.equal(
     /cq[iwhb]|vw|vmin|clamp\(|min\(\d/.test(flat.replace(/minmax\(min\(100%/g, '')),
     false,

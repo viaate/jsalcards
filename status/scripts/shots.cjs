@@ -191,12 +191,28 @@ function looked({ whole, big }) {
   let tied = 0;
   let texts = 0;
   let wider = 0;
+  /** Each element whose text is looked at as one, with the boxes in it. */
+  const owners = new Set();
   /** The tops of the lines a stretch of a text node is drawn on. */
   const tops = (node, from, to) => {
     const range = document.createRange();
     range.setStart(node, from);
     range.setEnd(node, to);
     return [...new Set([...range.getClientRects()].map((rect) => Math.round(rect.top)))];
+  };
+  /**
+   * In a name's box that cannot fit on one line: on one line it would be wider than the box is,
+   * and the box already takes its whole line.
+   */
+  const wide = (parent) => {
+    const box = parent.closest('.nm, .nb');
+    if (box === null || box.parentElement === null) return false;
+    const width = box.getBoundingClientRect().width;
+    const line = box.parentElement.getBoundingClientRect().width;
+    box.style.whiteSpace = 'nowrap';
+    const whole = box.getBoundingClientRect().width;
+    box.style.whiteSpace = '';
+    return whole - width > 0.05 && width >= line - 1;
   };
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
@@ -219,24 +235,49 @@ function looked({ whole, big }) {
         if (tops(node, match.index, match.index + match[0].length).length <= 1) continue;
         // A name's box in the headline breaks only when it is wider than the whole line: that
         // is the one split allowed, and it is counted. Anywhere else, a split is a fault.
-        const box = parent.closest('.nm');
-        const line = box?.parentElement?.getBoundingClientRect().width ?? Infinity;
-        if (box !== null && box.getBoundingClientRect().width >= line - 1) wider += 1;
+        if (wide(parent)) wider += 1;
         else split.push(`"${run}" in "${node.data}"`);
       }
     }
-    // A word as the reader counts it: "60 days." on a line is two words, held together.
-    const words = [...node.data.matchAll(/[^ \n\u00a0]+/g)];
+    // A box (a name, a date, a time, a length) is drawn on one line unless it is wider than it.
+    const box = parent.closest('.nm, .nb');
+    if (box !== null && !wide(parent) && tops(node, 0, node.data.length).length > 1)
+      split.push(`"${node.data}" (${box.className})`);
+    owners.add(box === null ? parent : box.parentElement);
+  }
+  // A last line of one word, per text as the reader sees it, across its boxes. A word as the
+  // reader counts it: "60 days." on a line is two words held together, in a box or not. A box
+  // wider than its whole line breaks between its words and may leave one alone: that is allowed.
+  for (const owner of owners) {
     const lines = new Map();
-    for (const word of words) {
-      const top = tops(node, word.index, word.index + word[0].length)[0];
-      lines.set(top, (lines.get(top) ?? 0) + 1);
+    let words = 0;
+    const add = (top, free) => {
+      const line = lines.get(top) ?? { n: 0, free: false };
+      lines.set(top, { n: line.n + 1, free: line.free || free });
+      words += 1;
+    };
+    // With large text the headline may set a part's name on a line of its own.
+    const apart = big && owner.matches('.lead');
+    for (const child of owner.childNodes) {
+      const text = child.nodeType === Node.TEXT_NODE ? child : null;
+      if (text !== null) {
+        for (const word of text.data.matchAll(/[^ \n\u00a0]+/g))
+          add(tops(text, word.index, word.index + word[0].length)[0], false);
+        continue;
+      }
+      if (child.matches?.('.nm, .nb') !== true || child.firstChild === null) continue;
+      const inner = child.firstChild;
+      const free = wide(child) || (apart && child.matches('.nm'));
+      const top = tops(inner, 0, inner.data.length)[0];
+      for (const word of inner.data.matchAll(/[^ \n]+/g))
+        add(free ? tops(inner, word.index, word.index + word[0].length)[0] : top, free);
     }
-    const counts = [...lines.values()];
+    const counts = [...lines.entries()].sort((a, b) => a[0] - b[0]).map(([, line]) => line);
     // With large text a text of two words that cannot share a line has a word on each.
-    if (big && words.length <= 2) continue;
-    if (counts.length > 1 && counts[counts.length - 1] === 1)
-      lone.push(`"${node.data}" (${parent.className || parent.tagName.toLowerCase()})`);
+    if (big && words <= 2) continue;
+    const last = counts[counts.length - 1];
+    if (counts.length > 1 && last.n === 1 && !last.free)
+      lone.push(`"${owner.textContent}" (${owner.className || owner.tagName.toLowerCase()})`);
   }
   return { split, lone, tied, texts, wider };
 }
@@ -435,6 +476,8 @@ async function hierarchy(browser, state) {
           scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         };
       });
+      if (width === 320 && size === 200 && (state === 'history' || state === 'worst'))
+        await page.screenshot({ path: join(out, `big-text-200-${state}-320.png`), fullPage: true });
       await context.close();
       looks += 1;
       const at = `${width} px at ${size}%`;

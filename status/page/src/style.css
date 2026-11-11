@@ -168,8 +168,10 @@ ol {
   /* No last line of one word. */
   text-wrap: balance;
 }
-/* A part's name in the headline: whole on a line wherever it fits on one. */
-.nm {
+/* A part's name, wherever it is drawn, and a problem's date, time or length: whole on a line
+   wherever it fits on one, broken between its words only where it is wider than the line. */
+.nm,
+.nb {
   display: inline-block;
 }
 .lead + .lead {
@@ -236,8 +238,8 @@ main:not(.on) .state {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  block-size: 1.5rem;
-  white-space: nowrap;
+  /* One line at every usual size; it wraps only where it does not fit (very large text). */
+  min-block-size: 1.5rem;
 }
 .says,
 .upd {
@@ -248,10 +250,11 @@ main:not(.on) .state {
 .says {
   /* One short line, or two of near one length (large text on a narrow phone). */
   text-wrap: balance;
+  /* "snowlightmap.com." breaks inside only where it is wider than the whole line. */
+  overflow-wrap: anywhere;
 }
 .upd {
   min-block-size: 1.25rem;
-  white-space: nowrap;
 }
 
 /* Last 90 days. */

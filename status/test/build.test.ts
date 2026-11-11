@@ -148,7 +148,7 @@ function texts(html: string): string[] {
   const body = html
     .replace(/<svg[^]*?<\/svg>/g, '')
     .replace(/<(script|style)[^]*?<\/\1>/g, '')
-    .replace(/<span class="nm">([^<]*)<\/span>/g, (_, words: string) =>
+    .replace(/<span class="n[mb]">([^<]*)<\/span>/g, (_, words: string) =>
       words.replace(/ /g, '\u00a0'),
     );
   for (const piece of body.split(/<[^>]*>/)) found.push(piece);
@@ -304,13 +304,15 @@ test('in every state each text of the page is made from the copy, and all of the
   // and no sentence says "today" of a day that is not the clock's.
   for (const input of inputs) {
     const html = mainHtml(viewOf(input));
-    const tabular = [...html.matchAll(/<(?:p|span) class="(?:more|upd|share|when)">([^<]*)</g)];
+    // A name's or a tied run's box is read as part of its text.
+    const flat = html.replace(/<span class="n[mb]">([^<]*)<\/span>/g, '$1');
+    const tabular = [...flat.matchAll(/<(?:p|span) class="(?:more|upd|share|when)">([^<]*)</g)];
     assert.equal(tabular.length > 0, true);
     for (const [, text] of tabular) assert.equal(/[-‐‑]/.test(text!), false, text);
-    const names = [...html.matchAll(/<span class="(?:name|what)">([^<]*)</g)].map((m) => m[1]);
+    const names = [...flat.matchAll(/<span class="(?:name|what)">([^<]*)</g)].map((m) => m[1]);
     assert.equal(names.map((name) => plain(name!)).includes('Snow-day chances'), true);
     if (input.kind !== 'wait') {
-      const box = /<(?:div class="probs none"><p>|span class="what">)([^<]+)</.exec(html);
+      const box = /<(?:div class="probs none"><p>|span class="what">)([^<]+)</.exec(flat);
       assert.notEqual(box, null, 'an empty box under Problems');
     }
     if (input.kind === 'data' && input.summary !== null) {
@@ -390,7 +392,7 @@ test('no line of the page can break inside a name, a date, a time or a count', (
   );
   assert.match(
     html,
-    /Snow-\u2060day\u00a0chances: slow or late since Nov\u00a010, 8:55\u00a0AM\u00a0EST\./,
+    /<span class="nm">Snow-\u2060day chances:<\/span> slow or late since <span class="nb">Nov 10,<\/span> <span class="nb">8:55 AM EST\.<\/span>/,
   );
   // At its worst, the banner names three parts, each in a box of its own that moves to the next
   // line whole, with its comma or full stop, and "and" in the box of the last name.
@@ -409,7 +411,17 @@ test('no line of the page can break inside a name, a date, a time or a count', (
     worstHtml,
     /<p class="lead">Not working right\u00a0now: <span class="nm">Website,<\/span> <span class="nm">Live school closings<\/span> <span class="nm">and Snow-\u2060day chances\.<\/span><\/p>/,
   );
-  assert.match(worstHtml, /for at\u00a0least \d/);
+  assert.match(worstHtml, /for <span class="nb">at least<\/span> <span class="nb">\d/);
+  // The same boxes hold each name in the rows, over the bars and in the problems.
+  assert.match(
+    worstHtml,
+    /<span class="name"><span class="nm">Live school closings<\/span><\/span>/,
+  );
+  assert.match(
+    worstHtml,
+    /<p class="hist-top"><span class="name"><span class="nm">Live school closings<\/span><\/span>/,
+  );
+  assert.match(worstHtml, /<span class="what"><span class="nm">Live school closings:<\/span> /);
   assert.match(html, /aria-label="Sat, Oct\u00a031: [^"]*not checked for 6\u00a0hours\."/);
 });
 
