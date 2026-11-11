@@ -122,7 +122,17 @@ test('with scripts off only the line that says so is shown', () => {
 test('no text of the page ends in a line of one word', () => {
   // The headline, the banner's second line, the line under each part's name and the one line
   // of an empty problems box are balanced: short lines of near one length.
-  assert.deepEqual(rulesWith('text-wrap: balance'), ['.lead', '.more', '.says', '.probs.none']);
+  // So are a row's state, a name in the key and the footer's one sentence, where very large
+  // text wraps them.
+  assert.deepEqual(rulesWith('text-wrap: balance'), [
+    '.lead',
+    '.more',
+    '.state',
+    '.says',
+    '.key span',
+    '.probs.none',
+    '.privacy',
+  ]);
   // The longer texts keep their own breaks and only pull a word down to the last line: a
   // problem's heading reads better broken late ("… not working for" / "25 minutes.") than in
   // the middle. The pictures script checks every visible text at nine widths.
@@ -151,7 +161,7 @@ test('large text on a narrow phone: the banner keeps its words whole and its key
   // The rows' words wrap where they do not fit, so nothing pushes the page wider than the screen.
   assert.match(
     flat,
-    /\.state \{ display: flex; align-items: center; gap: 0\.4rem; min-block-size: 1\.5rem; \}/,
+    /\.state \{ display: flex; align-items: center; gap: 0\.4rem; min-block-size: 1\.5rem; text-wrap: balance; \}/,
   );
   assert.match(flat, /\.upd \{ min-block-size: 1\.25rem; \}/);
   // A word wider than the line breaks inside it, and only then: never to balance two lines.
@@ -174,9 +184,24 @@ test('large text on a tablet: what goes side by side asks for room in text units
   // 150% text a 768 px tablet has the room of a 512 px phone, and lays out as one.
   assert.match(flat, /main \{ container-type: inline-size; \}/);
   assert.equal(/@media \([a-z-]*width/.test(flat), false);
-  assert.deepEqual(
-    [...flat.matchAll(/@container \(([^)]*)\)/g)].map((m) => m[1]),
-    ['min-width: 21.75rem', 'min-width: 38rem'],
+  const rooms = [...flat.matchAll(/@container \(([^)]*)\)/g)].map((m) => m[1]!);
+  for (const room of rooms) assert.match(room, /^min-width: \d+(\.\d+)?rem$/);
+  assert.deepEqual(rooms.slice(-2), ['min-width: 21.75rem', 'min-width: 38rem']);
+  // The banner's reserve steps down as its room grows (scripts/shots.cjs checks each holds the
+  // longest copy at every 2 px of room), and the side gutters stay 16 px at every text size.
+  const steps = [
+    ...flat.matchAll(
+      /@container \(min-width: ([\d.]+)rem\) \{ \.banner \{ min-block-size: ([\d.]+)rem; \} \}/g,
+    ),
+  ].map((m) => [Number(m[1]), Number(m[2])] as const);
+  assert.equal(steps.length >= 8, true);
+  for (let i = 1; i < steps.length; i += 1) {
+    assert.equal(steps[i]![0] > steps[i - 1]![0], true);
+    assert.equal(steps[i]![1] < steps[i - 1]![1], true);
+  }
+  assert.match(
+    flat,
+    /main, footer, \.noscript \{ max-inline-size: 44rem; margin-inline: auto; padding-inline: 16px; \}/,
   );
   // One column grows no wider than its row, so a long word or box wraps instead.
   assert.match(flat, /\.row \{ display: grid; grid-template-columns: minmax\(0, 1fr\);/);

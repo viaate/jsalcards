@@ -188,7 +188,9 @@ async function wholeRuns() {
  *   (with any spaces) drawn on more than one line. A box wider than its whole line may break:
  *   between its parts where it has parts ("23 hours" and "55 minutes."), and that is counted.
  * - lone: a text of more than one line whose last line is a word alone (with `big`, of three
- *   words or more), across its boxes.
+ *   words or more), across its boxes, where wrapping could have avoided it: the word or box at
+ *   the end of the line above and the word alone fit on one line. Where they do not (very large
+ *   text on a narrow phone), it is counted as `alone`.
  * - spill: an element, or a text, that reaches past the sides of the box it is in.
  * - axis: the two labels under the bars closer than half a line, or "Today" not ending under
  *   the last bar.
@@ -205,6 +207,7 @@ function looked({ whole, big }) {
   let tied = 0;
   let texts = 0;
   let wider = 0;
+  let alone = 0;
   const BOX = '.nm, .nb';
   const shown = (el) =>
     el.getClientRects().length > 0 &&
@@ -240,9 +243,9 @@ function looked({ whole, big }) {
     if (box === null || box.parentElement === null) return false;
     const width = box.getBoundingClientRect().width;
     const line = box.parentElement.getBoundingClientRect().width;
-    box.style.whiteSpace = 'nowrap';
+    box.style.inlineSize = 'max-content';
     const whole = box.getBoundingClientRect().width;
-    box.style.whiteSpace = '';
+    box.style.inlineSize = '';
     return whole - width > 0.05 && width >= line - 1;
   };
   const owners = new Set();
@@ -295,36 +298,81 @@ function looked({ whole, big }) {
   // wider than its whole line breaks between its words or parts and may leave one alone: that
   // is allowed.
   for (const owner of owners) {
+    /** Each line of the text by its top: how many words, the words or boxes on it, and their left. */
     const lines = new Map();
     let words = 0;
-    const add = (top, free) => {
-      const line = lines.get(top) ?? { n: 0, free: false };
-      lines.set(top, { n: line.n + 1, free: line.free || free });
-      words += 1;
+    const add = (top, n, unit, left, free) => {
+      const line = lines.get(top) ?? { n: 0, units: [], left: Infinity, free: false };
+      lines.set(top, {
+        n: line.n + n,
+        units: [...line.units, unit],
+        left: Math.min(line.left, left),
+        free: line.free || free,
+      });
+      words += n;
+    };
+    const rectOf = (node, from, to) => {
+      const range = document.createRange();
+      range.setStart(node, from);
+      range.setEnd(node, to);
+      return range.getClientRects()[0];
     };
     // With large text the headline may set a part's name on a line of its own.
     const apart = big && owner.matches('.lead');
     for (const child of owner.childNodes) {
       if (child.nodeType === Node.TEXT_NODE) {
-        for (const word of child.data.matchAll(/[^ \n\u00a0]+/g))
-          add(tops(child, word.index, word.index + word[0].length)[0], false);
+        for (const word of child.data.matchAll(/[^ \n\u00a0]+/g)) {
+          const rect = rectOf(child, word.index, word.index + word[0].length);
+          add(Math.round(rect.top), 1, word[0], rect.left, false);
+        }
         continue;
       }
       if (child.matches?.(BOX) !== true) continue;
       const inner = textsIn(child);
       if (inner.length === 0) continue;
       const free = wide(child) || (apart && child.matches('.nm'));
-      const first = tops(inner[0], 0, inner[0].data.length)[0];
-      for (const text of inner)
-        for (const word of text.data.matchAll(/[^ \n]+/g))
-          add(free ? tops(text, word.index, word.index + word[0].length)[0] : first, free);
+      if (free) {
+        for (const text of inner)
+          for (const word of text.data.matchAll(/[^ \n]+/g)) {
+            const rect = rectOf(text, word.index, word.index + word[0].length);
+            add(Math.round(rect.top), 1, word[0], rect.left, true);
+          }
+        continue;
+      }
+      const rect = rectOf(inner[0], 0, inner[0].data.length);
+      add(
+        Math.round(rect.top),
+        child.textContent.split(/[ \n]+/).filter(Boolean).length,
+        child.textContent,
+        rect.left,
+        false,
+      );
     }
     const counts = [...lines.entries()].sort((a, b) => a[0] - b[0]).map(([, line]) => line);
     // With large text a text of two words that cannot share a line has a word on each.
     if (big && words <= 2) continue;
     const last = counts[counts.length - 1];
-    if (counts.length > 1 && last.n === 1 && !last.free)
-      lone.push(`"${owner.textContent}" (${owner.className || owner.tagName.toLowerCase()})`);
+    if (counts.length < 2 || last.n !== 1 || last.free) continue;
+    // A word alone that could not have company: the last word or box of the line above and it,
+    // set on one line, are wider than the text's lines can be. No wrapping can avoid that.
+    const probe = document.createElement('span');
+    probe.style.cssText =
+      'position:absolute;visibility:hidden;white-space:nowrap;inline-size:max-content';
+    probe.textContent = `${counts[counts.length - 2].units.at(-1)} ${last.units[0]}`;
+    owner.append(probe);
+    const both = probe.getBoundingClientRect().width;
+    probe.remove();
+    const style = getComputedStyle(owner);
+    const right =
+      owner.getBoundingClientRect().right -
+      parseFloat(style.paddingRight) -
+      parseFloat(style.borderRightWidth);
+    const room = right - Math.min(...counts.map((line) => line.left));
+    if (both > room + 0.5) {
+      alone += 1;
+      continue;
+    }
+    lone.push(`"${owner.textContent}" (${owner.className || owner.tagName.toLowerCase()})`);
   }
   // No element reaches past the sides of the element it is in.
   for (const el of document.querySelectorAll('body *')) {
@@ -364,6 +412,7 @@ function looked({ whole, big }) {
     tied,
     texts,
     wider,
+    alone,
   };
 }
 
@@ -383,6 +432,7 @@ async function looks(browser, state) {
   let count = 0;
   let texts = 0;
   let wider = 0;
+  let alone = 0;
   const usual = new Map();
   for (const size of SIZES) {
     for (const width of WIDTHS) {
@@ -456,6 +506,7 @@ async function looks(browser, state) {
       for (const one of seen) {
         texts += one.texts;
         wider += one.wider;
+        alone += one.alone;
         for (const text of one.split) found.push(`${at}: split ${text}`);
         for (const text of one.lone) found.push(`${at}: a last line of one word in ${text}`);
         for (const text of one.spill) found.push(`${at}: ${text}`);
@@ -473,7 +524,8 @@ async function looks(browser, state) {
           'over the line under it and never under its usual size; nothing scrolls sideways or ' +
           'reaches past its box; the axis labels keep apart; the banner holds its words; no ' +
           `name, date, time, length or count split (${wider} boxes wider than their line broke ` +
-          'between their parts) and no one-word last line'
+          `between their parts) and no one-word last line that wrapping could avoid (${alone} ` +
+          'words alone whose line above could not take them)'
       : found.join('; '),
   );
 }
@@ -578,9 +630,56 @@ async function comingBack(browser) {
   return said(
     seen.before === 'Everything is working.' &&
       seen.shown === 'We have no recent checks.' &&
-      seen.states.every((state) => state === 'Could not check'),
+      seen.states.every((state) => state.replace(/\u00a0/g, ' ') === 'Could not check'),
     'coming back to the tab',
     `"${seen.before}" became "${seen.shown}" in the same task as pageshow, rows: ${[...new Set(seen.states)].join(', ')}`,
+  );
+}
+
+/**
+ * The banner's reserve holds its longest copy (every part named and "Could not refresh. This is
+ * the check from 14 minutes ago.") at every 2 px of room from 8rem to 43rem, so nothing moves
+ * when it fills, whatever the screen and the text size.
+ */
+async function reserves(browser) {
+  const context = await browser.newContext({
+    viewport: { width: 400, height: 900 },
+    timezoneId: 'America/New_York',
+    locale: 'en-US',
+  });
+  await (await context.request.get(`${ORIGIN}/__set?state=worst`)).text();
+  const page = await context.newPage();
+  const found = [];
+  let most = 0;
+  let count = 0;
+  for (let width = 160; width <= 720; width += 2) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
+    await page.waitForFunction(
+      () => !document.querySelector('.lead')?.textContent?.includes('Checking'),
+    );
+    const seen = await page.evaluate(() => {
+      const banner = document.querySelector('.banner');
+      const reserve = parseFloat(getComputedStyle(banner).minHeight);
+      banner.style.minHeight = '0';
+      document.querySelector('.more').textContent =
+        'Could not refresh. This is the check from 14\u00a0minutes\u00a0ago.';
+      const need = banner.getBoundingClientRect().height;
+      return { reserve, need };
+    });
+    count += 1;
+    most = Math.max(most, seen.reserve - seen.need);
+    if (seen.need > seen.reserve + 0.5)
+      found.push(`${(width - 32) / 16}rem: needs ${seen.need} px of its ${seen.reserve} px`);
+  }
+  await context.close();
+  return said(
+    found.length === 0,
+    'banner reserve',
+    found.length === 0
+      ? `the longest copy fits at all ${count} widths of room from 8rem to 43rem, with at most ` +
+          `${most} px to spare`
+      : found.join('; '),
   );
 }
 
@@ -624,7 +723,15 @@ async function bigText(browser, state) {
   );
 }
 
-(async () => {
+module.exports = { looks, looked, wholeRuns, setWhole: (runs) => (WHOLE = runs) };
+
+if (require.main === module)
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+
+async function main() {
   mkdirSync(out, { recursive: true });
   WHOLE = await wholeRuns();
   const browser = await chromium.launch();
@@ -633,13 +740,11 @@ async function bigText(browser, state) {
   good = (await scriptsOff(browser)) && good;
   good = (await scriptMissing(browser)) && good;
   good = (await comingBack(browser)) && good;
+  good = (await reserves(browser)) && good;
   for (const state of ['history', 'worst', 'stale', 'first', 'unreachable'])
     good = (await bigText(browser, state)) && good;
   for (const state of ['history', 'worst', 'launch', 'ok', 'stale', 'first', 'unreachable'])
     good = (await looks(browser, state)) && good;
   await browser.close();
   process.exit(good ? 0 : 1);
-})().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+}

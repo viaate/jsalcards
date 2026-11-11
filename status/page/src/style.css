@@ -59,13 +59,15 @@ body {
     display: none;
   }
 }
+/* The side gutters, of the page and inside each card, are 16 px at every text size, as on the
+   website: larger text gets the room, not the margins. */
 header,
 main,
 footer,
 .noscript {
   max-inline-size: 44rem;
   margin-inline: auto;
-  padding-inline: 1rem;
+  padding-inline: 16px;
 }
 /* Every layout below that sets things side by side asks how much room <main> has in text
    units, not how wide the screen is: with larger text the same screen holds fewer words, so
@@ -146,18 +148,81 @@ ol {
   color: var(--none);
 }
 
-/* The banner. Its block size holds its longest copy at 320 px, so nothing moves when it fills;
-   the shape and the words sit at its top. Its words keep at least 12rem: where that and the
-   shape do not fit side by side (large text on a narrow phone), the shape goes above the words
-   instead of squeezing them. */
+/* The banner. Its block size holds its longest copy (every part named, and "Could not
+   refresh") at the room it has, so nothing moves when it fills; the shape and the words sit at
+   its top. Its words keep at least 12rem: where that and the shape do not fit side by side
+   (large text on a narrow phone), the shape goes above the words instead of squeezing them. */
 .banner {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: flex-start;
   align-content: flex-start;
-  padding: 1rem;
-  min-block-size: 14.5rem;
+  padding: 1rem 16px;
+  min-block-size: 32.5rem;
+}
+/* Each step is the room, in rem, from which the longest copy takes fewer lines, and the size
+   it takes there. scripts/shots.cjs checks the longest copy fits at every 2 px of room from
+   8rem to 43rem. Under 18rem of room is larger text on a phone. */
+@container (min-width: 10rem) {
+  .banner {
+    min-block-size: 25.25rem;
+  }
+}
+@container (min-width: 11rem) {
+  .banner {
+    min-block-size: 24rem;
+  }
+}
+@container (min-width: 12.75rem) {
+  .banner {
+    min-block-size: 22.5rem;
+  }
+}
+@container (min-width: 13.5rem) {
+  .banner {
+    min-block-size: 19.5rem;
+  }
+}
+@container (min-width: 14rem) {
+  .banner {
+    min-block-size: 18.25rem;
+  }
+}
+@container (min-width: 15.25rem) {
+  .banner {
+    min-block-size: 16.75rem;
+  }
+}
+@container (min-width: 16.625rem) {
+  .banner {
+    min-block-size: 15.75rem;
+  }
+}
+@container (min-width: 17.75rem) {
+  .banner {
+    min-block-size: 14.25rem;
+  }
+}
+@container (min-width: 20.75rem) {
+  .banner {
+    min-block-size: 12.75rem;
+  }
+}
+@container (min-width: 22.625rem) {
+  .banner {
+    min-block-size: 11.25rem;
+  }
+}
+@container (min-width: 28.375rem) {
+  .banner {
+    min-block-size: 10rem;
+  }
+}
+@container (min-width: 29.125rem) {
+  .banner {
+    min-block-size: 8.5rem;
+  }
 }
 .banner > div {
   flex: 1 1 12rem;
@@ -231,7 +296,7 @@ main:not(.on) .state {
 .row {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 16px;
   border-block-start: 1px solid var(--border);
 }
 .row:first-child {
@@ -245,8 +310,10 @@ main:not(.on) .state {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  /* One line at every usual size; it wraps only where it does not fit (very large text). */
+  /* One line at every usual size; it wraps only where it does not fit (very large text), in
+     two lines of near one length. */
   min-block-size: 1.5rem;
+  text-wrap: balance;
 }
 .says,
 .upd {
@@ -287,6 +354,8 @@ main:not(.on) .state {
   display: flex;
   align-items: center;
   gap: 0.3rem;
+  /* Where a name wraps (very large text), two lines of near one length. */
+  text-wrap: balance;
 }
 .key .shape {
   inline-size: 0.875rem;
@@ -297,7 +366,7 @@ main:not(.on) .state {
   grid-column: 1 / -1;
 }
 .hist {
-  padding: 0.75rem 1rem 0.5rem;
+  padding: 0.75rem 16px 0.5rem;
   border-block-start: 1px solid var(--border);
 }
 .hist:first-child {
@@ -387,7 +456,7 @@ main:not(.on) .state {
   align-content: start;
   row-gap: 0.125rem;
   min-block-size: 9rem;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 16px;
   border-block-start: 1px solid var(--border);
 }
 .slot:first-child {
@@ -410,7 +479,7 @@ main:not(.on) .state {
   place-items: center;
   /* Three slots. */
   min-block-size: 27rem;
-  padding: 1rem;
+  padding: 1rem 16px;
   color: var(--quiet);
   text-align: center;
   text-wrap: balance;
@@ -454,6 +523,10 @@ footer p {
   /* No last line of one word. */
   text-wrap: pretty;
 }
+/* One sentence: short lines of near one length. */
+.privacy {
+  text-wrap: balance;
+}
 footer p + p {
   margin-block-start: 0.75rem;
 }
@@ -484,9 +557,6 @@ footer p + p {
 
 /* 21.75rem of room is a 380 px screen at the usual text size; 38rem is 640 px. */
 @container (min-width: 21.75rem) {
-  .banner {
-    min-block-size: 13rem;
-  }
   .share {
     min-block-size: 1.25rem;
   }
@@ -503,7 +573,7 @@ footer p + p {
 @container (min-width: 38rem) {
   .banner {
     gap: 1rem;
-    padding: 1.25rem;
+    padding: 1.25rem 20px;
     min-block-size: 9rem;
   }
   .row {

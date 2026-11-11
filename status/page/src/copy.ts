@@ -32,7 +32,8 @@ export const copy = {
     ok: 'Working',
     late: 'Slow or late',
     down: 'Not working',
-    unknown: 'Could not check',
+    // Where very large text wraps it, "not check" stays together.
+    unknown: 'Could not\u00a0check',
     wait: 'Checking',
   },
   banner: {

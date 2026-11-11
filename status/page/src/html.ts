@@ -209,7 +209,7 @@ export function pageHtml(main: string): string {
     `<noscript><p class="noscript">${esc(copy.noscript)}</p></noscript>\n` +
     `<main id="main">${main}</main>\n` +
     '<p class="sr" id="said" role="status"></p>\n' +
-    `<footer><p class="how">${esc(copy.foot.how)}</p><p>${esc(copy.foot.privacy)}</p>` +
+    `<footer><p class="how">${esc(copy.foot.how)}</p><p class="privacy">${esc(copy.foot.privacy)}</p>` +
     `<p><a class="home" href="${HOME_URL}">${MARK}<span>${esc(copy.foot.home)}</span></a></p></footer>\n` +
     '</body>\n</html>\n'
   );
