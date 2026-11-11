@@ -16,7 +16,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-from snowlight.live.publishers import DirPublisher, PublishError
+from snowlight.live.publishers import DirPublisher, PublishError, blob_etag
 from snowlight.predict import frozen, live_read, live_switch
 from snowlight.predict.config import LIVE_SCORE_SHA256, PredictConfig, live_score_sha256
 from snowlight.predict.live_switch import (
@@ -535,8 +535,17 @@ class Host:
         return found
 
 
+def no_wait(_seconds: float) -> None:
+    """The read-back's waits, skipped (a test that counts them passes its own)."""
+
+
 def step_inputs(
-    tmp_path: Path, host: Host, *, config: PredictConfig = CONFIG, clock: Clock | None = None
+    tmp_path: Path,
+    host: Host,
+    *,
+    config: PredictConfig = CONFIG,
+    clock: Clock | None = None,
+    sleep: Callable[[float], None] = no_wait,
 ) -> live_switch.StepInputs:
     return live_switch.StepInputs(
         config=config,
@@ -548,6 +557,7 @@ def step_inputs(
         now=NOW,
         started=0.0,
         clock=clock or Clock(),
+        sleep=sleep,
     )
 
 
@@ -1890,7 +1900,7 @@ class LostAnswer(Host):
         return super().read(key)
 
 
-def test_a_write_whose_answer_is_lost_is_read_once_and_said_as_it_is(tmp_path: Path) -> None:
+def test_a_write_whose_answer_is_lost_is_read_back_and_said_as_it_is(tmp_path: Path) -> None:
     host = LostAnswer(tmp_path / "host")
     started(tmp_path, host)
     days = school_days(3)
@@ -1930,6 +1940,89 @@ def test_a_write_whose_answer_is_lost_is_read_once_and_said_as_it_is(tmp_path: P
         "(the read-back failed (PublishError))"
     )
     assert frozen.read_marker(tmp_path / "frozen") == days[0]
+
+
+class Behind(LostAnswer):
+    """:class:`LostAnswer` whose next ``behind`` reads of the state after a write give the bytes
+    it held before (GitHub's API a second or two behind a branch it just moved)."""
+
+    def __init__(self, root: Path) -> None:
+        super().__init__(root)
+        self.behind = 0
+        self.left = 0
+        self.before: bytes | None = None
+
+    def write(self, files: Mapping[str, bytes]) -> None:
+        key = f"v1/{live_switch.SWITCH_PATH}"
+        if key in files:
+            self.before, self.left = self.folder.read(key), self.behind
+        super().write(files)
+
+    def read(self, key: str) -> bytes | None:
+        if self.left and key.endswith(live_switch.SWITCH_PATH):
+            self.left -= 1
+            return self.before
+        return super().read(key)
+
+
+def _blob12(body: bytes | None) -> str:
+    assert body is not None
+    return blob_etag(body).strip('"')[:12]
+
+
+def test_a_switch_read_back_that_meets_a_lagging_copy_reads_again_and_keeps_the_days(
+    tmp_path: Path,
+) -> None:
+    host = Behind(tmp_path / "host")
+    started(tmp_path, host)
+    days = school_days(2)
+    key = f"v1/{live_switch.SWITCH_PATH}"
+    # behind for two reads: confirmed on the third, the marker rewritten
+    storm_day(tmp_path / "reads", tmp_path / "frozen", days[0], 0.05)
+    host.behind = 2
+    slept: list[float] = []
+    out = run(step_inputs(tmp_path, host, sleep=slept.append))
+    body = host.folder.read(key)
+    assert body is not None
+    assert (
+        f"predict read-labels: switch: wrote {live_switch.SWITCH_PATH} ({len(body):,} B), read back"
+        in out
+    )
+    assert not any("did not read back" in line for line in out), out
+    assert slept == [2.0, 4.0]
+    assert frozen.read_marker(tmp_path / "frozen") == days[0]
+    # behind for every read: one warning with each read's blob, the days kept
+    storm_day(tmp_path / "reads", tmp_path / "frozen", days[1], 0.05)
+    host.behind = 9
+    slept.clear()
+    out = run(step_inputs(tmp_path, host, sleep=slept.append))
+    new = host.folder.read(key)
+    assert new is not None
+    assert new != body
+    old = f"blob {_blob12(body)}"
+    assert (
+        f"::warning::predict read-labels: switch: wrote {live_switch.SWITCH_PATH} "
+        f"({len(new):,} B), but it did not read back as written (4 reads, none the blob "
+        f"{_blob12(new)} sent: {old}, {old}, {old}, {old})"
+    ) in out
+    assert slept == [2.0, 4.0, 8.0]
+    assert frozen.read_marker(tmp_path / "frozen") == days[0]
+
+
+def test_a_lost_answer_read_back_from_a_lagging_copy_is_said_as_written(tmp_path: Path) -> None:
+    host = Behind(tmp_path / "host")
+    started(tmp_path, host)
+    day = school_days(1)[0]
+    storm_day(tmp_path / "reads", tmp_path / "frozen", day, 0.05)
+    host.lose = True
+    host.behind = 1
+    slept: list[float] = []
+    out = run(step_inputs(tmp_path, host, sleep=slept.append))
+    assert not any("not written" in line for line in out), out
+    assert out[-1].endswith(" B) read back as written")
+    assert slept == [2.0]
+    assert state_of(host)["bus_timing"].through == day
+    assert frozen.read_marker(tmp_path / "frozen") == day
 
 
 class Replica:

@@ -1803,8 +1803,10 @@ is its first term; CALL-TIME-2 plugs in later with its own block and code ("Swit
   writes the dates it counted, `through` advancing only that far, and the next run counts the
   rest, so a backlog is never retried whole). It writes only before 65 s, unless a date it counted
   ran past 55 s: that write goes through with every date counted, so a slow date never stops a
-  backlog. A host write and its read-back take a few seconds, at most about 20 s each, so the
-  step's 2-minute limit can cut off only a worst-case or late one. That is safe: the write is one
+  backlog. A host write and its read-back take a few seconds, at most about 20 s for the write
+  and each read (a read-back that meets a lagging copy, or follows a write that failed, reads
+  again after 2, 4 and 8 s: up to 14 s more), so the step's 2-minute limit can cut off only a
+  worst-case or late one. That is safe: the write is one
   commit and the frozen marker is rewritten only after a read-back, so the days are kept (the
   lines of a write cut off after its commit are lost, since no counted date is evaluated again;
   a date that ran past 55 s is said at once, before the write, so a step cut off still says
@@ -1813,10 +1815,12 @@ is its first term; CALL-TIME-2 plugs in later with its own block and code ("Swit
   needs under a second. The state is
   `predictions/switch.json` on the live host beside `learn.json`: counts, sums and state FIPS
   codes, no LEAIDs; written by a compare and swap (`guarded_write`: refused unless the host's
-  bytes are the ones this run read, in the same commit on GitHub) and read back. A write whose
-  answer is lost (a timeout after the commit) is read once: the lines are said as written where
-  the host holds the new bytes, `nothing written` where it holds the old, and otherwise the
-  outcome is unknown, nothing is said as written and the marker stays. The passes read it in a
+  bytes are the ones this run read, in the same commit on GitHub) and read back: at once, then
+  again after 2, 4 and 8 s while the host gives other bytes (GitHub's API can answer with the
+  file it held before the commit for a second or two). A write whose answer is lost (a timeout
+  after the commit) is read back the same way: the lines are said as written where a read gives
+  the new bytes, `nothing written` where the last gives the old, and otherwise the outcome is
+  unknown, nothing is said as written and the marker stays. The passes read it in a
   new process soon after; one behind the frozen marker (a host replica that has not caught up)
   is read once more, and one still behind is served as read with a warning. After each
   read-back the frozen folder's marker (`frozen/switch.json`, `through`) is rewritten, and the
@@ -1852,8 +1856,11 @@ is its first term; CALL-TIME-2 plugs in later with its own block and code ("Swit
   45 s of the step`, `switch: skipped past 65 s of the step: nothing written`, `switch: a date
   counted ran to 78 s, past 55 s: written through every date counted`, `switch: wrote
   predictions/switch.json (5,812 B), read back` (or, written but not read back, a warning
-  `wrote ... read back failed (<TypeName>)`; a lost answer read back as written, `::warning::...
-  the write's answer was lost: predictions/switch.json (5,812 B) read back as written`; one not,
+  `wrote ... read back failed (<TypeName>)`; written and read back as other bytes on every
+  read, `wrote ... but it did not read back as written (4 reads, none the blob 1a2b3c4d5e6f
+  sent: HTTP 200 blob 9f8e7d6c5b4a, HTTP 304 blob 9f8e7d6c5b4a, ...)`; a lost answer read
+  back as written, `::warning::... the write's answer was lost: predictions/switch.json
+  (5,812 B) read back as written`; one not,
   `::warning::... <TypeName>: the write's outcome is unknown (the host holds other bytes):
   nothing is said as written and the frozen days are kept`), `::warning::... switch.json is
   2,104,000 B, over 2,000,000 B`, `switch bus_timing: started (no state; term sha
@@ -1877,7 +1884,7 @@ is its first term; CALL-TIME-2 plugs in later with its own block and code ("Swit
   in the line), then is passed as absent; the folder keeps a finished day 9 days, so the days
   after it are still there when it passes. A failed or refused host write changes nothing, its
   lines say `(not written)`, and the next run evaluates the same dates to the same numbers; one
-  whose answer is lost is read back once, as above. A host
+  whose answer is lost is read back, as above. A host
   state that does not read serves the default in every run until it is mended, and the next
   `predict read-labels` restarts every term over it (one warning; the old bytes stay in the
   host's history); one of a later schema is never written over. An L1 file of a date that does
@@ -2718,8 +2725,9 @@ The token is never written to a log, a file or a chat.
 
 ## Commands
 
-Run from `pipeline/`. Exit codes: 0 done, 3 dark (nothing uploaded: the gate refused),
-1 an error.
+Run from `pipeline/`. Exit codes: 0 done, 3 dark (the gate refused or the host failed: nothing
+is confirmed as uploaded, and the file can be up only after a read-back that did not confirm it,
+cause 6 below, or a write whose answer was lost after the commit), 1 an error.
 
 | Command | What it does |
 |---|---|
@@ -2747,7 +2755,8 @@ to the `predict run` step only).
 
 ## When a pass stays dark
 
-A pass publishes nothing, and the page hides the old file within 90 minutes, when:
+A pass publishes nothing, and the page hides the old file within 90 minutes, when one of these
+holds (6 is the exception: see there):
 
 1. the NWS alerts cannot be read, or the feed's `updated` is older than 20 minutes;
 2. the deployed directory cannot be known for certain, or its `meta.json` and
@@ -2759,7 +2768,19 @@ A pass publishes nothing, and the page hides the old file within 90 minutes, whe
    districts alone without record days (see Size under piece 2: the worst case with the
    private schools and without record days or previous chances measures 16.3 MB raw and
    0.3 MB gzip, `tests/predict/test_loop.py`);
-6. the file read back after the upload is not the one sent;
+6. no read-back after the upload gives the file sent. The host is read at once, then again
+   after 2, 4 and 8 s while it gives other bytes, since GitHub's API can answer for the branch
+   with the file it held before the commit for a second or two (run 205 met it 9 times, each
+   file in fact deployed and served); a copy that answers 304 to the written file's ETag is
+   confirmed at once. Unlike every other cause, this one comes after the commit: the file went
+   up but was not confirmed, and it may well be live. The pass's state does not record the
+   upload, and its chance notifications wait for the next one. The dark line says each read's
+   HTTP status and the blob sha of the bytes it gave, and the blob sent: `predict: dark
+   (read_back: v1/predictions/latest.json written, not confirmed (4 reads, none the blob
+   1a2b3c4d5e6f sent: HTTP 200 blob 9f8e7d6c5b4a, HTTP 304 blob 9f8e7d6c5b4a, ...))`. A
+   read-back that fails (a host error) is the same dark, and no read is tried after it:
+   `predict: dark (read_back: v1/predictions/latest.json written, not confirmed (read failed:
+   read v1/predictions/latest.json: HTTP 502 (server)))`;
 7. yesterday's day timeline cannot be read (a host error or a file that does not validate);
 8. the alert memory does not reach back to 18:00 the evening before the first day
    published, and cannot be rebuilt: after a lost or stale state (the feed unread for more

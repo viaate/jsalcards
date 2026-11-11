@@ -34,6 +34,7 @@ from snowlight.live.publishers import (
     canonical_request,
     check_key,
     host_refused_until,
+    read_back_until,
     refusal_of,
     sign,
     signing_key,
@@ -1050,3 +1051,122 @@ def test_github_a_guard_read_at_a_commit_github_does_not_know_yet_is_read_again(
     assert publisher._read_at("v1/live/none.json", head) is None
     assert publisher._read_at("v1/live/none.json", head) is None
     assert repo.calls == [f"GET contents/v1/live/none.json@{head}"]
+
+
+class Lagging(Conditional):
+    """:class:`Conditional` whose next ``behind`` reads at the branch after a commit answer
+    from the commit before it (GitHub's API a second or two behind a branch it just moved)."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.behind = 0
+        self.lag = 0
+        self.before = self.head
+
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        path = request.url.path.removeprefix("/repos/viaate/snowlight-synthetic/")
+        if request.method == "PATCH":
+            self.before, self.lag = self.head, self.behind
+            return super().__call__(request)
+        if request.method != "GET" or not path.startswith("contents/") or self.lag == 0:
+            return super().__call__(request)
+        self.lag -= 1
+        head, self.head = self.head, self.before
+        try:
+            return super().__call__(request)
+        finally:
+            self.head = head
+
+
+def _blob12(body: bytes) -> str:
+    return blob_etag(body).strip('"')[:12]
+
+
+def _lagging(behind: int) -> tuple[Lagging, GitHubPublisher, list[float]]:
+    repo = Lagging()
+    publisher = _github(repo)
+    publisher.write({"v1/predictions/latest.json": b'{"SYNTHETIC":1}'})
+    repo.behind = behind
+    publisher.write({"v1/predictions/latest.json": b'{"SYNTHETIC":2}'})
+    repo.conditional.clear()
+    return repo, publisher, []
+
+
+def test_a_read_back_that_meets_a_lagging_copy_reads_again_until_it_caught_up() -> None:
+    repo, publisher, slept = _lagging(2)
+    old, new = b'{"SYNTHETIC":1}', b'{"SYNTHETIC":2}'
+    back = read_back_until(publisher, "v1/predictions/latest.json", new, sleep=slept.append)
+    assert back.confirmed
+    assert back.last == new
+    assert slept == [2.0, 4.0]
+    # the stale 200 replaced the ETag kept: the copy behind answers 304 with the old bytes, the
+    # one that caught up 200 with the new
+    assert repo.conditional == [blob_etag(new), blob_etag(old), blob_etag(old)]
+    assert back.reads == (
+        f"HTTP 200 blob {_blob12(old)}",
+        f"HTTP 304 blob {_blob12(old)}",
+        f"HTTP 200 blob {_blob12(new)}",
+    )
+    assert publisher.read("v1/predictions/latest.json") == new  # kept: the next read is a 304
+    assert repo.conditional[-1] == blob_etag(new)
+
+
+def test_a_read_back_that_never_matches_says_each_read_after_four() -> None:
+    _repo, publisher, slept = _lagging(9)
+    old, new = b'{"SYNTHETIC":1}', b'{"SYNTHETIC":2}'
+    back = read_back_until(publisher, "v1/predictions/latest.json", new, sleep=slept.append)
+    assert not back.confirmed
+    assert back.last == old
+    assert slept == [2.0, 4.0, 8.0]
+    assert back.text() == (
+        f"4 reads, none the blob {_blob12(new)} sent: HTTP 200 blob {_blob12(old)}, "
+        f"HTTP 304 blob {_blob12(old)}, HTTP 304 blob {_blob12(old)}, "
+        f"HTTP 304 blob {_blob12(old)}"
+    )
+
+
+def test_a_read_back_answered_304_to_the_written_etag_is_confirmed_at_once() -> None:
+    repo, publisher, slept = _lagging(0)
+    new = b'{"SYNTHETIC":2}'
+    back = read_back_until(publisher, "v1/predictions/latest.json", new, sleep=slept.append)
+    assert back.confirmed
+    assert slept == []
+    assert repo.conditional == [blob_etag(new)]
+    assert back.reads == (f"HTTP 304 blob {_blob12(new)}",)
+
+
+def test_a_read_back_on_a_host_without_statuses_notes_blobs_and_a_failed_read_raises(
+    tmp_path: Path,
+) -> None:
+    host = DirPublisher(tmp_path)
+    slept: list[float] = []
+    back = read_back_until(host, "v1/live/opens.json", b"{}", sleep=slept.append)
+    assert not back.confirmed
+    assert back.last is None
+    assert back.reads == ("no file",) * 4
+    assert slept == [2.0, 4.0, 8.0]
+    host.write({"v1/live/opens.json": b"{}"})
+    assert read_back_until(host, "v1/live/opens.json", b"{}", sleep=slept.append).reads == (
+        f"blob {_blob12(b'{}')}",
+    )
+    publisher = GitHubPublisher(
+        repository="viaate/snowlight-synthetic",
+        token="synthetic-token",  # noqa: S106 - a test value
+        client=httpx.Client(transport=httpx.MockTransport(lambda _r: httpx.Response(502))),
+        api="https://api.synthetic.example",
+    )
+    with pytest.raises(PublishError, match="HTTP 502"):
+        read_back_until(publisher, "v1/live/opens.json", b"{}", sleep=slept.append)
+
+
+def test_a_read_back_note_says_an_etag_that_is_not_the_blob_sha() -> None:
+    body = b'{"SYNTHETIC":1}'
+    answer = httpx.Response(200, content=body, headers={"etag": 'W/"0123456789abcdef0123"'})
+    publisher = GitHubPublisher(
+        repository="viaate/snowlight-synthetic",
+        token="synthetic-token",  # noqa: S106 - a test value
+        client=httpx.Client(transport=httpx.MockTransport(lambda _r: answer)),
+        api="https://api.synthetic.example",
+    )
+    back = read_back_until(publisher, "v1/live/opens.json", body, sleep=lambda _s: None)
+    assert back.reads == (f"HTTP 200 blob {_blob12(body)} etag 0123456789ab",)

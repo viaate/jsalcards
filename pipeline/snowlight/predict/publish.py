@@ -5,8 +5,11 @@ A pass publishes through a :class:`Host`, the publisher interface of the live in
 ``v1/`` or ``v1-shadow/`` only). ``PREDICT_PUBLISH`` picks the folder: ``on``
 (``v1/``), ``shadow`` (``v1-shadow/``) or ``off`` (the default: nothing is written).
 
-Fails dark (nothing uploads, the pass exits 3, the old file ages out and the page hides
-the chance within 90 minutes; never a stale or invented chance) when:
+Fails dark (the pass exits 3, the old file ages out and the page hides the chance within 90
+minutes; never a stale or invented chance) when one of these holds. Each but 6 uploads
+nothing; a dark of 6 (``read_back``) comes after the commit, so the file went up but was not
+confirmed, and it may well be live. A host error darks a pass the same way (exit 3); one whose
+answer is lost after the commit can leave the file up too:
 
 1. the alerts feed cannot be read, or its ``updated`` is older than
    ``alerts_max_age_minutes``;
@@ -16,7 +19,11 @@ the chance within 90 minutes; never a stale or invented chance) when:
 4. the winter alerts drop by more than ``collapse_drop`` from a pass that had more than
    ``collapse_from``: publish only once the next pass confirms it;
 5. the file does not validate, or breaks the size budget (raw and gzip);
-6. the file read back after the upload is not the one sent;
+6. no read-back after the upload gives the file sent: the host is read at once, then after
+   2, 4 and 8 s while it gives other bytes (GitHub's API can answer with the file it held
+   before the commit for a second or two), and the dark line says each read's HTTP status
+   and blob sha and the blob sent; a read-back that fails is the same dark, and its line
+   says the read that failed (no read is tried after it);
 7. yesterday's day timeline on the host cannot be read (only a file that is not there means
    no district had a day off);
 8. the 30-hour alert memory does not reach back to 18:00 the evening before the first day
@@ -44,7 +51,13 @@ from typing import Final, Protocol
 from pydantic import ValidationError
 
 from snowlight.live.publish import LiveHold, holds
-from snowlight.live.publishers import GuardRefusedError, WriteGuard, guarded_write
+from snowlight.live.publishers import (
+    GuardRefusedError,
+    PublishError,
+    WriteGuard,
+    guarded_write,
+    read_back_until,
+)
 from snowlight.predict.config import ServeSettings
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.predictions import PredictionsFile
@@ -411,20 +424,30 @@ def beside(key: str, name: str) -> str:
 
 def upload(host: Host, key: str, data: bytes, *, extra: Mapping[str, bytes] | None = None) -> None:
     """Write the file, guarded by the hold (read in the very commit on GitHub), and read it
-    back. ``extra``: files written in the same commit (the night chart's shadow summary, the
-    stamp), never the predictions file itself.
+    back, up to 4 times over about 14 s while the host still gives other bytes
+    (:func:`~snowlight.live.publishers.read_back_until`: GitHub's API can answer with the file
+    it held before the commit for a second or two). ``extra``: files written in the same commit
+    (the night chart's shadow summary, the stamp), never the predictions file itself.
 
     Raises:
-        DarkError: the hold is set, or the read-back differs.
-        PublishError: the host failed.
+        DarkError: the hold is set (nothing written), or no read-back gave the bytes sent or a
+            read-back failed (the commit went up but is not confirmed; its detail says each
+            read's status and blob, or the read that failed).
+        PublishError: the host failed writing (an answer lost after the commit leaves it up).
     """
     files = {**(extra or {}), key: data}
     try:
         guarded_write(host, files, WriteGuard(hold_key(key), held))
     except GuardRefusedError as error:
         raise DarkError(Dark.HELD, hold_key(key)) from error
-    if host.read(key) != data:
-        raise DarkError(Dark.READ_BACK, key)
+    try:
+        back = read_back_until(host, key, data)
+    except PublishError as error:  # after the commit: the file went up, unconfirmed
+        raise DarkError(
+            Dark.READ_BACK, f"{key} written, not confirmed (read failed: {error})"
+        ) from error
+    if not back.confirmed:
+        raise DarkError(Dark.READ_BACK, f"{key} written, not confirmed ({back.text()})")
 
 
 def stamp_file(data: bytes) -> bytes:

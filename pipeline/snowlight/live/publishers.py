@@ -47,6 +47,7 @@ import hashlib
 import hmac
 import logging
 import re
+import time
 from collections import OrderedDict
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -382,6 +383,88 @@ def guarded_write(host: "Publisher", files: Mapping[str, bytes], guard: WriteGua
     host.write(files)
 
 
+READ_BACK_WAITS: Final = (2.0, 4.0, 8.0)
+"""The waits before each read-back after the first (:func:`read_back_until`): at most 4 reads
+and 14 s of waiting. GitHub's API can answer for a branch with the file it held before a commit
+for a second or two after the branch moved (run 205 met it 9 times, every file in fact live)."""
+
+
+@dataclass(frozen=True, slots=True)
+class ReadAnswer:
+    """A host's answer to its last read: the HTTP status and the ETag (``None``: none)."""
+
+    status: int
+    etag: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ReadBack:
+    """What :func:`read_back_until` read: whether a read gave the bytes written, and one note per
+    read (its HTTP status where the host keeps one, the blob sha of the bytes it gave)."""
+
+    confirmed: bool
+    reads: tuple[str, ...]
+    sent: str
+    """The blob sha of the bytes written (12 hex digits)."""
+    last: bytes | None = field(default=None, repr=False)
+    """The bytes the last read gave (``None``: no file)."""
+
+    def text(self) -> str:
+        """One line for a final mismatch: each read's status and blob sha, and the one sent."""
+        return f"{len(self.reads)} reads, none the blob {self.sent} sent: " + ", ".join(self.reads)
+
+
+def _blob(data: bytes | None) -> str:
+    return "no file" if data is None else f"blob {blob_etag(data).strip(chr(34))[:12]}"
+
+
+def _read_note(host: "Publisher", data: bytes | None) -> str:
+    """One read's note: the host's last answer (``read_answer``: status and ETag, where it keeps
+    one) and the blob sha of the bytes it gave."""
+    blob = _blob(data)
+    answer = getattr(host, "read_answer", None)
+    if not isinstance(answer, ReadAnswer):
+        return blob
+    note = f"HTTP {answer.status} {blob}"
+    etag = answer.etag
+    tag = None if etag is None else _token_text(etag.removeprefix("W/").strip(chr(34)), 12)
+    if tag is not None and not blob.endswith(tag):
+        note += f" etag {tag}"  # GitHub's ETag of the raw file is its blob sha: said when not
+    return note
+
+
+def read_back_until(
+    host: "Publisher",
+    key: str,
+    data: bytes,
+    *,
+    waits: tuple[float, ...] = READ_BACK_WAITS,
+    sleep: Callable[[float], None] | None = None,
+) -> ReadBack:
+    """Read ``key`` back after a write until the host gives ``data``: at once, then after each
+    of ``waits`` (2, 4 and 8 s). A read that gives other bytes is read again; on GitHub its
+    answer replaces the ETag kept, so a copy that has caught up answers 200 with the new bytes
+    and one still behind 304 with the old. A 304 to the ETag of the bytes written confirms at
+    once. ``confirmed`` is false only when no read gave ``data`` (the caller's mismatch, with
+    :meth:`ReadBack.text`).
+
+    Raises:
+        PublishError: a read failed (the host's own error, as a single read would).
+    """
+    pause = time.sleep if sleep is None else sleep
+    sent = _blob(data).removeprefix("blob ")
+    notes: list[str] = []
+    found: bytes | None = None
+    for wait in (None, *waits):
+        if wait is not None:
+            pause(wait)
+        found = host.read(key)
+        notes.append(_read_note(host, found))
+        if found == data:
+            return ReadBack(confirmed=True, reads=tuple(notes), sent=sent, last=found)
+    return ReadBack(confirmed=False, reads=tuple(notes), sent=sent, last=found)
+
+
 def check_key(key: str) -> str:
     """Return ``key`` when a publisher may write it.
 
@@ -687,6 +770,8 @@ class GitHubPublisher:
     """The rate headers of the last answer that had them."""
     refusal: HostRefusal | None = None
     """The last refusal, until an answer clears it."""
+    read_answer: ReadAnswer | None = None
+    """The status and ETag of the last contents read sent (a read-back's diagnostic line)."""
     _refused_since: datetime | None = field(default=None, init=False, repr=False)
     _kept: dict[tuple[str, str], tuple[str, bytes]] = field(
         default_factory=dict, init=False, repr=False
@@ -814,6 +899,7 @@ class GitHubPublisher:
             expected=(httpx.codes.NOT_FOUND,),
         )
         status = response.status_code
+        self.read_answer = ReadAnswer(status, response.headers.get("etag"))
         if status == httpx.codes.NOT_MODIFIED and kept is not None:
             return kept[1]
         if status == httpx.codes.NOT_FOUND:

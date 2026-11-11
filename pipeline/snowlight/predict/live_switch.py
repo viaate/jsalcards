@@ -46,9 +46,10 @@ count limit, so a slow date never stops the backlog); its lines are
 said once the state they report is written. The state is one file on the live
 host beside ``learn.json`` (:data:`SWITCH_PATH`: counts, sums and state FIPS codes, no
 LEAIDs), written by a compare and swap (:func:`snowlight.live.publishers.guarded_write`: the
-host's bytes must be the bytes this run read) and read back. After each read-back the frozen
-record's marker (``frozen/switch.json``) is rewritten, so the frozen folder keeps each day
-until it is counted (:func:`snowlight.predict.frozen.note_held`).
+host's bytes must be the bytes this run read) and read back (again after 2, 4 and 8 s while the
+host gives other bytes: GitHub's API can lag a commit by a second or two). After each read-back
+the frozen record's marker (``frozen/switch.json``) is rewritten, so the frozen folder keeps each
+day until it is counted (:func:`snowlight.predict.frozen.note_held`).
 """
 
 import hashlib
@@ -1470,6 +1471,8 @@ class StepInputs:
     now: datetime
     started: float
     clock: Callable[[], float] = time.monotonic
+    sleep: Callable[[float], None] = time.sleep
+    """The read-back's waits (:func:`~snowlight.live.publishers.read_back_until`)."""
 
 
 @dataclass(slots=True)
@@ -1967,16 +1970,23 @@ def _newer(data: bytes) -> bool:
     return isinstance(version, int) and not isinstance(version, bool) and version > SCHEMA
 
 
-def _outcome(host: Any, key: str, body: bytes, data: bytes | None) -> str:
-    """What a write whose answer was lost did, read back once: ``written`` (the host holds
-    ``body``), ``unchanged`` (it holds ``data``, what the run read) or why it is unknown."""
+def _outcome(
+    host: Any, key: str, body: bytes, data: bytes | None, sleep: Callable[[float], None]
+) -> str:
+    """What a write whose answer was lost did, read back as a write is
+    (:func:`~snowlight.live.publishers.read_back_until`: again after 2, 4 and 8 s while the host
+    gives other bytes, since GitHub's API can answer with the file it held before a commit for a
+    second or two): ``written`` (a read gave ``body``), ``unchanged`` (the last gave ``data``,
+    what the run read) or why it is unknown."""
+    from snowlight.live.publishers import read_back_until  # noqa: PLC0415
+
     try:
-        now = host.read(key)
+        back = read_back_until(host, key, body, sleep=sleep)
     except Exception as error:  # unknown
         return f"the read-back failed ({type(error).__name__})"
-    if now == body:
+    if back.confirmed:
         return "written"
-    if now == data:
+    if back.last == data:
         return "unchanged"
     return "the host holds other bytes"
 
@@ -1998,6 +2008,7 @@ def run(  # noqa: PLR0911, PLR0912, PLR0915 - the step, each way it ends said
         MovedError,
         WriteGuard,
         guarded_write,
+        read_back_until,
     )
     from snowlight.predict import frozen as frozen_module  # noqa: PLC0415
 
@@ -2096,7 +2107,7 @@ def run(  # noqa: PLR0911, PLR0912, PLR0915 - the step, each way it ends said
             return
         except Exception as error:  # the answer may be lost: the host says what it holds
             name = type(error).__name__
-            outcome = _outcome(inputs.host, key, body, data)
+            outcome = _outcome(inputs.host, key, body, data, inputs.sleep)
             if outcome != "written":
                 unwritten()
                 said(
@@ -2117,17 +2128,17 @@ def run(  # noqa: PLR0911, PLR0912, PLR0915 - the step, each way it ends said
         )
     elif body != data:
         try:
-            back = inputs.host.read(key)
+            back = read_back_until(inputs.host, key, body, sleep=inputs.sleep)
         except Exception as error:  # written: only the read-back failed
             said(
                 f"::warning::predict read-labels: switch: wrote {SWITCH_PATH} ({len(body):,} B), "
                 f"read back failed ({type(error).__name__})"
             )
             return
-        if back != body:
+        if not back.confirmed:
             said(
                 f"::warning::predict read-labels: switch: wrote {SWITCH_PATH} ({len(body):,} B), "
-                "but it did not read back as written"
+                f"but it did not read back as written ({back.text()})"
             )
             return
         said(f"switch: wrote {SWITCH_PATH} ({len(body):,} B), read back")

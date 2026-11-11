@@ -2,6 +2,7 @@
 
 import gzip
 import json
+import time
 from collections.abc import Mapping
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -10,6 +11,7 @@ from typing import Any
 import pytest
 
 from predict import world
+from snowlight.live.publishers import PublishError, blob_etag
 from snowlight.predict import cli
 from snowlight.predict.alerts_live import UgcIndex
 from snowlight.predict.config import PredictConfig
@@ -170,7 +172,10 @@ def test_off_and_shadow() -> None:
         ({"budget": True}, "size"),
     ],
 )
-def test_every_refusal_publishes_nothing(change: dict[str, Any], reason: str, capsys: Any) -> None:
+def test_every_refusal_publishes_nothing(
+    change: dict[str, Any], reason: str, capsys: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(time, "sleep", lambda _seconds: None)  # the read-back's waits
     host = MemoryHost(broken=bool(change.get("broken")))
     config = world.CONFIG
     if change.get("budget"):
@@ -198,6 +203,102 @@ def test_every_refusal_publishes_nothing(change: dict[str, Any], reason: str, ca
         assert host.files == {}
 
 
+class LaggingHost(MemoryHost):
+    """A host whose next ``behind`` reads of a file after a write give the bytes it held before
+    (GitHub's API a second or two behind a branch it just moved)."""
+
+    def __init__(self, behind: int) -> None:
+        super().__init__()
+        self.behind = behind
+        self.lag: dict[str, tuple[int, bytes | None]] = {}
+
+    def write(self, files: Mapping[str, bytes]) -> None:
+        self.lag = {key: (self.behind, self.files.get(key)) for key in files}
+        super().write(files)
+
+    def read(self, key: str) -> bytes | None:
+        left, before = self.lag.get(key, (0, None))
+        if left == 0:
+            return super().read(key)
+        self.lag[key] = (left - 1, before)
+        return before
+
+
+class FailingReadHost(LaggingHost):
+    """A :class:`LaggingHost` whose read of a file after its ``behind`` lagging reads fails (a
+    502 on a read-back after the commit)."""
+
+    def read(self, key: str) -> bytes | None:
+        left, _before = self.lag.get(key, (-1, None))
+        if left == 0:
+            raise PublishError(f"read {key}: HTTP 502 (server)")
+        return super().read(key)
+
+
+def lagging_pass(
+    behind: int, monkeypatch: pytest.MonkeyPatch, host: LaggingHost | None = None
+) -> tuple[LaggingHost, cli.Pass, list[float], list[datetime]]:
+    slept: list[float] = []
+    monkeypatch.setattr(time, "sleep", slept.append)
+    host = LaggingHost(behind) if host is None else host
+    run = make_pass(host, directory=world.directory())
+    notified: list[datetime] = []
+
+    def notify(_made: PredictionsFile, _directory: DeployedDirectory, now: datetime) -> str:
+        notified.append(now)
+        return "notify: SYNTHETIC"
+
+    run.notify = notify
+    return host, run, slept, notified
+
+
+@pytest.mark.parametrize(("behind", "waits"), [(0, []), (1, [2.0]), (3, [2.0, 4.0, 8.0])])
+def test_a_read_back_that_meets_a_lagging_copy_tries_again_and_the_pass_publishes(
+    behind: int, waits: list[float], monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    host, run, slept, notified = lagging_pass(behind, monkeypatch)
+    assert cli.one_pass(run) == 0
+    said = capsys.readouterr()
+    assert "dark" not in said.err
+    assert "predict: uploaded v1/predictions/latest.json" in said.out
+    assert slept == waits  # a copy that answers at once is confirmed at once
+    assert run.state.digest == content_digest(host.files["v1/predictions/latest.json"])
+    assert run.state.uploaded_at == NOW
+    assert notified == [NOW]  # the chance notifications run on the file the site shows
+
+
+def test_a_read_back_that_never_matches_is_dark_and_says_each_read(
+    monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    host, run, slept, notified = lagging_pass(4, monkeypatch)
+    assert cli.one_pass(run) == cli.EXIT_DARK
+    sent = blob_etag(host.files["v1/predictions/latest.json"]).strip('"')[:12]
+    assert capsys.readouterr().err.splitlines()[0] == (
+        "predict: dark (read_back: v1/predictions/latest.json written, not confirmed "
+        f"(4 reads, none the blob {sent} sent: no file, no file, no file, no file))"
+    )
+    assert slept == [2.0, 4.0, 8.0]
+    assert run.state.digest is None
+    assert run.state.uploaded_at is None
+    assert notified == []
+
+
+@pytest.mark.parametrize("stale", [0, 1])
+def test_a_read_back_that_fails_after_the_commit_is_the_read_back_dark(
+    stale: int, monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    host, run, slept, notified = lagging_pass(stale, monkeypatch, FailingReadHost(stale))
+    assert cli.one_pass(run) == cli.EXIT_DARK
+    assert capsys.readouterr().err.splitlines()[0] == (
+        "predict: dark (read_back: v1/predictions/latest.json written, not confirmed "
+        "(read failed: read v1/predictions/latest.json: HTTP 502 (server)))"
+    )
+    assert "v1/predictions/latest.json" in host.files  # the file went up
+    assert slept == [2.0] * stale  # no read is tried after a failed one
+    assert run.state.uploaded_at is None
+    assert notified == []
+
+
 def held(state: State) -> int | None:
     return state.held_count
 
@@ -222,7 +323,9 @@ def test_an_alert_collapse_waits_for_the_next_pass() -> None:
     assert host.files
 
 
-def test_the_small_checks() -> None:
+def test_the_small_checks(monkeypatch: pytest.MonkeyPatch) -> None:
+    slept: list[float] = []
+    monkeypatch.setattr(time, "sleep", slept.append)
     check_alert_age(NOW, NOW, SETTINGS)
     with pytest.raises(DarkError, match="alerts_stale"):
         check_alert_age(None, NOW, SETTINGS)
@@ -242,6 +345,7 @@ def test_the_small_checks() -> None:
     assert due(state, "other", NOW, SETTINGS, grid=False)
     with pytest.raises(DarkError, match="read_back"):
         upload(MemoryHost(broken=True), "v1/predictions/latest.json", data)
+    assert slept == [2.0, 4.0, 8.0]
     kept = State.from_json(State(digest="x", uploaded_at=NOW, winter_alerts=3).as_json())
     assert kept.uploaded_at == NOW
     assert kept.winter_alerts == 3
