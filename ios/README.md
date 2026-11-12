@@ -128,7 +128,8 @@ change rarely.
   changes `ios/**` or the file itself. Runs `tools/check-ios.mjs`, the golden check under
   two odd zones (`America/St_Johns`, `Pacific/Kiritimati`), a syntax-only parse of the kit
   and the app (`swiftc -frontend -parse`), and the core tests under each of the two zones.
-- **`ios-app.yml`, iOS app** (macOS, about 10 to 12 minutes). On the same changes. Two jobs:
+- **`ios-app.yml`, iOS app** (macOS: about 10 minutes on macos-26, up to 26 on xcode-27,
+  which also tours the iPhone Duo; the two run side by side). On the same changes. Two jobs:
   `app (macos-26, Xcode 26.6)`, the one that counts, with Xcode pinned by its path; and
   `app (xcode-27, may fail)`, the same steps on the newer image with its default Xcode and
   an iOS 27 simulator, allowed to fail while that image is marked a preview. Each runs the
@@ -222,24 +223,112 @@ from the page in light and 37 in dark, the bar 2 and 4. On another device, as on
 xcode-27 job, those lines are printed and not judged until their places are measured
 there.
 
-## Approved Duo rulings for later pieces
+## The iPhone Duo
 
-The owner's rulings on the iPhone Duo (design/app/duo/ROUND7-BRIEF.md and the DUO LEG spec),
-with the piece that builds each:
+The owner's own phone is an iPhone Duo (iOS 27.1), so the app is made for it as well as
+for an ordinary iPhone (the DUO LEG, Nov 11 and 12, 2026). Everything below was read from
+the `xcode-27` job's log unless it says otherwise.
 
-- **The Outside screen setting** (built, the DUO LEG): on the closed Duo, Settings offers
-  "Outside screen" ("When your iPhone is closed") with two tiles, "Beside the map" (A, the
-  default: content stops where the system's side controls begin and the map runs on under
-  them) and "Under the controls" (B: the sheet runs on under them to the right edge). The
-  row exists only on an iPhone Duo. Its layout value (`SideControls`, read through
-  `Layout/SideControls.swift`) is proven on the placeholder tabs; **M1 and every later
-  screen with a sheet over the map** (My School and its states, Why, Call it, Map, Pick a
-  school) applies it. Words approved Nov 12, 2026.
+### Its sizes
+
+| Shape | Points | Where the number comes from |
+|---|---|---|
+| iPhone 17 Pro | 402 x 874 pt, tab bar along the bottom (y 791, 83 pt high) | the app's own geometry line, macos-26 job, iOS 26.5 |
+| Duo closed (outer screen) | **466 x 678 pt** at 3x (1398 x 2034 px), compact width and regular height, portrait; safe area top 0, left 0, bottom 34, right 84 | the app's own geometry line on the Duo simulator, iOS 27.1 runtime, first in run 43129256570 and in every Duo run since |
+| Duo closed, the system's side controls | the tab bar stands upright on the right (x 397, 69 pt wide, the full 678 pt high); the four tabs sit in a bottom-aligned column 48 pt wide (x 394, y 392 to 654), icons only, with the search glyph at its foot (x 415, y 606, 48 x 48) | the same line: the system's own views and their frames |
+| Duo open (inner screen) | **669 x 951 pt** at 3x upright (2007 x 2853 px), so 951 x 669 pt on its side | the simulator's device profile only: **not measured**, the app was never shown on the inner screen (below) |
+
+Apple's spec page gives the panels as 1398 x 2034 px outside (the same as the simulator)
+and 1878 x 2670 px inside; the simulator's inner screen is 2007 x 2853 px, the App Store
+Connect picture size. The owner's own screenshots of the closed phone are 457 pt wide, not
+466: which width a real phone gives is open until the app runs on it. The content beside
+the side controls is 382 pt wide on the simulator; with draft 3's 20 pt margins the column
+is 342 pt.
+
+### How the simulator shows each screen
+
+- **One device type for both poses:** "iPhone Duo"
+  (`com.apple.CoreSimulator.SimDeviceType.iPhone-Duo`, model `iPhone19,4`, product class
+  V68, at least iOS 27.1). On the `xcode-27` image only two runtimes make it: iOS 27.1
+  (24A94425) and the device-only iOS 27.2-iPhone19-4 (24B91016s); the tour boots 27.1
+  first. The app is built with Xcode 27.1 (27A9275) and the iOS 27.1 SDK
+  (`iphonesimulator27.1`, 24A94232; Swift 6.4); the deployment target stays iOS 26.0.
+- **Two screens:** `--display=1` "LCD" (primary), the outer screen, 1398 x 2034 px, and
+  `--display=3` "LCD-1" (primary-1), the inner screen, 2007 x 2853 px. A `simctl io
+  screenshot` that names no display is refused ("Cannot choose between 2 displays");
+  `internal` and `main` are refused the same way, `inner`, `outer`, `cover` and
+  `secondary` do not exist, and `external` hangs.
+- **It cannot be opened on GitHub's image.** simctl, CoreSimulator, SimulatorKit and the
+  device profile have no fold, hinge or posture command; Simulator.app (whose Device menu
+  may have one) is not on the image; switching the screens' power on and off does not open
+  the phone (the outer screen goes to the Home Screen, the app keeps its 466 x 678 pt
+  window, the inner screen stays black); and a landscape mode for the inner screen is
+  refused ("No mode found"). So the inner screen is pictured once per run and is black,
+  and the open Duo, upright or on its side, has no picture yet. It can be measured on the
+  borrowed Mac's Simulator.app or on the owner's phone.
+- **The hinge:** the iOS 27.1 SDK has UIKit's `UIHingeInteraction` (`UIHinge.h`,
+  `UIHingeInteraction.h`; status unknown 0, closed 1, partly open 2, fully open 3, and an
+  angle in radians). On the closed Duo simulator it reports "status 1 (Closed), angle 0.0
+  radians" at every launch; on an iPhone 18 Pro it reports nothing. The SDK has no call
+  that says a phone has an outside screen. The runtime's only fold file is
+  `SpringBoardFoundation.framework/hinge-samples.csv`, recorded hinge angles, not a
+  control.
+- **The Dynamic Island** now and then shows as a black disc above the time in a picture
+  (run 43204344211, three pictures in a row, gone 4 s later); the tour retakes such a
+  picture (above).
+
+### The Outside screen setting
+
+On the Duo only, Settings has a second row directly under Appearance, drawn the same way:
+the heading "Outside screen", the grey aside "When your iPhone is closed", and two picture
+tiles, "Beside the map" and "Under the controls", the chosen one ringed and its name
+ticked, as Appearance does. The words are the owner's (approved Nov 12, 2026: "I like the
+wording") and live in the words file like every other word.
+
+- **A, Beside the map, is the default:** the content stops where the system's side
+  controls begin, and the map (from M1) runs on under them. **B, Under the controls:** the
+  content runs on under them to the right edge.
+- The choice is kept across launches (`OutsideScreenStore`, the key `outsideScreen`,
+  `beside` or `under`; anything else reads as A).
+- **On any other iPhone the row does not exist**, and Settings is M0a's (the `settings`
+  pixel line above, with a forced-row negative sample that proves the line can fail).
+- The tiles are the approved mock-up's two small map pictures (ground, lake, roads, school
+  dot, sheet, time bar and glass circle), drawn from tokens.
+- Its effect is one layout value, `SideControls` (`SnowlightCore/State/OutsideScreen.swift`):
+  on a Duo, in compact width, with A, the content stops beside the controls; in every other
+  case it runs under them, as on M0a. The kit reads it through `Layout/SideControls.swift`
+  (`PageGround`). In this piece only the placeholder tabs use it, proven by the tour's
+  teal ground stopping at x 382 pt with A and running to the edge with B
+  (`duo-closed-*-myschool-proof-*`).
+- How the app knows it is on a Duo: rule 11.
+
+### Approved Duo rulings for later pieces
+
+The owner's rulings on the iPhone Duo (LEAD-RULINGS R14 to R17, design/app/duo/ROUND7-BRIEF.md
+and the DUO LEG spec), with the piece that builds each:
+
+- **The system's own controls, on the right** (R15): only the system's tab view, navigation
+  bars, toolbars and sheets carry the app's controls, so on the Duo the system moves them
+  to the right side; no custom bar anywhere; content keeps to the safe area and the layout
+  margins. Every piece.
+- **The Outside screen setting** (built, the DUO LEG; above). **M1 and every later screen
+  with a sheet over the map** (My School and its states, Why, Call it, Map, Pick a school)
+  applies its layout value.
 - **Continue on Pick a school is the phone's own 48 pt glass circle** with draft 3's
   chevron (owner's choice 1: "the iphones button is better than continue by far"). The word
-  in a capsule is dropped. Built with Pick a school in **M4**; nothing for it exists yet.
-- **The open Duo shows two panes** (R16): My School beside the map, on regular width,
-  with the system's split or column containers. Not drawn yet.
+  in a capsule is dropped everywhere. Built with Pick a school in **M4**; nothing for it
+  exists yet.
+- **The open Duo shows two panes** (R16): My School beside the map, on regular width, with
+  the system's split or column containers; the inner screen in portrait is the one pose
+  with bars along the bottom. Not built yet, and not picturable on GitHub's image.
+- **Band for band** (R17): every Duo screen, closed and open, is built only from mock-ups
+  the owner has seen and approved, drawn from draft 3, and every later screen's proof
+  pictures come in three shapes: iPhone 17 Pro, Duo closed, Duo open.
+- **Open for the lead:** whether the `xcode-27` job stops being `may fail` (green in run
+  43237329408, red in 43217555420 and 43226985119 when the Duo ran out of time on a slow
+  runner); whether `ThisPhone` moves from the model name to the hinge; the width a real
+  closed Duo gives (466 or 457 pt); and the ruled differences between the Duo pictures and
+  the mock-ups (in the DUO LEG report).
 
 ## Making the golden files again
 
