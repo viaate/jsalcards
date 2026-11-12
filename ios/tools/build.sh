@@ -32,6 +32,22 @@ fi
 # What was built, for whoever reads the log: its size and the settings file Xcode made.
 du -sh "$APP" || true
 plutil -p "$APP/Info.plist" || true
+# On the iOS 27 leg the app must be built with the iOS 27.1 SDK or newer: only an app built
+# with it is given the whole of the iPhone Duo's screens.
+if [ "${SIM_OS_PREFIX:-}" = "iOS 27." ]; then
+  SDK=$(plutil -extract DTPlatformVersion raw "$APP/Info.plist" 2>/dev/null || true)
+  MAJOR=${SDK%%.*}
+  MINOR=0
+  case "$SDK" in *.*) MINOR=${SDK#*.}; MINOR=${MINOR%%.*} ;; esac
+  case "$MAJOR:$MINOR" in
+    :*|*:|*[!0-9:]*) echo "::error::The app's SDK could not be read (DTPlatformVersion '$SDK')."; exit 1 ;;
+  esac
+  if [ "$MAJOR" -lt 27 ] || { [ "$MAJOR" -eq 27 ] && [ "$MINOR" -lt 1 ]; }; then
+    echo "::error::The app was built with the iOS $SDK SDK; the iPhone Duo needs 27.1 or newer."
+    exit 1
+  fi
+  echo "The app was built with the iOS $SDK SDK ($(plutil -extract DTSDKName raw "$APP/Info.plist" 2>/dev/null || true))."
+fi
 
 RLOG="$RUNNER_TEMP/xcodebuild-release.log"
 if ! xcodebuild build \

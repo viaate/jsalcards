@@ -3,7 +3,8 @@
 # files beside them. This folder is the one small artifact a run hands back.
 set -euo pipefail
 mkdir -p ios/out/small
-for f in ios/out/full/*/*.png; do
+# ios/out/duo/ holds the iPhone Duo's pictures, on the iOS 27 leg only (tools/duo.sh).
+for f in ios/out/full/*/*.png ios/out/duo/*.png; do
   [ -e "$f" ] || continue
   sips -s format jpeg -s formatOptions 80 -Z 1748 "$f" \
     --out "ios/out/small/$(basename "$f" .png).jpg" >/dev/null

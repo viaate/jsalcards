@@ -182,4 +182,12 @@ shoot light light-search-es search diff -AppleLanguages "(es)" -AppleLocale es_E
 # and uploaded, never compared with a committed file. Whether the teal shows in the
 # picture is read by ios/tools/pixels.swift and printed as yes or no.
 shoot dark dark-probe probe nodiff
+# On the iOS 27 leg only: the iPhone Duo, measured (tools/duo.sh). What it finds is printed;
+# it never changes this tour's result. This tour's phone is shut down first, so that two
+# simulators never run side by side on the runner's 7 GB.
+if [ "$SIM_OS_PREFIX" = "iOS 27." ]; then
+  xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
+  echo "[$SECONDS s] the iPhone Duo, measured by tools/duo.sh"
+  bash ios/tools/duo.sh || echo "::warning::The Duo measurement ended with status $?."
+fi
 exit $FAILED

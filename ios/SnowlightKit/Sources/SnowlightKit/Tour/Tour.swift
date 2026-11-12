@@ -163,8 +163,9 @@ struct TourPlan: Sendable {
 
 /// Put on the root view in debug builds. On an ordinary launch it does nothing. On a tour
 /// launch it turns animations off and, a little after the shell appears, makes the switch
-/// the launch asked for, if any, and has the words of the screen's model written. On the
-/// one launch that asks for the probe, it shows the probe in place of the shell.
+/// the launch asked for, if any, and has the words of the screen's model written; all the
+/// while, the window's measure goes to the log. On the one launch that asks for the probe,
+/// it shows the probe in place of the shell.
 struct TourStage: ViewModifier {
     /// The app's appearance choice: the same object the Settings tiles change.
     let appearance: AppearanceStore
@@ -174,7 +175,13 @@ struct TourStage: ViewModifier {
             // None of the shell is shown on this launch, and the probe writes its own file.
             MetalProbeScreen(plan: plan)
         } else {
-            content.onAppear {
+            // Behind the shell, a view of no look that writes the window's size, safe area,
+            // size classes and the places of the system's bars to the log whenever they
+            // change (TourGeometry.swift).
+            content.background {
+                TourGeometry().ignoresSafeArea()
+            }
+            .onAppear {
                 guard let plan = TourPlan.ofThisLaunch, Tour.begin() else {
                     return
                 }
