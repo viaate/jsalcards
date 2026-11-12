@@ -28,6 +28,24 @@ public enum Token: Equatable, Hashable, Sendable, CaseIterable {
     case onSolid
     /// The chance color.
     case chance
+    /// The small map pictures of Settings' Outside screen tiles, in draft 3's colors (the
+    /// approved mock-up's tile, design/app/duo duo.js layoutThumb, which keeps draft 3's
+    /// thumb colors): the map's ground,
+    case thumbGround
+    /// its lake and the lake's shore,
+    case thumbWater
+    case thumbShore
+    /// a road (in the light look a white line on a darker edge; in the dark look one line),
+    case thumbRoad
+    case thumbRoadEdge
+    /// the school's dot and its core,
+    case thumbDot
+    case thumbDotCore
+    /// the sheet over the map, its bold title bar and its two grey lines.
+    case thumbSheet
+    case thumbTitle
+    case thumbLine
+    case thumbLine2
 }
 
 /// One color: red, green and blue, each from 0 to 255.
@@ -129,6 +147,28 @@ public enum Tokens {
             return TokenPair(light: 0xFFFFFF, dark: 0x0D0E12)
         case .chance:
             return TokenPair(light: 0x12A594, dark: 0x36C9B3)
+        case .thumbGround:
+            return TokenPair(light: 0xE4EAF1, dark: 0x06070A)
+        case .thumbWater:
+            return TokenPair(light: 0xBBD5EE, dark: 0x0F1C2C)
+        case .thumbShore:
+            return TokenPair(light: 0x7DA7CF, dark: 0x35506E)
+        case .thumbRoad:
+            return TokenPair(light: 0xFFFFFF, dark: 0x7D8088)
+        case .thumbRoadEdge:
+            return TokenPair(light: 0x8F9DB0, dark: 0x7D8088)
+        case .thumbDot:
+            return TokenPair(light: 0x1D9BE6, dark: 0x7FD4FF)
+        case .thumbDotCore:
+            return TokenPair(light: 0xFFFFFF, dark: 0xD8F2FF)
+        case .thumbSheet:
+            return TokenPair(light: 0xFFFFFF, dark: 0x1C1D22)
+        case .thumbTitle:
+            return TokenPair(light: 0x0D0E12, dark: 0xE9EAEE)
+        case .thumbLine:
+            return TokenPair(light: 0xD6D9DE, dark: 0x3C3E46)
+        case .thumbLine2:
+            return TokenPair(light: 0xE7E9ED, dark: 0x2E3036)
         }
     }
 

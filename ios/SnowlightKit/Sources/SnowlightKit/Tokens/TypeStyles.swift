@@ -1,7 +1,7 @@
 // The type styles of the design, as numbers.
 //
-// Each style is a size, a weight and, at 20 points and above, a tracking set by hand: the
-// design is tighter than the system at display sizes. Every style grows with the reader's
+// Each style is a size, a weight and, at 20 points and above and for `meta`, a tracking set
+// by hand, the draft's own: the design is tighter than the system at display sizes. Every style grows with the reader's
 // text size setting, anchored to one of the system's text styles.
 
 import SwiftUI
@@ -12,7 +12,8 @@ enum TypeStyle {
     case titlePage
     /// A section's heading: 20 points, bold, tracking -0.3.
     case titleSection
-    /// Small supporting text: 15 points, regular.
+    /// Small supporting text: 15 points, regular, tracking -0.2 (draft 3's `.meta` and its
+    /// section heading's grey line).
     case meta
     /// A row's second line, and a tile's label: 14 points, regular.
     case sub
@@ -50,7 +51,9 @@ enum TypeStyle {
             return -0.45
         case .titleSection:
             return -0.3
-        case .meta, .sub, .subStrong:
+        case .meta:
+            return -0.2
+        case .sub, .subStrong:
             return 0
         }
     }

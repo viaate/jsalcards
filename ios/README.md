@@ -66,7 +66,7 @@ Each rule is held by a script, a test or the compiler, named beside it.
    the device's zone by mistake gives right answers. Each `swift test` step sets `TZ` and
    `SNOWLIGHT_EXPECT_ZONE` to the same odd zone (`workflow.zone`); no test may be skipped
    or kept from a platform (`tests.skip`); the count of tests in the source is the number
-   in `tools/test-count.txt` (`tests.count`, 40 today).
+   in `tools/test-count.txt` (`tests.count`, 49 today).
 7. **Made-up schools only.** Fixtures are the pipeline's synthetic ones; no school crest or
    logo is ever committed.
 8. **The picture tour is debug code.** Everything under `Tour/` is inside one `#if DEBUG`
@@ -75,24 +75,33 @@ Each rule is held by a script, a test or the compiler, named beside it.
 9. **English only.** No `.lproj` folder and no strings file (`language.file`).
 10. **Laid out from the room the window gives, never for one phone.** The same app runs on
    an iPhone 17 Pro (402 x 874 pt), on the iPhone Duo closed (466 x 678 pt, of which the
-   system's own controls take an 84 pt column on the right) and open (951 x 669 pt on its
-   side), and a fold or an unfold changes the room while it runs. So a view never reads the
+   system's own controls take an 84 pt column on the right; both measured by the app on the
+   simulator) and open (951 x 669 pt on its side: the device profile's figure, 2007 x 2853 px
+   at 3x, NOT measured, since the simulator never showed the app on the inner screen), and a
+   fold or an unfold changes the room while it runs (not proven: no simulator here folds). So a view never reads the
    device's screen, idiom or orientation and writes no length of 300 pt or more
    (`view.layout`); content sits inside the safe area, so it stops where the system's
    controls begin; and every screen's content keeps to the readable column
    (`Layout/ReadableColumn.swift`, at most `ContentLayout.readableLimit`, 672 pt, the
    width of the system's readable content guide at the standard text size). The width
    class alone picks one column (an iPhone, the closed Duo) or two (the open Duo, the
-   owner's two panes, not drawn yet): `SnowlightCore/State/ContentLayout.swift`, tested
-   with the rooms the simulators reported (`ContentLayoutTests`). Only the system's own
+   owner's two panes, not drawn yet): `SnowlightCore/State/ContentLayout.swift`, tested as
+   a pure function of the room (`ContentLayoutTests`: the two measured rooms and the open
+   Duo's profile figure; a test of a function, not a proof of a live fold). Only the system's own
    tab bar, navigation bars, toolbars and sheets carry the app's controls, so the system
-   moves them to the side on the Duo; no custom bar is ever drawn.
+   moves them to the side on the Duo; no custom bar is ever drawn. `Tour/` is measurement
+   only, debug code outside this rule: `TourGeometry` reads and logs the window's
+   orientation and the bars' places so the pictures can be judged, and nothing it reads
+   reaches a layout.
 11. **One file knows the phone, and only whether it has an outside screen.** The Outside
    screen row of Settings exists only on an iPhone Duo, and no documented call of the iOS
-   27.1 SDK says whether a phone has an outside screen. So `Shell/ThisPhone.swift` reads the
+   27.1 SDK says whether a phone has an outside screen (UIKit's hinge interaction, iOS 27.1,
+   says whether a phone has a hinge and reports Closed on the closed Duo simulator; whether
+   to use it is the lead's ruling, open). So `Shell/ThisPhone.swift` reads the
    phone's model name (on the simulator, the simulated phone's, which the simulator hands
    the app as `SIMULATOR_MODEL_IDENTIFIER`; on a phone, the system's `hw.machine`) as bytes,
-   and SnowlightCore's `PhoneModel` says whether it is a Duo (`iPhone19,4`, tested). The file
+   and SnowlightCore's `PhoneModel` says whether it is a Duo (`iPhone19,4`, tested; the name
+   is the simulator's device profile's, not yet confirmed on a real iPhone Duo). The file
    hands out one Bool. It alone may hold those two names and read `ProcessInfo`; every
    other rule holds in it (`words.literal`, `view.device`, with samples).
 
@@ -148,24 +157,40 @@ light and dark (10 pictures, `duo-closed-<look>-<screen>`, from the outer screen
 `--display=1`), with the Outside screen setting on Beside the map; then Settings with Under
 the controls chosen (`duo-closed-<look>-settings-under`) and My School with its ground in
 the chance teal under each layout (`duo-closed-<look>-myschool-proof-beside` and
-`-proof-under`), 16 pictures. Their words are compared with `tools/tour-words/duo/` where
+`-proof-under`); then Under the controls chosen in code through the tiles' own call
+(`duo-closed-light-settings-chose-under`) and, after the app is stopped and started again
+without the tour touching the kept layout, Settings once more (`duo-closed-light-settings-kept`,
+which must show Under the controls chosen): 18 pictures. Their words are compared with `tools/tour-words/duo/` where
 there is a file (Settings, with the Outside screen row), else with the iPhone's
 `tools/tour-words/` files; the app must say it is on a phone with an outside screen; and
 the app's own geometry line must show the system's tab bar standing upright on the right on
 the four tab screens. A screen that never comes up or cannot be pictured, a changed word,
-the app not knowing it is on a Duo or a tab bar elsewhere fails the job. The job also
+the app not knowing it is on a Duo or a tab bar elsewhere fails the job; so do, once the
+image has the Duo's device type and a runtime that makes it, a Duo that does not boot, an
+app that cannot be installed, and fewer than 18 pictures (out of time included). After each
+picture the tour counts the black pixels where the Dynamic Island is (above the time): run
+43204344211 caught a black disc there, drawn by the system in three light pictures in a
+row and gone 4 s later; such a picture is kept aside (`ios/out/duo/<name>-island.png`) and
+taken again, up to twice. The job is still `may fail` (`continue-on-error` in
+`ios-app.yml`), so a failure of the Duo's turns that job red but not the run: whether to
+make it count is the lead's decision (changing `ios-app.yml` starts the site's CI once). The job also
 prints what the iOS SDK's UIKit and SwiftUI say about an outer display, a fold, a posture
 or a hinge (rule 11): the 27.1 SDK has UIKit's `UIHingeInteraction` (`UIHinge.h`,
 `UIHingeInteraction.h`), and on a build with that SDK the tour puts one on the window and
 writes what it reports (`hinge:` lines, `Tour/TourGeometry.swift`), on the iPhone and on
 the Duo. The pictures stay in `ios-shots-27`
-and are also printed into the log as colour grids (`tools/grid.swift`, 96 columns). The
+and are also printed into the log as colour grids (`tools/grid.swift`, 96 columns), with
+the band of the Settings pictures that holds the Outside screen row (y 200 to 352 pt) at
+one cell per point (`grid <picture>-band`). The
 Duo cannot be opened on GitHub's image (no fold command in simctl and no Simulator.app
 there), so there is no open picture yet; the inner screen (`--display=3`) is pictured
 once and stays black.
 
 What the Mac job checks: the pinned Xcode exists; the core tests; XcodeGen's checksum; the
-two unsigned builds; every tour screen says it is ready; the words of 14 pictures equal
+two unsigned builds for the simulator and, on the macos-26 job, one unsigned Release build
+for a generic iPhone (`generic/platform=iOS`, `CODE_SIGNING_ALLOWED=NO`, no team), so the
+code only a real phone runs (`ThisPhone`'s `hw.machine`) is compiled; every tour screen says
+it is ready; the words of 15 pictures equal
 `tools/tour-words/`; the pixel lines. The words file of a picture is **the words its
 screen model offers the view**, read off the model in the app; it is not a reading of the
 screen. `tools/tour-words/system/` lists by hand the words iOS itself draws on each screen
@@ -180,10 +205,14 @@ left and the top:
 | the four tab screens | 94% from the top, at x 10%, 28%, 45%, 61% (My School, Map, Call it, Settings), inside each tab's capsule and clear of its symbol and name | the chosen tab's point at least 12 away from the page color (the system's capsule); the other three within 10 of it (the bar's glass) |
 | settings | 40%, 22% and 72%, 22% | the Light tile `#ffffff` and the Dark tile `#131418`, in either look |
 | settings | x 10%, every point from 33% to 47% | the `page` color: no Outside screen row on an iPhone |
+| `light-settings-forced-row` | the same run | must FAIL: the tour shows the row on this iPhone for this one picture (`-tour.row shown`), the negative sample that shows the run can find a row |
 | `dark-probe` | 10%, 25% | `#12a594`, printed yes or no and never a failure |
 | `duo-closed-*` (the Duo, closed) | 40%, 60%; on the four tab screens also 25%, 94% | the `page` color: the content left of the system's side controls, and no tab bar along the bottom; 90%, 66% (the side tab platter's glass) printed yes or no |
 | `duo-closed-*-settings*` | x 10%, some point from 31% to 50% | at least 60 from the `page` color: the Outside screen row (its heading and its first tile's bold bar) under Appearance |
 | `duo-closed-*-myschool-proof-*` | 40%, 60% and 25%, 94%; 90%, 40% | the `chance` teal (`#12a594` light, `#36c9b3` dark); at 90%, 40%, in the side column under the status cluster and above the tab platter: the teal with Under the controls, at least 40 from it with Beside the map |
+| every `duo-closed-*` | x 90%, some point from 58% to 96% | at least 60 from the ground (the page, or the teal): the system's side controls drawn (tab icons, search glyph) |
+| every `duo-closed-*` but search | across y 4%, some point from x 4% to 40% | at least 60 from the ground: the page title drawn |
+| `duo-closed-*-settings*` | across y 42%: x 2% to 4%, and x 41% to 42% | the chosen tile's ring (at least 60 from the page) at the first place with Beside the map, at the second with Under the controls (`-under`, `-chose-under`, `-kept`); the other place the page (within 12) |
 
 The tab and tile places were measured on the small iPhone 17 Pro pictures of iOS app run
 42914332720 (iOS 26.5), and hold the same in run 42898061415: the chosen capsule 20 away

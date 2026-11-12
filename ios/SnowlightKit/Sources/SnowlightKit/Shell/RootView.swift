@@ -55,7 +55,17 @@ public struct RootView: View {
     /// The kept Outside screen choice on a phone with an outside screen (Shell/ThisPhone.swift),
     /// and nil on any other phone: there the row does not exist and the layout is as it was.
     private var outsideScreen: OutsideScreenChoice? {
-        ThisPhone.hasOuterScreen ? outside.choice : nil
+        RootView.showsOutsideScreenRow ? outside.choice : nil
+    }
+
+    /// True on a phone with an outside screen. In debug builds the picture tour may also
+    /// show the row on another phone, for one picture that its pixel check must find wrong.
+    private static var showsOutsideScreenRow: Bool {
+        #if DEBUG
+        return Tour.showsOutsideScreenRow
+        #else
+        return ThisPhone.hasOuterScreen
+        #endif
     }
 
     private var shell: some View {

@@ -41,15 +41,28 @@
 #      (B) chosen (duo-closed-<look>-settings-under), and My School with its ground drawn in
 #      the chance teal, with A and with B (duo-closed-<look>-myschool-proof-beside and
 #      -proof-under), so the pictures show where the ground stops;
-#   5. pictures the inner screen once with the app running, to say what it holds;
-#   6. prints every picture as a grid of colors (tools/grid.swift), because the pictures
-#      of this leg stay in its own artifact.
+#   5. that a choice made in Settings is kept across a launch: Under the controls chosen in
+#      code through the tiles' own call (duo-closed-light-settings-chose-under), then the
+#      app stopped and started again without the tour touching the kept layout
+#      (duo-closed-light-settings-kept), 18 pictures in all;
+#   6. pictures the inner screen once with the app running, to say what it holds;
+#   7. prints every picture as a grid of colors (tools/grid.swift), because the pictures
+#      of this leg stay in its own artifact, and the band of the Settings pictures that
+#      holds the Outside screen row (y 200 to 352 pt) at one cell per point.
+# After each picture it counts the black pixels where the Dynamic Island is (x 393 to 443,
+# y 15 to 72 pt, above the time): run 43204344211 found a black disc there in three light
+# pictures taken one after another (a system drawing that came and went: the dark ones of
+# the same launches 4 seconds later had none). If one is there, the picture is kept aside
+# (ios/out/duo/<name>-island.png, printed as a grid too) and taken again, up to twice, 4
+# seconds apart.
 # The pixel step (tools/pixels.swift) reads the closed pictures with the others.
 #
 # It ends with status 1 when a check fails: a screen that never says it is ready or cannot
 # be pictured, a picture's words changed, the app not knowing it is on a Duo, or a tab
-# screen's tab bar not on the right. What the runner cannot give it (no Duo, no boot, no
-# time), it says, and ends with 0.
+# screen's tab bar not on the right; and, once this image has the Duo's device type and a
+# runtime that makes it, when the Duo does not boot, the app cannot be installed, or fewer
+# than all 18 pictures were taken (out of time included). Only an image with no Duo device
+# type, or no runtime that makes one, is said and ends with 0.
 #
 # Bash 3.2 on macOS: no associative arrays, no mapfile.
 set -uo pipefail
@@ -66,7 +79,7 @@ LOGS="$(cd "$OUT/logs" && pwd)"
 GRID="$RUNNER_TEMP/grid"
 # The seconds kept back for the grids at the end, after the budget's last stage (about 8
 # a picture at 96 columns).
-GRID_TIME=150
+GRID_TIME=180
 
 # limit <seconds> <command...>: the command, stopped when the time is up (macOS has no
 # timeout command; perl's alarm outlives the exec).
@@ -83,6 +96,10 @@ room() {
 say() { echo "[duo $SECONDS s] $*"; }
 FAILED=0
 fail() { echo "::error::$*"; FAILED=1; }
+# The pictures the tour must take, once the Duo exists.
+TOTAL=18
+# give_up <why>: a failure that ends the Duo's tour here.
+give_up() { fail "$*"; say "the Duo's tour stops: status 1"; exit 1; }
 
 say "budget $BUDGET s"
 # The grid tool is built while the simulator boots.
@@ -159,18 +176,16 @@ if [ -z "$UDID" ]; then
 fi
 trap 'xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true; xcrun simctl delete "$UDID" >/dev/null 2>&1 || true' EXIT
 say "an '$DUO' on $RUNTIME: $UDID"
-room 300 "the boot" || exit 0
+room 300 "the boot" || give_up "The Duo's tour had no time left for the boot."
 if ! limit 280 xcrun simctl boot "$UDID" || ! limit 280 xcrun simctl bootstatus "$UDID" -b >/dev/null; then
-  echo "::warning::The '$DUO' did not boot in time."
-  exit 0
+  give_up "The '$DUO' did not boot within 280 s on $RUNTIME."
 fi
 say "the Duo is up"
 xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 \
   --wifiBars 3 --cellularBars 4 || echo "the status bar override was refused"
-room 200 "the install" || exit 0
+room 200 "the install" || give_up "The Duo's tour had no time left to install the app."
 if ! limit 180 xcrun simctl install "$UDID" "$APP"; then
-  echo "::warning::The app could not be installed on the '$DUO'."
-  exit 0
+  give_up "The app could not be installed on the '$DUO' within 180 s."
 fi
 say "the app is installed"
 
@@ -233,6 +248,34 @@ bar_on_right() {
 TAKEN=0
 MISSES=0
 CHANGED=0
+ISLANDS=0
+GRID_STATE=""
+# grid_ready: true once the grid tool is built (waited for once, the first time asked).
+grid_ready() {
+  if [ -z "$GRID_STATE" ]; then
+    if wait "$GRID_BUILD"; then
+      GRID_STATE=yes; say "grid.swift built"
+    else
+      GRID_STATE=no; echo "grid.swift did not build:"; tail -20 "$LOGS/grid-build.txt"
+    fi
+  fi
+  [ "$GRID_STATE" = yes ]
+}
+# island <picture>: the number of black pixels where the Dynamic Island is, above the time
+# at the top of the side column (x 393 to 443 pt, y 15 to 72 pt), or 0 when it cannot be
+# counted.
+island() {
+  local n
+  n=$("$GRID" black 1180 45 1330 216 "$1" 2>/dev/null | awk '$1 == "black" {print $3}')
+  echo "${n:-0}"
+}
+# shot <name>: the outer screen's picture, with one more, slower try.
+shot() {
+  limit 30 xcrun simctl io "$UDID" screenshot --type=png --display="$OUTER" "$SHOTS/$1.png" >"$LOGS/duo-shot.txt" 2>&1 && return 0
+  say "the picture of '$1' did not come in 30 s; one more try"
+  sleep 2
+  limit 60 xcrun simctl io "$UDID" screenshot --type=png --display="$OUTER" "$SHOTS/$1.png" >"$LOGS/duo-shot.txt" 2>&1
+}
 # closed <light|dark> <screen> [variant]: one picture of the tour, the phone closed. The
 # variant names what the Outside screen setting is for the picture: none (a fresh
 # install's, Beside the map), under (Under the controls), proof-beside or proof-under (the
@@ -247,6 +290,8 @@ closed() {
     under) set -- -tour.outside under ;;
     proof-beside) set -- -tour.outside beside -tour.proof ground ;;
     proof-under) set -- -tour.outside under -tour.proof ground ;;
+    chose-under) set -- -tour.outsideThen under ;;
+    kept) set -- -tour.outside kept ;;
   esac
   if [ $TAKEN -eq 0 ]; then need=150; fi
   room $need "'$name'" || return 1
@@ -263,9 +308,7 @@ closed() {
   fi
   # Run 43192616125 once waited past 30 s for a picture that the next screen's took in 3 s:
   # one more try, with longer to answer, before the picture counts as not taken.
-  if ! limit 30 xcrun simctl io "$UDID" screenshot --type=png --display="$OUTER" "$SHOTS/$name.png" >"$LOGS/duo-shot.txt" 2>&1 \
-     && { say "the picture of '$name' did not come in 30 s; one more try"; sleep 2
-          ! limit 60 xcrun simctl io "$UDID" screenshot --type=png --display="$OUTER" "$SHOTS/$name.png" >"$LOGS/duo-shot.txt" 2>&1; }; then
+  if ! shot "$name"; then
     fail "No picture of the Duo's outer screen could be taken for '$name': $(tr '\n' ' ' < "$LOGS/duo-shot.txt" | cut -c1-300)"
     rm -f "$SHOTS/$name.png"
     MISSES=$((MISSES + 1))
@@ -273,6 +316,25 @@ closed() {
     return 0
   fi
   MISSES=0
+  # Something black where the Dynamic Island is: kept aside, and the picture taken again.
+  if grid_ready; then
+    local tries=0 black
+    black=$(island "$SHOTS/$name.png")
+    while [ "$black" -ge 500 ] && [ $tries -lt 2 ]; do
+      tries=$((tries + 1))
+      ISLANDS=$((ISLANDS + 1))
+      if [ $tries -eq 1 ]; then cp "$SHOTS/$name.png" "$OUT/duo/$name-island.png"; fi
+      say "$name: $black black pixels where the Dynamic Island is (x 393-443, y 15-72 pt): the system drew there; kept as ios/out/duo/$name-island.png, the picture taken again in 4 s (try $tries)"
+      sleep 4
+      shot "$name" || break
+      black=$(island "$SHOTS/$name.png")
+    done
+    if [ "$black" -ge 500 ]; then
+      echo "::warning::$name: still $black black pixels where the Dynamic Island is; the picture is kept with them."
+    elif [ $tries -gt 0 ]; then
+      say "$name: taken again, nothing black where the Dynamic Island is ($black)"
+    fi
+  fi
   TAKEN=$((TAKEN + 1))
   say "$name: $(sips -g pixelWidth -g pixelHeight "$SHOTS/$name.png" | tail -2 | tr -s ' \n' ' ')"
   cp "$READY" "$OUT/words/$name.txt"
@@ -305,14 +367,23 @@ say "closed: $TAKEN of 10 pictures"
 echo "=== The Outside screen setting on the Duo, closed: B chosen, and where the ground stops"
 if [ "$STOPPED" = no ]; then
   for mode in light dark; do
-    for shot in "settings under" "myschool proof-beside" "myschool proof-under"; do
+    for pair in "settings under" "myschool proof-beside" "myschool proof-under"; do
       # shellcheck disable=SC2086
-      if ! closed "$mode" $shot; then STOPPED=yes; break; fi
+      if ! closed "$mode" $pair; then STOPPED=yes; break; fi
     done
     [ "$STOPPED" = no ] || break
   done
 fi
 say "closed with the setting: $TAKEN of 16 pictures"
+
+echo "=== A choice made in Settings, kept across a launch"
+if [ "$STOPPED" = no ]; then
+  for pair in "settings chose-under" "settings kept"; do
+    # shellcheck disable=SC2086
+    if ! closed light $pair; then STOPPED=yes; break; fi
+  done
+fi
+say "with the kept choice: $TAKEN of $TOTAL pictures"
 
 echo "=== Open (the inner screen)"
 if [ $TAKEN -gt 0 ] && room 30 "the picture of the inner screen"; then
@@ -324,16 +395,23 @@ if [ $TAKEN -gt 0 ] && room 30 "the picture of the inner screen"; then
 fi
 echo "The phone cannot be opened on this image (no fold command, no Simulator.app): no open picture."
 
-if wait "$GRID_BUILD"; then
-  say "grid.swift built"
-  for f in "$SHOTS"/*.png; do
+if grid_ready; then
+  for f in "$SHOTS"/*.png "$OUT"/duo/*-island.png; do
     [ -e "$f" ] || continue
     "$GRID" 96 "$f" || true
   done
   if [ -f "$OUT/duo/duo-inner.png" ]; then "$GRID" 12 "$OUT/duo/duo-inner.png" || true; fi
-else
-  echo "grid.swift did not build:"; tail -20 "$LOGS/grid-build.txt"
+  # The Outside screen row at the picture's own scale: y 200 to 352 pt, the whole width,
+  # one cell a point (3 px).
+  for f in "$SHOTS"/duo-closed-light-settings.png "$SHOTS"/duo-closed-dark-settings.png \
+           "$SHOTS"/duo-closed-light-settings-under.png "$SHOTS"/duo-closed-dark-settings-under.png; do
+    [ -e "$f" ] || continue
+    "$GRID" band 0 600 1398 1056 3 "$f" || true
+  done
 fi
 ls -l "$SHOTS" "$OUT/duo" || true
-say "the Duo's tour: $TAKEN of 16 closed pictures, $CHANGED with changed words; status $FAILED"
+if [ $TAKEN -lt $TOTAL ]; then
+  fail "The Duo's tour took $TAKEN of its $TOTAL pictures."
+fi
+say "the Duo's tour: $TAKEN of $TOTAL closed pictures, $CHANGED with changed words, $ISLANDS taken again for the Dynamic Island; status $FAILED"
 exit $FAILED

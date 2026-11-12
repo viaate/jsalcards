@@ -45,28 +45,30 @@ struct SettingsScreen: View {
 }
 
 /// A section's heading and, when there is one, the grey line beside it, at the right, on
-/// one line as the draft draws them. The heading keeps its size; where the two do not fit
-/// the column (the Outside screen row on the closed Duo, run 43192616125, whose line
-/// broke in two), the grey line is drawn a little smaller, never below 85 percent. Where
-/// they fit, as Appearance's always does, nothing changes.
+/// one line as the draft draws them, both at full size: the line in the `meta` style, with
+/// the draft's -0.2 tracking. The gap between the two is at least 12 points and otherwise
+/// whatever is left, as the draft's row spreads them apart. (Run 43192616125 broke the
+/// Outside screen row's line in two on the closed Duo: the stack's own spacing then stood
+/// on both sides of the spacer, 24 points, and the line had no tracking.) The line is
+/// never made smaller; if it ever does not fit, it ends in an ellipsis on one line, for a
+/// person to see in the pictures.
 struct SectionHeading: View {
     let title: ShownText
     let aside: ShownText?
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
+        HStack(alignment: .firstTextBaseline, spacing: 0) {
             ShownLabel(title)
                 .typeStyle(.titleSection)
                 .foregroundStyle(Color.token(.ink))
                 .accessibilityAddTraits(.isHeader)
                 .layoutPriority(1)
-            Spacer(minLength: 0)
+            Spacer(minLength: 12)
             if let line = aside {
                 ShownLabel(line)
                     .typeStyle(.meta)
                     .foregroundStyle(Color.token(.ink2))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.85)
             }
         }
     }

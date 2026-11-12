@@ -27,6 +27,36 @@ final class OutsideScreenTests: XCTestCase {
         }
     }
 
+    func testAChoiceKeptInASettingsStoreReadsBackAndAnUnknownOneReadsAsBesideTheMap() throws {
+        // A store of the tests' own, never the phone's, emptied before and after.
+        let name = "snowlight.tests.outsideScreen"
+        let store = try XCTUnwrap(UserDefaults(suiteName: name))
+        store.removePersistentDomain(forName: name)
+        defer { store.removePersistentDomain(forName: name) }
+        // Nothing kept yet: Beside the map.
+        XCTAssertEqual(OutsideScreenChoice.kept(in: store), .besideTheMap)
+        // Under the controls, kept and read back, also through a second handle on the same
+        // store, as the next launch of the app opens it.
+        OutsideScreenChoice.underTheControls.keep(in: store)
+        XCTAssertEqual(store.string(forKey: OutsideScreenChoice.storeKey), "under")
+        XCTAssertEqual(OutsideScreenChoice.kept(in: store), .underTheControls)
+        let again = try XCTUnwrap(UserDefaults(suiteName: name))
+        XCTAssertEqual(OutsideScreenChoice.kept(in: again), .underTheControls)
+        // Back to Beside the map.
+        OutsideScreenChoice.besideTheMap.keep(in: store)
+        XCTAssertEqual(OutsideScreenChoice.kept(in: store), .besideTheMap)
+        // A value this build does not know, as a later or an earlier build might leave it.
+        store.set("sideways", forKey: OutsideScreenChoice.storeKey)
+        XCTAssertEqual(OutsideScreenChoice.kept(in: store), .besideTheMap)
+        store.set(7, forKey: OutsideScreenChoice.storeKey)
+        XCTAssertEqual(OutsideScreenChoice.kept(in: store), .besideTheMap)
+        // Forgotten: Beside the map again.
+        OutsideScreenChoice.underTheControls.keep(in: store)
+        OutsideScreenChoice.forget(in: store)
+        XCTAssertNil(store.object(forKey: OutsideScreenChoice.storeKey))
+        XCTAssertEqual(OutsideScreenChoice.kept(in: store), .besideTheMap)
+    }
+
     func testTheLayoutValueOfEachPhoneAndPose() {
         // Any other phone: the content runs under the system's controls, as it always has.
         XCTAssertEqual(sideControls(outsideScreen: nil, widthClass: .compact), .contentRunsUnder)

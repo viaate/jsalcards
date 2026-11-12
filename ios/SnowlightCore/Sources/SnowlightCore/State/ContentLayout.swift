@@ -3,8 +3,9 @@
 // A screen is laid out from the room its window gives it and the system's width class,
 // never from the device, its idiom, its orientation or its screen. The same app runs on
 // an iPhone 17 Pro (402 pt wide), on the iPhone Duo closed (466 pt, of which the system's
-// own controls take an 84 pt column on the right) and on the Duo open (951 pt on its
-// side), and folding or unfolding the Duo changes the room while the app runs. So the
+// own controls take an 84 pt column on the right; both measured on the simulator) and on
+// the Duo open (951 pt on its side, the device profile's figure, not measured), and folding
+// or unfolding the Duo changes the room while the app runs. So the
 // layout is a plain function of that room, asked again whenever the room changes, and it
 // keeps nothing from one answer to the next.
 //

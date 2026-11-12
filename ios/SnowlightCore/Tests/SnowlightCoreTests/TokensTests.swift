@@ -15,6 +15,17 @@ final class TokensTests: XCTestCase {
         (.solid, "#0d0e12", "#f4f5f7"),
         (.onSolid, "#ffffff", "#0d0e12"),
         (.chance, "#12a594", "#36c9b3"),
+        (.thumbGround, "#e4eaf1", "#06070a"),
+        (.thumbWater, "#bbd5ee", "#0f1c2c"),
+        (.thumbShore, "#7da7cf", "#35506e"),
+        (.thumbRoad, "#ffffff", "#7d8088"),
+        (.thumbRoadEdge, "#8f9db0", "#7d8088"),
+        (.thumbDot, "#1d9be6", "#7fd4ff"),
+        (.thumbDotCore, "#ffffff", "#d8f2ff"),
+        (.thumbSheet, "#ffffff", "#1c1d22"),
+        (.thumbTitle, "#0d0e12", "#e9eaee"),
+        (.thumbLine, "#d6d9de", "#3c3e46"),
+        (.thumbLine2, "#e7e9ed", "#2e3036"),
     ]
 
     func testEveryTokenIsInTheWrittenTableOnce() {

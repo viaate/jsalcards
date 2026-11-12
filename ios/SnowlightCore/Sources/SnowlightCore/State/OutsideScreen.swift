@@ -102,12 +102,13 @@ public func sideControls(outsideScreen: OutsideScreenChoice?, widthClass: WidthC
 
 /// Which phones have an outside screen, by the phone's model name.
 ///
-/// No documented call of the iOS 27.1 SDK says whether a phone has an outside screen, so
+/// No documented call of the iOS 27.1 SDK says whether a phone has an outside screen (its
+/// hinge interaction says whether a phone has a hinge, and is the lead's to rule on), so
 /// the model name is the last resort the build spec allows: the one place the app knows
 /// the device. The kit reads the name (Shell/ThisPhone.swift) and hands it here as bytes.
 public enum PhoneModel {
     /// The model names of the iPhone Duo. The simulator's iPhone Duo is iPhone19,4 (its
-    /// device profile, iOS app run 43129256570).
+    /// device profile, iOS app run 43129256570); not yet confirmed on a real iPhone Duo.
     static let withOuterScreen: [String] = ["iPhone19,4"]
 
     /// True when the model name, as bytes, is one of the iPhone Duo's. Zero bytes at the

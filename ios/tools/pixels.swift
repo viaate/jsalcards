@@ -105,6 +105,12 @@ struct NamedPoint {
     /// must show. Nil for a single point.
     var runTo: Int? = nil
     var run: Run? = nil
+    /// For a run across the picture instead, or a box: where it ends, in percent from the
+    /// left (a run across has runTo equal to y). Nil for a run down one column.
+    var runAcrossTo: Int? = nil
+    /// True for a negative sample: a picture known to be wrong for this run, on which the
+    /// run must NOT hold (ok when it fails, WRONG when it holds).
+    var mustFail: Bool = false
 }
 
 /// The colors the named points are held to. The two page colors are the app's `page`
@@ -174,6 +180,20 @@ func pageShade(for picture: String) -> (shade: Shade, name: String)? {
 ///     status cluster and above the tab platter: the teal with Under the controls (B), the
 ///     ground running under the column, and not the teal with Beside the map (A), the
 ///     ground stopping where the column begins (judged).
+/// Something drawn, so that a blank picture fails (judged on every Duo picture):
+///   - the system's side controls: down x 90% (419 pt, the middle of the platter at x 394
+///     to 442) from 58% to 96% (393 to 651 pt), some point at least 60 from the ground
+///     (the page, or the teal on the proof pictures): the tab icons and the search glyph,
+///     which only the system draws there;
+///   - the page title, on every screen but search: across y 4% (27 pt) from x 4% to 40%,
+///     some point at least 60 from the ground.
+/// Which Outside screen tile is ringed, on the Duo's Settings pictures (judged): across y
+/// 42% (285 pt, the middle of the tiles), from x 2% to 4% (9 to 18.6 pt) the first tile's
+/// ring when Beside the map is chosen, and from x 41% to 42% (191 to 195.7 pt), between the
+/// two tiles, the second tile's ring when Under the controls is chosen (settings-under, and
+/// settings-chose-under and settings-kept, where it was chosen in code and then kept across
+/// a launch); the other place the page all along. Measured on run 43204344211's grids: the
+/// first ring's left side near 15.5 to 18 pt, the second's near 192.5 to 197 pt.
 let duoClosed = "duo-closed-"
 
 func duoPoints(for rest: String) -> [NamedPoint] {
@@ -185,9 +205,22 @@ func duoPoints(for rest: String) -> [NamedPoint] {
     let variant = parts.count > 2 ? parts[2...].joined(separator: "-") : ""
     let tabScreen = tabs.contains(where: { $0.screen == screen })
     let teal = Wanted.chanceTeal(for: rest)
+    let ground = variant.hasPrefix("proof-") ? teal : page.shade
+    var drawn = [NamedPoint(
+        x: 90, y: 58, expect: .awayFrom(ground, 60),
+        what: "the system's side controls drawn: an icon or the search glyph somewhere down to 96%", judged: true,
+        runTo: 96, run: .someAwayFrom(ground, 60)
+    )]
+    if screen != "search" {
+        drawn.append(NamedPoint(
+            x: 4, y: 4, expect: .awayFrom(ground, 60),
+            what: "the page title drawn: ink somewhere across to x 40%", judged: true,
+            runTo: 4, run: .someAwayFrom(ground, 60), runAcrossTo: 40
+        ))
+    }
     if variant == "proof-beside" || variant == "proof-under" {
         let under = variant == "proof-under"
-        return [
+        return drawn + [
             NamedPoint(x: 40, y: 60, expect: .near(teal, 8), what: "the placeholder ground in the chance teal " + teal.hex, judged: true),
             NamedPoint(x: 25, y: 94, expect: .near(teal, 8), what: "no tab bar along the bottom: the teal", judged: true),
             under
@@ -206,8 +239,20 @@ func duoPoints(for rest: String) -> [NamedPoint] {
             what: "the Outside screen row: ink somewhere down to 50%", judged: true,
             runTo: 50, run: .someAwayFrom(page.shade, 60)
         ))
+        let underChosen = variant == "under" || variant == "chose-under" || variant == "kept"
+        let ringed = NamedPoint(
+            x: underChosen ? 41 : 2, y: 42, expect: .awayFrom(page.shade, 60),
+            what: (underChosen ? "Under the controls" : "Beside the map") + " chosen: its tile's ring", judged: true,
+            runTo: 42, run: .someAwayFrom(page.shade, 60), runAcrossTo: underChosen ? 42 : 4
+        )
+        let plain = NamedPoint(
+            x: underChosen ? 2 : 41, y: 42, expect: .near(page.shade, 12),
+            what: (underChosen ? "Beside the map" : "Under the controls") + " not chosen: no ring, the page", judged: true,
+            runTo: 42, run: .allNear(page.shade, 12), runAcrossTo: underChosen ? 4 : 42
+        )
+        points += [ringed, plain]
     }
-    return points
+    return drawn + points
 }
 
 /// The points to read in a picture, by the picture's name.
@@ -239,11 +284,17 @@ func namedPoints(for picture: String) -> [NamedPoint] {
         points.append(NamedPoint(x: 40, y: 22, expect: .near(Wanted.pageLight, 8), what: "the Light tile " + Wanted.pageLight.hex, judged: placesMeasuredHere))
         points.append(NamedPoint(x: 72, y: 22, expect: .near(Wanted.pageDark, 8), what: "the Dark tile " + Wanted.pageDark.hex, judged: placesMeasuredHere))
         // No Outside screen row on an iPhone: under the Appearance row, which ends at about
-        // 30%, the page down x 10% to 47%, where the row's heading and tiles would be.
+        // 30%, the page down x 10% to 47%, where the row's heading and tiles would be. On
+        // light-settings-forced-row, where the tour shows the row on this iPhone, the same
+        // run must fail: the negative sample that shows it can.
+        let forced = picture == "light-settings-forced-row"
         points.append(NamedPoint(
             x: 10, y: 33, expect: .near(page.shade, 8),
-            what: "no Outside screen row: the page all the way down to 47%", judged: placesMeasuredHere,
-            runTo: 47, run: .allNear(page.shade, 8)
+            what: forced
+                ? "the row forced on (a negative sample): the 'no Outside screen row' run must fail here"
+                : "no Outside screen row: the page all the way down to 47%",
+            judged: placesMeasuredHere,
+            runTo: 47, run: .allNear(page.shade, 8), mustFail: forced
         ))
     }
     return points
@@ -304,14 +355,17 @@ struct Bitmap {
     /// Reads every row of one column from one height to another (in percent of the
     /// picture). Says whether the run holds, and the shade that tells: the one farthest
     /// from the color.
-    func run(xPercent: Int, fromPercent: Int, toPercent: Int, run: Run) -> (holds: Bool, telling: Shade)? {
+    /// With `xToPercent`, every pixel of the box from x to that x as well (a run across
+    /// when the two heights are one).
+    func run(xPercent: Int, fromPercent: Int, toPercent: Int, run: Run, xToPercent: Int? = nil) -> (holds: Bool, telling: Shade)? {
         guard let memory = context.data else {
             return nil
         }
         let column = min(width - 1, max(0, width * xPercent / 100))
+        let lastColumn = min(width - 1, max(0, width * (xToPercent ?? xPercent) / 100))
         let first = min(height - 1, max(0, height * fromPercent / 100))
         let last = min(height - 1, max(0, height * toPercent / 100))
-        if last < first {
+        if last < first || lastColumn < column {
             return nil
         }
         let bytes = memory.assumingMemoryBound(to: UInt8.self)
@@ -328,12 +382,14 @@ struct Bitmap {
         var farthest = color
         var farthestDistance = -1
         for row in first...last {
-            let offset = row * context.bytesPerRow + column * 4
-            let seen = Shade(red: Int(bytes[offset]), green: Int(bytes[offset + 1]), blue: Int(bytes[offset + 2]))
-            let distance = seen.distance(to: color)
-            if distance > farthestDistance {
-                farthestDistance = distance
-                farthest = seen
+            for across in column...lastColumn {
+                let offset = row * context.bytesPerRow + across * 4
+                let seen = Shade(red: Int(bytes[offset]), green: Int(bytes[offset + 1]), blue: Int(bytes[offset + 2]))
+                let distance = seen.distance(to: color)
+                if distance > farthestDistance {
+                    farthestDistance = distance
+                    farthest = seen
+                }
             }
         }
         switch run {
@@ -375,16 +431,21 @@ func readPictures(under folder: String) -> Int32 {
         }
         for point in points {
             if let end = point.runTo, let run = point.run {
-                let place = String(point.x) + "% " + String(point.y) + "-" + String(end) + "%"
-                guard let found = bitmap.run(xPercent: point.x, fromPercent: point.y, toPercent: end, run: run) else {
+                var place = String(point.x) + "% " + String(point.y) + "-" + String(end) + "%"
+                if let across = point.runAcrossTo {
+                    place = "x " + String(point.x) + "-" + String(across) + "% y " + String(point.y) + "-" + String(end) + "%"
+                }
+                guard let found = bitmap.run(xPercent: point.x, fromPercent: point.y, toPercent: end, run: run, xToPercent: point.runAcrossTo) else {
                     print([name, place, "could not be read", "WRONG"].joined(separator: " "))
                     wrong += 1
                     continue
                 }
-                var verdict = found.holds ? "ok" : "WRONG"
+                // A negative sample is right when the run does not hold.
+                let right = point.mustFail ? !found.holds : found.holds
+                var verdict = right ? "ok" : "WRONG"
                 if !point.judged {
-                    verdict = found.holds ? "yes" : "no"
-                } else if !found.holds {
+                    verdict = right ? "yes" : "no"
+                } else if !right {
                     wrong += 1
                 }
                 print([name, place, found.telling.hex, point.what, verdict].joined(separator: " "))

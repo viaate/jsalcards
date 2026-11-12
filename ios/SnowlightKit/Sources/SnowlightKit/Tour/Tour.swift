@@ -9,7 +9,13 @@
 //     -tour.appearance <choice>   the look to start with: system, light or dark
 //     -tour.then <choice>         a look to switch to in code, after the first frame
 //     -tour.outside <layout>      the Outside screen layout to start with: beside or under
-//                                 (read only on a phone with an outside screen)
+//                                 (read only on a phone with an outside screen), or kept:
+//                                 leave the layout an earlier launch kept as it is
+//     -tour.outsideThen <layout>  a layout to choose in code, after the first frame, through
+//                                 the same call the Outside screen tiles make
+//     -tour.row shown             show the Outside screen row on a phone without an outside
+//                                 screen: the negative sample of the pixel step's check that
+//                                 the row is absent on an iPhone (that check must fail on it)
 //     -tour.proof ground          the placeholder tabs' ground in the chance teal instead of
 //                                 the page color, so a picture shows where it stops
 //
@@ -17,11 +23,13 @@
 //
 //   1. keeps the choice named by tour.appearance where the app keeps its own choice, or
 //      forgets the kept choice when the argument is absent (the app's data survives from
-//      one picture to the next); the same for tour.outside and the Outside screen choice;
-//      and says whether this phone has an outside screen;
+//      one picture to the next); the same for tour.outside and the Outside screen choice,
+//      except that tour.outside kept leaves it as it is; and says whether this phone has an
+//      outside screen;
 //   2. shows the named screen, with animations off;
-//   3. about 0.6 seconds after it appears: if tour.then is given, makes that choice
-//      through the same call the Settings tiles make, and waits 0.6 seconds more;
+//   3. about 0.6 seconds after it appears: if tour.then or tour.outsideThen is given, makes
+//      that choice through the same call the Settings tiles make, and waits 0.6 seconds
+//      more;
 //   4. writes the words of the screen's model, one per line, to
 //      Documents/tour/<picture>.txt. The script waits for that file and then takes its
 //      picture of the simulator's screen.
@@ -68,6 +76,12 @@ struct TourPlan: Sendable {
     let switchTo: AppearanceChoice?
     /// The Outside screen layout to start with, or nil to start as a fresh install does.
     let outside: OutsideScreenChoice?
+    /// True when the layout an earlier launch kept is left as it is (tour.outside kept).
+    let keepsOutside: Bool
+    /// An Outside screen layout to choose in code after the first frame, or nil.
+    let outsideThen: OutsideScreenChoice?
+    /// True when the Outside screen row is shown on a phone without an outside screen.
+    let forcesRow: Bool
     /// True when the placeholder tabs' ground is drawn in the chance teal.
     let proofGround: Bool
 
@@ -111,13 +125,17 @@ struct TourPlan: Sendable {
             Tour.note("there is no screen named " + screenName)
             return nil
         }
+        let keepsOutside = defaults.string(forKey: "tour.outside") == "kept"
         return TourPlan(
             name: name,
             screenName: screenName,
             show: show,
             appearance: TourPlan.choice(under: "tour.appearance", in: defaults),
             switchTo: TourPlan.choice(under: "tour.then", in: defaults),
-            outside: TourPlan.layout(under: "tour.outside", in: defaults),
+            outside: keepsOutside ? nil : TourPlan.layout(under: "tour.outside", in: defaults),
+            keepsOutside: keepsOutside,
+            outsideThen: TourPlan.layout(under: "tour.outsideThen", in: defaults),
+            forcesRow: TourPlan.forcesRow(in: defaults),
             proofGround: TourPlan.proofGround(in: defaults)
         )
     }
@@ -165,6 +183,18 @@ struct TourPlan: Sendable {
         }
         Tour.note(key + " is not beside or under")
         return nil
+    }
+
+    /// True when tour.row says shown. Anything else is said out loud and read as absent.
+    private static func forcesRow(in defaults: UserDefaults) -> Bool {
+        guard let value = defaults.string(forKey: "tour.row") else {
+            return false
+        }
+        if value == "shown" {
+            return true
+        }
+        Tour.note("tour.row is not shown")
+        return false
     }
 
     /// True when tour.proof says ground. Anything else is said out loud and read as absent.
@@ -229,13 +259,19 @@ struct TourStage: ViewModifier {
                 let store = appearance
                 let layout = outside
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    guard let next = plan.switchTo else {
+                    if plan.switchTo == nil && plan.outsideThen == nil {
                         Tour.writeWords(for: plan, shownWith: store, layout: layout)
                         return
                     }
-                    // The same call a tap on a Settings tile makes.
-                    store.choose(next)
-                    Tour.note("switched the look in code to " + Tour.name(of: next))
+                    // The same calls a tap on a Settings tile makes.
+                    if let next = plan.switchTo {
+                        store.choose(next)
+                        Tour.note("switched the look in code to " + Tour.name(of: next))
+                    }
+                    if let nextLayout = plan.outsideThen {
+                        layout.choose(nextLayout)
+                        Tour.note("chose the Outside screen layout " + Tour.name(of: nextLayout) + " in code, through the tiles' own call")
+                    }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                         Tour.writeWords(for: plan, shownWith: store, layout: layout)
                     }
@@ -265,7 +301,10 @@ enum Tour {
             AppearanceChoice.forget(in: defaults)
             Tour.note("forgot any kept look for the picture " + plan.name)
         }
-        if let layout = plan.outside {
+        if plan.keepsOutside {
+            let kept = OutsideScreenChoice.kept(in: defaults)
+            Tour.note("left the kept Outside screen layout as it was, " + Tour.name(of: kept) + ", for the picture " + plan.name)
+        } else if let layout = plan.outside {
             layout.keep(in: defaults)
             Tour.note("kept the Outside screen layout " + Tour.name(of: layout) + " for the picture " + plan.name)
         } else {
@@ -273,6 +312,9 @@ enum Tour {
             Tour.note("forgot any kept Outside screen layout for the picture " + plan.name)
         }
         Tour.note("this phone has an outside screen: " + (ThisPhone.hasOuterScreen ? "yes" : "no"))
+        if plan.forcesRow {
+            Tour.note("the Outside screen row is shown for the picture " + plan.name + " although this phone may have no outside screen: a negative sample")
+        }
         if plan.proofGround {
             Tour.note("the placeholder tabs' ground is drawn in the chance teal for the picture " + plan.name)
         }
@@ -302,6 +344,12 @@ enum Tour {
         }
     }
 
+    /// True when Settings shows the Outside screen row on this launch: on a phone with an
+    /// outside screen, and on the one tour launch that forces it as a negative sample.
+    static var showsOutsideScreenRow: Bool {
+        ThisPhone.hasOuterScreen || TourPlan.ofThisLaunch?.forcesRow == true
+    }
+
     private static var begun = false
 
     /// True the first time it is asked, on the main thread: the tour runs once a launch.
@@ -322,7 +370,7 @@ enum Tour {
         }
         // The same model the root view draws: with the Outside screen row only on a phone
         // that has an outside screen.
-        let outsideScreen: OutsideScreenChoice? = ThisPhone.hasOuterScreen ? layout.choice : nil
+        let outsideScreen: OutsideScreenChoice? = Tour.showsOutsideScreenRow ? layout.choice : nil
         let model = ShellModel(appearance: store.choice, outsideScreen: outsideScreen).screen(screen)
         let lines = shownTexts(in: model).map { $0.drawnString }
         Tour.write(lines, for: plan)

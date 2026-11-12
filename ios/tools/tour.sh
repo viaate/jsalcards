@@ -173,6 +173,11 @@ shoot dark dark-settings-forced-light settings diff -tour.appearance light
 # Started on a stored Dark with the simulator light, then switched back to System in code
 # after the first frame. The picture must be light.
 shoot light light-settings-dark-then-system settings diff -tour.appearance dark -tour.then system
+# The negative sample of the pixel step's "no Outside screen row" run on an iPhone: the row
+# forced on for this one picture (tour.row shown, debug only). That run must find the row
+# here, so a picture known to be wrong is shown to fail it; its words are those of the
+# Duo's Settings.
+shoot light light-settings-forced-row settings diff -tour.row shown
 # The simulator's language set to Spanish and a 24-hour region: do the words iOS itself
 # draws change when the app ships English only? Judged by eye.
 shoot light light-search-es search diff -AppleLanguages "(es)" -AppleLocale es_ES
@@ -186,9 +191,10 @@ shoot dark dark-probe probe nodiff
 # tour's phone is shut down first, so that two simulators never run side by side on the
 # runner's 7 GB. The job has 30 minutes: the steps before this one take up to about 3 and
 # those after it under 1, so the Duo is given what is left of 1400 seconds of this
-# script's clock. A Duo that is missing, does not boot or runs out of time is said and
-# changes nothing; a check of the Duo's that fails (a screen that never comes up, its words,
-# its tab bar on the right) fails the tour.
+# script's clock. An image with no Duo device type, or no runtime that makes one, is said and
+# changes nothing; otherwise a Duo that does not boot, an app that cannot be installed, fewer
+# than all of the Duo's pictures (out of time included) or a check of the Duo's that fails
+# (a screen that never comes up, its words, its tab bar on the right) fails the tour.
 if [ "$SIM_OS_PREFIX" = "iOS 27." ]; then
   xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
   echo "[$SECONDS s] the iPhone Duo's tour (tools/duo.sh)"

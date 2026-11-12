@@ -72,3 +72,31 @@ if grep -r -a -l -F -e tour.screen -e tour.name "$RAPP"; then
   exit 1
 fi
 echo "The Release app holds no trace of the picture tour."
+
+# On the macos-26 job: the Release app once more, for a generic iPhone rather than the
+# simulator, unsigned (no certificate, no team, no profile): so the code only a real phone
+# runs is compiled on every push. Shell/ThisPhone.swift reads the phone's model with
+# sysctlbyname on a phone and the simulator's environment on the simulator; without this
+# build the phone's branch would never be compiled. Nothing runs it.
+if [ "${SIM_OS_PREFIX:-}" = "iOS 26." ]; then
+  PLOG="$RUNNER_TEMP/xcodebuild-iphoneos.log"
+  if ! xcodebuild build \
+    -project ios/Snowlight.xcodeproj -scheme Snowlight -configuration Release \
+    -destination 'generic/platform=iOS' \
+    -derivedDataPath "$RUNNER_TEMP/dd" \
+    CODE_SIGNING_ALLOWED=NO \
+    ONLY_ACTIVE_ARCH=YES ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO \
+    2>&1 | tee "$PLOG" | "$PRETTY"; then
+    echo "::error::The unsigned Release build for a generic iPhone failed. The last 80 lines of its raw log follow."
+    tail -80 "$PLOG"
+    exit 1
+  fi
+  PAPP="$RUNNER_TEMP/dd/Build/Products/Release-iphoneos/Snowlight.app"
+  if [ ! -d "$PAPP" ]; then
+    echo "::error::The iPhone build passed but left no app at $PAPP."
+    ls -R "$RUNNER_TEMP/dd/Build/Products" | head -60 || true
+    exit 1
+  fi
+  du -sh "$PAPP" || true
+  echo "The Release app for a generic iPhone was built, unsigned ($(plutil -extract DTPlatformName raw "$PAPP/Info.plist" 2>/dev/null || true) $(plutil -extract DTPlatformVersion raw "$PAPP/Info.plist" 2>/dev/null || true))."
+fi

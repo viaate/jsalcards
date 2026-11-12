@@ -5,7 +5,11 @@
 // not been given to say. The title keeps to the readable column
 // (Layout/ReadableColumn.swift). The ground reads the Outside screen layout value
 // (Layout/SideControls.swift): on the closed iPhone Duo with Beside the map chosen it stops
-// where the system's side controls begin; everywhere else it runs under them.
+// where the system's side controls begin; everywhere else it runs under them. Under it, the
+// page color runs to every edge, so that where the ground stops the page goes on under
+// the side controls: a plain tab is one even page, as on every other phone, and only the
+// debug tour's teal ground shows where Beside the map stops (without
+// it the window's own black showed beside the dark page).
 
 import SnowlightCore
 import SwiftUI
@@ -18,6 +22,8 @@ struct EmptyTab: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
+            Color.token(.page)
+                .ignoresSafeArea()
             PageGround(token: ground)
             PageTitle(model.title)
                 .readableColumn()
