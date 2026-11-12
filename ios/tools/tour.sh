@@ -26,6 +26,36 @@ if [ ! -d "$APP" ]; then
   exit 1
 fi
 
+# On the iOS 27 leg only, FIRST: the same tour on the iPhone Duo, closed (tools/duo.sh),
+# given 1000 seconds of its own. The job has 30 minutes: the steps before this one take
+# about 2 to 3 and those after it under 1, and both phones' boots and installs are slow on
+# this image (run 43226985119: the iPhone's tour took 713 s, then the Duo's create, boot and
+# install 518 s, and the Duo ran out of time after 9 of its 18 pictures). The Duo is what
+# this leg is for, so it goes first, and the iPhone's tour here has what is left of 1450 s
+# of this script's clock: a picture it has no time for is said and skipped (the iPhone's
+# own tour that counts is the macos-26 job's, which has no such limit). The Duo's phone is
+# shut down and deleted before the iPhone's is made, so two simulators never run side by
+# side on the runner's 7 GB. An image with no Duo device type, or no runtime that makes
+# one, is said and changes nothing; otherwise a Duo that does not boot, an app that cannot
+# be installed, fewer than all of the Duo's pictures (out of time included) or a check of
+# the Duo's that fails (a screen that never comes up, its words, its tab bar on the right)
+# fails the tour.
+DUO_FAILED=0
+DEADLINE=""
+if [ "$SIM_OS_PREFIX" = "iOS 27." ]; then
+  echo "[$SECONDS s] the iPhone Duo's tour (tools/duo.sh)"
+  if ! DUO_BUDGET=1000 bash ios/tools/duo.sh; then
+    echo "::error::A check of the iPhone Duo's tour failed (above)."
+    DUO_FAILED=1
+  fi
+  echo "[$SECONDS s] the iPhone Duo's tour is done; the iPhone's tour has what is left of 1450 s"
+  DEADLINE=1450
+fi
+if [ -n "$DEADLINE" ] && [ $((DEADLINE - SECONDS)) -lt 400 ]; then
+  echo "::warning::No time left on this leg for the iPhone's tour ($SECONDS s of $DEADLINE): skipped."
+  exit $DUO_FAILED
+fi
+
 # Our own device, from what this image has, addressed by id (a name can be missing or doubled).
 DEVTYPE=$(xcrun simctl list devicetypes -j | jq -r --arg d "$SIM_DEVICE" \
   '[.devicetypes[] | select(.name == $d) | .identifier] | first // empty')
@@ -105,6 +135,11 @@ start_app() {  # start_app <picture name> <screen> [more launch arguments]; 0 wh
 shoot() {  # shoot <light|dark> <picture name> <screen> <diff|nodiff> [more launch arguments]
   local mode=$1 name=$2 screen=$3 check=$4; shift 4
   local limit=120 tries=0 i ready=""
+  # On the iOS 27 leg, after the Duo's tour: no picture that could run past the deadline.
+  if [ -n "$DEADLINE" ] && [ $((DEADLINE - SECONDS)) -lt 150 ]; then
+    echo "::warning::No time left on this leg for the iPhone's picture '$name' ($SECONDS s of $DEADLINE): skipped."
+    return 0
+  fi
   # The first launch on a cold hosted simulator is slow: up to 120 seconds. Later ones: 60.
   if [ "$FIRST" = 1 ]; then limit=240; FIRST=0; fi
   # If the look cannot be set, the picture is still taken: its pixel line is the judge.
@@ -187,21 +222,5 @@ shoot light light-search-es search diff -AppleLanguages "(es)" -AppleLocale es_E
 # and uploaded, never compared with a committed file. Whether the teal shows in the
 # picture is read by ios/tools/pixels.swift and printed as yes or no.
 shoot dark dark-probe probe nodiff
-# On the iOS 27 leg only: the same tour on the iPhone Duo, closed (tools/duo.sh). This
-# tour's phone is shut down first, so that two simulators never run side by side on the
-# runner's 7 GB. The job has 30 minutes: the steps before this one take up to about 3 and
-# those after it under 1, so the Duo is given what is left of 1450 seconds of this
-# script's clock (run 43217555420: 137 s before the tour, 42 s after it). An image with no Duo device type, or no runtime that makes one, is said and
-# changes nothing; otherwise a Duo that does not boot, an app that cannot be installed, fewer
-# than all of the Duo's pictures (out of time included) or a check of the Duo's that fails
-# (a screen that never comes up, its words, its tab bar on the right) fails the tour.
-if [ "$SIM_OS_PREFIX" = "iOS 27." ]; then
-  xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
-  echo "[$SECONDS s] the iPhone Duo's tour (tools/duo.sh)"
-  if ! DUO_BUDGET=$((1450 - SECONDS)) bash ios/tools/duo.sh; then
-    echo "::error::A check of the iPhone Duo's tour failed (above)."
-    FAILED=1
-  fi
-  echo "[$SECONDS s] the iPhone Duo's tour is done"
-fi
+if [ "$DUO_FAILED" = 1 ]; then FAILED=1; fi
 exit $FAILED

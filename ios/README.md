@@ -152,7 +152,9 @@ A push whose changed files are all under `ios/` starts iOS core and iOS app and 
 else: `CI` ignores `ios/**`, and `Preview` ignores `ios/**` and the iOS workflow files.
 
 On the `xcode-27` job only, the tour also runs on the **iPhone Duo** (`tools/duo.sh`,
-after the iPhone's tour, inside what is left of the job's time): the five screens closed,
+FIRST, with 1000 s of its own; the iPhone 18 Pro's tour then has what is left of 1450 s of
+the tour's clock, and a picture it has no time for is said and skipped: the iPhone tour
+that counts is the macos-26 job's): the five screens closed,
 light and dark (10 pictures, `duo-closed-<look>-<screen>`, from the outer screen,
 `--display=1`), with the Outside screen setting on Beside the map; then Settings with Under
 the controls chosen (`duo-closed-<look>-settings-under`) and My School with its ground in
