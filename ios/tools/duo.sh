@@ -25,9 +25,10 @@
 # Xcode's SharedFrameworks and names no fold either. So the stages below that need
 # Simulator.app say so and are skipped when it is missing.
 #
-# This run boots the Duo on the runtime built for it (iOS 27.2, iPhone19-4) first, since
-# 27.1 has been measured three times, and looks for a fold, a hinge or a posture in that
-# runtime's own files (the system's side of a fold).
+# The fifth run (iOS app run 43152482009) tried the runtime built for the Duo (iOS 27.2,
+# iPhone19-4) first: it did not boot within 280 s. So 27.1 is first again, and the words
+# about a fold in each runtime's own files (the system's side of a fold) are looked for
+# before any boot.
 #
 # So this script, for whoever reads the log:
 #   1. prints the words about a fold, a hinge or a posture that Simulator.app, SimulatorKit,
@@ -136,14 +137,37 @@ if [ -n "$DUO_BUNDLE" ]; then
   ls "$DUO_BUNDLE/Contents/Resources" 2>/dev/null | head -30
 fi
 
-# The runtimes that list the Duo: the one built for it (its identifier names iPhone19-4)
-# first, then 27.1, then the others, newest first.
+# The runtimes that list the Duo: 27.1 first, then the one built for it (its identifier
+# names iPhone19-4), then the others, newest first.
 RUNTIMES=$(xcrun simctl list runtimes -j | jq -r --arg d "$DEVTYPE" '[.runtimes[]
   | select(.isAvailable and ((.name // "") | startswith("iOS 27."))
       and (((.supportedDeviceTypes // []) | map(.identifier) | index($d)) != null))]
-  | sort_by((if (.identifier | test("iPhone19-4")) then 2 elif .version == "27.1" then 1 else 0 end), (.version | split(".") | map(tonumber)))
+  | sort_by((if .version == "27.1" then 2 elif (.identifier | test("iPhone19-4")) then 1 else 0 end), (.version | split(".") | map(tonumber)))
   | reverse | .[] | "\(.identifier)"')
 echo "runtimes that make an '$DUO', in the order tried: $(echo $RUNTIMES)"
+# runtime_words <runtime id>: the names and words about a fold, a hinge or a posture in a
+# runtime's own files (the system's side of a fold). It needs no booted device.
+runtime_words() {
+  local ROOT
+  ROOT=$(xcrun simctl list runtimes -j | jq -r --arg r "$1" '[.runtimes[] | select(.identifier == $r) | .runtimeRoot] | first // empty')
+  echo "=== The words about a fold in the files of $1 ($ROOT)"
+  if [ -n "$ROOT" ] && [ -d "$ROOT" ]; then
+    echo "--- files whose names say fold, hinge or posture"
+    limit 40 find "$ROOT/System/Library" "$ROOT/usr/libexec" -maxdepth 4 \( -iname '*fold*' -o -iname '*hinge*' -o -iname '*posture*' \) 2>/dev/null \
+      | grep -v -i -E 'folder|scaffold|manifold' | sed "s|$ROOT||" | head -40
+    echo "--- the runtime's frameworks named for the simulator"
+    ls "$ROOT/System/Library/PrivateFrameworks" 2>/dev/null | grep -i simulator | head -20
+    for f in "$ROOT"/System/Library/PrivateFrameworks/*Simulator*.framework; do
+      [ -d "$f" ] || continue
+      words "$(basename "$f")" "$f/$(basename "$f" .framework)" 30
+    done
+    words "backboardd" "$ROOT/usr/libexec/backboardd" 30
+    words "SpringBoard" "$ROOT/System/Library/CoreServices/SpringBoard.app/SpringBoard" 30
+  else
+    echo "(no runtime root)"
+  fi
+}
+for CANDIDATE in $RUNTIMES; do runtime_words "$CANDIDATE"; done
 RUNTIME=""
 UDID=""
 for CANDIDATE in $RUNTIMES; do
@@ -166,23 +190,6 @@ if ! limit 280 xcrun simctl boot "$UDID" || ! limit 280 xcrun simctl bootstatus 
   exit 0
 fi
 say "the Duo is up"
-ROOT=$(xcrun simctl list runtimes -j | jq -r --arg r "$RUNTIME" '[.runtimes[] | select(.identifier == $r) | .runtimeRoot] | first // empty')
-echo "=== The words about a fold in the runtime's own files ($ROOT)"
-if [ -n "$ROOT" ] && [ -d "$ROOT" ]; then
-  echo "--- files whose names say fold, hinge or posture"
-  limit 40 find "$ROOT/System/Library" "$ROOT/usr/libexec" -maxdepth 4 \( -iname '*fold*' -o -iname '*hinge*' -o -iname '*posture*' \) 2>/dev/null \
-    | grep -v -i -E 'folder|scaffold|manifold' | sed "s|$ROOT||" | head -40
-  echo "--- the runtime's frameworks named for the simulator"
-  ls "$ROOT/System/Library/PrivateFrameworks" 2>/dev/null | grep -i simulator | head -20
-  for f in "$ROOT"/System/Library/PrivateFrameworks/*Simulator*.framework; do
-    [ -d "$f" ] || continue
-    words "$(basename "$f")" "$f/$(basename "$f" .framework)" 30
-  done
-  words "backboardd" "$ROOT/usr/libexec/backboardd" 30
-  words "SpringBoard" "$ROOT/System/Library/CoreServices/SpringBoard.app/SpringBoard" 30
-else
-  echo "(no runtime root)"
-fi
 xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 \
   --wifiBars 3 --cellularBars 4 || echo "the status bar override was refused"
 if wait "$GRID_BUILD"; then
