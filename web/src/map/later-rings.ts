@@ -496,18 +496,27 @@ export function startLaterRings(map: MapLibreMap): LaterRings {
       }
     }
   };
-  /** Shows the rings again once the map holds this change's rings, every tile of them. */
+  /**
+   * Shows the rings again once the map holds this change's rings, every tile of them. Asked at
+   * each source event and at each frame drawn: a source whose layers were hidden before the map
+   * first drew it is found loaded at a frame that sends no source event.
+   */
   const showOnceIn = (change: number): void => {
+    const stop = (): void => {
+      map.off('sourcedata', check);
+      map.off('render', check);
+    };
     const check = (): void => {
       if (change !== changes || removed) {
-        map.off('sourcedata', check);
+        stop();
         return;
       }
       if (map.getSource(LATER_SOURCE) !== undefined && !map.isSourceLoaded(LATER_SOURCE)) return;
-      map.off('sourcedata', check);
+      stop();
       setHidden(false);
     };
     map.on('sourcedata', check);
+    map.on('render', check);
     check();
   };
 

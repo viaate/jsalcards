@@ -67,6 +67,11 @@ function fakeMap() {
       await Promise.resolve();
       await Promise.resolve();
     },
+    /** A frame drawn that finds every tile of the source made, with no source event. */
+    drawn(): void {
+      loaded = true;
+      for (const listener of [...(listeners.get('render') ?? [])]) listener();
+    },
     /** Every tile of the source made again. */
     tilesIn(): void {
       loaded = true;
@@ -127,6 +132,17 @@ describe('the later-day rings, as the lights are lit again', () => {
     expect(fake.visibility()).toEqual(['none', 'none', 'none']);
     await fake.workerDone();
     fake.tilesIn();
+    expect(fake.visibility()).toEqual(['visible', 'visible', 'visible']);
+  });
+
+  it('show again at the frame that finds the new rings in, when no source event follows', async () => {
+    const fake = fakeMap();
+    const rings = startLaterRings(fake.map as never);
+    rings.show(ONE, DIRECTORY);
+    await fake.workerDone();
+    expect(fake.visibility()).toEqual(['none', 'none', 'none']);
+    // The map draws a frame, finds the hidden source loaded, and sends no source event.
+    fake.drawn();
     expect(fake.visibility()).toEqual(['visible', 'visible', 'visible']);
   });
 });
