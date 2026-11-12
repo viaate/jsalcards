@@ -281,7 +281,9 @@ stations:
     page is on the Gray site, so its Wayback captures are read for gray-kjct (gray.yaml, whose evidence
     lists them) and not asked for again here; gray-kjct was read stale at 2026-09-28T01:45:04Z (its export
     last modified 2022-02-24T22:08:03Z). Market: ''Grand Junction-Montrose'' (first-hand record) is the
-    crosswalk''s ''Grand Junction - Montrose, CO DMA''.'
+    crosswalk''s ''Grand Junction - Montrose, CO DMA''. Since 2026-11-12 gray-kjct is retired as well
+    (piece GRAY-STALE-RELOCATE: the Grand Junction export it read is dead), so this list is read live
+    under neither entry; its captures are still read for the Gray entry.'
   list_files: []
   page_check: null
   robots: []
@@ -353,7 +355,9 @@ stations:
     closings page is on the Gray site, so its Wayback captures are read for gray-kkco (gray.yaml, whose
     evidence lists them) and not asked for again here; gray-kkco was read stale at 2026-09-28T01:45:09Z
     (its export last modified 2022-02-24T22:08:03Z). Market: ''Grand Junction-Montrose'' (first-hand record)
-    is the crosswalk''s ''Grand Junction - Montrose, CO DMA''.'
+    is the crosswalk''s ''Grand Junction - Montrose, CO DMA''. Since 2026-11-12 gray-kkco is retired as
+    well (piece GRAY-STALE-RELOCATE: the Grand Junction export it read is dead), so this list is read
+    live under neither entry; its captures are still read for the Gray entry.'
   list_files: []
   page_check: null
   robots: []

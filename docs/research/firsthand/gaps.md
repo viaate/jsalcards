@@ -67,6 +67,38 @@ From `gate.json` of 2026-10-13T22:20:52Z (coverage of 2026-10-13T22:12:01Z). A s
 42 of 49 states (with DC) meet the target; of the 7 short of it, 3 are settled: every source whose proof would add to the state has a verdict after which no archived capture left could prove it (`all-read`, `no-capture`, `no-endpoint`, `no-storm-capture`, `storm-read`, `unconfirmed`, `unreadable`). Settled is not met: a settled state is still short, and an `unconfirmed` source in it showed closings on or near its storm days that the proof rule does not accept. A source is open (the last column counts them) while captures of its list made in its closure window (its closure days and the 2 days either side) are unread or were misread (refused by its adapter, or showing a closing its rows do not hold: the closure-text check, `archive/closure-text.jsonl`), or an address of its list was never listed. A first-hand record of a source not built (a district or outlet the registry does not hold) keeps its states open too (the last column's records) while it says the site was not read, or was checked before 2026-10-01: only a check of today's site can say no reader here reads it (`open_records` in `gate.json`). The window is measured on the proven sources' own archived reads (`calibration` in `gate.json`). Verdicts: `proven`: proven: its list has been seen with a row (at its current or a former address, or as the list file another proven station reads too); `unread`: unproven: captures of its list are not read yet; `misread`: unproven, open: an archived capture of its list made in its closure window was refused by its adapter (a page form no reader knows) or showed a closing its rows do not hold (the closure-text check); no verdict is given until that form is read; `older-unread`: unproven: no unread capture of its list remains, at its current or a former address (none read held a row); only captures of other addresses it read before are unread, and they cannot prove it; `storm-read`: unproven: every archived capture of its list made in its closure window (a storm day, a day its counties' proven lists named closures, or a day within two days of one) was read, none with a row and none showing a closing its rows do not hold, and at least one of them showed the list (captures of other days may be unread); `unconfirmed`: unproven: every archived capture of its list made in its closure window that could be read was read, and at least one showed a closing, a delay or no school that its rows hold but that does not prove it: a district's notice or page text that names no weather or emergency (a calendar's planned day reads the same), or a story that is not a list's entry; the list may be in use; `no-storm-capture`: unproven: no archived capture of its list made in its closure window (a storm day, a day its counties' proven lists named closures, or a day within two days of one) shows the list: the archive holds none, or only page shells that show no closing; its other captures showed the list, empty (captures of other days may be unread); `all-read`: unproven: every archived capture of its list was read, none with a row; `unreadable`: unproven: no archived capture of its list that was read showed the list: each made in its closure window is a page that loads its list from an address the archive does not hold and shows no closing itself (others may be a form no adapter reads); `no-capture`: unproven: the archive holds no capture of its list; `not-listed`: unproven: an address of its list (its current page or data file, or a former address) was never listed, so what the archive holds of it is unknown; `not-working`: not working: its latest live read does not count; `no-endpoint`: no known closings endpoint.
 <!-- end of the coverage gate's section -->
 
+## Retired lists to re-check (piece GRAY-STALE-RELOCATE, 2026-11-12)
+
+On 2026-11-12 fifteen sources were retired (`no_endpoint`, each with a dated reason in its registry entry):
+fourteen whose pages still load a list that closing weather in their markets passed by unwritten, and WTVQ,
+whose site now redirects every address to LEX18. A retired source is never read live, so nothing reads it
+fresh again by itself if its station writes its list again. Each is re-checked by hand by 2026-12-01, in
+this order (the thinnest verdicts first, then the snow markets, where winter comes first): open the page
+once with the project's User-Agent, note the list file it loads and that file's `Last-Modified` (or the
+list's own update time), and return the source to `active` if the list was written after its retirement.
+
+| Order | Source | Re-check by | Why in this place |
+|---|---|---|---|
+| 1 | `gray-kgns` | 2026-12-01 | dead by one closure event, a warning (2025-01-21) |
+| 2 | `abc-owned-kgo` | 2026-12-01 | dead by one closure event, a warning (2023-02-24), and the update time it shares with KABC and KFSN |
+| 3 | `gray-kjct` | 2026-12-01 | snow market (Grand Junction-Montrose), 20 events missed |
+| 4 | `gray-kkco` | 2026-12-01 | snow market (Grand Junction-Montrose), 20 events missed |
+| 5 | `gray-wafb` | 2026-12-01 | 2 events missed |
+| 6 | `gray-wflx` | 2026-12-01 | 2 events missed |
+| 7 | `gray-wvue` | 2026-12-01 | 2 events missed |
+| 8 | `gray-wjhg` | 2026-12-01 | 3 events missed |
+| 9 | `gray-kplc` | 2026-12-01 | 5 events missed |
+| 10 | `gray-wect` | 2026-12-01 | 5 events missed |
+| 11 | `gray-wcjb` | 2026-12-01 | 6 events missed |
+| 12 | `gray-wcsc` | 2026-12-01 | 6 events missed |
+| 13 | `abc-owned-kabc` | 2026-12-01 | 27 events missed |
+| 14 | `abc-owned-kfsn` | 2026-12-01 | 46 events missed |
+| 15 | `scripps-wtvq` | 2026-12-01 | a temporary (302) redirect to a malformed LEX18 address |
+
+KMVT, WTOC, WWSB and KTXS stay active: their lists are idle (no closure event since their last write), and
+the live reader, which reads without closure seasons, reports them `stale` with 0 rows until they are written.
+
+
 ## Critics' second round (s4, 2026-10-13 evening)
 
 The second critic panel found the gate still failing (Wyoming short), and three faults in what it counted. Each is
@@ -361,6 +393,9 @@ coast). The 18 lists the old rule called stale (KSTU was the 19th):
 | `gray-wvue` | New Orleans LA | 2024-01-16 | `stale` | missed 2024-09-11 to 2024-09-12 (HU.W, TR.W over 100% of its schools), and 1 more to 2025-01-21 | 2024-01-15, 2 rows |
 | `gray-wwsb` | Tampa Bay | 2024-10-12 | `empty` | no closure event since; the last before: 2024-10-08 to 2024-10-09 (HU.W over 100% of its schools) | 2024-10-07, 2 rows |
 | `sinclair-ktxs` | Abilene - Sweetwater, TX | 2025-06-09 | `empty` | no closure event since; the last before: 2023-01-30 to 2023-02-01 (IS.W, WS.W over 100% of its schools) | - |
+
+Since 2026-11-12 the fourteen of these marked `stale` above are retired (`no_endpoint`); see
+"Retired lists to re-check" near the top of this file for their re-check queue.
 
 **Effect** (live reads merged as before, with a full fetch under the new rules, 2026-10-13 08:23 to 09:48 UTC:
 944 sources, 76 ok, 706 empty, 14 stale, 6 error, 142 skipped; WRCB and KOAM/KXLY, refused with 429 in it, were

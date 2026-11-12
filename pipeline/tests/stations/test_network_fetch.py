@@ -17,7 +17,7 @@ from snowlight.sources.stations import archive, fetch, network_fixtures
 from snowlight.sources.stations.fixtures import Origin
 from snowlight.sources.stations.http import USER_AGENT, ConditionalStore, PoliteClient, Timing
 from snowlight.sources.stations.model import HealthStatus, ListingState, ReadMode
-from snowlight.sources.stations.registry import load_registry
+from snowlight.sources.stations.registry import Registry, StationStatus, load_registry
 
 FIXTURES = Path(__file__).parent / "fixtures" / "networks"
 REGISTRY = load_registry()
@@ -99,6 +99,33 @@ def _client(tmp_path: Path, server: Server) -> PoliteClient:
     )
 
 
+def _kabc_as_read_before_retirement() -> Registry:
+    """The registry with KABC's page active again: retired on 2026-11-12, its list (last updated
+    2019-02-12) is still the case of a list that says it is old."""
+    files = dict(REGISTRY.files)
+    abc = files["abc-owned"]
+    page = "https://abc7.com/community/schoolclosings/"
+    stations = tuple(
+        s.model_copy(update={"status": StationStatus.ACTIVE, "page_url": page})
+        if s.id == "abc-owned-kabc"
+        else s
+        for s in abc.stations
+    )
+    files["abc-owned"] = abc.model_copy(update={"stations": stations})
+    return Registry(files)
+
+
+def test_a_retired_source_is_skipped_without_a_request(tmp_path: Path) -> None:
+    server = Server()
+    result = fetch.run(
+        REGISTRY, _client(tmp_path, server), clock=lambda: NOW, only=["abc-owned-kabc"]
+    )
+    assert [(h.source_id, h.status) for h in result.health] == [
+        ("abc-owned-kabc", HealthStatus.SKIPPED)
+    ]
+    assert "https://abc7.com/community/schoolclosings/" not in server.seen
+
+
 def test_registered_stations_read_through_their_adapters(tmp_path: Path) -> None:
     server = Server()
     wanted = [
@@ -113,7 +140,8 @@ def test_registered_stations_read_through_their_adapters(tmp_path: Path) -> None
         "flashalert-portland",
         "fox-owned-ksaz",
     ]
-    result = fetch.run(REGISTRY, _client(tmp_path, server), clock=lambda: NOW, only=wanted)
+    registry = _kabc_as_read_before_retirement()
+    result = fetch.run(registry, _client(tmp_path, server), clock=lambda: NOW, only=wanted)
     health = {entry.source_id: entry for entry in result.health}
     assert {sid: (h.status, h.rows, h.variant) for sid, h in health.items()} == {
         "abc-owned-wabc": (HealthStatus.EMPTY, 0, "abc-otv-list"),

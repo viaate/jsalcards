@@ -331,9 +331,10 @@ def test_cli_registry_summary(capsys: pytest.CaptureFixture[str]) -> None:
         active = sum(s.status.value == "active" for s in members)
         assert f"{platform}: {len(members)} stations ({active} with an endpoint)" in out
     # Every one of the 123 Gray exports the research verified is registered, WBBJ's,
-    # which an archived capture shows its Arc site loading, and KATC's, read live.
+    # which an archived capture shows its Arc site loading, KATC's, read live, and WFLX's,
+    # its data_url until it was retired on 2026-11-12.
     gray = [s for s in registry.stations.values() if s.platform == "gray"]
-    assert sum(1 for s in gray if s.export_url) == 125
+    assert sum(1 for s in gray if s.export_url) == 126
     assert "terms forbidden: polled (project owner's decision of 2026-09-25)" in out
 
 

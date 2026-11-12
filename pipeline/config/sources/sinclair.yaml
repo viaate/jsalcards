@@ -1207,7 +1207,13 @@ stations:
   evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KTXS; variant
     sinclair-next-ftptransfer). Live read of https://ktxs.com/resources/ftptransfer/ktxs/closings/closings.html
     2026-09-27T05:47:17Z: HTTP 200, 617 bytes, Last-Modified Mon, 09 Jun 2025 04:20:09 GMT; newsticker-html,
-    empty. Archived captures read (archive-captures runs 36299187602, 36317643857): 1 deferred, 3 empty.'
+    empty. Archived captures read (archive-captures runs 36299187602, 36317643857): 1 deferred, 3 empty.
+    Page check 2026-11-11T23:59:51Z (Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent,
+    pagecheck.cjs): the page still frames this file (Last-Modified 2025-06-09T04:20:09Z) and loads no
+    other closings file, so the station has not moved its list. Idle, not dead (2026-11-12, piece GRAY-STALE-RELOCATE):
+    by the closure-season record (closure-days.json of 2026-10-13, counted through 2026-10-12) no weather
+    that closes schools has come to its market since the list was last written (2025-06-09T04:20:09Z),
+    so it stays active; it reads stale only where a read has no closure seasons.'
   list_files:
   - url: https://ktxs.com/resources/ftptransfer/ktxs/closings/closings.html
     loaded_by: frame

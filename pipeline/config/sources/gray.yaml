@@ -1469,15 +1469,15 @@ stations:
       (sha256 2e2cd00265a8d704...), names resolved to FIPS with the Census 2025 county Gazetteer; Connecticut
       via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Laredo, TX DMA'''
     fips: ['48479', '48505']
-  page_url: https://www.kgns.tv/weather/closings/
-  data_url: https://s3.amazonaws.com/grayfilestore-kgns/closingsData/closings_KGNS.json
+  page_url: null
+  data_url: null
   export_url: https://s3.amazonaws.com/grayfilestore-kgns/closingsData/closings_KGNS.json
   archive_urls:
   - https://s3.amazonaws.com/grayfilestore-kgns/closingsData/closings_KGNS.json
   - https://grayfilestore-kgns.s3.amazonaws.com/closingsData/closings_KGNS.json
   - https://www.kgns.tv/weather/closings/
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'Export https://s3.amazonaws.com/grayfilestore-kgns/closingsData/closings_KGNS.json: Endpoint
     verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
     WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
@@ -1486,18 +1486,24 @@ stations:
     the research record. Archive: closings page confirmed by Wayback captures read with the gray adapter:
     2024-12-13 19:34Z https://www.kgns.tv/weather/closings/ (gray-fusion-orgs, empty, 0 rows; run 36111087246).
     Wayback CDX: 604 captures with HTTP 200 of http://www.kgns.tv/weather/closings, http://www.kgns.tv:80/weather/closings,
-    https://www.kgns.tv/weather/closings and other forms, 2016-06-24 to 2025-04-27.'
+    https://www.kgns.tv/weather/closings and other forms, 2016-06-24 to 2025-04-27. Retired 2026-11-12
+    (piece GRAY-STALE-RELOCATE): the station''s page https://www.kgns.tv/weather/closings/, opened 2026-11-11T23:57:21Z
+    in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent, still loads only the
+    export https://s3.amazonaws.com/grayfilestore-kgns/closingsData/closings_KGNS.json (Last-Modified
+    2023-08-22T22:16:08Z) and shows ''No closings are listed at this time.''; by the closure-season record
+    (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came to
+    its market once after that without the list being written (the Winter Storm Warning of 2025-01-21),
+    so the list is dead, not idle. This verdict is the thinnest of the set: it rests on one closure event,
+    and that event is a warning, not an observed closure, so the source is first in the re-check queue.
+    The export is written whenever the station posts to GSync (WTOC''s page held 23 closings on 2025-01-22
+    and its export was written 2025-01-24), so the site''s GSync content API https://www.kgns.tv/pf/api/v3/content/fetch/gsync-closings
+    is no live list either: read once with the pipeline''s own client at 2026-11-12T01:30:45Z it answered
+    an empty list (gray-api-orgs) stamped with the minute it was served, not a write time. The station
+    has no current list to read, so this source has no endpoint; its archive addresses stay, so its earlier
+    captures are still read. Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md,
+    ''Retired lists to re-check''); if its list is written again, return the source to active.'
   list_files: []
-  page_check:
-    checked_at: '2026-09-26T22:37:08Z'
-    page: https://www.kgns.tv/weather/closings/
-    loads:
-    - https://s3.amazonaws.com/grayfilestore-kgns/closingsData/closings_KGNS.json
-    shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+  page_check: null
   robots:
   - url: https://www.kgns.tv/weather/closings/
     checked_at: '2026-09-26T23:07:10Z'
@@ -1590,15 +1596,15 @@ stations:
       via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Grand Junction
       - Montrose, CO DMA'''
     fips: [08033, 08077, 08085]
-  page_url: https://www.kjct8.com/weather/closings/
-  data_url: https://s3.amazonaws.com/grayfilestore-kkco/closingsData/closings_KKCO.json
+  page_url: null
+  data_url: null
   export_url: https://s3.amazonaws.com/grayfilestore-kjct/closingsData/closings_KJCT.json
   archive_urls:
   - https://s3.amazonaws.com/grayfilestore-kjct/closingsData/closings_KJCT.json
   - https://grayfilestore-kjct.s3.amazonaws.com/closingsData/closings_KJCT.json
   - https://www.kjct8.com/weather/closings/
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'Export https://s3.amazonaws.com/grayfilestore-kjct/closingsData/closings_KJCT.json: Endpoint
     verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
     WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
@@ -1607,18 +1613,24 @@ stations:
     confirmed by Wayback captures read with the gray adapter: 2024-12-12 21:04Z https://www.kjct8.com/weather/closings/
     (gray-fusion-orgs, empty, 0 rows; run 36124847822). Wayback CDX: 102 captures with HTTP 200 of http://www.kjct8.com/weather/closings,
     http://www.kjct8.com:80/weather/closings, https://www.kjct8.com/weather/closings and other forms,
-    2016-02-04 to 2026-06-28.'
+    2016-02-04 to 2026-06-28. Retired 2026-11-12 (piece GRAY-STALE-RELOCATE): the station''s page https://www.kjct8.com/weather/closings/,
+    opened 2026-11-11T23:57:21Z in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent,
+    still loads only the export https://s3.amazonaws.com/grayfilestore-kkco/closingsData/closings_KKCO.json
+    (Last-Modified 2022-02-24T22:08:03Z) and shows ''No closings are listed at this time.''; by the closure-season
+    record (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came
+    to its market 20 times after that without the list being written (first the Winter Storm Warning of
+    2022-04-12 to 2022-04-13, last the Winter Storm Warning of 2026-02-17 to 2026-02-18), so the list
+    is dead, not idle. The export is written whenever the station posts to GSync (WTOC''s page held 23
+    closings on 2025-01-22 and its export was written 2025-01-24), so the site''s GSync content API https://www.kjct8.com/pf/api/v3/content/fetch/gsync-closings
+    is no live list either: read once with the pipeline''s own client at 2026-11-12T01:30:51Z it answered
+    an empty list (gray-api-orgs) stamped with the minute it was served, not a write time. KJCT''s page
+    loads KKCO''s export, the shared Grand Junction file, not one of its own (gray-kkco is retired with
+    it, so its rows are never counted twice). The station has no current list to read, so this source
+    has no endpoint; its archive addresses stay, so its earlier captures are still read. Re-check the
+    station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md, ''Retired lists to re-check'');
+    if its list is written again, return the source to active.'
   list_files: []
-  page_check:
-    checked_at: '2026-09-26T22:37:29Z'
-    page: https://www.kjct8.com/weather/closings/
-    loads:
-    - https://s3.amazonaws.com/grayfilestore-kkco/closingsData/closings_KKCO.json
-    shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+  page_check: null
   robots:
   - url: https://www.kjct8.com/weather/closings/
     checked_at: '2026-09-26T23:07:11Z'
@@ -1663,15 +1675,15 @@ stations:
       via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Grand Junction
       - Montrose, CO DMA'''
     fips: [08033, 08077, 08085]
-  page_url: https://www.nbc11news.com/weather/closings/
-  data_url: https://s3.amazonaws.com/grayfilestore-kkco/closingsData/closings_KKCO.json
+  page_url: null
+  data_url: null
   export_url: https://s3.amazonaws.com/grayfilestore-kkco/closingsData/closings_KKCO.json
   archive_urls:
   - https://s3.amazonaws.com/grayfilestore-kkco/closingsData/closings_KKCO.json
   - https://grayfilestore-kkco.s3.amazonaws.com/closingsData/closings_KKCO.json
   - https://www.nbc11news.com/weather/closings/
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'Export https://s3.amazonaws.com/grayfilestore-kkco/closingsData/closings_KKCO.json: Endpoint
     verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
     WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
@@ -1683,19 +1695,24 @@ stations:
     http://www.nbc11news.com:80/weather/closings, https://www.nbc11news.com/weather/closings and other
     forms, 2016-02-02 to 2023-12-07. The export in the Wayback Machine: 5 captures of the export (fetched
     by the station page with a cache-busting query), 2025-02-27 to 2026-03-05 (CDX inventory of s3.amazonaws.com/grayfilestore-*,
-    archive-captures run 36089770410).'
+    archive-captures run 36089770410). Retired 2026-11-12 (piece GRAY-STALE-RELOCATE): the station''s
+    page https://www.kkco11news.com/weather/closings/, opened 2026-11-11T23:57:45Z in Chromium 141 (Playwright
+    1.56.1, headless) with the project''s User-Agent, still loads only the export https://s3.amazonaws.com/grayfilestore-kkco/closingsData/closings_KKCO.json
+    (Last-Modified 2022-02-24T22:08:03Z) and shows ''No closings are listed at this time.''; by the closure-season
+    record (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came
+    to its market 20 times after that without the list being written (first the Winter Storm Warning of
+    2022-04-12 to 2022-04-13, last the Winter Storm Warning of 2026-02-17 to 2026-02-18), so the list
+    is dead, not idle. The export is written whenever the station posts to GSync (WTOC''s page held 23
+    closings on 2025-01-22 and its export was written 2025-01-24), so the site''s GSync content API https://www.kkco11news.com/pf/api/v3/content/fetch/gsync-closings
+    is no live list either: read once with the pipeline''s own client at 2026-11-12T01:30:56Z it answered
+    an empty list (gray-api-orgs) stamped with the minute it was served, not a write time; the page''s
+    own GSync data (its gsync-closings content cache) was empty during the Winter Storm Warning of 2022-11-29
+    to 2022-12-02 too (archived capture 2022-12-01T03:37:04Z). The station has no current list to read,
+    so this source has no endpoint; its archive addresses stay, so its earlier captures are still read.
+    Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md, ''Retired lists
+    to re-check''); if its list is written again, return the source to active.'
   list_files: []
-  page_check:
-    checked_at: '2026-09-26T22:37:41Z'
-    page: https://www.kkco11news.com/weather/closings/
-    loads:
-    - https://s3.amazonaws.com/grayfilestore-kkco/closingsData/closings_KKCO.json
-    shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened https://www.nbc11news.com/weather/closings/, which redirected to https://www.kkco11news.com/weather/closings/.
-      Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images, media
-      and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every request
-      and response (survey of 2026-09-26). loads: the closings list files the page requested that answered
-      200, without the cache-busting query the page adds.'
+  page_check: null
   robots:
   - url: https://www.nbc11news.com/weather/closings/
     checked_at: '2026-09-26T23:07:13Z'
@@ -2056,18 +2073,24 @@ stations:
     http://www.kmvt.com/weather/closings/, http://www.kmvt.com/weather/closings/Closings-and-Cancellations-012913.html
     and other forms, 2014-01-25 to 2026-09-05. The export in the Wayback Machine: 2 captures of the export
     (fetched by the station page with a cache-busting query), 2025-04-23 to 2025-07-09 (CDX inventory
-    of s3.amazonaws.com/grayfilestore-*, archive-captures run 36089770410).'
+    of s3.amazonaws.com/grayfilestore-*, archive-captures run 36089770410). Idle, not dead (2026-11-12,
+    piece GRAY-STALE-RELOCATE): by the closure-season record (closure-days.json of 2026-10-13, counted
+    through 2026-10-12) no weather that closes schools has come to its market since the list was last
+    written (2025-08-23T18:00:12Z), so it stays active; it reads stale only where a read has no closure
+    seasons. scripps-kmvt lists KMVT among Scripps'' stations and finds its site still on Gray''s Arc;
+    if kmvt.com leaves Arc this export can go dead with no signal, so re-check the page before the first
+    winter storm of 2026-27.'
   list_files: []
   page_check:
-    checked_at: '2026-09-26T22:38:31Z'
+    checked_at: '2026-11-11T23:59:13Z'
     page: https://www.kmvt.com/weather/closings/
     loads:
     - https://s3.amazonaws.com/grayfilestore-kmvt/closingsData/closings_KMVT.json
     shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent by pagecheck.cjs
+      (survey of 2026-11-11, two pages at a time); images, media and fonts not loaded; waited 12 s, scrolled
+      to the end and waited 5 s more, recording every request and response. loads: the closings list files
+      the page requested that answered 200, without the cache-busting query the page adds.'
   robots:
   - url: https://www.kmvt.com/weather/closings/
     checked_at: '2026-09-26T23:07:16Z'
@@ -2693,15 +2716,15 @@ stations:
       via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Lake Charles,
       LA DMA'''
     fips: ['22003', '22011', '22019', '22023']
-  page_url: https://www.kplctv.com/weather/closings/
-  data_url: https://s3.amazonaws.com/grayfilestore-kplc/closingsData/closings_KPLC.json
+  page_url: null
+  data_url: null
   export_url: https://s3.amazonaws.com/grayfilestore-kplc/closingsData/closings_KPLC.json
   archive_urls:
   - https://s3.amazonaws.com/grayfilestore-kplc/closingsData/closings_KPLC.json
   - https://grayfilestore-kplc.s3.amazonaws.com/closingsData/closings_KPLC.json
   - https://www.kplctv.com/weather/closings/
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'Export https://s3.amazonaws.com/grayfilestore-kplc/closingsData/closings_KPLC.json: Endpoint
     verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
     WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
@@ -2709,18 +2732,23 @@ stations:
     site: kplctv.com (wikidata Q6335637 via en.wikipedia KPLC). Market ''Lake Charles LA'' from the research
     record. Archive: closings page confirmed by Wayback captures read with the gray adapter: 2024-06-06
     07:26Z https://www.kplctv.com/weather/closings/ (gray-fusion-orgs, empty, 0 rows; run 36094846376).
-    Wayback CDX: 2 captures with HTTP 200 of https://www.kplctv.com/weather/closings/, 2021-07-10 to 2024-06-06.'
+    Wayback CDX: 2 captures with HTTP 200 of https://www.kplctv.com/weather/closings/, 2021-07-10 to 2024-06-06.
+    Retired 2026-11-12 (piece GRAY-STALE-RELOCATE): the station''s page https://www.kplctv.com/weather/closings/,
+    opened 2026-11-11T23:57:45Z in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent,
+    still loads only the export https://s3.amazonaws.com/grayfilestore-kplc/closingsData/closings_KPLC.json
+    (Last-Modified 2019-09-19T16:04:10Z) and shows ''No closings are listed at this time.''; by the closure-season
+    record (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came
+    to its market 5 times after that without the list being written (first the Hurricane Warning of 2020-08-26
+    to 2020-08-27, last the Blizzard and Winter Storm Warnings of 2025-01-21), so the list is dead, not
+    idle. The export is written whenever the station posts to GSync (WTOC''s page held 23 closings on
+    2025-01-22 and its export was written 2025-01-24), so the site''s GSync content API https://www.kplctv.com/pf/api/v3/content/fetch/gsync-closings
+    is no live list either: read once with the pipeline''s own client at 2026-11-12T01:31:02Z it answered
+    an empty list (gray-api-orgs) stamped with the minute it was served, not a write time. The station
+    has no current list to read, so this source has no endpoint; its archive addresses stay, so its earlier
+    captures are still read. Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md,
+    ''Retired lists to re-check''); if its list is written again, return the source to active.'
   list_files: []
-  page_check:
-    checked_at: '2026-09-26T22:40:09Z'
-    page: https://www.kplctv.com/weather/closings/
-    loads:
-    - https://s3.amazonaws.com/grayfilestore-kplc/closingsData/closings_KPLC.json
-    shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+  page_check: null
   robots:
   - url: https://www.kplctv.com/weather/closings/
     checked_at: '2026-09-26T23:07:21Z'
@@ -4310,8 +4338,8 @@ stations:
       LA - MS DMA'''
     fips: ['22005', '22007', '22033', '22037', '22047', '22063', '22077', '22091', '22101', '22121', '22125',
       '28005', '28157']
-  page_url: https://www.wafb.com/weather/closings/
-  data_url: https://s3.amazonaws.com/grayfilestore-wafb/closingsData/closings_WAFB.json
+  page_url: null
+  data_url: null
   export_url: https://s3.amazonaws.com/grayfilestore-wafb/closingsData/closings_WAFB.json
   archive_urls:
   - https://s3.amazonaws.com/grayfilestore-wafb/closingsData/closings_WAFB.json
@@ -4320,7 +4348,7 @@ stations:
   - https://www.wafb.com/weather/closings/
   - http://webpubcontent.raycommedia.com/wafb/NewsTicker/Closings/closings.html
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'Export https://s3.amazonaws.com/grayfilestore-wafb/closingsData/closings_WAFB.json: Endpoint
     verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
     WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
@@ -4332,22 +4360,29 @@ stations:
     04:00Z https://www.wafb.com/weather/closings/ (gray-frame, deferred, 0 rows; run 36136683508); 2024-09-11
     11:35Z https://www.wafb.com/weather/closings/ (gray-fusion-orgs, empty, 0 rows; run 36094846376).
     Wayback CDX: 63 captures with HTTP 200 of http://www.wafb.com/weather/closings/, http://www.wafb.com:80/weather/closings/,
-    https://www.wafb.com/weather/closings/ and other forms, 2018-09-01 to 2024-09-11.'
+    https://www.wafb.com/weather/closings/ and other forms, 2018-09-01 to 2024-09-11. Retired 2026-11-12
+    (piece GRAY-STALE-RELOCATE): the station''s page https://www.wafb.com/weather/closings/, opened 2026-11-11T23:58:09Z
+    in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent, still loads only the
+    export https://s3.amazonaws.com/grayfilestore-wafb/closingsData/closings_WAFB.json (Last-Modified
+    2024-05-17T15:32:15Z) and shows ''No closings are listed at this time.''; by the closure-season record
+    (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came to
+    its market 2 times after that without the list being written (first the Hurricane and Tropical Storm
+    Warnings of 2024-09-11, last the Winter Storm Warning of 2025-01-21), so the list is dead, not idle.
+    The export is written whenever the station posts to GSync (WTOC''s page held 23 closings on 2025-01-22
+    and its export was written 2025-01-24), so the site''s GSync content API https://www.wafb.com/pf/api/v3/content/fetch/gsync-closings
+    is no live list either: read once with the pipeline''s own client at 2026-11-12T01:31:13Z it answered
+    an empty list (gray-api-orgs) stamped with the minute it was served, not a write time; the page''s
+    own GSync data (its gsync-closings content cache) was empty on the morning of the Hurricane Warning
+    of 2024-09-11 too (archived capture 2024-09-11T11:35:49Z). The station has no current list to read,
+    so this source has no endpoint; its archive addresses stay, so its earlier captures are still read.
+    Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md, ''Retired lists
+    to re-check''); if its list is written again, return the source to active.'
   list_files:
   - url: http://webpubcontent.raycommedia.com/wafb/NewsTicker/Closings/closings.html
     loaded_by: frame
     seen: gray-frame page http://www.wafb.com:80/weather/closings/ captured 2018-11-03T11:36:03Z (and
       1 more captures to 2019-01-03T19:20:36Z) frames it
-  page_check:
-    checked_at: '2026-09-26T22:44:04Z'
-    page: https://www.wafb.com/weather/closings/
-    loads:
-    - https://s3.amazonaws.com/grayfilestore-wafb/closingsData/closings_WAFB.json
-    shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+  page_check: null
   robots:
   - url: https://www.wafb.com/weather/closings/
     checked_at: '2026-09-26T23:07:31Z'
@@ -5505,15 +5540,15 @@ stations:
       via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Gainesville,
       FL DMA'''
     fips: ['12001', '12029', '12041', '12075']
-  page_url: https://www.wcjb.com/weather/closings/
-  data_url: https://s3.amazonaws.com/grayfilestore-wcjb/closingsData/closings_WCJB.json
+  page_url: null
+  data_url: null
   export_url: https://s3.amazonaws.com/grayfilestore-wcjb/closingsData/closings_WCJB.json
   archive_urls:
   - https://s3.amazonaws.com/grayfilestore-wcjb/closingsData/closings_WCJB.json
   - https://grayfilestore-wcjb.s3.amazonaws.com/closingsData/closings_WCJB.json
   - https://www.wcjb.com/weather/closings/
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'Export https://s3.amazonaws.com/grayfilestore-wcjb/closingsData/closings_WCJB.json: Endpoint
     verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
     WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
@@ -5522,18 +5557,23 @@ stations:
     record. Archive: closings page confirmed by Wayback captures read with the gray adapter: 2024-11-06
     22:29Z https://www.wcjb.com/weather/closings/ (gray-fusion-orgs, empty, 0 rows; run 36111087246).
     Wayback CDX: 71 captures with HTTP 200 of http://www.wcjb.com:80/weather/closings, https://www.wcjb.com/weather/closings,
-    https://www.wcjb.com/weather/closings/ and other forms, 2017-09-14 to 2025-06-27.'
+    https://www.wcjb.com/weather/closings/ and other forms, 2017-09-14 to 2025-06-27. Retired 2026-11-12
+    (piece GRAY-STALE-RELOCATE): the station''s page https://www.wcjb.com/weather/closings/, opened 2026-11-11T23:58:06Z
+    in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent, still loads only the
+    export https://s3.amazonaws.com/grayfilestore-wcjb/closingsData/closings_WCJB.json (Last-Modified
+    2019-09-19T16:04:09Z) and shows ''No closings are listed at this time.''; by the closure-season record
+    (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came to
+    its market 6 times after that without the list being written (first the Tropical Storm Warning of
+    2020-11-11 to 2020-11-12, last the Winter Storm Warning of 2025-01-22), so the list is dead, not idle.
+    The export is written whenever the station posts to GSync (WTOC''s page held 23 closings on 2025-01-22
+    and its export was written 2025-01-24), so the site''s GSync content API https://www.wcjb.com/pf/api/v3/content/fetch/gsync-closings
+    is no live list either: read once with the pipeline''s own client at 2026-11-12T01:31:07Z it answered
+    an empty list (gray-api-orgs) stamped with the minute it was served, not a write time. The station
+    has no current list to read, so this source has no endpoint; its archive addresses stay, so its earlier
+    captures are still read. Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md,
+    ''Retired lists to re-check''); if its list is written again, return the source to active.'
   list_files: []
-  page_check:
-    checked_at: '2026-09-26T22:46:40Z'
-    page: https://www.wcjb.com/weather/closings/
-    loads:
-    - https://s3.amazonaws.com/grayfilestore-wcjb/closingsData/closings_WCJB.json
-    shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+  page_check: null
   robots:
   - url: https://www.wcjb.com/weather/closings/
     checked_at: '2026-09-26T23:07:41Z'
@@ -5578,15 +5618,15 @@ stations:
       via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Charleston, SC
       DMA'''
     fips: ['45015', '45019', '45029', '45035', '45043', '45089']
-  page_url: https://www.live5news.com/weather/closings/
-  data_url: https://s3.amazonaws.com/grayfilestore-wcsc/closingsData/closings_WCSC.json
+  page_url: null
+  data_url: null
   export_url: https://s3.amazonaws.com/grayfilestore-wcsc/closingsData/closings_WCSC.json
   archive_urls:
   - https://s3.amazonaws.com/grayfilestore-wcsc/closingsData/closings_WCSC.json
   - https://grayfilestore-wcsc.s3.amazonaws.com/closingsData/closings_WCSC.json
   - https://www.live5news.com/weather/closings/
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'Export https://s3.amazonaws.com/grayfilestore-wcsc/closingsData/closings_WCSC.json: Endpoint
     verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
     WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
@@ -5595,18 +5635,22 @@ stations:
     research record. Archive: closings page confirmed by Wayback captures read with the gray adapter:
     2024-09-21 10:48Z https://www.live5news.com/weather/closings/ (gray-fusion-orgs, empty, 0 rows; run
     36094846376). Wayback CDX: 5 captures with HTTP 200 of https://www.live5news.com/weather/closings/,
-    2021-07-05 to 2025-06-03.'
+    2021-07-05 to 2025-06-03. Retired 2026-11-12 (piece GRAY-STALE-RELOCATE): the station''s page https://www.live5news.com/weather/closings/,
+    opened 2026-11-11T23:58:27Z in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent,
+    still loads only the export https://s3.amazonaws.com/grayfilestore-wcsc/closingsData/closings_WCSC.json
+    (Last-Modified 2021-03-18T15:12:05Z) and shows ''No closings are listed at this time.''; by the closure-season
+    record (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came
+    to its market 6 times after that without the list being written (first the Hurricane and Tropical
+    Storm Warnings of 2022-09-28 to 2022-09-30, last the Winter Storm Warning of 2025-01-22), so the list
+    is dead, not idle. The export is written whenever the station posts to GSync (WTOC''s page held 23
+    closings on 2025-01-22 and its export was written 2025-01-24), so the site''s GSync content API https://www.live5news.com/pf/api/v3/content/fetch/gsync-closings
+    is no live list either: read once with the pipeline''s own client at 2026-11-12T01:31:18Z it answered
+    an empty list (gray-api-orgs) stamped with the minute it was served, not a write time. The station
+    has no current list to read, so this source has no endpoint; its archive addresses stay, so its earlier
+    captures are still read. Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md,
+    ''Retired lists to re-check''); if its list is written again, return the source to active.'
   list_files: []
-  page_check:
-    checked_at: '2026-09-26T22:46:46Z'
-    page: https://www.live5news.com/weather/closings/
-    loads:
-    - https://s3.amazonaws.com/grayfilestore-wcsc/closingsData/closings_WCSC.json
-    shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+  page_check: null
   robots:
   - url: https://www.live5news.com/weather/closings/
     checked_at: '2026-09-26T23:07:42Z'
@@ -6092,15 +6136,15 @@ stations:
       via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Wilmington, NC
       DMA'''
     fips: ['37017', '37019', '37047', '37129', '37141']
-  page_url: https://www.wect.com/weather/closings/&/&/&/&/&/&/&/
-  data_url: https://s3.amazonaws.com/grayfilestore-wect/closingsData/closings_WECT.json
+  page_url: null
+  data_url: null
   export_url: https://s3.amazonaws.com/grayfilestore-wect/closingsData/closings_WECT.json
   archive_urls:
   - https://s3.amazonaws.com/grayfilestore-wect/closingsData/closings_WECT.json
   - https://grayfilestore-wect.s3.amazonaws.com/closingsData/closings_WECT.json
   - https://www.wect.com/weather/closings/&/&/&/&/&/&/&/
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'Export https://s3.amazonaws.com/grayfilestore-wect/closingsData/closings_WECT.json: Endpoint
     verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
     WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
@@ -6109,18 +6153,22 @@ stations:
     closings page confirmed by Wayback captures read with the gray adapter: 2026-02-04 20:09Z https://www.wect.com/weather/closings/&/&/&/&/&/&/&/
     (gray-fusion-count, empty, 0 rows; run 36111087246). Wayback CDX: 35 captures with HTTP 200 of http://www.wect.com/weather/closings/,
     http://www.wect.com/weather/closings/&/, http://www.wect.com/weather/closings/&quot;/pf/resources/images/logo-icons/wect.svg
-    and other forms, 2021-07-05 to 2026-09-02.'
+    and other forms, 2021-07-05 to 2026-09-02. Retired 2026-11-12 (piece GRAY-STALE-RELOCATE): the station''s
+    page https://www.wect.com/weather/closings/, opened 2026-11-11T23:58:30Z in Chromium 141 (Playwright
+    1.56.1, headless) with the project''s User-Agent, still loads only the export https://s3.amazonaws.com/grayfilestore-wect/closingsData/closings_WECT.json
+    (Last-Modified 2022-01-21T16:00:13Z) and shows ''No closings are listed at this time.''; by the closure-season
+    record (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came
+    to its market 5 times after that without the list being written (first the Hurricane and Tropical
+    Storm Warnings of 2022-09-29 to 2022-09-30, last the Winter Storm Warning of 2025-01-22), so the list
+    is dead, not idle. The export is written whenever the station posts to GSync (WTOC''s page held 23
+    closings on 2025-01-22 and its export was written 2025-01-24), so the site''s GSync content API https://www.wect.com/pf/api/v3/content/fetch/gsync-closings
+    is no live list either: read once with the pipeline''s own client at 2026-11-12T01:31:23Z it answered
+    an empty list (gray-api-orgs) stamped with the minute it was served, not a write time. The station
+    has no current list to read, so this source has no endpoint; its archive addresses stay, so its earlier
+    captures are still read. Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md,
+    ''Retired lists to re-check''); if its list is written again, return the source to active.'
   list_files: []
-  page_check:
-    checked_at: '2026-09-26T23:01:33Z'
-    page: https://www.wect.com/weather/closings/
-    loads:
-    - https://s3.amazonaws.com/grayfilestore-wect/closingsData/closings_WECT.json
-    shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+  page_check: null
   robots:
   - url: https://www.wect.com/weather/closings/&/&/&/&/&/&/&/
     checked_at: '2026-09-26T23:07:46Z'
@@ -6356,30 +6404,37 @@ stations:
       via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''West Palm Beach
       - Ft. Pierce, FL DMA'''
     fips: ['12061', '12085', '12093', '12099', '12111']
-  page_url: https://www.wflx.com/weather/closings/
-  data_url: https://s3.amazonaws.com/grayfilestore-wflx/closingsData/closings_WFLX.json
-  export_url: null
+  page_url: null
+  data_url: null
+  export_url: https://s3.amazonaws.com/grayfilestore-wflx/closingsData/closings_WFLX.json
   archive_urls:
   - https://www.wflx.com/weather/closings/
+  - https://s3.amazonaws.com/grayfilestore-wflx/closingsData/closings_WFLX.json
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'Not in the research report. The English Wikipedia navbox Template:Gray Media (read 2026-09-25T04:37:19Z,
     sha256 f22ecf5f105e8187...) lists it as a Gray Media station; its English Wikipedia article ''WFLX''
     (read 2026-09-25T04:36Z) names the owner, carries the ''West Palm Beach TV'' navbox, and its infobox
     names the site wflx.com. Archive: closings page confirmed by Wayback captures read with the gray adapter:
     2024-09-10 16:49Z https://www.wflx.com/weather/closings/ (gray-fusion-orgs, empty, 0 rows; run 36111087246).
-    Wayback CDX: 2 captures with HTTP 200 of https://www.wflx.com/weather/closings/, 2024-09-10 to 2025-07-15.'
+    Wayback CDX: 2 captures with HTTP 200 of https://www.wflx.com/weather/closings/, 2024-09-10 to 2025-07-15.
+    Retired 2026-11-12 (piece GRAY-STALE-RELOCATE): the station''s page https://www.wflx.com/weather/closings/,
+    opened 2026-11-11T23:58:48Z in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent,
+    still loads only the export https://s3.amazonaws.com/grayfilestore-wflx/closingsData/closings_WFLX.json
+    (Last-Modified 2023-08-24T15:52:24Z) and shows ''No closings are listed at this time.''; by the closure-season
+    record (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came
+    to its market 2 times after that without the list being written (first the Tropical Storm Warning
+    of 2024-09-25 to 2024-09-26, last the Hurricane and Tropical Storm Warnings of 2024-10-09 to 2024-10-10),
+    so the list is dead, not idle. The export is written whenever the station posts to GSync (WTOC''s
+    page held 23 closings on 2025-01-22 and its export was written 2025-01-24), so the site''s GSync content
+    API https://www.wflx.com/pf/api/v3/content/fetch/gsync-closings is no live list either: read once
+    with the pipeline''s own client at 2026-11-12T01:31:29Z it answered an empty list (gray-api-orgs)
+    stamped with the minute it was served, not a write time. The station has no current list to read,
+    so this source has no endpoint; its archive addresses stay, so its earlier captures are still read.
+    Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md, ''Retired lists
+    to re-check''); if its list is written again, return the source to active.'
   list_files: []
-  page_check:
-    checked_at: '2026-09-26T22:48:38Z'
-    page: https://www.wflx.com/weather/closings/
-    loads:
-    - https://s3.amazonaws.com/grayfilestore-wflx/closingsData/closings_WFLX.json
-    shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+  page_check: null
   robots:
   - url: https://www.wflx.com/weather/closings/
     checked_at: '2026-09-26T23:07:48Z'
@@ -7231,15 +7286,15 @@ stations:
       via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Panama City,
       FL DMA'''
     fips: ['12005', '12013', '12037', '12045', '12059', '12063', '12077', '12131', '12133']
-  page_url: https://www.wjhg.com/weather/closings/
-  data_url: https://s3.amazonaws.com/grayfilestore-wjhg/closingsData/closings_WJHG.json
+  page_url: null
+  data_url: null
   export_url: https://s3.amazonaws.com/grayfilestore-wjhg/closingsData/closings_WJHG.json
   archive_urls:
   - https://s3.amazonaws.com/grayfilestore-wjhg/closingsData/closings_WJHG.json
   - https://grayfilestore-wjhg.s3.amazonaws.com/closingsData/closings_WJHG.json
   - https://www.wjhg.com/weather/closings/
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'Export https://s3.amazonaws.com/grayfilestore-wjhg/closingsData/closings_WJHG.json: Endpoint
     verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
     WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
@@ -7248,18 +7303,25 @@ stations:
     page confirmed by Wayback captures read with the gray adapter: 2024-12-08 05:39Z https://www.wjhg.com/weather/closings/
     (gray-fusion-orgs, empty, 0 rows; run 36123975119). Wayback CDX: 452 captures with HTTP 200 of http://www.wjhg.com/weather/closings,
     http://www.wjhg.com:80/weather/closings, https://www.wjhg.com/weather/closings and other forms, 2016-05-26
-    to 2026-09-15.'
+    to 2026-09-15. Retired 2026-11-12 (piece GRAY-STALE-RELOCATE): the station''s page https://www.wjhg.com/weather/closings/,
+    opened 2026-11-11T23:58:51Z in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent,
+    still loads only the export https://s3.amazonaws.com/grayfilestore-wjhg/closingsData/closings_WJHG.json
+    (Last-Modified 2024-04-11T16:00:06Z) and shows ''No closings are listed at this time.''; by the closure-season
+    record (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came
+    to its market 3 times after that without the list being written (first the Hurricane and Tropical
+    Storm Warnings of 2024-09-25 to 2024-09-26, last the Hurricane and Tropical Storm Warnings of 2026-10-08
+    to 2026-10-09), so the list is dead, not idle. The export is written whenever the station posts to
+    GSync (WTOC''s page held 23 closings on 2025-01-22 and its export was written 2025-01-24), so the
+    site''s GSync content API https://www.wjhg.com/pf/api/v3/content/fetch/gsync-closings is no live list
+    either: read once with the pipeline''s own client at 2026-11-12T01:31:34Z it answered an empty list
+    (gray-api-orgs) stamped with the minute it was served, not a write time; the page''s own GSync data
+    (its gsync-closings content cache) was empty during the Hurricane Warning of 2024-09-25 to 2024-09-26
+    too (archived captures 2024-09-25T11:50:24Z and 2024-09-26T01:43:47Z). The station has no current
+    list to read, so this source has no endpoint; its archive addresses stay, so its earlier captures
+    are still read. Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md,
+    ''Retired lists to re-check''); if its list is written again, return the source to active.'
   list_files: []
-  page_check:
-    checked_at: '2026-09-26T22:50:31Z'
-    page: https://www.wjhg.com/weather/closings/
-    loads:
-    - https://s3.amazonaws.com/grayfilestore-wjhg/closingsData/closings_WJHG.json
-    shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+  page_check: null
   robots:
   - url: https://www.wjhg.com/weather/closings/
     checked_at: '2026-09-26T23:07:57Z'
@@ -9186,18 +9248,21 @@ stations:
     page confirmed by Wayback captures read with the gray adapter: 2025-01-22 15:34Z https://www.wtoc.com/weather/closings/
     (gray-fusion-orgs, populated, 23 rows; run 36094846376). Wayback CDX: 5 captures with HTTP 200 of
     https://www.wtoc.com/weather/closings/, https://www.wtoc.com/weather/closings/gtm.js, 2024-01-08 to
-    2025-01-24.'
+    2025-01-24. Idle, not dead (2026-11-12, piece GRAY-STALE-RELOCATE): by the closure-season record (closure-days.json
+    of 2026-10-13, counted through 2026-10-12) no weather that closes schools has come to its market since
+    the list was last written (2025-01-24T17:12:20Z), so it stays active; it reads stale only where a
+    read has no closure seasons.'
   list_files: []
   page_check:
-    checked_at: '2026-09-26T22:54:38Z'
+    checked_at: '2026-11-11T23:59:30Z'
     page: https://www.wtoc.com/weather/closings/
     loads:
     - https://s3.amazonaws.com/grayfilestore-wtoc/closingsData/closings_WTOC.json
     shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent by pagecheck.cjs
+      (survey of 2026-11-11, two pages at a time); images, media and fonts not loaded; waited 12 s, scrolled
+      to the end and waited 5 s more, recording every request and response. loads: the closings list files
+      the page requested that answered 200, without the cache-busting query the page adds.'
   robots:
   - url: https://www.wtoc.com/weather/closings/
     checked_at: '2026-09-26T23:08:12Z'
@@ -9799,15 +9864,15 @@ stations:
       LA - MS DMA'''
     fips: ['22051', '22057', '22071', '22075', '22087', '22089', '22093', '22095', '22103', '22105', '22109',
       '22117', '28045', '28109']
-  page_url: https://www.fox8live.com/weather/closings/
-  data_url: https://s3.amazonaws.com/grayfilestore-wvue/closingsData/closings_WVUE.json
+  page_url: null
+  data_url: null
   export_url: https://s3.amazonaws.com/grayfilestore-wvue/closingsData/closings_WVUE.json
   archive_urls:
   - https://s3.amazonaws.com/grayfilestore-wvue/closingsData/closings_WVUE.json
   - https://grayfilestore-wvue.s3.amazonaws.com/closingsData/closings_WVUE.json
   - https://www.fox8live.com/weather/closings/
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'Export https://s3.amazonaws.com/grayfilestore-wvue/closingsData/closings_WVUE.json: Endpoint
     verified: the station''s S3 GSync export key exists and returned an explicit empty export on 2026-09-25.
     WebFetch shows no Last-Modified header, so whether the station still writes to this file is unproven.
@@ -9816,18 +9881,22 @@ stations:
     closings page confirmed by Wayback captures read with the gray adapter: 2024-06-13 23:36Z https://www.fox8live.com/weather/closings/
     (gray-fusion-orgs, empty, 0 rows; run 36094846376). Wayback CDX: 14 captures with HTTP 200 of https://www.fox8live.com/weather/closings/,
     https://www.fox8live.com/weather/closings/&/, https://www.fox8live.com/weather/closings/&/&/ and other
-    forms, 2024-01-15 to 2024-06-13.'
+    forms, 2024-01-15 to 2024-06-13. Retired 2026-11-12 (piece GRAY-STALE-RELOCATE): the station''s page
+    https://www.fox8live.com/weather/closings/, opened 2026-11-11T23:59:09Z in Chromium 141 (Playwright
+    1.56.1, headless) with the project''s User-Agent, still loads only the export https://s3.amazonaws.com/grayfilestore-wvue/closingsData/closings_WVUE.json
+    (Last-Modified 2024-01-16T18:56:38Z) and shows ''No closings are listed at this time.''; by the closure-season
+    record (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came
+    to its market 2 times after that without the list being written (first the Hurricane and Tropical
+    Storm Warnings of 2024-09-11 to 2024-09-12, last the Winter Storm Warning of 2025-01-21), so the list
+    is dead, not idle. The export is written whenever the station posts to GSync (WTOC''s page held 23
+    closings on 2025-01-22 and its export was written 2025-01-24), so the site''s GSync content API https://www.fox8live.com/pf/api/v3/content/fetch/gsync-closings
+    is no live list either: read once with the pipeline''s own client at 2026-11-12T01:31:39Z it answered
+    an empty list (gray-api-orgs) stamped with the minute it was served, not a write time. The station
+    has no current list to read, so this source has no endpoint; its archive addresses stay, so its earlier
+    captures are still read. Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md,
+    ''Retired lists to re-check''); if its list is written again, return the source to active.'
   list_files: []
-  page_check:
-    checked_at: '2026-09-26T22:56:09Z'
-    page: https://www.fox8live.com/weather/closings/
-    loads:
-    - https://s3.amazonaws.com/grayfilestore-wvue/closingsData/closings_WVUE.json
-    shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+  page_check: null
   robots:
   - url: https://www.fox8live.com/weather/closings/
     checked_at: '2026-09-26T23:08:17Z'
@@ -10119,18 +10188,21 @@ stations:
     the site mysuncoast.com. Archive: closings page confirmed by Wayback captures read with the gray adapter:
     2024-10-07 17:36Z https://www.mysuncoast.com/weather/closings/ (gray-fusion-orgs, populated, 2 rows;
     run 36111087246). Wayback CDX: 4 captures with HTTP 200 of https://www.mysuncoast.com/weather/closings/,
-    2022-11-27 to 2025-07-14.'
+    2022-11-27 to 2025-07-14. Idle, not dead (2026-11-12, piece GRAY-STALE-RELOCATE): by the closure-season
+    record (closure-days.json of 2026-10-13, counted through 2026-10-12) no weather that closes schools
+    has come to its market since the list was last written (2024-10-12T02:00:16Z), so it stays active;
+    it reads stale only where a read has no closure seasons.'
   list_files: []
   page_check:
-    checked_at: '2026-09-26T22:56:50Z'
+    checked_at: '2026-11-11T23:59:38Z'
     page: https://www.mysuncoast.com/weather/closings/
     loads:
     - https://s3.amazonaws.com/grayfilestore-wwsb/closingsData/closings_WWSB.json
     shows: 'The page''s closings area: No closings are listed at this time.'
-    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent; images,
-      media and fonts not loaded; waited 12 s, scrolled to the end and waited 5 s more, recording every
-      request and response (survey of 2026-09-26). loads: the closings list files the page requested that
-      answered 200, without the cache-busting query the page adds.'
+    method: 'Opened in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent by pagecheck.cjs
+      (survey of 2026-11-11, two pages at a time); images, media and fonts not loaded; waited 12 s, scrolled
+      to the end and waited 5 s more, recording every request and response. loads: the closings list files
+      the page requested that answered 200, without the cache-busting query the page adds.'
   robots:
   - url: https://www.mysuncoast.com/weather/closings/
     checked_at: '2026-09-26T23:08:20Z'

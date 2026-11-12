@@ -351,20 +351,30 @@ stations:
       via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Los Angeles,
       CA DMA'''
     fips: ['06027', '06037', 06059, '06071', '06111']
-  page_url: https://abc7.com/community/schoolclosings/
+  page_url: null
   data_url: null
   export_url: null
   archive_urls:
   - https://abc7.com/community/schoolclosings/
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KABC); closings
     page https://abc7.com/community/schoolclosings/, server-rendered section.school-list. Live read 2026-09-27
     (01:07:33Z, HTTP 200): ''No Closings at this time.'', list last updated 2019-02-12 20:39:39 UTC per
     the page state (before 2024: not listed a closing since; read as stale). Archive: 2 Wayback captures
     of this station''s page or list file read (archive-captures runs 36293423860), from 2019-05-06 to
     2019-05-06; none held a row (2 empty); variants abc-otv-list; not downloaded: 1 TLS handshake timed
-    out; fixtures abc-owned/kabc-page-20190506191048.html.'
+    out; fixtures abc-owned/kabc-page-20190506191048.html. Retired 2026-11-12 (piece GRAY-STALE-RELOCATE):
+    the page https://abc7.com/community/schoolclosings/, opened 2026-11-11T23:59:59Z in Chromium 141 (Playwright
+    1.56.1, headless) with the project''s User-Agent, still renders its own list, ''Last updated: 02/12/2019
+    08:39pm'' (the same minute at KABC, KFSN and KGO), and requests no other closings file, while the
+    sister pages WABC, WPVI, WTVD and KTRK read empty, not stale, on 2026-10-13; by the closure-season
+    record (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came
+    to its market 27 times after that without the list being written (first the Winter Storm Warning of
+    2019-03-12, last the Winter Storm Warning of 2026-02-16 to 2026-02-19), so the list is dead, not idle.
+    The station has no current list to read, so this source has no endpoint; its archive addresses stay,
+    so its earlier captures are still read. Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md,
+    ''Retired lists to re-check''); if its list is written again, return the source to active.'
   list_files: []
   page_check: null
   robots:
@@ -415,19 +425,32 @@ stations:
       via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''San Francisco
       - Oakland - San Jose, CA DMA'''
     fips: ['06001', '06013', '06033', '06041', '06045', '06055', '06075', 06081, 06085, 06095, 06097]
-  page_url: https://abc7news.com/community/schoolclosings/
+  page_url: null
   data_url: null
   export_url: null
   archive_urls:
   - https://abc7news.com/community/schoolclosings/
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KGO); closings
     page https://abc7news.com/community/schoolclosings/, server-rendered section.school-list. Live read
     2026-09-27 (01:07:36Z, HTTP 200): ''No Closings at this time.'', list last updated 2019-02-12 20:39:39
     UTC per the page state (before 2024: not listed a closing since; read as stale). Archive: 2 Wayback
     captures of this station''s page or list file read (archive-captures runs 36293423860, 36348669505),
-    from 2023-09-23 to 2025-05-23; none held a row (2 empty); variants abc-otv-list; fixtures abc-owned/kgo-page-20230923204353.html.'
+    from 2023-09-23 to 2025-05-23; none held a row (2 empty); variants abc-otv-list; fixtures abc-owned/kgo-page-20230923204353.html.
+    Retired 2026-11-12 (piece GRAY-STALE-RELOCATE): the page https://abc7news.com/community/schoolclosings/,
+    opened 2026-11-12T00:00:40Z in Chromium 141 (Playwright 1.56.1, headless) with the project''s User-Agent,
+    still renders its own list, ''Last updated: 02/12/2019 08:39pm'' (the same minute at KABC, KFSN and
+    KGO), and requests no other closings file, while the sister pages WABC, WPVI, WTVD and KTRK read empty,
+    not stale, on 2026-10-13; by the closure-season record (closure-days.json of 2026-10-13, counted through
+    2026-10-12) weather that closes schools came to its market once after that without the list being
+    written (the Winter Storm Warning of 2023-02-24), so the list is dead, not idle. This verdict is the
+    thinnest of the set but one: it rests on one closure event, and that event is a warning, not an observed
+    closure; the update time it shares to the minute with KABC and KFSN, whose lists missed 27 and 46
+    events, says the platform''s lists stopped together. It is second in the re-check queue. The station
+    has no current list to read, so this source has no endpoint; its archive addresses stay, so its earlier
+    captures are still read. Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md,
+    ''Retired lists to re-check''); if its list is written again, return the source to active.'
   list_files: []
   page_check: null
   robots:
@@ -478,20 +501,30 @@ stations:
       via the Census county-to-town crosswalk (snowlight.sources.stations.dma); market ''Fresno - Visalia,
       CA DMA'''
     fips: [06019, '06031', 06039, '06043', '06047', '06107']
-  page_url: https://abc30.com/community/schoolclosings/
+  page_url: null
   data_url: null
   export_url: null
   archive_urls:
   - https://abc30.com/community/schoolclosings/
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'First-hand check of 2026-09-26 (docs/research/firsthand/others.json, record KFSN); closings
     page https://abc30.com/community/schoolclosings/, server-rendered section.school-list. Live read 2026-09-27
     (01:07:40Z, HTTP 200): ''No Closings at this time.'', list last updated 2019-02-12 20:39:39 UTC per
     the page state (before 2024: not listed a closing since; read as stale). Archive: 3 Wayback captures
     of this station''s page or list file read (archive-captures runs 36293423860), from 2023-09-22 to
     2025-06-17; none held a row (3 empty); variants abc-otv-list; not downloaded: 1 TLS handshake timed
-    out; fixtures abc-owned/kfsn-page-20250617201253.html.'
+    out; fixtures abc-owned/kfsn-page-20250617201253.html. Retired 2026-11-12 (piece GRAY-STALE-RELOCATE):
+    the page https://abc30.com/community/schoolclosings/, opened 2026-11-12T00:00:20Z in Chromium 141
+    (Playwright 1.56.1, headless) with the project''s User-Agent, still renders its own list, ''Last updated:
+    02/12/2019 08:39pm'' (the same minute at KABC, KFSN and KGO), and requests no other closings file,
+    while the sister pages WABC, WPVI, WTVD and KTRK read empty, not stale, on 2026-10-13; by the closure-season
+    record (closure-days.json of 2026-10-13, counted through 2026-10-12) weather that closes schools came
+    to its market 46 times after that without the list being written (first the Winter Storm Warning of
+    2019-05-16, last the Winter Storm Warning of 2026-04-21 to 2026-04-22), so the list is dead, not idle.
+    The station has no current list to read, so this source has no endpoint; its archive addresses stay,
+    so its earlier captures are still read. Re-check the station''s page by 2026-12-01 (queue: docs/research/firsthand/gaps.md,
+    ''Retired lists to re-check''); if its list is written again, return the source to active.'
   list_files: []
   page_check: null
   robots:

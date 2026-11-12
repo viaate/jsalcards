@@ -34,12 +34,13 @@ def test_real_registry_loads_and_names_known_adapters() -> None:
 def test_every_gray_export_is_registered() -> None:
     registry = load_registry(DEFAULT_REGISTRY_DIR)
     gray = [s for s in registry.stations.values() if s.platform == "gray" and s.export_url]
-    # The 123 exports the research verified, WBBJ's (an archived capture of it) and
-    # KATC's (read live in round 2), each kept as its station's export_url.
-    assert len(gray) == 125
+    # The 123 exports the research verified, WBBJ's (an archived capture of it), KATC's
+    # (read live in round 2) and WFLX's (its data_url until it was retired on 2026-11-12,
+    # kept so its archived pages still follow it), each kept as its station's export_url.
+    assert len(gray) == 126
     assert all(s.export_url and GRAY_EXPORT.match(s.export_url) for s in gray)
     assert all(s.export_url in s.archive_urls for s in gray)
-    assert len({s.export_url for s in gray}) == 125
+    assert len({s.export_url for s in gray}) == 126
     missing = [s for s in registry.stations.values() if s.status is StationStatus.NO_ENDPOINT]
     assert {s.call_sign for s in missing if s.platform == "gray"} >= {"WAAY", "WDRB", "WREX"}
     assert "arc-site=wbbj" in registry.stations["gray-wbbj"].evidence
@@ -51,16 +52,54 @@ def test_every_gray_export_is_registered() -> None:
     assert kytv.data_url == kytv.export_url
 
 
+RECHECKED_2026_11_11 = {"gray-kmvt", "gray-wtoc", "gray-wwsb"}
+"""Stations whose lists were last written before the last winter, their pages opened again
+on 2026-11-11 (piece GRAY-STALE-RELOCATE): each still loads the same export, and no weather
+that closes schools has come to its market since that write, so the list is idle, not dead."""
+
+RETIRED_2026_11_12 = {
+    "gray-kgns", "gray-kjct", "gray-kkco", "gray-kplc", "gray-wafb", "gray-wcjb", "gray-wcsc",
+    "gray-wect", "gray-wflx", "gray-wjhg", "gray-wvue",
+    "abc-owned-kabc", "abc-owned-kfsn", "abc-owned-kgo",
+    "scripps-wtvq",
+}  # fmt: skip
+"""Sources retired on 2026-11-12 (piece GRAY-STALE-RELOCATE): fourteen whose pages still load a
+list that weather closing schools in their markets passed by unwritten (dead, not idle), and
+WTVQ, whose site now redirects to LEX18."""
+RETIRED_NOTE = re.compile(r"Retired (\d{4}-\d{2}-\d{2}) \(piece [A-Z0-9-]+\): ")
+RECHECK = re.compile(
+    r"re-check [^;]+? by (\d{4}-\d{2}-\d{2}) \(queue: docs/research/firsthand/gaps\.md, "
+    r"'Retired lists to re-check'\)",
+    re.IGNORECASE,
+)
+"""A retired source is never read again by itself, so it names the day it is looked at again by
+hand and the queue that holds it."""
+RECHECK_QUEUE = DEFAULT_REGISTRY_DIR.parents[2] / "docs/research/firsthand/gaps.md"
+THIN_VERDICT = "it rests on one closure event, and that event is a warning, not an observed closure"
+
+
+def _recheck_queue() -> list[tuple[str, str]]:
+    """The (source, re-check day) rows of the queue, in its order."""
+    text = RECHECK_QUEUE.read_text(encoding="utf-8")
+    section = text.split("\n## Retired lists to re-check (", 1)[1].split("\n## ", 1)[0]
+    rows = re.findall(r"^\| \d+ \| `([a-z0-9-]+)` \| (\d{4}-\d{2}-\d{2}) \|", section, re.M)
+    orders = [int(n) for n in re.findall(r"^\| (\d+) \| `", section, re.M)]
+    assert orders == list(range(1, len(rows) + 1))
+    return rows
+
+
 def test_every_active_gray_station_reads_the_list_its_page_loads() -> None:
     """The live data_url is the list the station's page loaded in a browser check."""
     registry = load_registry(DEFAULT_REGISTRY_DIR)
     gray = [s for s in registry.active() if s.platform == "gray"]
-    assert len(gray) == 119
+    assert len(gray) == 108  # 119 before 2026-11-12, when 11 dead lists were retired
+    assert {s.id for s in gray} >= RECHECKED_2026_11_11
     for station in gray:
         check = station.page_check
         assert check is not None, station.id
         assert station.data_url in check.loads, station.id
-        assert check.checked_at.isoformat().startswith("2026-09-26"), station.id
+        day = "2026-11-11" if station.id in RECHECKED_2026_11_11 else "2026-09-26"
+        assert check.checked_at.isoformat().startswith(day), station.id
         assert station.page_url is not None, station.id
     stations = registry.stations
     framed = {
@@ -81,10 +120,7 @@ def test_every_active_gray_station_reads_the_list_its_page_loads() -> None:
     wfsb = stations["gray-wfsb"].page_check
     assert wfsb is not None
     assert "First Church/Christ Cong-E Haddam" in wfsb.shows
-    # Pages that load a sister station's export.
-    assert stations["gray-kjct"].data_url == (
-        "https://s3.amazonaws.com/grayfilestore-kkco/closingsData/closings_KKCO.json"
-    )
+    # Pages that load a sister station's export (KJCT's loaded KKCO's until both were retired).
     assert stations["gray-ksnb"].data_url == stations["gray-koln"].data_url
     assert stations["gray-ktre"].data_url == stations["gray-kltv"].data_url
     # No page of their own, or a page that loads no list: no endpoint, with the check.
@@ -96,6 +132,56 @@ def test_every_active_gray_station_reads_the_list_its_page_loads() -> None:
         assert station.status is StationStatus.NO_ENDPOINT, station_id
         assert "Page check 2026-09-26" in station.evidence, station_id
     assert "HTTP 502" in stations["gray-wevv"].evidence
+
+
+def test_retired_sources_keep_their_reason_and_their_archive() -> None:
+    """A retired source has no endpoint, says when and why, names when to look again, and keeps
+    the addresses its earlier captures are read under (a Gray one, the export it followed)."""
+    registry = load_registry(DEFAULT_REGISTRY_DIR)
+    retired = {}
+    rechecks = {}
+    for station in registry.stations.values():
+        note = RETIRED_NOTE.search(station.evidence)
+        if note is None:
+            continue
+        retired[station.id] = note.group(1)
+        assert station.status is StationStatus.NO_ENDPOINT, station.id
+        assert (station.page_url, station.data_url, station.page_check) == (None, None, None)
+        assert station.archive_urls, station.id
+        recheck = RECHECK.search(station.evidence, note.end())
+        assert recheck is not None, station.id
+        assert recheck.group(1) > note.group(1), station.id
+        rechecks[station.id] = recheck.group(1)
+        if station.platform == "gray":
+            assert station.export in station.archive_urls, station.id
+    assert {k for k, day in retired.items() if day == "2026-11-12"} == RETIRED_2026_11_12
+    # Every retired source is in the re-check queue once, under the day its entry names, and the
+    # verdicts that rest on one warning event come before the rest.
+    queue = _recheck_queue()
+    assert dict(queue) == rechecks
+    assert len(queue) == len(rechecks)
+    thin = [THIN_VERDICT in registry.stations[source].evidence for source, _ in queue]
+    assert thin == sorted(thin, reverse=True)
+    assert [source for source, _ in queue][: sum(thin)] == ["gray-kgns", "abc-owned-kgo"]
+
+
+def test_lists_closure_weather_passed_by_are_retired_as_dead() -> None:
+    """The 2026-11-12 retirements but WTVQ's cite the closure-season record that found weather
+    closing schools in the market after the list's last write; the idle lists stay active."""
+    registry = load_registry(DEFAULT_REGISTRY_DIR)
+    for station_id in RETIRED_2026_11_12 - {"scripps-wtvq"}:
+        evidence = registry.stations[station_id].evidence
+        assert "closure-days.json of 2026-10-13" in evidence, station_id
+        assert "so the list is dead, not idle" in evidence, station_id
+        if station_id.startswith("gray-"):
+            assert "/pf/api/v3/content/fetch/gsync-closings is no live list" in evidence
+    for station_id in (*RECHECKED_2026_11_11, "sinclair-ktxs"):
+        station = registry.stations[station_id]
+        assert station.status is StationStatus.ACTIVE, station_id
+        assert "Idle, not dead (2026-11-12" in station.evidence, station_id
+    method = registry.stations["gray-wtoc"].page_check
+    assert method is not None
+    assert "Chromium 141 (Playwright 1.56.1, headless)" in method.method
 
 
 def test_a_data_url_the_page_does_not_load_is_refused(tmp_path: Path) -> None:

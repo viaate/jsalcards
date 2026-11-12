@@ -56,8 +56,9 @@ def test_endpoints_by_platform() -> None:
         )
         for pid in PLATFORMS
     }
+    # abc-owned had 8 until 2026-11-12, when KABC, KFSN and KGO (lists frozen in 2019) were retired.
     assert active == {
-        "abc-owned": 8,
+        "abc-owned": 5,
         "nbc-owned": 10,
         "fox-owned": 9,
         "cbs-owned": 8,
