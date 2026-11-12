@@ -66,7 +66,26 @@ public struct AppearanceOption: Equatable, Sendable {
     public let isChosen: Bool
 }
 
-/// The Settings screen: its title and its one section, Appearance.
+/// One of the two Outside screen tiles.
+public struct OutsideScreenOption: Equatable, Sendable {
+    public let choice: OutsideScreenChoice
+    public let label: ShownText
+    public let isChosen: Bool
+}
+
+/// The Outside screen section of Settings, which only a phone with an outside screen (the
+/// iPhone Duo) shows: its heading, the grey line beside it, and its two tiles.
+public struct OutsideScreenSection: Equatable, Sendable {
+    public let heading: ShownText
+    /// The line beside the heading, always shown.
+    public let aside: ShownText
+    /// Beside the map, Under the controls, in that order.
+    public let options: [OutsideScreenOption]
+    public let chosen: OutsideScreenChoice
+}
+
+/// The Settings screen: its title, the Appearance section, and on an iPhone Duo the
+/// Outside screen section under it.
 public struct SettingsModel: Equatable, Sendable {
     public let title: ShownText
     public let heading: ShownText
@@ -75,6 +94,8 @@ public struct SettingsModel: Equatable, Sendable {
     /// System, Light, Dark, in that order.
     public let options: [AppearanceOption]
     public let chosen: AppearanceChoice
+    /// The Outside screen section, on a phone with an outside screen; nil on any other.
+    public let outsideScreen: OutsideScreenSection?
 }
 
 /// What one screen shows below the bar.
@@ -90,7 +111,8 @@ public struct ScreenModel: Equatable, Sendable {
     public let content: ScreenContent
 }
 
-/// What the app's shell shows, for one appearance choice.
+/// What the app's shell shows, for one appearance choice and, on a phone with an outside
+/// screen, the Outside screen choice.
 public struct ShellModel: Equatable, Sendable {
     public let tabs: TabsModel
     public let mySchool: PlainScreenModel
@@ -99,7 +121,9 @@ public struct ShellModel: Equatable, Sendable {
     public let settings: SettingsModel
     public let search: SearchModel
 
-    public init(appearance: AppearanceChoice) {
+    /// `outsideScreen` is the kept Outside screen choice on a phone with an outside screen
+    /// (the iPhone Duo), and nil on any other phone, whose Settings has no such row.
+    public init(appearance: AppearanceChoice, outsideScreen: OutsideScreenChoice? = nil) {
         tabs = TabsModel(
             mySchool: TabModel(id: .mySchool, title: AppWords.mySchool),
             map: TabModel(id: .map, title: AppWords.map),
@@ -124,7 +148,8 @@ public struct ShellModel: Equatable, Sendable {
             heading: AppWords.appearance,
             followsPhone: appearance == .system ? AppWords.followsYourPhone : nil,
             options: options,
-            chosen: appearance
+            chosen: appearance,
+            outsideScreen: ShellModel.outsideScreenSection(outsideScreen)
         )
         search = SearchModel(prompt: SiteWords.searchPlaceholder)
     }
@@ -142,6 +167,38 @@ public struct ShellModel: Equatable, Sendable {
             return ScreenModel(tabs: tabs, content: .settings(settings))
         case .search:
             return ScreenModel(tabs: tabs, content: .search(search))
+        }
+    }
+
+    /// The Outside screen section for the kept choice, or nil off the Duo.
+    private static func outsideScreenSection(_ kept: OutsideScreenChoice?) -> OutsideScreenSection? {
+        guard let chosen = kept else {
+            return nil
+        }
+        var options: [OutsideScreenOption] = []
+        for choice in OutsideScreenChoice.allCases {
+            options.append(
+                OutsideScreenOption(
+                    choice: choice,
+                    label: ShellModel.label(of: choice),
+                    isChosen: choice == chosen
+                )
+            )
+        }
+        return OutsideScreenSection(
+            heading: AppWords.outsideScreen,
+            aside: AppWords.whenYourIPhoneIsClosed,
+            options: options,
+            chosen: chosen
+        )
+    }
+
+    private static func label(of choice: OutsideScreenChoice) -> ShownText {
+        switch choice {
+        case .besideTheMap:
+            return AppWords.besideTheMap
+        case .underTheControls:
+            return AppWords.underTheControls
         }
     }
 

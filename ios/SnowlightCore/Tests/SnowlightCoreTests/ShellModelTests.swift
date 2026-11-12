@@ -74,6 +74,49 @@ final class ShellModelTests: XCTestCase {
         )
     }
 
+    func testNoOutsideScreenRowOffTheDuo() {
+        for appearance in AppearanceChoice.allCases {
+            XCTAssertNil(ShellModel(appearance: appearance).settings.outsideScreen)
+            XCTAssertNil(ShellModel(appearance: appearance, outsideScreen: nil).settings.outsideScreen)
+            XCTAssertEqual(ShellModel(appearance: appearance, outsideScreen: nil), ShellModel(appearance: appearance))
+        }
+    }
+
+    func testTheOutsideScreenRowOnTheDuoAndTheChosenTile() {
+        for appearance in AppearanceChoice.allCases {
+            for kept in OutsideScreenChoice.allCases {
+                let row = ShellModel(appearance: appearance, outsideScreen: kept).settings.outsideScreen
+                XCTAssertEqual(row?.heading, AppWords.outsideScreen)
+                XCTAssertEqual(row?.aside, AppWords.whenYourIPhoneIsClosed)
+                XCTAssertEqual(row?.chosen, kept)
+                XCTAssertEqual(row?.options.map { $0.choice }, [.besideTheMap, .underTheControls])
+                XCTAssertEqual(row?.options.map { $0.label.drawnString }, ["Beside the map", "Under the controls"])
+                XCTAssertEqual(row?.options.filter { $0.isChosen }.map { $0.choice }, [kept])
+            }
+        }
+    }
+
+    func testTheWordsOfSettingsOnTheDuo() {
+        let row = ["Outside screen", "When your iPhone is closed", "Beside the map", "Under the controls"]
+        for kept in OutsideScreenChoice.allCases {
+            XCTAssertEqual(
+                shownTexts(in: ShellModel(appearance: .system, outsideScreen: kept).screen(.settings)).map { $0.drawnString },
+                bar + ["Settings", "Appearance", "Follows your iPhone", "System", "Light", "Dark"] + row
+            )
+            XCTAssertEqual(
+                shownTexts(in: ShellModel(appearance: .dark, outsideScreen: kept).screen(.settings)).map { $0.drawnString },
+                bar + ["Settings", "Appearance", "System", "Light", "Dark"] + row
+            )
+            // The other screens are the same on the Duo.
+            for screen in [ScreenID.mySchool, .map, .callIt, .search] {
+                XCTAssertEqual(
+                    ShellModel(appearance: .system, outsideScreen: kept).screen(screen),
+                    ShellModel(appearance: .system).screen(screen)
+                )
+            }
+        }
+    }
+
     func testTheWordsOfSearch() {
         for appearance in AppearanceChoice.allCases {
             XCTAssertEqual(words(of: .search, appearance: appearance), bar + ["Search a school, city, or ZIP"])

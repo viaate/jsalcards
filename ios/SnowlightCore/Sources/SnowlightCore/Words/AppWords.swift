@@ -1,4 +1,5 @@
-// The words only the app has: the site has no tab bar and no appearance setting.
+// The words only the app has: the site has no tab bar, no appearance setting and no Outside
+// screen setting.
 //
 // Each is also a line of ios/tools/app-words.txt, which says whether the owner has
 // approved it and where that was said. A script (ios/tools/check-ios.mjs) fails the build
@@ -31,4 +32,15 @@ enum AppWords {
     static let dark = ShownText("Dark")
     /// PENDING OWNER: from the unfinished light and dark pictures, not yet approved.
     static let followsYourPhone = ShownText("Follows your iPhone")
+
+    // The Outside screen setting, shown only on an iPhone Duo.
+
+    /// Approved: owner, Nov 12 2026, on the drawn Settings row: "I like the wording".
+    static let outsideScreen = ShownText("Outside screen")
+    /// Approved: owner, Nov 12 2026, on the drawn Settings row.
+    static let whenYourIPhoneIsClosed = ShownText("When your iPhone is closed")
+    /// Approved: owner, Nov 12 2026, on the drawn Settings row (layout A, the default).
+    static let besideTheMap = ShownText("Beside the map")
+    /// Approved: owner, Nov 12 2026, on the drawn Settings row (layout B, the owner's own phrase).
+    static let underTheControls = ShownText("Under the controls")
 }

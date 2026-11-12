@@ -3,7 +3,9 @@
 // My School, Map and Call it are this until their screens are built: the page color and
 // the tab's name as a page title. No placeholder sentence: the app says nothing it has
 // not been given to say. The title keeps to the readable column
-// (Layout/ReadableColumn.swift).
+// (Layout/ReadableColumn.swift). The ground reads the Outside screen layout value
+// (Layout/SideControls.swift): on the closed iPhone Duo with Beside the map chosen it stops
+// where the system's side controls begin; everywhere else it runs under them.
 
 import SnowlightCore
 import SwiftUI
@@ -11,10 +13,12 @@ import SwiftUI
 struct EmptyTab: View {
     let model: PlainScreenModel
 
+    /// The page color, but in the debug tour's pictures of where the ground stops.
+    @Environment(\.placeholderGround) private var ground
+
     var body: some View {
         ZStack(alignment: .topLeading) {
-            Color.token(.page)
-                .ignoresSafeArea()
+            PageGround(token: ground)
             PageTitle(model.title)
                 .readableColumn()
         }

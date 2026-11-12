@@ -3,7 +3,8 @@
 // Drawn, not a system control. Each tile is a small picture of its look: that look's page
 // color, holding a small block in that look's fill color with an ink bar. The System tile
 // is half light, half dark. The chosen tile has a ring and a ticked label. One tap
-// changes the whole app at once.
+// changes the whole app at once. The frame, the ring and the label of a tile are
+// `SettingsTile`, which the Outside screen tiles share.
 
 import SnowlightCore
 import SwiftUI
@@ -19,7 +20,13 @@ struct AppearanceTiles: View {
                 Button {
                     choose(option.choice)
                 } label: {
-                    AppearanceTile(option: option)
+                    SettingsTile(label: option.label, isChosen: option.isChosen) {
+                        HStack(spacing: 0) {
+                            ForEach(option.choice.looks, id: \.self) { look in
+                                LookSwatch(look: look)
+                            }
+                        }
+                    }
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(option.isChosen ? .isSelected : [])
@@ -28,56 +35,59 @@ struct AppearanceTiles: View {
     }
 }
 
-/// One tile and its label.
-struct AppearanceTile: View {
-    let option: AppearanceOption
+/// One tile of a Settings row and its label: a picture 62 points high with corner radius
+/// 14 and a hairline edge; the chosen one has a 2 point gap and then a 2.5 point ink ring,
+/// and its label is stronger and ticked; the others' labels are quieter.
+struct SettingsTile<Picture: View>: View {
+    let label: ShownText
+    let isChosen: Bool
+    let picture: Picture
+
+    init(label: ShownText, isChosen: Bool, @ViewBuilder picture: () -> Picture) {
+        self.label = label
+        self.isChosen = isChosen
+        self.picture = picture()
+    }
 
     var body: some View {
         VStack(spacing: 10) {
-            picture
-            label
+            framed
+            name
         }
         .frame(maxWidth: .infinity)
         .contentShape(Rectangle())
     }
 
-    /// The tile: 62 points high, corner radius 14. The chosen one has a 2 point gap and
-    /// then a 2.5 point ink ring.
-    private var picture: some View {
-        HStack(spacing: 0) {
-            ForEach(option.choice.looks, id: \.self) { look in
-                LookSwatch(look: look)
+    private var framed: some View {
+        picture
+            .frame(maxWidth: .infinity)
+            .frame(height: 62)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                // A hairline, so a tile the color of the page still has an edge.
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color.token(.fill2), lineWidth: 1)
             }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 62)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay {
-            // A hairline, so a tile the color of the page still has an edge.
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.token(.fill2), lineWidth: 1)
-        }
-        .overlay {
-            if option.isChosen {
-                RoundedRectangle(cornerRadius: 18.5, style: .continuous)
-                    .strokeBorder(Color.token(.ink), lineWidth: 2.5)
-                    .padding(-4.5)
+            .overlay {
+                if isChosen {
+                    RoundedRectangle(cornerRadius: 18.5, style: .continuous)
+                        .strokeBorder(Color.token(.ink), lineWidth: 2.5)
+                        .padding(-4.5)
+                }
             }
-        }
     }
 
-    /// The tile's name. The chosen one is stronger and has a tick; the others are quieter.
-    private var label: some View {
+    private var name: some View {
         HStack(spacing: 4) {
-            if option.isChosen {
+            if isChosen {
                 SymbolName.tick.image
                     .font(.system(size: 11, weight: .bold))
                     .accessibilityHidden(true)
             }
-            ShownLabel(option.label)
-                .typeStyle(option.isChosen ? .subStrong : .sub)
+            ShownLabel(label)
+                .typeStyle(isChosen ? .subStrong : .sub)
         }
-        .foregroundStyle(Color.token(option.isChosen ? .ink : .ink2))
+        .foregroundStyle(Color.token(isChosen ? .ink : .ink2))
     }
 }
 

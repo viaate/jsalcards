@@ -8,12 +8,17 @@
 //                                 or probe (the machine probe, MetalProbe.swift)
 //     -tour.appearance <choice>   the look to start with: system, light or dark
 //     -tour.then <choice>         a look to switch to in code, after the first frame
+//     -tour.outside <layout>      the Outside screen layout to start with: beside or under
+//                                 (read only on a phone with an outside screen)
+//     -tour.proof ground          the placeholder tabs' ground in the chance teal instead of
+//                                 the page color, so a picture shows where it stops
 //
 // On such a launch the app:
 //
 //   1. keeps the choice named by tour.appearance where the app keeps its own choice, or
 //      forgets the kept choice when the argument is absent (the app's data survives from
-//      one picture to the next);
+//      one picture to the next); the same for tour.outside and the Outside screen choice;
+//      and says whether this phone has an outside screen;
 //   2. shows the named screen, with animations off;
 //   3. about 0.6 seconds after it appears: if tour.then is given, makes that choice
 //      through the same call the Settings tiles make, and waits 0.6 seconds more;
@@ -61,6 +66,10 @@ struct TourPlan: Sendable {
     let appearance: AppearanceChoice?
     /// A look to switch to in code after the first frame, or nil.
     let switchTo: AppearanceChoice?
+    /// The Outside screen layout to start with, or nil to start as a fresh install does.
+    let outside: OutsideScreenChoice?
+    /// True when the placeholder tabs' ground is drawn in the chance teal.
+    let proofGround: Bool
 
     /// The screen of the shell to open on, or nil when the launch shows the probe.
     var screen: ScreenID? {
@@ -107,7 +116,9 @@ struct TourPlan: Sendable {
             screenName: screenName,
             show: show,
             appearance: TourPlan.choice(under: "tour.appearance", in: defaults),
-            switchTo: TourPlan.choice(under: "tour.then", in: defaults)
+            switchTo: TourPlan.choice(under: "tour.then", in: defaults),
+            outside: TourPlan.layout(under: "tour.outside", in: defaults),
+            proofGround: TourPlan.proofGround(in: defaults)
         )
     }
 
@@ -143,6 +154,31 @@ struct TourPlan: Sendable {
         return nil
     }
 
+    /// The Outside screen layout a launch argument names, or nil when it is absent. A value
+    /// that is not beside or under is said out loud and read as absent.
+    private static func layout(under key: String, in defaults: UserDefaults) -> OutsideScreenChoice? {
+        guard let value = defaults.string(forKey: key) else {
+            return nil
+        }
+        for choice in OutsideScreenChoice.allCases where Tour.name(of: choice) == value {
+            return choice
+        }
+        Tour.note(key + " is not beside or under")
+        return nil
+    }
+
+    /// True when tour.proof says ground. Anything else is said out loud and read as absent.
+    private static func proofGround(in defaults: UserDefaults) -> Bool {
+        guard let value = defaults.string(forKey: "tour.proof") else {
+            return false
+        }
+        if value == "ground" {
+            return true
+        }
+        Tour.note("tour.proof is not ground")
+        return false
+    }
+
     /// Lower-case letters, digits and hyphens only, so a name is safe as a file name.
     private static func isPlainName(_ text: String) -> Bool {
         let bytes = Array(text.utf8)
@@ -169,6 +205,8 @@ struct TourPlan: Sendable {
 struct TourStage: ViewModifier {
     /// The app's appearance choice: the same object the Settings tiles change.
     let appearance: AppearanceStore
+    /// The app's Outside screen choice: the same object its tiles change.
+    let outside: OutsideScreenStore
 
     func body(content: Content) -> some View {
         if let plan = TourPlan.ofThisLaunch, plan.showsProbe {
@@ -181,6 +219,7 @@ struct TourStage: ViewModifier {
             content.background {
                 TourGeometry().ignoresSafeArea()
             }
+            .environment(\.placeholderGround, TourPlan.ofThisLaunch?.proofGround == true ? Token.chance : Token.page)
             .onAppear {
                 guard let plan = TourPlan.ofThisLaunch, Tour.begin() else {
                     return
@@ -188,16 +227,17 @@ struct TourStage: ViewModifier {
                 UIView.setAnimationsEnabled(false)
                 Tour.note("showing " + plan.screenName + " for the picture " + plan.name)
                 let store = appearance
+                let layout = outside
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     guard let next = plan.switchTo else {
-                        Tour.writeWords(for: plan, shownWith: store)
+                        Tour.writeWords(for: plan, shownWith: store, layout: layout)
                         return
                     }
                     // The same call a tap on a Settings tile makes.
                     store.choose(next)
                     Tour.note("switched the look in code to " + Tour.name(of: next))
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                        Tour.writeWords(for: plan, shownWith: store)
+                        Tour.writeWords(for: plan, shownWith: store, layout: layout)
                     }
                 }
             }
@@ -225,6 +265,17 @@ enum Tour {
             AppearanceChoice.forget(in: defaults)
             Tour.note("forgot any kept look for the picture " + plan.name)
         }
+        if let layout = plan.outside {
+            layout.keep(in: defaults)
+            Tour.note("kept the Outside screen layout " + Tour.name(of: layout) + " for the picture " + plan.name)
+        } else {
+            OutsideScreenChoice.forget(in: defaults)
+            Tour.note("forgot any kept Outside screen layout for the picture " + plan.name)
+        }
+        Tour.note("this phone has an outside screen: " + (ThisPhone.hasOuterScreen ? "yes" : "no"))
+        if plan.proofGround {
+            Tour.note("the placeholder tabs' ground is drawn in the chance teal for the picture " + plan.name)
+        }
         return true
     }()
 
@@ -241,6 +292,16 @@ enum Tour {
         }
     }
 
+    /// An Outside screen layout's name in the tour's own launch arguments and notes.
+    static func name(of layout: OutsideScreenChoice) -> String {
+        switch layout {
+        case .besideTheMap:
+            return "beside"
+        case .underTheControls:
+            return "under"
+        }
+    }
+
     private static var begun = false
 
     /// True the first time it is asked, on the main thread: the tour runs once a launch.
@@ -254,12 +315,15 @@ enum Tour {
 
     /// Writes the words file of a picture: the words of the screen's model as the screen
     /// is shown now, one per line.
-    static func writeWords(for plan: TourPlan, shownWith store: AppearanceStore) {
+    static func writeWords(for plan: TourPlan, shownWith store: AppearanceStore, layout: OutsideScreenStore) {
         guard let screen = plan.screen else {
             note("the picture " + plan.name + " shows no screen of the shell, so it has no words")
             return
         }
-        let model = ShellModel(appearance: store.choice).screen(screen)
+        // The same model the root view draws: with the Outside screen row only on a phone
+        // that has an outside screen.
+        let outsideScreen: OutsideScreenChoice? = ThisPhone.hasOuterScreen ? layout.choice : nil
+        let model = ShellModel(appearance: store.choice, outsideScreen: outsideScreen).screen(screen)
         let lines = shownTexts(in: model).map { $0.drawnString }
         Tour.write(lines, for: plan)
     }

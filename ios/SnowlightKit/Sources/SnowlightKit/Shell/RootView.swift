@@ -10,6 +10,7 @@ import SwiftUI
 /// The root of the app.
 public struct RootView: View {
     @StateObject private var appearance: AppearanceStore
+    @StateObject private var outside: OutsideScreenStore
     @State private var selection: ScreenID
 
     public init() {
@@ -19,6 +20,7 @@ public struct RootView: View {
         Tour.prepare()
         #endif
         _appearance = StateObject(wrappedValue: AppearanceStore())
+        _outside = StateObject(wrappedValue: OutsideScreenStore())
         _selection = State(initialValue: RootView.firstScreen())
     }
 
@@ -28,7 +30,7 @@ public struct RootView: View {
         // one tour launch that asks for the machine probe, it shows the probe in place
         // of the shell. A release build holds none of it.
         #if DEBUG
-        shell.modifier(TourStage(appearance: appearance))
+        shell.modifier(TourStage(appearance: appearance, outside: outside))
         #else
         shell
         #endif
@@ -44,9 +46,16 @@ public struct RootView: View {
         return ScreenID.mySchool
     }
 
-    /// What the shell shows, for the appearance now chosen.
+    /// What the shell shows, for the appearance now chosen and, on an iPhone Duo, the
+    /// Outside screen layout now chosen.
     private var model: ShellModel {
-        ShellModel(appearance: appearance.choice)
+        ShellModel(appearance: appearance.choice, outsideScreen: outsideScreen)
+    }
+
+    /// The kept Outside screen choice on a phone with an outside screen (Shell/ThisPhone.swift),
+    /// and nil on any other phone: there the row does not exist and the layout is as it was.
+    private var outsideScreen: OutsideScreenChoice? {
+        ThisPhone.hasOuterScreen ? outside.choice : nil
     }
 
     private var shell: some View {
@@ -71,6 +80,9 @@ public struct RootView: View {
                     model: model.settings,
                     choose: { choice in
                         appearance.choose(choice)
+                    },
+                    chooseOutsideScreen: { choice in
+                        outside.choose(choice)
                     }
                 )
             } label: {
@@ -82,6 +94,8 @@ public struct RootView: View {
             }
         }
         .tint(Color.token(.ink))
+        // Every screen reads the Outside screen layout from here (Layout/SideControls.swift).
+        .environment(\.outsideScreen, outsideScreen)
         .background {
             WindowStyle(choice: appearance.choice)
                 .frame(width: 0, height: 0)

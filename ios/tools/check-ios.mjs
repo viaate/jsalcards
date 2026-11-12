@@ -55,6 +55,15 @@ const GOLDEN = 'ios/SnowlightCore/Tests/SnowlightCoreTests/Fixtures/golden/';
 const SHOWN = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/Shown.swift';
 const NAMES = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/Names.swift';
 const WINDOW_STYLE = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/WindowStyle.swift';
+/**
+ * The one view file that knows which phone the app runs on (the iPhone Duo has an outside
+ * screen, and no documented call says so). It alone may hold these two names and read
+ * ProcessInfo, the simulator's way to hand over the simulated phone's model; it hands out
+ * one Bool. Every other rule holds in it.
+ */
+const THIS_PHONE = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/ThisPhone.swift';
+const THIS_PHONE_NAMES = new Set(['hw.machine', 'SIMULATOR_MODEL_IDENTIFIER']);
+const THIS_PHONE_READS = 'ProcessInfo';
 const TEST_COUNT = 'ios/tools/test-count.txt';
 const APP_WORDS_SWIFT = 'ios/SnowlightCore/Sources/SnowlightCore/Words/AppWords.swift';
 const APP_WORDS_LIST = 'ios/tools/app-words.txt';
@@ -623,6 +632,9 @@ function checkTree(files, banned) {
     if (isViewCode(path)) {
       // (b) No text in quotes in a view; in the names file, names only.
       for (const literal of swift.literals) {
+        if (path === THIS_PHONE && !literal.interpolated && THIS_PHONE_NAMES.has(literal.value)) {
+          continue;
+        }
         if (path !== NAMES) {
           hit('words.literal', path, literal.line, `a string literal in a view: "${literal.value}"`);
         } else if (literal.interpolated || !NAME_LITERAL.test(literal.value)) {
@@ -658,6 +670,7 @@ function checkTree(files, banned) {
       // view's to read, so none of it can be drawn.
       for (const [pattern, what] of [...CLOCK_ZONE, ...VIEW_DEVICE]) {
         if (path === WINDOW_STYLE && what === SETTINGS_STORE) continue;
+        if (path === THIS_PHONE && what === THIS_PHONE_READS) continue;
         for (const found of matches(swift.code, pattern)) hit('view.device', path, found.line, `a view reads the device: ${what}`);
       }
       // (b) Laid out from the room the window gives, never from the device or for one phone.
@@ -1151,6 +1164,8 @@ const CLEAN = new Map([
   // Lengths below the size of a screen, and the width class, may be written in a view.
   [LAYOUT_VIEW, view('Color.clear.frame(width: 62, height: 299.5).padding(0.5).opacity(sizeClass == .regular ? 1 : 0x0)')],
   [WINDOW_STYLE, 'import SwiftUI\nfinal class AppearanceStore {\n    private let store: UserDefaults\n    init(store: UserDefaults = .standard) {\n        self.store = store\n    }\n}\n'],
+  // The one view file that knows the phone: its two names and ProcessInfo.
+  [THIS_PHONE, 'import Foundation\nimport SnowlightCore\nenum ThisPhone {\n    static let hasOuterScreen: Bool = PhoneModel.hasOuterScreen(machine: ThisPhone.modelBytes())\n    private static func modelBytes() -> [UInt8] {\n        #if targetEnvironment(simulator)\n        guard let model = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] else {\n            return []\n        }\n        return Array(model.utf8)\n        #else\n        var size = 0\n        guard sysctlbyname("hw.machine", nil, &size, nil, 0) == 0 else {\n            return []\n        }\n        var bytes = [UInt8](repeating: 0, count: size)\n        _ = sysctlbyname("hw.machine", &bytes, &size, nil, 0)\n        return bytes\n        #endif\n    }\n}\n'],
 ]);
 
 /**
@@ -1196,6 +1211,11 @@ const SAMPLES = [
   { name: 'the name of the function', rules: ['words.value'], files: [[VIEW, view('Button(#function) { }')]] },
   { name: 'the name of the file', rules: ['words.value'], files: [[VIEW, view('Button(#fileID) { }')]] },
   { name: 'a cast to text', rules: ['words.value'], files: [[VIEW, view('Button(value as? String ?? name) { }')]] },
+  { name: 'another name in the one file that knows the phone', rules: ['words.literal'], files: [[THIS_PHONE, 'import Foundation\nenum ThisPhone {\n    static let model = "iPhone19,4"\n}\n']] },
+  { name: 'one of its names with a value put in, in the one file that knows the phone', rules: ['words.literal'], files: [[THIS_PHONE, 'import Foundation\nenum ThisPhone {\n    static let key = "\\(prefix)hw.machine"\n}\n']] },
+  { name: 'the clock, in the one file that knows the phone', rules: ['view.device'], files: [[THIS_PHONE, 'import Foundation\nenum ThisPhone {\n    static let now = Date()\n}\n']] },
+  { name: 'ProcessInfo in a view other than the one that knows the phone', rules: ['view.device'], files: [[VIEW, view('let model = ProcessInfo.processInfo.environment.count')]] },
+  { name: 'one of its names in a view other than the one that knows the phone', rules: ['words.literal'], files: [[VIEW, view('let key = "hw.machine"')]] },
   { name: 'a stored value read as it is, in the one file that holds the store', rules: ['view.device'], files: [[WINDOW_STYLE, 'import SwiftUI\nfinal class AppearanceStore {\n    private let store: UserDefaults\n    var said: String? {\n        store.string(forKey: name)\n    }\n}\n']] },
   { name: 'a view that names SiteWords', rules: ['words.table'], files: [[VIEW, view('ShownLabel(SiteWords.appName)')]] },
   { name: 'a view that names AppWords', rules: ['words.table'], files: [[APP + 'Sample.swift', view('ShownLabel(AppWords.map)')]] },

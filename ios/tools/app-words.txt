@@ -1,4 +1,5 @@
-# The words only the iPhone app has: the site has no tab bar and no appearance setting.
+# The words only the iPhone app has: the site has no tab bar, no appearance setting and no
+# Outside screen setting.
 #
 # One line per word, three parts with a tab between them:
 #   approved or pending, then who approved it and where, then the words exactly as shown.
@@ -18,3 +19,7 @@ approved	owner request, Nov 10 2026: follow the phone by default	System
 approved	owner request, Nov 10 2026: Settings offers System, Light and Dark	Light
 approved	owner request, Nov 10 2026: Settings offers System, Light and Dark	Dark
 pending	PENDING OWNER: from the unfinished light and dark pictures	Follows your iPhone
+approved	owner, Nov 12 2026, on the drawn Settings row of the iPhone Duo: I like the wording	Outside screen
+approved	owner, Nov 12 2026, on the drawn Settings row of the iPhone Duo: I like the wording	When your iPhone is closed
+approved	owner, Nov 12 2026, on the drawn Settings row of the iPhone Duo: I like the wording	Beside the map
+approved	owner, Nov 12 2026, on the drawn Settings row of the iPhone Duo: I like the wording	Under the controls

@@ -1,4 +1,6 @@
-// The app's look, set on the window.
+// The app's look, set on the window; and the two choices Settings keeps on the phone (the
+// look and, on an iPhone Duo, the Outside screen layout): the one view file that holds the
+// settings store.
 //
 // The choice (System, Light, Dark) is kept on the phone and applied to the window itself,
 // not to a view: everything in a window follows the window, sheets, menus and alerts
@@ -25,6 +27,28 @@ final class AppearanceStore: ObservableObject {
     /// Changes the look of the whole app at once and keeps the choice on the phone. The
     /// one call that does: the Settings tiles make it, and so does the debug tour.
     func choose(_ newChoice: AppearanceChoice) {
+        newChoice.keep(in: store)
+        choice = newChoice
+    }
+}
+
+/// The Outside screen choice, as the app holds it while it runs. Kept in the same settings
+/// store as the look, through SnowlightCore. Only an iPhone Duo shows the row that changes
+/// it; on any other phone it is never read.
+final class OutsideScreenStore: ObservableObject {
+    /// The choice now in force.
+    @Published private(set) var choice: OutsideScreenChoice
+
+    private let store: UserDefaults
+
+    init(store: UserDefaults = .standard) {
+        self.store = store
+        choice = OutsideScreenChoice.kept(in: store)
+    }
+
+    /// Changes the layout at once and keeps the choice on the phone. The one call that
+    /// does: the Outside screen tiles make it.
+    func choose(_ newChoice: OutsideScreenChoice) {
         newChoice.keep(in: store)
         choice = newChoice
     }
