@@ -13,10 +13,80 @@ The line under each part's name says only what the part is. How it is doing is t
 word beside it, so the page never shows "Not working" next to a sentence that says
 all is well.
 
-For each part it says **Working**, **Slow or late**, **Not working** or **Could not
-check**, and for the two that are files, how long ago they were updated. Below that
-are 90 bars a part, one for each day, and a list of the problems of the last 90
-days with when each began and how long it lasted. A day or a stretch the checker
+It is laid out like GitHub's status page (its layout and feel only: the code, words and
+drawings are ours). At the top, one solid bar in the color of the worst state says it
+in a few words ("Everything is working.", "Something is not working.") with when the
+last check was; a screen reader is told which parts, by name. Under it, one card holds
+the four parts (two to a row on a wide screen): each part's name with a small mark
+whose tip says what the part is, **Working**, **Slow or late**, **Not working** or
+**Could not check** on the right in that state's color, then 90 thin bars, one for
+each day, with "90 days ago", the share of the checks that gave an answer and found
+it working ("99.9% of checks working"), or in its place why there is none ("Could
+not check"), and "Today" under them (on a narrow phone the share takes a line of its
+own under the rule); the two parts that are files also say how long ago they were
+updated. A day before the checks began, or one whose first check is not due yet, is
+a light grey bar, so every row is whole; a day with too few checks to say is a darker
+grey ("Not checked" in the key, the tips and the list alike), and the footer has a key
+to every color. Pointing at a bar, or tapping it, shows that day in a tip under it.
+Each bar is a day on the world clock, so its tip names the span it covers in the
+reader's time zone ("Nov 1, 7:00 PM to Nov 2, 7:00 PM EST: not working for 15
+minutes."), and a tip never names a date that "Past problems" uses for another span;
+a reader whose clock is the world clock sees the bar's own day ("Mon, Nov 2").
+
+Below the card, "Past problems" lists only the problem days among the days in the
+reader's time zone from today back 15 days, never a day before the checks began,
+newest first, and ends with when the checks began while that is inside the 90 days.
+A day with no problem shows nothing at all, today too: no date and no line (the
+owner's ruling of Nov 12: "only show problem days"). When no day in the 90 has a
+problem, "Past problems" is not drawn at all, and nothing anywhere says there were
+none. Under each date are the problems
+that covered any of it: in full on the day each began (an open one in full under
+today, and "from" its time on the day it began), and as "still not working from the
+day before" on each day after, until the time it ended. Three or more problems of one
+part and one kind that began and ended on the same day are one line ("Accounts: slow
+or late 48 times, 4 hours in all.", from the first to the last), so a part that flaps
+does not fill the list. A gap is never let look like a quiet day: a day is left out
+only when every part was checked on it and every bar of trouble it touches is one of
+the problems listed. Otherwise it is listed with a note in place of problems: a day
+with no checks says "Not checked.", a day partly checked says "This day was not
+checked in full.", and, since the summary holds the newest 100 problems only, a day
+whose bars show trouble no listed problem covers says "Some problems from this day
+are not listed." (and the list says it holds the newest 100). Once the checks are
+late, the day of the last check says "This day was not checked in full." (after its
+problems, if it had any) and each day since says "Not checked."; before that, a day after the last check is not listed, as
+its first checks are not due yet. Today, while a part could not be checked just now,
+says "Not every part could be checked.".
+
+"Partly checked" is counted from the bars, never from a bar's color alone (a bar is
+drawn working once half its checks gave an answer). For each part, the checks of the
+reader's day that gave no answer are counted at the most they can be: in each UTC bar
+the day touches, the fewer of the bar's checks with no answer and the day's own
+checks in that bar. The allowance is a count, not a share: a day says it was checked
+in full only while every part has at most 2 checks (10 minutes) with no answer on
+it; from 3 on it is listed as "not checked in full". The same count is said on a day with
+problems: after its problems it adds "This day was not checked in full." (joined to
+"Some problems from this day are not listed." when both apply), unless one of its
+lines already says the checks stopped. The store shows no routine misses: on Nov 11
+and 12 the website, the closings and the accounts answered every check (115 of 115,
+then 39 of 39), and the chances' 31 unanswered checks on Nov 11 were one block of
+about 2.5 hours, so that day reads "not checked in full". The count stays an upper
+bound, on purpose: the store keeps one count a part a UTC day, not when in the day
+the checks had no answer, and a reader's day in the US shares a UTC bar with the
+next one, so any smaller count could leave out as quiet a day with checks with no
+answer on that very day. The cost is the safe one: a gap that lay on one side of the reader's
+midnight marks both days that share its UTC bar as not checked in full, never the
+other way. When the checks stopped while a problem was going on and
+can have stayed away into the next days, by the same counts, each of those days says
+what they last found ("Live school closings: not working when our checks stopped on
+Nov 1, 10:15 PM EST. This day was not checked in full."), never left out as quiet.
+The problem days before the 15, and the days among them not checked in full, are
+behind a button that counts them ("Show 3 earlier problems"); with no problem day in
+the 15 days, "Past problems" is that button alone. If the history could not be loaded, the list
+says "The history could not be loaded. Reload the page to try again.", and each row
+is an empty dashed outline the height of its bars with "Not loaded" under it, in no
+color of the key, so it is never read as the days before the checks began. While the
+page waits for its first answer neither "Past problems" nor the footer is drawn, so
+the list takes its own size when it comes and nothing moves. A day or a stretch the checker
 did not run is shown as not checked, never as working. The day the checks began
 reads "working since checks began", not "working all day". The last bar is always
 today on the world clock: if the checker has been silent for days, the bars for
@@ -24,19 +94,15 @@ those days read "not checked" and no old day is called today. In the first minut
 of a new day on the world clock, before its first check is due, today has no bar
 yet and reads "not checked yet".
 
-A part's share never names more time than the checks it counts span. Under a day
-after the checks began, it says how long they have run ("Working in 100% of our
-checks over 2 hours."), not "over 1 day"; after that, the whole days they span (25
-hours of checks read "over 1 day", not the 2 bars they are drawn on). While a part's
-newest check could not tell, an open problem's length stops at its last reading.
+While a part's newest check could not tell, an open problem's length stops at its
+last reading.
 
-A part the checker has not once been able to read says "Could not check so far."
+A part the checker has not once been able to read says "Could not check" under its bars.
 That is what **Snow-day chances** says on the first day, until the chance job has
 put its stamp on the host (its next run after this lands); the top of the page
-then reads "We could not check everything just now." When the last check is old,
-the page says so at the top, lists only problems of the 90 days its bars show, and
-says nothing of the time since: "No problems up to the last check.", or "Not
-checked in the last 90 days." when every day shown is later than the last check.
+then reads "We could not check everything." When the last check is old, the page
+says so at the top, lists only problems of the 90 days its bars show, and says
+nothing of the time since.
 
 No line breaks inside a part's name, a date, a time or a count ("Live school
 closings", "Snow-day chances", "at least", "Nov 10", "2:35 PM EST", "5 minutes"): they
@@ -46,7 +112,7 @@ where very large text makes it wider than the line, it breaks between its parts,
 never between a number and its unit. `scripts/shots.cjs` checks every visible text at
 nine widths, at text of 100%, 150% and 200%, in every state.
 
-Whatever sits side by side (a row's state, a part's share, a problem's time) asks how
+Whatever sits side by side (the banner's two lines, the parts) asks how
 much room the page has in text units, not how wide the screen is, so with larger text
 a tablet lays out like a phone. The side gutters stay 16 px at every text size.
 
@@ -153,6 +219,18 @@ once, and once more 1.5 s later on trouble; the second try stands. A request
 waits 8 s at most. A check that fails (no answer, a timeout, HTTP 429) is "Could
 not check", never "Not working".
 
+One answer that is not 200 from the data host for a file part is "Not working" at
+once, not "Could not check" until a second in a row (lead's question, Nov 11; decided
+with the store's numbers that night). In the store's first 107 ticks the two file
+parts gave 183 readings with an answer and one was "Not working": a single chances
+tick at 15:15Z on launch day, while the stamp was being put on the host. That is no
+case for a rule that would hide every outage's first 5 minutes, and a file the host
+will not serve is what visitors get too: it is the part not working, not the checker.
+The checker's own failures (no answer, a timeout, 429, Cloudflare's refusal, no stamp
+yet) were already "Could not check", and a 5xx or no answer already gets a second
+try 1.5 s later. Revisit if the store shows single-tick file failures that the map's
+visitors did not see.
+
 - **Website**: `HEAD https://snowlightmap.com/`, the status code only. 200 within
   3 s is working, a slower 200 is slow, anything else is not working. No page is
   fetched, kept or shown.
@@ -228,8 +306,8 @@ draws again at once when its tab comes back to the screen, before the fetch that
 follows settles. With scripts off it shows only the line that says to turn them on.
 If its script has not started 10 seconds after the page opened (it did not load, or
 scripts are off in a browser too old to know the rule that hides the boxes), the
-stylesheet alone puts "This page did not finish loading. Reload it to try again."
-where "Checking" was, and the rows stop saying "Checking"; the script's first act
+stylesheet alone puts "This page did not finish loading." and "Reload it to try
+again." where "Checking" was, and the parts stop saying "Checking"; the script's first act
 is the mark on `<main>` that keeps that line away.
 Every sentence it shows is in `page/src/copy.ts`.
 
@@ -250,8 +328,9 @@ histories (`test/fixtures/made-up.ts`: for tests and pictures only), and
 state and checks that nothing moves when the page fills in, that scripts off shows
 no "Checking" box, that a page whose script never loads says so after 10 seconds,
 that coming back to the tab says an old answer's age at once, that the banner's
-kept room holds its longest words at every 2 px of room from 8rem to 43rem (so it
-does not grow at any text size), and that in every state, at nine widths from 320
+kept room holds every one of its headlines with its longest second line at every
+2 px from 160 to 1040 px (so it does not grow when it fills), that the footer is not
+drawn while the page waits, and that in every state, at nine widths from 320
 to 1280 px and at text of 100%, 150% and 200%: the headline is never smaller than
 the body text or its usual size and always larger than the line under it; nothing
 scrolls sideways or reaches past its box; the axis labels keep half a line apart
