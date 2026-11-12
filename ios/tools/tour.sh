@@ -184,10 +184,13 @@ shoot light light-search-es search diff -AppleLanguages "(es)" -AppleLocale es_E
 shoot dark dark-probe probe nodiff
 # On the iOS 27 leg only: the iPhone Duo, measured (tools/duo.sh). What it finds is printed;
 # it never changes this tour's result. This tour's phone is shut down first, so that two
-# simulators never run side by side on the runner's 7 GB.
+# simulators never run side by side on the runner's 7 GB. The job has 30 minutes: the
+# steps before this one take about 2.5 and those after it under 1, so the Duo is given
+# what is left of 1250 seconds of this script's clock.
 if [ "$SIM_OS_PREFIX" = "iOS 27." ]; then
   xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
   echo "[$SECONDS s] the iPhone Duo, measured by tools/duo.sh"
-  bash ios/tools/duo.sh || echo "::warning::The Duo measurement ended with status $?."
+  DUO_BUDGET=$((1250 - SECONDS)) bash ios/tools/duo.sh || echo "::warning::The Duo measurement ended with status $?."
+  echo "[$SECONDS s] the iPhone Duo measured"
 fi
 exit $FAILED
