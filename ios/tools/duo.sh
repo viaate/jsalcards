@@ -131,6 +131,17 @@ for FW in UIKit SwiftUI; do
       '.{0,70}([Oo]uter ?[Dd]isplay|[Oo]uter ?[Ss]creen|[Cc]over ?[Dd]isplay|[Ff]old(ed|able|State|Posture)|[Pp]osture|[Hh]inge|[Dd]uo[A-Z]|[Dd]ual ?[Dd]isplay).{0,70}' \
       "$D" 2>/dev/null | tr -s ' \t' ' ' | cut -c1-200 | sort | uniq -c | sort -rn | head -40 )
 done
+# Run 43192616125 found UIKit's hinge interaction (UIHinge.h, UIHingeInteraction.h, iOS
+# 27.1): their declarations, for whoever decides how the app knows a Duo.
+for H in UIHinge.h UIHingeInteraction.h; do
+  F="$SDK/System/Library/Frameworks/UIKit.framework/Headers/$H"
+  if [ -n "$SDK" ] && [ -f "$F" ]; then
+    echo "--- $H: $(wc -l < "$F" | tr -d ' ') lines; its lines that are not blank, comments or imports"
+    grep -v -E '^[[:space:]]*($|//|#import|#if|#endif|#else)' "$F" | cut -c1-220 | head -60
+  else
+    echo "--- $H: not in this SDK"
+  fi
+done
 
 RUNTIME=""
 UDID=""
@@ -250,7 +261,11 @@ closed() {
     if [ $MISSES -ge 2 ]; then echo "::error::Two of the Duo's screens in a row never came up. Its tour stops here."; return 1; fi
     return 0
   fi
-  if ! limit 30 xcrun simctl io "$UDID" screenshot --type=png --display="$OUTER" "$SHOTS/$name.png" >"$LOGS/duo-shot.txt" 2>&1; then
+  # Run 43192616125 once waited past 30 s for a picture that the next screen's took in 3 s:
+  # one more try, with longer to answer, before the picture counts as not taken.
+  if ! limit 30 xcrun simctl io "$UDID" screenshot --type=png --display="$OUTER" "$SHOTS/$name.png" >"$LOGS/duo-shot.txt" 2>&1 \
+     && { say "the picture of '$name' did not come in 30 s; one more try"; sleep 2
+          ! limit 60 xcrun simctl io "$UDID" screenshot --type=png --display="$OUTER" "$SHOTS/$name.png" >"$LOGS/duo-shot.txt" 2>&1; }; then
     fail "No picture of the Duo's outer screen could be taken for '$name': $(tr '\n' ' ' < "$LOGS/duo-shot.txt" | cut -c1-300)"
     rm -f "$SHOTS/$name.png"
     MISSES=$((MISSES + 1))
@@ -267,6 +282,7 @@ closed() {
     CHANGED=$((CHANGED + 1))
     fail "The model's words for '$name' are not those of $expected."
   fi
+  say "$name: $(grep -o 'hinge: .*' "$LOGS/$name.err" 2>/dev/null | head -4 | tr '\n' ';' | cut -c1-300)"
   if grep -q 'this phone has an outside screen: yes' "$LOGS/$name.err" 2>/dev/null; then
     say "$name: the app knows it is on a phone with an outside screen"
   else

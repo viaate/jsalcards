@@ -38,6 +38,7 @@ final class TourGeometryView: UIView {
     override func didMoveToWindow() {
         super.didMoveToWindow()
         report()
+        watchHinge()
         // The tab bar is placed a moment after the window: one more look, a second later.
         Task { [weak self] in
             try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -53,6 +54,33 @@ final class TourGeometryView: UIView {
     override func safeAreaInsetsDidChange() {
         super.safeAreaInsetsDidChange()
         report()
+    }
+
+    private var watchingHinge = false
+
+    /// Built with the iOS 27.1 SDK (Swift 6.4) and run on iOS 27.1 or later: puts the
+    /// system's hinge interaction (UIHingeInteraction, new in that SDK) on the window and
+    /// writes what it reports to the log, a hinge's status and angle or none, so the tour
+    /// says what a phone with a hinge, the iPhone Duo, reports closed. It measures; nothing
+    /// reads it back. Only on a tour launch, once.
+    private func watchHinge() {
+        #if compiler(>=6.4)
+        guard !watchingHinge, TourPlan.ofThisLaunch != nil, let window = window else {
+            return
+        }
+        if #available(iOS 27.1, *) {
+            watchingHinge = true
+            let interaction = UIHingeInteraction { _, update in
+                if let hinge = update.hinge {
+                    Tour.note("hinge: status \(hinge.status.rawValue), angle \(hinge.angle) radians")
+                } else {
+                    Tour.note("hinge: none (the window's hierarchy gives no hinge updates)")
+                }
+            }
+            window.addInteraction(interaction)
+            Tour.note("hinge: watching, a UIHingeInteraction is on the window")
+        }
+        #endif
     }
 
     /// Writes the line when it differs from the last one written. Only on a tour launch.

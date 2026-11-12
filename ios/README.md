@@ -155,7 +155,10 @@ the app's own geometry line must show the system's tab bar standing upright on t
 the four tab screens. A screen that never comes up or cannot be pictured, a changed word,
 the app not knowing it is on a Duo or a tab bar elsewhere fails the job. The job also
 prints what the iOS SDK's UIKit and SwiftUI say about an outer display, a fold, a posture
-or a hinge (rule 11). The pictures stay in `ios-shots-27`
+or a hinge (rule 11): the 27.1 SDK has UIKit's `UIHingeInteraction` (`UIHinge.h`,
+`UIHingeInteraction.h`), and on a build with that SDK the tour puts one on the window and
+writes what it reports (`hinge:` lines, `Tour/TourGeometry.swift`), on the iPhone and on
+the Duo. The pictures stay in `ios-shots-27`
 and are also printed into the log as colour grids (`tools/grid.swift`, 96 columns). The
 Duo cannot be opened on GitHub's image (no fold command in simctl and no Simulator.app
 there), so there is no open picture yet; the inner screen (`--display=3`) is pictured

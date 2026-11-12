@@ -44,7 +44,11 @@ struct SettingsScreen: View {
     }
 }
 
-/// A section's heading and, when there is one, the grey line beside it, at the right.
+/// A section's heading and, when there is one, the grey line beside it, at the right, on
+/// one line as the draft draws them. The heading keeps its size; where the two do not fit
+/// the column (the Outside screen row on the closed Duo, run 43192616125, whose line
+/// broke in two), the grey line is drawn a little smaller, never below 85 percent. Where
+/// they fit, as Appearance's always does, nothing changes.
 struct SectionHeading: View {
     let title: ShownText
     let aside: ShownText?
@@ -55,11 +59,14 @@ struct SectionHeading: View {
                 .typeStyle(.titleSection)
                 .foregroundStyle(Color.token(.ink))
                 .accessibilityAddTraits(.isHeader)
+                .layoutPriority(1)
             Spacer(minLength: 0)
             if let line = aside {
                 ShownLabel(line)
                     .typeStyle(.meta)
                     .foregroundStyle(Color.token(.ink2))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
         }
     }
