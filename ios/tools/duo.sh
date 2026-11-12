@@ -24,25 +24,32 @@
 #
 # So this script:
 #   1. prints what the Duo's runtimes hold about a hinge (SpringBoardFoundation's
-#      hinge-samples.csv), before any boot;
+#      hinge-samples.csv), before any boot, and what the iOS SDK's UIKit and SwiftUI say
+#      about an outer or cover display, a fold, a posture or a hinge (the app knows the
+#      Duo by its model name, Shell/ThisPhone.swift, because no documented call was known);
 #   2. boots a Duo, the iOS 27.1 runtime first, and installs the app;
 #   3. takes the tour CLOSED: My School, Map, Call it, Settings and the search tab, with
-#      the simulator light and then dark, the app on System, each picture from the outer
-#      screen into ios/out/full/duo/duo-closed-<look>-<screen>.png. The words of each
-#      picture are compared with tools/tour-words/<look>-<screen>.txt (the same screen
-#      models as on any iPhone), and the app's own last geometry line is read: on the four
-#      tab screens the system's tab bar must stand upright on the right;
-#   4. pictures the inner screen once with the app running, to say what it holds;
-#   5. if time is left, looks for the names of a hinge, a posture or a fold state in the
-#      system's own code (the runtime's shared cache), for whoever tries to open the phone
-#      next;
+#      the simulator light and then dark, the app on System and the Outside screen setting
+#      on its first choice, Beside the map (A), each picture from the outer screen into
+#      ios/out/full/duo/duo-closed-<look>-<screen>.png. The words of each picture are
+#      compared with tools/tour-words/duo/<look>-<screen>.txt where there is one (Settings,
+#      which has the Outside screen row only on the Duo), else with the iPhone's
+#      tools/tour-words/<look>-<screen>.txt. The app must say this phone has an outside
+#      screen, and its own last geometry line is read: on the four tab screens the
+#      system's tab bar must stand upright on the right;
+#   4. then the Outside screen setting, light and dark: Settings with Under the controls
+#      (B) chosen (duo-closed-<look>-settings-under), and My School with its ground drawn in
+#      the chance teal, with A and with B (duo-closed-<look>-myschool-proof-beside and
+#      -proof-under), so the pictures show where the ground stops;
+#   5. pictures the inner screen once with the app running, to say what it holds;
 #   6. prints every picture as a grid of colors (tools/grid.swift), because the pictures
 #      of this leg stay in its own artifact.
 # The pixel step (tools/pixels.swift) reads the closed pictures with the others.
 #
 # It ends with status 1 when a check fails: a screen that never says it is ready or cannot
-# be pictured, a picture's words changed, or a tab screen's tab bar not on the right. What
-# the runner cannot give it (no Duo, no boot, no time), it says, and ends with 0.
+# be pictured, a picture's words changed, the app not knowing it is on a Duo, or a tab
+# screen's tab bar not on the right. What the runner cannot give it (no Duo, no boot, no
+# time), it says, and ends with 0.
 #
 # Bash 3.2 on macOS: no associative arrays, no mapfile.
 set -uo pipefail
@@ -57,8 +64,9 @@ SHOTS="$OUT/full/duo"
 mkdir -p "$SHOTS" "$OUT/duo" "$OUT/logs" "$OUT/words"
 LOGS="$(cd "$OUT/logs" && pwd)"
 GRID="$RUNNER_TEMP/grid"
-# The seconds kept back for the grids at the end, after the budget's last stage.
-GRID_TIME=60
+# The seconds kept back for the grids at the end, after the budget's last stage (about 8
+# a picture at 96 columns).
+GRID_TIME=150
 
 # limit <seconds> <command...>: the command, stopped when the time is up (macOS has no
 # timeout command; perl's alarm outlives the exec).
@@ -111,6 +119,19 @@ for CANDIDATE in $RUNTIMES; do
   fi
 done
 
+echo "=== What the iOS SDK says about an outer display, a fold, a posture or a hinge"
+SDK=$(xcrun --sdk iphonesimulator --show-sdk-path 2>/dev/null || true)
+echo "SDK: ${SDK:-not found}"
+for FW in UIKit SwiftUI; do
+  D="$SDK/System/Library/Frameworks/$FW.framework"
+  if [ -z "$SDK" ] || [ ! -d "$D" ]; then echo "--- $FW: no framework folder"; continue; fi
+  echo "--- $FW: the matching lines, each once, with how often it comes (at most 40)"
+  ( export LC_ALL=C
+    limit 40 grep -r -I -h -o --line-buffered -E \
+      '.{0,70}([Oo]uter ?[Dd]isplay|[Oo]uter ?[Ss]creen|[Cc]over ?[Dd]isplay|[Ff]old(ed|able|State|Posture)|[Pp]osture|[Hh]inge|[Dd]uo[A-Z]|[Dd]ual ?[Dd]isplay).{0,70}' \
+      "$D" 2>/dev/null | tr -s ' \t' ' ' | cut -c1-200 | sort | uniq -c | sort -rn | head -40 )
+done
+
 RUNTIME=""
 UDID=""
 for CANDIDATE in $RUNTIMES; do
@@ -144,15 +165,17 @@ say "the app is installed"
 
 DATA=""
 READY=""
-# launch <light|dark> <name> <screen>: the app on a tour screen, waited for. 0 when the
-# screen said it was ready; 2 when the budget ran out while waiting; 1 otherwise.
+# launch <light|dark> <name> <screen> [tour arguments...]: the app on a tour screen,
+# waited for. 0 when the screen said it was ready; 2 when the budget ran out while
+# waiting; 1 otherwise.
 launch() {
   local mode=$1 name=$2 screen=$3 i=0
+  shift 3
   xcrun simctl ui "$UDID" appearance "$mode" || echo "the simulator's look could not be set to $mode"
   if [ -n "$DATA" ]; then rm -f "$DATA/Documents/tour/$name.txt"; fi
   if ! limit 150 xcrun simctl launch --terminate-running-process \
       --stdout="$LOGS/$name.out" --stderr="$LOGS/$name.err" "$UDID" "$BUNDLE" \
-      -tour.screen "$screen" -tour.name "$name" >/dev/null; then
+      -tour.screen "$screen" -tour.name "$name" "$@" >/dev/null; then
     say "the app did not start for '$name'"
     return 1
   fi
@@ -199,14 +222,24 @@ bar_on_right() {
 TAKEN=0
 MISSES=0
 CHANGED=0
-# closed <light|dark> <screen>: one picture of the tour, the phone closed. 1 when the tour
-# must stop: no time left (said, not a failure), or two screens in a row that never came
-# up or could not be pictured (a failure, as on the iPhone's tour).
+# closed <light|dark> <screen> [variant]: one picture of the tour, the phone closed. The
+# variant names what the Outside screen setting is for the picture: none (a fresh
+# install's, Beside the map), under (Under the controls), proof-beside or proof-under (the
+# same two, with the placeholder ground in the chance teal). 1 when the tour must stop:
+# no time left (said, not a failure), or two screens in a row that never came up or could
+# not be pictured (a failure, as on the iPhone's tour).
 closed() {
-  local mode=$1 screen=$2 name="duo-closed-$1-$2" need=40 judged=yes started=0
+  local mode=$1 screen=$2 variant=${3:-} need=40 judged=yes started=0 name expected
+  name="duo-closed-$mode-$screen${variant:+-$variant}"
+  set --
+  case "$variant" in
+    under) set -- -tour.outside under ;;
+    proof-beside) set -- -tour.outside beside -tour.proof ground ;;
+    proof-under) set -- -tour.outside under -tour.proof ground ;;
+  esac
   if [ $TAKEN -eq 0 ]; then need=150; fi
   room $need "'$name'" || return 1
-  launch "$mode" "$name" "$screen" || started=$?
+  launch "$mode" "$name" "$screen" "$@" || started=$?
   if [ $started -eq 2 ]; then
     echo "::warning::The Duo's tour ran out of time on '$name'."
     return 1
@@ -228,9 +261,16 @@ closed() {
   TAKEN=$((TAKEN + 1))
   say "$name: $(sips -g pixelWidth -g pixelHeight "$SHOTS/$name.png" | tail -2 | tr -s ' \n' ' ')"
   cp "$READY" "$OUT/words/$name.txt"
-  if ! diff -u "ios/tools/tour-words/$mode-$screen.txt" "$OUT/words/$name.txt"; then
+  expected="ios/tools/tour-words/duo/$mode-$screen.txt"
+  [ -f "$expected" ] || expected="ios/tools/tour-words/$mode-$screen.txt"
+  if ! diff -u "$expected" "$OUT/words/$name.txt"; then
     CHANGED=$((CHANGED + 1))
-    fail "The model's words for '$name' are not those of tools/tour-words/$mode-$screen.txt."
+    fail "The model's words for '$name' are not those of $expected."
+  fi
+  if grep -q 'this phone has an outside screen: yes' "$LOGS/$name.err" 2>/dev/null; then
+    say "$name: the app knows it is on a phone with an outside screen"
+  else
+    fail "$name: the app did not say this phone has an outside screen ($(grep -o 'this phone has an outside screen: [a-z]*' "$LOGS/$name.err" 2>/dev/null | head -1))."
   fi
   if [ "$screen" = search ]; then judged=no; fi
   bar_on_right "$name" "$judged"
@@ -246,6 +286,18 @@ for mode in light dark; do
 done
 say "closed: $TAKEN of 10 pictures"
 
+echo "=== The Outside screen setting on the Duo, closed: B chosen, and where the ground stops"
+if [ "$STOPPED" = no ]; then
+  for mode in light dark; do
+    for shot in "settings under" "myschool proof-beside" "myschool proof-under"; do
+      # shellcheck disable=SC2086
+      if ! closed "$mode" $shot; then STOPPED=yes; break; fi
+    done
+    [ "$STOPPED" = no ] || break
+  done
+fi
+say "closed with the setting: $TAKEN of 16 pictures"
+
 echo "=== Open (the inner screen)"
 if [ $TAKEN -gt 0 ] && room 30 "the picture of the inner screen"; then
   if limit 30 xcrun simctl io "$UDID" screenshot --type=png --display="$INNER" "$OUT/duo/duo-inner.png" >"$LOGS/duo-shot.txt" 2>&1; then
@@ -255,29 +307,6 @@ if [ $TAKEN -gt 0 ] && room 30 "the picture of the inner screen"; then
   fi
 fi
 echo "The phone cannot be opened on this image (no fold command, no Simulator.app): no open picture."
-
-echo "=== The names of a hinge, a posture or a fold state in the system's own code"
-if room 150 "the look into the shared cache"; then
-  ROOT=$(runtime_root "$RUNTIME")
-  CACHES=()
-  while IFS= read -r FOUND; do
-    [ -n "$FOUND" ] && CACHES+=("$FOUND")
-  done <<EOF
-$(limit 40 find "$ROOT" /Library/Developer/CoreSimulator/Caches "$HOME/Library/Developer/CoreSimulator/Caches" \
-  -maxdepth 7 -name 'dyld_sim_shared_cache*' -type f -size +1M 2>/dev/null | grep -v -E '\.(map|atlas)$' | head -40)
-EOF
-  if [ ${#CACHES[@]} -eq 0 ]; then
-    say "no shared cache found under the runtime or the simulator's caches"
-  else
-    say "shared cache files: ${#CACHES[@]}, the first: ${CACHES[0]}"
-    # Each name with a hinge, a posture, a fold state or a cover display in it, and how
-    # often it comes. Line-buffered, so what was found before the time ran out is kept.
-    ( export LC_ALL=C
-      limit 110 grep -a -o -h --line-buffered -E \
-        '[A-Za-z_]*([Hh]inge|[Pp]osture|[Ff]oldState|[Uu]nfold|[Cc]overDisplay)[A-Za-z_]*' "${CACHES[@]}" 2>/dev/null \
-        | grep -v -i -E 'folder|unfoldable' | cut -c1-120 | sort | uniq -c | sort -rn | head -80 )
-  fi
-fi
 
 if wait "$GRID_BUILD"; then
   say "grid.swift built"
@@ -290,5 +319,5 @@ else
   echo "grid.swift did not build:"; tail -20 "$LOGS/grid-build.txt"
 fi
 ls -l "$SHOTS" "$OUT/duo" || true
-say "the Duo's tour: $TAKEN of 10 closed pictures, $CHANGED with changed words; status $FAILED"
+say "the Duo's tour: $TAKEN of 16 closed pictures, $CHANGED with changed words; status $FAILED"
 exit $FAILED

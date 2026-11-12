@@ -24,11 +24,16 @@
 //     away from the page color in some channel; the other three are the bar's glass, within
 //     10 of it. So a picture with no tab bar, or with the wrong tab chosen, fails;
 //   - settings: a point on the Light tile (40%, 22%), white in either look, and one on the
-//     Dark tile (72%, 22%), the dark page color in either look;
+//     Dark tile (72%, 22%), the dark page color in either look; and a run down x 10% from
+//     33% to 47%, all the page color: no Outside screen row, which only the Duo has;
 //   - search: the page point only (iOS folds the bar into one button there);
 //   - the probe: 10%, 25% is the teal the Metal view is cleared to.
-//   - the iPhone Duo's closed pictures (duo-closed-<look>-<screen>): their own points,
-//     measured on the Duo (see duoPoints below).
+//   - the iPhone Duo's closed pictures (duo-closed-<look>-<screen>[-<variant>]): their own
+//     points, measured on the Duo, with the Outside screen row and the two layouts (see
+//     duoPoints below).
+//
+// A run is a line of points down one column, printed as one line with the shade that
+// tells (the farthest from the color it is held to).
 //
 // The tab and tile places were measured on the pictures of iPhone 17 Pro on iOS 26.5 (iOS
 // app run 42914332720). On another device (SIM_DEVICE in the job's environment) those lines
@@ -79,15 +84,27 @@ enum Expect {
     }
 }
 
+/// What a run of points down a picture must show, from one height to another.
+enum Run {
+    /// At least one point at least this far from the color: something is drawn there.
+    case someAwayFrom(Shade, Int)
+    /// Every point within this tolerance of the color: nothing is drawn there.
+    case allNear(Shade, Int)
+}
+
 struct NamedPoint {
     /// Percent from the left.
     let x: Int
-    /// Percent from the top.
+    /// Percent from the top. For a run, where it starts.
     let y: Int
     let expect: Expect
     let what: String
     /// False: printed as yes or no, never a failure.
     let judged: Bool
+    /// For a run down the picture: where it ends, in percent from the top, and what it
+    /// must show. Nil for a single point.
+    var runTo: Int? = nil
+    var run: Run? = nil
 }
 
 /// The colors the named points are held to. The two page colors are the app's `page`
@@ -96,6 +113,14 @@ enum Wanted {
     static let pageLight = Shade(red: 0xff, green: 0xff, blue: 0xff)
     static let pageDark = Shade(red: 0x13, green: 0x14, blue: 0x18)
     static let probeTeal = Shade(red: 0x12, green: 0xa5, blue: 0x94)
+    /// The `chance` token, light and dark: the placeholder ground of the Duo's proof pictures.
+    static let chanceLight = Shade(red: 0x12, green: 0xa5, blue: 0x94)
+    static let chanceDark = Shade(red: 0x36, green: 0xc9, blue: 0xb3)
+
+    /// The chance teal of the look a Duo picture's name begins with.
+    static func chanceTeal(for rest: String) -> Shade {
+        rest.hasPrefix("dark-") ? chanceDark : chanceLight
+    }
 }
 
 /// The device the tab and tile places were measured on.
@@ -139,6 +164,16 @@ func pageShade(for picture: String) -> (shade: Shade, name: String)? {
 ///     differently);
 ///   - 90%, 66% is in the side platter, between two of its tabs: its glass, printed and
 ///     not judged until its color is measured.
+/// The Outside screen setting (the Duo only):
+///   - settings, with either layout chosen: down x 10% from 31% to 50% of the height, at
+///     least one point drawn in ink (at least 60 from the page): the Outside screen row,
+///     its heading and the first tile's bold bar, below the Appearance row, which ends at
+///     about 30% (judged);
+///   - myschool-proof-beside and -proof-under: the placeholder ground drawn in the chance
+///     teal. 40%, 60% is that teal (judged); 90%, 40% is in the side column, under the
+///     status cluster and above the tab platter: the teal with Under the controls (B), the
+///     ground running under the column, and not the teal with Beside the map (A), the
+///     ground stopping where the column begins (judged).
 let duoClosed = "duo-closed-"
 
 func duoPoints(for rest: String) -> [NamedPoint] {
@@ -147,12 +182,32 @@ func duoPoints(for rest: String) -> [NamedPoint] {
     }
     let parts = rest.split(separator: "-").map { String($0) }
     let screen = parts.count > 1 ? parts[1] : ""
+    let variant = parts.count > 2 ? parts[2...].joined(separator: "-") : ""
     let tabScreen = tabs.contains(where: { $0.screen == screen })
-    return [
+    let teal = Wanted.chanceTeal(for: rest)
+    if variant == "proof-beside" || variant == "proof-under" {
+        let under = variant == "proof-under"
+        return [
+            NamedPoint(x: 40, y: 60, expect: .near(teal, 8), what: "the placeholder ground in the chance teal " + teal.hex, judged: true),
+            NamedPoint(x: 25, y: 94, expect: .near(teal, 8), what: "no tab bar along the bottom: the teal", judged: true),
+            under
+                ? NamedPoint(x: 90, y: 40, expect: .near(teal, 16), what: "Under the controls: the teal runs on under the side column", judged: true)
+                : NamedPoint(x: 90, y: 40, expect: .awayFrom(teal, 40), what: "Beside the map: the teal stops where the side column begins, at least 40 from it", judged: true),
+        ]
+    }
+    var points = [
         NamedPoint(x: 40, y: 60, expect: .near(page.shade, 8), what: page.name + ", the content left of the side controls", judged: true),
         NamedPoint(x: 25, y: 94, expect: .near(page.shade, 8), what: "no tab bar along the bottom: " + page.name, judged: tabScreen),
         NamedPoint(x: 90, y: 66, expect: .awayFrom(page.shade, 3), what: "the side tab platter's glass, at least 3 from the page", judged: false),
     ]
+    if screen == "settings" {
+        points.append(NamedPoint(
+            x: 10, y: 31, expect: .awayFrom(page.shade, 60),
+            what: "the Outside screen row: ink somewhere down to 50%", judged: true,
+            runTo: 50, run: .someAwayFrom(page.shade, 60)
+        ))
+    }
+    return points
 }
 
 /// The points to read in a picture, by the picture's name.
@@ -183,6 +238,13 @@ func namedPoints(for picture: String) -> [NamedPoint] {
     if screen == "settings" {
         points.append(NamedPoint(x: 40, y: 22, expect: .near(Wanted.pageLight, 8), what: "the Light tile " + Wanted.pageLight.hex, judged: placesMeasuredHere))
         points.append(NamedPoint(x: 72, y: 22, expect: .near(Wanted.pageDark, 8), what: "the Dark tile " + Wanted.pageDark.hex, judged: placesMeasuredHere))
+        // No Outside screen row on an iPhone: under the Appearance row, which ends at about
+        // 30%, the page down x 10% to 47%, where the row's heading and tiles would be.
+        points.append(NamedPoint(
+            x: 10, y: 33, expect: .near(page.shade, 8),
+            what: "no Outside screen row: the page all the way down to 47%", judged: placesMeasuredHere,
+            runTo: 47, run: .allNear(page.shade, 8)
+        ))
     }
     return points
 }
@@ -238,6 +300,49 @@ struct Bitmap {
         let offset = row * context.bytesPerRow + column * 4
         return Shade(red: Int(bytes[offset]), green: Int(bytes[offset + 1]), blue: Int(bytes[offset + 2]))
     }
+
+    /// Reads every row of one column from one height to another (in percent of the
+    /// picture). Says whether the run holds, and the shade that tells: the one farthest
+    /// from the color.
+    func run(xPercent: Int, fromPercent: Int, toPercent: Int, run: Run) -> (holds: Bool, telling: Shade)? {
+        guard let memory = context.data else {
+            return nil
+        }
+        let column = min(width - 1, max(0, width * xPercent / 100))
+        let first = min(height - 1, max(0, height * fromPercent / 100))
+        let last = min(height - 1, max(0, height * toPercent / 100))
+        if last < first {
+            return nil
+        }
+        let bytes = memory.assumingMemoryBound(to: UInt8.self)
+        let color: Shade
+        let tolerance: Int
+        switch run {
+        case .someAwayFrom(let other, let least):
+            color = other
+            tolerance = least
+        case .allNear(let want, let most):
+            color = want
+            tolerance = most
+        }
+        var farthest = color
+        var farthestDistance = -1
+        for row in first...last {
+            let offset = row * context.bytesPerRow + column * 4
+            let seen = Shade(red: Int(bytes[offset]), green: Int(bytes[offset + 1]), blue: Int(bytes[offset + 2]))
+            let distance = seen.distance(to: color)
+            if distance > farthestDistance {
+                farthestDistance = distance
+                farthest = seen
+            }
+        }
+        switch run {
+        case .someAwayFrom:
+            return (farthestDistance >= tolerance, farthest)
+        case .allNear:
+            return (farthestDistance <= tolerance, farthest)
+        }
+    }
 }
 
 /// Reads every picture under the folder. Returns the status to end with.
@@ -269,6 +374,22 @@ func readPictures(under folder: String) -> Int32 {
             continue
         }
         for point in points {
+            if let end = point.runTo, let run = point.run {
+                let place = String(point.x) + "% " + String(point.y) + "-" + String(end) + "%"
+                guard let found = bitmap.run(xPercent: point.x, fromPercent: point.y, toPercent: end, run: run) else {
+                    print([name, place, "could not be read", "WRONG"].joined(separator: " "))
+                    wrong += 1
+                    continue
+                }
+                var verdict = found.holds ? "ok" : "WRONG"
+                if !point.judged {
+                    verdict = found.holds ? "yes" : "no"
+                } else if !found.holds {
+                    wrong += 1
+                }
+                print([name, place, found.telling.hex, point.what, verdict].joined(separator: " "))
+                continue
+            }
             let place = String(point.x) + "% " + String(point.y) + "%"
             guard let seen = bitmap.shade(xPercent: point.x, yPercent: point.y) else {
                 print([name, place, "could not be read", "WRONG"].joined(separator: " "))

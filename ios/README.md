@@ -38,7 +38,8 @@ Each rule is held by a script, a test or the compiler, named beside it.
    of words only the app has (`tools/app-words.txt`, each marked approved or pending with
    who said so).
 3. **A view draws only what its screen model hands it.** No string literal in a view (but
-   symbol names in `Shell/Names.swift`); `Text(` only in `Shell/Shown.swift`, and there
+   symbol names in `Shell/Names.swift` and the two names of `Shell/ThisPhone.swift`, rule
+   11); `Text(` only in `Shell/Shown.swift`, and there
    only as `Text(verbatim:)` from a `ShownText`; no word table named; no system formatter;
    no value turned into words; nothing of the device read (its clock, zone, language,
    files, settings). SnowlightCore's public surface holds no text at all but two things:
@@ -86,6 +87,14 @@ Each rule is held by a script, a test or the compiler, named beside it.
    with the rooms the simulators reported (`ContentLayoutTests`). Only the system's own
    tab bar, navigation bars, toolbars and sheets carry the app's controls, so the system
    moves them to the side on the Duo; no custom bar is ever drawn.
+11. **One file knows the phone, and only whether it has an outside screen.** The Outside
+   screen row of Settings exists only on an iPhone Duo, and no documented call of the iOS
+   27.1 SDK says whether a phone has an outside screen. So `Shell/ThisPhone.swift` reads the
+   phone's model name (on the simulator, the simulated phone's, which the simulator hands
+   the app as `SIMULATOR_MODEL_IDENTIFIER`; on a phone, the system's `hw.machine`) as bytes,
+   and SnowlightCore's `PhoneModel` says whether it is a Duo (`iPhone19,4`, tested). The file
+   hands out one Bool. It alone may hold those two names and read `ProcessInfo`; every
+   other rule holds in it (`words.literal`, `view.device`, with samples).
 
 `check-ios.mjs` reads code, not comments, and skips itself and this file, which both name
 what is banned. It tests itself on every run first: a list of samples, at least one for
@@ -136,10 +145,17 @@ else: `CI` ignores `ios/**`, and `Preview` ignores `ios/**` and the iOS workflow
 On the `xcode-27` job only, the tour also runs on the **iPhone Duo** (`tools/duo.sh`,
 after the iPhone's tour, inside what is left of the job's time): the five screens closed,
 light and dark (10 pictures, `duo-closed-<look>-<screen>`, from the outer screen,
-`--display=1`). Their words are compared with the same `tools/tour-words/` files, and the
-app's own geometry line must show the system's tab bar standing upright on the right on
-the four tab screens; a screen that never comes up or cannot be pictured, a changed word or
-a tab bar elsewhere fails the job. The pictures stay in `ios-shots-27`
+`--display=1`), with the Outside screen setting on Beside the map; then Settings with Under
+the controls chosen (`duo-closed-<look>-settings-under`) and My School with its ground in
+the chance teal under each layout (`duo-closed-<look>-myschool-proof-beside` and
+`-proof-under`), 16 pictures. Their words are compared with `tools/tour-words/duo/` where
+there is a file (Settings, with the Outside screen row), else with the iPhone's
+`tools/tour-words/` files; the app must say it is on a phone with an outside screen; and
+the app's own geometry line must show the system's tab bar standing upright on the right on
+the four tab screens. A screen that never comes up or cannot be pictured, a changed word,
+the app not knowing it is on a Duo or a tab bar elsewhere fails the job. The job also
+prints what the iOS SDK's UIKit and SwiftUI say about an outer display, a fold, a posture
+or a hinge (rule 11). The pictures stay in `ios-shots-27`
 and are also printed into the log as colour grids (`tools/grid.swift`, 96 columns). The
 Duo cannot be opened on GitHub's image (no fold command in simctl and no Simulator.app
 there), so there is no open picture yet; the inner screen (`--display=3`) is pictured
@@ -160,14 +176,36 @@ left and the top:
 | all but the probe | 50%, 60% | the `page` color of the look the screen is in: `#ffffff` light, `#131418` dark (the two forced pictures are in the opposite look; Dark-then-System is light) |
 | the four tab screens | 94% from the top, at x 10%, 28%, 45%, 61% (My School, Map, Call it, Settings), inside each tab's capsule and clear of its symbol and name | the chosen tab's point at least 12 away from the page color (the system's capsule); the other three within 10 of it (the bar's glass) |
 | settings | 40%, 22% and 72%, 22% | the Light tile `#ffffff` and the Dark tile `#131418`, in either look |
+| settings | x 10%, every point from 33% to 47% | the `page` color: no Outside screen row on an iPhone |
 | `dark-probe` | 10%, 25% | `#12a594`, printed yes or no and never a failure |
 | `duo-closed-*` (the Duo, closed) | 40%, 60%; on the four tab screens also 25%, 94% | the `page` color: the content left of the system's side controls, and no tab bar along the bottom; 90%, 66% (the side tab platter's glass) printed yes or no |
+| `duo-closed-*-settings*` | x 10%, some point from 31% to 50% | at least 60 from the `page` color: the Outside screen row (its heading and its first tile's bold bar) under Appearance |
+| `duo-closed-*-myschool-proof-*` | 40%, 60% and 25%, 94%; 90%, 40% | the `chance` teal (`#12a594` light, `#36c9b3` dark); at 90%, 40%, in the side column under the status cluster and above the tab platter: the teal with Under the controls, at least 40 from it with Beside the map |
 
 The tab and tile places were measured on the small iPhone 17 Pro pictures of iOS app run
 42914332720 (iOS 26.5), and hold the same in run 42898061415: the chosen capsule 20 away
 from the page in light and 37 in dark, the bar 2 and 4. On another device, as on the
 xcode-27 job, those lines are printed and not judged until their places are measured
 there.
+
+## Approved Duo rulings for later pieces
+
+The owner's rulings on the iPhone Duo (design/app/duo/ROUND7-BRIEF.md and the DUO LEG spec),
+with the piece that builds each:
+
+- **The Outside screen setting** (built, the DUO LEG): on the closed Duo, Settings offers
+  "Outside screen" ("When your iPhone is closed") with two tiles, "Beside the map" (A, the
+  default: content stops where the system's side controls begin and the map runs on under
+  them) and "Under the controls" (B: the sheet runs on under them to the right edge). The
+  row exists only on an iPhone Duo. Its layout value (`SideControls`, read through
+  `Layout/SideControls.swift`) is proven on the placeholder tabs; **M1 and every later
+  screen with a sheet over the map** (My School and its states, Why, Call it, Map, Pick a
+  school) applies it. Words approved Nov 12, 2026.
+- **Continue on Pick a school is the phone's own 48 pt glass circle** with draft 3's
+  chevron (owner's choice 1: "the iphones button is better than continue by far"). The word
+  in a capsule is dropped. Built with Pick a school in **M4**; nothing for it exists yet.
+- **The open Duo shows two panes** (R16): My School beside the map, on regular width,
+  with the system's split or column containers. Not drawn yet.
 
 ## Making the golden files again
 
