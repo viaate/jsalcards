@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#2d6cf0" />
+    <title>%copy.get.meta.title%</title>
+    <meta name="description" content="%copy.get.meta.description%" />
+    <link rel="icon" href="../public/favicon-16.v2.png" type="image/png" sizes="16x16" />
+    <link rel="icon" href="../public/favicon-48.v2.png" type="image/png" sizes="48x48" />
+    <link rel="icon" href="../public/favicon-32.v2.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="../public/icons/apple-touch-icon.v2.png" />
+    <!--
+      The getsnowlight landing (docs/getsnowlight.md), served on its own at
+      https://www.getsnowlight.com (vite.get.config.ts builds it to dist-get/),
+      where the map sends iPhone visitors (index.html, data-get-redirect). Its
+      words are src/copy-get.ts; its phone pictures come from the one list
+      get/phones.json (tools/get-page.ts fills each %phone.…%). The App Store
+      badge shows only in a build with VITE_APP_STORE_URL set (appstore:on
+      blocks); until then the same places offer the live map (appstore:off
+      blocks), whose ?map=1 the map remembers, so that device is not sent here
+      again. It carries the map's lock until go-live. No script but the lock's.
+    -->
+    <link
+      rel="preload"
+      href="../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <style>
+      @font-face {
+        font-family: 'Geist Variable';
+        font-style: normal;
+        font-display: swap;
+        font-weight: 100 900;
+        src: url('../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2')
+          format('woff2-variations');
+      }
+      @font-face {
+        font-family: 'Instrument Serif';
+        font-style: normal;
+        font-display: swap;
+        font-weight: 400;
+        src: url('./fonts/instrument-serif-latin-400-normal.woff2') format('woff2');
+      }
+
+      :root {
+        color-scheme: light;
+        --blue: #2d6cf0;
+        --ink: #111318;
+        --ink-2: #5b6270;
+        --ink-3: #4a505c;
+        --night: #0f1115;
+        --night-2: #9aa3b2;
+        --paper: #fff;
+        --mist: #f3f4f7;
+        --sans: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--sans);
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      a:focus-visible,
+      summary:focus-visible {
+        outline: 3px solid #ffd166;
+        outline-offset: 3px;
+      }
+
+      .wrap {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h2 {
+        font-family: var(--serif);
+        font-weight: 400;
+        font-size: 46px;
+        line-height: 48px;
+        letter-spacing: -0.5px;
+      }
+
+      .lead {
+        margin-top: 18px;
+        font-size: 17px;
+        line-height: 28px;
+        color: var(--ink-2);
+      }
+
+      .phone {
+        width: 290px;
+        height: auto;
+        margin: 40px auto 0;
+        filter: drop-shadow(0 24px 34px rgb(17 19 24 / 0.18));
+      }
+
+      /* Buttons: the live map, the how-it-works link, the App Store badge. */
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 0 18px;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .button.solid {
+        background: var(--paper);
+        color: var(--blue);
+      }
+      .button.line {
+        border: 1.5px solid rgb(255 255 255 / 0.55);
+        color: var(--paper);
+        font-weight: 500;
+      }
+      .badge img {
+        width: auto;
+      }
+
+      /* The top: the blue band with the name, the promise and the first phone. */
+      header {
+        background: var(--blue);
+        color: var(--paper);
+      }
+      nav {
+        border-bottom: 1px solid rgb(255 255 255 / 0.18);
+      }
+      nav .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 68px;
+        padding: 0 20px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.3px;
+      }
+      .brand img {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+      }
+      nav .button {
+        min-height: 36px;
+        padding: 0 12px;
+        font-size: 14px;
+      }
+      nav .badge img {
+        height: 40px;
+      }
+
+      .hero {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 44px;
+        text-align: center;
+      }
+      .hero .icon {
+        width: 92px;
+        height: 92px;
+        border-radius: 21px;
+        box-shadow: 0 10px 30px rgb(9 27 80 / 0.35);
+      }
+      h1 {
+        margin-top: 30px;
+        font-size: 40px;
+        line-height: 46px;
+        font-weight: 700;
+        letter-spacing: -0.8px;
+      }
+      h1 .mark {
+        padding: 0 8px;
+        border-radius: 12px;
+        background: rgb(255 255 255 / 0.2);
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+      }
+      .hero .lead {
+        margin-top: 22px;
+        color: var(--paper);
+        font-size: 17px;
+        line-height: 27px;
+      }
+      .ctas {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 28px;
+      }
+      .ctas .badge img {
+        height: 48px;
+      }
+      .hero .ctas {
+        gap: 10px;
+      }
+      .hero .ctas .button {
+        padding: 0 15px;
+        font-size: 15px;
+      }
+      .soon {
+        margin-top: 14px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .soon a {
+        color: inherit;
+        text-underline-offset: 3px;
+      }
+      #get .soon {
+        margin-top: 16px;
+        font-size: 17px;
+      }
+      .facts {
+        margin-top: 14px;
+        font-size: 14px;
+        line-height: 20px;
+        color: var(--paper);
+      }
+      .hero .phone {
+        margin: 36px auto -300px;
+        filter: drop-shadow(0 30px 40px rgb(0 0 0 / 0.35));
+      }
+
+      .dark {
+        background: var(--night);
+        color: var(--paper);
+      }
+      .dark .lead {
+        color: var(--night-2);
+      }
+      section {
+        padding: 76px 0 70px;
+      }
+      #how {
+        padding-top: 340px;
+        padding-bottom: 72px;
+      }
+      .alert {
+        width: 100%;
+        max-width: 342px;
+        height: auto;
+        margin-top: 30px;
+        filter: drop-shadow(0 20px 40px rgb(0 0 0 / 0.35));
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 30px;
+      }
+      .stats div {
+        border-top: 1px solid rgb(255 255 255 / 0.18);
+        padding-top: 12px;
+      }
+      .stats .value {
+        font-size: 22px;
+        font-weight: 600;
+      }
+      .stats .label {
+        margin-top: 4px;
+        font-size: 13px;
+        line-height: 18px;
+        color: var(--night-2);
+      }
+      .dark .phone {
+        filter: drop-shadow(0 24px 40px rgb(0 0 0 / 0.5));
+      }
+
+      .pair {
+        display: flex;
+        justify-content: center;
+        margin-top: 40px;
+      }
+      .pair img {
+        width: 200px;
+        height: auto;
+        filter: drop-shadow(0 20px 30px rgb(17 19 24 / 0.2));
+      }
+      .pair img:first-child {
+        position: relative;
+        z-index: 2;
+      }
+      .pair img + img {
+        margin: 46px 0 0 -40px;
+      }
+
+      .mist {
+        background: var(--mist);
+      }
+      .cards {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 32px;
+      }
+      .cards div {
+        padding: 26px 24px;
+        border-radius: 22px;
+        background: var(--paper);
+      }
+      .cards h3 {
+        font-family: var(--serif);
+        font-weight: 400;
+        font-size: 32px;
+        line-height: 36px;
+      }
+      .cards p {
+        margin-top: 12px;
+        font-size: 16px;
+        line-height: 26px;
+        color: var(--ink-2);
+      }
+
+      #get {
+        background: var(--blue);
+        color: var(--paper);
+        padding: 64px 0 66px;
+      }
+      #get h2 {
+        font-size: 50px;
+        line-height: 52px;
+      }
+      #get .lead {
+        margin-top: 16px;
+        color: var(--paper);
+      }
+      #get .ctas {
+        justify-content: flex-start;
+        margin-top: 26px;
+      }
+      #get .badge img {
+        height: 52px;
+      }
+      details {
+        margin-top: 24px;
+        border-top: 1px solid rgb(255 255 255 / 0.25);
+        padding-top: 18px;
+      }
+      summary {
+        cursor: pointer;
+        font-size: 17px;
+        font-weight: 600;
+      }
+      details li a {
+        color: inherit;
+        font-weight: 600;
+        text-underline-offset: 3px;
+      }
+      details ol {
+        margin: 12px 0 0;
+        padding-left: 22px;
+        font-size: 16px;
+        line-height: 28px;
+        color: var(--paper);
+      }
+
+      .faq {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        margin-top: 30px;
+      }
+      .faq h3 {
+        font-size: 20px;
+        line-height: 26px;
+        font-weight: 600;
+      }
+      .faq p {
+        margin-top: 10px;
+        font-size: 16px;
+        line-height: 26px;
+        color: var(--ink-3);
+      }
+      #faq {
+        padding-bottom: 40px;
+      }
+
+      footer {
+        padding: 50px 0 44px;
+        border-top: 1px solid #e6e8ec;
+        background: #f6f7f9;
+        text-align: center;
+      }
+      footer .wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      footer .brand {
+        font-size: 26px;
+        letter-spacing: -0.4px;
+      }
+      footer .brand img {
+        width: 40px;
+        height: 40px;
+        border-radius: 9px;
+      }
+      footer .tagline {
+        margin-top: 14px;
+        font-size: 16px;
+        color: var(--ink-2);
+      }
+      footer .ctas {
+        margin-top: 22px;
+      }
+      footer .ctas .badge img {
+        height: 46px;
+      }
+      footer .button.solid {
+        background: var(--blue);
+        color: var(--paper);
+      }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px 24px;
+        margin-top: 28px;
+        font-size: 16px;
+      }
+      .links a {
+        color: #3a404c;
+        text-decoration: none;
+      }
+      .rights {
+        margin-top: 26px;
+        font-size: 14px;
+        color: #6b7079;
+      }
+
+      @media (min-width: 720px) {
+        h1 {
+          font-size: 56px;
+          line-height: 62px;
+        }
+        h2 {
+          font-size: 56px;
+          line-height: 58px;
+        }
+      }
+
+      /* The map's lock (index.html), until go-live. */
+      #lock {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        background: #000;
+        align-items: center;
+        justify-content: center;
+      }
+      #lock:not([hidden]) {
+        display: flex;
+      }
+      #lock input {
+        width: 180px;
+        padding: 12px 16px;
+        border: 1px solid rgb(255 255 255 / 0.2);
+        border-radius: 999px;
+        background: #0d0d0d;
+        color: #fff;
+        font: inherit;
+        font-size: 16px;
+        letter-spacing: 0.3em;
+        text-align: center;
+        outline: none;
+      }
+      #lock input:focus {
+        border-color: rgb(255 255 255 / 0.5);
+      }
+      #lock.is-wrong input {
+        border-color: rgb(255 120 120 / 0.7);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="lock" hidden>
+      <form id="lock-form" autocomplete="off">
+        <input
+          id="lock-input"
+          type="password"
+          inputmode="numeric"
+          placeholder="%copy.lock.password%"
+          aria-label="%copy.lock.password%"
+        />
+      </form>
+    </div>
+    <script>
+      (function () {
+        var host = location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') return;
+        try {
+          if (localStorage.getItem('sl-lock') === 'MjM4MQ==') return;
+        } catch (e) {}
+        var lock = document.getElementById('lock');
+        var input = document.getElementById('lock-input');
+        lock.hidden = false;
+        input.focus();
+        document.getElementById('lock-form').addEventListener('submit', function (event) {
+          event.preventDefault();
+          if (btoa(input.value) === 'MjM4MQ==') {
+            try {
+              localStorage.setItem('sl-lock', 'MjM4MQ==');
+            } catch (e) {}
+            lock.remove();
+          } else {
+            input.value = '';
+            lock.classList.add('is-wrong');
+          }
+        });
+        input.addEventListener('input', function () {
+          lock.classList.remove('is-wrong');
+          if (btoa(input.value) === 'MjM4MQ==')
+            document.getElementById('lock-form').requestSubmit();
+        });
+      })();
+    </script>
+    <header>
+      <nav>
+        <div class="wrap">
+          <a class="brand" href="#top">
+            <img src="../public/icons/icon-192.v2.png" alt="" width="34" height="34" />
+            <span>%copy.appName%</span>
+          </a>
+          <!-- appstore:on:start -->
+          <a class="badge" href="%appstore.url%">
+            <img src="./img/appstore-badge.svg" alt="%copy.get.badge%" width="120" height="40" />
+          </a>
+          <!-- appstore:on:end -->
+          <!-- appstore:off:start -->
+          <a class="button solid" href="https://snowlightmap.com/?map=1" data-map
+            >%copy.get.openMap%</a
+          >
+          <!-- appstore:off:end -->
+        </div>
+      </nav>
+      <div class="wrap hero" id="top">
+        <img
+          class="icon"
+          src="../public/icons/icon-192.v2.png"
+          alt="%copy.get.icon%"
+          width="92"
+          height="92"
+        />
+        <h1 data-mark-last="3">%copy.get.hero.title%</h1>
+        <p class="lead">%copy.get.hero.lead%</p>
+        <div class="ctas">
+          <!-- appstore:on:start -->
+          <a class="badge" href="%appstore.url%">
+            <img src="./img/appstore-badge.svg" alt="%copy.get.badge%" width="144" height="48" />
+          </a>
+          <!-- appstore:on:end -->
+          <!-- appstore:off:start -->
+          <a class="button solid" href="https://snowlightmap.com/?map=1" data-map
+            >%copy.get.openMap%</a
+          >
+          <!-- appstore:off:end -->
+          <a class="button line" href="#how">%copy.get.hero.how%</a>
+        </div>
+        <!-- appstore:on:start -->
+        <p class="soon">
+          <a href="https://snowlightmap.com/?map=1" data-map>%copy.get.openMap%</a>
+        </p>
+        <!-- appstore:on:end -->
+        <!-- appstore:off:start -->
+        <p class="soon">%copy.get.soon%</p>
+        <!-- appstore:off:end -->
+        <p class="facts">%copy.get.hero.facts%</p>
+        <img
+          class="phone"
+          src="%phone.hero%"
+          srcset="%phone.hero.srcset%"
+          alt="%copy.get.hero.phone%"
+          width="290"
+          height="593"
+          fetchpriority="high"
+        />
+      </div>
+    </header>
+
+    <main>
+      <section class="dark" id="how">
+        <div class="wrap">
+          <h2>%copy.get.open.title%</h2>
+          <p class="lead">%copy.get.open.body%</p>
+          <img
+            class="alert"
+            src="./img/alert-card.webp"
+            alt="%copy.get.open.alert%"
+            width="342"
+            height="92"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <h2>%copy.get.chance.title%</h2>
+          <p class="lead">%copy.get.chance.body%</p>
+          <img
+            class="phone"
+            src="%phone.chance%"
+            srcset="%phone.chance.srcset%"
+            alt="%copy.get.chance.phone%"
+            width="290"
+            height="593"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </section>
+
+      <section class="dark" id="map">
+        <div class="wrap">
+          <h2>%copy.get.map.title%</h2>
+          <p class="lead">%copy.get.map.body%</p>
+          <div class="stats">
+            <div>
+              <p class="value">%copy.get.map.schools%</p>
+              <p class="label">%copy.get.map.schoolsLabel%</p>
+            </div>
+            <div>
+              <p class="value">%copy.get.map.lists%</p>
+              <p class="label">%copy.get.map.listsLabel%</p>
+            </div>
+            <div>
+              <p class="value">%copy.get.map.checks%</p>
+              <p class="label">%copy.get.map.checksLabel%</p>
+            </div>
+          </div>
+          <img
+            class="phone"
+            src="%phone.map%"
+            srcset="%phone.map.srcset%"
+            alt="%copy.get.map.phone%"
+            width="290"
+            height="593"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <h2>%copy.get.unlock.title%</h2>
+          <p class="lead">%copy.get.unlock.body%</p>
+          <div class="pair">
+            <img
+              src="%phone.lockScreen%"
+              srcset="%phone.lockScreen.srcset%"
+              alt="%copy.get.unlock.lockScreen%"
+              width="200"
+              height="409"
+              loading="lazy"
+              decoding="async"
+            />
+            <img
+              src="%phone.liveActivity%"
+              srcset="%phone.liveActivity.srcset%"
+              alt="%copy.get.unlock.liveActivity%"
+              width="200"
+              height="409"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section class="mist">
+        <div class="wrap">
+          <h2>%copy.get.check.title%</h2>
+          <p class="lead">%copy.get.check.body%</p>
+          <div class="cards">
+            <div>
+              <h3>%copy.get.check.plain%</h3>
+              <p>%copy.get.check.plainBody%</p>
+            </div>
+            <div>
+              <h3>%copy.get.check.alerts%</h3>
+              <p>%copy.get.check.alertsBody%</p>
+            </div>
+            <div>
+              <h3>%copy.get.check.year%</h3>
+              <p>%copy.get.check.yearBody%</p>
+            </div>
+            <div>
+              <h3>%copy.get.check.share%</h3>
+              <p>%copy.get.check.shareBody%</p>
+            </div>
+            <div>
+              <h3>%copy.get.check.private%</h3>
+              <p>%copy.get.check.privateBody%</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="wrap">
+          <h2>%copy.get.game.title%</h2>
+          <p class="lead">%copy.get.game.body%</p>
+          <img
+            class="phone"
+            src="%phone.game%"
+            srcset="%phone.game.srcset%"
+            alt="%copy.get.game.phone%"
+            width="290"
+            height="593"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </section>
+
+      <section id="get">
+        <div class="wrap">
+          <h2>%copy.get.get.title%</h2>
+          <!-- appstore:on:start -->
+          <p class="lead">%copy.get.get.app%</p>
+          <div class="ctas">
+            <a class="badge" href="%appstore.url%">
+              <img
+                src="./img/appstore-badge.svg"
+                alt="%copy.get.badge%"
+                width="156"
+                height="52"
+                loading="lazy"
+              />
+            </a>
+          </div>
+          <p class="soon">
+            <a href="https://snowlightmap.com/?map=1" data-map>%copy.get.openMap%</a>
+          </p>
+          <!-- appstore:on:end -->
+          <!-- appstore:off:start -->
+          <p class="soon">%copy.get.soon%</p>
+          <p class="lead">%copy.get.get.web%</p>
+          <div class="ctas">
+            <a class="button solid" href="https://snowlightmap.com/?map=1" data-map
+              >%copy.get.openMap%</a
+            >
+          </div>
+          <details>
+            <summary>%copy.get.get.home%</summary>
+            <ol>
+              <li>
+                <a href="https://snowlightmap.com/?map=1" data-map>%copy.get.get.homeSteps.open%</a>
+              </li>
+              <li>%copy.get.get.homeSteps.share%</li>
+              <li>%copy.get.get.homeSteps.done%</li>
+            </ol>
+          </details>
+          <!-- appstore:off:end -->
+        </div>
+      </section>
+
+      <section id="faq">
+        <div class="wrap">
+          <h2>%copy.get.faq.title%</h2>
+          <div class="faq">
+            <div>
+              <h3>%copy.get.faq.free%</h3>
+              <p>%copy.get.faq.freeAnswer%</p>
+            </div>
+            <div>
+              <h3>%copy.get.faq.where%</h3>
+              <p>%copy.get.faq.whereAnswer%</p>
+            </div>
+            <div>
+              <h3>%copy.get.faq.how%</h3>
+              <p>%copy.get.faq.howAnswer%</p>
+            </div>
+            <div>
+              <h3>%copy.get.faq.covered%</h3>
+              <p>%copy.get.faq.coveredAnswer%</p>
+            </div>
+            <div>
+              <h3>%copy.get.faq.location%</h3>
+              <p>%copy.get.faq.locationAnswer%</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <a class="brand" href="#top">
+          <img src="../public/icons/icon-192.v2.png" alt="" width="40" height="40" loading="lazy" />
+          <span>%copy.appName%</span>
+        </a>
+        <p class="tagline">%copy.get.footer.tagline%</p>
+        <div class="ctas">
+          <!-- appstore:on:start -->
+          <a class="badge" href="%appstore.url%">
+            <img
+              src="./img/appstore-badge.svg"
+              alt="%copy.get.badge%"
+              width="138"
+              height="46"
+              loading="lazy"
+            />
+          </a>
+          <!-- appstore:on:end -->
+          <!-- appstore:off:start -->
+          <a class="button solid" href="https://snowlightmap.com/?map=1" data-map
+            >%copy.get.openMap%</a
+          >
+          <!-- appstore:off:end -->
+        </div>
+        <div class="links">
+          <a href="#how">%copy.get.footer.features%</a>
+          <a href="https://snowlightmap.com/?map=1" data-map>%copy.get.footer.map%</a>
+          <a href="#faq">%copy.get.footer.questions%</a>
+        </div>
+        <p class="rights">%copy.get.footer.rights%</p>
+      </div>
+    </footer>
+  </body>
+</html>

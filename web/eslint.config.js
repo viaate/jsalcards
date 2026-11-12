@@ -11,6 +11,7 @@ export default defineConfig(
     'dist-waitlist/',
     'dist-waitlist-chrome/',
     'dist-accounts/',
+    'dist-get/',
     'coverage/',
     'playwright-report/',
     'test-results/',

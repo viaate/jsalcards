@@ -2,9 +2,9 @@ name: Preview
 
 # Publishes the current state of the site to GitHub Pages on every push to the
 # default branch, so work in progress can be seen at https://snowlightmap.com,
-# the custom domain set in Settings > Pages (getsnowlight.com forwards to it at
-# the registrar). Pages must be enabled once: Settings > Pages > Build and
-# deployment > Source: GitHub Actions. The build's base path comes from
+# the custom domain set in Settings > Pages (getsnowlight.com is the iPhone
+# landing's own site: getsnowlight.yml, docs/getsnowlight.md). Pages must be
+# enabled once: Settings > Pages > Build and deployment > Source: GitHub Actions. The build's base path comes from
 # configure-pages: "/" under the custom domain, "/<repo>/" without one, so the
 # site follows the domain setting without a code change.
 #

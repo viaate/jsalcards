@@ -8,5 +8,11 @@
     "allowJs": true,
     "checkJs": true
   },
-  "include": ["vite.config.ts", "svelte.config.js", "eslint.config.js", "tools/**/*.ts"]
+  "include": [
+    "vite.config.ts",
+    "vite.get.config.ts",
+    "svelte.config.js",
+    "eslint.config.js",
+    "tools/**/*.ts"
+  ]
 }

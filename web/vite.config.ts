@@ -15,6 +15,8 @@ import { pushWorker } from './tools/push-worker.ts';
 import { usMask } from './tools/us-mask.ts';
 import { schoolNames } from './tools/school-names.ts';
 import { carriesUnreleased, themes } from './tools/themes.ts';
+import { getRedirect, getRedirectSwitch } from './tools/get-redirect.ts';
+import { pageComments } from './tools/page-comments.ts';
 import { waitlist, waitlistPost, waitlistSettings } from './tools/waitlist.ts';
 
 const isVitest = process.env.VITEST !== undefined;
@@ -56,6 +58,8 @@ export default defineConfig(({ mode }) => {
     appType: 'mpa',
     plugins: [
       svelte(),
+      // The iPhone redirect to the getsnowlight landing, first in the head (tools/get-redirect.ts).
+      getRedirect(getRedirectSwitch(loadEnv(mode, import.meta.dirname, 'VITE_GET_'))),
       // In a build with an accounts API, the strip keeps the account control's room (tools/accounts.ts).
       accounts(loadEnv(mode, import.meta.dirname, 'VITE_API_')),
       // Before htmlCopy: keeps index.html's blocks for the waitlist or for the code screen.
@@ -83,6 +87,8 @@ export default defineConfig(({ mode }) => {
       // Service worker and manifest links; the page registers the worker after load (src/pwa).
       // The notifications' part of the worker, written beside it (tools/push-worker.ts).
       isVitest ? [] : [VitePWA(pwaOptions()), pwaHead(), pushWorker(import.meta.dirname)],
+      // Last: the built page without the comments written for its readers (tools/page-comments.ts).
+      pageComments(),
     ],
     // Component tests mount into jsdom, so they need Svelte's browser build.
     resolve: isVitest ? { conditions: ['browser', ...defaultClientConditions] } : {},

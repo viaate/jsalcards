@@ -18,6 +18,7 @@ const NBSP_CHAR = '\u00a0';
 import { diagCopy } from './copy-diag';
 import { themesCopy } from './copy-themes';
 import { shareCopy } from './copy-share';
+import { getCopy } from './copy-get';
 import { waitlistCopy } from './copy-waitlist';
 
 // The house-style rules and the lint live in scripts/check-copy.mjs, a plain
@@ -4437,8 +4438,8 @@ ${aliases}
     // copy.ts's strings, the chance section's fixed words (src/copy-chance.ts), the waitlist's
     // (src/copy-waitlist.ts), the account controls' and admin view's (src/copy-account.ts) and
     // the notifications' (src/copy-notify.ts), the plain details' (src/copy-details.ts), the
-    // screen check's (src/copy-diag.ts), the themes' (src/copy-themes.ts) and the share cards'
-    // (src/copy-share.ts).
+    // screen check's (src/copy-diag.ts), the themes' (src/copy-themes.ts), the share cards'
+    // (src/copy-share.ts) and the getsnowlight landing's (src/copy-get.ts).
     expect(scanned.strings).toBe(
       strings.length +
         copyLeaves(chanceCopy).length +
@@ -4449,7 +4450,8 @@ ${aliases}
         copyLeaves(detailsCopy).length +
         copyLeaves(diagCopy).length +
         copyLeaves(themesCopy).length +
-        copyLeaves(shareCopy).length,
+        copyLeaves(shareCopy).length +
+        copyLeaves(getCopy).length,
     );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s

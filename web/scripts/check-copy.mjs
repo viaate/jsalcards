@@ -96,6 +96,7 @@ export const COPY_MODULES = [
   'src/copy-themes.ts',
   'src/copy-season.ts',
   'src/copy-share.ts',
+  'src/copy-get.ts',
 ];
 
 /** The waitlist page's words (src/copy-waitlist.ts), filled into pages under copy.waitlist. */
@@ -192,6 +193,8 @@ export const PROPER_NOUNS = new Set([
   'PK',
   'TK',
   'K',
+  // The language the site speaks: "said in plain English" (src/copy-get.ts).
+  'English',
   ...['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August'],
   ...['September', 'October', 'November', 'December'],
   ...['Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Sept', 'Oct', 'Nov', 'Dec'],
@@ -204,7 +207,14 @@ export const PROPER_NOUNS = new Set([
  * src/copy-notify.ts). Only the whole name keeps its capitals: "add to home screen" elsewhere
  * is still a sentence.
  */
-export const IOS_NAMES = ['Add to Home Screen', 'Share'];
+export const IOS_NAMES = [
+  'Add to Home Screen',
+  'Share',
+  // What the iPhone app brings, as iOS names them (the getsnowlight landing, src/copy-get.ts).
+  'Lock Screen',
+  'Live Activity',
+  'App Store',
+];
 
 // Whole words by Unicode letters and digits, not just ASCII \b.
 const BEFORE = '(?<![\\p{L}\\p{N}_])';
@@ -5777,7 +5787,7 @@ function htmlCode(tree) {
 
 const PLACEHOLDER = /%copy\.[A-Za-z0-9_.]+%/gu;
 /** The pages at the web root that Vite builds, filled in from the copy modules. */
-export const PAGES = ['index.html', 'privacy.html'];
+export const PAGES = ['index.html', 'privacy.html', 'get/index.html'];
 const MANIFEST_FILE = /(?:\.webmanifest|(?:^|[/\\])manifest\.json)$/u;
 
 /**
@@ -6078,10 +6088,15 @@ export async function lintProject({ root: given = WEB_ROOT, dist } = {}) {
   let copyTree = {};
   if (existsSync(project.copyFile)) {
     await project.loadCopy();
-    // Pages fill placeholders from copy.ts's tree, with the waitlist's words under `waitlist`.
+    // Pages fill placeholders from copy.ts's tree, with the waitlist's words under `waitlist` and
+    // the getsnowlight landing's under `get`.
     const exported = project.copyRuntime?.exports;
     copyTree = isFields(exported?.copy)
-      ? pageCopy(exported.copy, isFields(exported.waitlistCopy) ? exported.waitlistCopy : undefined)
+      ? pageCopy(
+          exported.copy,
+          isFields(exported.waitlistCopy) ? exported.waitlistCopy : undefined,
+          isFields(exported.getCopy) ? exported.getCopy : undefined,
+        )
       : exported?.copy;
     for (const [file, name, owner] of project.copyRuntime?.clashes ?? []) {
       findings.push({

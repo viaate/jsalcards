@@ -1,0 +1,195 @@
+name: Getsnowlight
+
+# Builds the getsnowlight landing (web/get/, vite.get.config.ts, docs/getsnowlight.md)
+# and deploys it to the free Cloudflare Pages project getsnowlight, on the account
+# the status page uses, with the name www.getsnowlight.com attached. The map's own
+# build and deploy (preview.yml) never carry it.
+#
+# It runs when the landing's files change on the default branch, and by hand.
+#
+# Fails dark: without the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets it
+# prints one notice and succeeds. Nothing here prints a secret: every request to
+# Cloudflare carries the token in a header from the environment, and only named
+# fields of an answer are printed.
+
+on:
+  push:
+    paths:
+      - web/get/**
+      - web/src/copy-get.ts
+      - web/src/copy.ts
+      - web/tools/get-page.ts
+      - web/tools/html-copy.ts
+      - web/vite.get.config.ts
+      - web/public/favicon-*.png
+      - web/public/icons/icon-192.v2.png
+      - web/public/icons/apple-touch-icon.v2.png
+      - web/package.json
+      - web/package-lock.json
+      - .github/workflows/getsnowlight.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run at a time on a branch, never cancelled.
+concurrency:
+  group: getsnowlight-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  WRANGLER_SEND_METRICS: "false"
+
+jobs:
+  deploy:
+    name: deploy
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - id: secrets
+        name: Are the Cloudflare secrets set
+        working-directory: .
+        env:
+          HAVE_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          HAVE_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          if [ "${HAVE_TOKEN}" != "true" ] || [ "${HAVE_ACCOUNT}" != "true" ]; then
+            echo "::notice::The getsnowlight landing is not set up yet: add the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repository secrets (docs/accounts.md). Skipping the deploy."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.secrets.outputs.enabled == 'true'
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - if: steps.secrets.outputs.enabled == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - if: steps.secrets.outputs.enabled == 'true'
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      # The landing, with Apple's badge once the app's App Store link is set as the
+      # repository variable APP_STORE_URL; until then, the live map in its place.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Build the landing
+        env:
+          VITE_APP_STORE_URL: ${{ vars.APP_STORE_URL }}
+        run: npm run build:get
+
+      # It carries the map's lock until go-live: a build without it never goes up.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Check the landing is locked
+        run: |
+          count="$(grep -c 'lock-form' dist-get/index.html || true)"
+          if [ "${count}" != "3" ]; then
+            echo "::error::The built landing does not carry the lock (lock-form ${count} times, not 3). Not deploying."
+            exit 1
+          fi
+
+      # The project, made on the first run. A token that cannot manage Pages is told
+      # 401, 403 or 404 here: the run then says which permission to add.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Find or make the Pages project
+        run: |
+          code="$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/getsnowlight" || true)"
+          case "${code}" in
+            200) ;;
+            404)
+              if ! npx --yes wrangler@4.124.0 pages project create getsnowlight --production-branch main; then
+                echo "::error::The Cloudflare token cannot manage Pages (HTTP ${code}). Add the permission Account / Cloudflare Pages / Edit to it, then run this workflow again (docs/status.md, step 1)."
+                exit 1
+              fi
+              ;;
+            401 | 403)
+              echo "::error::The Cloudflare token cannot manage Pages (HTTP ${code}). Add the permission Account / Cloudflare Pages / Edit to it, then run this workflow again (docs/status.md, step 1)."
+              exit 1
+              ;;
+            *)
+              echo "::error::Cloudflare's API answered HTTP ${code} for the Pages project. Run this workflow again."
+              exit 1
+              ;;
+          esac
+
+      # The Pages production branch is named main whatever this branch is called.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Deploy the landing
+        run: >-
+          npx --yes wrangler@4.124.0 pages deploy dist-get --project-name getsnowlight --branch main
+          --commit-hash "$GITHUB_SHA" --commit-message "getsnowlight ${GITHUB_SHA::7}" --commit-dirty=true
+
+      # The name. Asked for once; while Cloudflare has not found the DNS record yet,
+      # every run asks it to look again.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Attach www.getsnowlight.com
+        working-directory: .
+        run: |
+          domains="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/getsnowlight/domains"
+          state="$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${domains}" \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let out="unread";try{const found=(JSON.parse(s).result??[]).find((d)=>d.name==="www.getsnowlight.com");out=found?(found.status==="active"?"active":"waiting"):"absent"}catch{}process.stdout.write(out)})' || true)"
+          if [ "${state}" = "absent" ] || [ "${state}" = "unread" ] || [ -z "${state}" ]; then
+            code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data '{"name":"www.getsnowlight.com"}' "${domains}" || true)"
+            case "${code}" in
+              2??) ;;
+              *) echo "::warning::Could not attach www.getsnowlight.com to the Pages project (HTTP ${code}). Attach it by hand (docs/getsnowlight.md)." ;;
+            esac
+          elif [ "${state}" = "waiting" ]; then
+            code="$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              "${domains}/www.getsnowlight.com" || true)"
+            case "${code}" in
+              2??) ;;
+              *) echo "::warning::Cloudflare did not take the request to look at www.getsnowlight.com again (HTTP ${code}). Run this workflow again." ;;
+            esac
+          fi
+
+      # The page check and the DNS notice. The record's value is read from Cloudflare,
+      # never assumed: if the short name was taken on pages.dev, it differs. Only the
+      # status code and a count of the lock are read from the page.
+      - if: steps.secrets.outputs.enabled == 'true'
+        name: Check the landing and say where it is
+        working-directory: .
+        run: |
+          project="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/getsnowlight"
+          sub="$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${project}" \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let sub="";try{sub=JSON.parse(s).result?.subdomain??""}catch{}process.stdout.write(/^[a-z0-9.-]+\.pages\.dev$/.test(sub)?sub:"")})' || true)"
+          if [ -z "${sub}" ]; then
+            echo "::error::Cloudflare did not say where the landing is. Run this workflow again."
+            exit 1
+          fi
+          answered=false
+          for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            locks="$(curl -sS --max-time 10 "https://${sub}/" 2> /dev/null | grep -c 'lock-form' || true)"
+            if [ "${locks}" = "3" ]; then
+              answered=true
+              break
+            fi
+            sleep 15
+          done
+          if [ "${answered}" != "true" ]; then
+            echo "::error::The landing did not answer locked at https://${sub}/. Run this workflow again."
+            exit 1
+          fi
+          state="$(curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${project}/domains" \
+            | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let out="";try{out=(JSON.parse(s).result??[]).find((d)=>d.name==="www.getsnowlight.com")?.status??""}catch{}process.stdout.write(out==="active"?"active":"waiting")})' || true)"
+          if [ "${state}" = "active" ]; then
+            echo "::notice::https://www.getsnowlight.com is live."
+          else
+            echo "::notice::The landing is live at https://${sub}. To put it on www.getsnowlight.com, add this DNS record at GoDaddy: type CNAME, name www, value ${sub}, then forward getsnowlight.com to https://www.getsnowlight.com (docs/getsnowlight.md)."
+          fi

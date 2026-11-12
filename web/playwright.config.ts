@@ -10,6 +10,12 @@ import {
   WAITLIST_URL,
 } from './e2e/waitlist-server';
 import { ACCOUNTS_API, ACCOUNTS_DIST, ACCOUNTS_PORT, ACCOUNTS_URL } from './e2e/accounts-server';
+import { GET_PORT, GET_URL } from './e2e/get-server';
+
+// The map's phone redirect is off in every map build the e2e makes, the servers' below and the
+// specs' own (app.spec.ts and others build with vite's build() in the worker), whatever
+// GET_REDIRECT says; e2e/get.spec.ts switches it on page by page (docs/getsnowlight.md).
+process.env.VITE_GET_REDIRECT = 'off';
 
 // Each agent or CI job picks its own port so parallel runs never share a server.
 const port = Number(process.env.E2E_PORT ?? '4173');
@@ -35,28 +41,34 @@ export default defineConfig({
       // Smoke-test the production build, not the dev server. It ships no data, whatever is
       // staged in public/data/; specs that need data build their own (e2e/app.spec.ts,
       // e2e/real-data.spec.ts).
-      command: `SNOWLIGHT_DATA=none npm run build && npm run preview -- --host 127.0.0.1 --port ${String(port)} --strictPort`,
+      command: `VITE_GET_REDIRECT=off SNOWLIGHT_DATA=none npm run build && npm run preview -- --host 127.0.0.1 --port ${String(port)} --strictPort`,
       url: baseURL,
       reuseExistingServer: false,
       timeout: 120_000,
     },
     {
       // The same site built with the waitlist on (tools/waitlist.ts), for e2e/waitlist.spec.ts.
-      command: `VITE_WAITLIST_KIT_FORM=${WAITLIST_FORM} SNOWLIGHT_DATA=none npx vite build --outDir ${WAITLIST_DIST} --emptyOutDir && npx vite preview --outDir ${WAITLIST_DIST} --host 127.0.0.1 --port ${String(WAITLIST_PORT)} --strictPort`,
+      command: `VITE_GET_REDIRECT=off VITE_WAITLIST_KIT_FORM=${WAITLIST_FORM} SNOWLIGHT_DATA=none npx vite build --outDir ${WAITLIST_DIST} --emptyOutDir && npx vite preview --outDir ${WAITLIST_DIST} --host 127.0.0.1 --port ${String(WAITLIST_PORT)} --strictPort`,
       url: WAITLIST_URL,
       reuseExistingServer: false,
       timeout: 120_000,
     },
     {
       // The waitlist with its headline in the wordmark's chrome lettering (VITE_WAITLIST_HEADLINE=chrome).
-      command: `VITE_WAITLIST_KIT_FORM=${WAITLIST_FORM} VITE_WAITLIST_HEADLINE=chrome SNOWLIGHT_DATA=none npx vite build --outDir ${WAITLIST_CHROME_DIST} --emptyOutDir && npx vite preview --outDir ${WAITLIST_CHROME_DIST} --host 127.0.0.1 --port ${String(WAITLIST_CHROME_PORT)} --strictPort`,
+      command: `VITE_GET_REDIRECT=off VITE_WAITLIST_KIT_FORM=${WAITLIST_FORM} VITE_WAITLIST_HEADLINE=chrome SNOWLIGHT_DATA=none npx vite build --outDir ${WAITLIST_CHROME_DIST} --emptyOutDir && npx vite preview --outDir ${WAITLIST_CHROME_DIST} --host 127.0.0.1 --port ${String(WAITLIST_CHROME_PORT)} --strictPort`,
       url: WAITLIST_CHROME_URL,
       reuseExistingServer: false,
       timeout: 120_000,
     },
     {
-      command: `VITE_API_ROOT=${ACCOUNTS_API} SNOWLIGHT_DATA=none npx vite build --outDir ${ACCOUNTS_DIST} --emptyOutDir && npx vite preview --outDir ${ACCOUNTS_DIST} --host 127.0.0.1 --port ${String(ACCOUNTS_PORT)} --strictPort`,
+      command: `VITE_GET_REDIRECT=off VITE_API_ROOT=${ACCOUNTS_API} SNOWLIGHT_DATA=none npx vite build --outDir ${ACCOUNTS_DIST} --emptyOutDir && npx vite preview --outDir ${ACCOUNTS_DIST} --host 127.0.0.1 --port ${String(ACCOUNTS_PORT)} --strictPort`,
       url: ACCOUNTS_URL,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      command: `npx vite build --config vite.get.config.ts && npx vite preview --config vite.get.config.ts --host 127.0.0.1 --port ${String(GET_PORT)} --strictPort`,
+      url: GET_URL,
       reuseExistingServer: false,
       timeout: 120_000,
     },

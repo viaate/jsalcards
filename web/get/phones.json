@@ -1,0 +1,44 @@
+{
+  "hero": {
+    "from": "premium/d3t/out/myschool-closed-light-device.png",
+    "file": "phone-myschool-closed.webp",
+    "width": 580,
+    "file3x": "phone-myschool-closed-3x.webp",
+    "width3x": 675
+  },
+  "chance": {
+    "from": "premium/d3t/out/myschool-chance-light-device.png",
+    "file": "phone-myschool-chance.webp",
+    "width": 580,
+    "file3x": "phone-myschool-chance-3x.webp",
+    "width3x": 675
+  },
+  "map": {
+    "from": "premium/d3t/out/map-dark-device.png",
+    "file": "phone-map.webp",
+    "width": 580,
+    "file3x": "phone-map-3x.webp",
+    "width3x": 675
+  },
+  "lockScreen": {
+    "from": "upload/lockscreen.webp",
+    "file": "phone-lock-screen.webp",
+    "width": 400,
+    "file3x": "phone-lock-screen-3x.webp",
+    "width3x": 600
+  },
+  "liveActivity": {
+    "from": "upload/liveactivity.webp",
+    "file": "phone-live-activity.webp",
+    "width": 400,
+    "file3x": "phone-live-activity-3x.webp",
+    "width3x": 600
+  },
+  "game": {
+    "from": "premium/d3t/out/callit-light-device.png",
+    "file": "phone-call-it.webp",
+    "width": 580,
+    "file3x": "phone-call-it-3x.webp",
+    "width3x": 675
+  }
+}
