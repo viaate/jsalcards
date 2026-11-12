@@ -12,17 +12,26 @@
 # `io <device> screenConfig --display=<n> power on|off` (and `geometry`); there is no fold
 # command.
 #
+# The second run (iOS app run 43137086885, job 130914907555) found that those switches
+# do not open the phone: with the inner screen powered on the outer one went to the Home
+# Screen, the inner one stayed black in every picture, and the app, started again with the
+# outer screen off, still got the outer screen's 466 x 678 pt window. The inner screen
+# also refused a landscape geometry (2853x2007@3: "No mode found"). The fold is not in
+# simctl; it may be in Simulator.app.
+#
 # So this script, for whoever reads the log:
-#   1. boots a Duo on iOS 27.1 (the owner's phone's version) or, failing that, the other
+#   1. prints the words about a fold, a hinge or a posture that Simulator.app, SimulatorKit,
+#      CoreSimulator and simctl carry (their menus and their calls), and the Duo's profile;
+#   2. boots a Duo on iOS 27.1 (the owner's phone's version) or, failing that, the other
 #      runtime that makes one;
-#   2. starts the app on My School (light) and pictures both screens: the closed phone;
-#   3. powers the inner screen on, pictures both screens, then powers the outer one off
-#      and pictures both again: the open phone, if that is what the two switches mean;
-#      the app's own lines (Tour/TourGeometry.swift) say what size its window was given
-#      after each switch, without a relaunch;
-#   4. starts the app again on Settings (dark) with the phone open, and pictures it;
-#   5. asks the inner screen for a landscape geometry (2853 x 2007) and pictures it;
-#   6. prints every picture as a coarse grid of colors (tools/grid.swift), because the
+#   3. starts the app on My School (light) and pictures both screens: the closed phone;
+#   4. opens Simulator.app on the Duo, pictures both screens and the Mac's screen, and lists
+#      Simulator.app's menus (through System Events, if the runner lets it);
+#   5. clicks the menu item that opens the phone, if there is one, and pictures both
+#      screens; the app's own lines (Tour/TourGeometry.swift) say what window it was given;
+#   6. turns the open phone on its side with Simulator.app's rotate item, and pictures it;
+#   7. starts the app again on Settings (dark) and pictures it, open and on its side;
+#   8. prints every picture as a coarse grid of colors (tools/grid.swift), because the
 #      pictures of this leg stay in its own artifact.
 # It judges nothing and never fails the job: whatever it cannot do, it says, and goes on.
 # Its pictures go to ios/out/duo/, which shots.sh makes small with the others.
@@ -65,6 +74,47 @@ if [ -z "$DEVTYPE" ]; then
   xcrun simctl list devicetypes | grep -i iphone || true
   exit 0
 fi
+# The words about a fold. Simulator.app's menus are compiled nibs and its words .strings
+# files; the frameworks' method names show what a fold is called inside. Each list is cut
+# short; none of this changes anything.
+DEV=$(xcode-select -p)
+SIMAPP="$DEV/Applications/Simulator.app"
+FOLD_WORDS='fold|hinge|posture|tabletop|cover display|inner display|outer display'
+words() {
+  echo "--- $1"
+  if [ -e "$2" ]; then
+    limit 40 strings -a "$2" 2>/dev/null | grep -i -E "$FOLD_WORDS" | grep -v -i -E 'folder|manifold|scaffold|unfoldable' \
+      | sort -u | head -"${3:-40}" | cut -c1-200
+  else
+    echo "(not here: $2)"
+  fi
+}
+echo "=== The words about a fold in Apple's simulator"
+words "Simulator.app" "$SIMAPP/Contents/MacOS/Simulator"
+for f in "$SIMAPP"/Contents/Resources/en.lproj/* "$SIMAPP"/Contents/Resources/Base.lproj/*; do
+  [ -f "$f" ] || continue
+  case "$f" in
+    *.strings) if limit 10 plutil -p "$f" 2>/dev/null | grep -q -i -E "$FOLD_WORDS"; then
+        echo "--- $(basename "$f")"; limit 10 plutil -p "$f" | grep -i -E "$FOLD_WORDS" | head -20 | cut -c1-200; fi ;;
+    *.nib) ;;
+    *) if limit 10 strings -a "$f" 2>/dev/null | grep -q -i -E "$FOLD_WORDS"; then words "$(basename "$f")" "$f" 20; fi ;;
+  esac
+done
+for nib in "$SIMAPP"/Contents/Resources/*.nib "$SIMAPP"/Contents/Resources/*/*.nib; do
+  [ -e "$nib" ] || continue
+  if [ -d "$nib" ]; then nib="$nib/keyedobjects.nib"; fi
+  if [ -f "$nib" ] && limit 10 strings -a "$nib" 2>/dev/null | grep -q -i -E "$FOLD_WORDS"; then words "$(basename "$(dirname "$nib")")/$(basename "$nib")" "$nib" 20; fi
+done
+words "SimulatorKit" "$DEV/Library/PrivateFrameworks/SimulatorKit.framework/Versions/A/SimulatorKit"
+words "CoreSimulator" "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/CoreSimulator"
+words "simctl" "$DEV/usr/bin/simctl" 20
+DUO_BUNDLE=$(xcrun simctl list devicetypes -j | jq -r --arg d "$DEVTYPE" '[.devicetypes[] | select(.identifier == $d) | .bundlePath] | first // empty')
+if [ -n "$DUO_BUNDLE" ]; then
+  echo "--- the Duo's profile.plist, lines that name a fold, a hinge, a posture or a screen"
+  plutil -p "$DUO_BUNDLE/Contents/Resources/profile.plist" 2>/dev/null | grep -i -E "$FOLD_WORDS|screen|display|hid" | head -40 | cut -c1-200
+  ls "$DUO_BUNDLE/Contents/Resources" 2>/dev/null | head -30
+fi
+
 # The runtimes that list the Duo: 27.1 first, then the others, newest first.
 RUNTIMES=$(xcrun simctl list runtimes -j | jq -r --arg d "$DEVTYPE" '[.runtimes[]
   | select(.isAvailable and ((.name // "") | startswith("iOS 27."))
@@ -103,30 +153,15 @@ else
   GRID=""
 fi
 
-# screens <label>: the screens' states as simctl's IO ports list them. enumerate keeps
-# running after its list, so it is given a terminal (its output is not held back) and
-# stopped after 12 seconds.
-screens() {
-  echo "--- the IO ports ($1)"
-  limit 12 script -q /dev/null xcrun simctl io "$UDID" enumerate 2>&1 | tr -d '\r' | head -80
-}
 # shoot <name> <screen>: a picture of one screen, its size, and its grid.
 shoot() {
   local name=$1 screen=$2 file="$OUT/duo/$1.png"
-  if limit 60 xcrun simctl io "$UDID" screenshot --type=png --display="$screen" "$file" >"$LOGS/duo-shot.txt" 2>&1; then
+  if limit 30 xcrun simctl io "$UDID" screenshot --type=png --display="$screen" "$file" >"$LOGS/duo-shot.txt" 2>&1; then
     say "$name: $(sips -g pixelWidth -g pixelHeight "$file" | tail -2 | tr -s ' \n' ' ')"
     if [ -n "$GRID" ]; then "$GRID" 64 "$file" || true; fi
   else
     say "$name: no picture of screen $screen: $(tr '\n' ' ' < "$LOGS/duo-shot.txt" | cut -c1-300)"
     rm -f "$file"
-  fi
-}
-# power <screen> <on|off>: simctl's switch of a screen.
-power() {
-  if limit 30 xcrun simctl io "$UDID" screenConfig --display="$1" power "$2" >"$LOGS/duo-power.txt" 2>&1; then
-    say "screen $1 power $2: done $(tr '\n' ' ' < "$LOGS/duo-power.txt" | cut -c1-200)"
-  else
-    say "screen $1 power $2: refused: $(tr '\n' ' ' < "$LOGS/duo-power.txt" | cut -c1-300)"
   fi
 }
 # lines <name>: the app's geometry lines of a launch so far.
@@ -152,7 +187,65 @@ launch() {
   sleep 2
 }
 
-screens "booted"
+# The menus of Simulator.app, one line each: "<menu>\t<item>\t<sub item>".
+menus() {
+  limit 60 osascript -e '
+    set out to ""
+    tell application "System Events" to tell process "Simulator"
+      repeat with mb in menu bar items of menu bar 1
+        set m to name of mb
+        if m is not missing value and m is not "Apple" then
+          try
+            repeat with mi in menu items of menu 1 of mb
+              set n to name of mi
+              if n is not missing value then
+                set out to out & m & tab & n & linefeed
+                try
+                  repeat with si in menu items of menu 1 of mi
+                    set k to name of si
+                    if k is not missing value then set out to out & m & tab & n & tab & k & linefeed
+                  end repeat
+                end try
+              end if
+            end repeat
+          end try
+        end if
+      end repeat
+    end tell
+    return out' 2>&1
+}
+# click <menu> <item> [<sub item>]: a click on one of Simulator.app's menu items.
+click() {
+  local script
+  if [ -n "${3:-}" ]; then
+    script="tell application \"System Events\" to tell process \"Simulator\" to click menu item \"$3\" of menu 1 of menu item \"$2\" of menu 1 of menu bar item \"$1\" of menu bar 1"
+  else
+    script="tell application \"System Events\" to tell process \"Simulator\" to click menu item \"$2\" of menu 1 of menu bar item \"$1\" of menu bar 1"
+  fi
+  if limit 20 osascript -e "tell application \"Simulator\" to activate" -e "$script" >"$LOGS/duo-click.txt" 2>&1; then
+    say "clicked $1 > $2${3:+ > $3}"
+  else
+    say "the click on $1 > $2${3:+ > $3} was refused: $(tr '\n' ' ' < "$LOGS/duo-click.txt" | cut -c1-300)"
+    return 1
+  fi
+}
+# mac <name>: a picture of the Mac's whole screen (Simulator.app's window), and its grid.
+mac() {
+  local file="$OUT/duo/$1.png"
+  if limit 20 screencapture -x "$file" >"$LOGS/duo-mac.txt" 2>&1 && [ -s "$file" ]; then
+    say "$1: $(sips -g pixelWidth -g pixelHeight "$file" | tail -2 | tr -s ' \n' ' ')"
+    if [ -n "$GRID" ]; then "$GRID" 64 "$file" || true; fi
+  else
+    say "$1: no picture of the Mac's screen: $(tr '\n' ' ' < "$LOGS/duo-mac.txt" | cut -c1-200)"
+    rm -f "$file"
+  fi
+}
+# both <name>: both screens of the Duo.
+both() {
+  shoot "$1-outer" "$OUTER"
+  shoot "$1-inner" "$INNER"
+}
+
 room 200 "the install" || exit 0
 if ! limit 180 xcrun simctl install "$UDID" "$APP"; then
   echo "::warning::The app could not be installed on the '$DUO'."
@@ -163,44 +256,67 @@ say "the app is installed"
 echo "=== Closed: the app on My School, light"
 room 150 "the first launch" || exit 0
 launch light duo-closed-light-myschool myschool || exit 0
-shoot duo-closed-light-myschool "$OUTER"
-shoot duo-closed-light-myschool-inner "$INNER"
+both duo-closed-light-myschool
 lines duo-closed-light-myschool
 
-echo "=== Opening: the inner screen on, then the outer one off, the app left running"
-room 60 "the opening" || exit 0
-power "$INNER" on
-sleep 4
-screens "inner on"
-shoot duo-inner-on-light-myschool-outer "$OUTER"
-shoot duo-inner-on-light-myschool "$INNER"
-power "$OUTER" off
-sleep 4
-screens "outer off"
-shoot duo-open-light-myschool "$INNER"
-shoot duo-open-light-myschool-outer "$OUTER"
-echo "--- the app's lines since it started, after both switches"
+echo "=== Simulator.app on the Duo"
+room 120 "Simulator.app" || exit 0
+if limit 60 open -a "$SIMAPP" --args -CurrentDeviceUDID "$UDID" >"$LOGS/duo-open.txt" 2>&1; then
+  say "Simulator.app asked to show the Duo"
+else
+  say "Simulator.app did not open: $(tr '\n' ' ' < "$LOGS/duo-open.txt" | cut -c1-300)"
+fi
+sleep 15
+mac duo-mac-closed
+both duo-simapp-closed-light-myschool
 lines duo-closed-light-myschool
+echo "--- Simulator.app's menus"
+MENUS=$(menus)
+echo "$MENUS" | head -150 | cut -c1-200
+echo "--- the menu items about a fold, a hinge, a posture or a rotation"
+echo "$MENUS" | grep -i -E "$FOLD_WORDS|open|close|rotate|orientation" | grep -v -i -E 'folder|window|open recent|close all' | head -30
+
+# The item that opens the phone, by the words Simulator.app gives it: "Unfold" first, then
+# an "Open" or "Flat" item under a fold/hinge/posture menu, then any other fold item.
+OPENER=$(echo "$MENUS" | grep -i -E $'\t[^\t]*unfold[^\t]*$' | head -1)
+[ -n "$OPENER" ] || OPENER=$(echo "$MENUS" | grep -i -E 'fold|hinge|posture' | grep -i -E $'\t(open|flat|fully open|opened)$' | head -1)
+[ -n "$OPENER" ] || OPENER=$(echo "$MENUS" | grep -i -E $'\t[^\t]*fold[^\t]*$' | head -1)
+if [ -z "$OPENER" ]; then
+  echo "::warning::Simulator.app shows no menu item that opens the phone (or its menus could not be read)."
+else
+  echo "=== Open: Simulator.app's '$(echo "$OPENER" | tr '\t' '>')'"
+  IFS=$'\t' read -r M1 M2 M3 <<<"$OPENER"
+  if room 60 "the opening" && click "$M1" "$M2" "${M3:-}"; then
+    sleep 8
+    mac duo-mac-open
+    both duo-open-light-myschool
+    echo "--- the app's lines since it started, after the opening"
+    lines duo-closed-light-myschool
+  fi
+fi
 
 echo "=== Open: the app started again, on Settings, dark"
 if room 100 "the launch on the open phone"; then
   launch dark duo-open-dark-settings settings && {
-    shoot duo-open-dark-settings "$INNER"
+    both duo-open-dark-settings
     lines duo-open-dark-settings
   }
 fi
 
-echo "=== Open, landscape: the inner screen asked for 2853 x 2007"
-if room 40 "the landscape try"; then
-  if limit 30 xcrun simctl io "$UDID" screenConfig --display="$INNER" geometry 2853x2007@3 >"$LOGS/duo-geometry.txt" 2>&1; then
-    say "geometry 2853x2007@3: done $(tr '\n' ' ' < "$LOGS/duo-geometry.txt" | cut -c1-200)"
-    sleep 4
-    shoot duo-open-landscape-dark-settings "$INNER"
+echo "=== Open, on its side: Simulator.app's rotate item"
+ROTATE=$(echo "$MENUS" | grep -i -E $'\trotate (left|right)$' | head -1)
+if [ -n "$ROTATE" ] && room 60 "the rotation"; then
+  IFS=$'\t' read -r M1 M2 M3 <<<"$ROTATE"
+  if click "$M1" "$M2" "${M3:-}"; then
+    sleep 6
+    mac duo-mac-open-landscape
+    both duo-open-landscape-dark-settings
     lines duo-open-dark-settings
-  else
-    say "geometry 2853x2007@3: refused: $(tr '\n' ' ' < "$LOGS/duo-geometry.txt" | cut -c1-300)"
   fi
+else
+  say "no rotate item, or no time for it"
 fi
+limit 20 osascript -e 'tell application "Simulator" to quit' >/dev/null 2>&1 || true
 ls -l "$OUT/duo" || true
 say "the Duo measured"
 exit 0
