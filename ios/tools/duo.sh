@@ -17,7 +17,9 @@
 # Screen, the inner one stayed black in every picture, and the app, started again with the
 # outer screen off, still got the outer screen's 466 x 678 pt window. The inner screen
 # also refused a landscape geometry (2853x2007@3: "No mode found"). The fold is not in
-# simctl; it may be in Simulator.app.
+# simctl; it may be in Simulator.app. The third run (iOS app run 43142363913) found no fold,
+# hinge or posture word in CoreSimulator or simctl, and no Simulator.app where it looked;
+# the Mac's own screen can be pictured (1024 x 768).
 #
 # So this script, for whoever reads the log:
 #   1. prints the words about a fold, a hinge or a posture that Simulator.app, SimulatorKit,
@@ -78,7 +80,18 @@ fi
 # files; the frameworks' method names show what a fold is called inside. Each list is cut
 # short; none of this changes anything.
 DEV=$(xcode-select -p)
-SIMAPP="$DEV/Applications/Simulator.app"
+XCODE=$(dirname "$(dirname "$DEV")")
+# Run 3 found no Simulator.app at $DEV/Applications on the xcode-27 image, so it is looked
+# for: in the active Xcode, by its bundle id, then anywhere in that Xcode.
+SIMAPP=""
+for CANDIDATE in "$DEV/Applications/Simulator.app" "$XCODE/Contents/Applications/Simulator.app" /Applications/Simulator.app; do
+  if [ -d "$CANDIDATE" ]; then SIMAPP=$CANDIDATE; break; fi
+done
+[ -n "$SIMAPP" ] || SIMAPP=$(limit 20 mdfind "kMDItemCFBundleIdentifier == 'com.apple.iphonesimulator'" 2>/dev/null | head -1)
+[ -n "$SIMAPP" ] || SIMAPP=$(limit 40 find "$XCODE" -maxdepth 6 -name Simulator.app -type d 2>/dev/null | head -1)
+echo "Simulator.app: ${SIMAPP:-(none found)}; $DEV/Applications holds: $(ls "$DEV/Applications" 2>/dev/null | tr '\n' ' ')"
+SIMKIT=$(limit 40 find "$XCODE/Contents" /Library/Developer/PrivateFrameworks -maxdepth 6 -name SimulatorKit.framework -type d 2>/dev/null | head -1)
+echo "SimulatorKit: ${SIMKIT:-(none found)}"
 FOLD_WORDS='fold|hinge|posture|tabletop|cover display|inner display|outer display'
 words() {
   echo "--- $1"
@@ -105,7 +118,7 @@ for nib in "$SIMAPP"/Contents/Resources/*.nib "$SIMAPP"/Contents/Resources/*/*.n
   if [ -d "$nib" ]; then nib="$nib/keyedobjects.nib"; fi
   if [ -f "$nib" ] && limit 10 strings -a "$nib" 2>/dev/null | grep -q -i -E "$FOLD_WORDS"; then words "$(basename "$(dirname "$nib")")/$(basename "$nib")" "$nib" 20; fi
 done
-words "SimulatorKit" "$DEV/Library/PrivateFrameworks/SimulatorKit.framework/Versions/A/SimulatorKit"
+words "SimulatorKit" "${SIMKIT:-/none}/Versions/A/SimulatorKit"
 words "CoreSimulator" "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/CoreSimulator"
 words "simctl" "$DEV/usr/bin/simctl" 20
 DUO_BUNDLE=$(xcrun simctl list devicetypes -j | jq -r --arg d "$DEVTYPE" '[.devicetypes[] | select(.identifier == $d) | .bundlePath] | first // empty')
@@ -261,7 +274,8 @@ lines duo-closed-light-myschool
 
 echo "=== Simulator.app on the Duo"
 room 120 "Simulator.app" || exit 0
-if limit 60 open -a "$SIMAPP" --args -CurrentDeviceUDID "$UDID" >"$LOGS/duo-open.txt" 2>&1; then
+if [ -n "$SIMAPP" ]; then OPEN_APP=(-a "$SIMAPP"); else OPEN_APP=(-b com.apple.iphonesimulator); fi
+if limit 60 open "${OPEN_APP[@]}" --args -CurrentDeviceUDID "$UDID" >"$LOGS/duo-open.txt" 2>&1; then
   say "Simulator.app asked to show the Duo"
 else
   say "Simulator.app did not open: $(tr '\n' ' ' < "$LOGS/duo-open.txt" | cut -c1-300)"
