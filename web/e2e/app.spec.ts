@@ -51,6 +51,8 @@ import { STATUS_KEYS, copy } from '../src/copy';
 import { chanceCopy, chanceFormat } from '../src/copy-chance';
 import { diagCopy, diagFormat } from '../src/copy-diag';
 import { format } from '../src/copy-format';
+import { laterCopy, laterFormat } from '../src/copy-later';
+import { THEME_STORAGE_KEY } from '../src/theme/event';
 import { shareCopy } from '../src/copy-share';
 import { OPEN_SETTLE_ZOOM } from '../src/map/basemap/flight';
 import { COPIED_MS } from '../src/ui/share';
@@ -6345,6 +6347,313 @@ test.describe('with data staged', () => {
         expect(problems, label).toEqual([]);
         await context.close();
       }
+    }
+  });
+
+  test('closings for later days show as quiet rings up close, never further out, yielding to every label, with their key line and panel lines', async ({
+    browser,
+  }) => {
+    test.setTimeout(420_000);
+    // SYNTHETIC: every district and the private school on Kansas City's clock, as above.
+    const zoned = JSON.parse(syntheticPredictions()) as {
+      days: string[];
+      districts: { district: number; time_zone: string; days: unknown[] }[];
+      schools?: unknown[];
+      outlooks?: unknown[];
+      zones?: string[];
+    };
+    const calm = zoned.days.map(() => ({ state: 'no_threat' }));
+    for (const district of [0, 1, 2, 3]) {
+      if (!zoned.districts.some((entry) => entry.district === district)) {
+        zoned.districts.push({ district, time_zone: ZONE, days: calm });
+      }
+    }
+    zoned.districts.sort((a, b) => a.district - b.district);
+    zoned.outlooks = [{ state: 'no_threat' }];
+    zoned.zones = [ZONE];
+    zoned.schools = [{ school: 4, zone: 0, days: zoned.days.map(() => 0) }];
+    const predictions = JSON.stringify(zoned);
+    // SYNTHETIC, in the published file's own bounds (pipeline/snowlight/schemas/live.py: each
+    // day today or tomorrow somewhere at generated_at): Monday as the staged file has it (Border
+    // Star closed, Pembroke Hill delayed); Tuesday, the later day before 3:30 PM, Olathe North
+    // closed, Blue Valley remote and Border Star closed again.
+    const closings = JSON.stringify({
+      schema_version: 1,
+      generated_at: '2026-01-12T17:40:00Z',
+      directory: STAMP,
+      days: [
+        {
+          day: SYNTHETIC_DAY,
+          gaps: [3, 0],
+          statuses: [0, 1],
+          announced: [98, 40],
+          reasons: [0, 1],
+          shifts: [120],
+          clocks: [null],
+        },
+        {
+          day: '2026-01-13',
+          gaps: [0, 1, 0],
+          statuses: [0, 2, 0],
+          announced: [8, 19, 8],
+          reasons: [0, 0, 0],
+          shifts: [],
+          clocks: [],
+        },
+      ],
+    });
+    const RING_LAYERS = ['later-rings', 'later-rings-close', 'later-rings-near'];
+    /** The rings drawn now: each one's school id and status. */
+    const ringsShown = (page: Page): Promise<string[]> =>
+      page.evaluate((layers) => {
+        const map = window.snowlightMap;
+        const on = layers.filter((id) => map?.getLayer(id) !== undefined);
+        if (map === undefined || on.length === 0) return [];
+        return [
+          ...new Set(
+            map.queryRenderedFeatures({ layers: on }).map((feature) => {
+              const { id, status } = feature.properties as { id: string; status: number };
+              return `${id} ${String(status)}`;
+            }),
+          ),
+        ].sort();
+      }, RING_LAYERS);
+    /** The place names drawn now, from the first label layer up, with the rings on or off. */
+    const labelsWith = async (page: Page, rings: boolean): Promise<string[]> => {
+      await page.evaluate(
+        ([layers, on]) => {
+          const map = window.snowlightMap;
+          for (const id of layers) {
+            if (map?.getLayer(id) !== undefined) {
+              map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
+            }
+          }
+        },
+        [RING_LAYERS, rings] as const,
+      );
+      await settleMap(page);
+      return page.evaluate((first) => {
+        const map = window.snowlightMap;
+        if (map === undefined) return [];
+        const order = map.getLayersOrder();
+        const labels = order
+          .slice(order.indexOf(first))
+          .filter((id) => map.getLayer(id)?.type === 'symbol');
+        return [
+          ...new Set(
+            map
+              .queryRenderedFeatures({ layers: labels })
+              .map((feature) => `${feature.layer.id} ${String(feature.properties.name ?? '')}`),
+          ),
+        ].sort();
+      }, FIRST_LABEL_LAYER);
+    };
+    const tuesday = laterFormat.day('2026-01-13', SYNTHETIC_DAY);
+    /** A page on this theme, size and clock, the later days staged. */
+    const open = async (
+      theme: 'midnight' | 'daylight',
+      options: Parameters<typeof browser.newContext>[0],
+    ): Promise<{ page: Page; problems: string[]; close: () => Promise<void> }> => {
+      const context = await browser.newContext({ serviceWorkers: 'block', ...options });
+      const page = await context.newPage();
+      // Noon in Kansas City on Monday: the map shows Monday's lights, and Tuesday is a later day.
+      await fixDate(page, SYNTHETIC_NOW);
+      if (theme === 'daylight') {
+        await page.addInitScript(
+          ([key, value]) => {
+            localStorage.setItem(key, value);
+          },
+          [THEME_STORAGE_KEY, JSON.stringify({ id: 'daylight' })] as const,
+        );
+      }
+      const { problems } = watch(page);
+      await page.route('**/data/predictions/latest.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body: predictions }),
+      );
+      await page.route('**/data/live/closings.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body: closings }),
+      );
+      return { page, problems, close: () => context.close() };
+    };
+    /** A box's top and bottom, or a failure naming it. */
+    const span = async (
+      page: Page,
+      selector: string,
+    ): Promise<{ top: number; bottom: number; left: number; right: number }> => {
+      const box = await page.locator(selector).boundingBox();
+      if (box === null) throw new Error(`${selector} has no box`);
+      return { top: box.y, bottom: box.y + box.height, left: box.x, right: box.x + box.width };
+    };
+    for (const theme of ['midnight', 'daylight'] as const) {
+      const { page, problems, close } = await open(theme, {
+        viewport: { width: 1440, height: 900 },
+        timezoneId: ZONE,
+      });
+      // Over Blue Valley High, up close: Olathe North beside it.
+      await page.goto(`${site}?at=${String(BLUE_VALLEY.lat)},${String(BLUE_VALLEY.lon)},11`);
+      await waitForMap(page);
+      // Today's two lights, as ever: Border Star closed, Pembroke Hill delayed.
+      await expect.poll(async () => (await glowStats(page)).glowCount, { timeout: 30_000 }).toBe(2);
+      // A ring for each school with a later day and no light today: Olathe North closed and Blue
+      // Valley remote, Tuesday; none for Border Star, lit today.
+      await expect
+        .poll(
+          () =>
+            page.evaluate(() =>
+              [
+                ...new Set(
+                  (window.snowlightMap?.querySourceFeatures('later-days') ?? []).map((feature) => {
+                    const { id, status } = feature.properties as { id: string; status: number };
+                    return `${id} ${String(status)}`;
+                  }),
+                ),
+              ].sort(),
+            ),
+          { timeout: 30_000 },
+        )
+        .toEqual(['201014000137 0', '201200000112 2']);
+      // Across the county, Blue Valley's is drawn; Olathe North's sits under the town's name
+      // there, and gives way to it.
+      await expect.poll(() => ringsShown(page), { timeout: 30_000 }).toEqual(['201200000112 2']);
+      // Under the lights and every label, over the school dots, and keeping no label's room.
+      const order = await page.evaluate(() => window.snowlightMap?.getLayersOrder() ?? []);
+      for (const id of RING_LAYERS) {
+        expect(order.indexOf(id), `${theme} ${id}`).toBeGreaterThan(-1);
+        expect(order.indexOf(id), `${theme} ${id}`).toBeLessThan(order.indexOf(GLOW_LAYER));
+        expect(order.indexOf(id), `${theme} ${id}`).toBeLessThan(order.indexOf(FIRST_LABEL_LAYER));
+      }
+      expect(order.filter((id) => id.startsWith('later-')).sort(), theme).toEqual(RING_LAYERS);
+      // Every place name drawn without the rings is drawn with them, across a county and closer.
+      for (const zoom of [10.6, 11.5, 13.5]) {
+        await page.evaluate((z) => {
+          window.snowlightMap?.jumpTo({ zoom: z });
+        }, zoom);
+        const without = await labelsWith(page, false);
+        expect(await labelsWith(page, true), `${theme} zoom ${String(zoom)}`).toEqual(without);
+      }
+      // Closer in, where the names keep clear of every school's dot, every ring is drawn:
+      // Olathe North's too.
+      await page.evaluate(() => {
+        window.snowlightMap?.jumpTo({ center: [-94.8093, 38.888], zoom: 13.5 });
+      });
+      await settleMap(page);
+      expect(await ringsShown(page), theme).toContain('201014000137 0');
+      // The key's line names the rings and the later day with its count.
+      const key = page.locator('.later-key');
+      await expect(key, theme).toBeVisible();
+      await expect(key.locator('.visible'), theme).toHaveText(`${laterCopy.title} ${tuesday} 3`, {
+        useInnerText: true,
+      });
+      await expect(key.locator('.sr-only'), theme).toHaveText('Later days: Tuesday, 3 schools');
+      // Over the key, clear of it.
+      expect((await span(page, '.later-key')).bottom, theme).toBeLessThanOrEqual(
+        (await span(page, '.legend')).top,
+      );
+      // The regional view and the national one: no ring, and the key's line all the same.
+      for (const zoom of [7, 4]) {
+        await page.evaluate((z) => {
+          window.snowlightMap?.jumpTo({ zoom: z });
+        }, zoom);
+        await settleMap(page);
+        expect(await ringsShown(page), `${theme} zoom ${String(zoom)}`).toEqual([]);
+        await expect(key, theme).toBeVisible();
+      }
+      // Border Star's panel: lit today and closed tomorrow too, both lines, the later one with
+      // the ring's glyph; and the key's line steps aside under the open panel.
+      await page.goto(`${site}?school=${BORDER_STAR_ID}`);
+      const headlines = page.locator('.detail .status .headline');
+      await expect(headlines, theme).toHaveText([
+        copy.statusLine.closed.today,
+        copy.statusLine.closed.tomorrow,
+      ]);
+      await expect(headlines.nth(0).locator('.glyph'), theme).not.toHaveClass(/is-later/);
+      await expect(headlines.nth(1).locator('.glyph'), theme).toHaveClass(/is-later/);
+      await expect(key, theme).toHaveCount(1, { timeout: 30_000 });
+      await expect(key, theme).toBeHidden();
+      // Blue Valley's: tomorrow, a later day on the map before 3:30 PM, with the ring's glyph.
+      await page.goto(`${site}?school=201200000112`);
+      await expect(headlines, theme).toHaveText([copy.statusLine.remote.tomorrow]);
+      await expect(headlines.nth(0).locator('.glyph'), theme).toHaveClass(/is-later/);
+      await expect(key, theme).toHaveCount(1, { timeout: 30_000 });
+      await expect(key, theme).toBeHidden();
+      expect(problems, theme).toEqual([]);
+      await close();
+    }
+    // A visitor whose own today is Tuesday already (Tokyo), on a desktop and a phone: the day
+    // line ("Showing Monday") and the later days' line both, each over the next, inside the
+    // screen and clear of the locate button; with the credits open, the later days' line steps
+    // aside and the day line is lifted clear of them.
+    for (const [name, options] of [
+      ['desktop', { viewport: { width: 1280, height: 800 } }],
+      ['phone', { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }],
+      ['narrow phone', { viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true }],
+    ] as const) {
+      const { page, problems, close } = await open('daylight', {
+        ...options,
+        timezoneId: 'Asia/Tokyo',
+      });
+      await page.goto(`${site}?at=${String(BLUE_VALLEY.lat)},${String(BLUE_VALLEY.lon)},11`);
+      await waitForMap(page);
+      const key = page.locator('.later-key');
+      const day = page.locator('.map-day');
+      await expect(key, name).toBeVisible({ timeout: 30_000 });
+      await expect(day, name).toBeVisible();
+      await expect(day, name).toHaveText(
+        format.mapDays([{ day: SYNTHETIC_DAY, today: true, regions: [] }], '2026-01-13') ?? '',
+      );
+      await expect(key.locator('.visible'), name).toHaveText(`${laterCopy.title} ${tuesday} 3`, {
+        useInnerText: true,
+      });
+      const width = options.viewport.width;
+      const [line, later, legend] = await Promise.all([
+        span(page, '.map-day'),
+        span(page, '.later-key'),
+        span(page, '.legend'),
+      ]);
+      // The locate button, where the screen has one (a phone's).
+      const locate = await page.locator('.locate').boundingBox();
+      expect(line.bottom, name).toBeLessThanOrEqual(later.top);
+      expect(later.bottom, name).toBeLessThanOrEqual(legend.top);
+      for (const [what, box] of [
+        ['day line', line],
+        ['later days', later],
+      ] as const) {
+        expect(box.left, `${name} ${what}`).toBeGreaterThanOrEqual(0);
+        expect(box.right, `${name} ${what}`).toBeLessThanOrEqual(width);
+        expect(box.top, `${name} ${what}`).toBeGreaterThanOrEqual(0);
+      }
+      // Clear of the locate button across from it, where they share a height.
+      if (locate !== null && later.bottom > locate.y && later.top < locate.y + locate.height) {
+        expect(later.right, name).toBeLessThanOrEqual(locate.x);
+      }
+      // Every day the line lists is on its one line, whole, inside it: none wrapped to the
+      // second line, which is cut off, so the line shows every day the map rings.
+      const placed = await key.locator('.visible').evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        return [...el.querySelectorAll('.day')].map((day) => {
+          const at = day.getBoundingClientRect();
+          return (
+            at.width > 0 &&
+            at.left >= box.left - 0.5 &&
+            at.right <= box.right + 0.5 &&
+            at.top >= box.top - 0.5 &&
+            at.bottom <= box.bottom + 0.5
+          );
+        });
+      });
+      expect(placed, name).toEqual([true]);
+      await page.locator('.maplibregl-ctrl-attrib-button').click();
+      const credits = page.locator('.maplibregl-ctrl-attrib.maplibregl-compact-show');
+      await expect(credits, name).toBeVisible({ timeout: 30_000 });
+      await expect(key, name).toBeHidden();
+      await expect(day, name).toBeVisible();
+      const [lifted, shown] = await Promise.all([
+        span(page, '.map-day'),
+        span(page, '.maplibregl-ctrl-attrib.maplibregl-compact-show'),
+      ]);
+      expect(lifted.bottom, name).toBeLessThanOrEqual(shown.top);
+      expect(problems, name).toEqual([]);
+      await close();
     }
   });
 });
