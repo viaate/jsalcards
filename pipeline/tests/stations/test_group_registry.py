@@ -83,6 +83,9 @@ archive's listings and read live on 2026-09-28."""
 SCRIPPS_TYPED = {"KSTU"}
 """A Brightspot closings page typed by hand, archived with typed rows on storm days
 (filed under ``scripps-typed``)."""
+RETIRED_NOTE = re.compile(r"Retired \d{4}-\d{2}-\d{2} \(piece [A-Z0-9-]+\): ")
+"""A source read live until its list went away says so, dated: its captures were read as an
+active station's, under the archive addresses it keeps, not by the no-endpoint archive check."""
 ON_GRAY = {"tegna-kmsb": "gray-kold", "scripps-kktv": "gray-kktv", "scripps-kkco": "gray-kkco"}
 ON_GRAY |= {"scripps-kjct": "gray-kjct", "scripps-kmvt": "gray-kmvt"}
 
@@ -99,8 +102,8 @@ def test_every_site_is_registered_with_the_right_status() -> None:
         | dict.fromkeys(NEXSTAR_NONE, none),
         "nexstar-typed": dict.fromkeys(NEXSTAR_TYPED, active),
         "tegna": dict.fromkeys(TEGNA_MODULE | {"KGW"}, active) | dict.fromkeys(TEGNA_NONE, none),
-        "scripps": dict.fromkeys(SCRIPPS_MODULE | {"WTVQ"} | SCRIPPS_ELSEWHERE, active)
-        | dict.fromkeys(SCRIPPS_NONE, none),
+        "scripps": dict.fromkeys(SCRIPPS_MODULE | SCRIPPS_ELSEWHERE, active)
+        | dict.fromkeys(SCRIPPS_NONE | {"WTVQ"}, none),
         "scripps-typed": dict.fromkeys(SCRIPPS_TYPED, active) | dict.fromkeys(MTN_NONE, none),
     }
     for platform, members in expected.items():
@@ -178,11 +181,26 @@ def test_frames_and_their_files() -> None:
         ),
         ("nexstar-kolr", "https://www.schoolclosingsnet.com/report.php?type=html&code=c81e720002"),
         ("tegna-kgw", "https://content.kgw.com/station/flashalert/allclosures.html"),
-        ("scripps-wtvq", "https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html"),
     ):
         station = stations[station_id]
         assert station.data_url == file
         assert [item.url for item in station.list_files] == [file]
+
+
+def test_wtvq_is_retired_with_its_archive_kept() -> None:
+    """wtvq.com answers every address with a redirect to LEX18 (WLEX, its own source) since
+    November 2026, so WTVQ has no list to read; its earlier captures are still read."""
+    stations = REGISTRY.stations
+    wtvq = stations["scripps-wtvq"]
+    snowatch = "https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html"
+    assert wtvq.status is StationStatus.NO_ENDPOINT
+    assert (wtvq.page_url, wtvq.data_url, wtvq.page_check) == (None, None, None)
+    assert "Retired 2026-11-12 (piece GRAY-STALE-RELOCATE): " in wtvq.evidence
+    assert "re-check wtvq.com by 2026-12-01 (queue: " in wtvq.evidence
+    assert "scripps-wlex" in wtvq.evidence
+    assert stations["scripps-wlex"].status is StationStatus.ACTIVE
+    assert [item.url for item in wtvq.list_files] == [snowatch]
+    assert {"https://www.wtvq.com/closings/", snowatch} <= set(wtvq.archive_urls)
 
 
 @pytest.mark.parametrize(("station_id", "gray_id"), sorted(ON_GRAY.items()))
@@ -373,6 +391,8 @@ def test_every_scripps_and_tegna_site_without_an_endpoint_was_checked_in_the_arc
             continue
         if station.status is StationStatus.NO_ENDPOINT or station.id in per_site:
             assert "Archive check:" in station.evidence, station.id
+            if RETIRED_NOTE.search(station.evidence) and station.archive_urls:
+                continue  # read while active: its own archive addresses, kept
             if station.id in ON_GRAY and station.id not in per_site:
                 # A Gray site: its captures are read for the Gray entry, named here.
                 assert ON_GRAY[station.id] in station.evidence.split("Archive check:")[1]

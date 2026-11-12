@@ -106,10 +106,9 @@ def test_registered_stations_read_through_their_adapters(tmp_path: Path) -> None
         "tegna-wtic": (HealthStatus.OK, 1, "tegna-closings-module"),
         "tegna-kgw": (HealthStatus.EMPTY, 0, "gray-file-flashalert"),
         "scripps-wtkr": (HealthStatus.OK, 4, "scripps-closings-module"),
-        "scripps-wtvq": (HealthStatus.EMPTY, 0, "gray-file-grid"),
+        # Retired 2026-11-12: wtvq.com redirects every address to LEX18 (scripps-wlex).
+        "scripps-wtvq": (HealthStatus.SKIPPED, 0, None),
     }
-    # WTVQ's file was last written in March 2026, within the last winter: not stale.
-    assert health["scripps-wtvq"].last_modified == datetime(2026, 3, 20, 12, 33, 8, tzinfo=UTC)
     assert all(verdict.allowed for h in health.values() for verdict in h.robots)
     rows = [(row.source_id, row.raw_name) for row in result.rows]
     assert ("nexstar-wtnh", "Glanbia Nutritionals") in rows

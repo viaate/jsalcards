@@ -1363,32 +1363,35 @@ stations:
       '21073', '21079', '21097', '21109', '21113', '21119', '21121', '21125', '21129', '21137', '21151',
       '21165', '21167', '21173', '21175', '21181', '21189', '21193', '21197', '21199', '21203', '21205',
       '21207', '21209', '21231', '21235', '21237', '21239']
-  page_url: https://www.wtvq.com/closings/
-  data_url: https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html
+  page_url: null
+  data_url: null
   export_url: null
   archive_urls:
   - https://www.wtvq.com/closings/
   - https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html
   poll_minutes: null
-  status: active
+  status: no_endpoint
   evidence: 'First-hand check 2026-09-26T17:43:49Z (docs/research/firsthand/nexstar-tegna-scripps.json,
     record WTVQ): site https://www.wtvq.com. Closings page https://www.wtvq.com/closings/ (WordPress,
     not Brightspot) frames the static file https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html,
     which the poller reads (gray_files'' gray-file-grid format: ''Closings Last Updated at 8:27am on 3/20/2026
     No Closings have been reported at this time'' on 2026-09-26, Last-Modified 2026-03-20). Market: ''Lexington''
-    (first-hand record) is the crosswalk''s ''Lexington, KY DMA''.'
+    (first-hand record) is the crosswalk''s ''Lexington, KY DMA''. Retired 2026-11-12 (piece GRAY-STALE-RELOCATE):
+    read with the pipeline''s own client at 2026-11-12T00:10:35Z, every wtvq.com address answers 302 to
+    lex18.com (the site root to https://www.lex18.com; /closings/ and the SnoWatch file to a malformed
+    address with no slash between host and path), and the live read of 2026-11-12T00:16:26Z through the
+    reader failed after 4 attempts; the s4 read of 2026-10-13 still read the station''s own file. LEX18
+    is WLEX, a different station, read as scripps-wlex; WTVQ has no list of its own to read, so this source
+    has no endpoint. Its archive addresses stay, so its earlier captures are still read. Archive check:
+    its captures were read while it was active (the SnoWatch file held 23 rows on 2025-01-21 and 27 on
+    2026-02-06), under the archive addresses it keeps. The redirect is a 302, a temporary one, to a malformed
+    address, so the move may not be final: re-check wtvq.com by 2026-12-01 (queue: docs/research/firsthand/gaps.md,
+    ''Retired lists to re-check''), and if its own SnoWatch file answers again, return the source to active.'
   list_files:
   - url: https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html
     loaded_by: frame
     seen: the page https://www.wtvq.com/closings/ frames it (page HTML read 2026-09-26)
-  page_check:
-    checked_at: '2026-09-26T22:48:13Z'
-    page: https://www.wtvq.com/closings/
-    loads:
-    - https://www.wtvq.com/content/uploads/weather-images/SnoWatch.html
-    shows: Closings Last Updated at 8:27am on 3/20/2026 No Closings have been reported at this time
-    method: 'the page''s HTML read with the pipeline''s User-Agent: its SnoWatch iframe (not opened in
-      a browser)'
+  page_check: null
   robots:
   - url: https://www.wtvq.com/closings/
     checked_at: '2026-09-26T23:05:47Z'

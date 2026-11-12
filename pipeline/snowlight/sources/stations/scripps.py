@@ -63,7 +63,9 @@ Variants this adapter reads (the ``variant`` of each listing):
 
 ``scripps-frame``
     A closings page with no closings module that frames a list file (WTVQ's
-    WordPress page frames ``/content/uploads/weather-images/SnoWatch.html``): a
+    WordPress page framed ``/content/uploads/weather-images/SnoWatch.html`` until
+    wtvq.com began redirecting to LEX18; ``scripps-wtvq`` is retired since 2026-11-12,
+    see its registry evidence, and only its archived captures are read this way): a
     :attr:`~snowlight.sources.stations.model.ListingState.DEFERRED` listing whose
     ``follows`` names the framed file. Only frames of files whose name says they
     are closings files are followed (``SnoWatch``, ``closings``); other frames
