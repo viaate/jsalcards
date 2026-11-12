@@ -18,7 +18,7 @@ import { minifySync, type Plugin } from 'vite';
  * can still say VITE_GET_REDIRECT=on or off, as every e2e build of the map does (off), so the
  * flip changes no test.
  */
-export const GET_REDIRECT: Switch = 'off';
+export const GET_REDIRECT: Switch = 'on';
 
 export type Switch = 'on' | 'off';
 

@@ -55,7 +55,8 @@ The one test of who is sent is `WHO` in `web/tools/get-redirect.ts`: the whole
 user agent of Safari on iPhone. Widen it there to send other phones too.
 
 **The switch** is `GET_REDIRECT` in `web/tools/get-redirect.ts`: `'on'` sends,
-`'off'` sends no one. It lands off. A build can override it with
+`'off'` sends no one. It landed off and was turned on on November 12, 2026, once
+`https://getsnowlight.com` reached `https://www.getsnowlight.com`. A build can override it with
 `VITE_GET_REDIRECT=on` or `off`; every e2e build of the map says `off`
 (`web/playwright.config.ts`), and the redirect's own e2e tests switch it on in
 the page they serve, so turning it on changes no test.
