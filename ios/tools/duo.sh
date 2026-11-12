@@ -19,7 +19,15 @@
 # also refused a landscape geometry (2853x2007@3: "No mode found"). The fold is not in
 # simctl; it may be in Simulator.app. The third run (iOS app run 43142363913) found no fold,
 # hinge or posture word in CoreSimulator or simctl, and no Simulator.app where it looked;
-# the Mac's own screen can be pictured (1024 x 768).
+# the Mac's own screen can be pictured (1024 x 768). The fourth run (iOS app run
+# 43147864852) found that the xcode-27 image has no Simulator.app at all (its Xcode's
+# Developer/Applications is empty and no app has its bundle id); SimulatorKit is in the
+# Xcode's SharedFrameworks and names no fold either. So the stages below that need
+# Simulator.app say so and are skipped when it is missing.
+#
+# This run boots the Duo on the runtime built for it (iOS 27.2, iPhone19-4) first, since
+# 27.1 has been measured three times, and looks for a fold, a hinge or a posture in that
+# runtime's own files (the system's side of a fold).
 #
 # So this script, for whoever reads the log:
 #   1. prints the words about a fold, a hinge or a posture that Simulator.app, SimulatorKit,
@@ -128,11 +136,12 @@ if [ -n "$DUO_BUNDLE" ]; then
   ls "$DUO_BUNDLE/Contents/Resources" 2>/dev/null | head -30
 fi
 
-# The runtimes that list the Duo: 27.1 first, then the others, newest first.
+# The runtimes that list the Duo: the one built for it (its identifier names iPhone19-4)
+# first, then 27.1, then the others, newest first.
 RUNTIMES=$(xcrun simctl list runtimes -j | jq -r --arg d "$DEVTYPE" '[.runtimes[]
   | select(.isAvailable and ((.name // "") | startswith("iOS 27."))
       and (((.supportedDeviceTypes // []) | map(.identifier) | index($d)) != null))]
-  | sort_by((if .version == "27.1" then 1 else 0 end), (.version | split(".") | map(tonumber)))
+  | sort_by((if (.identifier | test("iPhone19-4")) then 2 elif .version == "27.1" then 1 else 0 end), (.version | split(".") | map(tonumber)))
   | reverse | .[] | "\(.identifier)"')
 echo "runtimes that make an '$DUO', in the order tried: $(echo $RUNTIMES)"
 RUNTIME=""
@@ -157,6 +166,23 @@ if ! limit 280 xcrun simctl boot "$UDID" || ! limit 280 xcrun simctl bootstatus 
   exit 0
 fi
 say "the Duo is up"
+ROOT=$(xcrun simctl list runtimes -j | jq -r --arg r "$RUNTIME" '[.runtimes[] | select(.identifier == $r) | .runtimeRoot] | first // empty')
+echo "=== The words about a fold in the runtime's own files ($ROOT)"
+if [ -n "$ROOT" ] && [ -d "$ROOT" ]; then
+  echo "--- files whose names say fold, hinge or posture"
+  limit 40 find "$ROOT/System/Library" "$ROOT/usr/libexec" -maxdepth 4 \( -iname '*fold*' -o -iname '*hinge*' -o -iname '*posture*' \) 2>/dev/null \
+    | grep -v -i -E 'folder|scaffold|manifold' | sed "s|$ROOT||" | head -40
+  echo "--- the runtime's frameworks named for the simulator"
+  ls "$ROOT/System/Library/PrivateFrameworks" 2>/dev/null | grep -i simulator | head -20
+  for f in "$ROOT"/System/Library/PrivateFrameworks/*Simulator*.framework; do
+    [ -d "$f" ] || continue
+    words "$(basename "$f")" "$f/$(basename "$f" .framework)" 30
+  done
+  words "backboardd" "$ROOT/usr/libexec/backboardd" 30
+  words "SpringBoard" "$ROOT/System/Library/CoreServices/SpringBoard.app/SpringBoard" 30
+else
+  echo "(no runtime root)"
+fi
 xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 \
   --wifiBars 3 --cellularBars 4 || echo "the status bar override was refused"
 if wait "$GRID_BUILD"; then
@@ -272,54 +298,59 @@ launch light duo-closed-light-myschool myschool || exit 0
 both duo-closed-light-myschool
 lines duo-closed-light-myschool
 
+PHASE=closed
+MENUS=""
 echo "=== Simulator.app on the Duo"
-room 120 "Simulator.app" || exit 0
-if [ -n "$SIMAPP" ]; then OPEN_APP=(-a "$SIMAPP"); else OPEN_APP=(-b com.apple.iphonesimulator); fi
-if limit 60 open "${OPEN_APP[@]}" --args -CurrentDeviceUDID "$UDID" >"$LOGS/duo-open.txt" 2>&1; then
-  say "Simulator.app asked to show the Duo"
-else
-  say "Simulator.app did not open: $(tr '\n' ' ' < "$LOGS/duo-open.txt" | cut -c1-300)"
-fi
-sleep 15
-mac duo-mac-closed
-both duo-simapp-closed-light-myschool
-lines duo-closed-light-myschool
-echo "--- Simulator.app's menus"
-MENUS=$(menus)
-echo "$MENUS" | head -150 | cut -c1-200
-echo "--- the menu items about a fold, a hinge, a posture or a rotation"
-echo "$MENUS" | grep -i -E "$FOLD_WORDS|open|close|rotate|orientation" | grep -v -i -E 'folder|window|open recent|close all' | head -30
+if [ -z "$SIMAPP" ]; then
+  say "this image has no Simulator.app: the stages that need it are skipped"
+elif room 120 "Simulator.app"; then
+  if limit 60 open -a "$SIMAPP" --args -CurrentDeviceUDID "$UDID" >"$LOGS/duo-open.txt" 2>&1; then
+    say "Simulator.app asked to show the Duo"
+  else
+    say "Simulator.app did not open: $(tr '\n' ' ' < "$LOGS/duo-open.txt" | cut -c1-300)"
+  fi
+  sleep 15
+  mac duo-mac-closed
+  both duo-simapp-closed-light-myschool
+  lines duo-closed-light-myschool
+  echo "--- Simulator.app's menus"
+  MENUS=$(menus)
+  echo "$MENUS" | head -150 | cut -c1-200
+  echo "--- the menu items about a fold, a hinge, a posture or a rotation"
+  echo "$MENUS" | grep -i -E "$FOLD_WORDS|open|close|rotate|orientation" | grep -v -i -E 'folder|window|open recent|close all' | head -30
 
-# The item that opens the phone, by the words Simulator.app gives it: "Unfold" first, then
-# an "Open" or "Flat" item under a fold/hinge/posture menu, then any other fold item.
-OPENER=$(echo "$MENUS" | grep -i -E $'\t[^\t]*unfold[^\t]*$' | head -1)
-[ -n "$OPENER" ] || OPENER=$(echo "$MENUS" | grep -i -E 'fold|hinge|posture' | grep -i -E $'\t(open|flat|fully open|opened)$' | head -1)
-[ -n "$OPENER" ] || OPENER=$(echo "$MENUS" | grep -i -E $'\t[^\t]*fold[^\t]*$' | head -1)
-if [ -z "$OPENER" ]; then
-  echo "::warning::Simulator.app shows no menu item that opens the phone (or its menus could not be read)."
-else
-  echo "=== Open: Simulator.app's '$(echo "$OPENER" | tr '\t' '>')'"
-  IFS=$'\t' read -r M1 M2 M3 <<<"$OPENER"
-  if room 60 "the opening" && click "$M1" "$M2" "${M3:-}"; then
-    sleep 8
-    mac duo-mac-open
-    both duo-open-light-myschool
-    echo "--- the app's lines since it started, after the opening"
-    lines duo-closed-light-myschool
+  # The item that opens the phone, by the words Simulator.app gives it: "Unfold" first, then
+  # an "Open" or "Flat" item under a fold/hinge/posture menu, then any other fold item.
+  OPENER=$(echo "$MENUS" | grep -i -E $'\t[^\t]*unfold[^\t]*$' | head -1)
+  [ -n "$OPENER" ] || OPENER=$(echo "$MENUS" | grep -i -E 'fold|hinge|posture' | grep -i -E $'\t(open|flat|fully open|opened)$' | head -1)
+  [ -n "$OPENER" ] || OPENER=$(echo "$MENUS" | grep -i -E $'\t[^\t]*fold[^\t]*$' | head -1)
+  if [ -z "$OPENER" ]; then
+    echo "Simulator.app shows no menu item that opens the phone (or its menus could not be read)."
+  else
+    echo "=== Open: Simulator.app's '$(echo "$OPENER" | tr '\t' '>')'"
+    IFS=$'\t' read -r M1 M2 M3 <<<"$OPENER"
+    if room 60 "the opening" && click "$M1" "$M2" "${M3:-}"; then
+      PHASE=open
+      sleep 8
+      mac duo-mac-open
+      both duo-open-light-myschool
+      echo "--- the app's lines since it started, after the opening"
+      lines duo-closed-light-myschool
+    fi
   fi
 fi
 
-echo "=== Open: the app started again, on Settings, dark"
-if room 100 "the launch on the open phone"; then
-  launch dark duo-open-dark-settings settings && {
-    both duo-open-dark-settings
-    lines duo-open-dark-settings
+echo "=== The app started again, on Settings, dark, the phone $PHASE"
+if room 100 "the launch on Settings"; then
+  launch dark "duo-$PHASE-dark-settings" settings && {
+    both "duo-$PHASE-dark-settings"
+    lines "duo-$PHASE-dark-settings"
   }
 fi
 
 echo "=== Open, on its side: Simulator.app's rotate item"
 ROTATE=$(echo "$MENUS" | grep -i -E $'\trotate (left|right)$' | head -1)
-if [ -n "$ROTATE" ] && room 60 "the rotation"; then
+if [ "$PHASE" = open ] && [ -n "$ROTATE" ] && room 60 "the rotation"; then
   IFS=$'\t' read -r M1 M2 M3 <<<"$ROTATE"
   if click "$M1" "$M2" "${M3:-}"; then
     sleep 6
@@ -328,9 +359,9 @@ if [ -n "$ROTATE" ] && room 60 "the rotation"; then
     lines duo-open-dark-settings
   fi
 else
-  say "no rotate item, or no time for it"
+  say "no rotation: the phone did not open, or Simulator.app has no rotate item, or no time"
 fi
-limit 20 osascript -e 'tell application "Simulator" to quit' >/dev/null 2>&1 || true
+[ -z "$SIMAPP" ] || limit 20 osascript -e 'tell application "Simulator" to quit' >/dev/null 2>&1 || true
 ls -l "$OUT/duo" || true
 say "the Duo measured"
 exit 0
