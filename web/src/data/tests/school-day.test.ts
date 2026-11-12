@@ -207,6 +207,35 @@ describe('a school’s status', () => {
     ).toMatchObject({ status: 0, shiftMinutes: null, clockMinute: null, manual: false });
   });
 
+  it('reads its rows for the days after tomorrow, earliest first, and none where it has none', () => {
+    const later = testClosings(GENERATED, META, [
+      testDay('2026-01-15', [[0, 2]]),
+      testDay('2026-01-12', [[0, 0]]),
+      testDay('2026-01-14', [
+        [0, 0],
+        [2, 1],
+      ]),
+    ]);
+    const status = schoolStatus({
+      school: 0,
+      directory: STAMP,
+      closings: later,
+      covered: null,
+      now: NOON,
+    });
+    // Closed today, and the days after tomorrow: Wednesday closed, Thursday remote.
+    expect(status.today).toMatchObject({ status: 0 });
+    expect(status.tomorrow).toBeNull();
+    expect(status.later?.map(({ day, row }) => [day, row.status])).toEqual([
+      ['2026-01-14', 0],
+      ['2026-01-15', 2],
+    ]);
+    // A school with no row after tomorrow has no later days at all.
+    expect(
+      schoolStatus({ school: 1, directory: STAMP, closings: later, covered: null, now: NOON }),
+    ).not.toHaveProperty('later');
+  });
+
   it("reads a row's plain details, and none from a file without the column or a bad one", () => {
     const day = delayedDay('2026-01-13');
     const today = testDay('2026-01-12', [[0, 0]]);

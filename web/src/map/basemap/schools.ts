@@ -54,11 +54,15 @@ import {
   SCHOOL_DUST_UNTIL,
   dotAt,
 } from './dots';
+import { MAX_ZOOM } from './bounds';
 import { MAP_FONTS } from './fonts';
 import {
   BASEMAP_IDS,
   SCHOOLS_TILE_LAYER,
   SCHOOL_COVERED_STATE,
+  SCHOOL_LATER_STATE,
+  SCHOOL_LATER_STEP,
+  SCHOOL_LATER_WHOLE,
   SCHOOL_LIT_STATE,
   SCHOOL_TILES_PROTOCOL,
 } from './ids';
@@ -186,25 +190,92 @@ const LIT: ExpressionSpecification = [
   ['boolean', ['feature-state', SCHOOL_LIT_STATE], false],
   COVERED,
 ];
+/**
+ * The zooms a later-day ring can be whole at (map/later-rings.ts): the whole
+ * zooms from SCHOOL_LATER_WHOLE to the map's closest. A ring near today's
+ * light is whole at the first of them a zoom past the last where it would
+ * touch the light's glow, and its school's own mark gives way to it there, not
+ * before. Whole zooms, as the map draws them: a paint value that reads both the
+ * zoom and the school (its feature state, or a ring's `clear`) is drawn as it
+ * is at the tile's whole zoom and the next, blended between them, so each mark
+ * gives way over the zoom before its ring is whole, as the ring comes in.
+ */
+export const SCHOOL_LATER_ZOOMS: readonly number[] = Array.from(
+  { length: Math.round((MAX_ZOOM - SCHOOL_LATER_WHOLE) / SCHOOL_LATER_STEP) + 1 },
+  (_, i) => SCHOOL_LATER_WHOLE + i * SCHOOL_LATER_STEP,
+);
 
-/** An opacity by zoom, as [zoom, opacity] stops, and none where `when` holds. */
+/**
+ * The same, or at `zoom` the school's later-day ring is drawn whole
+ * (map/later-rings.ts sets SCHOOL_LATER_STATE to the zoom it is from): the
+ * ring is its mark.
+ */
+/** SCHOOL_LATER_STATE's stand-in for a school with no ring: past any zoom. */
+const NO_LATER_ZOOM = 99;
+function litOrRinged(zoom: number): ExpressionSpecification {
+  return [
+    ...LIT,
+    ['<=', ['number', ['feature-state', SCHOOL_LATER_STATE], NO_LATER_ZOOM], zoom],
+  ] as unknown as ExpressionSpecification;
+}
+
+/** An opacity by zoom, as [zoom, opacity] stops, and none where `when` holds at that stop's zoom. */
 function unless(
-  when: ExpressionSpecification,
+  when: (zoom: number) => ExpressionSpecification,
   ...stops: readonly (readonly [zoom: number, opacity: number])[]
 ): ExpressionSpecification {
   return [
     'interpolate',
     ['linear'],
     ['zoom'],
-    ...stops.flatMap(([zoom, opacity]) => [zoom, ['case', when, 0, opacity]]),
+    ...stops.flatMap(([zoom, opacity]) => [zoom, ['case', when(zoom), 0, opacity]]),
   ] as unknown as ExpressionSpecification;
 }
 
-/** An opacity by zoom, and none for a school the glow lights or one at its place. */
+/**
+ * The whole zooms a ringed school's own mark gives way to its later-day ring
+ * over (map/later-rings.ts), from and whole, as the map blends them (see
+ * SCHOOL_LATER_ZOOMS): its dot from the first whole zoom every ring is drawn
+ * at (the names come in), since further out a ring gives way to any label
+ * over it and the dot keeps the school on the map there, under the ring's
+ * ground where the ring is drawn (wider than the dot and its edge to zoom 15);
+ * the light around its dot over the zoom the rings come in at, so a ring has
+ * no light of its own.
+ */
+export const RINGED_DOT: readonly [from: number, whole: number] = [
+  Math.ceil(SCHOOL_NAMES_FROM - SCHOOL_FADE),
+  Math.ceil(SCHOOL_NAMES_FROM - SCHOOL_FADE) + 1,
+];
+export const RINGED_LIGHT: readonly [from: number, whole: number] = [
+  SCHOOL_LATER_WHOLE - 1,
+  SCHOOL_LATER_WHOLE,
+];
+
+/**
+ * An opacity by zoom, and none for a school the glow lights or one at its
+ * place; nor, from the zoom `ringed` names whole, for a school with a
+ * later-day ring, fading out from the zoom it names first: further out its
+ * mark shows as any school's.
+ */
 function unlessLit(
+  ringed: readonly [from: number, whole: number],
   ...stops: readonly (readonly [zoom: number, opacity: number])[]
 ): ExpressionSpecification {
-  return unless(LIT, ...stops);
+  const [from, whole] = ringed;
+  // Every whole zoom, the only zooms the map reads this at, so a mark gives way only over the
+  // zoom before its ring is whole (and from `whole`), never while its ring is not drawn.
+  const first = stops[0]?.[0] ?? 0;
+  const wholes = Array.from(
+    { length: Math.max(0, Math.floor(MAX_ZOOM) - Math.ceil(first) + 1) },
+    (_, i) => Math.ceil(first) + i,
+  );
+  const zooms = [...new Set([...stops.map(([z]) => z), from, whole, ...wholes])]
+    .filter((z) => z >= (stops[0]?.[0] ?? 0))
+    .sort((a, b) => a - b);
+  return unless(
+    (zoom) => (zoom < whole ? LIT : litOrRinged(zoom)),
+    ...zooms.map((z) => [z, dotAt(stops, z)] as const),
+  );
 }
 
 /**
@@ -252,7 +323,7 @@ export function schoolDustRadius(zoom: number): number {
  * from it where the tiles hold nothing.
  */
 export function schoolDotLayer(colors: SchoolColors): CircleLayerSpecification {
-  const opacity = unlessLit(...DOT_OPACITY);
+  const opacity = unlessLit(RINGED_DOT, ...DOT_OPACITY);
   return {
     id: BASEMAP_IDS.schoolDots,
     type: 'circle',
@@ -290,6 +361,7 @@ export function schoolLightLayer(colors: SchoolColors): CircleLayerSpecification
       'circle-radius': byZoom(...LIGHT_RADIUS.flat()),
       'circle-color': colors.name,
       'circle-opacity': unlessLit(
+        RINGED_LIGHT,
         [from, 0],
         [SCHOOL_LIGHT_FROM, SCHOOL_LIGHT_OPACITY],
         [SCHOOL_LIGHT_UNTIL, SCHOOL_LIGHT_OPACITY],
@@ -474,7 +546,7 @@ export function schoolNameLayer(colors: SchoolColors): SymbolLayerSpecification 
     },
     paint: {
       'text-color': colors.name,
-      'text-opacity': unless(COVERED, ...NAME_OPACITY),
+      'text-opacity': unless(() => COVERED, ...NAME_OPACITY),
       'text-halo-color': colors.ground,
       'text-halo-width': 1.5,
       'text-halo-blur': 0.5,

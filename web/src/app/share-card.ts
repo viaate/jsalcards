@@ -89,7 +89,8 @@ function cardLine(line: StatusLine): CardLine {
   return {
     tone: line.tone,
     headline: line.headline,
-    day: day === null ? null : shareFormat.cardDay(day),
+    // A later day's headline names its own date ("Closed Fri, Nov 13"): not again under it.
+    day: day === null || line.dated === true ? null : shareFormat.cardDay(day),
     detail: line.detail,
     reason: line.reason ?? null,
     said: line.said,

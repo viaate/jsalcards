@@ -227,6 +227,21 @@ describe('a share card, from the panel’s view', () => {
     expect(offered).toBeGreaterThan(100);
   });
 
+  it('names a later day’s date once, in its line, and the cards’ other days as before', () => {
+    const status = {
+      ...CLOSED_TWO_DAYS,
+      later: [
+        { day: '2026-01-15', row: CLOSED_TWO_DAYS.today as NonNullable<typeof CLOSED.tomorrow> },
+      ],
+    };
+    const model = card(viewOf({ status }));
+    expect(model.lines.map((line) => [line.headline, line.day])).toEqual([
+      ['Closed today', 'Monday, Jan 12'],
+      ['Closed tomorrow', 'Tuesday, Jan 13'],
+      ['Closed Thu, Jan 15', null],
+    ]);
+  });
+
   it('has no card while the panel loads, or for a past day', () => {
     const loading: SchoolView = { ...viewOf({ status: CLOSED }), loading: true };
     expect(

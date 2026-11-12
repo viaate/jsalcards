@@ -130,6 +130,16 @@
     }
   }
 
+  /*
+    The later days' line (ui/LaterKey.svelte) takes the line's place over the
+    key: the day line steps up over it, a line and its gap. While the credits
+    are open, or a panel, the later days' line steps aside (and the day line
+    is lifted clear of the credits as above).
+  */
+  :global(.stage:has(.later-key):not(:has(.maplibregl-compact-show, .detail))) .map-day {
+    transform: translateY(-22px);
+  }
+
   @keyframes appear {
     from {
       opacity: 0;

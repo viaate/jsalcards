@@ -379,8 +379,16 @@ export function coveredBy(index: SamePlaces, lit: Int32Array): Int32Array {
  * edge, as the build pairs them. The same schools as coveredBy gives with the index (in another
  * order), in a fraction of the build's time: the worker answers a page's first light with them
  * before it builds the index for the lights after it (same-places-worker.ts).
+ *
+ * With `among`, only those schools are checked, not the whole directory: the
+ * later-day rings ask which of theirs a light covers (data/later-days.ts), so
+ * no ring shows through a light the glow covers its school with.
  */
-export function coveredNow(places: Int32Array, lit: Int32Array): Int32Array {
+export function coveredNow(
+  places: Int32Array,
+  lit: Int32Array,
+  among?: ArrayLike<number>,
+): Int32Array {
   const count = places.length >> 1;
   let bits = 4;
   while (1 << bits < lit.length * 2) bits++;
@@ -445,7 +453,10 @@ export function coveredNow(places: Int32Array, lit: Int32Array): Int32Array {
     }
     return false;
   };
-  for (let j = 0; j < count; j++) {
+  const checked = among === undefined ? count : among.length;
+  for (let n = 0; n < checked; n++) {
+    const j = among === undefined ? n : (among[n] ?? -1);
+    if (j < 0 || j >= count) continue;
     const x = places[j * 2] ?? 0;
     const y = places[j * 2 + 1] ?? 0;
     const cx = x >> LON_SHIFT;

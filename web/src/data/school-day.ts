@@ -127,6 +127,17 @@ export interface SchoolStatus {
   readonly today: StatusRow | 'open' | null;
   /** Tomorrow's row, once announced; null otherwise (never "open": no day is checked ahead). */
   readonly tomorrow: StatusRow | null;
+  /**
+   * The rows announced for the days after tomorrow, earliest first (the
+   * map's later-day rings, map/later-rings.ts); absent or empty for none.
+   */
+  readonly later?: readonly LaterRow[];
+}
+
+/** A row announced for a day after tomorrow, and its day. */
+export interface LaterRow {
+  readonly day: LocalDate;
+  readonly row: StatusRow;
 }
 
 export const NO_STATUS: SchoolStatus = Object.freeze({ today: null, tomorrow: null });
@@ -235,8 +246,18 @@ export function schoolStatus(input: StatusInput): SchoolStatus {
     return NO_STATUS;
   }
   const todayRow = rowOn(closings, today, school);
-  const tomorrow = rowOn(closings, nextDay(today), school);
-  if (todayRow !== null) return { today: todayRow, tomorrow };
+  const tomorrowDay = nextDay(today);
+  const tomorrow = rowOn(closings, tomorrowDay, school);
+  const later: LaterRow[] = [];
+  for (const group of closings.days) {
+    if (group.day <= tomorrowDay) continue;
+    const row = rowOn(closings, group.day, school);
+    if (row !== null) later.push({ day: group.day, row });
+  }
+  later.sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
+  // Only where there is one, so a school with none reads as it always has.
+  const after = later.length > 0 ? { later } : {};
+  if (todayRow !== null) return { today: todayRow, tomorrow, ...after };
   const checked = covered === null ? null : parseInstant(covered.generated_at);
   const open =
     covered !== null &&
@@ -246,7 +267,7 @@ export function schoolStatus(input: StatusInput): SchoolStatus {
     schoolToday(checked, zone) === today &&
     checked.getTime() <= now.getTime() &&
     covers(covered, school);
-  return { today: open ? 'open' : null, tomorrow };
+  return { today: open ? 'open' : null, tomorrow, ...after };
 }
 
 /** One day's outlook for a school's district. */

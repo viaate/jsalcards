@@ -57,7 +57,7 @@ import {
   toldZones,
   turnTimer,
 } from '../data/live';
-import { nextTurnOf, schoolZone, unreadZoneOf, zoneOf } from '../data/map-day';
+import { mapDay, nextTurnOf, schoolZone, unreadZoneOf, zoneOf } from '../data/map-day';
 import type { ToldZones } from '../data/map-day';
 import {
   NO_STATUS,
@@ -115,6 +115,13 @@ export interface StatusLineView {
   readonly day?: LocalDate | null;
   /** The reason in the note ("Winter storm"), or null: the share cards show it alone. */
   readonly reason?: string | null;
+  /**
+   * Whether the line is for a day after the one the map shows for the school (its later-day
+   * ring's day, map/later-rings.ts): its glyph is the ring's, not the light's.
+   */
+  readonly later?: boolean;
+  /** Whether the headline names its own date ("Closed Fri, Nov 13"): the share cards add none. */
+  readonly dated?: boolean;
 }
 
 /** A school near this one, as the panel lists it. */
@@ -347,6 +354,7 @@ function statusLines(
   timeZone: string,
   said: NearbySaid = NOTHING_SAID,
   today: LocalDate | null = null,
+  shown: LocalDate | null = null,
 ): StatusLineView[] {
   const lines: StatusLineView[] = [];
   if (status.today === 'open') {
@@ -364,7 +372,19 @@ function statusLines(
   }
   if (status.tomorrow !== null) {
     const next = today === null ? null : nextDay(today);
-    lines.push(statusLine(status.tomorrow, 'tomorrow', now, timeZone, said.tomorrow, next));
+    const line = statusLine(status.tomorrow, 'tomorrow', now, timeZone, said.tomorrow, next);
+    // Before the map turns to tomorrow (3:30 PM), tomorrow is a later day on it: a ring.
+    lines.push(next !== null && shown !== null && next > shown ? { ...line, later: true } : line);
+  }
+  // Each day after tomorrow, dated in the site's words ("Closed Fri, Nov 13"), with its ring.
+  for (const { day, row } of status.later ?? []) {
+    const line = statusLine(row, 'tomorrow', now, timeZone, null, day);
+    lines.push({
+      ...line,
+      headline: format.statusDated(statusKey(row.status), day),
+      later: true,
+      dated: true,
+    });
   }
   return lines;
 }
@@ -646,6 +666,15 @@ function seasonLine(file: SeasonFile | null, record: SchoolRecord, now: Date): s
   }
 }
 
+/** The day the map shows for a school by its clock (map-day.ts mapDay), or null for none. */
+function shownDay(now: Date, zone: string | null): LocalDate | null {
+  try {
+    return mapDay(now, zone);
+  } catch {
+    return null;
+  }
+}
+
 /** The clock a view reads the school's today by: the one its status was read by. */
 function viewZone(input: ViewInput): string | null {
   return input.zone === undefined ? (input.outlook?.timeZone ?? null) : input.zone;
@@ -690,6 +719,7 @@ export function schoolView(input: ViewInput): SchoolView | null {
             timeZone,
             nearbySaid(input, record.district?.index ?? null),
             today,
+            shownDay(now, zone),
           )
         : replayLines(id, replay);
   } catch {

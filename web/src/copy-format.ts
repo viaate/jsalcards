@@ -24,7 +24,8 @@ const SCHOOL_YEAR = /^(\d{4})-(\d{4})$/;
 let speedFormat: Intl.NumberFormat | undefined;
 const dateTimeFormats = new Map<string, Intl.DateTimeFormat>();
 
-type DateStyle = 'clock' | 'day' | 'monthDay' | 'dayYear' | 'dayFull' | 'ymd' | 'weekday';
+type DateStyle =
+  'clock' | 'day' | 'monthDay' | 'dayYear' | 'dayFull' | 'ymd' | 'weekday' | 'weekdayShort';
 
 const DATE_STYLES: Readonly<Record<DateStyle, Intl.DateTimeFormatOptions>> = {
   clock: { hour: 'numeric', minute: '2-digit', hourCycle: 'h23' },
@@ -34,6 +35,7 @@ const DATE_STYLES: Readonly<Record<DateStyle, Intl.DateTimeFormatOptions>> = {
   dayFull: { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' },
   ymd: { year: 'numeric', month: '2-digit', day: '2-digit' },
   weekday: { weekday: 'long' },
+  weekdayShort: { weekday: 'short' },
 };
 
 /** One cached Intl formatter per style and time zone; an unknown zone throws RangeError. */
@@ -226,6 +228,14 @@ function statusOn(status: StatusKey, localDate: string, now: Date, timeZone: str
   if (offset === 0) return line.today;
   if (offset === 1) return line.tomorrow;
   return `${line.on} ${day(localDate)}`;
+}
+
+/**
+ * A school's status line for a later day, dated: "Closed Fri, Nov 13", "Delayed start Mon, Jan 12"
+ * (the later-day rings' days, beyond tomorrow).
+ */
+function statusDated(status: StatusKey, localDate: string): string {
+  return `${copy.statusLine[checkKey(copy.statusLine, status, 'status')].on} ${day(localDate)}`;
 }
 
 /**
@@ -552,6 +562,7 @@ export const format = /* @__PURE__ */ Object.freeze({
   offline,
   posted,
   statusOn,
+  statusDated,
   delay,
   dismissal,
   chance,

@@ -7,6 +7,7 @@ import type { DetailsSource, SchoolRecord } from '../../data/details';
 import { createDataFiles, withLiveRoot } from '../../data/files';
 import { LIVE_POLL_MS, LIVE_SIDE_POLL_MS, closingsReader, startLive } from '../../data/live';
 import { WAKE_CHECK_MS } from '../../state/wake';
+import { mapDay } from '../../data/map-day';
 import { NO_STATUS, schoolStatus } from '../../data/school-day';
 import type { DayOutlook, SchoolStatus, StatusRow } from '../../data/school-day';
 import { createDirectory, parsePoints } from '../../data/directory';
@@ -293,6 +294,8 @@ describe('schoolView', () => {
         said: null,
         day: '2026-01-13',
         reason: null,
+        // Before 3:30 PM the map shows today: tomorrow is a later day there, with its ring.
+        later: true,
       },
     ]);
     expect(schoolView(input({ status: { today: 'open', tomorrow: null } }))?.status).toEqual([
@@ -1228,6 +1231,96 @@ describe('the chance section in the panel', () => {
     });
     // Both days set by our team: no chance to give.
     expect(view({ today: manual, tomorrow: manual })?.chance).toBeNull();
+  });
+
+  it('shows each later day’s line dated, with the ring’s glyph, and today’s light as it is', () => {
+    const outlook = {
+      today: { state: 'no_threat' as const },
+      tomorrow: null,
+      timeZone: 'America/Chicago',
+    };
+    const closed: StatusRow = {
+      status: 0,
+      reason: 0,
+      announcedAt: null,
+      shiftMinutes: null,
+      clockMinute: null,
+      manual: false,
+      details: [],
+    };
+    const delayed: StatusRow = { ...closed, status: 1, shiftMinutes: 120 };
+    const status: SchoolStatus = {
+      today: closed,
+      tomorrow: closed,
+      later: [{ day: '2026-01-14', row: delayed }],
+    };
+    const lines = (now: Date) =>
+      (schoolView(input({ status, outlook, now }))?.status ?? []).map((line) => [
+        line.headline,
+        line.later === true,
+        line.day,
+      ]);
+    // 10 AM in Kansas City on Monday: the map shows Monday's light, Tuesday and Wednesday as rings.
+    expect(lines(new Date('2026-01-12T16:00:00Z'))).toEqual([
+      ['Closed today', false, '2026-01-12'],
+      ['Closed tomorrow', true, '2026-01-13'],
+      ['Delayed start Wed, Jan 14', true, '2026-01-14'],
+    ]);
+    // 4 PM: the map shows Tuesday's light; Wednesday is still a ring.
+    expect(lines(new Date('2026-01-12T22:00:00Z'))).toEqual([
+      ['Closed today', false, '2026-01-12'],
+      ['Closed tomorrow', false, '2026-01-13'],
+      ['Delayed start Wed, Jan 14', true, '2026-01-14'],
+    ]);
+    // A later day's headline names its date: the share cards add none.
+    const later = schoolView(input({ status, outlook, now: new Date('2026-01-12T16:00:00Z') }))
+      ?.status[2];
+    expect(later).toMatchObject({ dated: true, detail: '2-hour delay' });
+  });
+
+  it('tells today, tomorrow and a later day by the school’s own date, across its midnight', () => {
+    // SYNTHETIC: a school in Kansas City closed Thursday, Friday and Saturday (Nov 12 to 14).
+    const meta = testMeta([
+      { id: 'ZZ000001', name: 'The Test Hill School', lon: -94.593, lat: 39.036, district: -1 },
+    ]);
+    const closings = testClosings('2026-11-13T05:00:00Z', meta, [
+      testDay('2026-11-12', [[0, 0]]),
+      testDay('2026-11-13', [[0, 0]]),
+      testDay('2026-11-14', [[0, 0]]),
+    ]);
+    const record: SchoolRecord = { ...PRIVATE, index: 0, directory: closings.directory };
+    const lines = (now: Date, timeZone: string) => {
+      const status = schoolStatus({
+        school: 0,
+        directory: closings.directory,
+        closings,
+        covered: null,
+        now,
+        timeZone,
+      });
+      const view = schoolView(input({ record, closings, status, now, timeZone, zone: timeZone }));
+      return (view?.status ?? []).map((line) => [line.headline, line.day, line.later === true]);
+    };
+    // 11:30 PM Thursday in Kansas City (05:30 UTC Friday): past 3:30 PM, the map lights Friday,
+    // and Saturday is a later day there, dated.
+    expect(lines(new Date('2026-11-13T05:30:00Z'), 'America/Chicago')).toEqual([
+      ['Closed today', '2026-11-12', false],
+      ['Closed tomorrow', '2026-11-13', false],
+      ['Closed Sat, Nov 14', '2026-11-14', true],
+    ]);
+    // 12:30 AM Friday there: Friday is today, Saturday tomorrow, a later day until 3:30 PM.
+    expect(lines(new Date('2026-11-13T06:30:00Z'), 'America/Chicago')).toEqual([
+      ['Closed today', '2026-11-13', false],
+      ['Closed tomorrow', '2026-11-14', true],
+    ]);
+    // At 05:30 UTC it is already Friday in New York: its own date, not Kansas City's.
+    expect(lines(new Date('2026-11-13T05:30:00Z'), 'America/New_York')).toEqual([
+      ['Closed today', '2026-11-13', false],
+      ['Closed tomorrow', '2026-11-14', true],
+    ]);
+    // The map tells its day by the same clock: Friday at 11:30 PM Thursday, Friday after midnight.
+    expect(mapDay(new Date('2026-11-13T05:30:00Z'), 'America/Chicago')).toBe('2026-11-13');
+    expect(mapDay(new Date('2026-11-13T06:30:00Z'), 'America/Chicago')).toBe('2026-11-13');
   });
 
   it('reads the districts next door through the directory, once, and names them when it comes', async () => {

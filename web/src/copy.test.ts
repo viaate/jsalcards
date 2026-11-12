@@ -19,6 +19,7 @@ import { diagCopy } from './copy-diag';
 import { themesCopy } from './copy-themes';
 import { shareCopy } from './copy-share';
 import { getCopy } from './copy-get';
+import { laterCopy, laterFormat } from './copy-later';
 import { waitlistCopy } from './copy-waitlist';
 
 // The house-style rules and the lint live in scripts/check-copy.mjs, a plain
@@ -319,6 +320,20 @@ describe('house style rules', () => {
     'K-12 schools across the US',
   ])('passes %j', (text) => {
     expect(problems(text)).toEqual([]);
+  });
+
+  it('words the later days’ key line in the house style', () => {
+    const days = [
+      { day: '2026-11-12', count: 10 },
+      { day: '2026-11-13', count: 1204 },
+    ];
+    for (const text of [
+      laterCopy.title,
+      laterFormat.label(days),
+      ...days.map(({ day, count }) => `${laterFormat.day(day)} ${laterFormat.count(count)}`),
+    ]) {
+      expect(problems(text), text).toEqual([]);
+    }
   });
 
   it('reads "May" as a month only before a day number', () => {
@@ -4439,7 +4454,8 @@ ${aliases}
     // (src/copy-waitlist.ts), the account controls' and admin view's (src/copy-account.ts) and
     // the notifications' (src/copy-notify.ts), the plain details' (src/copy-details.ts), the
     // screen check's (src/copy-diag.ts), the themes' (src/copy-themes.ts), the share cards'
-    // (src/copy-share.ts) and the getsnowlight landing's (src/copy-get.ts).
+    // (src/copy-share.ts), the getsnowlight landing's (src/copy-get.ts) and the later days'
+    // key line's (src/copy-later.ts).
     expect(scanned.strings).toBe(
       strings.length +
         copyLeaves(chanceCopy).length +
@@ -4451,7 +4467,8 @@ ${aliases}
         copyLeaves(diagCopy).length +
         copyLeaves(themesCopy).length +
         copyLeaves(shareCopy).length +
-        copyLeaves(getCopy).length,
+        copyLeaves(getCopy).length +
+        copyLeaves(laterCopy).length,
     );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s

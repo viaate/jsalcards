@@ -95,7 +95,11 @@
       {#each chance.status as line, n (n)}
         <div class="line">
           <p class="headline">
-            {line.headline}<span class="glyph {GLYPHS[line.tone]}" aria-hidden="true"></span>
+            {line.headline}<span
+              class="glyph {GLYPHS[line.tone]}"
+              class:is-later={line.later === true}
+              aria-hidden="true"
+            ></span>
           </p>
           {#if line.detail !== null}
             <p class="line-detail">{line.detail}</p>

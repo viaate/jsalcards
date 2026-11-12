@@ -349,7 +349,11 @@
       {#each view.status as line, n (n)}
         <div class="line">
           <p class="headline">
-            {line.headline}<span class="glyph {GLYPHS[line.tone]}" aria-hidden="true"></span>
+            {line.headline}<span
+              class="glyph {GLYPHS[line.tone]}"
+              class:is-later={line.later === true}
+              aria-hidden="true"
+            ></span>
           </p>
           {#if line.detail !== null}
             <p class="line-detail">{line.detail}</p>
@@ -646,6 +650,53 @@
 
   .glyph.is-open {
     box-shadow: inset 0 0 0 1.5px var(--text-2);
+  }
+
+  /*
+    A later day's line (the map's later-day ring, map/later-rings.ts): the
+    ring as the map draws it, thin and dashed in the second gray with no
+    glow, around a small, see-through mark of its status. Here and in the
+    chance section's status lines (ChanceSection.svelte), which it holds.
+  */
+  :global(.headline .glyph.is-later) {
+    position: relative;
+    box-sizing: border-box;
+    width: 11px;
+    height: 11px;
+    margin: -1.5px;
+    background: none;
+    border: 1px dashed var(--text-2);
+    border-radius: 50%;
+    box-shadow: none;
+    transform: none;
+  }
+
+  :global(.headline .glyph.is-later)::after {
+    position: absolute;
+    inset: 2.5px;
+    content: '';
+    border-radius: 50%;
+    opacity: 0.7;
+  }
+
+  :global(.headline .glyph.is-later.is-closed)::after {
+    background: var(--status-closed);
+  }
+
+  :global(.headline .glyph.is-later.is-delayed)::after {
+    box-shadow: inset 0 0 0 1px var(--status-delayed);
+  }
+
+  :global(.headline .glyph.is-later.is-remote)::after {
+    inset: 3px;
+    background: var(--status-remote);
+    border-radius: 0.5px;
+    transform: rotate(45deg);
+  }
+
+  :global(.headline .glyph.is-later.is-early-dismissal)::after {
+    background: linear-gradient(90deg, var(--status-early-dismissal) 50%, transparent 50%);
+    box-shadow: inset 0 0 0 1px var(--status-early-dismissal);
   }
 
   .line-note {

@@ -71,6 +71,10 @@ export interface StatusLine {
   readonly day?: LocalDate | null;
   /** The reason in the note (StatusLineView.reason), for the share cards. */
   readonly reason?: string | null;
+  /** A later day's line, its glyph the map's ring (StatusLineView.later). */
+  readonly later?: boolean;
+  /** The headline names its own date (StatusLineView.dated): the share cards add none. */
+  readonly dated?: boolean;
 }
 
 /** How the directory names a district, for its short name and for telling it from another. */

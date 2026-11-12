@@ -10,7 +10,7 @@
 import { DATA_FILES } from 'virtual:snowlight/data-files';
 
 import type { LitSchools, StatusCounts } from '../data/closings';
-import type { MapDays } from '../data/live';
+import type { LaterRows, MapDays } from '../data/live';
 import type { DirectorySource } from '../data/directory';
 import { DATA_PATHS, createDataFiles, dataRootFor, withLiveRoot } from '../data/files';
 import type { DataFiles } from '../data/files';
@@ -113,6 +113,12 @@ export interface LiveGlowListeners {
   readonly onCounts?: (counts: StatusCounts | null) => void;
   /** Which days the map shows, and where, for the key's day line (null while none is shown). */
   readonly onDays?: (days: MapDays | null) => void;
+  /**
+   * The closings for later days of the file shown, and the menu's filter, for
+   * the map's later-day rings (map/later-rings.ts): null while none is shown,
+   * and while a replay is on.
+   */
+  readonly onLater?: (later: LaterRows | null, filter: MapFilter) => void;
 }
 
 /** The live glow, running. */
@@ -190,7 +196,7 @@ export async function startLiveGlow(
   { held = false }: { readonly held?: boolean } = {},
 ): Promise<LiveGlow> {
   if (!data.files.has(PUBLISHED_PATHS.closings)) return notLive(glow, listeners, held);
-  const { onShown, onCounts, onDays } = listeners;
+  const { onShown, onCounts, onDays, onLater } = listeners;
   const [
     { closingsUrl, startLive },
     { onDataUpdate },
@@ -212,6 +218,8 @@ export async function startLiveGlow(
   let lastDays: MapDays | null = null;
   /** Each paint's turn: a paint that lands after a newer one, or after a hold, is dropped. */
   let paints = 0;
+  /** The later days of the file shown last, given again with a new filter and as a hold ends. */
+  let lastLater: LaterRows | null = null;
   const count = (): void => {
     const next = lit === null ? null : countShown(lit, shown);
     if (holding || sameCounts(next, counted)) return;
@@ -244,6 +252,10 @@ export async function startLiveGlow(
       lastDays = days;
       if (!holding) onDays?.(days);
     },
+    onLater: (later) => {
+      lastLater = later;
+      if (!holding) onLater?.(later, shown);
+    },
   });
   const url = closingsUrl(data.files);
   // The worker fetched a newer copy in the background: read it (from its cache) and relight.
@@ -254,6 +266,7 @@ export async function startLiveGlow(
     filter(next) {
       if (sameFilter(next, shown)) return;
       shown = next;
+      if (!holding && lastLater !== null) onLater?.(lastLater, shown);
       if (lit === null) return;
       light(lit, false);
       count();
@@ -264,7 +277,10 @@ export async function startLiveGlow(
       if (next) {
         // Whatever was queued to paint lands no more; a replay names its own day.
         paints += 1;
-        if (!was) onDays?.(null);
+        if (!was) {
+          onDays?.(null);
+          onLater?.(null, shown);
+        }
         return;
       }
       if (!was) return;
@@ -273,6 +289,7 @@ export async function startLiveGlow(
       onShown?.(lastShown);
       onCounts?.(counted);
       onDays?.(lastDays);
+      onLater?.(lastLater, shown);
     },
     stop() {
       live.stop();

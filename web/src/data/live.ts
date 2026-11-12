@@ -73,7 +73,7 @@ import {
   rowsByDay,
   sameCounts,
 } from './closings';
-import type { LitSchools, StatusCounts } from './closings';
+import type { LaterDay, LitSchools, StatusCounts } from './closings';
 import type { Directory } from './directory';
 import {
   UNREAD_ZONE,
@@ -115,6 +115,12 @@ export interface LiveOptions {
   readonly onCounts?: (counts: StatusCounts | null) => void;
   /** Called with the days the map shows whenever they change; null while no file is shown. */
   readonly onDays?: (days: MapDays | null) => void;
+  /**
+   * Called with the closings for days after each school's map day (the map's
+   * later-day rings, map/later-rings.ts) as each file or day is lit; null
+   * while no file is shown, so no ring outlives the file it came from.
+   */
+  readonly onLater?: (later: LaterRows | null) => void;
   /** The visitor's own time zone, for their today. Default: the browser's. */
   readonly viewerZone?: () => string;
   readonly fetch?: Fetch;
@@ -132,6 +138,21 @@ export interface Live {
   /** The last file read, or null. */
   readonly closings: ClosingsFile | null;
   stop(): void;
+}
+
+/** The rows for later days of the file shown, and what to read them by. */
+export interface LaterRows {
+  /** The later days, earliest first (closings.ts Lit.later); empty for none. */
+  readonly days: readonly LaterDay[];
+  /** The directory their school positions point into. */
+  readonly directory: Directory;
+  /**
+   * What the map lights now: a light wins over a ring at its school, and at
+   * every school at its place, which the glow covers (map/glow-mount.ts).
+   */
+  readonly lit: LitSchools;
+  /** The earliest day the map shows: the key dates a later day a week or so after it. */
+  readonly from: LocalDate;
 }
 
 /** The days the map shows, the latest first, each with where; and the visitor's own today. */
@@ -903,8 +924,13 @@ export function startLive(options: LiveOptions): Live {
     let next: LitSchools = NOTHING_LIT;
     /** The rows accounted for by this light (closings.ts Lit.seen); null where nothing was lit. */
     let nextSeen: ReadonlyMap<LocalDate, ReadonlySet<number>> | null = null;
-    // With no schools on any day shown there is nothing to read against the directory.
+    // With no schools on any day shown there is nothing to light; the directory is read all the
+    // same for rows on a later day than one shown, which the map shows as rings.
     const lights = file.days.some((group) => plan.days.has(group.day));
+    const firstShown = [...plan.days].sort()[0];
+    const laterListed =
+      firstShown !== undefined && file.days.some((group) => group.day > firstShown);
+    let later: LaterRows | null = null;
     // While no school's day can be told (the zones unread, from 3:30 PM in the East to 3:30 PM
     // in the West, and overnight), the file is not shown: no update time stands over a map that
     // cannot show its rows, as none does over one whose directory cannot be had.
@@ -912,7 +938,7 @@ export function startLive(options: LiveOptions): Live {
     let shown = !lights && !blind;
     /** Whether the directory was still not read when its wait ran out: asked again next time. */
     let late = false;
-    if (lights) {
+    if (lights || laterListed) {
       // A directory read that never settles must not hold every later file: past the read's
       // limit the map goes dark for this file, and lights it as soon as the directory comes.
       const reading = options.directory(file.directory);
@@ -960,7 +986,12 @@ export function startLive(options: LiveOptions): Live {
           seen,
         });
         next = result.lit;
-        nextSeen = result.seen;
+        // A file with no row on a day shown keeps the rows it had as below, whatever it lists later.
+        nextSeen = lights ? result.seen : null;
+        later =
+          firstShown === undefined
+            ? null
+            : { days: result.later, directory, lit: result.lit, from: firstShown };
         shown = true;
         // A school the agreed day cannot tell (outside the contiguous US): its zone is read.
         if (unread && result.untold) readZones(file.directory);
@@ -972,6 +1003,7 @@ export function startLive(options: LiveOptions): Live {
     // Counted from the schools lit, so the counts are always the map's own.
     reportCounts(countStatuses(next));
     reportDays(shown ? plan.shown : null, at);
+    options.onLater?.(shown ? later : null);
     // Blind, the turn when the days can be told again is waited for all the same.
     schedule(shown || blind ? plan : null, at, unread);
     // A file shown with no row on any day shown: each of its rows is one the map had, so the

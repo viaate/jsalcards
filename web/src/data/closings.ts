@@ -231,6 +231,27 @@ export interface Lit {
   readonly seen: ReadonlyMap<LocalDate, ReadonlySet<number>>;
   /** Whether some row's school had no day to be told (map-day.ts mapDay null): it shows none. */
   readonly untold: boolean;
+  /**
+   * The rows for days after their school's map day, by day, earliest first:
+   * closings announced for later days, which the map shows as quiet rings
+   * (map/later-rings.ts) and never as a light. A school's row on its own map
+   * day is a light, never here; a school with no day to be told has none here.
+   */
+  readonly later: readonly LaterDay[];
+}
+
+/**
+ * One later day's rows: its schools' positions, ascending, and each one's
+ * status code, for the schools it is a later day for; and every row of the
+ * day, those of schools it is the map day for too (while the map shows two
+ * days, a later day in the West can be the day lit in the East), as the
+ * key counts a later day whole.
+ */
+export interface LaterDay {
+  readonly day: LocalDate;
+  readonly schools: readonly number[];
+  readonly statuses: readonly number[];
+  readonly all: { readonly schools: ArrayLike<number>; readonly statuses: ArrayLike<number> };
 }
 
 /** The zones a light is told by: LightOptions' zones, or none to be had (unread). */
@@ -265,6 +286,7 @@ export function lightAndSee(
     lit: NOTHING_LIT,
     seen: first ? rowsByDay(closings) : (before ?? new Map()),
     untold: false,
+    later: [],
   };
   if (!sameDirectory(directory, closings.directory)) return none;
   if (told !== null && told !== undefined && !zonesFor(told, closings.directory)) return none;
@@ -281,6 +303,7 @@ export function lightAndSee(
   };
   const picked: { school: number; status: number; day: LocalDate }[] = [];
   const seen = new Map<LocalDate, Set<number>>();
+  const later: LaterDay[] = [];
   let untold = false;
   for (const group of closings.days) {
     const rows = decodeDay(group);
@@ -289,6 +312,7 @@ export function lightAndSee(
     const accounted = new Set<number>();
     const had = before?.get(group.day);
     seen.set(group.day, accounted);
+    const laterOn: LaterDay = { day: group.day, schools: [], statuses: [], all: rows };
     for (let i = 0; i < rows.schools.length; i++) {
       const school = rows.schools[i] ?? 0;
       const zone = schoolZone(
@@ -303,10 +327,15 @@ export function lightAndSee(
       if (first || day !== null || had?.has(school) === true) accounted.add(school);
       if (day === group.day) {
         picked.push({ school, status: rows.statuses[i] ?? 0, day: group.day });
+      } else if (day !== null && group.day > day) {
+        (laterOn.schools as number[]).push(school);
+        (laterOn.statuses as number[]).push(rows.statuses[i] ?? 0);
       }
     }
+    if (laterOn.schools.length > 0) later.push(laterOn);
   }
-  if (picked.length === 0) return { lit: NOTHING_LIT, seen, untold };
+  later.sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
+  if (picked.length === 0) return { lit: NOTHING_LIT, seen, untold, later };
   // One row a school at most (its map day's), in school order as a day's rows are.
   picked.sort((a, b) => a.school - b.school);
   const schools = Uint32Array.from(picked, (row) => row.school);
@@ -319,6 +348,7 @@ export function lightAndSee(
     lit: litRows(directory, schools, statuses, options.previous, options.bornMs, known),
     seen,
     untold,
+    later,
   };
 }
 

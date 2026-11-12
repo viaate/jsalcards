@@ -19,7 +19,7 @@ import {
   startLive,
   turnTimer,
 } from '../live';
-import type { LiveHost, MapDays } from '../live';
+import type { LaterRows, LiveHost, MapDays } from '../live';
 import { inContiguous, mapDay, schoolZone, zonesOf } from '../map-day';
 import { dayWords } from '../../ui/map-day-host';
 import { parsePredictions } from '../school-day';
@@ -174,6 +174,8 @@ interface Run {
   readonly lights: LitSchools[];
   readonly days: (MapDays | null)[];
   readonly shown: (string | null)[];
+  /** The later days given, each time (live.ts onLater). */
+  readonly later: (LaterRows | null)[];
   readonly reads: () => { closings: number; predictions: number };
   readonly stop: () => void;
   readonly host: LiveHost & { document: FakeDocument };
@@ -192,6 +194,7 @@ function run(
   const lights: LitSchools[] = [];
   const days: (MapDays | null)[] = [];
   const shown: (string | null)[] = [];
+  const later: (LaterRows | null)[] = [];
   const counts = { closings: 0, predictions: 0 };
   const host = fakeHost();
   const state: Run = {
@@ -199,6 +202,7 @@ function run(
     lights,
     days,
     shown,
+    later,
     reads: () => ({ ...counts }),
     stop: () => undefined,
     file,
@@ -211,6 +215,7 @@ function run(
     onLight: (next) => lights.push(next),
     onShown: (at) => shown.push(at),
     onDays: (next) => days.push(next),
+    onLater: (next) => later.push(next),
     viewerZone: () => viewer,
     fetch: (url) => {
       if (url.endsWith('predictions/latest.json')) {
@@ -720,4 +725,72 @@ describe('the day every contiguous US clock agrees on, while the zones cannot be
     // Every 70 minutes of a year and every 5 of three clock change days, at each place: 2 s on a
     // CI runner, more on a busy one.
   }, 30_000);
+});
+
+/** The later days given last as day → [school, status] pairs, for reading at a glance. */
+function laterOf(given: LaterRows | null | undefined): Record<string, [number, number][]> {
+  const out: Record<string, [number, number][]> = {};
+  for (const { day, schools, statuses } of given?.days ?? []) {
+    out[day] = schools.map((school, i) => [school, statuses[i] ?? -1]);
+  }
+  return out;
+}
+
+describe('the rows for later days than each school’s map day (the later-day rings)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('gives each school’s rows after its own map day, and none of its map day’s', async () => {
+    // 2 PM in New York on Monday: every school shows Monday, and Tuesday is a later day for all.
+    vi.setSystemTime(new Date('2026-11-09T19:00:00Z'));
+    const map = run();
+    await vi.advanceTimersByTimeAsync(10);
+    const given = map.later.at(-1);
+    expect(laterOf(given)).toEqual({
+      '2026-11-10': [
+        [0, 2],
+        [1, 3],
+        [3, 2],
+      ],
+    });
+    // The lights today go with them: a light wins over a ring at its school.
+    expect([...(given?.lit.schools ?? [])]).toEqual([0, 1, 2, 3]);
+    // 3:30 PM in New York: Tuesday is the East's map day, its light, and no longer later for it.
+    await vi.advanceTimersByTimeAsync(91 * 60_000);
+    expect(laterOf(map.later.at(-1))).toEqual({
+      '2026-11-10': [
+        [1, 3],
+        [3, 2],
+      ],
+    });
+    map.stop();
+  });
+
+  it('reads the directory for a file that lists only later days, and lights nothing', async () => {
+    vi.setSystemTime(new Date('2026-11-09T19:00:00Z'));
+    const map = run(
+      undefined,
+      testClosings('2026-11-09T18:00:00Z', META, [testDay('2026-11-11', [[1, 0]])]),
+    );
+    await vi.advanceTimersByTimeAsync(10);
+    // Shown, with nothing lit: a map with no closing today, and a ring on Wednesday.
+    expect(map.shown.at(-1)).toBe('2026-11-09T18:00:00Z');
+    expect(map.lights.every((light) => light.schools.size === 0)).toBe(true);
+    expect(laterOf(map.later.at(-1))).toEqual({ '2026-11-11': [[1, 0]] });
+    map.stop();
+  });
+
+  it('gives none while no file is shown, so no ring outlives its file', async () => {
+    vi.setSystemTime(new Date('2026-11-09T19:00:00Z'));
+    const map = run();
+    map.directory = () => Promise.resolve(null);
+    await vi.advanceTimersByTimeAsync(10);
+    expect(map.later.at(-1)).toBeNull();
+    map.stop();
+  });
 });

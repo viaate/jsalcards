@@ -362,9 +362,20 @@ describe('the schools a light covers, worked out straight from the places', () =
           (_, n) => offset + n * every,
         );
         const sorted = (list: Int32Array): number[] => [...list].sort((a, b) => a - b);
-        expect(sorted(coveredNow(places, lit))).toEqual(sorted(coveredBy(index, lit)));
+        const all = sorted(coveredNow(places, lit));
+        expect(all).toEqual(sorted(coveredBy(index, lit)));
+        // Asked of some schools only (the later-day rings'), the same answer for those alone.
+        const among = Int32Array.from({ length: count >> 2 }, (_, n) => (n * 7 + offset) % count);
+        const asked = new Set(among);
+        expect(sorted(coveredNow(places, lit, among))).toEqual(
+          all.filter((school) => asked.has(school)),
+        );
       }
     }
+    // Schools out of the directory, or asked twice, are passed over or found once.
+    expect([...coveredNow(places, Int32Array.of(0), [-1, count + 3, 1, 1])]).toEqual(
+      [...coveredNow(places, Int32Array.of(0))].filter((school) => school === 1),
+    );
     expect(coveredNow(places, new Int32Array(0))).toHaveLength(0);
     // A school lit twice, or one out of the directory, counted once or not at all.
     const twice = Int32Array.of(0, 0, 1, -1, count + 5);

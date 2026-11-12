@@ -40,7 +40,8 @@ import type { Selection } from '../state/url';
 import type { UrlStore } from '../state/url-store';
 import type { DistrictId, LocalDate, SchoolId, UtcInstant } from '../types/generated';
 import type { StatusCounts } from '../data/closings';
-import type { MapDays } from '../data/live';
+import type { LaterRows, MapDays } from '../data/live';
+import type { LaterHost } from '../ui/later-host';
 import type { DayLine } from '../ui/map-day-host';
 import { AREAS_INDEX_PATH } from '../data/areas-format';
 import type { AreaSource } from '../data/areas';
@@ -395,6 +396,38 @@ export function boot(options: BootOptions): Services {
       line?.show(daysShown);
     });
   };
+  /**
+   * The later days' rings and key line (ui/later-host.ts), loaded with the first file that
+   * lists a later day, once the map is in: a visit with none never loads their code.
+   */
+  let laterHost: Promise<LaterHost | null> | null = null;
+  /** The later days last handed to it, and the filter, so it shows the latest once it is in. */
+  let laterShown: { rows: LaterRows | null; filter: MapFilter } = { rows: null, filter: SHOW_ALL };
+  const showLater = (rows: LaterRows | null, shownFilter: MapFilter): void => {
+    laterShown = { rows, filter: shownFilter };
+    if (laterHost === null && (rows === null || rows.days.length === 0)) return;
+    laterHost ??= Promise.all([options.map, import('../ui/later-host')]).then(
+      ([map, { startLater }]) => {
+        if (aborted() || map === undefined) return null;
+        const host = startLater(
+          document.querySelector<HTMLElement>('.stage') ?? document.body,
+          map.map,
+        );
+        signal.addEventListener('abort', () => {
+          host.destroy();
+        });
+        return host;
+      },
+      () => {
+        // Its code could not load (offline, a deploy in flight): the next file asks again.
+        laterHost = null;
+        return null;
+      },
+    );
+    void laterHost.then((host) => {
+      host?.show(laterShown.rows, laterShown.filter);
+    });
+  };
   /** Replay mode, loaded with the first replay asked for (app/replay.ts). */
   let replays: Promise<Controller> | null = null;
   /** Its code could not load (offline, a deploy in flight): live it is, and the address says so. */
@@ -476,6 +509,12 @@ export function boot(options: BootOptions): Services {
           for (const listener of [...liveDaysListeners]) listener();
           void document.fonts.ready.then(() => {
             if (!aborted() && (days === null || replayOn === null)) showDays(days);
+          });
+        },
+        // The later days' rings and key line, in the face the key keeps; none while a replay is on.
+        onLater: (rows, shownFilter) => {
+          void document.fonts.ready.then(() => {
+            if (!aborted() && (rows === null || replayOn === null)) showLater(rows, shownFilter);
           });
         },
       },

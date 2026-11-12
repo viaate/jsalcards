@@ -140,6 +140,29 @@ export const SCHOOL_LIT_STATE = 'lit';
 export const SCHOOL_COVERED_STATE = 'covered';
 
 /**
+ * The feature state of a school with a ring for a later day: the zoom its ring
+ * is drawn whole from (map/later-rings.ts), the first where it is clear of
+ * today's lights. From the zoom the rings come in at (SCHOOL_LATER_FROM,
+ * whole at SCHOOL_LATER_WHOLE), once its ring is drawn, the light around its
+ * dot gives way to the ring,
+ * which is quiet, with no light of its own, and its ground hides the dot; from
+ * the zoom every ring is drawn, the dot gives way to it too (schools.ts
+ * RINGED_DOT). Further out its dot shows as any school's.
+ */
+export const SCHOOL_LATER_STATE = 'later';
+/** The zoom the later-day rings come in from, and the zoom they are whole at. */
+export const SCHOOL_LATER_FROM = 9.75;
+export const SCHOOL_LATER_WHOLE = 10;
+/**
+ * The zooms a ring near today's light can be whole at are this far apart
+ * (schools.ts SCHOOL_LATER_ZOOMS): whole zooms, since the map draws a paint
+ * value that reads both the zoom and the school only as it is at the tile's
+ * whole zoom and the next, blended between them, so a ring whole at zoom c is
+ * drawn, fading in, from c - 1.
+ */
+export const SCHOOL_LATER_STEP = 1;
+
+/**
  * The scheme of the school tiles' URLs, which MapLibre's workers serve from
  * the archive (school-tiles.ts): "snowlight-schools://<archive URL>/{z}/{x}/{y}".
  */
