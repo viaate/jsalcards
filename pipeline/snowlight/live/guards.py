@@ -24,7 +24,7 @@ from typing import Final
 from snowlight.replays.build import names_part_of_district
 from snowlight.replays.gates import LEARNING_WORDS, NON_WEATHER_WORDS, learning_mode
 
-GUARDS_VERSION: Final = "s8c-5"
+GUARDS_VERSION: Final = "s8c-6"
 """Part of every ``derived_version``: bump it when a guard changes what a row derives."""
 
 
@@ -62,6 +62,11 @@ class Withheld(StrEnum):
     ZONE_SPLIT = "zone_split"
     ZONE_UNKNOWN = "zone_unknown"
     BOARD_DATE = "board_date"
+    CARVE_OUT = "carve_out"
+    """An open statement read from a row whose own words also say closed, delayed, remote or
+    early dismissal ("ANTC and Governors School report on time" beside "Closed Wednesday"),
+    or whose open words have a subject that names someone else (:func:`opens_for_others`):
+    it darkens as the open would, but is never published as the school's open."""
     STALE_UNPROVEN = "stale_unproven"
     NOT_DERIVED = "not_derived"
     SUPERSEDED = "superseded"
@@ -211,6 +216,329 @@ def open_wording_reason(text: str, name: str) -> str | None:
     """:func:`wording_reason` for a row the reader reads as an explicit open statement and
     nothing else: the same gates, with its own normal-schedule words left out."""
     return wording_reason(OPEN_SCHEDULE.sub(" ", text), name, remote=False)
+
+
+STATUS_WORDS: Final = re.compile(
+    r"\b(?:"
+    r"clos(?:ed|es|ing|ings|ure|ures)"
+    r"|cancel(?:s|ed|led|ing|ling|ations?|lations?)?"
+    r"|delay(?:ed|s)?|late (?:start|arrival|opening)|(?:hours?|hrs?)\.? late|running late"
+    r"|remote|virtual|e-?learning|nti|ami|online (?:learning|instruction|classes|school)"
+    r"|distance learning|flexible instruction|at[- ]home learning|learn(?:ing)? from home"
+    r"|early (?:dismissal|release|out)|dismiss(?:al|ed|es|ing)? early|releas(?:e|ed|ing) early"
+    r"|half[- ]day|(?:abbreviated|shortened) (?:day|schedule)"
+    r")\b",
+    re.IGNORECASE,
+)
+"""Words that say a school is closed (or cancelled), delayed, remote or dismissed early
+(an abbreviated day): the statuses an open statement must never stand beside
+(:func:`names_a_status`)."""
+NEGATION: Final = re.compile(r"\b(?:no|not|never|without|isn't|aren't|won't)\b", re.IGNORECASE)
+"""Words that take a status word back ("No delay", "will not be closed")."""
+NEGATION_REACH: Final = 2
+"""How many words before a status word a :data:`NEGATION` takes it back from."""
+_FILLER: Final = re.compile(
+    r"(?:a|an|any|be|\d+|one|two|three|four)(?:[- ]?(?:hours?|hrs?))?|hours?|hrs?", re.IGNORECASE
+)
+"""Words that may stand between a negation and the status word it takes back, however many
+("There will not be a delay", "no two hour delay")."""
+_CLAUSE_END: Final = re.compile(r"[,.;:|!?]$")
+"""A word that ends a clause: a negation never reaches back past it ("No buses, delayed")."""
+_JOINED: Final = re.compile(r"\s+(?:or|nor|and)\s+$", re.IGNORECASE)
+"""What joins two status words into one list, which one negation takes back whole ("No
+closures or delays")."""
+
+
+def _taken_back(before: str) -> bool:
+    """Whether a :data:`NEGATION` takes back the status word after ``before``: one of the
+    :data:`NEGATION_REACH` words right before it, or one with only :data:`_FILLER` words
+    between, in its clause (never past a word that ends one, :data:`_CLAUSE_END`)."""
+    filler = True
+    for at, word in enumerate(reversed(before.split())):
+        if _CLAUSE_END.search(word):
+            return False
+        key = word.strip("\"'()[],.;:|!?").casefold()
+        if NEGATION.fullmatch(key):
+            return at < NEGATION_REACH or filler
+        filler = filler and _FILLER.fullmatch(key) is not None
+        if at + 1 >= NEGATION_REACH and not filler:
+            return False
+    return False
+
+
+def names_a_status(text: str) -> bool:
+    """Whether a row's own words say closed, delayed, remote or early dismissal anywhere: a
+    :data:`STATUS_WORDS` word that no negation takes back (:func:`_taken_back`; a status
+    word joined to one before it by "or", "nor" or "and" is taken back with it) ("Closed
+    Wednesday. Staff report on time", "Open today, closed tomorrow", "Open, 2 hour delay for
+    buses", "Open; evening classes cancelled"; never "Open. No delay" or "No closures or
+    delays"). Such a row's open statement is never published (:attr:`Withheld.CARVE_OUT`)."""
+    end, taken = -1, False
+    for found in STATUS_WORDS.finditer(text):
+        before = text[: found.start()]
+        joined = end >= 0 and _JOINED.fullmatch(" " + text[end : found.start()]) is not None
+        taken = taken if joined else _taken_back(before)
+        if not taken:
+            return True
+        end = found.end()
+    return False
+
+
+# --- an open statement about others (R8 (iv)) ----------------------------------------------
+#
+# Whom an open statement is about is read as wip-live-words-light reads its subject: the
+# words before its open words, in their part of the row's words, after its update markers and
+# speaker, hold a phrase of :data:`OTHERS` that is no phrase of the row's own name. The lists
+# and the reading below are that branch's, with nothing added to :data:`OTHERS`, with one
+# addition: that branch reads the subject of a part's first run of open words only, and this
+# reads the words before every later run too ("Schools open and Governors School on time"),
+# which only ever keeps more rows from writing an open.
+
+_MARKS: Final = re.compile(
+    r"(?P<end>[.!?]+(?=\s|$)|[;|\n]+)|(?P<inner>[,/()\[\]]+|\s[-\u2013\u2014]+\s|:(?=\s|$))"
+)
+"""What ends a part of a row's words: a sentence (a full stop and the like before a space, a
+semicolon, a bar, a line break) or a part of one (a comma, a slash, a bracket, a spaced dash,
+a colon)."""
+_ABBREVIATIONS: Final = frozenset(
+    {
+        "gov", "govt", "st", "ste", "co", "cnty", "ctr", "cntr", "mt", "ft", "dr", "jr", "sr",
+        "voc", "tech", "elem", "int", "acad", "inst", "twp", "dist", "sch", "schs", "no", "ave",
+        "rd", "hwy", "assn", "dept", "inc", "univ", "hr", "hrs", "min", "mins", "approx", "jan",
+        "feb", "mar", "apr", "jun", "jul", "aug", "sep", "sept", "oct", "nov", "dec",
+    }
+)  # fmt: skip
+"""Words whose dot is their own, never a full stop ("Gov. School", "St. Mary's", "Nottoway Co.
+Schools", "Open 2 Hrs. Late", "Sept. 5"), as is the dot after a single letter ("a.m.")."""
+_OPEN_CLAUSE: Final = re.compile(
+    r"\bopen(?:s|ing)?\b(?!\s+at\s+\d)|\bon[\s-]?time\b|\bas\s+(?:normal|usual|scheduled)\b|"
+    r"\b(?:normal|regular|usual)(?:ly)?\b",
+    re.IGNORECASE,
+)
+"""Words that say someone or something runs as usual: an open statement's words. "Open at
+10:00" is a late start, never these (:data:`_OPEN_AT`)."""
+_OPEN_WORDS: Final = re.compile(
+    r"(?:\b(?:operat(?:e|es|ing)|run(?:s|ning)?|resum(?:e|es|ing)|(?<!head\s)start(?:s|ing)?|"
+    r"begin(?:s|ning)?)\s+(?=on\b|as\b|normal|regular|usual))?"
+    r"(?:\bon\s+(?:a\s+|the\s+)?(?:normal|regular|usual)\b|\bre-open(?:s|ing)?\b|"
+    + _OPEN_CLAUSE.pattern
+    + ")",
+    re.IGNORECASE,
+)
+"""Where the open words of a part start (:data:`_OPEN_CLAUSE`, with the "on a" of "on a
+regular schedule", the "re-" of "re-opens" and the verb of running before them): the words
+before them are its subject. "Head Start on time" keeps its phrase of :data:`OTHERS`."""
+_MORE_OPEN: Final = re.compile(
+    r"\s+(?:(?:(?:at|during)\s+(?:the\s+|their\s+|its\s+)?)?(?:"
+    + _OPEN_WORDS.pattern
+    + r")|(?:school\s+)?(?:schedules?|hours|days?|times?)\b)",
+    re.IGNORECASE,
+)
+"""Open words, or the schedule they keep, right after open words ("Open on time", "on a
+normal schedule"): the same run of open words."""
+_STATUS_CLAUSE: Final = re.compile(
+    r"\b(?:clos\w*|cancel\w*|delay\w*|late|later|dismiss\w*|early|remote|virtual|e-?learning|"
+    r"no|not)\b",
+    re.IGNORECASE,
+)
+"""Words of a status, a delay or a negation: a piece with one is a part of its own
+(:func:`_parts`)."""
+_OPEN_AT: Final = re.compile(r"\bopen(?:s|ing)?\s+at\s+\d", re.IGNORECASE)
+"""An opening time ("Daycare open at 6am"): open words only beside a phrase of
+:data:`OTHERS`."""
+_UPDATE: Final = re.compile(
+    r"[^\w&]*\b(?:updated?|correction|corrected|changed?(?:\s+to)?|revised|now|new|"
+    r"please\s+note|note)\b[^\w&]*",
+    re.IGNORECASE,
+)
+"""An update marker at the start of an open part, with its marks ("Update: "): it names no
+one, so it is left out before the subject is read."""
+_SPEAKER: Final = re.compile(r"\b(?:says|said|announces|announced|reports\s+that|per)\b", re.I)
+"""A speaker verb before the open words ("Superintendent Says Schools Now Open On Time"): the
+words up to and with it name who speaks, never who runs as usual, so they are left out."""
+_TOKEN: Final = re.compile(r"[^\W_](?:[\w'\u2019]|[-/.](?=[^\W_]))*")
+"""A word, with its inner hyphens, slashes and dots ("vo-tech", "WS/FCS", "a.m")."""
+_PIECES: Final = re.compile(r"[-/]")
+
+
+def _phrases(*texts: str) -> frozenset[tuple[str, ...]]:
+    return frozenset(tuple(text.split()) for text in texts)
+
+
+OWN_PHRASES: Final = _phrases("snow routes", "bus routes")
+"""Phrases that name the row's own schools, read before :data:`OTHERS` as the longest phrase."""
+OTHERS: Final = _phrases(
+    "governor school", "governor schools", "governors school", "governors schools",
+    "gov school", "gov schools", "govs school", "govs schools",
+    "regional school", "regional schools", "regional center", "regional centers",
+    "regional centre", "regional program", "regional programs", "regional academy",
+    "career center", "career centers", "career centre", "career and technical center",
+    "career and technical education center", "career technical center",
+    "career technical education center", "technical center", "technical centers",
+    "technical college", "vocational", "vo-tech", "vo tech", "votech", "cte center",
+    "head start",
+    "child care", "childcare", "day care", "daycare", "extended care", "before and after care",
+    "before after care", "after school care", "sacc", "latchkey", "kids club", "ymca",
+    "central office", "central offices", "district office", "district offices",
+    "administrative offices", "admin offices", "offices",
+    "staff", "teachers", "faculty", "employees", "personnel", "administrators", "12-month",
+    "12 month", "essential",
+    "community college", "college", "university",
+)  # fmt: skip
+"""The phrases that name someone other than the row's schools (R4 OTHERS), each as its words'
+keys (:func:`_key`: "Governor's School" is ``("governor", "school")``, "Gov. School" its
+abbreviation ``("gov", "school")``), with the words of a hyphen or an ampersand
+("after-school care", "career & technical center"). A phrase whose every word is a word of the
+row's own name is the row's own ("Regional schools open" for a "Regional School District")."""
+_PHRASES: Final = OTHERS | OWN_PHRASES
+_LONGEST: Final = max(map(len, _PHRASES))
+
+
+def _key(word: str) -> str:
+    key = word.casefold().replace("\u2019", "'").rstrip("'")
+    return key[:-2] if key.endswith("'s") else key
+
+
+def _named(name: str) -> frozenset[str]:
+    """The keys of the words of the row's own ``name``, each whole and in its hyphen and
+    slash pieces."""
+    words = _TOKEN.findall(name)
+    pieces = [_key(piece) for word in words for piece in _PIECES.split(word) if piece]
+    return frozenset(_key(word) for word in words) | frozenset(pieces)
+
+
+def _names(named: frozenset[str], key: str) -> bool:
+    """Whether ``key`` is a word of the row's own name, in the singular or the plural."""
+    return key in named or key.removesuffix("s") in named or f"{key}s" in named
+
+
+def _holds_others(text: str, named: frozenset[str]) -> bool:
+    """Whether ``text`` holds a phrase of :data:`OTHERS`, longest phrase first, that is not
+    the row's own (every word of it a word of its name, :data:`named`). A hyphenated or
+    slashed word that is no single phrase and no word of the name is read in its pieces."""
+    keys: list[str] = []
+    for word in _TOKEN.findall(text):
+        key = _key(word)
+        if not _PIECES.search(word) or key in named or (key,) in OTHERS:
+            keys.append(key)
+        else:
+            keys += [_key(piece) for piece in _PIECES.split(word) if piece]
+    at = 0
+    while at < len(keys):
+        window = tuple(keys[at : at + _LONGEST])
+        size = next((n for n in range(len(window), 0, -1) if window[:n] in _PHRASES), 0)
+        if not size:
+            at += 1
+            continue
+        phrase = window[:size]
+        if phrase not in OWN_PHRASES and not all(_names(named, key) for key in phrase):
+            return True
+        at += size
+    return False
+
+
+def _open_runs(part: str) -> list[tuple[int, int]]:
+    """Where each run of open words in ``part`` starts and ends (:data:`_OPEN_WORDS`, or an
+    opening time, :data:`_OPEN_AT`, with every open word right after them,
+    :data:`_MORE_OPEN`)."""
+    runs: list[tuple[int, int]] = []
+    at = 0
+    while (found := _OPEN_WORDS.search(part, at) or _OPEN_AT.search(part, at)) is not None:
+        end = found.end()
+        while (more := _MORE_OPEN.match(part, end)) is not None:
+            end = more.end()
+        runs.append((found.start(), end))
+        at = max(end, found.start() + 1)
+    return runs
+
+
+def _without_markers(part: str) -> str:
+    """``part`` without its update markers at its start (:data:`_UPDATE`) and, when a speaker
+    verb stands before its open words (:data:`_SPEAKER`), without its words up to and with
+    that verb ("Superintendent Says Schools Now Open On Time" is "Schools Now Open On
+    Time")."""
+    while (marker := _UPDATE.match(part)) is not None and marker.end():
+        part = part[marker.end() :]
+    runs = _open_runs(part)
+    spoken = [verb for verb in _SPEAKER.finditer(part) if not runs or verb.end() <= runs[0][0]]
+    if spoken:
+        part = part[spoken[-1].end() :]
+        while (marker := _UPDATE.match(part)) is not None and marker.end():
+            part = part[marker.end() :]
+    return part
+
+
+def _pieces(text: str) -> list[tuple[int, int, bool]]:
+    """The pieces of ``text`` between its marks (:data:`_MARKS`) as ``(start, end, last)``:
+    ``last`` is whether it ends a sentence. A dot after a single letter or one of
+    :data:`_ABBREVIATIONS` ends nothing."""
+    pieces: list[tuple[int, int, bool]] = []
+    start = 0
+    for mark in [*_MARKS.finditer(text), None]:
+        if mark is not None and mark.group("end") and mark.group(0)[0] == ".":
+            before = re.search(r"[^\W\d_]+$", text[: mark.start()])
+            if before is not None and (
+                len(before.group(0)) == 1 or before.group(0).casefold() in _ABBREVIATIONS
+            ):
+                continue
+        end = len(text) if mark is None else mark.start()
+        pieces.append((start, end, mark is None or bool(mark.group("end"))))
+        start = len(text) if mark is None else mark.end()
+    return pieces
+
+
+def _runs_as_usual(part: str) -> bool:
+    """Whether ``part`` says someone runs as usual: open words (:data:`_OPEN_CLAUSE`), or an
+    opening time beside a phrase of :data:`OTHERS` ("Childcare open at 7:00 am")."""
+    if _OPEN_CLAUSE.search(part):
+        return True
+    return _OPEN_AT.search(part) is not None and _holds_others(part, frozenset())
+
+
+def _parts(text: str) -> list[str]:
+    """The parts of ``text``: a piece (:func:`_pieces`) with no status and no open words
+    belongs to the next piece in its sentence that has some ("ANTC, Governors School: report
+    on time"), or, at the sentence's end, to the one before ("On time - ANTC, Governors
+    School")."""
+    parts: list[tuple[int, int]] = []
+    sentence: list[tuple[int, int]] = []
+    loose: list[tuple[int, int]] = []
+    for begin, end, last in _pieces(text):
+        words = text[begin:end]
+        if _runs_as_usual(words) or _STATUS_CLAUSE.search(words):
+            sentence.append((loose[0][0] if loose else begin, end))
+            loose = []
+        else:
+            loose.append((begin, end))
+        if last:
+            if loose and sentence:
+                head, _ = sentence.pop()
+                sentence.append((head, loose[-1][1]))
+            elif loose:
+                sentence.append((loose[0][0], loose[-1][1]))
+            parts += sentence
+            sentence, loose = [], []
+    return [text[begin:end] for begin, end in parts]
+
+
+def opens_for_others(text: str, name: str) -> bool:
+    """Whether an open statement in a row's words is about someone else (the lead's ruling R8
+    (iv)): in a part of its words (:func:`_parts`), after its update markers and speaker
+    (:func:`_without_markers`), the subject words of a run of open words (the words before
+    it, back to the part's start or the run before) hold a phrase of :data:`OTHERS` that is
+    not the row's own ``name``'s ("ANTC and Governors School report on time", "Daycare
+    open on time", never "Schools open on time" or "Regional schools open" for a "Regional
+    School District"). Such a row's open statement is never published
+    (:attr:`Withheld.CARVE_OUT`)."""
+    named = _named(name)
+    for whole in _parts(text):
+        part = _without_markers(whole)
+        at = 0
+        for start, end in _open_runs(part):
+            if _holds_others(part[at:start], named):
+                return True
+            at = end
+    return False
 
 
 def names_part(text: str) -> bool:

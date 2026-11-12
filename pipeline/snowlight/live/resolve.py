@@ -92,7 +92,16 @@ Besides statuses a row can give:
   (:mod:`snowlight.live.merge`) and is kept for S7. An open statement that cannot be
   dated so (posted at midday or in the evening with no day, or naming a day the exact
   reading does not cover) is never an open signal, but it still dissents
-  (``OPEN_UNDATED``): for the day a bare status posted then is for, or every day.
+  (``OPEN_UNDATED``): for the day a bare status posted then is for, or every day. An open
+  statement from a row whose own words also say closed, delayed, remote or early dismissal
+  (:func:`~snowlight.live.guards.names_a_status`: "Closed Wednesday. ANTC and Governors
+  School report on time", "Open today, closed tomorrow"), or whose open words have a subject
+  that names someone else (:func:`~snowlight.live.guards.opens_for_others`: "ANTC and
+  Governors School report on time" alone), is kept with ``CARVE_OUT``: it darkens exactly as
+  an open does, and merge never publishes it, nor sources an open signal from it. Being
+  withheld, the morning record names it as any withheld row
+  (:func:`~snowlight.live.morning.naming`): by its words' status kinds when they hold one,
+  and not at all when they say open only.
 * **plain details** (:mod:`snowlight.live.details`): the closed set of details its words
   state beside the one status it lights on one day ("Buses on snow routes", "No breakfast"),
   as codes (:attr:`Derived.details`), read after every step above, so they never change what
@@ -174,8 +183,10 @@ from snowlight.live.guards import (
     GUARDS_VERSION,
     Rules,
     Withheld,
+    names_a_status,
     names_part,
     open_wording_reason,
+    opens_for_others,
     wording_reason,
 )
 from snowlight.live.ledger import Darkens, Ledger, LedgerRow, SeenRow, Start
@@ -1626,7 +1637,12 @@ class Resolver:
             dissent=voters_dissent,
         )
         if first.verdict == "open":
-            return replace(lit, opens=first.days)
+            # an open beside the row's own closed, delayed, remote or early-dismissal words,
+            # or one whose subject names others ("Governors School report on time"), still
+            # darkens as an open does, but merge never publishes it (CARVE_OUT)
+            others = names_a_status(seen.text) or opens_for_others(seen.text, seen.name)
+            carve_out = Withheld.CARVE_OUT if others else None
+            return replace(lit, opens=first.days, withheld=carve_out)
         return replace(lit, claims=first.claims)
 
     def _voter_days(self, readings: Sequence[_Reading]) -> tuple[date, ...]:

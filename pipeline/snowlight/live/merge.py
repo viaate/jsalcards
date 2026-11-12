@@ -29,7 +29,11 @@ is recent). For each school and local day:
 2. **Open and dissent.** When the latest word is an open statement (owner
    decision Q8) or a dissent (a retraction, a denial, a narrowing, a cause that is
    not weather), nothing is published (``RETRACTED``); an open statement is kept as
-   an :class:`OpenSignal` for S7, which never lights the map. Beside a status at
+   an :class:`OpenSignal` for S7, which never lights the map. A row of that latest word
+   that is ``CARVE_OUT`` (its own words also say closed, delayed, remote or early
+   dismissal, or its open words are about someone else) darkens the same way but never
+   writes or sources the open: it is kept from the latest word's other rows, and with none
+   no open is kept (``CARVE_OUT``). Beside a status at
    the same time, either is a ``CONFLICT``, whatever the levels: a district's later
    word darkens a school's status it may have been posted after.
    A source that is not held contributes no status (``STALE_SOURCE``), but its
@@ -406,14 +410,23 @@ def merge(  # noqa: PLR0912, PLR0915 - the steps of the module, in order
                 withheld[Withheld.RETRACTED.value] += 1
             continue
         if verdicts == {"open"}:
-            first = min(top, key=_order)
-            confidences = [c for item in top if (c := item.result.derived.confidence) is not None]
+            # a row whose own words also say closed, delayed, remote or early dismissal, or
+            # whose open words are about others, darkens as any open does (CARVE_OUT), but
+            # never writes or sources the open: only the other rows of the moment can
+            clean = [item for item in top if item.result.derived.withheld is not Withheld.CARVE_OUT]
+            if not clean:
+                withheld[Withheld.CARVE_OUT.value] += 1
+                if claims:
+                    withheld[Withheld.RETRACTED.value] += 1
+                continue
+            first = min(clean, key=_order)
+            confidences = [c for item in clean if (c := item.result.derived.confidence) is not None]
             opens.append(
                 OpenSignal(
                     school=school,
                     nces_id=first.nces_id,
                     day=day,
-                    at=latest,
+                    at=max(item.posted_hi for item in clean),
                     source_id=first.source_id,
                     source_type=first.result.derived.source_type,
                     confidence=min(confidences, default=None),

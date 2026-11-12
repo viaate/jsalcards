@@ -1515,7 +1515,7 @@ school's light, `closings.ts litStatus`), and the school panel's own today and t
 Public, on the live host. These hold school indexes, days, codes and times only.
 
 - `v1/live/closings.json`.
-- `v1/live/opens.json`: explicit "school is open" statements, for the prediction model.
+- `v1/live/opens.json`: explicit "school is open" statements, for the prediction model. A row whose own words also say closed, delayed, remote or early dismissal, or whose open words are about someone else ("Governors School on time"), never writes or sources one (withheld `carve_out`); it darkens a status as any open statement does.
 - `v1/live/days/<day>.json`: when each school's status changed that day, for the timeline.
 - `v1/live/days/index.json`: lists only the days whose file carries the current stamp, and is written with every upload, even when it lists no day. A finished day is published again from the change log after a restamp or a directory change.
 - `v1/live/hold.json`: the hold, a flag and two times. The web never reads it.
