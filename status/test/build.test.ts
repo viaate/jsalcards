@@ -8,6 +8,7 @@ import { CANONICAL_URL, HOME_URL, copy } from '../page/src/copy.ts';
 import { mainHtml, pageHtml } from '../page/src/html.ts';
 import { viewOf } from '../page/src/view.ts';
 import type { Input } from '../page/src/view.ts';
+import { INCIDENTS_MAX } from '../shared/history.ts';
 import { DAY } from '../shared/types.ts';
 import type { Summary } from '../shared/types.ts';
 import { allOk, history, launch, simulate, worst } from './fixtures/made-up.ts';
@@ -63,7 +64,7 @@ test('index.html has no inline script or style and asks no other host', () => {
   assert.deepEqual(html.match(/<script[^>]*>/g), ['<script src="/app.js" defer>']);
   assert.equal(/<script[^>]*>[^<]/.test(html), false);
   assert.equal(/<style|\sstyle=|\son[a-z]+=/.test(html), false);
-  assert.deepEqual(html.match(/https?:\/\/[^"'\s<>]+/g), [CANONICAL_URL, HOME_URL]);
+  assert.deepEqual(html.match(/https?:\/\/[^"'\s<>]+/g), [CANONICAL_URL, HOME_URL, HOME_URL]);
   assert.match(html, /<link rel="canonical" href="https:\/\/status\.snowlightmap\.com\/">/);
   assert.match(html, /<a class="home" href="https:\/\/snowlightmap\.com\/">/);
   assert.deepEqual(html.match(/<link[^>]*>/g), [
@@ -79,34 +80,57 @@ test('index.html has no inline script or style and asks no other host', () => {
 test('the first paint is the same boxes saying Checking', () => {
   const html = file('index.html');
   const wait = mainHtml(viewOf({ kind: 'wait' }));
-  assert.equal(html.includes(`<main id="main">${wait}</main>`), true);
+  // The first paint waits: its footer is drawn once the page fills in (main.wait).
+  assert.equal(html.includes(`<main id="main" class="wait">${wait}</main>`), true);
   assert.equal(html, pageHtml(wait));
   assert.match(
     html,
     /<h1><svg class="tile"[^]*<\/svg><span class="brand">Snowlight<\/span> <span class="page">Status<\/span><\/h1>/,
   );
+  // "Past problems" is drawn only once there is a problem day, or why none can be listed.
   assert.deepEqual(html.match(/<h2[^>]*>[^<]*<\/h2>/g)?.map(plain), [
-    '<h2 id="h-now">Right now</h2>',
-    '<h2 id="h-history">Last 90 days</h2>',
-    '<h2 id="h-problems">Problems in the last 90 days</h2>',
+    '<h2 id="h-now">Current status</h2>',
   ]);
+  // The way back to the website is in the header and in the footer.
+  assert.match(html, /<a class="go" href="https:\/\/snowlightmap\.com\/">Go to Snowlight<\/a>/);
   assert.match(html, /<p class="sr" id="said" role="status"><\/p>/);
   // If the script never starts, the stylesheet draws this line in the lead's place.
   assert.match(
     html,
-    /<div class="swap"><p class="lead">Checking…<\/p><p class="lead stuck">This page did not finish loading\. Reload it to try again\.<\/p><\/div>/,
+    /<div class="swap"><div><p class="lead">Checking…<\/p><\/div><div class="stuck"><p class="lead">This page did not finish loading\.<\/p><p class="more">Reload it to try again\.<\/p><\/div><\/div>/,
   );
   for (const kind of ['unreachable', 'data'] as const) {
     const other = mainHtml(
       viewOf(
         kind === 'data'
-          ? { kind, summary: null, clock: 0, kept: false, expanded: false, picked: null }
+          ? {
+              kind,
+              summary: null,
+              clock: 0,
+              kept: false,
+              expanded: false,
+              picked: null,
+            }
           : { kind },
       ),
     );
     assert.equal(/stuck|swap/.test(other), false, kind);
   }
-  assert.match(html, /<footer><p class="how">/);
+  assert.match(html, /<footer><div class="foot-in"><p class="how">/);
+  // A key to every color of bar, the two greys apart.
+  assert.deepEqual(
+    [...html.matchAll(/<li><span class="sw b-([a-z]+)"><\/span>([^<]*)<\/li>/g)].map((m) => [
+      m[1],
+      plain(m[2]!),
+    ]),
+    [
+      ['ok', 'Working'],
+      ['late', 'Slow or late'],
+      ['down', 'Not working'],
+      ['none', 'Not checked'],
+      ['before', 'Before checks began'],
+    ],
+  );
   assert.match(
     html,
     /<noscript><p class="noscript">Turn on JavaScript to see the status\.<\/p><\/noscript>/,
@@ -118,7 +142,12 @@ test('the first paint is the same boxes saying Checking', () => {
     assert.equal(ids.includes(id), true, id);
 });
 
-const OK_ALL = { site: 'ok', closings: 'ok', chances: 'ok', accounts: 'ok' } as const;
+const OK_ALL = {
+  site: 'ok',
+  closings: 'ok',
+  chances: 'ok',
+  accounts: 'ok',
+} as const;
 
 /** Every leaf of the copy, as [key, text]. */
 function leaves(node: unknown, path = ''): [string, string][] {
@@ -159,7 +188,12 @@ function texts(html: string): string[] {
         .replace(/<wbr>/g, ''),
     ),
   );
-  for (const piece of body.split(/<[^>]*>/)) found.push(piece);
+  // A day's date in "Past problems" is data, not copy: it is checked for its form instead.
+  const dated = body.replace(/<time>([^<]*)<\/time>/g, (_, date: string) => {
+    assert.match(date, /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), [A-Z][a-z]{2}\u00a0\d{1,2}$/);
+    return '';
+  });
+  for (const piece of dated.split(/<[^>]*>/)) found.push(piece);
   return found
     .map((text) =>
       text
@@ -220,6 +254,7 @@ test('in every state each text of the page is made from the copy, and all of the
     data(young, { expanded: false, kept: true }),
     data(young, { clock: NOW + 2000 }),
     data(bad, { picked: { part: 'closings', day: 67 } }),
+    data(bad, { expanded: false }),
     data(bad, { picked: { part: 'chances', day: 66 } }),
     data(unknown),
     data(quiet, { picked: { part: 'site', day: 10 } }),
@@ -255,9 +290,30 @@ test('in every state each text of the page is made from the copy, and all of the
     data(eve, { clock: midnight + 120, picked: { part: 'site', day: 89 } }),
     // 88 days later only the second of its two days is still a bar: "over 1 day".
     data(eve, { clock: midnight + 88 * DAY + 3600 }),
-    data(young, { clock: NOW + DAY + 7200, picked: { part: 'chances', day: 89 } }),
-    data(bad, { clock: NOW + 3 * DAY + 7200, picked: { part: 'closings', day: 86 } }),
+    data(young, {
+      clock: NOW + DAY + 7200,
+      picked: { part: 'chances', day: 89 },
+    }),
+    data(bad, {
+      clock: NOW + 3 * DAY + 7200,
+      picked: { part: 'closings', day: 86 },
+    }),
   );
+  // A summary that is full: it holds only the newest problems.
+  const flap: Summary = structuredClone(quiet);
+  flap.incidents = Array.from({ length: INCIDENTS_MAX }, (_, i) => ({
+    p: 'site' as const,
+    k: 'late' as const,
+    s: NOW - 3600 - i * 1200,
+    e: NOW - 3600 - i * 1200 + 300,
+    g: 0 as const,
+  }));
+  flap.days.site = flap.days.site.map((day, i) => (i > 85 ? [day[0] - 30, 30, 0] : day));
+  inputs.push(data(flap));
+  // A day the checker missed, and a quiet summary gone stale.
+  const gappy: Summary = structuredClone(quiet);
+  gappy.days.site[85] = [0, 0, 0];
+  inputs.push(data(gappy), data(allOk(NOW), { clock: NOW + 2000 }));
   // Launch day (one part never answered), a quiet summary a day old, and one 100 days old.
   inputs.push(
     data(launch(NOW)),
@@ -268,8 +324,13 @@ test('in every state each text of the page is made from the copy, and all of the
   const all = leaves(copy);
   const patterns = all.map(([key, text]) => [key, pattern(text)] as const);
   const used = new Set<string>();
+  // What a screen reader is told when the headline changes is copy too.
+  const read = (input: Input): string[] => [
+    ...texts(pageHtml(mainHtml(viewOf(input)))),
+    viewOf(input).banner.said,
+  ];
   for (const input of inputs) {
-    for (const text of texts(pageHtml(mainHtml(viewOf(input))))) {
+    for (const text of read(input)) {
       const hits = patterns.filter(([, made]) => made.test(text));
       assert.equal(hits.length > 0, true, `not from the copy: "${text}"`);
       for (const [key] of hits) used.add(key);
@@ -298,9 +359,7 @@ test('in every state each text of the page is made from the copy, and all of the
     ['problem.down', /: not working (?:for|since)/],
     ['problem.late', /: slow or late (?:for|since)/],
   ]);
-  const everything = plain(
-    inputs.map((input) => texts(pageHtml(mainHtml(viewOf(input)))).join('\n')).join('\n'),
-  );
+  const everything = plain(inputs.map((input) => read(input).join('\n')).join('\n'));
   for (const [key, shows] of pieces) if (shows.test(everything)) used.add(key);
   assert.deepEqual(
     all.map(([key]) => key).filter((key) => !used.has(key)),
@@ -308,20 +367,28 @@ test('in every state each text of the page is made from the copy, and all of the
   );
 
   // In every state: the lines drawn with tabular numbers never hold a hyphen (those numbers
-  // widen it), no state leaves the box under "Problems" blank once the page has its answer,
-  // and no sentence says "today" of a day that is not the clock's.
+  // widen it), no state draws "Past problems" with nothing under it, and no sentence says
+  // "today" of a day that is not the clock's.
+  let hidden = 0;
   for (const input of inputs) {
     const html = mainHtml(viewOf(input));
     // A name's or a tied run's box is read as part of its text.
     const flat = html.replace(/<span class="n[mb]">([^<]*)<\/span>/g, '$1');
-    const tabular = [...flat.matchAll(/<(?:p|span) class="(?:more|upd|share|when)">([^<]*)</g)];
+    const tabular = [...flat.matchAll(/<(?:p|span) class="(?:more|upd|share|mid|when)">([^<]*)</g)];
     assert.equal(tabular.length > 0, true);
     for (const [, text] of tabular) assert.equal(/[-‐‑]/.test(text!), false, text);
-    const names = [...flat.matchAll(/<span class="(?:name|what)">([^<]*)</g)].map((m) => m[1]);
+    const names = [...flat.matchAll(/<span class="name">([^<]*)</g)].map((m) => m[1]);
     assert.equal(names.map((name) => plain(name!)).includes('Snow-day chances'), true);
-    if (input.kind !== 'wait') {
-      const box = /<(?:div class="probs none"><p>|span class="what">)([^<]+)</.exec(flat);
-      assert.notEqual(box, null, 'an empty box under Problems');
+    if (!html.includes('id="h-problems"')) hidden += 1;
+    else {
+      const box = /<p class="(?:empty|none|what k-\w+)">([^<]+)</.exec(flat);
+      assert.notEqual(box, null, 'nothing under Past problems');
+      // Every day listed says something: its problems, or why it has none.
+      for (const day of flat.matchAll(
+        /<li class="day">([^]*?)<\/li><\/(?:ol|ul)>|<li class="day">([^]*?)(?=<li class="day">)/g,
+      )) {
+        assert.match(day[0], /class="(?:none|what k-\w+)">[^<]+</);
+      }
     }
     if (input.kind === 'data' && input.summary !== null) {
       const clockDay = new Date(Math.max(input.clock, input.summary.now) * 1000)
@@ -332,6 +399,9 @@ test('in every state each text of the page is made from the copy, and all of the
         assert.equal(plain(label!).startsWith(`${clockDay}:`), true, `${label} on ${clockDay}`);
     }
   }
+  // The page as it waits, and every state with no problem day, draw no "Past problems".
+  assert.equal(hidden > 1, true);
+  assert.equal(mainHtml(viewOf(data(allOk(NOW)))).includes('Past problems'), false);
 });
 
 test('no line of the page can break inside a name, a date, a time or a count', () => {
@@ -396,14 +466,8 @@ test('no line of the page can break inside a name, a date, a time or a count', (
   );
   assert.match(
     html,
-    /<p class="lead">Slow or late right\u00a0now: <span class="nm">Snow-\u2060day chances\.<\/span><\/p>/,
+    /<p class="what k-late"><span class="nm">Snow-\u2060day chances:<\/span> slow or late since <span class="nb">Nov 10,<\/span> <span class="nb">8:55 AM EST\.<\/span>/,
   );
-  assert.match(
-    html,
-    /<span class="nm">Snow-\u2060day chances:<\/span> slow or late since <span class="nb">Nov 10,<\/span> <span class="nb">8:55 AM EST\.<\/span>/,
-  );
-  // At its worst, the banner names three parts, each in a box of its own that moves to the next
-  // line whole, with its comma or full stop, and "and" in the box of the last name.
   const worstHtml = mainHtml(
     viewOf({
       kind: 'data',
@@ -414,10 +478,6 @@ test('no line of the page can break inside a name, a date, a time or a count', (
       picked: null,
       zone: 'America/New_York',
     }),
-  );
-  assert.match(
-    worstHtml,
-    /<p class="lead">Not working right\u00a0now: <span class="nm">Website,<\/span> <span class="nm">Live school closings<\/span> <span class="nm">and Snow-\u2060day chances\.<\/span><\/p>/,
   );
   assert.match(
     worstHtml,
@@ -433,37 +493,44 @@ test('no line of the page can break inside a name, a date, a time or a count', (
   // The address is a box that breaks only at its dot.
   assert.match(
     worstHtml,
-    /<span class="says">Opening <span class="nb">snowlightmap<wbr>\.com\.<\/span><\/span>/,
+    /<span class="about" aria-hidden="true">Opening <span class="nb">snowlightmap<wbr>\.com\.<\/span><\/span>/,
   );
-  // The same boxes hold each name in the rows, over the bars and in the problems.
+  // The same boxes hold each name in the card and in the problems.
   assert.match(
     worstHtml,
-    /<span class="name"><span class="nm">Live school closings<\/span><\/span>/,
+    /<p class="top"><span class="name"><span class="nm">Live school closings<\/span><\/span>/,
+  );
+  assert.match(worstHtml, /<p class="what k-down"><span class="nm">Live school closings:<\/span> /);
+  // A picked day's name is in the tip, with its length of two parts a box of two boxes.
+  const tipped = mainHtml(
+    viewOf({
+      kind: 'data',
+      summary: history(NOW),
+      clock: NOW + 130,
+      kept: false,
+      expanded: false,
+      picked: { part: 'closings', day: 79 },
+      zone: 'America/New_York',
+    }),
   );
   assert.match(
-    worstHtml,
-    /<p class="hist-top"><span class="name"><span class="nm">Live school closings<\/span><\/span>/,
+    tipped,
+    /<p class="tip" id="tip" role="tooltip"><span class="nb">Oct 30,<\/span> <span class="nb">8:00 PM to<\/span> <span class="nb">Oct 31,<\/span> <span class="nb">8:00 PM EDT:<\/span> not working for <span class="nb">15 minutes,<\/span> not checked for <span class="nb">6 hours\.<\/span><\/p>/,
   );
-  assert.match(worstHtml, /<span class="what"><span class="nm">Live school closings:<\/span> /);
-  assert.match(html, /aria-label="Sat, Oct\u00a031: [^"]*not checked for 6\u00a0hours\."/);
+  assert.match(
+    html,
+    /aria-label="Oct\u00a030, 8:00\u00a0PM\u00a0to Oct\u00a031, 8:00\u00a0PM\u00a0EDT: [^"]*not checked for 6\u00a0hours\."/,
+  );
 });
 
-test('the key names every kind of bar, and a bar that is not a state has its own drawing', () => {
-  const html = mainHtml(viewOf({ kind: 'wait' }));
-  const key = /<p class="key">([^]*?)<\/p>/.exec(html)![1]!;
-  assert.deepEqual(
-    [...key.matchAll(/<svg class="shape s-(\w+)"[^]*?<\/svg>([^<]*)</g)].map((m) => [m[1], m[2]]),
-    [
-      ['ok', 'Working'],
-      ['late', 'Slow or late'],
-      ['down', 'Not working'],
-      ['none', 'Not checked'],
-      ['before', 'Before checks began'],
-    ],
-  );
+test('every kind of bar has its own drawing, and a day with nothing to show is a full grey bar', () => {
   const css = file('style.css');
   for (const cls of ['b-ok', 'b-late', 'b-down', 'b-none', 'b-before', 'b-wait', 'b-yet'])
     assert.equal(css.includes(`.${cls}`), true, cls);
+  const flat = css.replace(/\/\*[^]*?\*\//g, '').replace(/\s+/g, ' ');
+  assert.match(flat, /\.b-before, \.b-wait, \.b-yet \{ background: var\(--before\); \}/);
+  // No bar is drawn shorter than its row: the row always looks whole.
+  assert.equal(/\.b-[a-z]+ \{[^}]*block-size/.test(flat), false);
 });
 
 test('coming back to the page draws on the clock before it fetches', () => {
@@ -488,7 +555,7 @@ test('every value is escaped', () => {
     expanded: false,
     picked: null,
   });
-  view.banner.lead = ['<img src=x onerror=alert(1)> & "quotes"'];
+  view.banner.lead = '<img src=x onerror=alert(1)> & "quotes"';
   view.history[0]!.bars[0]!.label = '"><script>alert(1)</script>';
   const html = mainHtml(view);
   assert.equal(html.includes('<img'), false);
@@ -511,7 +578,9 @@ test('the headers and the routes are the ones the page needs', () => {
 
 test('the script is small, asks only its own origin, and keeps nothing', () => {
   const script = file('app.js');
-  assert.equal(Buffer.byteLength(script) <= 20000, true, String(Buffer.byteLength(script)));
+  // Past problems reads each day against its bars, their unanswered checks and the summary's
+  // cut, and each tip names its span in the reader's zone: 23 KB at most.
+  assert.equal(Buffer.byteLength(script) <= 23000, true, String(Buffer.byteLength(script)));
   assert.deepEqual(script.match(/fetch\(("[^"]*")/g), ['fetch("/api/status"']);
   assert.match(script, /credentials:"omit"/);
   // A reload is never answered from the browser's cache, which would set the clock back.

@@ -156,7 +156,41 @@ export function launch(now: number): Summary {
   return simulate(now - 2 * 3600, now, () => ({ ...ALL_OK, chances: 'unknown' }));
 }
 
-export type Made = 'history' | 'ok' | 'first' | 'stale' | 'unreachable' | 'worst' | 'launch';
+/**
+ * Ninety-five days of checks ending at `now`, everything working now, with a mix of days: the
+ * website slow for an hour every 17 days, the closings down for 30 minutes every 23 days, the
+ * chances late for 2 hours every 29 days, and a day in five weeks the checker did not run for
+ * 14 hours.
+ */
+export function full(now: number): Summary {
+  const first = Math.floor(now / DAY) * DAY - 95 * DAY;
+  return simulate(first, now, (t) => {
+    const day = Math.floor((t - first) / DAY);
+    const at = t % DAY;
+    if (day % 37 === 20 && at >= 6 * 3600 && at < 20 * 3600) return null;
+    const states = { ...ALL_OK };
+    if (day % 17 === 8 && at >= 13 * 3600 && at < 14 * 3600) states.site = 'late';
+    if (day % 23 === 11 && at >= 12 * 3600 && at < 12 * 3600 + 1800) states.closings = 'down';
+    if (day % 29 === 5 && at >= 15 * 3600 && at < 17 * 3600) states.chances = 'late';
+    return states;
+  });
+}
+
+/**
+ * Twenty days of checks ending at `now`, everything working now, and the accounts slow for 5
+ * minutes every half hour for the two UTC days before yesterday: a part that flaps.
+ */
+export function flap(now: number): Summary {
+  const today = Math.floor(now / DAY) * DAY;
+  return simulate(today - 20 * DAY, now, (t) => {
+    const states = { ...ALL_OK };
+    if (t >= today - 3 * DAY && t < today - DAY && t % 1800 === 0) states.accounts = 'late';
+    return states;
+  });
+}
+
+export type Made =
+  'history' | 'ok' | 'first' | 'stale' | 'unreachable' | 'worst' | 'launch' | 'full' | 'flap';
 export const MADE: readonly Made[] = [
   'history',
   'ok',
@@ -165,6 +199,8 @@ export const MADE: readonly Made[] = [
   'unreachable',
   'worst',
   'launch',
+  'full',
+  'flap',
 ];
 
 /** What `/api/status` answers for a made-up state at a clock, or null: it does not answer. */
@@ -178,6 +214,8 @@ export function answerOf(
   if (state === 'ok') return { served, summary: allOk(tickAt(clock)) };
   if (state === 'worst') return { served, summary: worst(tickAt(clock)) };
   if (state === 'launch') return { served, summary: launch(tickAt(clock)) };
+  if (state === 'full') return { served, summary: full(tickAt(clock)) };
+  if (state === 'flap') return { served, summary: flap(tickAt(clock)) };
   if (state === 'stale') return { served, summary: history(tickAt(clock) - 8 * TICK) };
   return { served, summary: history(tickAt(clock)) };
 }

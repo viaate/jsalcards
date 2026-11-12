@@ -14,7 +14,8 @@ export const copy = {
   page: 'Status',
   noscript: 'Turn on JavaScript to see the status.',
   // Shown in the banner when the page's script has not started 10 seconds after the page opened.
-  stuck: 'This page did not finish loading. Reload it to try again.',
+  stuck: 'This page did not finish loading.',
+  stuckMore: 'Reload it to try again.',
   description:
     'See whether Snowlight is working right now, and how it has done over the last 90\u00a0days.',
   parts: {
@@ -25,9 +26,14 @@ export const copy = {
       name: 'Live\u00a0school\u00a0closings',
       says: 'The closings and delays on the map.',
     },
-    chances: { name: 'Snow-\u2060day\u00a0chances', says: 'Each district’s chance of no school.' },
+    chances: {
+      name: 'Snow-\u2060day\u00a0chances',
+      says: 'Each district’s chance of no school.',
+    },
     accounts: { name: 'Accounts', says: 'Signing in and saved schools.' },
   },
+  // The small mark beside a part's name: its name, said by a screen reader.
+  about: 'About {part}',
   state: {
     ok: 'Working',
     late: 'Slow or late',
@@ -37,54 +43,62 @@ export const copy = {
     wait: 'Checking',
   },
   banner: {
-    // "right now" stays on one line.
+    // The headline: one short line in the state's color. Which part is in trouble is said in
+    // the card under it, and in full to a screen reader (`said`).
     wait: 'Checking…',
     first: 'The first check is on its way.',
     firstMore: 'This page fills in within 5\u00a0minutes.',
     ok: 'Everything is working.',
-    down: 'Not working right\u00a0now: {parts}.',
-    late: 'Slow or late right\u00a0now: {parts}.',
-    unknown: 'We could not check everything just\u00a0now.',
+    down: 'Something is not working.',
+    late: 'Something is slow or late.',
+    unknown: 'We could not check everything.',
     stale: 'We have no recent checks.',
     // Said with the rows' "Could not check": nothing old is shown as what is true now.
     staleMore: 'The last check was {ago}.',
-    unreachable: 'We cannot load the status right now.',
+    unreachable: 'We cannot load the status.',
     unreachableMore: 'This page tries again every minute.',
     checked: 'Last checked {ago}.',
-    kept: 'Could not refresh. This is the check from {ago}.',
+    kept: 'Could not refresh. Checked {ago}.',
+  },
+  // Said to a screen reader when the headline changes: which parts, by name.
+  said: {
+    down: 'Not working right\u00a0now: {parts}.',
+    late: 'Slow or late right\u00a0now: {parts}.',
   },
   // "and" stays on the line of the name before it, never on a line of its own.
   list: { and: '{a}\u00a0and {b}', comma: '{a}, {b}' },
   heads: {
-    now: 'Right now',
-    history: 'Last 90\u00a0days',
-    problems: 'Problems in the last 90\u00a0days',
+    now: 'Current status',
+    problems: 'Past problems',
   },
   updated: 'Updated {ago}.',
+  // A file part's line while its own stamp is not known: before the first check, with no
+  // recent checks, when the history did not load, or when the file gave none.
+  updatedNone: 'Update time not\u00a0known.',
   share: {
-    // {days} is the days the bars count, or under a day after checks began, how long they ran.
-    line: 'Working in {pct} of our checks over {days}.',
-    none: 'No checks yet.',
+    // Between "90 days ago" and "Today" under the bars: the share of the checks that gave an
+    // answer, or, short enough to keep that line one line, why there is none.
+    mid: '{pct} of checks working',
+    none: 'No checks yet',
     // The checks have begun, and none of this part's has given an answer.
-    unknown: 'Could not check so\u00a0far.',
+    unknown: 'Could not check',
     // The last check is older than every day shown.
-    old: 'Not checked in the last 90\u00a0days.',
-    unloaded: 'The history could not be loaded.',
+    old: 'No recent checks',
+    unloaded: 'Not loaded',
     axisStart: '90\u00a0days\u00a0ago',
     axisEnd: 'Today',
-    keyNone: 'Not checked',
-    keyBefore: 'Before checks began',
-    hint: 'Pick a bar to see that day.',
   },
   day: {
     ok: '{date}: working all day.',
-    today: '{date}: working so far today.',
+    today: '{date}: working so far.',
     since: '{date}: working since checks began.',
     none: '{date}: not checked.',
     yet: '{date}: not checked yet.',
     before: '{date}: before checks began.',
     okGap: '{date}: working when checked; not checked for {dur}.',
     mixed: '{date}: {list}.',
+    // The span of a bar in the reader's zone, where it is not the world clock's day.
+    span: '{from}\u00a0to {to}',
     down: 'not working for {dur}',
     late: 'slow or late for {dur}',
     gap: 'not checked for {dur}',
@@ -92,18 +106,47 @@ export const copy = {
   problem: {
     closed: '{part}: {kind} for {dur}.',
     closedWhen: '{start} to {end}',
+    // A part's run of problems of one kind on one day, from the first to the last.
+    closedMany: '{part}: {kind} {n}\u00a0times, {dur} in\u00a0all.',
     gap: '{part}: {kind} for at\u00a0least {dur}.',
     gapWhen: 'From {start}. Our checks stopped while it was going on.',
     open: '{part}: {kind} since {start}.',
     openWhen: '{dur} so\u00a0far.',
     down: 'not working',
     late: 'slow or late',
-    none: 'No problems in the last 90\u00a0days.',
-    // No recent checks: nothing is said of the time since the last one.
-    noneStale: 'No problems up to the last check.',
-    noneSince: 'No problems since checks began on {date}.',
-    showAll: 'Show all {n}',
-    showFewer: 'Show fewer',
+    // Under the date of a day with no problem listed that is listed for its gap. A quiet day
+    // is not listed at all.
+    // The clock's day, while a part could not be checked just now.
+    noneUnknown: 'Not every part could be checked.',
+    // A day with too few checks to say, or whose checks stopped.
+    noneGap: 'This day was not checked in\u00a0full.',
+    unchecked: 'Not checked.',
+    // Its bars show trouble that no problem listed covers: the summary keeps only the newest.
+    unlisted: 'Some problems from this day are not listed.',
+    // Both that and too few answers: the two notes as one.
+    unlistedGap:
+      'Some problems from this day are not listed. This day was not checked in\u00a0full.',
+    // A problem still going on, on the day it began; it is told in full under today.
+    began: '{part}: {kind} from {time}.',
+    going: 'Still going on.',
+    // A problem on each day after the one it began on.
+    still: '{part}: still {kind} from the day\u00a0before.',
+    allDay: 'All day.',
+    until: 'Until {time}.',
+    untilGap: 'Until {time}, when our checks stopped.',
+    // A day the checks can have stayed away on after they stopped on a problem the day before.
+    stopped: '{part}: {kind} when our checks stopped on {time}.',
+    stoppedWhen: 'This day was not checked in\u00a0full.',
+    // After the list, while the first check is inside the 90 days.
+    checksBegan: 'Checks began on {start}.',
+    cut: 'This list holds the newest {n}\u00a0problems. Older ones are not shown.',
+    // Before the first check.
+    first: 'No checks yet.',
+    // When the history did not load.
+    unloaded: 'The history could not be loaded. Reload the page to try again.',
+    showOlder: 'Show {n}\u00a0earlier problems',
+    showOlderOne: 'Show 1\u00a0earlier problem',
+    hideOlder: 'Hide earlier problems',
   },
   foot: {
     how:
@@ -111,6 +154,15 @@ export const copy = {
       'part and keeps what it finds for 90\u00a0days. Each bar is one day on the world clock, ' +
       'so it starts the evening before in the US: 7\u00a0PM\u00a0Eastern in winter, 8\u00a0PM in ' +
       'summer. Times are shown in your time zone.',
+    // What each color of bar means.
+    key: {
+      ok: 'Working',
+      late: 'Slow or late',
+      down: 'Not working',
+      none: 'Not checked',
+      before: 'Before checks began',
+    },
+    share: 'The share under each row counts only the checks that gave an answer.',
     privacy: 'This page uses no cookies and keeps nothing about its visitors.',
     home: 'Go to Snowlight',
   },
@@ -128,7 +180,6 @@ export const copy = {
     minutes: '{n}\u00a0minutes',
     hour: '1\u00a0hour',
     hours: '{n}\u00a0hours',
-    day: '1\u00a0day',
     days: '{n}\u00a0days',
     // "1 hour 10 minutes" is one length: its two parts are joined by a narrow no-break space,
     // which the page draws as a no-break space. Where the whole length is wider than the line

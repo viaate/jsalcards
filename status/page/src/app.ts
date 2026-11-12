@@ -36,19 +36,44 @@ function marks(): Marks {
 function input(): Input {
   if (answer === null) return failed ? { kind: 'unreachable' } : { kind: 'wait' };
   const clock = answer.served + elapsed(answer.at, marks());
-  return { kind: 'data', summary: answer.summary, clock, kept: failed, expanded, picked };
+  return {
+    kind: 'data',
+    summary: answer.summary,
+    clock,
+    kept: failed,
+    expanded,
+    picked,
+  };
 }
 
 function draw(): void {
-  const view = viewOf(input());
+  const now = input();
+  const view = viewOf(now);
+  // The footer is drawn once there is something in its place: nothing moves when it fills.
+  main.classList.toggle('wait', now.kind === 'wait');
   const focused = document.activeElement?.id === 'more';
   main.innerHTML = mainHtml(view);
   if (focused) document.getElementById('more')?.focus();
-  const first = view.banner.lead[0] ?? '';
-  if (first !== lead) {
-    lead = first;
-    said.textContent = first;
+  place();
+  if (view.banner.said !== lead) {
+    lead = view.banner.said;
+    said.textContent = lead;
   }
+}
+
+/**
+ * Sets the picked day's tip over its bar: a share of the row's width the stylesheet turns into
+ * a place that keeps the whole tip inside the row (a style property, which the page's policy
+ * allows where it refuses a style attribute).
+ */
+function place(): void {
+  const tip = document.getElementById('tip');
+  const bar = tip?.parentElement?.querySelector<HTMLElement>('.bar.on');
+  if (!tip || !bar) return;
+  const row = tip.parentElement!.getBoundingClientRect();
+  const box = bar.getBoundingClientRect();
+  const at = row.width <= 0 ? 0 : (box.left + box.width / 2 - row.left) / row.width;
+  tip.style.setProperty('--at', String(Math.min(1, Math.max(0, at))));
 }
 
 function schedule(): void {
@@ -97,7 +122,7 @@ function barAt(event: MouseEvent): Picked | null {
   const bars = (event.target as Element | null)?.closest?.('.bars');
   if (!(bars instanceof HTMLElement) || bars.getAttribute('aria-hidden') === 'true') return null;
   const box = bars.getBoundingClientRect();
-  const count = bars.children.length;
+  const count = bars.querySelectorAll('.bar').length;
   if (box.width <= 0 || count === 0) return null;
   const day = Math.min(
     count - 1,
@@ -114,15 +139,33 @@ function pick(event: MouseEvent): void {
   draw();
 }
 
+/** Puts the tip away. */
+function unpick(): void {
+  if (picked === null) return;
+  picked = null;
+  draw();
+}
+
 main.addEventListener('click', (event) => {
   if ((event.target as Element | null)?.closest?.('#more')) {
     expanded = !expanded;
     draw();
     return;
   }
-  pick(event);
+  // A tap off the bars puts the tip away; a tap on one shows its day.
+  if (barAt(event) === null) unpick();
+  else pick(event);
 });
-main.addEventListener('pointermove', pick);
+main.addEventListener('pointermove', (event) => {
+  if (event.pointerType === 'mouse' && barAt(event) === null) unpick();
+  else pick(event);
+});
+main.addEventListener('pointerleave', (event) => {
+  if (event.pointerType === 'mouse') unpick();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') unpick();
+});
 
 window.setInterval(() => {
   if (document.visibilityState !== 'visible') return;

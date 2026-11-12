@@ -1,28 +1,45 @@
 /* The status page. System fonts, no third-party request; light and dark follow the system.
-   The colors are the site's Daylight and Midnight tokens; the red is new. */
+   One banner in the state's color, one card of the parts with their 90 days, past problems by
+   day. */
 :root {
   color-scheme: light dark;
-  --page: #e9ecef;
-  --surface: #fff;
-  --border: #d2d6dc;
-  --text: #0d1014;
-  --quiet: #4a515a;
-  --ok: #08794b;
-  --late: #9a5600;
-  --down: #b3261e;
-  --none: #68707a;
+  --page: #f4f6f8;
+  --surface: #ffffff;
+  --border: #dde1e6;
+  --text: #1c2127;
+  --quiet: #59626d;
+  --link: #0b5cba;
+  --ok: #1b7f40;
+  --late: #a65c00;
+  --down: #cf2c2c;
+  --none: #8c949e;
+  --before: #e6e9ed;
+  --bar: #34a35a;
+  --bok: #1f8442;
+  --blate: #a35400;
+  --bdown: #c42b2b;
+  --bnone: #5e6873;
+  --on: #ffffff;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --page: #000;
-    --surface: #0a0a0a;
-    --border: #2a2a2a;
-    --text: #f5f5f5;
-    --quiet: #a3a3a3;
-    --ok: #6bffb0;
-    --late: #ffc46b;
-    --down: #ff8a80;
-    --none: #6b6b6b;
+    --page: #0c0f13;
+    --surface: #151a20;
+    --border: #2a313a;
+    --text: #e9edf1;
+    --quiet: #9ba5b0;
+    --link: #79b4ff;
+    --ok: #3ccf6e;
+    --late: #f0a83a;
+    --down: #ff6b63;
+    --none: #6c7682;
+    --before: #262d36;
+    --bar: #34b862;
+    --bok: #1f8442;
+    --blate: #a35400;
+    --bdown: #c42b2b;
+    --bnone: #4f5965;
+    --on: #ffffff;
   }
 }
 * {
@@ -37,7 +54,7 @@ body {
   background: var(--page);
   color: var(--text);
   font:
-    1rem/1.4 system-ui,
+    1rem/1.5 system-ui,
     -apple-system,
     'Segoe UI',
     Roboto,
@@ -47,7 +64,7 @@ body {
    part's name: in some system typefaces tabular numbers also widen the hyphen of "Snow-day". */
 .more,
 .upd,
-.share,
+.mid,
 .when {
   font-variant-numeric: tabular-nums;
 }
@@ -59,36 +76,72 @@ body {
     display: none;
   }
 }
-/* The side gutters, of the page and inside each card, are 16 px at every text size, as on the
+/* While the page waits for its first answer the footer is not drawn, so the list above it can
+   take its own size when it fills and nothing moves. With scripts off it is drawn at once,
+   and on a page whose script never starts, 10 s on, with the line that says so. */
+main.wait ~ footer {
+  display: none;
+}
+main.wait:not(.on) ~ footer {
+  animation: drawn 0.01s 10s forwards;
+}
+@media (scripting: none) {
+  main.wait ~ footer {
+    display: block;
+  }
+}
+@keyframes drawn {
+  to {
+    display: block;
+  }
+}
+p,
+ul,
+ol,
+h1,
+h2,
+h3 {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+a {
+  color: var(--link);
+  text-underline-offset: 0.15em;
+}
+
+/* The header: a white bar across the page, the name on the left and the way back on the right.
+   The side gutters, of the page and inside each card, are 16 px at every text size, as on the
    website: larger text gets the room, not the margins. */
-header,
+header {
+  background: var(--surface);
+  border-block-end: 1px solid var(--border);
+}
+.bar-top,
 main,
-footer,
+.foot-in,
 .noscript {
-  max-inline-size: 44rem;
+  max-inline-size: 61.25rem;
   margin-inline: auto;
   padding-inline: 16px;
 }
-/* Every layout below that sets things side by side asks how much room <main> has in text
-   units, not how wide the screen is: with larger text the same screen holds fewer words, so
-   the rows, the history's heads and the problems go back to one column as they would on a
-   narrower phone. */
-main {
-  container-type: inline-size;
-}
-header {
-  padding-block: 1.25rem 1rem;
+.bar-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding-block: 0.875rem;
 }
 h1 {
   display: flex;
   /* With very large text on a narrow screen "Status" goes under the name, never off the edge. */
   flex-wrap: wrap;
   align-items: center;
-  gap: 0 0.6rem;
-  margin: 0;
-  font-size: 1.3rem;
+  gap: 0 0.5rem;
+  font-size: 1.25rem;
   line-height: 2rem;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
 }
 .tile {
   flex: none;
@@ -102,30 +155,25 @@ h1 {
   font-weight: 400;
   color: var(--quiet);
 }
+.go {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 2.75rem;
+}
+/* Every layout below that sets things side by side asks how much room <main> has in text
+   units, not how wide the screen is: with larger text the same screen holds fewer words. */
+main {
+  container-type: inline-size;
+  padding-block: 1.5rem 0;
+}
 h2 {
-  margin: 0;
-  font-size: 1rem;
+  margin-block-end: 0.75rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  line-height: 1.5rem;
+  line-height: 1.75rem;
 }
-section {
-  margin-block-end: 1.75rem;
-}
-section > h2,
-.head {
-  margin-block-end: 0.5rem;
-}
-p,
-ul,
-ol {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.875rem;
+section + section {
+  margin-block-start: 2.25rem;
 }
 .shape {
   flex: none;
@@ -142,102 +190,96 @@ ol {
   color: var(--down);
 }
 .s-unknown,
-.s-wait,
-.s-none,
-.s-before {
-  color: var(--none);
+.s-wait {
+  color: var(--quiet);
 }
 
-/* The banner. Its block size holds its longest copy (every part named, and "Could not
-   refresh") at the room it has, so nothing moves when it fills; the shape and the words sit at
-   its top. Its words keep at least 12rem: where that and the shape do not fit side by side
-   (large text on a narrow phone), the shape goes above the words instead of squeezing them. */
+/* The banner: one solid bar in the state's color, its words in white, centred top to bottom.
+   Its block size holds its longest copy at the room it has, so nothing moves when it fills:
+   scripts/shots.cjs checks every copy fits at every 2 px of room. */
 .banner {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
   gap: 0.75rem;
-  align-items: flex-start;
-  align-content: flex-start;
-  padding: 1rem 16px;
-  min-block-size: 32.5rem;
+  margin-block-end: 2.25rem;
+  padding: 0.75rem 12px;
+  border-radius: 0.375rem;
+  background: var(--bnone);
+  color: var(--on);
+  min-block-size: 14.5rem;
 }
-/* Each step is the room, in rem, from which the longest copy takes fewer lines, and the size
-   it takes there. scripts/shots.cjs checks the longest copy fits at every 2 px of room from
-   8rem to 43rem. Under 18rem of room is larger text on a phone. */
-@container (min-width: 10rem) {
+/* Each step is the room, in rem, from which every copy takes fewer lines, and the size it
+   takes there (scripts/shots.cjs measures them). Under 22.625rem of room is a phone narrower
+   than 400 px, or larger text. */
+@container (min-width: 8.625rem) {
   .banner {
-    min-block-size: 25.25rem;
+    min-block-size: 13.25rem;
   }
 }
-@container (min-width: 11rem) {
+@container (min-width: 9rem) {
   .banner {
-    min-block-size: 24rem;
+    min-block-size: 11.75rem;
   }
 }
-@container (min-width: 12.75rem) {
+@container (min-width: 12.125rem) {
   .banner {
-    min-block-size: 22.5rem;
+    min-block-size: 10.5rem;
   }
 }
-@container (min-width: 13.5rem) {
+@container (min-width: 12.25rem) {
   .banner {
-    min-block-size: 19.5rem;
+    min-block-size: 9rem;
   }
 }
-@container (min-width: 14rem) {
+@container (min-width: 15.5rem) {
   .banner {
-    min-block-size: 18.25rem;
+    min-block-size: 7rem;
   }
 }
-@container (min-width: 15.25rem) {
+@container (min-width: 21.75rem) {
   .banner {
-    min-block-size: 16.75rem;
-  }
-}
-@container (min-width: 16.625rem) {
-  .banner {
-    min-block-size: 15.75rem;
-  }
-}
-@container (min-width: 17.75rem) {
-  .banner {
-    min-block-size: 14.25rem;
-  }
-}
-@container (min-width: 20.75rem) {
-  .banner {
-    min-block-size: 12.75rem;
+    min-block-size: 5.75rem;
   }
 }
 @container (min-width: 22.625rem) {
   .banner {
-    min-block-size: 11.25rem;
+    min-block-size: 4.25rem;
   }
 }
-@container (min-width: 28.375rem) {
-  .banner {
-    min-block-size: 10rem;
-  }
+
+.st-ok {
+  background: var(--bok);
 }
-@container (min-width: 29.125rem) {
-  .banner {
-    min-block-size: 8.5rem;
-  }
+.st-late {
+  background: var(--blate);
 }
-.banner > div {
+.st-down {
+  background: var(--bdown);
+}
+.banner .shape {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  color: var(--on);
+}
+/* Its words keep at least 12rem: where that and the shape do not fit side by side (large text
+   on a narrow phone), the shape goes above the words instead of squeezing them. */
+.banner > div,
+.banner .swap > div {
   flex: 1 1 12rem;
   min-inline-size: 0;
 }
-.banner .shape {
-  inline-size: 1.75rem;
-  block-size: 1.75rem;
-}
-/* The answer is the largest text of the page at every text size the reader picks. */
 .lead {
   font-size: 1.125rem;
   font-weight: 600;
   line-height: 1.5rem;
   /* No last line of one word. */
+  text-wrap: balance;
+}
+.more {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   text-wrap: balance;
 }
 /* A part's name, wherever it is drawn, and a problem's date, time or length: whole on a line
@@ -246,24 +288,15 @@ ol {
 .nb {
   display: inline-block;
 }
-.lead + .lead {
-  margin-block-start: 0.25rem;
-}
-.more {
-  margin-block-start: 0.25rem;
-  color: var(--quiet);
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  /* Two short lines of near one length, never a word alone. */
-  text-wrap: balance;
-}
 
 /* The script marks <main> "on" when it starts. If it has not 10 seconds after the page opened
    (it did not load, or scripts are off in a browser that does not know the rule above), the
    banner stops saying "Checking" and says the page did not finish loading, in the same place,
-   and the rows stop saying "Checking" too. Nothing moves: both lines share one grid cell. */
+   and the parts stop saying "Checking" too. Nothing moves: both share one grid cell. */
 .swap {
   display: grid;
+  flex: 1 1 12rem;
+  min-inline-size: 0;
 }
 .swap > * {
   grid-area: 1 / 1;
@@ -292,112 +325,114 @@ main:not(.on) .state {
   }
 }
 
-/* Right now. A row's own sentence never changes; only the "Updated" line fills in. */
-.row {
+/* The parts: one card, a part to a cell, the lines between them drawn by the card's color
+   showing through a 1 px gap. */
+.parts {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  padding: 0.75rem 16px;
-  border-block-start: 1px solid var(--border);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
 }
-.row:first-child {
-  border-block-start: 0;
+.part {
+  position: relative;
+  padding: 1rem 16px 0.875rem;
+  background: var(--surface);
+}
+/* The card's round corners, drawn by the parts in them (a tip may reach past the card). */
+.part:first-child {
+  border-start-start-radius: 0.3125rem;
+  border-start-end-radius: 0.3125rem;
+}
+.part:last-child {
+  border-end-start-radius: 0.3125rem;
+  border-end-end-radius: 0.3125rem;
+}
+/* On a narrow phone a name and a long state ("Could not check") take two lines: both lines
+   are kept whatever the state, so nothing moves when it changes. */
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: flex-start;
+  column-gap: 0.375rem;
+  min-block-size: 3rem;
 }
 .name {
   font-weight: 600;
   line-height: 1.5rem;
 }
-.state {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  /* One line at every usual size; it wraps only where it does not fit (very large text), in
-     two lines of near one length. */
-  min-block-size: 1.5rem;
-  text-wrap: balance;
-}
-.says,
-.upd {
+/* The small mark beside a name: its line about the part shows over it on a hover or a tap. */
+.info {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
   color: var(--quiet);
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  cursor: help;
 }
-.says {
-  /* One short line, or two of near one length (large text on a narrow phone). */
-  text-wrap: balance;
-  /* An address is a box (see .nb) that breaks only at its dot, and only where it is wider
-     than the whole line; a word wider than the line breaks inside rather than run off. */
-  overflow-wrap: break-word;
-}
-.upd {
-  min-block-size: 1.25rem;
-}
-
-/* Last 90 days. */
-.head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  column-gap: 1rem;
-}
-.key {
-  display: grid;
-  /* Two columns, or one when large text would wrap a name in two. */
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr));
-  column-gap: 0.9rem;
-  flex: 1 0 100%;
-  color: var(--quiet);
-  font-size: 0.8125rem;
-  line-height: 1.5rem;
-}
-.key span {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  /* Where a name wraps (very large text), two lines of near one length. */
-  text-wrap: balance;
-}
-.key .shape {
+.i {
   inline-size: 0.875rem;
   block-size: 0.875rem;
 }
-/* The fifth and longest name has a row of its own, so it does not wrap at 320 px. */
-.key span:last-child {
-  grid-column: 1 / -1;
-}
-.hist {
-  padding: 0.75rem 16px 0.5rem;
-  border-block-start: 1px solid var(--border);
-}
-.hist:first-child {
-  border-block-start: 0;
-}
-.hist-top {
-  display: grid;
-}
-.share {
-  min-block-size: 2.5rem;
-  color: var(--quiet);
-  font-size: 0.875rem;
+.about {
+  position: absolute;
+  inset-block-start: 2.75rem;
+  inset-inline-start: 12px;
+  z-index: 2;
+  inline-size: max-content;
+  max-inline-size: min(17rem, calc(100% - 24px));
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 400;
   line-height: 1.25rem;
-  /* No last line of one word. */
-  text-wrap: pretty;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.14);
+  visibility: hidden;
+  pointer-events: none;
+  overflow-wrap: break-word;
 }
+.info:hover .about,
+.info:focus .about {
+  visibility: visible;
+}
+.state {
+  display: flex;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 0.375rem;
+  margin-inline-start: auto;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5rem;
+  text-wrap: balance;
+}
+.state .shape {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+}
+
+/* Ninety thin day bars filling the width, the oldest on the left. A day with no reading to
+   show (before the checks began, or not due yet) is a light grey bar, so the row is always
+   whole. */
 .bars {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(90, 1fr);
-  align-items: end;
   gap: 1px;
-  block-size: 2rem;
-  margin-block-start: 0.375rem;
+  block-size: 2.125rem;
+  margin-block-start: 0.625rem;
   touch-action: pan-y;
 }
 .bar {
-  block-size: 100%;
   border-radius: 1px;
+  background: var(--before);
 }
 .b-ok {
-  background: var(--ok);
+  background: var(--bar);
 }
 .b-late {
   background: var(--late);
@@ -406,129 +441,234 @@ main:not(.on) .state {
   background: var(--down);
 }
 .b-none {
-  block-size: 0.5rem;
   background: var(--none);
 }
 .b-before,
-.b-wait {
-  block-size: 2px;
-  background: var(--border);
-}
-/* A day whose first check is not due: nothing is drawn, and it can still be picked. */
+.b-wait,
 .b-yet {
-  block-size: 2px;
+  background: var(--before);
+}
+/* The status could not be loaded: no day is drawn, only the row's outline, in no color of
+   the key. */
+.bars.off {
+  outline: 1px dashed var(--none);
+  outline-offset: -1px;
+  border-radius: 2px;
 }
 .bar.on {
   outline: 2px solid var(--text);
   outline-offset: 1px;
 }
-/* "90 days ago" under the first bar and "Today" under the last, at least half a line apart.
-   Where both do not fit on one line (very large text on a narrow phone), "Today" goes to the
-   next line and still ends under the last bar. */
+/* The picked day, in a tip under its bar that never leaves the row: `--at` is the bar's place,
+   0 at the left to 1 at the right, set by the script. */
+.tip {
+  position: absolute;
+  inset-block-start: calc(100% + 0.5rem);
+  inset-inline-start: calc(var(--at, 0) * 100%);
+  z-index: 2;
+  inline-size: max-content;
+  max-inline-size: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.14);
+  transform: translateX(calc(var(--at, 0) * -100%));
+  pointer-events: none;
+  text-wrap: balance;
+}
+/* "90 days ago" and "Today" with a rule between them, and the share of checks on a line of its
+   own under them, kept while the page waits so nothing moves. Once the three fit on one line
+   (from a 375 px screen at the usual text size) the share sits in the middle of the rule. */
 .axis {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
   column-gap: 0.5rem;
-  margin-block-start: 0.25rem;
+  margin-block-start: 0.375rem;
   color: var(--quiet);
   font-size: 0.75rem;
   line-height: 1.125rem;
 }
-.axis span:last-child {
-  margin-inline-start: auto;
-}
-.note {
-  min-block-size: 4.5rem;
-  margin-block-start: 0.25rem;
-  font-size: 0.8125rem;
-  line-height: 1.125rem;
-  /* No last line of one word. */
-  text-wrap: pretty;
-}
-.note.hint {
-  color: var(--quiet);
-}
-
-/* Problems. Three slots and the button row are always there. */
-.slot {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  row-gap: 0.125rem;
-  min-block-size: 9rem;
-  padding: 0.75rem 16px;
+.axis::before {
+  content: '';
+  grid-row: 1;
+  grid-column: 2;
   border-block-start: 1px solid var(--border);
 }
-.slot:first-child {
-  border-block-start: 0;
+.axis > :first-child {
+  grid-row: 1;
+  grid-column: 1;
 }
-.what {
-  font-size: 0.9375rem;
+.axis > :last-child {
+  grid-row: 1;
+  grid-column: 3;
+}
+.mid {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  min-block-size: 1.125rem;
+  text-align: center;
+  text-wrap: balance;
+}
+@container (min-width: 21.5rem) {
+  .axis {
+    display: flex;
+  }
+  .axis::before {
+    content: none;
+  }
+  .axis > :first-child,
+  .axis > :last-child {
+    flex: none;
+  }
+  .mid {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-inline-size: 0;
+    min-block-size: 0;
+  }
+  .mid::before,
+  .mid::after {
+    content: '';
+    flex: 1 1 0;
+    min-inline-size: 0.5rem;
+    border-block-start: 1px solid var(--border);
+  }
+  /* With no share to show, the rule runs whole from "90 days ago" to "Today". */
+  .mid:empty {
+    gap: 0;
+  }
+}
+/* For a file part, when it was last made: its line is kept while it waits, so nothing moves. */
+.upd {
+  min-block-size: 1.25rem;
+  margin-block-start: 0.25rem;
+  color: var(--quiet);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+/* Past problems: a day to a heading, newest first, as long as its days. */
+.day + .day {
+  margin-block-start: 1.5rem;
+}
+h3 {
+  margin-block-end: 0.75rem;
+  padding-block-end: 0.375rem;
+  border-block-end: 1px solid var(--border);
+  font-size: 1rem;
   font-weight: 600;
-  line-height: 1.375rem;
-  text-wrap: pretty;
+  line-height: 1.5rem;
 }
-.when {
+.none,
+.empty {
+  color: var(--quiet);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-wrap: balance;
+}
+.note {
+  margin-block-start: 0.75rem;
+}
+.end {
+  margin-block-start: 1.5rem;
   color: var(--quiet);
   font-size: 0.875rem;
   line-height: 1.25rem;
   text-wrap: pretty;
 }
-.probs.none {
-  display: grid;
-  place-items: center;
-  /* Three slots. */
-  min-block-size: 27rem;
-  padding: 1rem 16px;
+.prob + .prob {
+  margin-block-start: 1rem;
+}
+.what {
+  font-weight: 600;
+  line-height: 1.5rem;
+  text-wrap: pretty;
+}
+.k-down {
+  color: var(--down);
+}
+.k-late {
+  color: var(--late);
+}
+.when {
   color: var(--quiet);
-  text-align: center;
-  text-wrap: balance;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  text-wrap: pretty;
+}
+.older {
+  margin-block-start: 1.5rem;
 }
 .more-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  block-size: 3.5rem;
-  border-block-start: 1px solid var(--border);
-}
-.more-row:empty {
-  border-color: transparent;
+  margin-block-start: 1.5rem;
 }
 button {
-  min-block-size: 2.5rem;
+  min-block-size: 2.75rem;
   padding: 0 1rem;
   border: 1px solid var(--border);
-  border-radius: 0.6rem;
+  border-radius: 0.375rem;
   background: var(--surface);
-  color: var(--text);
+  color: var(--link);
   font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
 }
 button:hover {
   border-color: var(--quiet);
 }
 :focus-visible {
-  outline: 2px solid var(--text);
+  outline: 2px solid var(--link);
   outline-offset: 2px;
 }
 
 footer {
-  padding-block: 0 2.5rem;
+  margin-block-start: 3rem;
+  padding-block: 1.5rem 2.5rem;
+  border-block-start: 1px solid var(--border);
   color: var(--quiet);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
 }
 footer p {
-  /* No last line of one word. */
+  max-inline-size: 44rem;
   text-wrap: pretty;
+}
+footer p + p,
+.key + p {
+  margin-block-start: 0.75rem;
+}
+/* What each color of bar means: a small bar of it before its word. */
+.key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin-block-start: 0.75rem;
+}
+.key li {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.sw {
+  flex: none;
+  inline-size: 0.375rem;
+  block-size: 1rem;
+  border-radius: 1px;
+  /* The light grey is close to the page: a ring keeps its shape. */
+  box-shadow: 0 0 0 1px var(--border);
 }
 /* One sentence: short lines of near one length. */
 .privacy {
   text-wrap: balance;
-}
-footer p + p {
-  margin-block-start: 0.75rem;
 }
 .home {
   display: inline-flex;
@@ -537,14 +677,9 @@ footer p + p {
   min-block-size: 2.75rem;
   color: var(--text);
   font-weight: 600;
-  text-decoration: none;
-}
-.home span {
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
 }
 .noscript {
-  padding-block-end: 1rem;
+  padding-block: 1.5rem;
 }
 .sr {
   position: absolute;
@@ -555,69 +690,59 @@ footer p + p {
   white-space: nowrap;
 }
 
-/* 21.75rem of room is a 380 px screen at the usual text size; 38rem is 640 px. */
-@container (min-width: 21.75rem) {
-  .share {
-    min-block-size: 1.25rem;
+/* From a 368 px screen at the usual text size a name and its state share one line. */
+@container (min-width: 21rem) {
+  .top {
+    min-block-size: 0;
   }
-  .note {
-    min-block-size: 3.375rem;
-  }
-  .slot {
-    min-block-size: 7.5rem;
-  }
-  .probs.none {
-    min-block-size: 22.5rem;
+  .state {
+    flex-basis: auto;
   }
 }
-@container (min-width: 38rem) {
+/* Side by side once <main> has the room: the banner's last-checked line goes to its right, the
+   parts go two to a row. 36rem is a 608 px screen at the usual text size, 56rem a 928 px one. */
+@container (min-width: 36rem) {
   .banner {
-    gap: 1rem;
-    padding: 1.25rem 20px;
-    min-block-size: 9rem;
+    padding-inline: 20px;
   }
-  .row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: 1rem;
-  }
-  .state,
-  .upd {
-    justify-self: end;
-  }
-  .key {
+  .banner > div:not(.swap),
+  .banner .swap > div {
     display: flex;
-    flex: 0 1 auto;
     flex-wrap: wrap;
-  }
-  .key span {
-    white-space: nowrap;
-  }
-  .hist-top {
-    grid-template-columns: auto 1fr;
+    align-items: baseline;
+    justify-content: space-between;
     column-gap: 1rem;
-    align-items: center;
   }
-  .share {
-    text-align: end;
+  .lead {
+    font-size: 1.25rem;
   }
   .bars {
     gap: 2px;
   }
-  .note {
-    min-block-size: 2.25rem;
+  .part {
+    padding-inline: 20px;
   }
-  /* The time column takes what it needs up to 19rem and never more than 45% of the row, so
-     the problem's own sentence always keeps the larger part. */
-  .slot {
-    grid-template-columns: minmax(0, 1fr) fit-content(45%);
-    column-gap: 1.5rem;
-    min-block-size: 4.5rem;
+}
+@container (min-width: 56rem) {
+  .parts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .when {
-    max-inline-size: 19rem;
-    text-align: end;
+  .part:first-child {
+    border-start-end-radius: 0;
   }
-  .probs.none {
-    min-block-size: 13.5rem;
+  .part:nth-child(2) {
+    border-start-end-radius: 0.3125rem;
+  }
+  .part:nth-last-child(2) {
+    border-end-start-radius: 0.3125rem;
+  }
+  .part:last-child {
+    border-end-start-radius: 0;
+  }
+}
+/* Wide enough for the headline and the line under it side by side, whatever they say. */
+@container (min-width: 45rem) {
+  .banner {
+    min-block-size: 3.5rem;
   }
 }

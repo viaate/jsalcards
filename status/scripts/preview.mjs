@@ -1,7 +1,7 @@
 /**
  * Serves the built status page on 127.0.0.1:4190 for a look by eye and for scripts/shots.cjs.
  * `/api/status` answers a made-up state (test/fixtures/made-up.ts), the one last set by
- * `GET /__set?state=history|ok|first|stale|unreachable|worst|launch`. Nothing here is deployed.
+ * `GET /__set?state=history|ok|first|stale|unreachable|worst|launch|full`. Nothing here is deployed.
  */
 
 import { readFileSync } from 'node:fs';

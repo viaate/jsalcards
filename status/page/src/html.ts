@@ -1,9 +1,9 @@
 /** From a view to HTML. Pure, and every value is escaped. */
 
-import { CANONICAL_URL, HOME_URL, copy } from './copy.ts';
+import { CANONICAL_URL, HOME_URL, copy, fill } from './copy.ts';
 import { MARK } from './mark.ts';
 import { TILE } from './tile.ts';
-import type { Shape, View } from './view.ts';
+import type { DayView, ProblemView, Shape, View } from './view.ts';
 
 /** The join between the two parts of a length (`copy.dur.two`). */
 const PART = /\u202f/g;
@@ -21,24 +21,27 @@ export function esc(text: string): string {
   return escaped(text).replace(PART, '\u00a0');
 }
 
-const SHAPES: Record<Shape | 'none' | 'before', string> = {
+const SHAPES: Record<Shape, string> = {
   ok: '<circle cx="8" cy="8" r="6.5"/>',
   late: '<path d="M8 1.5 15.2 14H.8Z"/>',
   down: '<rect x="2" y="2" width="12" height="12" rx="1.5"/>',
   unknown: '<circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/>',
   wait: '<circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/>',
-  // The two bars that are not a state, drawn as a run of them looks in the history.
-  none: '<path d="M1 9h4v6H1zM6 9h4v6H6zM11 9h4v6h-4z"/>',
-  before: '<path d="M1 13h4v2H1zM6 13h4v2H6zM11 13h4v2h-4z"/>',
 };
 
 /** A state's shape. The word beside it says the same: color is never alone. */
-export function shape(of: Shape | 'none' | 'before'): string {
+export function shape(of: Shape): string {
   return (
     `<svg class="shape s-${of}" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" ` +
     `aria-hidden="true" focusable="false">${SHAPES[of]}</svg>`
   );
 }
+
+/** The small mark beside a part's name: a letter i in a ring. */
+const INFO =
+  '<svg class="i" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" ' +
+  'focusable="false"><path d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1Zm0 1.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z"/>' +
+  '<circle cx="8" cy="5.25" r="1"/><path d="M7.25 7h1.5v4.5h-1.5z"/></svg>';
 
 /** Each part's name as the copy spells it, longest first, as a pattern. */
 const NAMES = Object.values(copy.parts)
@@ -97,97 +100,120 @@ function addressed(line: string): string {
 }
 
 function banner(view: View): string {
-  const lead = view.banner.lead.map((line) => `<p class="lead">${named(line)}</p>`).join('');
-  const more = view.banner.more === null ? '' : `<p class="more">${esc(view.banner.more)}</p>`;
-  // Drawn in the lead's place by the stylesheet alone, when the script has not started in time.
-  const stuck =
-    view.banner.stuck === null ? '' : `<p class="lead stuck">${esc(view.banner.stuck)}</p>`;
-  return (
-    `<section class="banner card" id="banner">${shape(view.banner.shape)}` +
-    `<div${stuck === '' ? '' : ' class="swap"'}>${lead}${more}${stuck}</div></section>`
-  );
+  const { lead, more, stuck } = view.banner;
+  const words =
+    `<div><p class="lead">${esc(lead)}</p>` +
+    (more === null ? '' : `<p class="more">${esc(more)}</p>`) +
+    '</div>';
+  // Drawn in the words' place by the stylesheet alone, when the script has not started in time.
+  const body =
+    stuck === null
+      ? words
+      : `<div class="swap">${words}<div class="stuck"><p class="lead">${esc(stuck.lead)}</p>` +
+        `<p class="more">${esc(stuck.more)}</p></div></div>`;
+  return `<section class="banner st-${view.banner.shape}" id="banner">${shape(view.banner.shape)}${body}</section>`;
 }
 
-function now(view: View): string {
-  const rows = view.parts
-    .map(
-      (row) =>
-        `<li class="row"><span class="name">${named(row.name)}</span>` +
-        `<span class="state">${shape(row.shape)}${esc(row.word)}</span>` +
-        `<span class="says">${addressed(row.says)}</span>` +
-        (row.file
-          ? `<span class="upd">${row.updated === null ? '' : esc(row.updated)}</span>`
-          : '') +
-        '</li>',
-    )
+function bars(block: View['history'][number]): string {
+  // No day is known: an empty outline the height of the bars, and the row's "Not loaded".
+  if (block.bars.every((bar) => bar.cls === 'unloaded')) {
+    return `<div class="bars off" data-part="${block.part}" aria-hidden="true"></div>`;
+  }
+  const labelled = block.bars.some((bar) => bar.label !== null);
+  const drawn = block.bars
+    .map((bar, i) => {
+      const cls = `bar b-${bar.cls}${bar.picked ? ' on' : ''}`;
+      if (bar.label === null) return `<span class="${cls}"></span>`;
+      return `<span class="${cls}" role="img" aria-label="${esc(bar.label)}" data-day="${i}"></span>`;
+    })
     .join('');
-  return (
-    `<section aria-labelledby="h-now"><h2 id="h-now">${esc(copy.heads.now)}</h2>` +
-    `<ul class="card rows">${rows}</ul></section>`
-  );
+  // The picked day's name, in a tip under its bar.
+  const tip =
+    block.note === null ? '' : `<p class="tip" id="tip" role="tooltip">${boxed(block.note)}</p>`;
+  return `<div class="bars" data-part="${block.part}"${labelled ? '' : ' aria-hidden="true"'}>${drawn}${tip}</div>`;
 }
 
-function history(view: View): string {
-  const key =
-    (['ok', 'late', 'down'] as const)
-      .map((state) => `<span>${shape(state)}${esc(copy.state[state])}</span>`)
-      .join('') +
-    `<span>${shape('none')}${esc(copy.share.keyNone)}</span>` +
-    `<span>${shape('before')}${esc(copy.share.keyBefore)}</span>`;
-  const blocks = view.history
-    .map((block) => {
-      const labelled = block.bars.some((bar) => bar.label !== null);
-      const bars = block.bars
-        .map((bar, i) => {
-          const cls = `bar b-${bar.cls}${bar.picked ? ' on' : ''}`;
-          if (bar.label === null) return `<span class="${cls}"></span>`;
-          const label = esc(bar.label);
-          return `<span class="${cls}" role="img" aria-label="${label}" title="${label}" data-day="${i}"></span>`;
-        })
-        .join('');
+function parts(view: View): string {
+  const rows = view.parts
+    .map((row, i) => {
+      const block = view.history[i]!;
+      const about = fill(copy.about, { part: row.name });
       return (
-        `<li class="hist"><p class="hist-top"><span class="name">${named(block.name)}</span>` +
-        `<span class="share">${esc(block.share)}</span></p>` +
-        `<div class="bars" data-part="${block.part}"${labelled ? '' : ' aria-hidden="true"'}>${bars}</div>` +
-        `<p class="axis" aria-hidden="true"><span>${esc(copy.share.axisStart)}</span><span>${esc(copy.share.axisEnd)}</span></p>` +
-        `<p class="note${block.hint ? ' hint' : ''}">${esc(block.note)}</p></li>`
+        `<li class="part"><p class="top"><span class="name">${named(row.name)}</span>` +
+        `<span class="info" tabindex="0" role="img" aria-label="${esc(about)}">${INFO}` +
+        `<span class="about" aria-hidden="true">${addressed(row.says)}</span></span>` +
+        `<span class="state s-${row.shape}">${shape(row.shape)}${esc(row.word)}</span></p>` +
+        `<p class="sr">${addressed(row.says)}</p>` +
+        bars(block) +
+        `<p class="axis" aria-hidden="true"><span>${esc(copy.share.axisStart)}</span>` +
+        `<span class="mid">${esc(block.mid)}</span>` +
+        `<span>${esc(copy.share.axisEnd)}</span></p>` +
+        // The axis is drawn for the eye; its share is said to a screen reader here.
+        (block.mid === '' ? '' : `<p class="sr">${esc(block.mid)}</p>`) +
+        (row.file ? `<p class="upd">${esc(row.updated)}</p>` : '') +
+        '</li>'
       );
     })
     .join('');
   return (
-    `<section aria-labelledby="h-history"><div class="head"><h2 id="h-history">${esc(copy.heads.history)}</h2>` +
-    `<p class="key">${key}</p></div><ul class="card hists">${blocks}</ul></section>`
+    `<section aria-labelledby="h-now"><h2 id="h-now">${esc(copy.heads.now)}</h2>` +
+    `<ul class="card parts">${rows}</ul></section>`
+  );
+}
+
+function problem(item: ProblemView): string {
+  return (
+    `<li class="prob"><p class="what k-${item.kind}">${boxed(item.what)}</p>` +
+    `<p class="when">${boxed(item.when)}</p></li>`
+  );
+}
+
+function day(item: DayView): string {
+  return (
+    `<li class="day"><h3><time>${esc(item.date)}</time></h3>` +
+    (item.none === null
+      ? `<ul class="probs">${item.problems.map(problem).join('')}</ul>`
+      : `<p class="none">${esc(item.none)}</p>`) +
+    (item.note === null ? '' : `<p class="none note">${esc(item.note)}</p>`) +
+    '</li>'
   );
 }
 
 function problems(view: View): string {
-  const { slots, empty, button } = view.problems;
-  let list: string;
-  if (slots.every((slot) => slot === null)) {
-    list = `<div class="probs none"><p>${empty === null ? '' : esc(empty)}</p></div>`;
-  } else {
-    const items = slots
-      .map((slot) =>
-        slot === null
-          ? '<li class="slot" aria-hidden="true"></li>'
-          : `<li class="slot"><span class="what">${boxed(slot.what)}</span><span class="when">${boxed(slot.when)}</span></li>`,
-      )
-      .join('');
-    list = `<ol class="probs">${items}</ol>`;
-  }
+  const { days, empty, older, button, expanded, began, cut } = view.problems;
+  // Only problem days are listed: with none, and nothing to say in their place, no section.
+  if (days.length === 0 && empty === null && button === null) return '';
+  let list = '';
+  if (days.length > 0) list = `<ol class="days">${days.map(day).join('')}</ol>`;
+  else if (empty !== null) list = `<p class="empty">${esc(empty)}</p>`;
+  const shown =
+    expanded && older.length > 0 ? `<ol class="days older">${older.map(day).join('')}</ol>` : '';
   const more =
     button === null
       ? ''
-      : `<button type="button" id="more" aria-expanded="${view.problems.expanded}">${esc(button)}</button>`;
+      : `<p class="more-row"><button type="button" id="more" aria-expanded="${expanded}">${esc(button)}</button></p>`;
+  const ends = [cut, began]
+    .filter((line) => line !== null)
+    .map((line) => `<p class="end">${boxed(line)}</p>`)
+    .join('');
   return (
-    `<section aria-labelledby="h-problems"><h2 id="h-problems">${esc(copy.heads.problems)}</h2>` +
-    `<div class="card">${list}<p class="more-row">${more}</p></div></section>`
+    `<section class="past" aria-labelledby="h-problems"><h2 id="h-problems">${esc(copy.heads.problems)}</h2>` +
+    `${list}${shown}${more}${ends}</section>`
   );
+}
+
+/** What each color of bar means, each with a bar of its own color. */
+function key(): string {
+  const kinds = ['ok', 'late', 'down', 'none', 'before'] as const;
+  const items = kinds
+    .map((kind) => `<li><span class="sw b-${kind}"></span>${esc(copy.foot.key[kind])}</li>`)
+    .join('');
+  return `<ul class="key how">${items}</ul>`;
 }
 
 /** What goes in `<main>`. */
 export function mainHtml(view: View): string {
-  return banner(view) + now(view) + history(view) + problems(view);
+  return banner(view) + parts(view) + problems(view);
 }
 
 /** The whole page, with `main` in `<main>`: the first paint before the script runs. */
@@ -205,12 +231,15 @@ export function pageHtml(main: string): string {
     '<link rel="stylesheet" href="/style.css">\n' +
     '<script src="/app.js" defer></script>\n' +
     '</head>\n<body>\n' +
-    `<header><h1>${TILE}<span class="brand">${esc(copy.brand)}</span> <span class="page">${esc(copy.page)}</span></h1></header>\n` +
+    `<header><div class="bar-top"><h1>${TILE}<span class="brand">${esc(copy.brand)}</span> <span class="page">${esc(copy.page)}</span></h1>` +
+    `<a class="go" href="${HOME_URL}">${esc(copy.foot.home)}</a></div></header>\n` +
     `<noscript><p class="noscript">${esc(copy.noscript)}</p></noscript>\n` +
-    `<main id="main">${main}</main>\n` +
+    // The first paint is the page waiting: its footer is drawn once the page has filled in.
+    `<main id="main" class="wait">${main}</main>\n` +
     '<p class="sr" id="said" role="status"></p>\n' +
-    `<footer><p class="how">${esc(copy.foot.how)}</p><p class="privacy">${esc(copy.foot.privacy)}</p>` +
-    `<p><a class="home" href="${HOME_URL}">${MARK}<span>${esc(copy.foot.home)}</span></a></p></footer>\n` +
+    `<footer><div class="foot-in"><p class="how">${esc(copy.foot.how)}</p>${key()}` +
+    `<p class="how">${esc(copy.foot.share)}</p><p class="privacy">${esc(copy.foot.privacy)}</p>` +
+    `<p><a class="home" href="${HOME_URL}">${MARK}<span>${esc(copy.foot.home)}</span></a></p></div></footer>\n` +
     '</body>\n</html>\n'
   );
 }

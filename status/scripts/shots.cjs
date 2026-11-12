@@ -30,43 +30,59 @@ const PHONE = { width: 390, height: 844, scale: 2 };
 const DESKTOP = { width: 1280, height: 800, scale: 1 };
 const NARROW = { width: 320, height: 640, scale: 1 };
 
-/** [file, state, scheme, viewport]; a null file is checked and not saved. */
+/**
+ * [file, state, scheme, viewport, open]; a null file is checked and not saved. Every state,
+ * light and dark, on a phone and a desktop: everything working (ok), slow (history), not
+ * working (worst), could not check (launch), no recent checks (stale), history failed
+ * (unreachable), before the first check (first), 90 full days of mixed days (full), and a part
+ * that flaps (flap). With `open` the earlier problems are shown before the picture is taken.
+ */
+const STATES = [
+  'ok',
+  'history',
+  'worst',
+  'launch',
+  'stale',
+  'unreachable',
+  'first',
+  'full',
+  'flap',
+];
 const SHOTS = [
-  ['history-light-phone', 'history', 'light', PHONE],
-  ['history-dark-phone', 'history', 'dark', PHONE],
-  ['history-light-desktop', 'history', 'light', DESKTOP],
-  ['history-dark-desktop', 'history', 'dark', DESKTOP],
-  ['first-dark-phone', 'first', 'dark', PHONE],
-  ['unreachable-light-phone', 'unreachable', 'light', PHONE],
-  ['stale-dark-desktop', 'stale', 'dark', DESKTOP],
-  ['ok-light-desktop', 'ok', 'light', DESKTOP],
+  ...STATES.flatMap((state) =>
+    ['light', 'dark'].flatMap((scheme) => [
+      [`${state}-${scheme}-phone`, state, scheme, PHONE],
+      [`${state}-${scheme}-desktop`, state, scheme, DESKTOP],
+    ]),
+  ),
   ['history-light-320', 'history', 'light', NARROW],
-  [null, 'ok', 'light', NARROW],
-  [null, 'first', 'light', NARROW],
-  ['stale-light-320', 'stale', 'light', NARROW],
-  ['unreachable-light-320', 'unreachable', 'light', NARROW],
   ['worst-light-320', 'worst', 'light', NARROW],
-  ['worst-light-phone', 'worst', 'light', PHONE],
-  ['worst-light-desktop', 'worst', 'light', DESKTOP],
+  ...STATES.filter((s) => s !== 'history' && s !== 'worst').map((s) => [null, s, 'light', NARROW]),
   [null, 'worst', 'dark', { width: 768, height: 1024, scale: 1 }],
-  ['launch-light-phone', 'launch', 'light', PHONE],
-  ['ok-light-phone', 'ok', 'light', PHONE],
-  [null, 'launch', 'light', NARROW],
-  [null, 'launch', 'dark', DESKTOP],
+  ...['light', 'dark'].flatMap((scheme) => [
+    [`worst-${scheme}-phone-earlier`, 'worst', scheme, PHONE, true],
+    [`worst-${scheme}-desktop-earlier`, 'worst', scheme, DESKTOP, true],
+  ]),
 ];
 
 /** The widths the line breaks are checked at: the common phones, a tablet, a desktop. */
 const WIDTHS = [320, 360, 375, 390, 393, 412, 430, 768, 1280];
 
-/** Where each box that fills from data sits, so a box that grew or moved can be told. */
+/**
+ * Where each box that fills from data sits, so a box that grew or moved can be told: the
+ * banner, each part and its bars. "Past problems" under them is drawn only once the page has
+ * its answer and a problem day, as long as its days; the footer under it is not drawn while
+ * the page waits (checked in `one`).
+ */
 function boxes(page) {
   return page.evaluate(() => {
-    const picked = 'main > section, .banner, .row, .hist, .probs, .more-row, footer';
-    return [...document.querySelectorAll(picked)].map((box) => {
+    const picked = '.banner, .part, .bars';
+    const found = [...document.querySelectorAll(picked)].map((box) => {
       const rect = box.getBoundingClientRect();
       const top = Math.round((rect.top + window.scrollY) * 10) / 10;
-      return `${box.classList[0] ?? box.tagName.toLowerCase()} ${top} ${Math.round(rect.height * 10) / 10}`;
+      return `${box.classList[0] ?? box.id} ${top} ${Math.round(rect.height * 10) / 10}`;
     });
+    return found;
   });
 }
 
@@ -76,7 +92,7 @@ function moved(before, after) {
   return at < 0 ? null : `"${before[at]}" became "${after[at]}"`;
 }
 
-async function one(browser, [file, state, scheme, viewport]) {
+async function one(browser, [file, state, scheme, viewport, open = false]) {
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
     deviceScaleFactor: viewport.scale,
@@ -114,6 +130,11 @@ async function one(browser, [file, state, scheme, viewport]) {
   });
   await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
   const before = await boxes(page);
+  // While it waits the footer is not drawn, so the list above it fills in and nothing moves.
+  const footer = await page.evaluate(
+    () => getComputedStyle(document.querySelector('footer')).display,
+  );
+  if (footer !== 'none') problems.push(`footer drawn while waiting (${footer})`);
   release();
   await page.waitForFunction(
     () => !document.querySelector('.lead')?.textContent?.includes('Checking'),
@@ -146,10 +167,23 @@ async function one(browser, [file, state, scheme, viewport]) {
     const box = await bars.boundingBox();
     const day = state === 'history' ? 79.5 : 67.5;
     await page.mouse.move(box.x + (box.width * day) / 90, box.y + box.height / 2);
-    await page.waitForFunction(() => document.querySelector('.note:not(.hint)') !== null);
+    await page.waitForFunction(() => document.getElementById('tip') !== null);
     change = moved(before, await boxes(page));
     if (change !== null) problems.push(`moved when a day was picked: ${change}`);
+    if (file !== null && state === 'history') {
+      await page.evaluate(() => window.scrollBy(0, -120));
+      await page.screenshot({ path: join(out, `${file}-tip.png`) });
+    }
     await page.mouse.move(0, 0);
+  }
+  if (open) {
+    // The earlier problems, as the button shows them: the page still fits its width.
+    await page.locator('#more').click();
+    await page.waitForFunction(() => document.querySelector('.days.older') !== null);
+    const wide = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    if (wide > 0) problems.push(`horizontal scroll ${wide}px with the earlier problems shown`);
   }
   if (file !== null) await page.screenshot({ path: join(out, `${file}.png`), fullPage: true });
   await context.close();
@@ -391,7 +425,8 @@ function looked({ whole, big }) {
   const half = parseFloat(getComputedStyle(document.documentElement).fontSize) / 2;
   for (const p of document.querySelectorAll('.axis')) {
     if (!shown(p)) continue;
-    const [start, end] = [...p.children].map((span) => span.getBoundingClientRect());
+    const spans = [...p.children].map((span) => span.getBoundingClientRect());
+    const [start, end] = [spans[0], spans[spans.length - 1]];
     const bars = p.previousElementSibling.getBoundingClientRect();
     const gap = end.left - start.right;
     if (Math.round(start.top) === Math.round(end.top) && gap < half - 0.5)
@@ -482,7 +517,7 @@ async function looks(browser, state) {
         await bars.scrollIntoViewIfNeeded();
         const box = await bars.boundingBox();
         await page.mouse.move(box.x + (box.width * 79.5) / 90, box.y + box.height / 2);
-        await page.waitForFunction(() => document.querySelector('.note:not(.hint)') !== null);
+        await page.waitForFunction(() => document.getElementById('tip') !== null);
         seen.push(await page.evaluate(looked, { whole: WHOLE, big: size !== 100 }));
       }
       await context.close();
@@ -547,8 +582,8 @@ async function scriptMissing(browser) {
     page.evaluate(() => {
       const shown = (box) => getComputedStyle(box).visibility === 'visible';
       return {
-        lead: shown(document.querySelector('.lead:not(.stuck)')),
-        stuck: shown(document.querySelector('.stuck')),
+        lead: shown(document.querySelector('.swap > :not(.stuck) .lead')),
+        stuck: shown(document.querySelector('.stuck .lead')),
         states: [...document.querySelectorAll('.state')].filter(shown).length,
         line: document.querySelector('.stuck').textContent,
       };
@@ -637,11 +672,20 @@ async function comingBack(browser) {
 }
 
 /**
- * The banner's reserve holds its longest copy (every part named and "Could not refresh. This is
- * the check from 14 minutes ago.") at every 2 px of room from 8rem to 43rem, so nothing moves
- * when it fills, whatever the screen and the text size.
+ * The banner's reserve holds each of its copies, the headline with the longest line under it,
+ * at every 2 px of room from 8rem to the page's widest, so nothing moves when it fills,
+ * whatever the screen and the text size. With `report`, prints the size each room needs.
  */
-async function reserves(browser) {
+async function reserves(browser, report = false) {
+  const { copy } = await import('../page/src/copy.ts');
+  const leads = [...Object.values(copy.banner).filter((t) => !t.includes('{')), copy.stuck];
+  const mores = [
+    'Could not refresh. Checked 59\u00a0minutes\u00a0ago.',
+    'The last check was 59\u00a0minutes\u00a0ago.',
+    copy.banner.firstMore,
+    copy.banner.unreachableMore,
+    copy.stuckMore,
+  ];
   const context = await browser.newContext({
     viewport: { width: 400, height: 900 },
     timezoneId: 'America/New_York',
@@ -649,36 +693,55 @@ async function reserves(browser) {
   });
   await (await context.request.get(`${ORIGIN}/__set?state=worst`)).text();
   const page = await context.newPage();
+  await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
+  await page.waitForFunction(
+    () => !document.querySelector('.lead')?.textContent?.includes('Checking'),
+  );
   const found = [];
+  const needs = [];
   let most = 0;
   let count = 0;
-  for (let width = 160; width <= 720; width += 2) {
+  for (let width = 160; width <= 1040; width += 2) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto(`${ORIGIN}/`, { waitUntil: 'load' });
-    await page.waitForFunction(
-      () => !document.querySelector('.lead')?.textContent?.includes('Checking'),
+    const seen = await page.evaluate(
+      ({ leads, mores }) => {
+        const banner = document.querySelector('.banner');
+        const reserve = parseFloat(getComputedStyle(banner).minHeight);
+        const lead = banner.querySelector('.lead');
+        let more = banner.querySelector('.more');
+        if (more === null) {
+          more = document.createElement('p');
+          more.className = 'more';
+          lead.after(more);
+        }
+        const was = [lead.textContent, more.textContent];
+        banner.style.minHeight = '0';
+        let need = 0;
+        for (const a of leads)
+          for (const b of mores) {
+            lead.textContent = a;
+            more.textContent = b;
+            need = Math.max(need, banner.getBoundingClientRect().height);
+          }
+        banner.style.minHeight = '';
+        [lead.textContent, more.textContent] = was;
+        return { reserve, need };
+      },
+      { leads, mores },
     );
-    const seen = await page.evaluate(() => {
-      const banner = document.querySelector('.banner');
-      const reserve = parseFloat(getComputedStyle(banner).minHeight);
-      banner.style.minHeight = '0';
-      document.querySelector('.more').textContent =
-        'Could not refresh. This is the check from 14\u00a0minutes\u00a0ago.';
-      const need = banner.getBoundingClientRect().height;
-      return { reserve, need };
-    });
     count += 1;
+    needs.push(`${width}:${seen.need}`);
     most = Math.max(most, seen.reserve - seen.need);
     if (seen.need > seen.reserve + 0.5)
-      found.push(`${(width - 32) / 16}rem: needs ${seen.need} px of its ${seen.reserve} px`);
+      found.push(`${width} px: needs ${seen.need} px of its ${seen.reserve} px`);
   }
   await context.close();
+  if (report) console.log(needs.join(' '));
   return said(
     found.length === 0,
     'banner reserve',
     found.length === 0
-      ? `the longest copy fits at all ${count} widths of room from 8rem to 43rem, with at most ` +
-          `${most} px to spare`
+      ? `every copy fits at all ${count} widths from 160 to 1040 px, with at most ${most} px to spare`
       : found.join('; '),
   );
 }
@@ -723,7 +786,7 @@ async function bigText(browser, state) {
   );
 }
 
-module.exports = { looks, looked, wholeRuns, setWhole: (runs) => (WHOLE = runs) };
+module.exports = { looks, looked, reserves, wholeRuns, setWhole: (runs) => (WHOLE = runs) };
 
 if (require.main === module)
   main().catch((error) => {
@@ -736,6 +799,16 @@ async function main() {
   WHOLE = await wholeRuns();
   const browser = await chromium.launch();
   let good = true;
+  // SHOTS_PART=pictures or =looks runs one half, so each fits a short sitting; unset runs both.
+  const part = process.env.SHOTS_PART ?? 'all';
+  if (part !== 'looks') good = (await pictures(browser)) && good;
+  if (part !== 'pictures') for (const state of STATES) good = (await looks(browser, state)) && good;
+  await browser.close();
+  process.exit(good ? 0 : 1);
+}
+
+async function pictures(browser) {
+  let good = true;
   for (const shot of SHOTS) good = (await one(browser, shot)) && good;
   good = (await scriptsOff(browser)) && good;
   good = (await scriptMissing(browser)) && good;
@@ -743,8 +816,5 @@ async function main() {
   good = (await reserves(browser)) && good;
   for (const state of ['history', 'worst', 'stale', 'first', 'unreachable'])
     good = (await bigText(browser, state)) && good;
-  for (const state of ['history', 'worst', 'launch', 'ok', 'stale', 'first', 'unreachable'])
-    good = (await looks(browser, state)) && good;
-  await browser.close();
-  process.exit(good ? 0 : 1);
+  return good;
 }

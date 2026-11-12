@@ -35,36 +35,55 @@ function contrast(a: string, b: string): number {
 
 test('the tokens are the ones the page was designed with', () => {
   assert.deepEqual(light, {
-    page: '#e9ecef',
+    page: '#f4f6f8',
     surface: '#ffffff',
-    border: '#d2d6dc',
-    text: '#0d1014',
-    quiet: '#4a515a',
-    ok: '#08794b',
-    late: '#9a5600',
-    down: '#b3261e',
-    none: '#68707a',
+    border: '#dde1e6',
+    text: '#1c2127',
+    quiet: '#59626d',
+    link: '#0b5cba',
+    ok: '#1b7f40',
+    late: '#a65c00',
+    down: '#cf2c2c',
+    none: '#8c949e',
+    before: '#e6e9ed',
+    bar: '#34a35a',
+    bok: '#1f8442',
+    blate: '#a35400',
+    bdown: '#c42b2b',
+    bnone: '#5e6873',
+    on: '#ffffff',
   });
   assert.deepEqual(dark, {
-    page: '#000000',
-    surface: '#0a0a0a',
-    border: '#2a2a2a',
-    text: '#f5f5f5',
-    quiet: '#a3a3a3',
-    ok: '#6bffb0',
-    late: '#ffc46b',
-    down: '#ff8a80',
-    none: '#6b6b6b',
+    page: '#0c0f13',
+    surface: '#151a20',
+    border: '#2a313a',
+    text: '#e9edf1',
+    quiet: '#9ba5b0',
+    link: '#79b4ff',
+    ok: '#3ccf6e',
+    late: '#f0a83a',
+    down: '#ff6b63',
+    none: '#6c7682',
+    before: '#262d36',
+    bar: '#34b862',
+    bok: '#1f8442',
+    blate: '#a35400',
+    bdown: '#c42b2b',
+    bnone: '#4f5965',
+    on: '#ffffff',
   });
   assert.match(css, /color-scheme: light dark;/);
 });
 
+const SCHEMES = [
+  ['light', light],
+  ['dark', dark],
+] as const;
+
 test('text reads on the page and on a surface, in both schemes', () => {
-  for (const [name, scheme] of [
-    ['light', light],
-    ['dark', dark],
-  ] as const) {
-    for (const ink of ['text', 'quiet'] as const) {
+  for (const [name, scheme] of SCHEMES) {
+    // The state words and a problem's heading are drawn in their state's color.
+    for (const ink of ['text', 'quiet', 'link', 'ok', 'late', 'down'] as const) {
       for (const ground of ['page', 'surface'] as const) {
         const ratio = contrast(scheme[ink]!, scheme[ground]!);
         assert.equal(ratio >= 4.5, true, `${name} ${ink} on ${ground}: ${ratio.toFixed(2)}`);
@@ -73,15 +92,24 @@ test('text reads on the page and on a surface, in both schemes', () => {
   }
 });
 
-test('each state color stands out from a surface, in both schemes', () => {
-  for (const [name, scheme] of [
-    ['light', light],
-    ['dark', dark],
-  ] as const) {
-    for (const state of ['ok', 'late', 'down', 'none'] as const) {
-      const ratio = contrast(scheme[state]!, scheme['surface']!);
-      assert.equal(ratio >= 3, true, `${name} ${state}: ${ratio.toFixed(2)}`);
+test("the banner's white words read on each of its colors", () => {
+  for (const [name, scheme] of SCHEMES) {
+    for (const ground of ['bok', 'blate', 'bdown', 'bnone'] as const) {
+      const ratio = contrast(scheme['on']!, scheme[ground]!);
+      assert.equal(ratio >= 4.5, true, `${name} on ${ground}: ${ratio.toFixed(2)}`);
     }
+  }
+});
+
+test('each bar of a state stands out from a surface, and a day with nothing to show does not', () => {
+  for (const [name, scheme] of SCHEMES) {
+    for (const state of ['bar', 'late', 'down', 'none'] as const) {
+      const ratio = contrast(scheme[state]!, scheme['surface']!);
+      assert.equal(ratio >= 2.9, true, `${name} ${state}: ${ratio.toFixed(2)}`);
+    }
+    // Before the checks began: a light grey bar, quieter than any state.
+    const before = contrast(scheme['before']!, scheme['surface']!);
+    assert.equal(before > 1.1 && before < 1.5, true, `${name} before: ${before.toFixed(2)}`);
   }
 });
 
@@ -89,7 +117,7 @@ test('nothing in the stylesheet comes from elsewhere', () => {
   assert.equal(/url\(|@import|@font-face|https?:/.test(css), false);
   assert.match(
     css.replace(/\s+/g, ' '),
-    /font: 1rem\/1\.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;/,
+    /font: 1rem\/1\.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;/,
   );
 });
 
@@ -104,94 +132,53 @@ function rulesWith(property: string): string[] {
   return found;
 }
 
+const flat = css.replace(/\/\*[^]*?\*\//g, '').replace(/\s+/g, ' ');
+
 test('tabular numbers are only on the lines whose numbers change in place', () => {
   // Never on the body or on a line that holds a part's name: in some system fonts tabular
   // numbers also widen the hyphen, and "Snow-day" was drawn "Snow - day".
-  assert.deepEqual(rulesWith('font-variant-numeric'), ['.more, .upd, .share, .when']);
+  assert.deepEqual(rulesWith('font-variant-numeric'), ['.more, .upd, .mid, .when']);
   assert.deepEqual(rulesWith('font-feature-settings'), []);
 });
 
 test('with scripts off only the line that says so is shown', () => {
   // The boxes cannot fill in, and the footer does not explain bars that are not there.
-  assert.match(
-    css.replace(/\s+/g, ' '),
-    /@media \(scripting: none\) \{ main, \.how \{ display: none; \} \}/,
-  );
+  assert.match(flat, /@media \(scripting: none\) \{ main, \.how \{ display: none; \} \}/);
 });
 
 test('no text of the page ends in a line of one word', () => {
-  // The headline, the banner's second line, the line under each part's name and the one line
-  // of an empty problems box are balanced: short lines of near one length.
-  // So are a row's state, a name in the key and the footer's one sentence, where very large
-  // text wraps them.
+  // The headline, the banner's second line, a state, the share on its own line and the
+  // footer's one sentence are balanced: short lines of near one length.
   assert.deepEqual(rulesWith('text-wrap: balance'), [
     '.lead',
     '.more',
     '.state',
-    '.says',
-    '.key span',
-    '.probs.none',
+    '.tip',
+    '.mid',
+    '.none, .empty',
     '.privacy',
   ]);
-  // The longer texts keep their own breaks and only pull a word down to the last line: a
-  // problem's heading reads better broken late ("… not working for" / "25 minutes.") than in
-  // the middle. The pictures script checks every visible text at nine widths.
-  assert.deepEqual(rulesWith('text-wrap: pretty'), [
-    '.share',
-    '.note',
-    '.what',
-    '.when',
-    'footer p',
-  ]);
+  // The longer texts keep their own breaks and only pull a word down to the last line. The
+  // pictures script checks every visible text at nine widths.
+  assert.deepEqual(rulesWith('text-wrap: pretty'), ['.end', '.what', '.when', 'footer p']);
 });
 
-test('large text on a narrow phone: the banner keeps its words whole and its key wraps', () => {
-  const flat = css.replace(/\/\*[^]*?\*\//g, '').replace(/\s+/g, ' ');
-  // The shape goes above the words when they would have under 12rem beside it, and both sit at
-  // the top of the banner's reserved size.
+test('one banner: a solid bar in the state color, its words centred, its size kept', () => {
   assert.match(
     flat,
-    /\.banner \{ display: flex; flex-wrap: wrap; gap: 0\.75rem; align-items: flex-start; align-content: flex-start;/,
+    /\.banner \{ display: flex; flex-wrap: wrap; align-items: center; align-content: center; gap: 0\.75rem;[^}]*background: var\(--bnone\); color: var\(--on\); min-block-size: 14\.5rem; \}/,
   );
-  assert.match(flat, /\.banner > div \{ flex: 1 1 12rem; min-inline-size: 0; \}/);
-  // The headline grows with the reader's text and is never held to its column's width: a name
-  // that does not fit at the end of a line moves down whole in its own box.
-  assert.match(flat, /\.lead \{ font-size: 1\.125rem; font-weight: 600; line-height: 1\.5rem;/);
-  assert.match(flat, /\.nm, \.nb \{ display: inline-block; \}/);
-  // The rows' words wrap where they do not fit, so nothing pushes the page wider than the screen.
-  assert.match(
-    flat,
-    /\.state \{ display: flex; align-items: center; gap: 0\.4rem; min-block-size: 1\.5rem; text-wrap: balance; \}/,
-  );
-  assert.match(flat, /\.upd \{ min-block-size: 1\.25rem; \}/);
-  // A word wider than the line breaks inside it, and only then: never to balance two lines.
-  assert.match(flat, /\.says \{ text-wrap: balance; overflow-wrap: break-word; \}/);
-  assert.equal(flat.includes('anywhere'), false);
-  assert.equal(
-    /cq[iwhb]|vw|vmin|clamp\(|min\(\d/.test(flat.replace(/minmax\(min\(100%/g, '')),
-    false,
-  );
-  // The key has two columns, or one where a name would not fit in half.
-  assert.match(
-    flat,
-    /\.key \{ display: grid; grid-template-columns: repeat\(auto-fit, minmax\(min\(100%, 7rem\), 1fr\)\);/,
-  );
-});
-
-test('large text on a tablet: what goes side by side asks for room in text units', () => {
-  const flat = css.replace(/\/\*[^]*?\*\//g, '').replace(/\s+/g, ' ');
-  // Every wide layout asks <main> how much room it has in rem, never the screen in pixels: at
-  // 150% text a 768 px tablet has the room of a 512 px phone, and lays out as one.
-  assert.match(flat, /main \{ container-type: inline-size; \}/);
-  assert.equal(/@media \([a-z-]*width/.test(flat), false);
-  const rooms = [...flat.matchAll(/@container \(([^)]*)\)/g)].map((m) => m[1]!);
-  for (const room of rooms) assert.match(room, /^min-width: \d+(\.\d+)?rem$/);
-  assert.deepEqual(rooms.slice(-2), ['min-width: 21.75rem', 'min-width: 38rem']);
-  // The banner's reserve steps down as its room grows (scripts/shots.cjs checks each holds the
-  // longest copy at every 2 px of room), and the side gutters stay 16 px at every text size.
+  for (const [state, token] of [
+    ['ok', 'bok'],
+    ['late', 'blate'],
+    ['down', 'bdown'],
+  ])
+    assert.match(flat, new RegExp(`\\.st-${state} \\{ background: var\\(--${token}\\); \\}`));
+  // Its reserve steps down as its room grows (scripts/shots.cjs checks each holds every copy
+  // at every 2 px of room), to one bar's height when its two lines go side by side.
   const steps = [
     ...flat.matchAll(
-      /@container \(min-width: ([\d.]+)rem\) \{ \.banner \{ min-block-size: ([\d.]+)rem; \} \}/g,
+      /@container \(min-width: ([\d.]+)rem\) \{ \.banner \{ (?:padding-inline: 20px; )?min-block-size: ([\d.]+)rem; \} \}/g,
     ),
   ].map((m) => [Number(m[1]), Number(m[2])] as const);
   assert.equal(steps.length >= 8, true);
@@ -199,31 +186,58 @@ test('large text on a tablet: what goes side by side asks for room in text units
     assert.equal(steps[i]![0] > steps[i - 1]![0], true);
     assert.equal(steps[i]![1] < steps[i - 1]![1], true);
   }
+  assert.deepEqual(steps.at(-1), [45, 3.5]);
+  // Its words grow with the reader's text; a name never splits.
+  assert.match(flat, /\.lead \{ font-size: 1\.125rem; font-weight: 600; line-height: 1\.5rem;/);
+  assert.match(flat, /\.nm, \.nb \{ display: inline-block; \}/);
+});
+
+test('ninety bars fill each row, and the tip of a day stays inside it', () => {
   assert.match(
     flat,
-    /main, footer, \.noscript \{ max-inline-size: 44rem; margin-inline: auto; padding-inline: 16px; \}/,
+    /\.bars \{ position: relative; display: grid; grid-template-columns: repeat\(90, 1fr\);/,
+  );
+  assert.match(flat, /\.bar \{ border-radius: 1px; background: var\(--before\); \}/);
+  assert.match(
+    flat,
+    /\.tip \{ position: absolute;[^}]*inset-inline-start: calc\(var\(--at, 0\) \* 100%\);[^}]*max-inline-size: 100%;[^}]*transform: translateX\(calc\(var\(--at, 0\) \* -100%\)\);/,
+  );
+  // The list of past problems is as long as its days: no screen-tall hold under a short one.
+  assert.equal(/100vh|min-block-size: 100/.test(flat), false);
+  // While the page waits the footer is not drawn, so it never moves when the list fills in.
+  assert.match(flat, /main\.wait ~ footer \{ display: none; \}/);
+  assert.match(flat, /@media \(scripting: none\) \{ main\.wait ~ footer \{ display: block; \} \}/);
+  // With no share the rule between the axis labels runs whole.
+  assert.match(flat, /\.mid:empty \{ gap: 0; \}/);
+  // On a narrow row the share has a line of its own under the rule, kept while the page waits;
+  // from 21.5rem it sits in the middle of the rule.
+  assert.match(flat, /\.mid \{ grid-row: 2; grid-column: 1 \/ -1; min-block-size: 1\.125rem;/);
+  assert.match(flat, /@container \(min-width: 21\.5rem\) \{ \.axis \{ display: flex; \}/);
+});
+
+test('what goes side by side asks for room in text units', () => {
+  // Every wide layout asks <main> how much room it has in rem, never the screen in pixels: at
+  // 150% text a 768 px tablet has the room of a 512 px phone, and lays out as one.
+  assert.match(flat, /main \{ container-type: inline-size;/);
+  assert.equal(/@media \([a-z-]*width/.test(flat), false);
+  const rooms = [...flat.matchAll(/@container \(([^)]*)\)/g)].map((m) => m[1]!);
+  for (const room of rooms) assert.match(room, /^min-width: \d+(\.\d+)?rem$/);
+  assert.equal(/cq[iwhb]|vw|vmin|clamp\(/.test(flat), false);
+  // The side gutters stay 16 px at every text size.
+  assert.match(
+    flat,
+    /\.bar-top, main, \.foot-in, \.noscript \{ max-inline-size: 61\.25rem; margin-inline: auto; padding-inline: 16px; \}/,
   );
   // One column grows no wider than its row, so a long word or box wraps instead.
-  assert.match(flat, /\.row \{ display: grid; grid-template-columns: minmax\(0, 1fr\);/);
-  assert.match(flat, /\.slot \{ display: grid; grid-template-columns: minmax\(0, 1fr\);/);
-  // Side by side, the time column never takes more than 45% of a problem's row.
-  assert.match(
-    flat,
-    /\.slot \{ grid-template-columns: minmax\(0, 1fr\) fit-content\(45%\); column-gap: 1\.5rem;/,
-  );
-  // The axis labels keep half a line apart, or "Today" goes down a line and ends under the
-  // last bar.
-  assert.match(
-    flat,
-    /\.axis \{ display: flex; flex-wrap: wrap; column-gap: 0\.5rem;[^}]*\} \.axis span:last-child \{ margin-inline-start: auto; \}/,
-  );
+  assert.match(flat, /\.parts \{ display: grid; grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(flat, /\.parts \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/);
 });
 
 test('a page whose script never starts stops saying Checking, by the stylesheet alone', () => {
   const flat = css.replace(/\/\*[^]*?\*\//g, '').replace(/\s+/g, ' ');
   // Hidden until 10 s have passed without the script's mark on <main>, then drawn in the
   // lead's own grid cell; gone for good once the script has started.
-  assert.match(flat, /\.swap \{ display: grid; \} \.swap > \* \{ grid-area: 1 \/ 1; \}/);
+  assert.match(flat, /\.swap \{ display: grid;[^}]*\} \.swap > \* \{ grid-area: 1 \/ 1; \}/);
   assert.match(flat, /\.stuck \{ visibility: hidden; \} main\.on \.stuck \{ display: none; \}/);
   assert.match(flat, /main:not\(\.on\) \.stuck \{ animation: shown 0\.01s 10s forwards; \}/);
   assert.match(
