@@ -8,6 +8,8 @@
 //       settings file writes them;
 //   (b) words: any way for a view to draw text that did not come from its screen model,
 //       and any text SnowlightCore hands out through its public surface;
+//       and a view laid out by the device's screen, idiom or orientation, or by a length
+//       the size of a screen;
 //   (c) impurity in SnowlightCore: the device's clock or zone, the process's environment,
 //       the network, a formatter, a pattern engine, a crash path, any import but
 //       Foundation; and in the tests: the clock, the zone, the environment or the network
@@ -460,6 +462,23 @@ const VIEW_DEVICE = [
 const SETTINGS_STORE = 'the settings store (only Shell/WindowStyle.swift holds it)';
 
 /**
+ * What a view may not lay itself out by: the device's screen, its idiom, its orientation.
+ * A screen is laid out from the room its window gives it and the system's width class
+ * (SnowlightCore's ContentLayout), because the same app runs on an iPhone 17 Pro, on the
+ * iPhone Duo closed and open, and a fold changes the room while it runs. UIDevice is
+ * already refused by the list above. (b)
+ */
+const VIEW_LAYOUT = [
+  [/(?<![A-Za-z0-9_])UIScreen(?![A-Za-z0-9_])/, "the device's screen", 'let wide = UIScreen.main.bounds.width'],
+  [/(?<![A-Za-z0-9_])(?:UIUserInterfaceIdiom|userInterfaceIdiom)(?![A-Za-z0-9_])/, "the device's idiom", 'let pad = traits.userInterfaceIdiom == .pad'],
+  [/(?<![A-Za-z0-9_])(?:UIInterfaceOrientation|UIDeviceOrientation|interfaceOrientation|isPortrait|isLandscape)(?![A-Za-z0-9_])/, 'the orientation (the inner screen of the Duo does not follow it; lay out by the width class)', 'let side = scene.interfaceOrientation.isLandscape'],
+  [/(?<![A-Za-z0-9_])(?:nativeBounds|nativeScale)(?![A-Za-z0-9_])/, "the screen's own measure", 'let pixels = window.windowScene?.screen.nativeBounds'],
+];
+/** A number in a view's code: a length of 300 points or more is the size of a screen. (b) */
+const VIEW_NUMBER = /(?<![A-Za-z0-9_.])[0-9][0-9_]*(?:\.[0-9]+)?(?![A-Za-z0-9_.])/;
+const SCREEN_SIZED = 300;
+
+/**
  * Ways around the type system, which would let code make a ShownText it may not make, or
  * read text a type keeps to itself: a cast the compiler does not check, raw memory, a
  * symbol looked up by its name. In the views and in SnowlightCore. (b)
@@ -640,6 +659,15 @@ function checkTree(files, banned) {
       for (const [pattern, what] of [...CLOCK_ZONE, ...VIEW_DEVICE]) {
         if (path === WINDOW_STYLE && what === SETTINGS_STORE) continue;
         for (const found of matches(swift.code, pattern)) hit('view.device', path, found.line, `a view reads the device: ${what}`);
+      }
+      // (b) Laid out from the room the window gives, never from the device or for one phone.
+      for (const [pattern, what] of VIEW_LAYOUT) {
+        for (const found of matches(swift.code, pattern)) hit('view.layout', path, found.line, `a view lays itself out by ${what}`);
+      }
+      for (const found of matches(swift.code, VIEW_NUMBER)) {
+        if (Number(found.text.replace(/_/g, '')) >= SCREEN_SIZED) {
+          hit('view.layout', path, found.line, `${found.text}: a length the size of a screen (lay out from the room the window gives)`);
+        }
       }
       checkNetwork(path, swift, 'view.network', hit);
       checkUnsafe(path, swift, hit);
@@ -1064,6 +1092,7 @@ const SCREEN_FILE = 'ios/SnowlightCore/Sources/SnowlightCore/Screens/Sample.swif
 const TEST_FILE = 'ios/SnowlightCore/Tests/SnowlightCoreTests/SampleTests.swift';
 const CORE_STATE = 'ios/SnowlightCore/Sources/SnowlightCore/State/Sample.swift';
 const SEARCH_VIEW = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/SampleSearch.swift';
+const LAYOUT_VIEW = 'ios/SnowlightKit/Sources/SnowlightKit/Layout/Sample.swift';
 const WORKFLOW = '.github/workflows/ios-sample.yml';
 const PROJECT = 'ios/project.yml';
 /** Ten characters shaped like a team value, made here so that none is ever written down. */
@@ -1119,6 +1148,8 @@ const CLEAN = new Map([
   ['ios/tools/build.sh', 'xcodebuild build CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY=- ONLY_ACTIVE_ARCH=YES\n'],
   // The search field's binding, and the one view file that may hold the settings store.
   [SEARCH_VIEW, view('Color.clear.searchable(text: $query.typed, prompt: model.prompt.text)')],
+  // Lengths below the size of a screen, and the width class, may be written in a view.
+  [LAYOUT_VIEW, view('Color.clear.frame(width: 62, height: 299.5).padding(0.5).opacity(sizeClass == .regular ? 1 : 0x0)')],
   [WINDOW_STYLE, 'import SwiftUI\nfinal class AppearanceStore {\n    private let store: UserDefaults\n    init(store: UserDefaults = .standard) {\n        self.store = store\n    }\n}\n'],
 ]);
 
@@ -1356,6 +1387,13 @@ for (const [, what, example] of NETWORK) {
 for (const [, what, example] of VIEW_DEVICE) {
   SAMPLES.push({ name: `in a view: ${what}`, rules: ['view.device'], files: [[VIEW, view(example)]] });
 }
+for (const [, what, example] of VIEW_LAYOUT) {
+  SAMPLES.push({ name: `in a view: ${what}`, rules: ['view.layout'], files: [[VIEW, view(example)]] });
+}
+SAMPLES.push(
+  { name: 'a view sized for the iPhone 17 Pro', rules: ['view.layout'], files: [[LAYOUT_VIEW, view('Color.clear.frame(width: 402, height: 874)')]] },
+  { name: 'a screen-sized length written with a fraction and a separator', rules: ['view.layout'], files: [[LAYOUT_VIEW, view('Color.clear.frame(maxWidth: 1_000.5)')]] },
+);
 for (const [, what, example] of UNSAFE) {
   SAMPLES.push({ name: `in SnowlightCore: ${what}`, rules: ['code.unsafe'], files: [[CORE_FILE, core(example)]] });
   SAMPLES.push({ name: `in a view: ${what}`, rules: ['code.unsafe'], files: [[VIEW, view(example)]] });
@@ -1392,7 +1430,7 @@ const RULES = [
   'signing.file', 'signing.profile', 'signing.identity', 'signing.team',
   'workflow.secrets', 'runner.label', 'workflow.uses', 'workflow.permissions', 'workflow.syntax', 'workflow.zone',
   'words.literal', 'words.names', 'words.text', 'words.table', 'words.drawn', 'words.system', 'words.value',
-  'view.device', 'view.network', 'view.import', 'code.unsafe',
+  'view.device', 'view.layout', 'view.network', 'view.import', 'code.unsafe',
   'core.showntext', 'core.screenliteral', 'core.publicstring', 'language.file',
   'appwords.list', 'appwords.format', 'appwords.banned', 'appwords.style',
   'core.import', 'core.device', 'core.network', 'core.formatter', 'core.pattern', 'core.crash',

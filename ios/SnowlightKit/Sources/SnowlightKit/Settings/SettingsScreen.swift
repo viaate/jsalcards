@@ -1,6 +1,7 @@
 // The Settings screen: its title and one section, Appearance.
 //
-// Every word on it is a field of the screen's model.
+// Every word on it is a field of the screen's model. Its content keeps to the readable
+// column (Layout/ReadableColumn.swift).
 
 import SnowlightCore
 import SwiftUI
@@ -23,6 +24,7 @@ struct SettingsScreen: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
             }
+            .readableColumn()
         }
     }
 

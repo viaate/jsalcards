@@ -182,15 +182,20 @@ shoot light light-search-es search diff -AppleLanguages "(es)" -AppleLocale es_E
 # and uploaded, never compared with a committed file. Whether the teal shows in the
 # picture is read by ios/tools/pixels.swift and printed as yes or no.
 shoot dark dark-probe probe nodiff
-# On the iOS 27 leg only: the iPhone Duo, measured (tools/duo.sh). What it finds is printed;
-# it never changes this tour's result. This tour's phone is shut down first, so that two
-# simulators never run side by side on the runner's 7 GB. The job has 30 minutes: the
-# steps before this one take about 2.5 and those after it under 1, so the Duo is given
-# what is left of 1250 seconds of this script's clock.
+# On the iOS 27 leg only: the same tour on the iPhone Duo, closed (tools/duo.sh). This
+# tour's phone is shut down first, so that two simulators never run side by side on the
+# runner's 7 GB. The job has 30 minutes: the steps before this one take up to about 3 and
+# those after it under 1, so the Duo is given what is left of 1400 seconds of this
+# script's clock. A Duo that is missing, does not boot or runs out of time is said and
+# changes nothing; a check of the Duo's that fails (a screen that never comes up, its words,
+# its tab bar on the right) fails the tour.
 if [ "$SIM_OS_PREFIX" = "iOS 27." ]; then
   xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
-  echo "[$SECONDS s] the iPhone Duo, measured by tools/duo.sh"
-  DUO_BUDGET=$((1250 - SECONDS)) bash ios/tools/duo.sh || echo "::warning::The Duo measurement ended with status $?."
-  echo "[$SECONDS s] the iPhone Duo measured"
+  echo "[$SECONDS s] the iPhone Duo's tour (tools/duo.sh)"
+  if ! DUO_BUDGET=$((1400 - SECONDS)) bash ios/tools/duo.sh; then
+    echo "::error::A check of the iPhone Duo's tour failed (above)."
+    FAILED=1
+  fi
+  echo "[$SECONDS s] the iPhone Duo's tour is done"
 fi
 exit $FAILED

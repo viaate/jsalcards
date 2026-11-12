@@ -65,13 +65,27 @@ Each rule is held by a script, a test or the compiler, named beside it.
    the device's zone by mistake gives right answers. Each `swift test` step sets `TZ` and
    `SNOWLIGHT_EXPECT_ZONE` to the same odd zone (`workflow.zone`); no test may be skipped
    or kept from a platform (`tests.skip`); the count of tests in the source is the number
-   in `tools/test-count.txt` (`tests.count`, 36 today).
+   in `tools/test-count.txt` (`tests.count`, 40 today).
 7. **Made-up schools only.** Fixtures are the pipeline's synthetic ones; no school crest or
    logo is ever committed.
 8. **The picture tour is debug code.** Everything under `Tour/` is inside one `#if DEBUG`
    (`tour.debug`), and the Mac job builds Release too and looks for the tour's launch keys
    in the release app (`tools/build.sh`).
 9. **English only.** No `.lproj` folder and no strings file (`language.file`).
+10. **Laid out from the room the window gives, never for one phone.** The same app runs on
+   an iPhone 17 Pro (402 x 874 pt), on the iPhone Duo closed (466 x 678 pt, of which the
+   system's own controls take an 84 pt column on the right) and open (951 x 669 pt on its
+   side), and a fold or an unfold changes the room while it runs. So a view never reads the
+   device's screen, idiom or orientation and writes no length of 300 pt or more
+   (`view.layout`); content sits inside the safe area, so it stops where the system's
+   controls begin; and every screen's content keeps to the readable column
+   (`Layout/ReadableColumn.swift`, at most `ContentLayout.readableLimit`, 672 pt, the
+   width of the system's readable content guide at the standard text size). The width
+   class alone picks one column (an iPhone, the closed Duo) or two (the open Duo, the
+   owner's two panes, not drawn yet): `SnowlightCore/State/ContentLayout.swift`, tested
+   with the rooms the simulators reported (`ContentLayoutTests`). Only the system's own
+   tab bar, navigation bars, toolbars and sheets carry the app's controls, so the system
+   moves them to the side on the Duo; no custom bar is ever drawn.
 
 `check-ios.mjs` reads code, not comments, and skips itself and this file, which both name
 what is banned. It tests itself on every run first: a list of samples, at least one for
@@ -119,6 +133,18 @@ cd web && npx vitest run src/pwa/tests/config.test.ts
 A push whose changed files are all under `ios/` starts iOS core and iOS app and nothing
 else: `CI` ignores `ios/**`, and `Preview` ignores `ios/**` and the iOS workflow files.
 
+On the `xcode-27` job only, the tour also runs on the **iPhone Duo** (`tools/duo.sh`,
+after the iPhone's tour, inside what is left of the job's time): the five screens closed,
+light and dark (10 pictures, `duo-closed-<look>-<screen>`, from the outer screen,
+`--display=1`). Their words are compared with the same `tools/tour-words/` files, and the
+app's own geometry line must show the system's tab bar standing upright on the right on
+the four tab screens; a screen that never comes up or cannot be pictured, a changed word or
+a tab bar elsewhere fails the job. The pictures stay in `ios-shots-27`
+and are also printed into the log as colour grids (`tools/grid.swift`, 96 columns). The
+Duo cannot be opened on GitHub's image (no fold command in simctl and no Simulator.app
+there), so there is no open picture yet; the inner screen (`--display=3`) is pictured
+once and stays black.
+
 What the Mac job checks: the pinned Xcode exists; the core tests; XcodeGen's checksum; the
 two unsigned builds; every tour screen says it is ready; the words of 14 pictures equal
 `tools/tour-words/`; the pixel lines. The words file of a picture is **the words its
@@ -135,6 +161,7 @@ left and the top:
 | the four tab screens | 94% from the top, at x 10%, 28%, 45%, 61% (My School, Map, Call it, Settings), inside each tab's capsule and clear of its symbol and name | the chosen tab's point at least 12 away from the page color (the system's capsule); the other three within 10 of it (the bar's glass) |
 | settings | 40%, 22% and 72%, 22% | the Light tile `#ffffff` and the Dark tile `#131418`, in either look |
 | `dark-probe` | 10%, 25% | `#12a594`, printed yes or no and never a failure |
+| `duo-closed-*` (the Duo, closed) | 40%, 60%; on the four tab screens also 25%, 94% | the `page` color: the content left of the system's side controls, and no tab bar along the bottom; 90%, 66% (the side tab platter's glass) printed yes or no |
 
 The tab and tile places were measured on the small iPhone 17 Pro pictures of iOS app run
 42914332720 (iOS 26.5), and hold the same in run 42898061415: the chosen capsule 20 away

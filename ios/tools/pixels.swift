@@ -27,6 +27,8 @@
 //     Dark tile (72%, 22%), the dark page color in either look;
 //   - search: the page point only (iOS folds the bar into one button there);
 //   - the probe: 10%, 25% is the teal the Metal view is cleared to.
+//   - the iPhone Duo's closed pictures (duo-closed-<look>-<screen>): their own points,
+//     measured on the Duo (see duoPoints below).
 //
 // The tab and tile places were measured on the pictures of iPhone 17 Pro on iOS 26.5 (iOS
 // app run 42914332720). On another device (SIM_DEVICE in the job's environment) those lines
@@ -125,8 +127,39 @@ func pageShade(for picture: String) -> (shade: Shade, name: String)? {
     return nil
 }
 
+/// The iPhone Duo's closed pictures (tools/duo.sh, on the iOS 27 job) are named
+/// duo-closed-<look>-<screen>. Their places were measured by the app itself on the Duo
+/// simulator (iOS app run 43137086885): a window of 466 x 678 pt whose right 84 pt are the
+/// system's own column of controls, its tab bar there (x 397, 69 wide, the full height)
+/// with the four tabs in a platter at x 394 to 442, y 392 to 654, and nothing along the
+/// bottom. So, in percent of the picture:
+///   - 40%, 60% is the page color, in the content left of that column (judged);
+///   - on the four tab screens, 25%, 94% is the page color too: no tab bar runs along the
+///     bottom, as it does on an iPhone (judged; printed on search, which iOS lays out
+///     differently);
+///   - 90%, 66% is in the side platter, between two of its tabs: its glass, printed and
+///     not judged until its color is measured.
+let duoClosed = "duo-closed-"
+
+func duoPoints(for rest: String) -> [NamedPoint] {
+    guard let page = pageShade(for: rest) else {
+        return []
+    }
+    let parts = rest.split(separator: "-").map { String($0) }
+    let screen = parts.count > 1 ? parts[1] : ""
+    let tabScreen = tabs.contains(where: { $0.screen == screen })
+    return [
+        NamedPoint(x: 40, y: 60, expect: .near(page.shade, 8), what: page.name + ", the content left of the side controls", judged: true),
+        NamedPoint(x: 25, y: 94, expect: .near(page.shade, 8), what: "no tab bar along the bottom: " + page.name, judged: tabScreen),
+        NamedPoint(x: 90, y: 66, expect: .awayFrom(page.shade, 3), what: "the side tab platter's glass, at least 3 from the page", judged: false),
+    ]
+}
+
 /// The points to read in a picture, by the picture's name.
 func namedPoints(for picture: String) -> [NamedPoint] {
+    if picture.hasPrefix(duoClosed) {
+        return duoPoints(for: String(picture.dropFirst(duoClosed.count)))
+    }
     if picture == "dark-probe" {
         return [NamedPoint(x: 10, y: 25, expect: .near(Wanted.probeTeal, 8), what: "the Metal view's teal " + Wanted.probeTeal.hex, judged: false)]
     }

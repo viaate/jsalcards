@@ -2,7 +2,8 @@
 //
 // My School, Map and Call it are this until their screens are built: the page color and
 // the tab's name as a page title. No placeholder sentence: the app says nothing it has
-// not been given to say.
+// not been given to say. The title keeps to the readable column
+// (Layout/ReadableColumn.swift).
 
 import SnowlightCore
 import SwiftUI
@@ -15,6 +16,7 @@ struct EmptyTab: View {
             Color.token(.page)
                 .ignoresSafeArea()
             PageTitle(model.title)
+                .readableColumn()
         }
     }
 }
