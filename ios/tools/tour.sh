@@ -190,15 +190,15 @@ shoot dark dark-probe probe nodiff
 # On the iOS 27 leg only: the same tour on the iPhone Duo, closed (tools/duo.sh). This
 # tour's phone is shut down first, so that two simulators never run side by side on the
 # runner's 7 GB. The job has 30 minutes: the steps before this one take up to about 3 and
-# those after it under 1, so the Duo is given what is left of 1400 seconds of this
-# script's clock. An image with no Duo device type, or no runtime that makes one, is said and
+# those after it under 1, so the Duo is given what is left of 1450 seconds of this
+# script's clock (run 43217555420: 137 s before the tour, 42 s after it). An image with no Duo device type, or no runtime that makes one, is said and
 # changes nothing; otherwise a Duo that does not boot, an app that cannot be installed, fewer
 # than all of the Duo's pictures (out of time included) or a check of the Duo's that fails
 # (a screen that never comes up, its words, its tab bar on the right) fails the tour.
 if [ "$SIM_OS_PREFIX" = "iOS 27." ]; then
   xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
   echo "[$SECONDS s] the iPhone Duo's tour (tools/duo.sh)"
-  if ! DUO_BUDGET=$((1400 - SECONDS)) bash ios/tools/duo.sh; then
+  if ! DUO_BUDGET=$((1450 - SECONDS)) bash ios/tools/duo.sh; then
     echo "::error::A check of the iPhone Duo's tour failed (above)."
     FAILED=1
   fi

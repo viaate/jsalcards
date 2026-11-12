@@ -77,9 +77,9 @@ SHOTS="$OUT/full/duo"
 mkdir -p "$SHOTS" "$OUT/duo" "$OUT/logs" "$OUT/words"
 LOGS="$(cd "$OUT/logs" && pwd)"
 GRID="$RUNNER_TEMP/grid"
-# The seconds kept back for the grids at the end, after the budget's last stage (about 8
-# a picture at 96 columns).
-GRID_TIME=180
+# The seconds kept back for the grids at the end, after the budget's last stage: run
+# 43217555420 printed 11 pictures at 96 columns and 3 bands in 15 s.
+GRID_TIME=60
 
 # limit <seconds> <command...>: the command, stopped when the time is up (macOS has no
 # timeout command; perl's alarm outlives the exec).
@@ -192,11 +192,31 @@ say "the app is installed"
 DATA=""
 READY=""
 # launch <light|dark> <name> <screen> [tour arguments...]: the app on a tour screen,
-# waited for. 0 when the screen said it was ready; 2 when the budget ran out while
-# waiting; 1 otherwise.
+# waited for: 150 s for the first launch (a cold app on a fresh simulator), 90 s for the
+# others, and then once more with the app started again, as the iPhone's tour does (run
+# 43217555420 waited 170 s in vain for one launch some 9 minutes after the boot; run
+# 43192616125 saw a launch take 160 s at the same point). 0 when the screen said it was
+# ready; 2 when the budget ran out while waiting; 1 otherwise.
+LAUNCHES=0
 launch() {
-  local mode=$1 name=$2 screen=$3 i=0
+  local tries=0 got=1
+  while [ $tries -lt 2 ]; do
+    tries=$((tries + 1))
+    launch_once "$@" && return 0
+    got=$?
+    [ $got -eq 2 ] && return 2
+    if [ $tries -lt 2 ]; then
+      room 100 "another try at '$2'" || return 2
+      say "'$2' did not come up; the app is started again"
+    fi
+  done
+  return $got
+}
+launch_once() {
+  local mode=$1 name=$2 screen=$3 i=0 halves=180
   shift 3
+  LAUNCHES=$((LAUNCHES + 1))
+  if [ $LAUNCHES -eq 1 ]; then halves=300; fi
   xcrun simctl ui "$UDID" appearance "$mode" || echo "the simulator's look could not be set to $mode"
   if [ -n "$DATA" ]; then rm -f "$DATA/Documents/tour/$name.txt"; fi
   if ! limit 150 xcrun simctl launch --terminate-running-process \
@@ -207,9 +227,9 @@ launch() {
   fi
   if [ -z "$DATA" ]; then DATA=$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data 2>/dev/null || true); fi
   READY="$DATA/Documents/tour/$name.txt"
-  while [ ! -f "$READY" ] && [ $i -lt 300 ] && [ $((BUDGET - GRID_TIME - SECONDS)) -gt 20 ]; do sleep 0.5; i=$((i + 1)); done
+  while [ ! -f "$READY" ] && [ $i -lt $halves ] && [ $((BUDGET - GRID_TIME - SECONDS)) -gt 20 ]; do sleep 0.5; i=$((i + 1)); done
   if [ ! -f "$READY" ]; then
-    if [ $i -lt 300 ]; then say "'$name' was not ready when the time ran out"; return 2; fi
+    if [ $i -lt $halves ]; then say "'$name' was not ready when the time ran out"; return 2; fi
     say "'$name' never said it was ready"
     tail -20 "$LOGS/$name.err" 2>/dev/null || true
     return 1
@@ -250,6 +270,13 @@ MISSES=0
 CHANGED=0
 ISLANDS=0
 GRID_STATE=""
+# grid_built: true when the grid tool is built, without waiting for it: while it is still
+# being built (run 43217555420 took 425 s to build it beside the boot and the install), a
+# picture gets no Dynamic Island count, and says so.
+grid_built() {
+  if [ -z "$GRID_STATE" ] && kill -0 "$GRID_BUILD" 2>/dev/null; then return 1; fi
+  grid_ready
+}
 # grid_ready: true once the grid tool is built (waited for once, the first time asked).
 grid_ready() {
   if [ -z "$GRID_STATE" ]; then
@@ -317,7 +344,9 @@ closed() {
   fi
   MISSES=0
   # Something black where the Dynamic Island is: kept aside, and the picture taken again.
-  if grid_ready; then
+  if ! grid_built; then
+    say "$name: the grid tool is still being built; no Dynamic Island count for this picture"
+  else
     local tries=0 black
     black=$(island "$SHOTS/$name.png")
     while [ "$black" -ge 500 ] && [ $tries -lt 2 ]; do
