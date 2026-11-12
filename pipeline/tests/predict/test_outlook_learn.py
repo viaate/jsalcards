@@ -3,6 +3,7 @@ step, the record moves to the host, live cases are counted once, ``T`` is swappe
 the held-out days find it no worse, and the internal report. SYNTHETIC records and T only."""
 
 import json
+import time
 from datetime import date, timedelta
 from typing import Any
 
@@ -10,7 +11,8 @@ import numpy as np
 import pytest
 
 from predict import night, world
-from predict.test_learn import CFG, Host, built, learn_run
+from predict.test_learn import CFG, Host, LaggingHost, built, learn_run
+from snowlight.live.publishers import blob_etag
 from snowlight.predict import cli, learn
 from snowlight.predict import outlook as outlook_module
 from snowlight.predict.live_labels import NoLiveSource
@@ -426,6 +428,42 @@ def test_an_outlook_error_never_changes_the_learning_step(capsys: Any) -> None:
     assert cli.learn_once(outlook_run(host, now, {}, broken=True)) == 0
     assert host.files == {}
     assert "outlook: RuntimeError: nothing written" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(("behind", "waits"), [(1, [2.0]), (3, [2.0, 4.0, 8.0])])
+def test_the_outlook_s_files_read_back_from_a_lagging_copy_are_read_again_and_reported(
+    behind: int, waits: list[float], monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    slept: list[float] = []
+    monkeypatch.setattr(time, "sleep", slept.append)
+    host = LaggingHost(behind)
+    assert cli.learn_once(outlook_run(host, world.utc("2026-01-08T13:00"), shadow_state())) == 0
+    said = capsys.readouterr()
+    assert "outlook:" not in said.err
+    assert "predict learn: outlook: counted the live cases of 2026-01-07" in said.out
+    assert "predict learn: outlook report:" in said.out
+    assert slept == waits  # the first file confirmed, the commit's others read at once
+    assert f"v1/{CASES_PATH}" in host.files
+
+
+def test_outlook_files_that_never_read_back_as_written_are_warned_with_each_read(
+    monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    slept: list[float] = []
+    monkeypatch.setattr(time, "sleep", slept.append)
+    host = LaggingHost(99)
+    assert cli.learn_once(outlook_run(host, world.utc("2026-01-08T13:00"), shadow_state())) == 0
+    said = capsys.readouterr()
+    (warning,) = [line for line in said.err.splitlines() if "outlook:" in line]
+    key = warning.split("predict learn: outlook: wrote ", 1)[1].split(" ", 1)[0]
+    sent = blob_etag(host.files[key]).strip('"')[:12]
+    assert warning.endswith(
+        f"predict learn: outlook: wrote {key} but it did not read back as written "
+        f"(4 reads, none the blob {sent} sent: no file, no file, no file, no file)"
+    )
+    assert "nothing written" not in said.err  # the files went up
+    assert "counted the live cases" not in said.out  # not said as written
+    assert slept == [2.0, 4.0, 8.0]
 
 
 @pytest.mark.parametrize("mode", [OutlookMode.OFF])

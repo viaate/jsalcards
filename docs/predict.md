@@ -3239,6 +3239,17 @@ gained a named winter storm reason. The committed model is not refit for it: the
    was made over. A refit that is worse is kept out: the step exits 4, says why in its log
    line, and the workflow opens one issue, "The snow-day model kept its last version",
    unless one is already open. The same issue opens when the step fails.
+   The step reads each file it wrote (`learn.json`, `learned.json`) back the way the passes
+   read theirs: at once, then again after 2, 4 and 8 s while the host gives other bytes
+   (GitHub's API can answer with the file it held before the commit for a second or two;
+   issue #65 was a single read that met it, after a write that had gone up). A file read back
+   as written lets the step go on: its decision line, then the outlook's step. One that never
+   reads back as written fails the step (exit 1) with `predict learn: error: wrote
+   v1/predictions/learned.json but it did not read back as written (4 reads, none the blob
+   1a2b3c4d5e6f sent: HTTP 200 blob 9f8e7d6c5b4a, HTTP 304 blob 9f8e7d6c5b4a, ...)`, and a
+   read-back that fails with `predict learn: error: wrote v1/predictions/learned.json but
+   its read-back failed (<the read's error>)`: the file went up either way, so neither says
+   the model is as it was. Only a write that fails says `the served model is as it was`.
 
 Serving never depends on it: the step may fail or time out (5 minutes; it takes under a
 minute) and the passes run anyway. A learned file that is missing, does not validate, was
@@ -4520,7 +4531,10 @@ is written only when it says something new (its time aside), so a run that learn
 no commit to the live host. A new directory edition carries the record over by LEAID (the
 host's record keeps its districts' LEAIDs): a district keeps its days, a new one reads as not
 taken, and no day not yet counted is lost. The learning step's own outcome (its exit code, its
-v2 swap) never depends on the outlook's: an error there is a warning and writes nothing.
+v2 swap) never depends on the outlook's: an error there is a warning and writes nothing. Its
+files are read back as the step's own are (at once, then after 2, 4 and 8 s); one that never
+reads back as written is the warning `predict learn: outlook: wrote <key> but it did not read
+back as written (4 reads, ...)`, and its lines are not said.
 `learn.score` now scores through `outlook.chance` (the identity on a labeled morning, exactly
 the published rates, a test holds it).
 

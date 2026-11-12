@@ -55,7 +55,12 @@ from snowlight.live.kept import (
     snapshot_finished,
 )
 from snowlight.live.publish import LiveHold
-from snowlight.live.publishers import DirPublisher, GitHubPublisher, PublishError
+from snowlight.live.publishers import (
+    DirPublisher,
+    GitHubPublisher,
+    PublishError,
+    read_back_until,
+)
 from snowlight.output import write_bytes_atomic, write_json
 from snowlight.predict import (
     anchor_cli,
@@ -3962,7 +3967,7 @@ class LearnRun:
 def learn_once(run: LearnRun) -> int:
     """One learning run (:mod:`snowlight.predict.learn`): 0 swapped or nothing to change,
     :data:`~snowlight.predict.learn.EXIT_KEPT` kept because the refit was worse, 1 an error
-    (nothing written)."""
+    (nothing written, or a file written and not confirmed by its read-back)."""
     store_key = f"{run.prefix}/{learn.LEARN_PATH}"
     learned_key = f"{run.prefix}/{learn.LEARNED_PATH}"
     try:
@@ -4003,10 +4008,12 @@ def learn_once(run: LearnRun) -> int:
     if files:
         try:
             run.host.write(files)
-            if any(run.host.read(key) != data for key, data in files.items()):
-                raise PublishError("the files read back are not the ones written")
         except PublishError as error:
             _err(f"predict learn: error: {error}: the served model is as it was")
+            return 1
+        unconfirmed = _not_read_back(run.host, files)
+        if unconfirmed is not None:
+            _err(f"predict learn: error: {unconfirmed}")
             return 1
     _out(f"predict learn: {decision.why}")
     if run.outlook_mode is not OutlookMode.OFF:
@@ -4016,7 +4023,8 @@ def learn_once(run: LearnRun) -> int:
 
 def _learn_outlook(run: LearnRun, store: learn.LearnStore) -> None:
     """The outlook's learning step (:mod:`snowlight.predict.outlook_learn`): it never changes
-    the step's own outcome; an error is warned and writes nothing."""
+    the step's own outcome; an error is warned and writes nothing, and a file written that its
+    read-back does not confirm is warned with its key and reads (its lines are not said)."""
     try:
         if run.outlook is None:
             raise ServeError("no outlook model is given")
@@ -4024,12 +4032,34 @@ def _learn_outlook(run: LearnRun, store: learn.LearnStore) -> None:
         step = outlook_step(run, store, serve, sha)
         if step.files:
             run.host.write(step.files)
-            if any(run.host.read(key) != data for key, data in step.files.items()):
-                raise PublishError("the files read back are not the ones written")
-        for line in step.lines:
-            _out(f"predict learn: {line}")
     except Exception as error:  # the outlook never touches the step's own outcome
         _warn(f"predict learn: outlook: {type(error).__name__}: nothing written")
+        return
+    try:
+        unconfirmed = _not_read_back(run.host, step.files)
+    except Exception as error:  # the outlook never touches the step's own outcome
+        unconfirmed = f"wrote its files but a read-back failed ({type(error).__name__})"
+    if unconfirmed is not None:
+        _warn(f"predict learn: outlook: {unconfirmed}")
+        return
+    for line in step.lines:
+        _out(f"predict learn: {line}")
+
+
+def _not_read_back(host: Host, files: Mapping[str, bytes]) -> str | None:
+    """Read each file just written back as the passes do
+    (:func:`~snowlight.live.publishers.read_back_until`: at once, then after 2, 4 and 8 s while
+    GitHub's API still gives the file it held before the commit). ``None`` when every file reads
+    back as written; else what the first that does not says: the write went up either way, so
+    it is never said as nothing written."""
+    for key, data in files.items():
+        try:
+            back = read_back_until(host, key, data)
+        except PublishError as error:
+            return f"wrote {key} but its read-back failed ({error})"
+        if not back.confirmed:
+            return f"wrote {key} but it did not read back as written ({back.text()})"
+    return None
 
 
 def _learn_v3_rates(

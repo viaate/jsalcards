@@ -6,6 +6,7 @@ comes from a real list.
 
 import json
 import sqlite3
+import time
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
@@ -14,6 +15,7 @@ from typing import Any
 
 import numpy as np
 import polars as pl
+import pytest
 
 from predict import world
 from predict.test_publish import NOW, MemoryHost, feed, make_pass
@@ -21,6 +23,7 @@ from predict.test_serve import index, storm
 from snowlight.live.history import BY, BY_HOLD, ChangeLog, Event, Shown
 from snowlight.live.history import Change as LogChange
 from snowlight.live.morning import ANY_KIND, MorningLog, Slot, slot_start
+from snowlight.live.publishers import PublishError, blob_etag
 from snowlight.live.state import pack
 from snowlight.predict import cli, learn
 from snowlight.predict import serve as serve_module
@@ -1240,6 +1243,93 @@ def test_a_rerun_writes_nothing_and_a_kept_refit_exits_four(capsys: Any) -> None
     broken.files["v1/predictions/learn.json"] = b"{"
     assert cli.learn_once(learn_run(broken, NoLiveSource(), now)) == 1
     assert broken.writes == 0
+
+
+class LaggingHost(Host):
+    """A host whose next ``behind`` reads after a write give each file written as it was before
+    the commit (GitHub's API a second or two behind the branch it just moved; issue #65), and
+    whose reads after those fail when ``fails`` (a 502 on a read-back after the commit)."""
+
+    def __init__(self, behind: int, fails: bool = False) -> None:
+        super().__init__()
+        self.behind = behind
+        self.fails = fails
+        self.left = 0
+        self.before: dict[str, bytes | None] = {}
+
+    def write(self, files: Mapping[str, bytes]) -> None:
+        self.before = {key: self.files.get(key) for key in files}
+        self.left = self.behind
+        super().write(files)
+
+    def read(self, key: str) -> bytes | None:
+        if key in self.before:
+            if self.left > 0:
+                self.left -= 1
+                return self.before[key]
+            if self.fails:
+                raise PublishError(f"read {key}: HTTP 502 (server)")
+        return super().read(key)
+
+
+def lagging_learn(
+    host: LaggingHost, monkeypatch: pytest.MonkeyPatch
+) -> tuple[cli.LearnRun, list[float]]:
+    """A run whose refit is swapped in (``learned.json`` written) on ``host``, its read-back's
+    waits recorded instead of slept."""
+    slept: list[float] = []
+    monkeypatch.setattr(time, "sleep", slept.append)
+    host.files["v1/predictions/learn.json"] = store_of([honest(j) for j in range(30)]).to_bytes()
+    return learn_run(host, NoLiveSource(), world.utc("2026-01-07T09:00:00")), slept
+
+
+@pytest.mark.parametrize(("behind", "waits"), [(0, []), (1, [2.0]), (3, [2.0, 4.0, 8.0])])
+def test_a_learned_file_read_back_from_a_lagging_copy_is_read_again_and_the_step_goes_on(
+    behind: int, waits: list[float], monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    host = LaggingHost(behind)
+    run, slept = lagging_learn(host, monkeypatch)
+    assert cli.learn_once(run) == 0
+    said = capsys.readouterr()
+    assert "error" not in said.err
+    # decision.why, said after the write is confirmed (issue #65 stopped before it)
+    assert said.out.splitlines()[-1].startswith("predict learn: swapped in the refit")
+    assert slept == waits  # a copy that answers at once is confirmed at once
+    assert Learned.from_bytes(host.files["v1/predictions/learned.json"]).anchored == (
+        "snow_warning",
+    )
+
+
+def test_a_learned_file_that_never_reads_back_as_written_is_an_error_naming_each_read(
+    monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    host = LaggingHost(4)
+    run, slept = lagging_learn(host, monkeypatch)
+    assert cli.learn_once(run) == 1
+    said = capsys.readouterr()
+    sent = blob_etag(host.files["v1/predictions/learned.json"]).strip('"')[:12]
+    assert said.err == (
+        "predict learn: error: wrote v1/predictions/learned.json but it did not read back as "
+        f"written (4 reads, none the blob {sent} sent: no file, no file, no file, no file)\n"
+    )
+    assert "as it was" not in said.err  # the write went up: never said as not made
+    assert "swapped in the refit" not in said.out
+    assert slept == [2.0, 4.0, 8.0]
+
+
+@pytest.mark.parametrize("stale", [0, 1])
+def test_a_read_back_that_fails_after_the_write_is_an_error_saying_the_file_was_written(
+    stale: int, monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    host = LaggingHost(stale, fails=True)
+    run, slept = lagging_learn(host, monkeypatch)
+    assert cli.learn_once(run) == 1
+    assert capsys.readouterr().err == (
+        "predict learn: error: wrote v1/predictions/learned.json but its read-back failed "
+        "(read v1/predictions/learned.json: HTTP 502 (server))\n"
+    )
+    assert "v1/predictions/learned.json" in host.files  # the file went up
+    assert slept == [2.0] * stale  # no read is tried after a failed one
 
 
 def test_a_learned_file_never_darkens_serving(monkeypatch: Any) -> None:
