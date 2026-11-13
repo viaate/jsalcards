@@ -207,3 +207,45 @@ jobs:
       # whole suite; coverage adds to the step above and the total is held to
       # fail_under here.
       - run: uv run pytest -k "_perf or _speed" --cov-append
+
+  # The storm drill (docs/predict.md, "The storm drill"): one scripted storm through the real
+  # loop and pass, hour by hour, and the storm-size night's 37% worst-case world. It serves
+  # nothing and reads no secret. Red only when the command fails: exit 3 when a pass of that
+  # world went dark or left something out of its file; the story's verdicts never fail it.
+  storm-drill:
+    name: storm-drill
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - run: uv sync --locked
+      - name: storm drill (the story and the 37% worst-case night)
+        run: |
+          set -o pipefail
+          uv run snowlight predict drill --size --json drill.json | tee drill.txt
+      - name: summary
+        if: always()
+        run: |
+          if [ -f drill.txt ]; then
+            {
+              echo '### Storm drill'
+              echo '```'
+              cat drill.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
