@@ -81,6 +81,7 @@ import type {
   DirectoryStamp,
   LocalDate,
   PredictionsFile,
+  ReasonCode,
   SchoolId,
   SeasonFile,
 } from '../types/generated';
@@ -197,11 +198,17 @@ export interface ShareFacts {
 const CAMPUS_MARK = ' - ';
 const DOT = ' · ';
 
+/** Whether a reason code is one Reason names (0-7: the weather and a power outage). */
+function isReason(code: ReasonCode): code is Reason {
+  return Number.isInteger(code) && code >= 0 && code < REASON_KEYS.length;
+}
+
 function statusKey(status: Status): StatusKey {
   return STATUS_KEYS[status] ?? 'closed';
 }
 
-function reasonName(reason: Reason): string | null {
+/** The name of a row's reason; null (no words) for a code this page has no name for. */
+function reasonName(reason: ReasonCode): string | null {
   const key = REASON_KEYS[reason];
   return key === undefined ? null : copy.reason[key];
 }
@@ -243,7 +250,8 @@ export function townOf(record: SchoolRecord): string | null {
  * weather of an area (never a power outage) and at least one of them stands whole with it
  * (every school the directory gives it listed that day, each row naming it). Worded by how
  * many stand so: "A district nearby said flooding", "Districts nearby said flooding". Null
- * otherwise, and wherever the file's directory is not the one `names` comes from.
+ * otherwise, and wherever the file's directory is not the one `names` comes from. A row whose
+ * reason is not a named Reason code (a cause other than the weather) is read as no row at all.
  */
 export function nearbyReason(
   closings: ClosingsFile | null,
@@ -267,6 +275,8 @@ export function nearbyReason(
     const district = names.districtOf(school);
     if (!next.has(district)) return;
     const reason = group.reasons[i] ?? null;
+    // A cause other than the weather: read as if the school had no row (never a note).
+    if (reason !== null && !isReason(reason)) return;
     if (reason !== null) said.add(reason);
     const seen = found.get(district);
     if (seen === undefined) found.set(district, { listed: 1, reasons: new Set([reason]) });
@@ -333,7 +343,7 @@ function replayLines(id: SchoolId, replay: ReplayOn): StatusLineView[] {
       tone: key,
       headline: format.replayStatus(key, replay.day),
       detail: null,
-      note: found.reason === null ? null : reasonName(found.reason as Reason),
+      note: found.reason === null ? null : reasonName(found.reason),
       said: null,
       day: null,
     },

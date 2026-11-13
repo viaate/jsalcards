@@ -2823,9 +2823,10 @@ Six files, written by two other chains:
 (`snowlight/predict/host_files.py`). A file is read strictly first, exactly as before, and a
 file that reads that way gives the same object and the same published bytes. Only when every
 problem is a key this code does not know are those keys dropped and the rest read again, just
-as strictly. An unknown status, reason or detail code, another `schema_version`, a missing or
+as strictly. An unknown status or detail code, another `schema_version`, a missing or
 repeated key, or a file that breaks one of its own rules is refused as before, and the pass
-goes dark with the same line as before. Each drop is said once per run:
+goes dark with the same line as before. A reason code is the one exception: every reader takes
+any whole code from 0 to 255 ("Stated causes read as dark", below). Each drop is said once per run:
 
 ```
 predict: v1/live/closings.json: 3 unknown keys dropped (in (top), days[], directory); the rest validates
@@ -2841,6 +2842,56 @@ closings reader's own reads.
 **The deployed site's files are read exactly, never tolerantly.** The directory handshake
 reads them "exactly or not at all" by design, and the site build and the closings reader
 share it.
+
+### Stated causes read as dark (ALL-CLOSINGS lane T)
+
+The closings file, the day timelines and the change log may hold a status whose reason code
+is not one `Reason` names (0-7: the weather and a power outage): a stated cause that is not the
+weather (ALL-CLOSINGS, a later piece), or a code a newer or a reverted pipeline wrote. No such
+code is written today. Every reader takes it (`ReasonCode` in `schemas/live.py`, any whole
+number up to 255; the site shows no words for it), and the rule for the prediction is one
+sentence: **everything that teaches or serves the prediction reads a status whose reason is not
+0-7 exactly as it read the dark that status replaces.** On files whose codes are all 0-7 each
+loader gives what the raw read gives, so nothing published or served changes.
+
+The rule lives in one place per input, so a new reader of that input gets it for free:
+
+- `as_dark` (`schemas/live.py`): a day timeline. Each such change becomes a taken-back change,
+  and each school's run is collapsed again by the timeline's own rules; a school with no
+  change left drops out, and a day with none left is an empty timeline.
+- `as_dark_closings` (`schemas/live.py`): the closings file. Each such row is left out, and a
+  day left with none.
+- `as_dark_changes` (`live/history.py`): the change log, one day at a time. Each such line is
+  read as the status taken back and the school-day's lines are derived again (`lit`,
+  `changed`, `dark`); a `dark`, `expired` or hold line where nothing was shown is dropped.
+- `history.timeline`'s emergency-stop rule stops at such a status: it is read as dark at its
+  own minute and what came before stays, so the timeline of a stop read through `as_dark` is
+  the base's.
+
+They live in `schemas/` and `live/`, never in `predict/`, so the season counts can share them
+without importing the prediction. They wrap the prediction's loaders only
+(`snowlight/predict/dark_reads.py`); `host_files.closings` and `host_files.timeline` stay the
+raw tolerant readers, and the notifier reads every status raw (a followed school's status
+pushes whatever its reason). The call sites (lines at the lane T commit):
+
+| Input | Loader | Call site | What reads it |
+|---|---|---|---|
+| closings file | `dark_reads.closings` | `predict/cli.py` 2490 `_neighbors` | the neighbors term (`nowcast.neighbors_posted`, its `posted_any` too) |
+| closings file | `dark_reads.closings` | `predict/cli.py` 2692 `_said_open` | said open (`opens.said_open`) |
+| day timeline | `dark_reads.timeline` | `predict/cli.py` 2653 `_closed_on` | the day after (`serve.closed_districts`, `closed_private`) |
+| day timeline | `dark_reads.timeline` | `predict/live_labels.py` 546 `StateSource.timeline` | live labels (`lit_of`, `label_live_day`), the read rule (`live_read`), call times (`read_cli` -> `call_time.called_minutes`) |
+| change log | `dark_reads.DarkChanges` | `predict/live_labels.py` 567 `StateSource.morning` | the live audience (`audience_of`) and the stop (`held_on`) |
+| change log | `dark_reads.DarkChanges` | `predict/live_read.py` 2345 `StateReadSource._log` | `lit_sources`, `audience_before` |
+| closings file | `host_files.closings` (raw) | `predict/cli.py` 3378 `_make_notifier`; `notify/cli.py` | status and chance notifications |
+
+`DarkChanges.days()` leaves out a day all of whose lines were such statuses, as the base holds
+no log for it. The readers that turn a code into a weather reason (`lit_of`,
+`call_time._runs`, `nowcast._canceled`) do it through `named_reason`, which refuses a code not
+read as dark: a loader that skipped `as_dark` fails loudly rather than teach from it. Tests:
+`tests/live/test_reason_codes.py` (the base sequences, the stop, and the revert test: codes 13
+and 99 in a change log, a day timeline and a closings file read on this code) and
+`tests/predict/test_dark_reads.py` (every loader above, each with a mutation check: read raw,
+the result differs, except the day after, which counts weather reasons only).
 
 ### The rule for changing one of these files
 

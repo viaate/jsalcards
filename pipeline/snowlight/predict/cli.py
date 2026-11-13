@@ -67,6 +67,7 @@ from snowlight.predict import (
     backtest,
     candidates_cli,
     chart_evidence,
+    dark_reads,
     forecast_adjust,
     forecast_adjust_cli,
     forecast_history,
@@ -2486,7 +2487,7 @@ def _neighbors(run: Pass, model: ServeModel, days: tuple[date, ...], now: dateti
     path = f"{key.split('/', 1)[0]}/live/closings.json"
     try:
         data = run.host.read(path)
-        closings = host_files.closings(data, where=path) if data else None
+        closings = dark_reads.closings(data, where=path) if data else None
     except (OSError, PublishError, ValueError) as error:
         _warn(f"{path}: {type(error).__name__}: no neighbors reasons this pass")
         return UNREAD
@@ -2649,7 +2650,7 @@ def _closed_on(
         found: DayTimeline | None = None
         if data is not None:
             try:
-                found = host_files.timeline(data, where=path)
+                found = dark_reads.timeline(data, where=path)
             except ValueError as error:
                 raise host_files.Refused(Dark.DAY_FILE, f"{path} does not validate") from error
         read[day] = found
@@ -2688,7 +2689,7 @@ def _said_open(run: Pass, model: ServeModel, now: datetime) -> SaidOpen:
     try:
         opens = host_files.opens(opens_data, where=f"{prefix}/live/opens.json")
         closings = (
-            host_files.closings(closings_data, where=f"{prefix}/live/closings.json")
+            dark_reads.closings(closings_data, where=f"{prefix}/live/closings.json")
             if closings_data
             else None
         )

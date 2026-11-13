@@ -200,8 +200,14 @@ describe('copy', () => {
       const schema = JSON.parse(readFileSync(schemaFile('closings.schema.json'), 'utf8')) as {
         $defs: Record<string, { enum: number[]; 'x-enum-names': string[] }>;
       };
+      // The closings file takes any reason code (ReasonCode); the named ones are Reason, as the
+      // replay files hold it.
+      const replay = JSON.parse(readFileSync(schemaFile('replay.schema.json'), 'utf8')) as {
+        $defs: Record<string, { enum: number[]; 'x-enum-names': string[] }>;
+      };
       const status = schema.$defs.Status;
-      const reason = schema.$defs.Reason;
+      const reason = replay.$defs.Reason;
+      expect(schema.$defs.Reason).toBeUndefined();
       expect(STATUS_KEYS.map(snake)).toEqual(status?.['x-enum-names']);
       expect(STATUS_KEYS.map((_, code) => code)).toEqual(status?.enum);
       expect(REASON_KEYS.map(snake)).toEqual(reason?.['x-enum-names']);

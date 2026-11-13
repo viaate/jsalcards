@@ -38,7 +38,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from itertools import accumulate, combinations, pairwise
-from typing import Annotated, Literal, Self
+from typing import Annotated, Final, Literal, Self
 
 from pydantic import AfterValidator, Field, StringConstraints, model_validator
 
@@ -75,6 +75,41 @@ from snowlight.schemas.vocab import (
     Status,
 )
 
+REASON_CODE_MAX: Final = 255
+"""The highest reason code a live file may hold. :class:`~snowlight.schemas.vocab.Reason`
+names 0-7; a reader takes any code up to this one, so a file written by a newer (or a
+reverted) pipeline never fails to read for a code this one does not name."""
+
+WEATHER_CODES: Final = frozenset(int(reason) for reason in Reason)
+"""The codes :class:`~snowlight.schemas.vocab.Reason` names today (0-7): the weather and a
+power outage. :func:`as_dark` reads every other code as dark."""
+
+
+def _named_reason(code: int) -> int:
+    """A code :class:`~snowlight.schemas.vocab.Reason` names, as its member (so a file of
+    known codes reads exactly as before); any other code as the plain number."""
+    return Reason(code) if code in WEATHER_CODES else code
+
+
+type ReasonCode = Annotated[
+    int,
+    Field(
+        ge=0,
+        le=REASON_CODE_MAX,
+        description=(
+            "The cause a status was posted for, as a Reason code: 0 winter storm, 1 ice, "
+            "2 extreme cold, 3 flooding, 4 hurricane, 5 severe storms, 6 heat, 7 power "
+            "outage. A reader takes any other code up to 255 as a stated cause it has no "
+            "name for: it shows no words for it and never fails to read the file."
+        ),
+    ),
+    AfterValidator(_named_reason),
+]
+"""A status's reason code as a live file holds it (closings, day timelines): the named
+:class:`~snowlight.schemas.vocab.Reason` codes read as their members, any other code up to
+:data:`REASON_CODE_MAX` as its number (ALL-CLOSINGS lane T, docs/live.md "Reasons")."""
+
+
 # The directory holds contiguous-US schools only, and every contiguous-US time zone
 # is 4 (EDT) to 8 (PST) hours behind UTC. So at any moment the local todays and
 # tomorrows of all schools span two dates, or three between 04:00 and 08:00 UTC,
@@ -109,7 +144,7 @@ class Closing:
     day: date
     status: Status
     announced_at: datetime | None
-    reason: Reason | None
+    reason: ReasonCode | None
     shift_minutes: int | None = None
     clock_minute: int | None = None
     manual: bool = False
@@ -158,7 +193,7 @@ class ClosingsDay(PublishedModel):
         ),
     ]
     reasons: Annotated[
-        tuple[Reason | None, ...],
+        tuple[ReasonCode | None, ...],
         Field(description="The weather each row names; null when none was named."),
     ]
     shifts: Annotated[
@@ -674,7 +709,7 @@ class DayTimeline(PublishedModel):
         tuple[Status | None, ...],
         Field(description="Each change's status; null when the status was taken back."),
     ]
-    reasons: tuple[Reason | None, ...]
+    reasons: tuple[ReasonCode | None, ...]
     shifts: tuple[ShiftMinutes | None, ...]
     clocks: tuple[MinuteOfDay | None, ...]
     details: Annotated[
@@ -742,6 +777,107 @@ class DayTimeline(PublishedModel):
     def schools(self) -> tuple[int, ...]:
         """Each school's index, in order."""
         return tuple(index - 1 for index in accumulate(gap + 1 for gap in self.gaps))
+
+
+def _unnamed(reasons: Iterable[int | None]) -> bool:
+    return any(reason is not None and reason not in WEATHER_CODES for reason in reasons)
+
+
+type _Change = tuple[int, Status | None, int | None, int | None, int | None, tuple[Detail, ...]]
+
+
+def named_reason(code: int | None) -> Reason | None:
+    """A reason code read through :func:`as_dark` (or :func:`as_dark_closings`), as its
+    :class:`~snowlight.schemas.vocab.Reason`.
+
+    Raises:
+        ValueError: ``code`` is not a named code: the file was not read through ``as_dark``.
+    """
+    return None if code is None else Reason(code)
+
+
+def as_dark(timeline: DayTimeline) -> DayTimeline:
+    """``timeline`` read as the dark a status of an unnamed reason replaces.
+
+    The one rule by which everything that teaches or serves the prediction, and the season
+    counts, read a status whose reason is not a named
+    :class:`~snowlight.schemas.vocab.Reason` code (0-7), a stated cause that is not the
+    weather or a code this code does not know: exactly as the dark it replaces. Each such
+    change becomes a taken-back change (no status, reason, shift, clock or details), then
+    each school's run is collapsed again by the timeline's own rules (a leading taken-back
+    change dropped, a change equal to the one before it dropped); a school with no change
+    left drops out, and a day with none left is an empty timeline (the same file, no
+    schools). A timeline whose changes all carry a named code (or none) comes back as is:
+    on today's files this is the identity.
+    """
+    if not _unnamed(timeline.reasons):
+        return timeline
+    times = iter(zip(timeline.shifts, timeline.clocks, strict=True))
+    said = dict(timeline.details)
+    changes: list[_Change] = []
+    for at, (minute, status, reason) in enumerate(
+        zip(timeline.minutes, timeline.statuses, timeline.reasons, strict=True)
+    ):
+        shift, clock = next(times) if status in SHIFTED else (None, None)
+        if reason is not None and reason not in WEATHER_CODES:
+            changes.append((minute, None, None, None, None, ()))
+        else:
+            changes.append((minute, status, reason, shift, clock, said.get(at, ())))
+    runs: list[tuple[int, list[_Change]]] = []
+    start = 0
+    for school, count in zip(timeline.schools(), timeline.counts, strict=True):
+        run: list[_Change] = []
+        for change in changes[start : start + count]:
+            if (not run and change[1] is None) or (run and run[-1][1:] == change[1:]):
+                continue
+            run.append(change)
+        start += count
+        if run:
+            runs.append((school, run))
+    schools = [school for school, _ in runs]
+    flat = [change for _, run in runs for change in run]
+    shifted = [change for change in flat if change[1] in SHIFTED]
+    return DayTimeline.model_validate(
+        {
+            "schema_version": timeline.schema_version,
+            "day": timeline.day,
+            "generated_at": timeline.generated_at,
+            "directory": timeline.directory,
+            "content_sha256": timeline.content_sha256,
+            "final": timeline.final,
+            "gaps": tuple(
+                school - previous - 1
+                for previous, school in zip([-1, *schools], schools, strict=False)
+            ),
+            "counts": tuple(len(run) for _, run in runs),
+            "minutes": tuple(change[0] for change in flat),
+            "statuses": tuple(change[1] for change in flat),
+            "reasons": tuple(change[2] for change in flat),
+            "shifts": tuple(change[3] for change in shifted),
+            "clocks": tuple(change[4] for change in shifted),
+            "details": tuple(
+                (position, change[5]) for position, change in enumerate(flat) if change[5]
+            ),
+        }
+    )
+
+
+def as_dark_closings(closings: ClosingsFile) -> ClosingsFile:
+    """``closings`` read as the dark a status of an unnamed reason replaces (:func:`as_dark`):
+    every row whose reason is not a named :class:`~snowlight.schemas.vocab.Reason` code
+    (0-7) is left out, the columns of its day kept in step, and a day left with no row is
+    left out. A file whose rows all carry a named code (or none) comes back as is."""
+    if not any(_unnamed(group.reasons) for group in closings.days):
+        return closings
+    return ClosingsFile.encode(
+        (
+            closing
+            for closing in closings.closings()
+            if closing.reason is None or closing.reason in WEATHER_CODES
+        ),
+        generated_at=closings.generated_at,
+        directory=closings.directory,
+    )
 
 
 class DayEntry(PublishedModel):

@@ -127,6 +127,7 @@ from snowlight.live.morning import SLOT_MINUTES, MorningLog, Slot, slot_start
 from snowlight.output import JSONValue, dumps_json, write_bytes_atomic
 from snowlight.predict.calendar import is_school_day, likely_break, previous_school_day
 from snowlight.predict.config import PIPELINE_ROOT, LabelSettings, PredictConfig
+from snowlight.predict.dark_reads import ChangeDays, DarkChanges
 from snowlight.predict.geography import REGION_OF
 from snowlight.predict.labels import (
     Outcome,
@@ -1744,15 +1745,6 @@ class ReadSource(LiveSource, Protocol):
         ...
 
 
-class ChangeDays(Protocol):
-    """The change log's days and each day's changes (:class:`~snowlight.live.history.
-    ChangeLog`, or :class:`LoadedChanges`)."""
-
-    def days(self) -> list[date]: ...
-
-    def changes(self, day: date) -> list[Change]: ...
-
-
 @dataclass(frozen=True, slots=True)
 class LoadedChanges:
     """A change log read once (one run reads it for every day it labels)."""
@@ -1760,7 +1752,7 @@ class LoadedChanges:
     by_day: Mapping[date, Sequence[Change]]
 
     @classmethod
-    def of(cls, log: ChangeLog) -> "LoadedChanges":
+    def of(cls, log: ChangeDays) -> "LoadedChanges":
         return cls({day: tuple(log.changes(day)) for day in log.days()})
 
     def days(self) -> list[date]:
@@ -2350,7 +2342,7 @@ class StateReadSource:
 
     def _log(self) -> LoadedChanges:
         if self._changes is None:
-            self._changes = LoadedChanges.of(ChangeLog(self.state.folder / "changes"))
+            self._changes = LoadedChanges.of(DarkChanges(ChangeLog(self.state.folder / "changes")))
         return self._changes
 
     def _days(self, closing: Closing) -> dict[date, dict[str, int]]:

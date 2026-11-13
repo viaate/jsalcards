@@ -239,7 +239,8 @@ def test_the_warning_never_names_the_key_and_counts_past_five_places(
 
 CASES: dict[str, Callable[[dict[str, Any]], Any]] = {
     "a status code of 99": lambda doc: doc["days"][0]["statuses"].__setitem__(0, 99),
-    "a reason code of 99": lambda doc: doc["days"][0]["reasons"].__setitem__(0, 99),
+    # Any whole reason code up to 255 reads (ALL-CLOSINGS lane T, tests/live/test_reason_codes.py).
+    "a reason code of 256": lambda doc: doc["days"][0]["reasons"].__setitem__(0, 256),
     "a detail code of 99": lambda doc: doc["days"][0]["details"][0][1].__setitem__(0, 99),
     "schema_version 2": lambda doc: doc.__setitem__("schema_version", 2),
     "a missing key": lambda doc: doc.pop("generated_at"),

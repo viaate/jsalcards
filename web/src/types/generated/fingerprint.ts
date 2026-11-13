@@ -9,4 +9,4 @@ import type fingerprint from '../../../../schemas/fingerprint.json';
  * `npm run gen:types` runs again.
  */
 export const SCHEMAS_FINGERPRINT: keyof typeof fingerprint =
-  'b35d81f8766a1674e0f416dcc6017739d69f23994c18284ce7acfcb668709243';
+  '0393c4735b3e8a51f137bae45acfeb5fd5686bc69a445ba1555e74c7d9a61f21';

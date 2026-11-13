@@ -27,7 +27,7 @@ import numpy.typing as npt
 
 from snowlight.predict.posts import counts_as_no_school
 from snowlight.schemas.directory import DirectoryStamp
-from snowlight.schemas.live import ClosingsFile
+from snowlight.schemas.live import ClosingsFile, named_reason
 from snowlight.schemas.vocab import Status
 
 
@@ -82,7 +82,7 @@ def _canceled(
             if district < 0:
                 continue
             posted_any.add(district)
-            if counts_as_no_school(status, reason):
+            if counts_as_no_school(status, named_reason(reason)):
                 counted.setdefault(district, Counter())[status] += 1
     canceled = {
         district: tally

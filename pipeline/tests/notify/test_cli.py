@@ -254,6 +254,28 @@ def test_end_to_end_dry_run_against_a_stub_push_service(
     )
 
 
+def test_a_status_for_a_reason_code_above_7_pushes_like_any_other(push: PushService) -> None:
+    """ALL-CLOSINGS lane T: the notifier reads the closings file raw (never through the
+    prediction's as_dark), so a followed school's status pushes whatever code its reason
+    has, one this code names or not, with the same words."""
+    sent = []
+    for codes in (None, (13, 99)):
+        value = json.loads(CLOSINGS)
+        if codes is not None:
+            for group in value["days"]:
+                group["reasons"] = [codes[i % 2] for i in range(len(group["reasons"]))]
+        fake = database()
+        add_vapid(fake)
+        phone = Browser.make(push.endpoint(f"phone-{codes is None}"), 1)
+        add_user(fake, "u1", [(IDS[0], "Lincoln High"), (IDS[5], "Saint Ann")], [phone])
+        push.received.clear()
+        assert cli.run_status(ARGS, world(fake, closings=json.dumps(value).encode())) == 0
+        sent.append(sorted(json.dumps(opened(phone, body), sort_keys=True)
+                           for _path, _headers, body in push.received))  # fmt: skip
+    assert len(sent[0]) == 3
+    assert sent[1] == sent[0]
+
+
 def test_quiet_and_dark(push: PushService, capsys: pytest.CaptureFixture[str]) -> None:
     fake = database()
     assert cli.run_status(ARGS, world(fake, env={})) == 0

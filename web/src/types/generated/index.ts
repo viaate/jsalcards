@@ -171,6 +171,16 @@ export const Reason = {
 export type Reason = (typeof Reason)[keyof typeof Reason];
 
 /**
+ * The cause a status was posted for, as a Reason code: 0 winter storm, 1 ice, 2 extreme cold, 3
+ * flooding, 4 hurricane, 5 severe storms, 6 heat, 7 power outage. A reader takes any other code up
+ * to 255 as a stated cause it has no name for: it shows no words for it and never fails to read the
+ * file.
+ * @minimum 0
+ * @maximum 255
+ */
+export type ReasonCode = number;
+
+/**
  * The storm's first local day, with a suffix when two share it.
  * @pattern ^\d{4}-\d{2}-\d{2}(?:-[a-z0-9]{1,16})?$
  */
@@ -373,7 +383,7 @@ export interface ClosingsDay {
    */
   readonly announced: readonly (MinutesAgo | null)[];
   /** The weather each row names; null when none was named. */
-  readonly reasons: readonly (Reason | null)[];
+  readonly reasons: readonly (ReasonCode | null)[];
   /**
    * For each delayed or early-dismissal row, how late the day starts or how early it ends; null
    * unless the listing states it.
@@ -488,7 +498,7 @@ export interface DayTimeline {
   readonly minutes: readonly DayMinute[];
   /** Each change's status; null when the status was taken back. */
   readonly statuses: readonly (Status | null)[];
-  readonly reasons: readonly (Reason | null)[];
+  readonly reasons: readonly (ReasonCode | null)[];
   readonly shifts: readonly (ShiftMinutes | null)[];
   readonly clocks: readonly (MinuteOfDay | null)[];
   /**

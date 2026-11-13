@@ -15,6 +15,7 @@ import type {
   DirectoryStamp,
   PredictionsFile,
   PublishedDocuments,
+  ReasonCode,
   ReplayFile,
   SchoolDirectoryMeta,
   SeasonStats,
@@ -111,7 +112,7 @@ export function rowOf(day: DecodedDay, school: number): number {
 export interface SchoolDay {
   readonly status: Status;
   readonly announcedAt: Date | null;
-  readonly reason: Reason | null;
+  readonly reason: ReasonCode | null;
   readonly shiftMinutes: number | null;
   /** The stated opening or dismissal time as H:MM, or null. */
   readonly clock: string | null;

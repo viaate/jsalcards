@@ -63,7 +63,9 @@ describe('closings.json', () => {
       { ...FILE, days: [{ ...day, shifts: [] }] },
       { ...FILE, days: [{ ...day, clocks: [1440, null] }] },
       { ...FILE, days: [{ ...day, announced: ['2026-01-12T11:42:00Z', null, null] }] },
-      { ...FILE, days: [{ ...day, reasons: [9, null, null] }] },
+      { ...FILE, days: [{ ...day, reasons: [-1, null, null] }] },
+      { ...FILE, days: [{ ...day, reasons: [1.5, null, null] }] },
+      { ...FILE, days: [{ ...day, reasons: ['3', null, null] }] },
       // The rows the site's team set: ascending positions of the day's rows.
       { ...FILE, days: [{ ...day, manual: [3] }] },
       { ...FILE, days: [{ ...day, manual: [1, 0] }] },
@@ -72,6 +74,22 @@ describe('closings.json', () => {
       { ...FILE, days: [{ ...day, manual: 0 }] },
     ];
     for (const value of broken) expect(parseClosings(value)).toBeNull();
+  });
+
+  it('reads a reason code it has no name for as a row like any other, never refusing its day', () => {
+    const day = FILE.days[0];
+    if (day === undefined) throw new Error('no day');
+    for (const reasons of [
+      [13, null, 99],
+      [8, 24, 255],
+    ]) {
+      const coded = { ...FILE, days: [{ ...day, reasons }, ...FILE.days.slice(1)] };
+      const read = parseClosings(JSON.parse(JSON.stringify(coded)));
+      expect(read).toEqual(coded);
+      if (read === null) throw new Error('not read');
+      // The map glows as with any reason: the same schools, the same statuses.
+      expect(decodeDay(read.days[0] ?? day)).toEqual(decodeDay(day));
+    }
   });
 
   it('reads the rows the site’s team set, and none from a file written before the column', () => {

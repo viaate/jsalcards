@@ -86,9 +86,10 @@ from snowlight.live.morning import (
     Slot,
     slot_start,
 )
-from snowlight.predict import host_files
+from snowlight.predict import dark_reads, host_files
 from snowlight.predict.calendar import is_school_day, likely_break, season_of
 from snowlight.predict.config import LabelSettings
+from snowlight.predict.dark_reads import ChangeDays, DarkChanges
 from snowlight.predict.geography import state_of_leaid
 from snowlight.predict.labels import (
     LABEL_SCHEMA,
@@ -108,7 +109,7 @@ from snowlight.predict.labels import (
 from snowlight.predict.situations import WeatherClass, Window
 from snowlight.replays.gates import UNREADABLE_SHARE, low_match, station_median
 from snowlight.schemas.directory import DirectoryStamp
-from snowlight.schemas.live import DayIndex, DayTimeline
+from snowlight.schemas.live import DayIndex, DayTimeline, named_reason
 from snowlight.schemas.vocab import STATUS_BY_KIND
 
 UNKNOWN_CLASS: Final = "-"
@@ -342,7 +343,7 @@ def leaid_of(nces_id: str) -> str | None:
     return None
 
 
-def audience_of(changes: ChangeLog, day: date, min_days: int) -> dict[str, dict[str, date]]:
+def audience_of(changes: ChangeDays, day: date, min_days: int) -> dict[str, dict[str, date]]:
     """Each source's audience up to ``day``: the districts whose schools it lit on at least
     ``min_days`` live days, each from the first of them."""
     listings: list[tuple[str, str, date]] = []
@@ -357,7 +358,7 @@ def audience_of(changes: ChangeLog, day: date, min_days: int) -> dict[str, dict[
     return audiences(listings, min_days)
 
 
-def held_on(changes: ChangeLog, day: date) -> bool:
+def held_on(changes: ChangeDays, day: date) -> bool:
     """Whether the emergency stop darkened the map on ``day``."""
     return any(
         change.shown is None and change.fields.get(BY) == BY_HOLD for change in changes.changes(day)
@@ -542,7 +543,7 @@ class StateSource:
     def timeline(self, day: date) -> DayTimeline | None:
         path = f"live/days/{day.isoformat()}.json"
         data = self.read_file(path)
-        return None if data is None else host_files.timeline(data, where=path)
+        return None if data is None else dark_reads.timeline(data, where=path)
 
     def morning(self, day: date) -> Morning | str:
         log = MorningLog(self.folder / "morning")
@@ -563,7 +564,7 @@ class StateSource:
                 found for when in log.days() if (found := log.day(when)) is not None
             )
         before = log.day(day - timedelta(days=1))
-        changes = ChangeLog(self.folder / "changes")
+        changes = DarkChanges(ChangeLog(self.folder / "changes"))
         return Morning(
             day=day,
             slots={slot_start(day, key): slot for key, slot in record.slots.items()},
@@ -606,7 +607,7 @@ def lit_of(timeline: DayTimeline | None) -> Lit:
         if status is None:
             retracted.add(school)
         else:
-            statuses[school] = LitStatus(status, timeline.reasons[last])
+            statuses[school] = LitStatus(status, named_reason(timeline.reasons[last]))
         start += count
     return Lit(statuses, frozenset(retracted))
 

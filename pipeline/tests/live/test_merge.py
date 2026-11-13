@@ -324,7 +324,7 @@ def _three() -> World:
     return world
 
 
-def _reason(world: World) -> Reason | None:
+def _reason(world: World) -> int | None:
     merged = world.publish(at("2026-11-17 11:59"))
     (closing,) = [c for c in merged.closings if c.school == 0]
     return closing.reason
@@ -414,7 +414,7 @@ def test_the_new_reason_rule_keeps_every_reason_the_old_one_showed(
     one) showed a reason, the new rule shows the same; and the reasons rows name change
     nothing published but the reason (status, times, shift, clock, what is withheld)."""
     real = merge_module._closing
-    seen: list[tuple[Reason | None, Reason | None]] = []
+    seen: list[tuple[int | None, Reason | None]] = []
 
     def checked(  # noqa: PLR0913 - the arguments of _closing
         school: int,

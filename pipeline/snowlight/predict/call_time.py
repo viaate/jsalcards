@@ -79,7 +79,7 @@ from snowlight.predict.live_read import (
 )
 from snowlight.predict.serve import ADJUST_KINDS
 from snowlight.predict.situations import WeatherClass
-from snowlight.schemas.live import DayTimeline
+from snowlight.schemas.live import DayTimeline, named_reason
 
 STEP: Final = 30
 """Minutes between slot ends (the record's slot)."""
@@ -334,7 +334,7 @@ def _runs(timeline: DayTimeline) -> dict[int, list[tuple[int, LitStatus | None]]
         run: list[tuple[int, LitStatus | None]] = []
         for at in range(start, start + count):
             status = timeline.statuses[at]
-            lit = None if status is None else LitStatus(status, timeline.reasons[at])
+            lit = None if status is None else LitStatus(status, named_reason(timeline.reasons[at]))
             run.append((timeline.minutes[at], lit))
         found[school] = run
         start += count

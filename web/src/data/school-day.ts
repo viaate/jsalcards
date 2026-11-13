@@ -33,6 +33,7 @@ import type {
   LocalDate,
   PredictionsFile,
   Reason,
+  ReasonCode,
   SchoolForecast,
 } from '../types/generated';
 import { decodeDay, todayEverywhere } from './closings';
@@ -109,7 +110,8 @@ export function schoolEntry(predictions: PredictionsFile, school: number): Schoo
 /** A school's status on one day, as its closings row gives it. */
 export interface StatusRow {
   readonly status: Status;
-  readonly reason: Reason | null;
+  /** The reason code the row gives: a named Reason, or a code this page has no words for. */
+  readonly reason: ReasonCode | null;
   /** When it was posted, or null when the listing gave no time. */
   readonly announcedAt: Date | null;
   /** How late the day starts or how early it ends, for a delay or early dismissal; or null. */

@@ -46,7 +46,7 @@ import json
 import logging
 import re
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
@@ -59,6 +59,7 @@ from snowlight.output import JSONValue, dumps_json, write_bytes_atomic
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.live import (
     MAX_LEAD_MINUTES,
+    WEATHER_CODES,
     Closing,
     DayEntry,
     DayIndex,
@@ -66,7 +67,7 @@ from snowlight.schemas.live import (
     local_days,
 )
 from snowlight.schemas.scalars import MINUTES_PER_DAY
-from snowlight.schemas.vocab import SHIFTED, Detail, Reason, Status
+from snowlight.schemas.vocab import SHIFTED, Detail, Status
 
 LOG: Final = logging.getLogger(__name__)
 KEEP_DAYS: Final = 45
@@ -374,8 +375,7 @@ def timeline(  # noqa: PLR0913 - the day, its changes and the directory they ind
         run = runs.setdefault(school.index, [])
         shown = change.shown
         if shown is None and change.fields.get(BY) == BY_HOLD:
-            while run and run[-1][1] is not None:
-                run.pop()  # the emergency stop: what it darkened is no part of the record
+            _hold(run)
             continue
         if (not run and shown is None) or (run and run[-1][1] == shown):
             continue
@@ -400,10 +400,7 @@ def timeline(  # noqa: PLR0913 - the day, its changes and the directory they ind
             "counts": tuple(len(runs[school]) for school in schools),
             "minutes": tuple(minute for minute, _ in flat),
             "statuses": tuple(None if shown is None else Status(shown.status) for _, shown in flat),
-            "reasons": tuple(
-                None if shown is None or shown.reason is None else Reason(shown.reason)
-                for _, shown in flat
-            ),
+            "reasons": tuple(None if shown is None else shown.reason for _, shown in flat),
             "shifts": tuple(shown.shift for shown in shifted),
             "clocks": tuple(shown.clock for shown in shifted),
             "details": tuple(
@@ -413,6 +410,71 @@ def timeline(  # noqa: PLR0913 - the day, its changes and the directory they ind
             ),
         }
     )
+
+
+def _hold(run: list[tuple[int, Shown | None]]) -> None:
+    """The emergency stop on one school's run: what it darkened is no part of the record.
+
+    The statuses shown up to the hold are dropped from the end of the run, back to the
+    last time the school showed none. A status whose reason is not a named
+    :class:`~snowlight.schemas.vocab.Reason` code (0-7) stops it: it lit only where the
+    weather statuses left the school dark (ALL-CLOSINGS), so it is read as that dark, at
+    its own minute, and what came before it stays as it was. So the run read through
+    :func:`~snowlight.schemas.live.as_dark` is the run the weather statuses alone give.
+    """
+    while run and (shown := run[-1][1]) is not None:
+        minute, _ = run.pop()
+        if shown.reason is not None and shown.reason not in WEATHER_CODES:
+            if run and run[-1][1] is not None:
+                run.append((minute, None))
+            return
+
+
+def as_dark_changes(changes: Iterable[Change]) -> list[Change]:
+    """``changes`` read as the dark a status of an unnamed reason replaces (docs/predict.md,
+    "Stated causes read as dark").
+
+    A change showing a status whose reason is not a named
+    :class:`~snowlight.schemas.vocab.Reason` code (0-7) is read as the status taken back,
+    and each school-day's lines are derived again by this module's own rules: a line that
+    changes nothing is dropped, ``lit`` and ``changed`` follow what was shown before, and a
+    ``dark``, ``expired`` or hold line where nothing was shown is dropped. A school-day with
+    no such status keeps its lines exactly; with none anywhere ``changes`` comes back as is.
+    """
+    found = list(changes)
+    unnamed = {
+        (change.nces_id, change.day)
+        for change in found
+        if change.shown is not None
+        and change.shown.reason is not None
+        and change.shown.reason not in WEATHER_CODES
+    }
+    if not unnamed:
+        return found
+    kept: list[Change] = []
+    before: dict[Key, Shown] = {}
+    for change in found:
+        key = (change.nces_id, change.day)
+        if key not in unnamed:
+            kept.append(change)
+            continue
+        shown = change.shown
+        line = change
+        if shown is not None and shown.reason is not None and shown.reason not in WEATHER_CODES:
+            shown = None
+            line = Change(change.at, change.day, change.nces_id, Event.DARK, None, {})
+        was = before.get(key)
+        if shown is None:
+            if was is not None:
+                kept.append(line)
+                del before[key]
+            continue
+        if shown == was:
+            continue
+        event = Event.LIT if was is None else Event.CHANGED
+        kept.append(line if line.event is event else replace(line, event=event))
+        before[key] = shown
+    return kept
 
 
 def seed_changes(made: DayTimeline, directory: LiveDirectory) -> list[Change]:

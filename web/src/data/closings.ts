@@ -36,7 +36,6 @@ const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_MINUTES_AGO = 20_160;
 const MAX_SHIFT_MINUTES = 720;
 const MINUTES_PER_DAY = 1440;
-const REASON_COUNT = 8;
 const MAX_INDEX = 4_294_967_294;
 
 function isWhole(value: unknown, min: number, max: number): value is number {
@@ -77,7 +76,8 @@ function parseDay(value: unknown): ClosingsDay | null {
     const status = statuses[i];
     if (!isWhole(gaps[i], 0, MAX_INDEX) || !isStatus(status)) return null;
     if (!isNullOr(announced[i], (item) => isWhole(item, 0, MAX_MINUTES_AGO))) return null;
-    if (!isNullOr(reasons[i], (item) => isWhole(item, 0, REASON_COUNT - 1))) return null;
+    // Any whole reason code reads: one this page has no name for shows no words (app/school.ts).
+    if (!isNullOr(reasons[i], (item) => isWhole(item, 0, Number.MAX_SAFE_INTEGER))) return null;
     if (isShifted(status)) shifted++;
   }
   if (shifts.length !== shifted || clocks.length !== shifted) return null;

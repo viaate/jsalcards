@@ -249,6 +249,24 @@ describe('schoolView', () => {
     ).toBeNull();
   });
 
+  it('shows no words for a reason code it has no name for, and the status as any other', () => {
+    for (const reason of [8, 13, 24, 99]) {
+      const row = (code: number | null) => ({
+        status: 0 as const,
+        reason: code,
+        announcedAt: null,
+        shiftMinutes: null,
+        clockMinute: null,
+        manual: false,
+        details: [],
+      });
+      const coded = schoolView(input({ status: { today: row(reason), tomorrow: null } }));
+      const plain = schoolView(input({ status: { today: row(null), tomorrow: null } }));
+      expect(coded?.status).toEqual(plain?.status);
+      expect(coded?.status[0]).toMatchObject({ tone: 'closed', note: null, reason: null });
+    }
+  });
+
   it('writes the status lines today first, with what the row states', () => {
     const view = schoolView(
       input({
@@ -1560,6 +1578,60 @@ describe('what districts nearby said, where a school’s own status names no rea
         rows: [
           [2, POWER],
           [3, POWER],
+        ],
+      },
+    ]);
+    expect(notes(power)).toEqual([null]);
+  });
+
+  it('reads a row next door whose cause is not the weather as no row at all', () => {
+    // District 1 stands whole with flooding; district 2's one school is closed for a code
+    // this page has no name for: the note is the one the file without that row gives.
+    for (const code of [8, 13, 24, 99]) {
+      const coded = file([
+        {
+          day: TODAY,
+          rows: [
+            [2, FLOODING],
+            [3, FLOODING],
+            [4, code],
+          ],
+        },
+      ]);
+      const plain = file([
+        {
+          day: TODAY,
+          rows: [
+            [2, FLOODING],
+            [3, FLOODING],
+          ],
+        },
+      ]);
+      expect(notes(coded)).toEqual(notes(plain));
+      expect(notes(coded)).toEqual(['A district nearby said flooding']);
+      // Alone, it says nothing; beside flooding in the same district, that district is
+      // only partly listed, as it is without the row.
+      expect(notes(file([{ day: TODAY, rows: [[4, code]] }]))).toEqual([null]);
+      const split = file([
+        {
+          day: TODAY,
+          rows: [
+            [2, FLOODING],
+            [3, code],
+          ],
+        },
+      ]);
+      expect(notes(split)).toEqual([null]);
+      expect(notes(split)).toEqual(notes(file([{ day: TODAY, rows: [[2, FLOODING]] }])));
+    }
+    // A power outage is a named code: next door it still keeps the note away, as before.
+    const power = file([
+      {
+        day: TODAY,
+        rows: [
+          [2, FLOODING],
+          [3, FLOODING],
+          [4, POWER],
         ],
       },
     ]);

@@ -258,6 +258,11 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   building issues did not. Downed power lines are storm damage, the weather on an ice day,
   and name no cause. The reader, the merge and the replay are part of `derived_version`, so
   a change to them lands on a day the public closings file holds few rows, not in a storm.
+  Every reader of the closings file, the day timelines and the change log takes any whole
+  reason code from 0 to 255 (ALL-CLOSINGS lane T, Nov 2026): the site shows no words for a
+  code it has no name for and leaves it out of what districts nearby said, the notifier
+  pushes it like any status, and the prediction reads it as the dark it replaces
+  (docs/predict.md, "Stated causes read as dark"). Nothing writes a code above 7 yet.
 - **Plain details** (`snowlight/live/details.py`, Nov 9, 2026). Beside a lit status the panel
   and status notifications say a closed set of details in the site's own words
   (`web/src/copy-details.ts`), never a list's: who (students and staff; staff report, students
