@@ -1,8 +1,9 @@
 /** One tick: probe the four parts, then write what was found in one transaction. */
 
-import { INCIDENTS_MAX, dayOf, step, windowStart } from '../../shared/history.ts';
+import { INCIDENTS_MAX, dayOf, missIn, missOf, step, windowStart } from '../../shared/history.ts';
+import type { StoredStates } from '../../shared/history.ts';
 import { DAY, DAYS_KEPT, PARTS } from '../../shared/types.ts';
-import type { DayRow, Incident, Part, Reading, Sample } from '../../shared/types.ts';
+import type { DayRow, Incident, Miss, Part, Reading, Sample } from '../../shared/types.ts';
 import { probe } from './probe.ts';
 import type { Deps, Where } from './probe.ts';
 
@@ -27,15 +28,38 @@ export const CLOSED_SQL =
 interface Kept {
   first: string | null;
   processed: string | null;
+  /** The last summary's checks with no answer, when it was written at `processed`. */
+  miss: Miss | null;
+}
+
+/** The checks with no answer that a summary written at `processed` carries, or null. */
+function keptMiss(summary: string | undefined, processed: string | null): Miss | null {
+  if (summary === undefined || processed === null) return null;
+  try {
+    const value = JSON.parse(summary) as { now?: unknown; miss?: unknown } | null;
+    if (value === null || value.now !== Number(processed)) return null;
+    return missIn(value.miss);
+  } catch {
+    return null;
+  }
 }
 
 async function readKept(db: D1Database): Promise<Kept> {
   const meta = await db
-    .prepare("SELECT k, v FROM meta WHERE k IN ('first', 'processed')")
+    .prepare("SELECT k, v FROM meta WHERE k IN ('first', 'processed', 'summary')")
     .all<{ k: string; v: string }>();
   const kept = new Map(meta.results.map((row) => [row.k, row.v]));
-  return { first: kept.get('first') ?? null, processed: kept.get('processed') ?? null };
+  const processed = kept.get('processed') ?? null;
+  return {
+    first: kept.get('first') ?? null,
+    processed,
+    miss: keptMiss(kept.get('summary'), processed),
+  };
 }
+
+/** The samples a store that kept no runs yet makes them from, once: the 90 days' ticks. */
+export const SAMPLES_SQL =
+  'SELECT t, site, closings, chances, accounts FROM samples WHERE t >= ? ORDER BY t';
 
 const taken = (kept: Kept, t: number): boolean =>
   kept.processed !== null && Number(kept.processed) >= t;
@@ -101,17 +125,30 @@ async function writesFor(
   const { t, parts } = sample;
   const processed = kept.processed === null ? null : Number(kept.processed);
   const start = windowStart(t);
-  const [days, open, closed] = await db.batch<Record<string, unknown>>([
+  // A store whose summary carries no runs (one written before they were kept) makes them once
+  // from its samples; from then on each tick goes on from the summary before it.
+  const remake = processed !== null && kept.miss === null;
+  const [days, open, closed, samples] = await db.batch<Record<string, unknown>>([
     db.prepare('SELECT day, part, ok, late, down FROM days WHERE day >= ?').bind(dayOf(start)),
     db.prepare(OPEN_SQL),
     db.prepare(CLOSED_SQL).bind(start, CLOSED_READ),
+    ...(remake ? [db.prepare(SAMPLES_SQL).bind(start)] : []),
   ]);
   const incidents = [...(open?.results ?? []), ...(closed?.results ?? [])];
+  const first = kept.first === null ? null : Number(kept.first);
+  let miss = kept.miss;
+  if (remake && processed !== null) {
+    const rows = (samples?.results ?? []) as unknown as StoredStates[];
+    // The samples read begin at the new tick's window: the ticks before it are not kept.
+    miss = missOf(rows, Math.max(first ?? processed, start), processed);
+  }
   const stepped = step(
     {
-      first: kept.first === null ? null : Number(kept.first),
+      first,
       days: (days?.results ?? []) as unknown as DayRow[],
       incidents: incidents as unknown as Incident[],
+      miss,
+      last: processed,
     },
     sample,
   );

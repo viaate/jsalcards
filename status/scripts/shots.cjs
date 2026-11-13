@@ -683,7 +683,6 @@ async function reserves(browser, report = false) {
     'Could not refresh. Checked 59\u00a0minutes\u00a0ago.',
     'The last check was 59\u00a0minutes\u00a0ago.',
     copy.banner.firstMore,
-    copy.banner.unreachableMore,
     copy.stuckMore,
   ];
   const context = await browser.newContext({

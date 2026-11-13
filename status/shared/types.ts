@@ -68,6 +68,16 @@ export interface SummaryPart {
   made?: number;
 }
 
+/**
+ * The checks of each part that gave no answer (its state was `unknown`, or the tick was not
+ * taken at all), as runs: `[the first such tick, how many in a row]`, oldest first. Exact from
+ * `since` on; before it the store kept only the counts a UTC day.
+ */
+export interface Miss {
+  since: number;
+  runs: Record<Part, [number, number][]>;
+}
+
 /** The one document the page draws from, written whole at every tick. */
 export interface Summary {
   v: 1;
@@ -81,6 +91,8 @@ export interface Summary {
   /** Per part, 90 triples `[ok, late, down]`, oldest first. */
   days: Record<Part, [number, number, number][]>;
   incidents: SummaryIncident[];
+  /** Left out by a store written before it was kept: the page then claims no gap it cannot prove. */
+  miss?: Miss;
 }
 
 /** Seconds in a tick, and ticks in a whole UTC day. */

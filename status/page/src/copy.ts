@@ -56,7 +56,6 @@ export const copy = {
     // Said with the rows' "Could not check": nothing old is shown as what is true now.
     staleMore: 'The last check was {ago}.',
     unreachable: 'We cannot load the status.',
-    unreachableMore: 'This page tries again every minute.',
     checked: 'Last checked {ago}.',
     kept: 'Could not refresh. Checked {ago}.',
   },
@@ -137,8 +136,6 @@ export const copy = {
     // A day the checks can have stayed away on after they stopped on a problem the day before.
     stopped: '{part}: {kind} when our checks stopped on {time}.',
     stoppedWhen: 'This day was not checked in\u00a0full.',
-    // After the list, while the first check is inside the 90 days.
-    checksBegan: 'Checks began on {start}.',
     cut: 'This list holds the newest {n}\u00a0problems. Older ones are not shown.',
     // Before the first check.
     first: 'No checks yet.',

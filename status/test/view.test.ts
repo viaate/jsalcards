@@ -128,7 +128,6 @@ test('while it waits, the same boxes say Checking', () => {
     older: [],
     button: null,
     expanded: false,
-    began: null,
     cut: null,
   });
 });
@@ -161,7 +160,8 @@ test('before the first check, and when the status cannot be loaded', () => {
     shape: 'unknown',
     lead: 'We cannot load the status.',
     said: 'We cannot load the status.',
-    more: 'This page tries again every minute.',
+    // One thing to do, said once: the history's line says to reload the page.
+    more: null,
     stuck: null,
   });
   assert.deepEqual(
@@ -766,8 +766,9 @@ test('problems: closed, closed by a gap, open, and across a change of clocks', (
     some.problems.days.map((day) => day.date),
     ['Tue, Nov 10', 'Sat, Nov 7', 'Sun, Nov 1', 'Fri, Oct 30'],
   );
-  // The problem that began before the days listed is the one behind the button.
-  assert.equal(some.problems.button, 'Show 1 earlier problem');
+  // The problem that began before the days listed is the one behind the button. It ran past
+  // midnight, so the button shows two lines, one on each of its days, and says 2.
+  assert.equal(some.problems.button, 'Show 2 earlier problems');
   // Another reader's zone gives the same instants in their own clock, on their own days.
   const utc = data(summary, { zone: 'UTC' });
   assert.equal(probs(utc)[1]!.when, 'Nov 7, 11:10 AM to 11:35 AM UTC');
@@ -788,7 +789,7 @@ test('past problems: only the problem days since checks began, and nothing of a 
   // Checks began Nov 7 and found no problem: no day is listed, and nothing is drawn.
   const none = data(summaryWith({}));
   assert.deepEqual(none.problems.days, []);
-  assert.equal(none.problems.began, 'Checks began on Nov 7, 10:00 AM EST.');
+
   assert.deepEqual(
     [none.problems.older, none.problems.button, none.problems.empty, none.problems.cut],
     [[], null, null, null],
@@ -797,11 +798,11 @@ test('past problems: only the problem days since checks began, and nothing of a 
   // Launch day ten hours in, all working: no day, never a column of days before the checks.
   const launchDay = data(simulate(NOW - 10 * 3600, NOW, () => OK));
   assert.deepEqual(launchDay.problems.days, []);
-  assert.equal(launchDay.problems.began, 'Checks began on Nov 10, 12:00 AM EST.');
+
   // Ninety days of checks, all working: no day, and no "Past problems".
   const full = data(allOk(NOW));
   assert.deepEqual([full.problems.days, full.problems.older, full.problems.button], [[], [], null]);
-  assert.equal(full.problems.began, null);
+
   assert.equal(mainHtml(full).includes('Past problems'), false);
   const long = (incidents: SummaryIncident[]): Summary => summaryWith({}, incidents, 40);
   const two = data(long([one(0), one(1)]));
@@ -965,7 +966,9 @@ test('a day with too few checks is never said to have no problems', () => {
 
 test('a day is said to have no problems only when its checks had answers, counted from the bars', () => {
   // Case A: every part answered only half of Nov 9 UTC and 228 of 288 checks of Nov 10 UTC.
-  // Both bars are drawn working, yet New York's Nov 9 and Nov 10 each had hours with no answer.
+  // Both bars are drawn working, yet New York's Nov 8 and Nov 9 each had hours with no answer.
+  // The 60 of Nov 10 UTC were its first 5 hours, all on New York's Nov 9: its Nov 10, a day
+  // that straddles two UTC days, was checked in full and is not listed.
   const clock = at('2026-11-12T17:00:00Z');
   const halves = simulate(clock - 20 * DAY, clock, (t) => {
     if (t >= at('2026-11-09T00:00:00Z') && t < at('2026-11-09T12:00:00Z')) return null;
@@ -982,7 +985,6 @@ test('a day is said to have no problems only when its checks had answers, counte
     ['ok', 'ok'],
   );
   assert.deepEqual(told(a), [
-    'Tue, Nov 10: This day was not checked in full.',
     'Mon, Nov 9: This day was not checked in full.',
     // Its evening is the first 12 hours of Nov 9 UTC.
     'Sun, Nov 8: This day was not checked in full.',
@@ -1071,14 +1073,13 @@ test('the day after the checks stopped on a problem says what they last found', 
         'Nov 1, 10:00 PM to 10:25 PM EST',
     ],
   );
-  // Back at 04:00Z: 9 checks with no answer, all on Sun, Nov 1 in New York. The store keeps a
-  // count a UTC day, and Nov 2 UTC is the end of Sun, Nov 1 and most of Mon, Nov 2, so the 9
-  // can be counted to either day: both say they were not checked in full, never "No problems.".
+  // Back at 04:00Z: 9 checks with no answer, all on Sun, Nov 1 in New York. Nov 2 UTC is the
+  // end of Sun, Nov 1 and most of Mon, Nov 2; the summary's runs say when the 9 were, so only
+  // Sun, Nov 1 says it was not checked in full, and Mon, Nov 2, checked in full, is not listed.
   const nine = told(data(run('2026-11-02T04:00:00Z')));
   assert.deepEqual(
     nine.filter((line) => line.startsWith('Mon, Nov 2') || line.startsWith('Sun, Nov 1')),
     [
-      'Mon, Nov 2: This day was not checked in full.',
       'Sun, Nov 1: Live school closings: not working for at least 15 minutes. From Nov 1, ' +
         '10:00 PM EST. Our checks stopped while it was going on. ' +
         '(This day was not checked in full.)',
@@ -1100,12 +1101,9 @@ test('a part with 3 checks of a day unanswered never lets that day be left out a
     ).filter((line) => line.startsWith('Thu, Nov 5') || line.startsWith('Wed, Nov 4'));
   // Two are inside the allowance: both days are quiet, and neither is listed.
   assert.deepEqual(run(2), []);
-  // Three are not. Nov 5 UTC is also the last 5 hours of Wed, Nov 4 in New York, and the
-  // store keeps a count a UTC day, so the day before cannot be left out as quiet either.
-  assert.deepEqual(run(3), [
-    'Thu, Nov 5: This day was not checked in full.',
-    'Wed, Nov 4: This day was not checked in full.',
-  ]);
+  // Three are not. Nov 5 UTC is also the last 5 hours of Wed, Nov 4 in New York, but the
+  // three were all on Thu, Nov 5 there: Wed, Nov 4 was checked in full and is not listed.
+  assert.deepEqual(run(3), ['Thu, Nov 5: This day was not checked in full.']);
   for (const n of [3, 4, 12, 30, 287]) {
     assert.equal(run(n)[0], 'Thu, Nov 5: This day was not checked in full.', `${n} unanswered`);
   }
@@ -1199,10 +1197,13 @@ test('a full summary never leaves out as quiet a day whose problems it left out'
     view.problems.cut,
     'This list holds the newest 100 problems. Older ones are not shown.',
   );
-  // Three of the site's checks of Nov 4 UTC with no answer too: both notes, as one.
+  // Three of the site's checks at 12:00Z Nov 4 with no answer too: both notes, as one, on
+  // that day; the day before keeps its one note.
   const short = structuredClone(flap);
   const bar = short.days.site[83]!;
   short.days.site[83] = [bar[0] - 3, bar[1], bar[2]];
+  short.miss!.runs.site.push([at('2026-11-04T12:00:00Z'), 3]);
+  short.miss!.runs.site.sort((x, y) => x[0] - y[0]);
   const both = told(data(short));
   assert.equal(
     on(both, 'Wed, Nov 4')!.endsWith(
@@ -1210,10 +1211,7 @@ test('a full summary never leaves out as quiet a day whose problems it left out'
     ),
     true,
   );
-  assert.equal(
-    on(both, 'Tue, Nov 3'),
-    'Tue, Nov 3: Some problems from this day are not listed. This day was not checked in full.',
-  );
+  assert.equal(on(both, 'Tue, Nov 3'), 'Tue, Nov 3: Some problems from this day are not listed.');
   // One fewer problem and nothing is cut.
   const fewer = structuredClone(flap);
   fewer.incidents = fewer.incidents.slice(0, INCIDENTS_MAX - 1);
@@ -1238,7 +1236,7 @@ test('a part no check could reach says so, and an old summary says nothing of th
     first.problems.days.map((day) => day.none),
     ['Not every part could be checked.'],
   );
-  assert.equal(first.problems.began, 'Checks began on Nov 10, 8:00 AM EST.');
+
   // "No checks yet" is said before the first check only.
   assert.equal(JSON.stringify(first).includes('No checks yet'), false);
 
@@ -1411,3 +1409,131 @@ function summaryFrom(): Summary {
     return OK;
   });
 }
+
+test('a day checked in full that straddles two UTC days is never said to have a gap', () => {
+  // The chances give no answer for 3 checks from 02:00Z Nov 6: 9:00 PM EST on Thu, Nov 5.
+  // Fri, Nov 6 in New York (05:00Z Nov 6 to 05:00Z Nov 7) shares the bar of Nov 6 UTC with
+  // them, yet had every check answered.
+  const clock = at('2026-11-10T15:00:00Z');
+  const summary = simulate(clock - 20 * DAY, clock, (t) => {
+    const k = (t - at('2026-11-06T02:00:00Z')) / TICK;
+    return k >= 0 && k < 3 ? { ...OK, chances: 'unknown' } : OK;
+  });
+  assert.deepEqual(summary.miss!.runs.chances, [[at('2026-11-06T02:00:00Z'), 3]]);
+  const view = data(summary, { clock: clock + 130 });
+  assert.deepEqual(told(view), ['Thu, Nov 5: This day was not checked in full.']);
+  assert.doesNotMatch(mainHtml(view), /Fri, Nov\s6/);
+  // A store written before the runs were kept says only what its bars prove: the 3 can be
+  // on either day, so neither is said to have a gap.
+  const older = structuredClone(summary);
+  delete older.miss;
+  assert.deepEqual(told(data(older, { clock: clock + 130 })), []);
+  // Runs that make no sense are read as none.
+  const broken = structuredClone(summary) as unknown as { miss: unknown };
+  broken.miss = { since: 'x', runs: {} };
+  assert.deepEqual(told(data(broken as unknown as Summary, { clock: clock + 130 })), []);
+});
+
+test('a store with no runs still says what its bars prove', () => {
+  // No readings at all through Nov 4 UTC: whatever the runs, the bars prove most of New
+  // York's Nov 3 evening and Nov 4 had no answer.
+  const clock = at('2026-11-10T15:00:00Z');
+  const summary = simulate(clock - 20 * DAY, clock, (t) =>
+    t >= at('2026-11-04T00:00:00Z') && t < at('2026-11-05T00:00:00Z') ? null : OK,
+  );
+  const exact = told(data(summary, { clock: clock + 130 }));
+  delete summary.miss;
+  const proven = told(data(summary, { clock: clock + 130 }));
+  assert.deepEqual(exact, [
+    'Wed, Nov 4: This day was not checked in full.',
+    'Tue, Nov 3: This day was not checked in full.',
+  ]);
+  assert.deepEqual(proven, exact);
+});
+
+test('the fold counts the lines it shows, never a problem already shown open today', () => {
+  // A chances problem open since 13:55Z today and two older closings outages, 20 and 25 days
+  // back: the button says 2, and shows 2 lines.
+  const clock = NOW + 130;
+  const outage = (back: number): SummaryIncident => ({
+    p: 'closings',
+    k: 'down',
+    s: NOW - back * DAY,
+    e: NOW - back * DAY + 600,
+    g: 0,
+  });
+  const summary = summaryWith(
+    { chances: 'late' },
+    [
+      { p: 'chances', k: 'late', s: at('2026-11-10T13:55:00Z'), e: null, g: 0, l: NOW },
+      outage(20),
+      outage(25),
+    ],
+    40,
+  );
+  const shut = data(summary, { clock });
+  assert.equal(shut.problems.days[0]!.problems[0]!.what.startsWith('Snow-day chances'), true);
+  assert.equal(shut.problems.button, 'Show 2 earlier problems');
+  // The same count when the open one began before the days listed: its lines on those days
+  // are counted, and its line under today is not.
+  const long = summaryWith(
+    { chances: 'late' },
+    [{ p: 'chances', k: 'late', s: NOW - 17 * DAY, e: null, g: 0, l: NOW }, outage(20), outage(25)],
+    40,
+  );
+  for (const one of [summary, long, history(NOW), launch(NOW), worst(NOW)]) {
+    const folded = data(one, { clock });
+    const open = data(one, { clock, expanded: true });
+    const older = /<ol class="days older">(.*?)<\/ol><p class="more-row">/s.exec(mainHtml(open));
+    const lines =
+      (older?.[1]!.match(/<li class="prob">/g)?.length ?? 0) +
+      (older?.[1]!.match(/<p class="none">/g)?.length ?? 0);
+    const n = folded.problems.button === null ? 0 : Number(/\d+/.exec(folded.problems.button)![0]);
+    assert.equal(n, lines);
+  }
+  // Its began line and two still lines (Oct 24 to 26), and the two outages.
+  assert.equal(data(long, { clock }).problems.button, 'Show 5 earlier problems');
+});
+
+test('the history that could not load says one thing to do, once', () => {
+  const html = mainHtml(page.viewOf({ kind: 'unreachable' }));
+  assert.equal(html.match(/Reload/g)?.length, 1);
+  assert.match(html, /The history could not be loaded\. Reload the page to try again\./);
+  assert.doesNotMatch(html, /tries again|try again every/);
+});
+
+test('no line says when the checks began', () => {
+  for (const one of [launch(NOW), history(NOW), allOk(NOW), worst(NOW)]) {
+    for (const expanded of [false, true]) {
+      assert.doesNotMatch(mainHtml(data(one, { expanded })), /Checks began on|checks began on/);
+    }
+  }
+});
+
+test('a day note is drawn as every other line: its tied runs in boxes', () => {
+  const clock = at('2026-11-10T15:00:00Z');
+  const summary = simulate(clock - 20 * DAY, clock, (t) => {
+    const k = (t - at('2026-11-05T15:00:00Z')) / TICK;
+    if (k >= 0 && k < 30) return null;
+    return k === 40 ? { ...OK, site: 'down' } : OK;
+  });
+  const html = mainHtml(
+    page.viewOf({
+      kind: 'data',
+      summary,
+      clock: clock + 130,
+      kept: false,
+      expanded: false,
+      picked: null,
+      zone: ZONE,
+    }),
+  );
+  assert.match(
+    html,
+    /<p class="none note">This day was not checked <span class="nb">in full\.<\/span><\/p>/,
+  );
+  // No line of the list keeps a bare no-break space: each tied run is a box, as in a tip.
+  const lines = html.match(/<p class="(?:none|what|when)[^"]*">.*?<\/p>/g) ?? [];
+  assert.equal(lines.length > 0, true);
+  for (const line of lines) assert.equal(line.includes('\u00a0'), false, line);
+});

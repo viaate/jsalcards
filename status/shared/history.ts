@@ -4,6 +4,7 @@ import { DAY, DAYS_KEPT, PARTS, TICK } from './types.ts';
 import type {
   DayRow,
   Incident,
+  Miss,
   Part,
   Sample,
   State,
@@ -16,6 +17,12 @@ import type {
 export const GAP_SECONDS = 900;
 /** The summary carries this many incidents at most. */
 export const INCIDENTS_MAX = 100;
+/**
+ * The summary carries this many runs of checks with no answer a part at most. Past it, the
+ * oldest go and `since` moves up to where they ended: before it the page claims only what the
+ * day counts prove.
+ */
+export const MISS_RUNS_MAX = 300;
 
 /** The UTC day of an instant, 'YYYY-MM-DD'. */
 export function dayOf(t: number): string {
@@ -38,11 +45,17 @@ export interface Before {
   first: number | null;
   days: readonly DayRow[];
   incidents: readonly Incident[];
+  /** The checks with no answer up to the last tick taken in; null: not known (an older store). */
+  miss?: Miss | null;
+  /** The last tick taken in; null or left out on an empty store. */
+  last?: number | null;
 }
 
 /** What a sample changes in the store. */
 export interface Advanced {
   first: number;
+  /** The checks with no answer, this sample's taken in. */
+  miss: Miss;
   /** What to add to the sample's UTC day, one row a part (all zero for `unknown`). */
   add: DayRow[];
   /** Incidents to insert. */
@@ -93,12 +106,111 @@ export function advance(before: Before, sample: Sample): Advanced {
       changed.push({ ...open, ended: t });
     }
   }
-  return { first, add, opened, changed };
+  return { first, add, opened, changed, miss: missAfter(before, sample, first) };
+}
+
+function emptyRuns(): Record<Part, [number, number][]> {
+  const runs = {} as Record<Part, [number, number][]>;
+  for (const part of PARTS) runs[part] = [];
+  return runs;
+}
+
+/** Adds `n` ticks with no answer from `t` on to a part's runs, joining a run they continue. */
+function addRun(runs: [number, number][], t: number, n: number): void {
+  if (n <= 0) return;
+  const lastRun = runs[runs.length - 1];
+  if (lastRun !== undefined && lastRun[0] + lastRun[1] * TICK === t) lastRun[1] += n;
+  else runs.push([t, n]);
+}
+
+/** The runs kept inside the 90 days of `t`, at most `MISS_RUNS_MAX` a part. */
+function trimmed(miss: Miss, t: number): Miss {
+  let since = Math.max(miss.since, windowStart(t));
+  for (const part of PARTS) {
+    const over = miss.runs[part].length - MISS_RUNS_MAX;
+    if (over > 0) {
+      const gone = miss.runs[part][over - 1]!;
+      since = Math.max(since, gone[0] + gone[1] * TICK);
+    }
+  }
+  const runs = emptyRuns();
+  for (const part of PARTS) {
+    for (const [from, n] of miss.runs[part]) {
+      const end = from + n * TICK;
+      if (end <= since) continue;
+      const start = Math.max(from, Math.ceil(since / TICK) * TICK);
+      runs[part].push([start, (end - start) / TICK]);
+    }
+  }
+  return { since, runs };
+}
+
+/**
+ * The checks with no answer once `sample` is taken in: those before, every tick between the
+ * last taken and this one (none of them was taken), and each part this one could not check.
+ * With no runs kept before (an older store), they are exact from this tick on.
+ */
+export function missAfter(before: Before, sample: Sample, first: number): Miss {
+  const t = sample.t;
+  const known = before.miss ?? null;
+  const last = before.last ?? null;
+  const miss: Miss =
+    known === null || last === null
+      ? { since: before.first === null ? first : t, runs: emptyRuns() }
+      : { since: known.since, runs: emptyRuns() };
+  for (const part of PARTS) {
+    if (known !== null && last !== null) {
+      for (const [from, n] of known.runs[part]) miss.runs[part].push([from, n]);
+      addRun(miss.runs[part], last + TICK, Math.max(0, (t - last) / TICK - 1));
+    }
+    if (sample.parts[part].s === 'unknown') addRun(miss.runs[part], t, 1);
+  }
+  return trimmed(miss, t);
+}
+
+/** A sample as the store keeps it: the tick and each part's state. */
+export type StoredStates = { t: number } & Record<Part, State>;
+
+/**
+ * The checks with no answer, made once from the samples the store keeps (each tick of the 90
+ * days to `last`): for a store that kept no runs yet.
+ */
+export function missOf(rows: readonly StoredStates[], first: number, last: number): Miss {
+  const since = Math.max(first, windowStart(last));
+  const runs = emptyRuns();
+  const byTick = new Map(rows.map((row) => [row.t, row]));
+  for (let t = Math.ceil(since / TICK) * TICK; t <= last; t += TICK) {
+    const row = byTick.get(t);
+    for (const part of PARTS)
+      if (row === undefined || row[part] === 'unknown') addRun(runs[part], t, 1);
+  }
+  return trimmed({ since, runs }, last);
+}
+
+/** A stored summary's runs, or null when it has none fit to go on from. */
+export function missIn(value: unknown): Miss | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const { since, runs } = value as { since?: unknown; runs?: unknown };
+  if (typeof since !== 'number' || !Number.isFinite(since)) return null;
+  if (typeof runs !== 'object' || runs === null) return null;
+  const out = emptyRuns();
+  for (const part of PARTS) {
+    const list = (runs as Record<string, unknown>)[part];
+    if (!Array.isArray(list)) return null;
+    for (const run of list) {
+      if (!Array.isArray(run) || run.length !== 2) return null;
+      const [from, n] = run as unknown[];
+      if (typeof from !== 'number' || typeof n !== 'number') return null;
+      if (!Number.isInteger(from / TICK) || !Number.isInteger(n) || n < 1) return null;
+      out[part].push([from, n]);
+    }
+  }
+  return { since, runs: out };
 }
 
 /** Take one sample in: the rows it changes, and the summary once they are written. */
 export function step(before: Before, sample: Sample): Stepped {
-  const { first, add, opened, changed } = advance(before, sample);
+  const { first, add, opened, changed, miss } = advance(before, sample);
   const replaced = new Set(changed.map((row) => row.id));
   const days = new Map<string, DayRow>();
   for (const row of before.days) days.set(`${row.day} ${row.part}`, row);
@@ -113,8 +225,8 @@ export function step(before: Before, sample: Sample): Stepped {
     });
   }
   const incidents = [...before.incidents.filter((i) => !replaced.has(i.id)), ...changed, ...opened];
-  const summary = summarize(sample, first, [...days.values()], incidents);
-  return { first, add, opened, changed, summary };
+  const summary = summarize(sample, first, [...days.values()], incidents, miss);
+  return { first, add, opened, changed, miss, summary };
 }
 
 /** The summary the page draws from: the parts now, 90 days of counts, the window's incidents. */
@@ -123,6 +235,7 @@ export function summarize(
   first: number,
   days: readonly DayRow[],
   incidents: readonly Incident[],
+  miss?: Miss,
 ): Summary {
   const t = sample.t;
   const start = windowStart(t);
@@ -155,7 +268,17 @@ export function summarize(
       if (i.ended === null) row.l = i.last;
       return row;
     });
-  return { v: 1, now: t, first, parts, from: dayOf(start), days: counts, incidents: listed };
+  const summary: Summary = {
+    v: 1,
+    now: t,
+    first,
+    parts,
+    from: dayOf(start),
+    days: counts,
+    incidents: listed,
+  };
+  if (miss !== undefined) summary.miss = miss;
+  return summary;
 }
 
 /**

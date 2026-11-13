@@ -1,6 +1,6 @@
 /** From the summary and a clock to what the page says. Pure: no DOM, no fetch, no timer. */
 
-import { INCIDENTS_MAX, barOf, dayStart, expected, shareOf } from '../../shared/history.ts';
+import { INCIDENTS_MAX, barOf, dayStart, expected, missIn, shareOf } from '../../shared/history.ts';
 import type { BarClass } from '../../shared/history.ts';
 import { DAY, DAYS_KEPT, PARTS, TICK } from '../../shared/types.ts';
 import type { Part, State, Summary, SummaryIncident } from '../../shared/types.ts';
@@ -19,13 +19,11 @@ export const STALE_RETRY_AFTER = 300;
  */
 export const DAYS_LISTED = 15;
 /**
- * A day counts as checked in full only while each part has at most this
- * many checks with no answer in it (10 minutes); from one more on, it says it was not. Each
- * part is counted at the most it can be from the bars: in each UTC bar the day touches, the
- * fewer of the bar's checks with no answer and the day's own checks in that bar. The store
- * keeps a count a UTC day, not when in it the checks had no answer, so a day that shares a UTC
- * bar with its neighbour can be counted the neighbour's: any lower count could leave a day out
- * of "Past problems" as quiet over checks that had no answer on that very day.
+ * A day counts as checked in full only while each part has at most this many checks with no
+ * answer in it (10 minutes); from one more on, it says it was not. The checks with no answer
+ * are counted in the reader's own day: from the summary's runs, which say which ticks had
+ * none, and, before the runs begin (a store written before they were kept), only as many as
+ * the UTC bars prove fell inside that day. A gap the page cannot prove is never claimed.
  */
 export const UNANSWERED_ALLOWED = 2;
 /** A part's problems of one kind that ended on the day they began are told as one from this many. */
@@ -134,8 +132,6 @@ export interface View {
     older: DayView[];
     button: string | null;
     expanded: boolean;
-    /** When the checks began, said after the list while that is inside the 90 days. */
-    began: string | null;
     /** The summary holds only the newest problems: said when it is full. */
     cut: string | null;
   };
@@ -399,8 +395,8 @@ function waiting(input: Input): View {
     lead = copy.banner.first;
     more = copy.banner.firstMore;
   } else if (unreachable) {
+    // The one thing to do is said once, under "Past problems": reload the page.
     lead = copy.banner.unreachable;
-    more = copy.banner.unreachableMore;
   }
   // Not loaded is never drawn as days before the checks began: the key names that color.
   const bars: BarView[] = Array.from({ length: DAYS_KEPT }, () => ({
@@ -440,7 +436,6 @@ function waiting(input: Input): View {
       older: [],
       button: null,
       expanded: false,
-      began: null,
       cut: null,
     },
   };
@@ -683,43 +678,92 @@ function pastProblems(
   const from = starts[0]!;
   const today = dayKey(at, zone);
   const firstDay = dayKey(summary.first, zone);
-  const lastDay = dayKey(summary.now, zone);
   /** The oldest day any of the 90 bars touches. */
   const rangeStart = dayKey(Math.max(from, summary.first), zone);
   const unknownNow = PARTS.some((part) => summary.parts[part].s === 'unknown');
 
-  /** The checks due in [lo, hi): the ticks from the first check to the summary's last. */
+  /**
+   * The last tick due: the summary's own, and once the checks are late every tick up to the
+   * clock, none of which gave an answer.
+   */
+  const dueTo = stale ? at : summary.now;
+  /** The checks due in [lo, hi): the ticks from the first check to `dueTo`. */
   const dueIn = (lo: number, hi: number): number => {
     const a = Math.max(Math.ceil(lo / TICK), Math.ceil(summary.first / TICK));
-    const b = Math.min(Math.ceil(hi / TICK) - 1, Math.floor(summary.now / TICK));
+    const b = Math.min(Math.ceil(hi / TICK) - 1, Math.floor(dueTo / TICK));
     return b < a ? 0 : b - a + 1;
   };
-  /** Each bar's checks with no answer, of those due up to the summary's last tick. */
+  const miss = missIn(summary.miss);
+  /** Where the runs begin: before it, only the counts a UTC bar are known. */
+  const exactFrom = miss === null ? Math.floor(summary.now / TICK) * TICK + TICK : miss.since;
+  /** The first tick after the summary's own. */
+  const tail = Math.floor(summary.now / TICK) * TICK + TICK;
+  /** Each part's ticks with no answer from `exactFrom` on, as [from, to) spans, joined. */
+  const holes = {} as Record<Part, [number, number][]>;
+  for (const part of PARTS) {
+    const list: [number, number][] = [];
+    const runs: [number, number][] = (miss?.runs[part] ?? []).map(([t, n]) => [t, t + n * TICK]);
+    // After the summary's tick no check has given an answer: each tick due since is one.
+    if (dueTo >= tail) runs.push([tail, Math.floor(dueTo / TICK) * TICK + TICK]);
+    for (const [a, b] of runs) {
+      const lo = Math.max(a, exactFrom);
+      if (b <= lo) continue;
+      const was = list[list.length - 1];
+      if (was !== undefined && was[1] >= lo) was[1] = Math.max(was[1], b);
+      else list.push([lo, b]);
+    }
+    holes[part] = list;
+  }
+  /** A part's ticks with no answer in [lo, hi), from its runs: due ones only. */
+  const holesIn = (part: Part, lo: number, hi: number): number => {
+    let n = 0;
+    for (const [a, b] of holes[part]) {
+      if (b <= lo || a >= hi) continue;
+      n += dueIn(Math.max(a, lo), Math.min(b, hi));
+    }
+    return n;
+  };
+  /**
+   * Each bar's checks with no answer that the runs do not place: those before `exactFrom`,
+   * which can be anywhere in the bar's part before it (anywhere in the bar, were the runs ever
+   * to place fewer than a bar after it counts).
+   */
+  const loose = {} as Record<Part, number[]>;
+  /** Each bar's checks with no answer, of those due up to `dueTo`. */
   const missed = {} as Record<Part, number[]>;
   for (const part of PARTS) {
     missed[part] = starts.map((start, i) => {
       const [ok, late, down] = tallies[part][i] ?? [0, 0, 0];
       return Math.max(0, dueIn(start, start + DAY) - ok - late - down);
     });
+    loose[part] = starts.map((start, i) =>
+      Math.max(0, missed[part][i]! - holesIn(part, Math.max(start, exactFrom), start + DAY)),
+    );
   }
-  /** The most of a part's checks due in [lo, hi) that can have had no answer. */
+  /**
+   * A part's checks due in [lo, hi) that are proven to have had no answer: the runs' own, and
+   * of each bar's checks the runs do not place, those that cannot all fit outside [lo, hi).
+   */
   const unanswered = (part: Part, lo: number, hi: number): number => {
-    let n = 0;
+    let n = holesIn(part, Math.max(lo, exactFrom), hi);
     starts.forEach((start, i) => {
-      if (start >= hi || start + DAY <= lo) return;
-      n += Math.min(missed[part][i]!, dueIn(Math.max(lo, start), Math.min(hi, start + DAY)));
+      const left = loose[part][i]!;
+      const cut = exactFrom > start ? Math.min(start + DAY, exactFrom) : start + DAY;
+      if (left === 0 || cut <= start || start >= hi || cut <= lo) return;
+      const outside = dueIn(start, cut) - dueIn(Math.max(lo, start), Math.min(hi, cut));
+      n += Math.max(0, left - outside);
     });
     return n;
   };
-  /** The latest instant a part's checks can have stayed away from `t` on, from the bars. */
+  /**
+   * The instant a part's checks are proven to have stayed away to from `t` on: the end of the
+   * run of ticks with no answer that `t` is in, and `t` itself where the runs cannot say. The
+   * time since the summary's last tick is not counted: those days say they were not checked.
+   */
   const away = (part: Part, t: number): number => {
-    let reach = t;
-    for (let i = Math.floor((t - from) / DAY); i >= 0 && i < DAYS_KEPT; i += 1) {
-      const start = starts[i]!;
-      reach = Math.min(start + DAY, Math.max(reach, start) + missed[part][i]! * TICK);
-      if (reach < start + DAY) break;
-    }
-    return reach;
+    if (t < exactFrom || t >= tail) return t;
+    const hole = holes[part].find(([a, b]) => a <= t && t < b);
+    return hole === undefined ? t : Math.min(hole[1], tail);
   };
 
   const spans: Span[] = [];
@@ -773,7 +817,12 @@ function pastProblems(
       if (!(incident.s < end && span.to > begin)) {
         // The checks stopped on a problem before this day and can have stayed away into it:
         // what they last found is said, never that the day had no problems.
-        if (span.gap && span.to <= begin && span.away > begin) {
+        if (
+          span.gap &&
+          span.to <= begin &&
+          span.away > begin &&
+          unanswered(incident.p, begin, end) > UNANSWERED_ALLOWED
+        ) {
           told.push({
             span,
             whole: false,
@@ -860,64 +909,56 @@ function pastProblems(
       if (start < end && start + DAY > begin) touched.push(i);
     });
     const missing = PARTS.some((part) => touched.some((i) => unexplained(part, i)));
+    // Each part's checks due on this day, and those of them proven to have had no answer (once
+    // the checks are late, every tick due since the last one is one).
+    const due = dueIn(begin, end);
+    const gone = PARTS.map((part) => unanswered(part, begin, end));
     // Any part with more of the day's checks unanswered than the allowance: not checked in full.
-    const short = PARTS.some((part) => unanswered(part, begin, end) > UNANSWERED_ALLOWED);
+    const short = gone.some((n) => n > UNANSWERED_ALLOWED);
     if (problems.length > 0) {
       // A day with problems says so too, unless a line of the checks stopping already does.
       const stopped = problems.some((line) => line.when === copy.problem.stoppedWhen);
-      // The day of the last check, once the checks are late, was not checked in full either.
-      const gap = (short || (stale && key === lastDay)) && !stopped;
+      const gap = short && !stopped;
       let note: string | null = gap ? copy.problem.stoppedWhen : null;
       if (missing) note = gap ? copy.problem.unlistedGap : copy.problem.unlisted;
       return { date, problems, none: null, note };
     }
-    const due = PARTS.flatMap((part) =>
-      touched
-        .map((i) => cells[part][i]!)
-        .filter((cls) => cls !== 'before' && cls !== 'yet' && cls !== 'wait'),
-    );
     // A day with no problem listed is left out, but a gap is never let look like a quiet day:
     // a day not checked in full is listed with its note.
     let none: string | null = null;
-    // A day after the last check is a gap only once the checks are late; before, its first
-    // checks are not due yet.
-    if (key > lastDay) none = stale ? copy.problem.unchecked : null;
-    else if (due.length === 0) none = copy.problem.unchecked;
+    // A day with no check due (after the last check, while the checks are not late) has
+    // nothing to say yet.
+    if (due === 0) none = null;
     else if (missing) none = short ? copy.problem.unlistedGap : copy.problem.unlisted;
-    else if (due.every((cls) => cls === 'none')) none = copy.problem.unchecked;
+    else if (gone.every((n) => n >= due)) none = copy.problem.unchecked;
     // The clock's day, while a part cannot be checked now, says that before any gap of the day.
     else if (key === today && unknownNow && !stale) none = copy.problem.noneUnknown;
-    else if (short || (stale && key === lastDay)) none = copy.problem.noneGap;
+    else if (short) none = copy.problem.noneGap;
     return none === null ? null : { date, problems, none, note: null };
   };
 
   const days: DayView[] = [];
   const older: DayView[] = [];
   let next = dayBefore(today, -1).key;
-  let shownFrom = today;
   for (let back = 0; ; back += 1) {
     const { key, date } = dayBefore(today, back);
     if (key < rangeStart) break;
     const listed = back < DAYS_LISTED && key >= firstDay;
-    if (listed) shownFrom = key;
     const day = dayOf(key, date, next);
     if (day !== null) (listed ? days : older).push(day);
     next = key;
   }
-  // The button counts the problems behind it, and each day there not checked in full.
-  const n =
-    spans.filter((span) => span.home < shownFrom).length +
-    older.filter((day) => day.problems.length === 0).length;
+  // The button counts the lines it shows: each problem line of the days behind it, and each
+  // of those days listed for its gap alone. A problem told under a day already shown (one
+  // still going on today) is counted only for the lines it has behind the button.
+  const n = older.reduce(
+    (sum, day) => sum + (day.problems.length > 0 ? day.problems.length : 1),
+    0,
+  );
   let button: string | null = null;
   if (n > 0) {
     if (input.expanded) button = copy.problem.hideOlder;
     else button = n === 1 ? copy.problem.showOlderOne : fill(copy.problem.showOlder, { n });
-  }
-  let began: string | null = null;
-  if (summary.first >= from) {
-    began = fill(copy.problem.checksBegan, {
-      start: zoned(local(summary.first, zone)),
-    });
   }
   return {
     days,
@@ -925,7 +966,6 @@ function pastProblems(
     older,
     button,
     expanded: input.expanded,
-    began,
     cut: full ? fill(copy.problem.cut, { n: INCIDENTS_MAX }) : null,
   };
 }

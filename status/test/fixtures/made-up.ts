@@ -9,6 +9,7 @@ import { DAY, PARTS, TICK } from '../../shared/types.ts';
 import type {
   DayRow,
   Incident,
+  Miss,
   Part,
   Reading,
   Sample,
@@ -51,6 +52,7 @@ export function simulate(first: number, last: number, script: Script): Summary {
   const since: Partial<Record<Part, number>> = {};
   let incidents: Incident[] = [];
   let latest: Sample | null = null;
+  let miss: Miss | null = null;
   let nextId = 1;
   for (let t = first; t <= last; t += TICK) {
     const states = script(t);
@@ -71,9 +73,16 @@ export function simulate(first: number, last: number, script: Script): Summary {
     // The store's side of a tick: only the open incidents matter to the next sample.
     const open = incidents.filter((row) => row.ended === null);
     const stepped = advance(
-      { first: latest === null ? null : first, days: [], incidents: open },
+      {
+        first: latest === null ? null : first,
+        days: [],
+        incidents: open,
+        miss,
+        last: latest?.t ?? null,
+      },
       sample,
     );
+    miss = stepped.miss;
     for (const row of stepped.add) {
       const was = days.get(`${row.day} ${row.part}`);
       days.set(`${row.day} ${row.part}`, {
@@ -92,7 +101,7 @@ export function simulate(first: number, last: number, script: Script): Summary {
     latest = sample;
   }
   if (latest === null) throw new Error('no tick was taken');
-  return summarize(latest, first, [...days.values()], incidents);
+  return summarize(latest, first, [...days.values()], incidents, miss ?? undefined);
 }
 
 /** The tick at or before a clock in seconds. */

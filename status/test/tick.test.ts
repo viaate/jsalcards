@@ -95,6 +95,7 @@ test('a first tick on an empty store', async () => {
     'from',
     'days',
     'incidents',
+    'miss',
   ]);
   assert.deepEqual(summary.parts, {
     site: { s: 'ok' },
@@ -523,5 +524,50 @@ test('the compare-and-set refuses a tick whose store moved, and the batch is und
     ]);
   } finally {
     await fresh.close();
+  }
+});
+
+test('the summary keeps which checks had no answer, and an older store makes them once from its samples', async () => {
+  const own = await startStore();
+  try {
+    const env = { ...WHERE, DB: own.db };
+    const t0 = Date.UTC(2026, 10, 10, 6, 0, 0) / 1000;
+    // Ticks at t0 and t0 + 300; the next three are not taken; then the accounts cannot be read.
+    for (const t of [t0, t0 + TICK]) assert.equal(await tick(env, t, net(t)), 'taken');
+    const t5 = t0 + 5 * TICK;
+    // A 429 answer is the checker's own trouble: Could not check, never down.
+    const blind = healthy(new Net(t5 * 1000 + 2000)).on(WHERE.ACCOUNTS_HEALTH_URL, {
+      status: 429,
+    });
+    assert.equal(await tick(env, t5, blind), 'taken');
+    const kept = await summaryOf(own);
+    assert.equal(kept.parts.accounts.s, 'unknown');
+    assert.deepEqual(kept.miss, {
+      since: t0,
+      runs: {
+        site: [[t0 + 2 * TICK, 3]],
+        closings: [[t0 + 2 * TICK, 3]],
+        chances: [[t0 + 2 * TICK, 3]],
+        accounts: [[t0 + 2 * TICK, 4]],
+      },
+    });
+    // A summary written before the runs were kept: the next tick reads the samples once, and
+    // the runs are the same as if they had been kept all along.
+    const older = { ...kept } as Partial<Summary>;
+    delete older.miss;
+    await own.sql("UPDATE meta SET v = ? WHERE k = 'summary'", JSON.stringify(older));
+    const t6 = t5 + TICK;
+    const watch = counted(own.db);
+    assert.equal(await tick({ ...env, DB: watch.db }, t6, net(t6)), 'taken');
+    const remade = await summaryOf(own);
+    assert.deepEqual(remade.miss, kept.miss);
+    // The one more read is the samples'; the next tick goes on from the summary again.
+    const t7 = t6 + TICK;
+    const again = counted(own.db);
+    assert.equal(await tick({ ...env, DB: again.db }, t7, net(t7)), 'taken');
+    assert.equal(watch.statements(), again.statements() + 1);
+    assert.deepEqual((await summaryOf(own)).miss, kept.miss);
+  } finally {
+    await own.close();
   }
 });

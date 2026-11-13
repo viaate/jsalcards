@@ -1,17 +1,28 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  MISS_RUNS_MAX,
   advance,
   barOf,
   dayOf,
   dayStart,
   expected,
+  missIn,
   shareOf,
   step,
   windowStart,
 } from '../shared/history.ts';
 import { DAY, PARTS, TICK } from '../shared/types.ts';
-import type { DayRow, Incident, Part, Reading, Sample, State, Summary } from '../shared/types.ts';
+import type {
+  DayRow,
+  Incident,
+  Miss,
+  Part,
+  Reading,
+  Sample,
+  State,
+  Summary,
+} from '../shared/types.ts';
 import { simulate } from './fixtures/made-up.ts';
 
 const T0 = Date.UTC(2026, 10, 10, 0, 0, 0) / 1000;
@@ -182,6 +193,7 @@ test('the summary lists open problems first, then the newest, 100 at most', () =
     'from',
     'days',
     'incidents',
+    'miss',
   ]);
 });
 
@@ -218,6 +230,7 @@ test('exactly 90 days, and what is older leaves the summary', () => {
     'add',
     'opened',
     'changed',
+    'miss',
   ]);
 });
 
@@ -300,4 +313,52 @@ test('the made-up history runs on the real code', () => {
   assert.deepEqual(summary.incidents, [
     { p: 'site', k: 'down', s: T0 + DAY, e: T0 + DAY + 300, g: 0 },
   ]);
+});
+
+test('the runs of checks with no answer: joined, kept 90 days, and at most so many', () => {
+  const store = new Memory();
+  // Not one check missing: no runs, exact from the first tick.
+  store.take(T0);
+  let miss = store.summary!.miss!;
+  assert.deepEqual(miss, {
+    since: T0,
+    runs: { site: [], closings: [], chances: [], accounts: [] },
+  });
+  // Ticks not taken, then a part that could not be checked right after: one run each.
+  let last = T0;
+  const take = (t: number, states: Partial<Record<Part, State>> = {}): Miss => {
+    const stepped = step({ first: T0, days: [], incidents: [], miss, last }, sample(t, states));
+    last = t;
+    miss = stepped.miss;
+    return miss;
+  };
+  take(T0 + 3 * TICK);
+  take(T0 + 4 * TICK, { chances: 'unknown' });
+  assert.deepEqual(take(T0 + 5 * TICK).runs, {
+    site: [[T0 + TICK, 2]],
+    closings: [[T0 + TICK, 2]],
+    chances: [
+      [T0 + TICK, 2],
+      [T0 + 4 * TICK, 1],
+    ],
+    accounts: [[T0 + TICK, 2]],
+  });
+  // A part that flaps for long keeps the newest runs only; `since` moves up past the rest.
+  for (let k = 6; k < 6 + 2 * (MISS_RUNS_MAX + 5); k += 2) {
+    take(T0 + k * TICK, { site: 'unknown' });
+    take(T0 + (k + 1) * TICK);
+  }
+  assert.equal(miss.runs.site.length, MISS_RUNS_MAX);
+  assert.equal(miss.since, miss.runs.site[0]![0] - TICK);
+  assert.deepEqual(miss.runs.chances, []);
+  // 90 days on, what is older than the window is gone.
+  const later = T0 + 100 * DAY;
+  take(later);
+  assert.equal(miss.since, windowStart(later));
+  assert.deepEqual(miss.runs.site, [[windowStart(later), (later - windowStart(later)) / TICK]]);
+  // A stored summary's runs are read back, and anything else is none.
+  assert.deepEqual(missIn(JSON.parse(JSON.stringify(miss))), miss);
+  for (const bad of [null, 3, { since: 1 }, { since: 0, runs: { site: [[1, 1]] } }]) {
+    assert.equal(missIn(bad), null);
+  }
 });

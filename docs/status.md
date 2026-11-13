@@ -35,9 +35,9 @@ a reader whose clock is the world clock sees the bar's own day ("Mon, Nov 2").
 
 Below the card, "Past problems" lists only the problem days among the days in the
 reader's time zone from today back 15 days, never a day before the checks began,
-newest first, and ends with when the checks began while that is inside the 90 days.
-A day with no problem shows nothing at all, today too: no date and no line (the
-owner's ruling of Nov 12: "only show problem days"). When no day in the 90 has a
+newest first. No line gives the date the checks began. A day with no problem shows
+nothing at all, today too: no date and no line (the owner's ruling of Nov 12: "only
+show problem days"). When no day in the 90 has a
 problem, "Past problems" is not drawn at all, and nothing anywhere says there were
 none. Under each date are the problems
 that covered any of it: in full on the day each began (an open one in full under
@@ -52,37 +52,50 @@ with no checks says "Not checked.", a day partly checked says "This day was not
 checked in full.", and, since the summary holds the newest 100 problems only, a day
 whose bars show trouble no listed problem covers says "Some problems from this day
 are not listed." (and the list says it holds the newest 100). Once the checks are
-late, the day of the last check says "This day was not checked in full." (after its
-problems, if it had any) and each day since says "Not checked."; before that, a day after the last check is not listed, as
-its first checks are not due yet. Today, while a part could not be checked just now,
+late, every check due since the last one counts as one with no answer: the day of the
+last check says "This day was not checked in full." (after its problems, if it had
+any) once that passes the allowance, and each day since says "Not checked."; before
+that, a day after the last check is not listed, as its first checks are not due yet. Today, while a part could not be checked just now,
 says "Not every part could be checked.".
 
-"Partly checked" is counted from the bars, never from a bar's color alone (a bar is
-drawn working once half its checks gave an answer). For each part, the checks of the
-reader's day that gave no answer are counted at the most they can be: in each UTC bar
-the day touches, the fewer of the bar's checks with no answer and the day's own
-checks in that bar. The allowance is a count, not a share: a day says it was checked
-in full only while every part has at most 2 checks (10 minutes) with no answer on
-it; from 3 on it is listed as "not checked in full". The same count is said on a day with
-problems: after its problems it adds "This day was not checked in full." (joined to
-"Some problems from this day are not listed." when both apply), unless one of its
-lines already says the checks stopped. The store shows no routine misses: on Nov 11
-and 12 the website, the closings and the accounts answered every check (115 of 115,
-then 39 of 39), and the chances' 31 unanswered checks on Nov 11 were one block of
-about 2.5 hours, so that day reads "not checked in full". The count stays an upper
-bound, on purpose: the store keeps one count a part a UTC day, not when in the day
-the checks had no answer, and a reader's day in the US shares a UTC bar with the
-next one, so any smaller count could leave out as quiet a day with checks with no
-answer on that very day. The cost is the safe one: a gap that lay on one side of the reader's
-midnight marks both days that share its UTC bar as not checked in full, never the
-other way. When the checks stopped while a problem was going on and
-can have stayed away into the next days, by the same counts, each of those days says
+"Partly checked" is counted in the reader's own day, never from a bar's color alone (a
+bar is drawn working once half its checks gave an answer). The summary carries, for
+each part, the runs of checks that gave no answer (a "Could not check" reading, or a
+tick the checker did not take): the first such tick and how many in a row, for the 90
+days, at most 300 runs a part (past that the oldest go, and `since` moves up). So the
+page counts each part's checks with no answer inside the reader's day itself. The
+allowance is a count, not a share: a day says it was checked in full only while every
+part has at most 2 checks (10 minutes) with no answer on it; from 3 on it is listed as
+"not checked in full". The same count is said on a day with problems: after its
+problems it adds "This day was not checked in full." (joined to "Some problems from this
+day are not listed." when both apply), unless one of its lines already says the checks
+stopped. A day every part of which had no answer all day says "Not checked.". The
+store shows no routine misses: on Nov 11 and 12 the website, the closings and the
+accounts answered every check (115 of 115, then 288 of 288), and the chances' 31
+unanswered checks on Nov 11 were one block of about 2.5 hours, so that day reads "not
+checked in full".
+
+Before the runs begin (`since`), the store kept only one count a part a UTC day. There
+the page claims only what those counts prove: of a UTC bar's checks with no answer,
+those that cannot all fit in the part of the bar outside the reader's day. A gap the
+page cannot place is never said, so a reader's day checked in full is never marked
+for its neighbour's gap (before the runs were kept, the page marked both days that
+share a UTC bar). A summary with no runs at all, as every summary written before them
+was, is read the same way. The checker makes the runs once from the samples it keeps (90 days) on its
+first tick after the change, so the live page counts exactly from then on. When the
+checks stopped while a problem was going on and stayed away past the reader's
+midnight, each day they stayed away on with more than 2 checks with no answer says
 what they last found ("Live school closings: not working when our checks stopped on
 Nov 1, 10:15 PM EST. This day was not checked in full."), never left out as quiet.
 The problem days before the 15, and the days among them not checked in full, are
-behind a button that counts them ("Show 3 earlier problems"); with no problem day in
+behind a button that counts the lines it shows ("Show 3 earlier problems"): each
+problem line of those days, and each of those days listed for its gap alone. A problem
+that runs over several of those days has a line on each and is counted for each, and
+one still going on today is counted only for its lines behind the button, never for
+its line under today. With no problem day in
 the 15 days, "Past problems" is that button alone. If the history could not be loaded, the list
-says "The history could not be loaded. Reload the page to try again.", and each row
+says "The history could not be loaded. Reload the page to try again." (the one
+thing to do, said once: the banner says only "We cannot load the status."), and each row
 is an empty dashed outline the height of its bars with "Not loaded" under it, in no
 color of the key, so it is never read as the days before the checks began. While the
 page waits for its first answer neither "Past problems" nor the footer is drawn, so
@@ -284,7 +297,11 @@ tick's summary, and no summary is made from a store it did not read.
 working, late or down readings for each part. A reading that is not working opens a
 problem or extends the open one; a working reading closes it; more than 15 minutes
 with no known reading closes it where the readings stopped, and the page says so.
-Samples, days and closed problems are kept 90 days. The page (`page/src/view.ts`)
+Each tick also adds to the runs of checks with no answer: every tick between the last
+one taken and this one, and each part this one could not check. A tick goes on from
+the runs in the summary it read (written at the same `processed`, so no statement is
+added); a store whose summary has none makes them once from its samples, one more read
+on that tick only. Samples, days, closed problems and runs are kept 90 days. The page (`page/src/view.ts`)
 names each bar from those counts and its own clock: "working all day" only for a
 day checked from its first tick to its last, and the time not checked counted from
 the day's start on the day the checks began. A past day is always counted to its

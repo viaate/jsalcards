@@ -173,14 +173,15 @@ function day(item: DayView): string {
     `<li class="day"><h3><time>${esc(item.date)}</time></h3>` +
     (item.none === null
       ? `<ul class="probs">${item.problems.map(problem).join('')}</ul>`
-      : `<p class="none">${esc(item.none)}</p>`) +
-    (item.note === null ? '' : `<p class="none note">${esc(item.note)}</p>`) +
+      : `<p class="none">${boxed(item.none)}</p>`) +
+    // A day's note is drawn as every other line of the list is: its tied runs in boxes.
+    (item.note === null ? '' : `<p class="none note">${boxed(item.note)}</p>`) +
     '</li>'
   );
 }
 
 function problems(view: View): string {
-  const { days, empty, older, button, expanded, began, cut } = view.problems;
+  const { days, empty, older, button, expanded, cut } = view.problems;
   // Only problem days are listed: with none, and nothing to say in their place, no section.
   if (days.length === 0 && empty === null && button === null) return '';
   let list = '';
@@ -192,10 +193,7 @@ function problems(view: View): string {
     button === null
       ? ''
       : `<p class="more-row"><button type="button" id="more" aria-expanded="${expanded}">${esc(button)}</button></p>`;
-  const ends = [cut, began]
-    .filter((line) => line !== null)
-    .map((line) => `<p class="end">${boxed(line)}</p>`)
-    .join('');
+  const ends = cut === null ? '' : `<p class="end">${boxed(cut)}</p>`;
   return (
     `<section class="past" aria-labelledby="h-problems"><h2 id="h-problems">${esc(copy.heads.problems)}</h2>` +
     `${list}${shown}${more}${ends}</section>`

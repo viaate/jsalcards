@@ -578,9 +578,9 @@ test('the headers and the routes are the ones the page needs', () => {
 
 test('the script is small, asks only its own origin, and keeps nothing', () => {
   const script = file('app.js');
-  // Past problems reads each day against its bars, their unanswered checks and the summary's
-  // cut, and each tip names its span in the reader's zone: 23 KB at most.
-  assert.equal(Buffer.byteLength(script) <= 23000, true, String(Buffer.byteLength(script)));
+  // Past problems reads each day against its bars, the summary's runs of unanswered checks and
+  // its cut, and each tip names its span in the reader's zone: 24 KB at most.
+  assert.equal(Buffer.byteLength(script) <= 24000, true, String(Buffer.byteLength(script)));
   assert.deepEqual(script.match(/fetch\(("[^"]*")/g), ['fetch("/api/status"']);
   assert.match(script, /credentials:"omit"/);
   // A reload is never answered from the browser's cache, which would set the clock back.
