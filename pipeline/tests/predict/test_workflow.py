@@ -126,13 +126,30 @@ def test_the_model_learns_before_the_passes_and_a_failed_step_never_stops_them()
     live = [step for step in found if "live-state" in str(step.get("with", {}))]
     assert [str(step["uses"]) for step in live] == ["actions/cache/restore@v4"]
     assert found.index(live[0]) < ids.index("learn")
-    issue = next(step for step in found if "steps.learn.outcome" in str(step.get("if", "")))
-    assert issue["if"] == (
-        "always() && steps.token.outputs.ready == 'true' && steps.learn.outcome == 'failure'"
-    )
-    script = str(issue["run"])
-    assert script.index("gh issue list") < script.index("gh issue create")
-    assert '[ "$open" = "0" ]' in script
+    issues = [step for step in found if "steps.learn.outcome" in str(step.get("if", ""))]
+    failed = "always() && steps.token.outputs.ready == 'true' && steps.learn.outcome == 'failure'"
+    titles = {str(step["env"]["TITLE"]): step for step in issues}  # type: ignore[index]
+    assert list(titles) == [
+        "The snow-day model's new version is not confirmed",
+        "The snow-day model kept its last version",
+    ]
+    # S2: a new version written and not confirmed by its read-back is never titled kept.
+    unconfirmed = titles["The snow-day model's new version is not confirmed"]
+    assert unconfirmed["if"] == f"{failed} && steps.learn.outputs.learned == 'unconfirmed'"
+    kept = titles["The snow-day model kept its last version"]
+    assert kept["if"] == f"{failed} && steps.learn.outputs.learned != 'unconfirmed'"
+    assert "kept the served model" in str(kept["run"])
+    body = str(unconfirmed["run"])
+    assert "could not read its files back to confirm them" in body
+    assert "the served version may be the new one" in body
+    assert "kept" not in body.replace("kept serving", "")
+    for issue in issues:
+        script = str(issue["run"])
+        assert script.index("gh issue list") < script.index("gh issue create")
+        assert '[ "$open" = "0" ]' in script
+        assert "$GITHUB_RUN_ID" in script
+    # What the step writes is what the workflow reads.
+    assert cli.LEARNED_UNCONFIRMED == "learned=unconfirmed"
     assert load()["permissions"]["issues"] == "write"  # type: ignore[index]
 
 

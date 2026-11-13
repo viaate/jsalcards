@@ -4,6 +4,7 @@ the held-out days find it no worse, and the internal report. SYNTHETIC records a
 
 import json
 import time
+from collections.abc import Mapping
 from datetime import date, timedelta
 from typing import Any
 
@@ -12,7 +13,7 @@ import pytest
 
 from predict import night, world
 from predict.test_learn import CFG, Host, LaggingHost, built, learn_run
-from snowlight.live.publishers import blob_etag
+from snowlight.live.publishers import PublishError, blob_etag
 from snowlight.predict import cli, learn
 from snowlight.predict import outlook as outlook_module
 from snowlight.predict.live_labels import NoLiveSource
@@ -455,15 +456,44 @@ def test_outlook_files_that_never_read_back_as_written_are_warned_with_each_read
     assert cli.learn_once(outlook_run(host, world.utc("2026-01-08T13:00"), shadow_state())) == 0
     said = capsys.readouterr()
     (warning,) = [line for line in said.err.splitlines() if "outlook:" in line]
-    key = warning.split("predict learn: outlook: wrote ", 1)[1].split(" ", 1)[0]
+    written = [key for key in host.before if key in host.files]
+    key = written[0]  # the first file read back, and never confirmed
+    assert len(written) > 1
+    named = ", ".join(written[:-1]) + " and " + written[-1]
     sent = blob_etag(host.files[key]).strip('"')[:12]
+    # every file the write sent is named, then the one that did not read back
     assert warning.endswith(
-        f"predict learn: outlook: wrote {key} but it did not read back as written "
+        f"predict learn: outlook: wrote {named} but {key} did not read back as written "
         f"(4 reads, none the blob {sent} sent: no file, no file, no file, no file)"
     )
     assert "nothing written" not in said.err  # the files went up
     assert "counted the live cases" not in said.out  # not said as written
     assert slept == [2.0, 4.0, 8.0]
+
+
+class RefusingHost(Host):
+    """A host that refuses (after none of it went up) every write of the outlook's files."""
+
+    def write(self, files: Mapping[str, bytes]) -> None:
+        if any("/outlook/" in key for key in files):
+            raise PublishError("move branch: HTTP 502")
+        super().write(files)
+
+
+def test_an_outlook_write_that_fails_is_never_said_as_nothing_written(capsys: Any) -> None:
+    # S3: a write that fails may have gone up in part on a host that writes file by file, so
+    # its warning says none of it is confirmed, never that nothing was written.
+    host = RefusingHost()
+    assert cli.learn_once(outlook_run(host, world.utc("2026-01-08T13:00"), shadow_state())) == 0
+    said = capsys.readouterr()
+    (warning,) = [line for line in said.err.splitlines() if "outlook:" in line]
+    assert warning.endswith(
+        "predict learn: outlook: writing v1/predictions/outlook/record.json, "
+        "v1/predictions/outlook/cases.json and v1/predictions/outlook/report.json failed "
+        "(PublishError): none of it is confirmed written"
+    )
+    assert "nothing written" not in said.err
+    assert "counted the live cases" not in said.out
 
 
 @pytest.mark.parametrize("mode", [OutlookMode.OFF])

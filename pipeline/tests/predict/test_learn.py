@@ -1301,10 +1301,11 @@ def test_a_learned_file_read_back_from_a_lagging_copy_is_read_again_and_the_step
 
 
 def test_a_learned_file_that_never_reads_back_as_written_is_an_error_naming_each_read(
-    monkeypatch: pytest.MonkeyPatch, capsys: Any
+    monkeypatch: pytest.MonkeyPatch, capsys: Any, tmp_path: Path
 ) -> None:
     host = LaggingHost(4)
     run, slept = lagging_learn(host, monkeypatch)
+    run.output = output = tmp_path / "output"
     assert cli.learn_once(run) == 1
     said = capsys.readouterr()
     sent = blob_etag(host.files["v1/predictions/learned.json"]).strip('"')[:12]
@@ -1315,21 +1316,138 @@ def test_a_learned_file_that_never_reads_back_as_written_is_an_error_naming_each
     assert "as it was" not in said.err  # the write went up: never said as not made
     assert "swapped in the refit" not in said.out
     assert slept == [2.0, 4.0, 8.0]
+    # The workflow's issue says the new version is not confirmed, never that it was kept.
+    assert output.read_text(encoding="utf-8") == f"{cli.LEARNED_UNCONFIRMED}\n"
 
 
 @pytest.mark.parametrize("stale", [0, 1])
 def test_a_read_back_that_fails_after_the_write_is_an_error_saying_the_file_was_written(
-    stale: int, monkeypatch: pytest.MonkeyPatch, capsys: Any
+    stale: int, monkeypatch: pytest.MonkeyPatch, capsys: Any, tmp_path: Path
 ) -> None:
     host = LaggingHost(stale, fails=True)
     run, slept = lagging_learn(host, monkeypatch)
+    run.output = output = tmp_path / "output"
     assert cli.learn_once(run) == 1
+    # S1: the read itself failed (an error, not other bytes), the file named, the write said
+    # as gone up.
     assert capsys.readouterr().err == (
-        "predict learn: error: wrote v1/predictions/learned.json but its read-back failed "
-        "(read v1/predictions/learned.json: HTTP 502 (server))\n"
+        "predict learn: error: wrote v1/predictions/learned.json but reading it back failed "
+        "with an error (read v1/predictions/learned.json: HTTP 502 (server)), so it is not "
+        "confirmed\n"
     )
     assert "v1/predictions/learned.json" in host.files  # the file went up
     assert slept == [2.0] * stale  # no read is tried after a failed one
+    assert output.read_text(encoding="utf-8") == f"{cli.LEARNED_UNCONFIRMED}\n"
+
+
+class StaggeredHost(Host):
+    """A host whose files written lag each on its own: the next ``behind[key]`` reads of ``key``
+    after a write give it as it was before the commit. Every read is kept, in order."""
+
+    def __init__(self, behind: Mapping[str, int]) -> None:
+        super().__init__()
+        self.behind = dict(behind)
+        self.left: dict[str, int] = {}
+        self.before: dict[str, bytes | None] = {}
+        self.reads: list[str] = []
+
+    def write(self, files: Mapping[str, bytes]) -> None:
+        self.before = {key: self.files.get(key) for key in files}
+        self.left = {key: self.behind.get(key, 0) for key in files}
+        self.reads = []
+        super().write(files)
+
+    def read(self, key: str) -> bytes | None:
+        self.reads.append(key)
+        if self.left.get(key, 0) > 0:
+            self.left[key] -= 1
+            return self.before[key]
+        return super().read(key)
+
+
+STORE = "v1/predictions/learn.json"
+LEARNED = "v1/predictions/learned.json"
+
+
+def two_file_learn(
+    host: Host, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *, misread: bool = False
+) -> tuple[cli.LearnRun, list[float]]:
+    """A run that labels a new live day and so writes ``learn.json`` first, then
+    ``learned.json`` (its refit swapped in; with ``misread`` kept out, so ``learn.json``
+    alone), its read-back's waits recorded instead of slept."""
+    slept: list[float] = []
+    monkeypatch.setattr(time, "sleep", slept.append)
+    store = store_of([MISREAD if misread and 2 <= j < 22 else honest(j) for j in range(30)])
+
+    def labeled(*_args: object) -> learn.Labeling:
+        return learn.Labeling(store, added=[DAY])
+
+    monkeypatch.setattr(learn, "label_new_days", labeled)
+    run = learn_run(host, NoLiveSource(), world.utc("2026-01-07T09:00:00"))
+    run.output = tmp_path / "output"
+    return run, slept
+
+
+@pytest.mark.parametrize(("behind", "waits"), [(1, [2.0]), (3, [2.0, 4.0, 8.0])])
+def test_a_second_file_that_lags_is_read_again_after_the_first_reads_back_at_once(
+    behind: int, waits: list[float], monkeypatch: pytest.MonkeyPatch, capsys: Any, tmp_path: Path
+) -> None:
+    host = StaggeredHost({LEARNED: behind})
+    run, slept = two_file_learn(host, monkeypatch, tmp_path)
+    assert cli.learn_once(run) == 0
+    said = capsys.readouterr()
+    assert "error" not in said.err
+    assert said.out.splitlines()[-1].startswith("predict learn: swapped in the refit")
+    # learn.json confirmed by its first read; learned.json read again until it caught up
+    assert host.reads == [STORE] + [LEARNED] * (behind + 1)
+    assert slept == waits
+    assert not (tmp_path / "output").exists()
+
+
+def test_a_second_file_that_never_catches_up_is_an_error_naming_it_and_both_written(
+    monkeypatch: pytest.MonkeyPatch, capsys: Any, tmp_path: Path
+) -> None:
+    host = StaggeredHost({LEARNED: 4})
+    run, slept = two_file_learn(host, monkeypatch, tmp_path)
+    assert cli.learn_once(run) == 1
+    said = capsys.readouterr()
+    sent = blob_etag(host.files[LEARNED]).strip('"')[:12]
+    assert said.err == (
+        f"predict learn: error: wrote {STORE} and {LEARNED} but {LEARNED} did not read back as "
+        f"written (4 reads, none the blob {sent} sent: no file, no file, no file, no file)\n"
+    )
+    assert "swapped in the refit" not in said.out
+    assert host.reads == [STORE] + [LEARNED] * 4
+    assert slept == [2.0, 4.0, 8.0]
+    assert (tmp_path / "output").read_text(encoding="utf-8") == f"{cli.LEARNED_UNCONFIRMED}\n"
+
+
+def test_a_step_output_that_cannot_be_written_is_a_warning_and_the_error_stands(
+    monkeypatch: pytest.MonkeyPatch, capsys: Any, tmp_path: Path
+) -> None:
+    host = StaggeredHost({LEARNED: 4})
+    run, _slept = two_file_learn(host, monkeypatch, tmp_path)
+    run.output = tmp_path  # a folder: the append fails
+    assert cli.learn_once(run) == 1
+    err = capsys.readouterr().err
+    assert "did not read back as written" in err
+    assert err.endswith("predict learn: the step output did not write: IsADirectoryError\n")
+
+
+def test_labels_alone_unconfirmed_leave_the_model_kept_and_say_so(
+    monkeypatch: pytest.MonkeyPatch, capsys: Any, tmp_path: Path
+) -> None:
+    # A refit kept out writes learn.json alone: its read-back not confirming it is an error,
+    # and the served model did keep its last version (no unconfirmed output).
+    host = StaggeredHost({STORE: 4})
+    run, _slept = two_file_learn(host, monkeypatch, tmp_path, misread=True)
+    assert cli.learn_once(run) == 1
+    said = capsys.readouterr()
+    assert said.err.startswith(
+        f"predict learn: error: wrote {STORE} but it did not read back as written (4 reads, "
+    )
+    assert LEARNED not in host.files
+    assert not (tmp_path / "output").exists()
 
 
 def test_a_learned_file_never_darkens_serving(monkeypatch: Any) -> None:

@@ -3962,12 +3962,22 @@ class LearnRun:
     outlook_build: Callable[[artifact_module.Learned | None], ServeModel] | None = None
     """Builds the v3 rates' serving model with a learned file (or none): the v3 rates learn
     from the 05:00 record's labels under their own no-worse swap (spec-f s. 10)."""
+    output: Path | None = None
+    """The file ``GITHUB_OUTPUT`` names: :data:`LEARNED_UNCONFIRMED` is added to it when the
+    model's new version (``learned.json``) was written and its read-back did not confirm it
+    (the workflow's issue then says so, not that the model kept its last version)."""
+
+
+LEARNED_UNCONFIRMED: Final = "learned=unconfirmed"
+"""The learn step's output when ``learned.json`` was written and not confirmed."""
 
 
 def learn_once(run: LearnRun) -> int:
     """One learning run (:mod:`snowlight.predict.learn`): 0 swapped or nothing to change,
     :data:`~snowlight.predict.learn.EXIT_KEPT` kept because the refit was worse, 1 an error
-    (nothing written, or a file written and not confirmed by its read-back)."""
+    (nothing written, or files written and not confirmed by their read-back: a read that never
+    gave the bytes written, or a read that failed; with ``learned.json`` among them,
+    :data:`LEARNED_UNCONFIRMED` goes to :attr:`LearnRun.output`)."""
     store_key = f"{run.prefix}/{learn.LEARN_PATH}"
     learned_key = f"{run.prefix}/{learn.LEARNED_PATH}"
     try:
@@ -4005,35 +4015,57 @@ def learn_once(run: LearnRun) -> int:
         files[store_key] = labeling.store.to_bytes()
     if decision.kind in ("swap", "reset") and decision.learned is not None:
         files[learned_key] = decision.learned.to_bytes()
-    if files:
-        try:
-            run.host.write(files)
-        except PublishError as error:
-            _err(f"predict learn: error: {error}: the served model is as it was")
-            return 1
-        unconfirmed = _not_read_back(run.host, files)
-        if unconfirmed is not None:
-            _err(f"predict learn: error: {unconfirmed}")
-            return 1
+    if files and not _written(run, files, learned_key):
+        return 1
     _out(f"predict learn: {decision.why}")
     if run.outlook_mode is not OutlookMode.OFF:
         _learn_outlook(run, labeling.store)
     return learn.EXIT_KEPT if decision.kind == "keep" else 0
 
 
+def _written(run: LearnRun, files: Mapping[str, bytes], learned_key: str) -> bool:
+    """Write the step's files and read them back; whether every one is confirmed. A write that
+    fails is said as the served model is as it was; a file written and not confirmed is said
+    with every file written, and with ``learned.json`` among them :data:`LEARNED_UNCONFIRMED`
+    goes to the step's output (the served version may be the new one)."""
+    try:
+        run.host.write(files)
+    except PublishError as error:
+        _err(f"predict learn: error: {error}: the served model is as it was")
+        return False
+    unconfirmed = _not_read_back(run.host, files)
+    if unconfirmed is None:
+        return True
+    _err(f"predict learn: error: {unconfirmed}")
+    if learned_key in files and run.output is not None:
+        try:
+            with run.output.open("a", encoding="utf-8") as handle:
+                handle.write(f"{LEARNED_UNCONFIRMED}\n")
+        except OSError as error:
+            _warn(f"predict learn: the step output did not write: {type(error).__name__}")
+    return False
+
+
 def _learn_outlook(run: LearnRun, store: learn.LearnStore) -> None:
     """The outlook's learning step (:mod:`snowlight.predict.outlook_learn`): it never changes
-    the step's own outcome; an error is warned and writes nothing, and a file written that its
-    read-back does not confirm is warned with its key and reads (its lines are not said)."""
+    the step's own outcome. An error before its write is warned and writes nothing; a write
+    that fails is warned as not confirmed (a host that writes file by file may have written
+    some); a file written that its read-back does not confirm is warned with the files written,
+    its key and its reads. Its lines are said only when every file is confirmed."""
     try:
         if run.outlook is None:
             raise ServeError("no outlook model is given")
         serve, sha = run.outlook()
         step = outlook_step(run, store, serve, sha)
+    except Exception as error:  # the outlook never touches the step's own outcome
+        _warn(f"predict learn: outlook: {type(error).__name__}: nothing written")
+        return
+    try:
         if step.files:
             run.host.write(step.files)
     except Exception as error:  # the outlook never touches the step's own outcome
-        _warn(f"predict learn: outlook: {type(error).__name__}: nothing written")
+        _warn(f"predict learn: outlook: writing {_listed(step.files)} failed "
+              f"({type(error).__name__}): none of it is confirmed written")  # fmt: skip
         return
     try:
         unconfirmed = _not_read_back(run.host, step.files)
@@ -4050,16 +4082,27 @@ def _not_read_back(host: Host, files: Mapping[str, bytes]) -> str | None:
     """Read each file just written back as the passes do
     (:func:`~snowlight.live.publishers.read_back_until`: at once, then after 2, 4 and 8 s while
     GitHub's API still gives the file it held before the commit). ``None`` when every file reads
-    back as written; else what the first that does not says: the write went up either way, so
-    it is never said as nothing written."""
+    back as written; else what the first that does not says, after every file written: the
+    write went up either way, so it is never said as nothing written. A read that gives other
+    bytes every time is a mismatch with each read; a read that raises is said as an error of
+    the read itself (no later file is read)."""
     for key, data in files.items():
+        name = "it" if len(files) == 1 else key
         try:
             back = read_back_until(host, key, data)
         except PublishError as error:
-            return f"wrote {key} but its read-back failed ({error})"
+            return (f"wrote {_listed(files)} but reading {name} back failed with an error "
+                    f"({error}), so it is not confirmed")  # fmt: skip
         if not back.confirmed:
-            return f"wrote {key} but it did not read back as written ({back.text()})"
+            return (f"wrote {_listed(files)} but {name} did not read back as written "
+                    f"({back.text()})")  # fmt: skip
     return None
+
+
+def _listed(keys: Iterable[str]) -> str:
+    """``a``, ``a and b``, ``a, b and c``."""
+    names = list(keys)
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
 
 
 def _learn_v3_rates(
@@ -4753,6 +4796,7 @@ def _run_learn(args: argparse.Namespace, scratch: Path) -> int:  # pragma: no co
             outlook_state=run.state.outlook,
             outlook=outlook_of,
             outlook_build=outlook_build,
+            output=Path(env["GITHUB_OUTPUT"]) if env.get("GITHUB_OUTPUT") else None,
         )
     )
     _leave_labels(host, prefix)

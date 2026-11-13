@@ -2740,7 +2740,7 @@ cause 6 below, or a write whose answer was lost after the commit), 1 an error.
 | `uv run snowlight predict release` | Clears the hold. |
 | `uv run snowlight predict check --max-age 45m` | The watchdog: exit 3 when the public file is missing, invalid, blank, ahead of the clock or older than the limit. The workflow runs it after every run, a failed pass included, and opens one issue, "Snow-day chances are stale", unless one is already open. The watch every 5 minutes (`chances-watch.yml`) shares that issue and closes it when a fresh file is served (see "Staying on air"). |
 | `uv run snowlight predict exposure --work out/internal/predict` | Builds `data/predict/exposure.json.gz` (each district's storm-class days a winter, county medians, national references, the archive's region tallies) from the labels folder (see "The storm-class levels"). Codes and counts only. |
-| `uv run snowlight predict learn` | Labels the live-read days not yet labeled and swaps in a refit only when the held-out live days find it no worse (see "The model learns on its own"). Exit 0 swapped, reset (a served file counted an excluded day) or nothing to change, 4 kept the model served because the refit was worse, 1 an error (nothing changed). The workflow runs it before the passes. |
+| `uv run snowlight predict learn` | Labels the live-read days not yet labeled and swaps in a refit only when the held-out live days find it no worse (see "The model learns on its own"). Exit 0 swapped, reset (a served file counted an excluded day) or nothing to change, 4 kept the model served because the refit was worse, 1 an error: before or in its write (nothing written that the step knows of), or after it, when a file written did not read back as written or its read failed (the file went up; see "Swap or keep"). The workflow runs it before the passes. |
 | `uv run snowlight predict read-labels` | Labels the live school mornings not yet labeled by the outcome-blind read rule into the private record `out/internal/predict/reads/` and publishes `predictions/read-audit.json` (counts only) when a day is added (see "The read labels"). Exit 0, or 1 on an error (nothing more is labeled). The workflow runs it right after `predict learn` (it continues on error, 2-minute limit); it labels nothing while a coverage file is absent. |
 | `uv run snowlight predict read-sources` | Builds `data/predict/read-sources.json.gz` (county FIPS to the lists proven for it, every list's populated archive captures, and the row counts of its closing-size days, one value a day) and `data/predict/audiences.json.gz` (each list's districts listed in the current or previous season as of `--as-of`, default today, no dates; it logs the pairs dropped) from `out/internal/stations/coverage.json`, a match of the whole archive and the archive's weather classes (`out/internal/predict/weather.parquet`; heavy lock). Codes and counts only. |
 | `uv run snowlight predict evidence` | Keeps every finished weather-class snapshot of the pass state, the district table of the directory predict learn read and the labels it published (`learn.json`, every version) for good in the evidence databases (docs/live.md, "The evidence"); it reads the table and labels learn left in `out/internal/predict/evidence/`, and the deployed directory only when learn left none (and the pass state keeps no table). Exit 0 when both kept them, 1 otherwise. Then it asks both databases which snapshots and tables they hold and notes it in the pass state (`evidence`). The workflow runs it after the passes and before the state's save, never before the first pass (it continues on error: 30 seconds of writes, 45 seconds for the push's requests, 15 for the question, a 2-minute limit). With `--check` it reads only the pass state: one line, and exit 1 with an `::error::` line when a finished snapshot or its district table has waited 2 days for a copy in both databases (the workflow's issue). |
@@ -3238,18 +3238,44 @@ gained a named winter storm reason. The committed model is not refit for it: the
    counted, the check it passed). The next serving pass uses it with the committed model it
    was made over. A refit that is worse is kept out: the step exits 4, says why in its log
    line, and the workflow opens one issue, "The snow-day model kept its last version",
-   unless one is already open. The same issue opens when the step fails.
-   The step reads each file it wrote (`learn.json`, `learned.json`) back the way the passes
+   unless one is already open. The same issue opens when the step fails, except in the one
+   case below where the new version was written and not confirmed.
+   The step writes its files (`learn.json` when it labeled a new day, then `learned.json` on
+   a swap or a reset) in one commit and reads each back, in that order, the way the passes
    read theirs: at once, then again after 2, 4 and 8 s while the host gives other bytes
    (GitHub's API can answer with the file it held before the commit for a second or two;
-   issue #65 was a single read that met it, after a write that had gone up). A file read back
-   as written lets the step go on: its decision line, then the outlook's step. One that never
-   reads back as written fails the step (exit 1) with `predict learn: error: wrote
-   v1/predictions/learned.json but it did not read back as written (4 reads, none the blob
-   1a2b3c4d5e6f sent: HTTP 200 blob 9f8e7d6c5b4a, HTTP 304 blob 9f8e7d6c5b4a, ...)`, and a
-   read-back that fails with `predict learn: error: wrote v1/predictions/learned.json but
-   its read-back failed (<the read's error>)`: the file went up either way, so neither says
-   the model is as it was. Only a write that fails says `the served model is as it was`.
+   issue #65 was a single read that met it, after a write that had gone up). What is written
+   and what is said, in each outcome:
+   - **Confirmed** (every file read back as written at once) or **caught up after retries**
+     (a file gave the old bytes, or no file, and then the new ones within the 3 waits): the
+     files are written and live, and the step goes on as before: its decision line, then
+     the outlook's step, and exit 0 (or 4 for a refit kept out).
+   - **Never confirmed** (no read of a file gave its bytes): every file of the commit was
+     sent and went up as far as the host said; the step stops at the first such file
+     (exit 1) with `predict learn: error: wrote v1/predictions/learn.json and
+     v1/predictions/learned.json but v1/predictions/learned.json did not read back as written
+     (4 reads, none the blob 1a2b3c4d5e6f sent: HTTP 200 blob 9f8e7d6c5b4a, HTTP 304 blob
+     9f8e7d6c5b4a, ...)` (a single file: `wrote <key> but it did not read back as
+     written (...)`). No decision line and no outlook step follow.
+   - **Read error** (a read-back read failed: an error from the host, not other bytes): the
+     files were written just the same; the step stops there (exit 1, no later file is read)
+     with `predict learn: error: wrote v1/predictions/learned.json but reading it back
+     failed with an error (<the read's error>), so it is not confirmed` (several files:
+     `wrote <every key> but reading <key> back failed with an error (...)`). A read-back
+     that raises is a read error, as it was before the read-back retried.
+   - **Write failed** (the host answered the write with an error, or its answer did not
+     come): `predict learn: error: <the write's error>: the served model is as it was`
+     (exit 1). A commit on GitHub moves the branch last, in one request, so a write that
+     fails before that request writes nothing; the one exception is an answer to that last request lost
+     after GitHub moved the branch, which the line cannot tell from a failure (the next run
+     reads the files as they are).
+   In the two outcomes after a write, neither line says the model is as it was. When
+   `learned.json` was among the files written and not confirmed (never confirmed, or a read
+   error), the step writes `learned=unconfirmed` to its step output, and the workflow opens
+   "The snow-day model's new version is not confirmed" in place of the kept issue: the new
+   version's files were written but could not be read back to confirm them, so the served
+   version may be the new one. `learn.json` alone not confirmed (no swap or reset) keeps the kept
+   issue: the served model did keep its last version.
 
 Serving never depends on it: the step may fail or time out (5 minutes; it takes under a
 minute) and the passes run anyway. A learned file that is missing, does not validate, was
@@ -4531,10 +4557,16 @@ is written only when it says something new (its time aside), so a run that learn
 no commit to the live host. A new directory edition carries the record over by LEAID (the
 host's record keeps its districts' LEAIDs): a district keeps its days, a new one reads as not
 taken, and no day not yet counted is lost. The learning step's own outcome (its exit code, its
-v2 swap) never depends on the outlook's: an error there is a warning and writes nothing. Its
-files are read back as the step's own are (at once, then after 2, 4 and 8 s); one that never
-reads back as written is the warning `predict learn: outlook: wrote <key> but it did not read
-back as written (4 reads, ...)`, and its lines are not said.
+v2 swap) never depends on the outlook's: every outlook outcome is a warning at most. An error
+before its write (the model, the record, the count) writes nothing and is the warning
+`predict learn: outlook: <TypeName>: nothing written`. A write that fails is the warning
+`predict learn: outlook: writing <every key> failed (<TypeName>): none of it is confirmed
+written` (a host that writes file by file may have written some). Its files are read back as
+the step's own are (at once, then after 2, 4 and 8 s): confirmed, at once or after the waits,
+its lines are said; a file that never reads back as written is the warning `predict learn:
+outlook: wrote <every key> but <key> did not read back as written (4 reads, ...)`, and a read
+that fails `... but reading <key> back failed with an error (...), so it is not confirmed`:
+the files were written either way, and its lines are not said.
 `learn.score` now scores through `outlook.chance` (the identity on a labeled morning, exactly
 the published rates, a test holds it).
 

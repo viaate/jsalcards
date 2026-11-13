@@ -306,9 +306,25 @@ jobs:
               --body "predict evidence --check found a finished weather-class snapshot, the district table it indexes, or a finished frozen day, not in both evidence databases after 2 days, in run $GITHUB_RUN_ID. The pass state and the frozen record's folder keep every such file until the databases hold it, so nothing is lost yet. The Keep the evidence step's log says why. See docs/predict.md, The evidence and The frozen record."
           fi
 
+      # The model's new version (predictions/learned.json) was written and its read-back did
+      # not confirm it (`predict learn` wrote learned=unconfirmed): the served version may be
+      # the new one, so this is never said as kept. One issue at a time.
+      - if: always() && steps.token.outputs.ready == 'true' && steps.learn.outcome == 'failure' && steps.learn.outputs.learned == 'unconfirmed'
+        name: Open an issue when the model's new version is not confirmed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: The snow-day model's new version is not confirmed
+        run: |
+          open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "in:title \"$TITLE\"" --json title --jq "[.[] | select(.title == env.TITLE)] | length")
+          if [ "$open" = "0" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$TITLE" \
+              --body "predict learn wrote the snow-day model's new version (predictions/learned.json) in run $GITHUB_RUN_ID, but it could not read its files back to confirm them, so the served version may be the new one; the chances kept serving. Its log line names the file and each read. See docs/predict.md, Swap or keep."
+          fi
+
       # A refit the held-out live days judged worse is kept out (exit 4), and a learning step
-      # that failed changes nothing; either way one issue says so, not one per run.
-      - if: always() && steps.token.outputs.ready == 'true' && steps.learn.outcome == 'failure'
+      # that failed otherwise did not change the served model; either way one issue says so,
+      # not one per run.
+      - if: always() && steps.token.outputs.ready == 'true' && steps.learn.outcome == 'failure' && steps.learn.outputs.learned != 'unconfirmed'
         name: Open an issue when the model did not learn
         env:
           GH_TOKEN: ${{ github.token }}
