@@ -2744,6 +2744,7 @@ cause 6 below, or a write whose answer was lost after the commit), 1 an error.
 | `uv run snowlight predict read-labels` | Labels the live school mornings not yet labeled by the outcome-blind read rule into the private record `out/internal/predict/reads/` and publishes `predictions/read-audit.json` (counts only) when a day is added (see "The read labels"). Exit 0, or 1 on an error (nothing more is labeled). The workflow runs it right after `predict learn` (it continues on error, 2-minute limit); it labels nothing while a coverage file is absent. |
 | `uv run snowlight predict read-sources` | Builds `data/predict/read-sources.json.gz` (county FIPS to the lists proven for it, every list's populated archive captures, and the row counts of its closing-size days, one value a day) and `data/predict/audiences.json.gz` (each list's districts listed in the current or previous season as of `--as-of`, default today, no dates; it logs the pairs dropped) from `out/internal/stations/coverage.json`, a match of the whole archive and the archive's weather classes (`out/internal/predict/weather.parquet`; heavy lock). Codes and counts only. |
 | `uv run snowlight predict evidence` | Keeps every finished weather-class snapshot of the pass state, the district table of the directory predict learn read and the labels it published (`learn.json`, every version) for good in the evidence databases (docs/live.md, "The evidence"); it reads the table and labels learn left in `out/internal/predict/evidence/`, and the deployed directory only when learn left none (and the pass state keeps no table). Exit 0 when both kept them, 1 otherwise. Then it asks both databases which snapshots and tables they hold and notes it in the pass state (`evidence`). The workflow runs it after the passes and before the state's save, never before the first pass (it continues on error: 30 seconds of writes, 45 seconds for the push's requests, 15 for the question, a 2-minute limit). With `--check` it reads only the pass state: one line, and exit 1 with an `::error::` line when a finished snapshot or its district table has waited 2 days for a copy in both databases (the workflow's issue). |
+| `uv run snowlight predict drill [--size [--full]] [--json FILE] [--against FILE]` | The storm drill: one scripted storm through the real loop and pass on a faked clock, publishing to a host in its own memory (serves nothing, reads no secret, writes only its temporary folder and `--json`), and its table of what the panel would show at six moments, its ten risk-row verdicts and its run line. `--size` adds the storm-size night's 37% worst-case world (the CI gate), `--full` the calibration world and every share in both mixes; `--against FILE` lists every cell and verdict that moved (see "The storm drill"). Exit 0 when the story ran, whatever its verdicts say, 3 when a pass of the 37% worst-case world went dark or is not whole, 1 an error. |
 
 Environment: `PREDICT_PUBLISH` (`on` writes `v1/`, `shadow` writes `v1-shadow/`, `off`
 writes nothing and is the default; the workflow sets `on`), `LIVE_HOST_TOKEN` (the
@@ -3190,6 +3191,172 @@ already gone from the feed is a second case: it reaches the memory only through 
 piece `one-memory` is queued to make the passes agree on one answer, so the routine rebuild can
 stop. Until then a pass that goes on from its checks serves the kept memory's answer, the one
 the page already showed.
+
+## The storm drill (predict-next STORM-DRILL)
+
+Before a big storm we play one through the real system, hour by hour, and read the number a
+family would have seen at each moment that matters. `snowlight predict drill` does that, on any
+commit, in seconds. It serves nothing: it publishes to a host that is a dictionary in its own
+memory, opens no network connection, reads no secret, and writes only inside its own temporary
+folder (and the `--json` file). Nothing in the live chance job runs it.
+
+**What it runs.** Nine stories of one scripted storm, Tuesday Jan 12 2027 (Monday and Wednesday
+around it are school days too), each in its own made-up zone and state, so a fix moves its own
+rows and a cell of another story that moves is a change to explain:
+
+| Story | Risk row | State | Districts | The products | The forecast at each school |
+|---|---|---|---|---|---|
+| `watch` | B1, C3 | NY | 6 | winter storm watch at 4 AM Mon, upgraded to a warning at 5 PM | 3 in (picks 1, 3, 5) or 20 in (2, 4, 6) |
+| `cancel` | B3 | MA | 4 | warning at 3 PM Mon, cancelled at 4:30 AM Tue | 8 in |
+| `late` | B4 | WA | 4 | warning at 3 PM Mon for 10 AM Tue on | 6 in |
+| `daytwo` | B2 | MO | 4 | warning to 5 PM Tue; every school posts closed for the storm at 7:45 AM Tue | 10 in |
+| `coldadv` | B5 | MN | 4 | cold weather advisory 3 AM to 10 AM Tue | none |
+| `half` | B6 | OH | 4 x 5 schools | warning over 2 of each district's 5 schools | 8 in |
+| `blizzard` | C1 | ND | 4 | blizzard warning | 6 in |
+| `extcold` | C2 | MT | 4 | extreme cold warning | none, feels -35 F at 7 AM |
+| `overnight` | C4 | PA | 4 | freezing rain advisory first issued at 3 AM Tue | none; from the 1 AM run on, 0.15 in of ice |
+
+The districts are real ones of the committed model (their LEAID, county, time zone, record and
+exposure: everything a chance is made of), picked by rule: those of the state in its most common
+time zone, from the least to the most exposed to winter storm warnings. Their schools sit on
+made-up points inside made-up zones, 69 miles apart, so no district has a neighbor. The pass is
+the real one (`cli.Pass` and `cli.loop`, publishing on), on a faked clock from 3 AM Eastern
+Monday to 6 PM Pacific Tuesday: 96 passes on :07 and :37 and within 10 minutes of each change in
+the feed, as live. Only the callables the pass already takes are the drill's: the alerts (the
+service's `/alerts/active` body, parsed by the real reader), the history, the directory, the
+host, the clock, the forecast and the night. The host gives back at once what was last written,
+so every read-back of a pass (the publish, the switch, the stamp) confirms at its first read. The
+pass's wait before a second read is the real `time.sleep`, which the drill leaves as it is (it is
+served code): a host that did not confirm at once would make the story wait for real, and the
+drill's tests fail on any such sleep.
+
+**The seams.** The forecast goes through the real settled reader
+(`outlook_live.settled_reader`, which reads each zone only from 9 PM the evening before), the
+real per-district arithmetic (`forecast_live.forecasts`) and the real run assembly
+(`ndfd.assemble_runs`, over scripted listings whose files go up 50 minutes after their stamp);
+only the run's values at each school are scripted. The night chart goes through the real night
+reader over a scripted blend. So a piece that changes any of these changes code the drill runs,
+and its effect shows in the table. **The one copy.** `drill.drill_read` copies the body of
+`outlook_live.forecast_reader` with its two network parts scripted, and `drill.adjust_reader`
+composes it as `cli._adjust_reader` does. The drill's tests compare both with the live code and
+fail until a change there is followed in the drill, in the same commit.
+
+**How to read a cell.** For each district, on its own clock: 4 PM, 8 PM and 9:30 PM Monday and 5
+AM and 6:30 AM Tuesday (each the chance for Tuesday), and 4 PM Tuesday (the chance for
+Wednesday). A cell is what the panel would show from the last file the host held at that moment,
+by the panel's own rules: the file at most 90 minutes old and at most 15 minutes ahead; the day
+the panel heads, the first of the district's today and the file's next day that is not decided
+and not under way (from 7:30 AM, or once its buses ran where the file says when); the percent
+rounded as the panel rounds it (a half up); then `^41` (up from 41%), `v41` (down from) or `=41`
+(same as) when the panel would show its move line, then the base's letter (`C` class, `P`
+pooled, `A` alert, `D` day after, `S` similar days), `b` when the base is borrowed, `f` when a
+forecast line shows and `a` when the district closed for weather the day before (the drill's own
+reading of the day timeline the host held). `--` is no number (no file yet, or one over 90
+minutes old, as the panel shows nothing then); `n/a` is a day not in the file; `off` is a moment
+at which the panel heads another day (today no file says when buses run, so no cell is `off`).
+The drill's tests read each of these rules' numbers in the web source (`school-day.ts`,
+`chance.ts`, `forecast-detail.ts`, `copy-chance.ts`) and fail when one changes there. The
+calm-day number is 1% with no alert's weather.
+
+**How to read a verdict.** One line a risk row, `shows` while the row is still true of the head
+and `gone` once a fix took it away, each with its numbers. Each names the mechanism its fix
+changes, never a threshold on a percent, so a change of a level does not flip a verdict its fix
+did not:
+
+| Row | Shows when |
+|---|---|
+| B1 | `watch` at 4 PM Mon: every cell the calm-day number |
+| C3 | `watch` at 8 PM Mon: no forecast line, each chance its base's points; at 9:30 PM a forecast line everywhere |
+| B3 | `cancel` at 5 AM Tue: every cell calm |
+| B4 | `late` at 6:30 AM Tue: every cell calm |
+| B2 | `daytwo` at 4 PM Tue (for Wed): every cell calm, after a weather closing and borrowed; no other district after one at any moment |
+| B5 | `coldadv` at 9:30 PM Mon and 5 AM Tue: every cell calm |
+| B6 | `half` at 9:30 PM Mon: every cell calm, with at least one school of each district in the warned zone and fewer than the share that makes a class cover it (the line counts them: 2 of 5 each, under the 50%) |
+| C1 | `blizzard` at 9:30 PM Mon: no forecast line, each chance the district's plain winter storm warning level |
+| C2 | `extcold` at 9:30 PM Mon: class base, no forecast line, each chance the district's cold class level, and the cold class still starting at 0.10 |
+| C4 | `overnight` at 5 AM Tue: a forecast line, each chance under its base's points |
+
+On the commit it landed on, every row shows, and the run line reads `drill: 96 passes (0
+dark), 96 uploads, the largest file 18,149 bytes`. The table then, for Tuesday (the last column
+for Wednesday):
+
+| Story | 4 PM Mon | 8 PM | 9:30 PM | 5 AM Tue | 6:30 AM | 4 PM Tue (for Wed) |
+|---|---|---|---|---|---|---|
+| `watch` | 1% all six | 29-49%, up from 1% | 3 in: 29-39%; 20 in: 87-91% | as 9:30 PM | as 9:30 PM | 1% |
+| `cancel` | 37-45%, up from 1% | 37-45% | 38-65% | 1%, down from 38-65% | 1%, down from 38-65% | 1% |
+| `late` | 1% | 1% | 1% | 1% | 1% | 31-55% |
+| `daytwo` | 44-52%, up from 1% | 44-52% | 87-94% | 87-94% | 87-94% | 1%, borrowed, after the closing |
+| `coldadv` | 1% | 1% | 1% | 1% | 1% | 1% |
+| `half` | 1% | 1% | 1% | 1% | 1% | 1% |
+| `blizzard` | 35-42%, up from 1% | 35-42% | 35-42%, no forecast line | 35-42% | 35-42% | 1% |
+| `extcold` | 6-12%, up from 1% | 6-12% | 6-12% | 6-12% | 6-12% | 1% |
+| `overnight` | 1% | 1% | 1% | 3-4%, with a forecast line | 3-4% | 1% |
+
+**How a later piece uses it.** Each serving piece that changes a number runs, on its base commit,
+`uv run snowlight predict drill --json before.json`, and on its branch `uv run snowlight predict
+drill --json after.json --against before.json`, which prints every cell and verdict that moved
+(`LEAID story moment: before -> after`) and how many. The landing notes carry both tables and the
+list. A cell that moves outside the piece's own rows is explained there or is a blocking finding.
+The piece flips its own row in `test_drill.py`'s pinned rows in the same commit. A piece that
+adds bytes to the file also runs `--size --full` before and after.
+
+**The storm-size night** (`--size`). Every district of the committed model and every private
+school it holds, on a 6-mile lattice of made-up points; a winter weather advisory over a share of
+the districts since Sunday, upgraded to a winter storm warning at 8 PM Eastern Monday; the
+forecast through the same real readers, the blend's night snow over the storm only; nine passes
+from 7:37 PM Eastern Monday to 6:30 AM Pacific Tuesday, so every zone's four freezes are taken.
+Each pass prints its compute seconds (the serving part only: the live job also reads the
+network, uploads and runs the outlook's shadow record, which the drill does not), its file's
+sizes against the budget (16,500,000 raw, 1,500,000 gzip, and 16,446,182 raw for a file with
+nights; a margin under 3% is said "at the edge"), what it holds, the ladder's own warning when
+it took a step, and whether the file is whole: a forecast line, the private schools and their
+previous chances, a night on the storm (on every storm district through the evening), the
+districts' previous chances through the evening, and a record day wherever an own base shows.
+Then the frozen day's size and what storing it costs.
+
+Two forecast mixes, the two bounds, so a size claim says which storm it is about: **worst**,
+every storm school with snow, 0.05 in of ice and a 12 F morning (a snow, an ice and a cold line
+on nearly every adjusted district-day), the upper bound; and **typical**, snow only, the lower
+bound. A real January storm lies between: of the forecast climate's warning district-days of
+2018-19 to 2025-26, 76.6% carry a snow code, 8.7% an ice code and 6.4% a cold code.
+
+Measured on Nov 13 2026 at `210561b` by `--size --full` on a builder's 4-CPU machine (44 minutes,
+peak memory 1,700 MB); CPU seconds of the serving part of each pass. A file with nights must stay
+under 16,446,182 bytes raw.
+
+| Share, mix | Largest file (raw / gzip, when) | What the ladder left out, and when | CPU a pass |
+|---|---|---|---|
+| none (calibration) | 8,486,502 / 699,026, its one pass | nothing; the live file of Nov 10 was 8,306,870 / 611,554, so the lattice is 2.2% larger raw | 24.0 s |
+| 37%, worst | 13,462,785 / 903,008, 9:30 PM Pacific | nothing, at all nine passes (3,037,215 under the budget) | 22.8 to 33.8 s |
+| 37%, typical | 11,631,835 / 859,134, 9:30 PM Pacific | nothing | 20.8 to 31.7 s |
+| 70%, worst | 16,433,827 / 1,033,871, 9:30 PM Eastern, 12,355 under the night limit: at the edge | from 9:07 PM Mountain the night chart and every "Up from" (`published it with no record days or previous chances`; at 9:30 PM Pacific `... or night charts`, with no "Up from" left to carry); none in the morning either, the private schools' too; forecast lines kept | 29.4 to 37.6 s with no step; 84.5 and 131.7 s stepped down |
+| 70%, typical | 14,373,585 / 992,301, 9:30 PM Pacific | nothing | 27.5 to 35.8 s |
+| 100%, worst | 15,583,449 / 954,802, the advisory; the largest published with no step, 16,211,006 / 1,039,470 at 5:07 AM Eastern, has no private previous chance, 235,176 under the night limit: at the edge | from the upgrade the night chart and every "Up from"; from 9:30 PM Eastern to 9:30 PM Pacific every forecast line too (`published it with no record days, previous chances or reasons`): every district at its plain class level, 9,707,884 bytes; in the morning the lines return, 18,175 of them each with a move line from that bare level, the private schools' none, and from 6:07 AM Mountain the night chart goes again | 32.8 to 45.6 s with no step; 82.2 to 169.9 s stepped down |
+| 100%, typical | 16,299,635 / 1,082,114, 9:30 PM Eastern, 146,547 under the night limit: at the edge | the night chart at 9:07 PM Mountain and 9:30 PM Pacific (`published it with no record days or night charts`); every "Up from" and forecast line kept all night | 33.9 to 41.9 s with no step; 91.4 and 96.5 s stepped down |
+
+So, today: with snow lines only nothing is lost at 37% or 70%, and over every district only the
+night chart; the "Up from" lines go only in the worst case from 70%, and every forecast line only
+in the worst case at 100%. Once a pass leaves the previous chances out, the next passes have none
+to carry, so they stay gone through the morning. A pass that steps down builds the whole file at
+each step before it measures it, so it costs two to five times the CPU of one that does not. No
+gzip size comes within 27% of its limit. No world holds an own base or a record day today.
+
+The frozen day, as the real pass wrote it (nine passes that take every zone's four freezes of
+Tuesday, each at most 60 minutes late; 72,928 lines), at the store's xz preset 9: 37% 17.9 MB raw
+and 220,844 bytes (worst), 17.1 MB and 196,640 (typical); 70% 27.2 MB and 330,972 (worst), 25.6
+MB and 289,000 (typical); 100% 29.3 MB and 456,952 (worst, whose evening freezes hold no lines),
+33.4 MB and 369,428 in 4.7 s, 492,584 stored, 7 D1 rows a database (typical). Each is under the
+1 MB a day, but the drill's forecasts repeat every 13 schools, so its rows compress better than
+a real night's: the 804 KB of "The frozen record" for every district in a class stays the bound.
+
+**The CI job.** `storm-drill` in `ci.yml` runs `uv run snowlight predict drill --size --json
+drill.json` on every push and pull request (20-minute limit, no secret, its output in the job's
+summary): the story, and the 37% worst-case world, the docs' "Storm, 37% of districts in a
+class" at its heaviest. It is red only when the command fails: exit 3 when a pass of that world
+went dark or its file is not whole, so a later piece whose lines or bytes would cost such a storm
+its chart, its "Up from" lines or its forecast lines fails there. The story's verdicts never
+fail it. The 70% and 100% worlds and the typical mix run by hand with `--size --full` (about an
+hour on a builder's machine), never in CI: what may be dropped there is a serving decision.
 
 ## Retraining
 
