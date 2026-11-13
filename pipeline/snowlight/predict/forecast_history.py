@@ -23,9 +23,18 @@ Three steps, each a command (``snowlight predict forecast-history ACTION``):
   (:func:`measure_feed`).
 * ``nights --season S --chunk C``: one school year's months (:data:`CHUNKS`), the 80-job matrix.
 * ``collect``: one file per school year, a manifest with every file's SHA-256, the report.
+
+Artifacts last 90 days, so a monthly job keeps them (each-school P0): ``keep --name N
+--schedule S`` stages the newest whole copy of artifact N, or on the second schedule the pinned
+copy the committed model learned from (every file it lists checked against its manifest's
+SHA-256; only from this repository's own succeeded runs on its default branch), for the
+workflow to upload again under the same name, and refuses one whose staged manifest
+differs; ``keep-check`` reads the uploaded copy back and fails unless its manifest's SHA-256 is
+the original's.
 """
 
 import argparse
+import io
 import json
 import math
 import os
@@ -33,8 +42,9 @@ import re
 import sys
 import threading
 import time as clock
+import zipfile
 from collections import Counter, defaultdict
-from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
@@ -1194,6 +1204,19 @@ def register(actions: "argparse._SubParsersAction[argparse.ArgumentParser]") -> 
     collect.add_argument("--prepared", type=Path, required=True)
     collect.add_argument("--out", type=Path, required=True)
     collect.set_defaults(handler=run_collect)
+    repository = os.environ.get("GITHUB_REPOSITORY", "viaate/jsalcards")
+    keep = steps.add_parser("keep", help="stage the copy of an artifact a keep schedule keeps")
+    keep.add_argument("--name", required=True, choices=KEPT_ARTIFACTS)
+    keep.add_argument("--schedule", required=True, help="the run's github.event.schedule")
+    keep.add_argument("--repository", default=repository)
+    keep.add_argument("--out", type=Path, required=True, help="a new folder: the copy to upload")
+    keep.add_argument("--record", type=Path, required=True, help="where the copy came from")
+    keep.set_defaults(handler=run_keep)
+    check = steps.add_parser("keep-check", help="the uploaded copy equals the original")
+    check.add_argument("--record", type=Path, required=True)
+    check.add_argument("--artifact-id", type=int, required=True)
+    check.add_argument("--repository", default=repository)
+    check.set_defaults(handler=run_keep_check)
 
 
 def _client() -> httpx.Client:  # pragma: no cover - the network
@@ -1502,3 +1525,451 @@ def run_collect(args: argparse.Namespace) -> int:  # pragma: no cover - the work
     for problem in problems:
         sys.stderr.write(f"forecast history: {problem}\n")
     return 0 if not missing and not problems else 1
+
+
+# --- keep: the artifacts kept past their 90 days (each-school P0) -------------------------------
+
+KEEP_CRON: Final = "41 10 2 * *"
+"""The keep job's schedule for the newest copies: 10:41 UTC on the 2nd of every month, so an
+artifact kept 90 days is copied about three times before it would expire, and one missed month
+loses nothing."""
+KEEP_PINNED_CRON: Final = "47 10 2 * *"
+"""The keep job's schedule for the pinned copies (:data:`KEPT_PINS`), six minutes later. A run
+holds one artifact of a name, so the pinned copy needs its own run to keep its name."""
+NEWEST: Final = "newest"
+PINNED: Final = "pinned"
+KEEP_CRONS: Final[Mapping[str, str]] = {KEEP_CRON: NEWEST, KEEP_PINNED_CRON: PINNED}
+"""Each keep schedule (``github.event.schedule``, byte for byte the workflow's cron) and what
+its run keeps."""
+KEPT_ARTIFACTS: Final = ("forecast-history", "label-night-forecast-extract")
+"""The artifacts the keep job copies. A later piece adds its own (``obs-<season>``, the night
+samples, raw state files over the record kind's day cap), each with a ``manifest.json`` that
+lists every file's SHA-256."""
+KEPT_PINS: Final[Mapping[str, str]] = {
+    # run 39748984910: the committed terms' forecast levels (docs/predict.md, "predict terms")
+    "forecast-history": "77b684fea703be166ac5291d7ea29a000fc0ed97a2bfee6be2fe9b36eadb8ec0",
+    # run 40262501880: the label-night extract the tuning read (docs/predict.md)
+    "label-night-forecast-extract": (
+        "4a58d614772d97fd2788671111fbc5bfc0a55db71001cbf659d545aba0cb2fda"
+    ),
+}
+"""The manifest SHA-256 of the copy the committed model learned from, per artifact: kept every
+month besides the newest, so a newer backfill never lets it expire. Change a pin only with a
+model that learned from another copy."""
+KEEP_WORKFLOW: Final = ".github/workflows/predict-forecast-history.yml"
+KEPT_SOURCES: Final[Mapping[str, str]] = {
+    "forecast-history": KEEP_WORKFLOW,
+    "label-night-forecast-extract": ".github/workflows/label-night-forecast-extract.yml",
+}
+"""The workflow that makes each kept artifact (on ``push`` or ``workflow_dispatch``); a kept
+copy comes only from a scheduled run of :data:`KEEP_WORKFLOW` whose keep job for it succeeded."""
+SOURCE_EVENTS: Final = frozenset({"push", "workflow_dispatch"})
+MANIFEST_FILE: Final = "manifest.json"
+KEEP_LIMIT: Final = 1024 * 1024 * 1024
+"""Bytes an artifact may hold, packed or unpacked, for the keep job to read it (the largest kept
+today, forecast-history, is 19,280,584 B packed)."""
+API_ROOT: Final = "https://api.github.com"
+
+
+class KeepError(RuntimeError):
+    """An artifact could not be kept whole (ids, sizes and SHA-256 only)."""
+
+
+@dataclass(frozen=True, slots=True)
+class Kept:
+    """Where a kept copy came from and the manifest it carries."""
+
+    name: str
+    artifact_id: int
+    run_id: int
+    event: str
+    created_at: str
+    manifest_sha256: str
+    files: int
+    bytes: int
+
+    def to_json(self) -> dict[str, JSONValue]:
+        return {
+            "name": self.name,
+            "artifact_id": self.artifact_id,
+            "run_id": self.run_id,
+            "event": self.event,
+            "created_at": self.created_at,
+            "manifest_sha256": self.manifest_sha256,
+            "files": self.files,
+            "bytes": self.bytes,
+        }
+
+    @classmethod
+    def from_json(cls, data: object) -> "Kept":
+        if not isinstance(data, dict):
+            raise KeepError("the keep record is not an object")
+        try:
+            return cls(
+                name=str(data["name"]),
+                artifact_id=int(data["artifact_id"]),
+                run_id=int(data["run_id"]),
+                event=str(data["event"]),
+                created_at=str(data["created_at"]),
+                manifest_sha256=str(data["manifest_sha256"]),
+                files=int(data["files"]),
+                bytes=int(data["bytes"]),
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            raise KeepError(f"the keep record does not read ({type(error).__name__})") from error
+
+
+def verify_copy(files: Mapping[str, bytes]) -> str:
+    """The SHA-256 of a copy's ``manifest.json``, once every file it lists is there with its
+    SHA-256 (and size, where listed) and no other file is.
+
+    Raises:
+        KeepError: the manifest is missing or does not read, or a file is missing, extra or
+            not the one listed.
+    """
+    manifest = files.get(MANIFEST_FILE)
+    if manifest is None:
+        raise KeepError(f"no {MANIFEST_FILE}")
+    try:
+        listed = json.loads(manifest)["files"]
+    except (ValueError, KeyError, TypeError) as error:
+        raise KeepError(f"{MANIFEST_FILE} does not read ({type(error).__name__})") from error
+    if not isinstance(listed, dict) or not listed:
+        raise KeepError(f"{MANIFEST_FILE} lists no files")
+    for name, entry in sorted(listed.items()):
+        if not isinstance(entry, dict) or not isinstance(entry.get("sha256"), str):
+            raise KeepError(f"{MANIFEST_FILE} gives {name} no SHA-256")
+        data = files.get(name)
+        if data is None:
+            raise KeepError(f"{name} is missing")
+        if sha256(data).hexdigest() != entry["sha256"]:
+            raise KeepError(f"{name} is not the file its manifest lists (SHA-256)")
+        if "bytes" in entry and entry["bytes"] != len(data):
+            raise KeepError(f"{name} is not the file its manifest lists (size)")
+    extra = sorted(set(files) - set(listed) - {MANIFEST_FILE})
+    if extra:
+        raise KeepError(f"{len(extra)} files its manifest does not list, first {extra[0]}")
+    return sha256(manifest).hexdigest()
+
+
+def check_copy(files: Mapping[str, bytes], original: Kept) -> str:
+    """:func:`verify_copy`, and the copy's manifest SHA-256 equals the original's.
+
+    Raises:
+        KeepError: it does not verify, or its manifest differs from the original's.
+    """
+    found = verify_copy(files)
+    if found != original.manifest_sha256:
+        raise KeepError(
+            f"refused: the copy's manifest SHA-256 {found} differs from the original's "
+            f"{original.manifest_sha256} (artifact {original.artifact_id})"
+        )
+    return found
+
+
+def unzip_flat(archive: bytes) -> dict[str, bytes]:
+    """The files of an artifact's zip, every one at its top level.
+
+    Raises:
+        KeepError: it does not read, is too large, or holds a folder or an odd name.
+    """
+    if len(archive) > KEEP_LIMIT:
+        raise KeepError(f"the zip is {len(archive)} B, over {KEEP_LIMIT}")
+    found: dict[str, bytes] = {}
+    try:
+        with zipfile.ZipFile(io.BytesIO(archive)) as packed:
+            infos = [info for info in packed.infolist() if not info.is_dir()]
+            if sum(info.file_size for info in infos) > KEEP_LIMIT:
+                raise KeepError(f"the zip unpacks to over {KEEP_LIMIT} B")
+            for info in infos:
+                name = info.filename
+                if not KEPT_NAME.fullmatch(name) or name in found:
+                    raise KeepError("the zip holds a folder or a name the keep job refuses")
+                found[name] = packed.read(info)
+    except (zipfile.BadZipFile, OSError, EOFError) as error:
+        raise KeepError(f"the zip does not read ({type(error).__name__})") from error
+    return found
+
+
+KEPT_NAME: Final = re.compile(r"[0-9A-Za-z][0-9A-Za-z._-]{0,127}")
+
+
+def read_folder(folder: Path) -> dict[str, bytes]:
+    """The files of a staged copy (top level only).
+
+    Raises:
+        KeepError: it holds a folder or an odd name.
+    """
+    found: dict[str, bytes] = {}
+    for path in sorted(folder.iterdir()):
+        if not path.is_file() or not KEPT_NAME.fullmatch(path.name):
+            raise KeepError("the staged copy holds a folder or a name the keep job refuses")
+        found[path.name] = path.read_bytes()
+    return found
+
+
+@dataclass(slots=True)
+class Artifacts:
+    """The repository's artifacts, through GitHub's API (read only)."""
+
+    http: httpx.Client
+    repository: str
+
+    def _get(self, path: str, params: Mapping[str, str | int] | None = None) -> httpx.Response:
+        url = f"{API_ROOT}/repos/{self.repository}" + (f"/{path}" if path else "")
+        try:
+            response = self.http.get(url, params=params)
+        except httpx.HTTPError as error:
+            raise KeepError(f"GitHub API {path}: {type(error).__name__}") from error
+        if response.status_code != httpx.codes.OK:
+            raise KeepError(f"GitHub API {path}: HTTP {response.status_code}")
+        return response
+
+    def _json(self, path: str, params: Mapping[str, str | int] | None = None) -> dict[str, object]:
+        try:
+            found = self._get(path, params).json()
+        except ValueError as error:
+            raise KeepError(f"GitHub API {path}: not JSON") from error
+        if not isinstance(found, dict):
+            raise KeepError(f"GitHub API {path}: not an object")
+        return found
+
+    def listed(self, name: str) -> list[dict[str, object]]:
+        """Every artifact named ``name`` not expired, newest first."""
+        found = self._json("actions/artifacts", {"name": name, "per_page": 100})
+        artifacts = found.get("artifacts")
+        if not isinstance(artifacts, list):
+            raise KeepError("GitHub API actions/artifacts: no list")
+        kept = [
+            a
+            for a in artifacts
+            if isinstance(a, dict) and a.get("name") == name and a.get("expired") is False
+        ]
+        return sorted(kept, key=lambda a: (str(a.get("created_at")), _int(a, "id")), reverse=True)
+
+    def default_branch(self) -> str:
+        """The repository's default branch (where its schedules run)."""
+        branch = self._json("").get("default_branch")
+        if not isinstance(branch, str) or not branch:
+            raise KeepError("GitHub API: no default_branch")
+        return branch
+
+    def run(self, run_id: int) -> dict[str, object]:
+        return self._json(f"actions/runs/{run_id}")
+
+    def jobs(self, run_id: int) -> list[dict[str, object]]:
+        """The jobs of a run (its latest attempt)."""
+        found = self._json(f"actions/runs/{run_id}/jobs", {"per_page": 100}).get("jobs")
+        if not isinstance(found, list):
+            raise KeepError(f"GitHub API actions/runs/{run_id}/jobs: no list")
+        return [job for job in found if isinstance(job, dict)]
+
+    def download(self, artifact_id: int) -> bytes:
+        return self._get(f"actions/artifacts/{artifact_id}/zip").content
+
+
+def _int(data: Mapping[str, object], key: str) -> int:
+    value = data.get(key)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise KeepError(f"GitHub API: no {key}")
+    return value
+
+
+def passed_over(
+    artifacts: Artifacts, name: str, run_id: int, run: Mapping[str, object], branch: str
+) -> str | None:
+    """Why an artifact named ``name`` of ``run`` may not be kept, or None when it may.
+
+    It may be kept only from a run of this repository (never a fork's) on the default branch
+    that succeeded: a backfill or extract run of the workflow that makes it
+    (:data:`KEPT_SOURCES`), on ``push`` or ``workflow_dispatch`` (a failed backfill uploads
+    what it has: its collect step fails on a missing part), or a scheduled run of
+    :data:`KEEP_WORKFLOW` whose keep job for ``name`` succeeded (it uploaded only a copy that
+    verified against an earlier whole one, and read it back).
+
+    Raises:
+        KeepError: the run's jobs do not read.
+    """
+    head = run.get("head_repository")
+    event, scheduled = run.get("event"), run.get("event") == "schedule"
+    source = KEEP_WORKFLOW if scheduled else KEPT_SOURCES[name]
+    checks = (
+        (
+            isinstance(head, dict) and head.get("full_name") == artifacts.repository,
+            "its run is not this repository's",
+        ),
+        (run.get("head_branch") == branch, f"its run is not on {branch}"),
+        (
+            run.get("status") == "completed" and run.get("conclusion") == "success",
+            "its run did not succeed",
+        ),
+        (scheduled or event in SOURCE_EVENTS, f"its run's event {event} makes no {name}"),
+        (
+            run.get("path") == source,
+            f"its {'scheduled ' if scheduled else ''}run is not {source}'s",
+        ),
+    )
+    for passed, why in checks:
+        if not passed:
+            return why
+    job = f"keep ({name})"
+    if scheduled and not any(
+        j.get("name") == job and j.get("conclusion") == "success" for j in artifacts.jobs(run_id)
+    ):
+        return f"its run's {job} job did not succeed"
+    return None
+
+
+def whole_copies(artifacts: Artifacts, name: str) -> Iterator[tuple[Kept, dict[str, bytes]]]:
+    """Every artifact named ``name`` that may be kept and verifies, with its files, newest
+    first (each read only when asked for). One that may not, or does not verify, or whose run
+    does not read, is passed over with a line saying why.
+
+    Raises:
+        KeepError: the listing or the default branch does not read.
+    """
+    branch = artifacts.default_branch()
+    for listed in artifacts.listed(name):
+        artifact_id = _int(listed, "id")
+        source = listed.get("workflow_run")
+        run_id, run = 0, {}
+        try:
+            if not isinstance(source, dict):
+                raise KeepError("its listing names no run")
+            run_id = _int(source, "id")
+            run = artifacts.run(run_id)
+            why = passed_over(artifacts, name, run_id, run, branch)
+        except KeepError as error:
+            why = str(error)
+        if why is not None:
+            sys.stdout.write(
+                f"keep {name}: artifact {artifact_id} of run {run_id} passed over: {why}\n"
+            )
+            continue
+        try:
+            files = unzip_flat(artifacts.download(artifact_id))
+            digest = verify_copy(files)
+        except KeepError as error:
+            sys.stdout.write(
+                f"::warning::keep {name}: artifact {artifact_id} passed over: {error}\n"
+            )
+            continue
+        kept = Kept(
+            name=name,
+            artifact_id=artifact_id,
+            run_id=run_id,
+            event=str(run.get("event")),
+            created_at=str(listed.get("created_at")),
+            manifest_sha256=digest,
+            files=len(files),
+            bytes=sum(len(data) for data in files.values()),
+        )
+        yield kept, files
+
+
+def chosen_copy(artifacts: Artifacts, name: str, role: str) -> tuple[Kept, dict[str, bytes]] | None:
+    """The copy a keep run of ``role`` keeps: for :data:`NEWEST`, the newest whole copy whose
+    manifest is not pinned (None when every whole copy is the pinned one, which the pinned run
+    keeps); for :data:`PINNED`, the newest whole copy carrying :data:`KEPT_PINS`' manifest
+    (None when ``name`` has no pin).
+
+    Raises:
+        KeepError: no whole copy is left, or none carries the pinned manifest.
+    """
+    pin = KEPT_PINS.get(name)
+    if role == PINNED:
+        if pin is None:
+            return None
+        for kept, files in whole_copies(artifacts, name):
+            if kept.manifest_sha256 == pin:
+                return kept, files
+        raise KeepError(f"no whole copy of {name} with the pinned manifest SHA-256 {pin} is left")
+    pinned_only = False
+    for kept, files in whole_copies(artifacts, name):
+        if kept.manifest_sha256 != pin:
+            return kept, files
+        pinned_only = True
+    if pinned_only:
+        return None
+    raise KeepError(f"no whole copy of {name} is left to keep")
+
+
+def _staged(value: bool) -> None:
+    """Tell the workflow's later steps whether a copy was staged (``GITHUB_OUTPUT``)."""
+    output = os.environ.get("GITHUB_OUTPUT")
+    if output:
+        with Path(output).open("a", encoding="utf-8") as found:
+            found.write(f"staged={'true' if value else 'false'}\n")
+
+
+def _api_client(token: str | None) -> httpx.Client:  # pragma: no cover - the network
+    from snowlight.predict.inputs import TIMEOUT, USER_AGENT, verify  # noqa: PLC0415
+
+    headers = {
+        "User-Agent": USER_AGENT,
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    # httpx drops the Authorization header on the redirect to the storage host.
+    return httpx.Client(headers=headers, timeout=TIMEOUT, follow_redirects=True, verify=verify())
+
+
+def run_keep(args: argparse.Namespace) -> int:
+    """Run ``forecast-history keep``: stage the copy the run's schedule keeps for upload, and
+    refuse (exit 1, nothing staged) when the staged copy's manifest differs from the original's;
+    exit 0 with nothing staged when this schedule has nothing of the artifact to keep."""
+    role = KEEP_CRONS.get(args.schedule)
+    if role is None:
+        sys.stderr.write(f"::error::keep {args.name}: {args.schedule!r} is no keep schedule\n")
+        return 1
+    try:
+        with _api_client(os.environ.get("GITHUB_TOKEN")) as http:
+            chosen = chosen_copy(Artifacts(http, args.repository), args.name, role)
+        if chosen is None:
+            _staged(False)
+            sys.stdout.write(
+                f"keep {args.name} ({role}): nothing to keep on this schedule, the "
+                f"{PINNED if role == NEWEST else NEWEST} run keeps every whole copy\n"
+            )
+            return 0
+        kept, files = chosen
+        args.out.mkdir(parents=True, exist_ok=False)
+        for file_name, data in sorted(files.items()):
+            (args.out / file_name).write_bytes(data)
+        try:
+            check_copy(read_folder(args.out), kept)
+        except KeepError:
+            for path in args.out.iterdir():
+                path.unlink()
+            raise
+    except (KeepError, FileExistsError) as error:
+        sys.stderr.write(f"::error::keep {args.name}: {error}\n")
+        return 1
+    write_json(args.record, kept.to_json())
+    _staged(True)
+    sys.stdout.write(
+        f"keep {kept.name} ({role}): artifact {kept.artifact_id} of run {kept.run_id} "
+        f"({kept.event}, {kept.created_at}), {kept.files} files, {kept.bytes} B, manifest SHA-256 "
+        f"{kept.manifest_sha256}\n"
+    )
+    return 0
+
+
+def run_keep_check(args: argparse.Namespace) -> int:
+    """Run ``forecast-history keep-check``: the uploaded copy, read back, carries the original's
+    manifest SHA-256 and every file it lists (exit 1 otherwise)."""
+    try:
+        original = Kept.from_json(json.loads(args.record.read_text(encoding="utf-8")))
+        with _api_client(os.environ.get("GITHUB_TOKEN")) as http:
+            files = unzip_flat(Artifacts(http, args.repository).download(args.artifact_id))
+        digest = check_copy(files, original)
+    except (KeepError, OSError, ValueError) as error:
+        sys.stderr.write(f"::error::keep-check {args.artifact_id}: {error}\n")
+        return 1
+    sys.stdout.write(
+        f"kept {original.name} as artifact {args.artifact_id}: manifest SHA-256 {digest} equals "
+        f"the original's (artifact {original.artifact_id}, run {original.run_id})\n"
+    )
+    return 0

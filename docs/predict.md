@@ -4184,6 +4184,35 @@ nothing (a public repository's runners, public buckets, no key) and commits noth
 results are the artifact `forecast-history` (kept 90 days), with `manifest.json` listing
 every file's SHA-256. Piece F2 downloads it to `pipeline/.cache/predict/ndfd-districts/`.
 
+**Kept past 90 days** (each-school P0). The same workflow's `keep` job runs on its own two
+monthly schedules (10:41 and 10:47 UTC on the 2nd; `KEEP_CRONS` in `forecast_history.py`), and
+the backfill never runs on either. For `forecast-history` and `label-night-forecast-extract` the
+first run keeps the newest copy and the second the pinned copy the committed model learned from
+(`KEPT_PINS`: manifest SHA-256 77b684fe of run 39748984910, and 4a58d614 of extract run
+40262501880), so a newer backfill never lets that copy expire; a run holds one artifact of a
+name, hence two runs. A copy is taken only from this repository's own runs on its default branch
+that succeeded: a run of the workflow that makes it (on push or by hand), or a keep run whose
+keep job for it succeeded. A copy from a fork, another branch, another workflow or a failed run
+is passed over, and so is one whose run does not read. Each copy taken has every file checked
+against its `manifest.json` SHA-256 (a copy with a missing, extra or changed file is passed over
+with a warning, and the next older one tried), is uploaded again under the same name for
+another 90 days, and is read back: the run fails unless the kept copy's manifest SHA-256 is the
+original's. A staged copy whose manifest differs is refused before anything is uploaded. Each
+schedule has its own concurrency group, so a pending keep is never dropped behind a running
+backfill. It reads and uploads only: nothing is deleted, committed or published, and the serving
+workflow is not touched. Three runs fall within an artifact's 90 days, so one missed month loses
+nothing.
+
+**The record kind** (each-school P0). The evidence store (docs/live.md) gains kind `record`, each
+school's own record, one day a key. Nothing writes it yet: only the daily record job will
+(each-school P2a1, not built yet; workflow `each-school record`). It holds codes, ids, counts and
+times only. The writer refuses, before anything is written, a version whose bytes hold `://` or
+`www.` (a backstop: the record job checks its decoded rows too), and a push after which a
+database would hold over 2 MiB raw of one day (every version of it together) or over 30,000,000 B
+stored in the kind, counting every record version either database holds and the ones offered.
+The cap is under a tenth of the 313,840,866 B left under the 300 MiB warning when each database
+held 731,934 B (Nov 13 2026, live-read run 43431486056).
+
 Each sample keeps two codes: `code` reads a school whose cell has no value as unknown, and
 `code_filled` reads it as nothing forecast of that element; `missing` says which element had
 no value (1 snow, 2 ice, 4 apparent temperature). Some offices issue no grid of an element:

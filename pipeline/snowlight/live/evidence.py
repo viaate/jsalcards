@@ -86,14 +86,30 @@ AUDIT: Final = "audit"
 FROZEN: Final = "frozen"
 """The frozen record (predict-next P1, :mod:`snowlight.predict.frozen`): every chance served
 and its inputs at four freezes a night, one finished day a key."""
-KINDS: Final = (MORNING, CHANGES, SNAPSHOT, DISTRICTS, LABELS, TRIALS, AUDIT, FROZEN)
+RECORD: Final = "record"
+"""Each district's and private school's own record (each-school P2a1, not built yet: nothing
+writes it today): the parsed record rows of a day, one key a day. Codes, ids, counts and times
+only, as every kind here: never a URL (a source's address stays in config) and never list text;
+the writer refuses a version whose bytes hold an address (:func:`_checked_records`, a backstop
+only), and any write over :data:`RECORD_DAY_BYTES` or :data:`RECORD_TOTAL_BYTES`."""
+KINDS: Final = (MORNING, CHANGES, SNAPSHOT, DISTRICTS, LABELS, TRIALS, AUDIT, FROZEN, RECORD)
 WRITERS: Final[Mapping[str, frozenset[str]]] = {
     "live-read": frozenset({MORNING, CHANGES}),
     "predict": frozenset({SNAPSHOT, DISTRICTS, LABELS, TRIALS, AUDIT, FROZEN}),
+    "each-school record": frozenset({RECORD}),
 }
 """The kinds each workflow (``GITHUB_WORKFLOW``) may write: only the live reader's evidence job
-holds the morning record and change log, and only the predict chain the snapshots, district
-tables and labels."""
+holds the morning record and change log, only the predict chain the snapshots, district
+tables and labels, and only the daily record job the record (each-school P2a1, not built yet:
+its workflow, outside the serving chain, will be named ``each-school record``)."""
+RECORD_DAY_BYTES: Final = 2 * 1024 * 1024
+"""Raw bytes one record day may hold in a database, every version of its key together."""
+RECORD_TOTAL_BYTES: Final = 30_000_000
+"""Stored bytes (base64 text, as :data:`WARN_BYTES` counts them) the record kind may hold in a
+database. Set from the free room measured on Nov 13 2026: each database held 731,934 B of every
+kind (live-read run 43431486056's push line), so 313,840,866 B were left under the 300 MiB
+warning; the record takes under a tenth of that (31,384,086 B), and every other kind keeps
+the rest."""
 CODEC: Final = "xz"
 PART_BYTES: Final = 64 * 1024
 """Compressed bytes per part (87,384 base64 characters, under D1's 100 KB statement)."""
@@ -486,7 +502,12 @@ def _stored(database: "EvidenceDatabase") -> int | None:
         rows = database.size()
     except D1Error:
         return None
-    return sum(math.ceil(int(str(row.get("packed") or 0)) * 4 / 3) for row in rows)
+    return sum(_stored_size(int(str(row.get("packed") or 0))) for row in rows)
+
+
+def _stored_size(packed: int) -> int:
+    """Stored bytes (base64 text) of ``packed`` compressed bytes."""
+    return math.ceil(packed * 4 / 3)
 
 
 @dataclass(slots=True)
@@ -532,6 +553,60 @@ class _Run:
         return found
 
 
+ADDRESS_MARKS: Final = (b"://", b"www.")
+"""Byte strings no record version may hold (looked for in lower case)."""
+
+
+def _checked_records(
+    run: _Run, offered: Mapping[tuple[str, str, str], Offer], kept_at: str
+) -> dict[tuple[str, str, str], tuple[Item, list[str]]]:
+    """The record versions offered, each compressed once, after the record kind's caps are
+    checked: nothing is written when one would pass.
+
+    The caps count what every database holds once this push and its copy step are done: every
+    record version any database that answered holds (the copy step fills each from the other),
+    and the versions offered.
+
+    The address check is a backstop on the raw bytes only: it cannot see inside compressed
+    bytes, so the record's writer offers uncompressed rows, and checks every string column of
+    its decoded rows against its code and id columns before it offers (each-school P2a1).
+
+    Raises:
+        EvidenceError: a version holds an address mark (:data:`ADDRESS_MARKS`), or a database
+            would hold more than :data:`RECORD_DAY_BYTES` of one day or
+            :data:`RECORD_TOTAL_BYTES` in all.
+    """
+    found: dict[tuple[str, str, str], tuple[Item, list[str]]] = {}
+    for version, offer in sorted(offered.items()):
+        if offer.kind != RECORD:
+            continue
+        lowered = offer.data.lower()
+        if any(mark in lowered for mark in ADDRESS_MARKS):
+            raise EvidenceError(f"{RECORD} {offer.key}: refused, it holds an address")
+        found[version] = item_of(offer, kept_at)
+    union: dict[tuple[str, str, str], Item] = {}
+    for held in run.held.values():
+        union.update((v, item) for v, item in held.items() if item.kind == RECORD)
+    for version, (item, _) in found.items():
+        union.setdefault(version, item)
+    days: dict[str, int] = {}
+    for item in union.values():
+        days[item.key] = days.get(item.key, 0) + item.bytes
+    for key, size in sorted(days.items()):
+        if size > RECORD_DAY_BYTES:
+            raise EvidenceError(
+                f"{RECORD} {key}: refused, a database would hold {size} B of it, over its"
+                f" {RECORD_DAY_BYTES} B"
+            )
+    total = sum(_stored_size(item.packed) for item in union.values())
+    if total > RECORD_TOTAL_BYTES:
+        raise EvidenceError(
+            f"{RECORD}: refused, a database would hold {total} B of it, over its"
+            f" {RECORD_TOTAL_BYTES} B"
+        )
+    return found
+
+
 @dataclass(slots=True)
 class EvidenceStore:
     """Both evidence databases (see the module). One per process."""
@@ -568,7 +643,9 @@ class EvidenceStore:
         back whole is never copied, and gets no item row.
 
         Raises:
-            EvidenceError: this workflow may not write ``kinds``, or no database was written.
+            EvidenceError: this workflow may not write ``kinds``, a record version is over
+                the record kind's caps (:func:`_checked_records`; nothing is written), or no
+                database was written.
         """
         kinds = tuple(sorted(set(kinds) | {offer.kind for offer in offers}))
         self._writable(kinds)
@@ -585,12 +662,13 @@ class EvidenceStore:
             version = (offer.kind, offer.key, hashlib.sha256(offer.data).hexdigest())
             offered.setdefault(version, offer)
         run.tally = {name: _Tally() for name in run.held}
+        records = _checked_records(run, offered, kept_at)
         if self.seconds is not None:
             run.stop = self.monotonic() + self.seconds
         # offers first, then each version only another database holds
         for version, offer in sorted(offered.items()):
             if self._lacking(run, databases, version):
-                item, parts = item_of(offer, kept_at)
+                item, parts = records.get(version) or item_of(offer, kept_at)
                 self._keep(run, databases, item, parts, copied=False)
         for name in sorted(run.held):
             for version, item in sorted(run.held[name].items()):

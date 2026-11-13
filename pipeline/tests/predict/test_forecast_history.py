@@ -4,10 +4,18 @@ from synthetic runs, the delay, gaps, the heads-up files and the workflow.
 Every forecast here is synthetic (tests/predict/grib.py) and every school is the test world's.
 """
 
+import argparse
+import io
+import json
+import re
+import zipfile
 from collections.abc import Iterable, Iterator
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
+from hashlib import sha256
 from pathlib import Path
 
+import httpx
 import numpy as np
 import polars as pl
 import pytest
@@ -1089,7 +1097,7 @@ def test_the_workflow_runs_once_on_landing_and_on_demand_and_commits_nothing() -
     triggers = workflow[True]
     assert triggers["push"] == {"paths": [".github/workflows/predict-forecast-history.yml"]}
     assert "workflow_dispatch" in triggers
-    assert "schedule" not in triggers
+    assert triggers["schedule"] == [{"cron": cron} for cron in fh.KEEP_CRONS]
     assert workflow["permissions"]["contents"] == "read"
     jobs = workflow["jobs"]
     matrix = jobs["nights"]["strategy"]["matrix"]
@@ -1134,3 +1142,629 @@ def test_a_whole_file_answer_never_sets_the_file_size_for_later_reads() -> None:
     # A whole answer at the file's end is checked against its own length.
     end = ndfd.steady_reader(lambda o, z: fh.range_answer(200, None, data, o, z, url))
     assert end(180, 50) == data[180:]
+
+
+# --- keep (each-school P0) ------------------------------------------------------------------------
+
+
+def _jobs() -> dict[str, dict[str, object]]:
+    found = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["jobs"]
+    assert isinstance(found, dict)
+    return found
+
+
+def test_the_backfill_never_runs_on_the_schedule_and_keep_runs_only_on_its_own() -> None:
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    jobs = _jobs()
+    assert set(jobs) == {"prepare", "nights", "collect", "keep"}
+    # the exact conditions: a looser one (say "|| github.event.schedule != ''") would let a
+    # backfill job run on the schedule
+    assert jobs["prepare"]["if"] == "github.event_name != 'schedule'"
+    assert jobs["nights"]["if"] == "github.event_name != 'schedule'"
+    assert jobs["collect"]["if"] == (
+        "always() && github.event_name != 'schedule' && needs.prepare.result == 'success'"
+    )
+    # keep runs only on its own schedules, and tells them apart from any other (a daily night
+    # job joins later) by github.event.schedule, byte for byte the crons
+    assert fh.KEEP_CRONS == {"41 10 2 * *": fh.NEWEST, "47 10 2 * *": fh.PINNED}
+    assert jobs["keep"]["if"] == (
+        "github.event_name == 'schedule' && (github.event.schedule == '41 10 2 * *' || "
+        "github.event.schedule == '47 10 2 * *')"
+    )
+    assert [entry["cron"] for entry in workflow[True]["schedule"]] == list(fh.KEEP_CRONS)
+    keep_env = jobs["keep"]["env"]
+    assert isinstance(keep_env, dict)
+    assert keep_env["SCHEDULE"] == "${{ github.event.schedule }}"
+    # a pending keep is never dropped behind a backfill: each schedule has its own group, and
+    # the backfill keeps the group it always had
+    group = str(workflow["concurrency"]["group"])
+    assert group == (
+        "predict-forecast-history${{ github.event_name == 'schedule' && "
+        "format('-schedule {0}', github.event.schedule) || '' }}"
+    )
+    assert workflow["concurrency"]["cancel-in-progress"] is False
+
+
+def test_the_keep_job_stages_uploads_and_reads_back_every_kept_artifact() -> None:
+    keep = _jobs()["keep"]
+    assert keep["strategy"] == {
+        "fail-fast": False,
+        "matrix": {"artifact": list(fh.KEPT_ARTIFACTS)},
+    }
+    steps = keep["steps"]
+    assert isinstance(steps, list)
+    runs = [str(step.get("run", "")) for step in steps]
+    staged = next(i for i, r in enumerate(runs) if "forecast-history keep --name" in r)
+    assert steps[staged]["id"] == "stage"
+    assert '--schedule "$SCHEDULE"' in runs[staged]
+    upload = next(i for i, s in enumerate(steps) if "upload-artifact" in str(s.get("uses")))
+    checked = next(i for i, r in enumerate(runs) if "forecast-history keep-check" in r)
+    assert staged < upload < checked
+    assert steps[upload]["id"] == "upload"
+    assert steps[upload]["with"] == {
+        "name": "${{ matrix.artifact }}",
+        "path": "kept/files/",
+        "retention-days": 90,
+        "if-no-files-found": "error",
+    }
+    assert "--out ../kept/files" in runs[staged]
+    assert "--record ../kept/source.json" in runs[checked]
+    assert "steps.upload.outputs.artifact-id" in runs[checked]
+    # A refused copy stops the job (exit 1): nothing uploads. With nothing to keep on this
+    # schedule the step says staged=false and the upload and read-back are skipped.
+    assert "if" not in steps[staged]
+    staged_only = "steps.stage.outputs.staged == 'true'"
+    assert steps[upload]["if"] == staged_only
+    assert steps[checked]["if"] == staged_only
+    assert [s.get("if") for s in steps[:staged]] == [None] * staged
+    # read and upload only: no cache is saved or restored here (the serving chain's
+    # predict-reads- and predict-frozen- caches are never touched), nothing deleted
+    for job in _jobs().values():
+        for step in job["steps"]:  # type: ignore[attr-defined]
+            assert "actions/cache" not in str(step.get("uses", ""))
+            assert "DELETE" not in str(step.get("run", ""))
+    assert yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))["permissions"] == {
+        "contents": "read",
+        "actions": "read",
+        "deployments": "read",
+    }
+
+
+REPO = "owner-x/repo-y"
+BRANCH = "main-z"
+
+
+def _manifest(files: dict[str, bytes], **extra: object) -> bytes:
+    listed = {n: {"sha256": sha256(d).hexdigest(), "bytes": len(d)} for n, d in files.items()}
+    return json.dumps({"files": listed, **extra}, sort_keys=True).encode()
+
+
+def _artifact(**extra: object) -> dict[str, bytes]:
+    """A SYNTHETIC artifact: two files and the manifest listing them."""
+    files = {"codes-2024.parquet": b"SYNTHETIC codes", "delay.json": b'{"SYNTHETIC": 1}'}
+    return {**files, fh.MANIFEST_FILE: _manifest(files, **extra)}
+
+
+def _zip(files: dict[str, bytes], compression: int = zipfile.ZIP_STORED) -> bytes:
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", compression) as packed:
+        for name, data in files.items():
+            packed.writestr(name, data)
+    return out.getvalue()
+
+
+@dataclass
+class FakeGitHub:
+    """The artifacts API: listings, runs, and each zip behind a redirect to a storage host."""
+
+    artifacts: list[dict[str, object]] = field(default_factory=list)
+    runs: dict[int, dict[str, object]] = field(default_factory=dict)
+    zips: dict[int, bytes] = field(default_factory=dict)
+    storage_auth: list[str | None] = field(default_factory=list)
+
+    jobs: dict[int, list[dict[str, object]]] = field(default_factory=dict)
+
+    def add(
+        self,
+        artifact_id: int,
+        run_id: int,
+        created: str,
+        data: bytes,
+        name: str = "forecast-history",
+        **run: object,
+    ) -> None:
+        """An artifact of a run; by default the repository's own, on its default branch, from
+        the workflow that makes it (or, scheduled, the keep workflow with its keep job
+        succeeded)."""
+        self.artifacts.append(
+            {
+                "id": artifact_id,
+                "name": name,
+                "expired": False,
+                "created_at": created,
+                "workflow_run": {"id": run_id},
+            }
+        )
+        scheduled = run.get("event") == "schedule"
+        self.runs[run_id] = {
+            "id": run_id,
+            "status": "completed",
+            "path": fh.KEEP_WORKFLOW if scheduled else fh.KEPT_SOURCES[name],
+            "head_branch": BRANCH,
+            "head_repository": {"full_name": REPO},
+            **run,
+        }
+        self.jobs.setdefault(run_id, [])
+        if scheduled:
+            self.jobs[run_id].append({"name": f"keep ({name})", "conclusion": "success"})
+        self.zips[artifact_id] = data
+
+    def handler(self, request: httpx.Request) -> httpx.Response:  # noqa: PLR0911 - one per path
+        path = request.url.path
+        if request.url.host == "storage.invalid":
+            self.storage_auth.append(request.headers.get("authorization"))
+            return httpx.Response(200, content=self.zips[int(path.strip("/"))])
+        assert request.url.host == "api.github.com"
+        if path == f"/repos/{REPO}":
+            return httpx.Response(200, json={"full_name": REPO, "default_branch": BRANCH})
+        assert path.startswith(f"/repos/{REPO}/actions/")
+        if path.endswith("/actions/artifacts"):
+            name = request.url.params["name"]
+            found = [a for a in self.artifacts if a["name"] == name]
+            return httpx.Response(200, json={"total_count": len(found), "artifacts": found})
+        if (match := re.fullmatch(r".*/artifacts/(\d+)/zip", path)) is not None:
+            if int(match.group(1)) not in self.zips:
+                return httpx.Response(404)
+            return httpx.Response(302, headers={"location": f"https://storage.invalid/{match[1]}"})
+        if (match := re.fullmatch(r".*/runs/(\d+)/jobs", path)) is not None:
+            jobs = self.jobs.get(int(match.group(1)), [])
+            return httpx.Response(200, json={"total_count": len(jobs), "jobs": jobs})
+        if (match := re.fullmatch(r".*/runs/(\d+)", path)) is not None:
+            if int(match.group(1)) not in self.runs:
+                return httpx.Response(404)
+            return httpx.Response(200, json=self.runs[int(match.group(1))])
+        return httpx.Response(404)  # pragma: no cover - a test's mistake
+
+    def client(self, _token: str | None) -> httpx.Client:
+        return httpx.Client(
+            transport=httpx.MockTransport(self.handler),
+            follow_redirects=True,
+            headers={"Authorization": "Bearer SYNTHETIC"},
+        )
+
+
+def _keep_args(
+    tmp_path: Path, name: str = "forecast-history", schedule: str = fh.KEEP_CRON
+) -> argparse.Namespace:
+    return argparse.Namespace(
+        name=name,
+        schedule=schedule,
+        repository=REPO,
+        out=tmp_path / "kept" / "files",
+        record=tmp_path / "rec.json",
+    )
+
+
+def _kept_id(record: Path) -> int:
+    return fh.Kept.from_json(json.loads(record.read_text(encoding="utf-8"))).artifact_id
+
+
+def test_a_copy_verifies_only_whole_and_alone() -> None:
+    files = _artifact(parts_expected=80)
+    digest = fh.verify_copy(files)
+    assert digest == sha256(files[fh.MANIFEST_FILE]).hexdigest()
+    for broken, why in (
+        ({k: v for k, v in files.items() if k != "delay.json"}, "delay.json is missing"),
+        ({**files, "delay.json": b'{"SYNTHETIC": 2}'}, "delay.json is not the file .*SHA-256"),
+        ({**files, "extra.parquet": b"x"}, "1 files its manifest does not list"),
+        ({k: v for k, v in files.items() if k != fh.MANIFEST_FILE}, "no manifest.json"),
+        ({**files, fh.MANIFEST_FILE: b"{"}, "does not read"),
+        ({**files, fh.MANIFEST_FILE: b'{"files": {}}'}, "lists no files"),
+        ({**files, fh.MANIFEST_FILE: b'{"files": {"a": 1}}'}, "gives a no SHA-256"),
+    ):
+        with pytest.raises(fh.KeepError, match=why):
+            fh.verify_copy(broken)
+    sized = {"a": b"12"}
+    wrong_size = {"files": {"a": {"sha256": sha256(b"12").hexdigest(), "bytes": 3}}}
+    with pytest.raises(fh.KeepError, match="size"):
+        fh.verify_copy({**sized, fh.MANIFEST_FILE: json.dumps(wrong_size).encode()})
+
+
+def test_a_copy_whose_manifest_differs_from_the_originals_is_refused() -> None:
+    original = _artifact(parts_expected=80)
+    kept = fh.Kept("forecast-history", 1, 2, "push", "t", fh.verify_copy(original), 3, 4)
+    assert fh.check_copy(original, kept) == kept.manifest_sha256
+    # whole on its own (every file matches its own manifest), but not the original's manifest
+    other = _artifact(parts_expected=79)
+    with pytest.raises(fh.KeepError, match=r"refused: the copy's manifest SHA-256 .* differs"):
+        fh.check_copy(other, kept)
+    assert fh.Kept.from_json(kept.to_json()) == kept
+    with pytest.raises(fh.KeepError, match="does not read"):
+        fh.Kept.from_json({"name": "x"})
+    with pytest.raises(fh.KeepError, match="not an object"):
+        fh.Kept.from_json([])
+
+
+def test_a_zip_with_a_folder_or_an_odd_name_is_refused() -> None:
+    assert fh.unzip_flat(_zip(_artifact())) == _artifact()
+    for files in ({"sub/a.parquet": b"x"}, {"../a": b"x"}, {".hidden": b"x"}):
+        with pytest.raises(fh.KeepError, match="refuses"):
+            fh.unzip_flat(_zip(files))
+    with pytest.raises(fh.KeepError, match="does not read"):
+        fh.unzip_flat(b"not a zip")
+
+
+def test_the_keep_job_stages_the_newest_whole_copy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    hub = FakeGitHub()
+    good = _artifact(parts_expected=80)
+    hub.add(10, 100, "2026-10-22T02:53:49Z", _zip(good), event="push", conclusion="success")
+    # newer, but its run failed: a backfill uploads what it has even then
+    partial = _artifact(parts_expected=80, missing_parts=["2024-3"])
+    hub.add(11, 101, "2026-10-23T00:00:00Z", _zip(partial), event="push", conclusion="failure")
+    # newest, from a keep run, but damaged: passed over with a warning
+    damaged = {**good, "delay.json": b"damaged"}
+    hub.add(12, 102, "2026-11-02T10:41:00Z", _zip(damaged), event="schedule", conclusion="success")
+    monkeypatch.setattr(fh, "_api_client", hub.client)
+    args = _keep_args(tmp_path)
+    assert fh.run_keep(args) == 0
+    out = capsys.readouterr().out
+    assert "artifact 11 of run 101 passed over: its run did not succeed" in out
+    assert "::warning::keep forecast-history: artifact 12 passed over: delay.json" in out
+    assert fh.read_folder(args.out) == good
+    record = fh.Kept.from_json(json.loads(args.record.read_text(encoding="utf-8")))
+    assert record == fh.Kept(
+        "forecast-history",
+        10,
+        100,
+        "push",
+        "2026-10-22T02:53:49Z",
+        sha256(good[fh.MANIFEST_FILE]).hexdigest(),
+        3,
+        sum(len(d) for d in good.values()),
+    )
+    # the storage host never sees the API token
+    assert set(hub.storage_auth) == {None}
+
+
+def test_the_keep_job_takes_a_kept_copy_and_fails_when_none_is_whole(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    hub = FakeGitHub()
+    good = _artifact()
+    hub.add(20, 200, "2026-12-02T10:41:00Z", _zip(good), event="schedule", conclusion="success")
+    # a newer keep run that failed (its read-back refused the copy) is never a source
+    hub.add(21, 201, "2027-01-02T10:41:00Z", _zip(good), event="schedule", conclusion="failure")
+    monkeypatch.setattr(fh, "_api_client", hub.client)
+    assert fh.run_keep(_keep_args(tmp_path / "a")) == 0
+    assert "artifact 21 of run 201 passed over: its run did not succeed" in capsys.readouterr().out
+    assert _kept_id(tmp_path / "a" / "rec.json") == 20
+    hub.zips[20] = _zip({**good, "codes-2024.parquet": b"damaged"})
+    assert fh.run_keep(_keep_args(tmp_path / "b")) == 1
+    assert "::error::keep forecast-history: no whole copy of forecast-history is left" in (
+        capsys.readouterr().err
+    )
+    assert not (tmp_path / "b" / "rec.json").exists()
+    # a staged folder that already exists is never written into
+    assert fh.run_keep(_keep_args(tmp_path / "a")) == 1
+
+
+def test_the_keep_job_refuses_an_upload_whose_manifest_differs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    hub = FakeGitHub()
+    hub.add(30, 300, "2026-10-22T02:53:49Z", _zip(_artifact()), event="push", conclusion="success")
+    monkeypatch.setattr(fh, "_api_client", hub.client)
+    # the staged copy reads back with another (self-consistent) manifest: nothing is left to
+    # upload and no record is written
+    monkeypatch.setattr(fh, "read_folder", lambda _folder: _artifact(parts_expected=1))
+    args = _keep_args(tmp_path)
+    assert fh.run_keep(args) == 1
+    assert "refused: the copy's manifest SHA-256" in capsys.readouterr().err
+    assert list(args.out.iterdir()) == []
+    assert not args.record.exists()
+
+
+def test_keep_check_reads_the_upload_back_against_the_original(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    hub = FakeGitHub()
+    original = _artifact(parts_expected=80)
+    hub.add(40, 400, "2026-10-22T02:53:49Z", _zip(original), event="push", conclusion="success")
+    monkeypatch.setattr(fh, "_api_client", hub.client)
+    args = _keep_args(tmp_path)
+    assert fh.run_keep(args) == 0
+    hub.add(41, 401, "2026-12-02T10:41:00Z", _zip(original), event="schedule")
+    check = argparse.Namespace(record=args.record, artifact_id=41, repository=REPO)
+    assert fh.run_keep_check(check) == 0
+    assert "kept forecast-history as artifact 41: manifest SHA-256" in capsys.readouterr().out
+    hub.zips[41] = _zip(_artifact(parts_expected=79))
+    assert fh.run_keep_check(check) == 1
+    assert "differs from the original's" in capsys.readouterr().err
+    for missing in (
+        argparse.Namespace(record=args.record, artifact_id=99, repository=REPO),
+        argparse.Namespace(record=tmp_path / "none.json", artifact_id=41, repository=REPO),
+    ):
+        assert fh.run_keep_check(missing) == 1
+
+
+def test_the_keep_commands_are_registered() -> None:
+    from snowlight import cli  # noqa: PLC0415
+
+    parser = cli.build_parser()
+    found = parser.parse_args(
+        [
+            "predict",
+            "forecast-history",
+            "keep",
+            "--name",
+            "forecast-history",
+            "--schedule",
+            fh.KEEP_CRON,
+            "--out",
+            "o",
+            "--record",
+            "r",
+        ]
+    )
+    assert found.handler is fh.run_keep
+    assert found.schedule == fh.KEEP_CRON
+    found = parser.parse_args(
+        ["predict", "forecast-history", "keep-check", "--record", "r", "--artifact-id", "7"]
+    )
+    assert found.handler is fh.run_keep_check
+    with pytest.raises(SystemExit):
+        parser.parse_args(
+            [
+                "predict",
+                "forecast-history",
+                "keep",
+                "--name",
+                "other",
+                "--schedule",
+                fh.KEEP_CRON,
+                "--out",
+                "o",
+                "--record",
+                "r",
+            ]
+        )
+    assert fh.KEPT_ARTIFACTS == ("forecast-history", "label-night-forecast-extract")
+
+
+def test_the_keep_job_refuses_what_it_cannot_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "sub").mkdir()
+    with pytest.raises(fh.KeepError, match="holds a folder"):
+        fh.read_folder(tmp_path)
+    archive = _zip(_artifact())
+    monkeypatch.setattr(fh, "KEEP_LIMIT", len(archive) - 1)
+    with pytest.raises(fh.KeepError, match="the zip is"):
+        fh.unzip_flat(archive)
+    monkeypatch.setattr(fh, "KEEP_LIMIT", len(archive))
+    with pytest.raises(fh.KeepError, match="unpacks to over"):
+        fh.unzip_flat(_zip({"a": b"0" * (len(archive) + 1)}, zipfile.ZIP_DEFLATED))
+
+    def api(answer: httpx.Response | Exception) -> fh.Artifacts:
+        def handler(_request: httpx.Request) -> httpx.Response:
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+
+        return fh.Artifacts(httpx.Client(transport=httpx.MockTransport(handler)), REPO)
+
+    for answer, why in (
+        (httpx.Response(500), "HTTP 500"),
+        (httpx.ConnectError("x"), "ConnectError"),
+        (httpx.Response(200, content=b"<"), "not JSON"),
+        (httpx.Response(200, json=[]), "not an object"),
+        (httpx.Response(200, json={"artifacts": None}), "no list"),
+    ):
+        with pytest.raises(fh.KeepError, match=why):
+            api(answer).listed("forecast-history")
+    nameless = {"artifacts": [{"name": "forecast-history", "expired": False, "created_at": "t"}]}
+    with pytest.raises(fh.KeepError, match="no id"):
+        api(httpx.Response(200, json=nameless)).listed("forecast-history")
+
+
+GENUINE = _artifact(parts_expected=80)
+IMPOSTOR = _artifact(parts_expected=80, SYNTHETIC="not the history")
+
+
+@pytest.mark.parametrize(
+    ("run", "why"),
+    [
+        # a fork's pull request runs its own workflow in this repository
+        (
+            {
+                "event": "pull_request",
+                "conclusion": "success",
+                "path": ".github/workflows/evil.yml",
+                "head_repository": {"full_name": "stranger/fork"},
+                "head_branch": "main-z",
+            },
+            "not this repository's",
+        ),
+        ({"event": "push", "conclusion": "success", "head_repository": None}, "repository's"),
+        # a backfill pushed on another branch
+        ({"event": "push", "conclusion": "success", "head_branch": "some-lane"}, "not on main-z"),
+        (
+            {"event": "workflow_dispatch", "conclusion": "success", "head_branch": "x"},
+            "not on main-z",
+        ),
+        # a keep run that failed, and one that was cancelled
+        ({"event": "schedule", "conclusion": "failure"}, "did not succeed"),
+        ({"event": "schedule", "conclusion": "cancelled"}, "did not succeed"),
+        ({"event": "push", "status": "in_progress", "conclusion": None}, "did not succeed"),
+        # another workflow's scheduled run, and another workflow's push
+        (
+            {"event": "schedule", "conclusion": "success", "path": ".github/workflows/ci.yml"},
+            "scheduled run is not .github/workflows/predict-forecast-history.yml's",
+        ),
+        (
+            {"event": "push", "conclusion": "success", "path": ".github/workflows/ci.yml"},
+            "is not .github/workflows/predict-forecast-history.yml's",
+        ),
+        # an event that makes no history, on this repository's own default branch
+        ({"event": "pull_request", "conclusion": "success"}, "event pull_request makes no"),
+        ({"event": "release", "conclusion": "success"}, "event release makes no"),
+    ],
+)
+def test_the_keep_job_never_keeps_an_artifact_from_another_source(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    run: dict[str, object],
+    why: str,
+) -> None:
+    hub = FakeGitHub()
+    hub.add(50, 500, "2026-10-22T11:22:10Z", _zip(GENUINE), event="push", conclusion="success")
+    # newer, whole on its own and under the trusted name, but not from the history's source
+    hub.add(51, 501, "2026-11-20T00:00:00Z", _zip(IMPOSTOR), "forecast-history", **run)
+    monkeypatch.setattr(fh, "_api_client", hub.client)
+    args = _keep_args(tmp_path)
+    assert fh.run_keep(args) == 0
+    out = capsys.readouterr().out
+    assert re.search(f"artifact 51 of run 501 passed over: .*{re.escape(why)}", out), out
+    assert fh.read_folder(args.out) == GENUINE
+    assert _kept_id(args.record) == 50
+
+
+def test_a_scheduled_run_is_a_source_only_when_its_keep_job_for_the_artifact_succeeded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    hub = FakeGitHub()
+    hub.add(60, 600, "2026-10-22T11:22:10Z", _zip(GENUINE), event="push", conclusion="success")
+    hub.add(61, 601, "2026-12-02T10:41:00Z", _zip(IMPOSTOR), event="schedule", conclusion="success")
+    # a later scheduled job of this workflow (a night job, say) uploaded it, not keep
+    hub.jobs[601] = [
+        {"name": "night", "conclusion": "success"},
+        {"name": "keep (forecast-history)", "conclusion": "skipped"},
+        {"name": "keep (label-night-forecast-extract)", "conclusion": "success"},
+    ]
+    monkeypatch.setattr(fh, "_api_client", hub.client)
+    args = _keep_args(tmp_path)
+    assert fh.run_keep(args) == 0
+    assert "passed over: its run's keep (forecast-history) job did not succeed" in (
+        capsys.readouterr().out
+    )
+    assert fh.read_folder(args.out) == GENUINE
+
+
+def test_an_artifact_whose_run_does_not_read_is_passed_over(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    hub = FakeGitHub()
+    hub.add(70, 700, "2026-10-22T11:22:10Z", _zip(GENUINE), event="push", conclusion="success")
+    # a run deleted since (404), and a listing with no run at all
+    hub.add(71, 701, "2026-11-01T00:00:00Z", _zip(IMPOSTOR), event="push", conclusion="success")
+    del hub.runs[701]
+    hub.add(72, 702, "2026-11-02T00:00:00Z", _zip(IMPOSTOR), event="push", conclusion="success")
+    hub.artifacts[-1].pop("workflow_run")
+    # jobs that do not read
+    hub.add(73, 703, "2026-11-03T00:00:00Z", _zip(IMPOSTOR), event="schedule", conclusion="success")
+    monkeypatch.setattr(fh, "_api_client", hub.client)
+    real_jobs = fh.Artifacts.jobs
+
+    def jobs(self: fh.Artifacts, run_id: int) -> list[dict[str, object]]:
+        if run_id == 703:
+            raise fh.KeepError("GitHub API actions/runs/703/jobs: HTTP 502")
+        return real_jobs(self, run_id)
+
+    monkeypatch.setattr(fh.Artifacts, "jobs", jobs)
+    args = _keep_args(tmp_path)
+    assert fh.run_keep(args) == 0
+    out = capsys.readouterr().out
+    assert "artifact 71 of run 701 passed over: GitHub API actions/runs/701: HTTP 404" in out
+    assert "artifact 72 of run 0 passed over: its listing names no run" in out
+    assert "artifact 73 of run 703 passed over: GitHub API actions/runs/703/jobs: HTTP 502" in out
+    assert fh.read_folder(args.out) == GENUINE
+
+
+def test_the_label_night_extract_is_kept_only_from_its_own_workflow(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    name = "label-night-forecast-extract"
+    hub = FakeGitHub()
+    hub.add(
+        80, 800, "2026-10-26T03:16:41Z", _zip(GENUINE), name, event="push", conclusion="success"
+    )
+    assert hub.runs[800]["path"] == ".github/workflows/label-night-forecast-extract.yml"
+    # the history's backfill workflow makes no extract
+    hub.add(
+        81,
+        801,
+        "2026-11-01T00:00:00Z",
+        _zip(IMPOSTOR),
+        name,
+        event="push",
+        conclusion="success",
+        path=fh.KEEP_WORKFLOW,
+    )
+    monkeypatch.setattr(fh, "_api_client", hub.client)
+    args = _keep_args(tmp_path, name)
+    assert fh.run_keep(args) == 0
+    assert "artifact 81 of run 801 passed over: its run is not" in capsys.readouterr().out
+    assert fh.read_folder(args.out) == GENUINE
+
+
+def test_the_pinned_copy_is_kept_by_its_own_schedule_besides_the_newest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    learned = _artifact(parts_expected=80)
+    newer = _artifact(parts_expected=80, missing_days=["2024-01-09"])
+    hub = FakeGitHub()
+    hub.add(90, 900, "2026-10-22T11:22:10Z", _zip(learned), event="push", conclusion="success")
+    monkeypatch.setattr(fh, "_api_client", hub.client)
+    monkeypatch.setattr(
+        fh, "KEPT_PINS", {"forecast-history": sha256(learned[fh.MANIFEST_FILE]).hexdigest()}
+    )
+    output = tmp_path / "github_output"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    # Only the pinned copy exists: the newest run stages nothing, the pinned run keeps it.
+    assert fh.run_keep(_keep_args(tmp_path / "a", schedule=fh.KEEP_CRON)) == 0
+    assert "nothing to keep on this schedule" in capsys.readouterr().out
+    assert not (tmp_path / "a" / "kept").exists()
+    assert fh.run_keep(_keep_args(tmp_path / "b", schedule=fh.KEEP_PINNED_CRON)) == 0
+    assert fh.read_folder(tmp_path / "b" / "kept" / "files") == learned
+    assert output.read_text(encoding="utf-8") == "staged=false\nstaged=true\n"
+    # A newer backfill lands, and its keep copies follow; the pinned run still keeps the
+    # copy the model learned from, newest of its copies first.
+    hub.add(91, 901, "2026-11-14T00:00:00Z", _zip(newer), event="push", conclusion="success")
+    hub.add(92, 902, "2026-12-02T10:47:00Z", _zip(learned), event="schedule", conclusion="success")
+    hub.add(93, 903, "2026-12-02T10:41:00Z", _zip(newer), event="schedule", conclusion="success")
+    assert fh.run_keep(_keep_args(tmp_path / "c", schedule=fh.KEEP_CRON)) == 0
+    assert fh.read_folder(tmp_path / "c" / "kept" / "files") == newer
+    assert _kept_id(tmp_path / "c" / "rec.json") == 93
+    assert fh.run_keep(_keep_args(tmp_path / "d", schedule=fh.KEEP_PINNED_CRON)) == 0
+    assert fh.read_folder(tmp_path / "d" / "kept" / "files") == learned
+    assert _kept_id(tmp_path / "d" / "rec.json") == 92
+    # The pinned copy lost: the pinned run fails, and the newest run still keeps the newest.
+    for artifact_id in (90, 92):
+        hub.zips[artifact_id] = _zip({**learned, "delay.json": b"damaged"})
+    assert fh.run_keep(_keep_args(tmp_path / "e", schedule=fh.KEEP_PINNED_CRON)) == 1
+    assert "no whole copy of forecast-history with the pinned manifest SHA-256" in (
+        capsys.readouterr().err
+    )
+    assert fh.run_keep(_keep_args(tmp_path / "f", schedule=fh.KEEP_CRON)) == 0
+    # An artifact with no pin: the pinned run has nothing to keep.
+    monkeypatch.setattr(fh, "KEPT_PINS", {})
+    assert fh.run_keep(_keep_args(tmp_path / "g", schedule=fh.KEEP_PINNED_CRON)) == 0
+    assert not (tmp_path / "g" / "kept").exists()
+    # Any other schedule is refused.
+    assert fh.run_keep(_keep_args(tmp_path / "h", schedule="41 10 2 * * ")) == 1
+    assert "is no keep schedule" in capsys.readouterr().err
+
+
+def test_the_pins_are_the_copies_the_committed_model_names() -> None:
+    assert set(fh.KEPT_PINS) == set(fh.KEPT_ARTIFACTS) == set(fh.KEPT_SOURCES)
+    assert all(re.fullmatch(r"[0-9a-f]{64}", pin) for pin in fh.KEPT_PINS.values())
+    docs = (REPO_ROOT / "docs" / "predict.md").read_text(encoding="utf-8")
+    assert "run 39748984910" in docs
+    assert "extract run 40262501880" in docs
+    for pin in fh.KEPT_PINS.values():
+        assert f"SHA-256 {pin[:8]}" in docs or f"and {pin[:8]}" in docs
+    assert fh.KEEP_WORKFLOW == ".github/workflows/predict-forecast-history.yml"
+    assert (REPO_ROOT / fh.KEPT_SOURCES["label-night-forecast-extract"]).is_file()
