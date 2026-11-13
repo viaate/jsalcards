@@ -2,7 +2,8 @@ name: iOS core
 
 # The iPhone app's logic package (ios/SnowlightCore) and its guards, on Linux: the fast
 # loop. The guards keep signing material, shown words that did not come from a screen
-# model, and reads of the device's clock out of the app. The golden check runs the site's
+# model, and reads of the device's clock out of the app. The fixture check fails when a copy
+# of the pipeline's synthetic files differs from its source. The golden check runs the site's
 # own code and fails when one of its answers no longer matches the golden files the Swift
 # tests are held to. The screens are parsed for syntax only; the Mac compiles them.
 # The tests and the golden check always run under a zone that is not UTC: on a UTC
@@ -43,6 +44,8 @@ jobs:
           date +%Z
       - name: Guards
         run: node ios/tools/check-ios.mjs
+      - name: Fixture copies match the pipeline's
+        run: node ios/tools/sync-fixtures.mjs --check
       - name: Golden answers match the site's code, under two odd zones
         run: |
           TZ=America/St_Johns node ios/tools/gen-golden.mjs --check

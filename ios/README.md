@@ -66,7 +66,7 @@ Each rule is held by a script, a test or the compiler, named beside it.
    the device's zone by mistake gives right answers. Each `swift test` step sets `TZ` and
    `SNOWLIGHT_EXPECT_ZONE` to the same odd zone (`workflow.zone`); no test may be skipped
    or kept from a platform (`tests.skip`); the count of tests in the source is the number
-   in `tools/test-count.txt` (`tests.count`, 49 today).
+   in `tools/test-count.txt` (`tests.count`, 67 today).
 7. **Made-up schools only.** Fixtures are the pipeline's synthetic ones; no school crest or
    logo is ever committed.
 8. **The picture tour is debug code.** Everything under `Tour/` is inside one `#if DEBUG`
@@ -125,9 +125,10 @@ Three workflows, all in `.github/workflows/`. Logic lives in `tools/` so the wor
 change rarely.
 
 - **`ios-core.yml`, iOS core** (Linux, about a minute). On every push or pull request that
-  changes `ios/**` or the file itself. Runs `tools/check-ios.mjs`, the golden check under
-  two odd zones (`America/St_Johns`, `Pacific/Kiritimati`), a syntax-only parse of the kit
-  and the app (`swiftc -frontend -parse`), and the core tests under each of the two zones.
+  changes `ios/**` or the file itself. Runs `tools/check-ios.mjs`, the fixture check
+  (`tools/sync-fixtures.mjs --check`), the golden check under two odd zones
+  (`America/St_Johns`, `Pacific/Kiritimati`), a syntax-only parse of the kit and the app
+  (`swiftc -frontend -parse`), and the core tests under each of the two zones.
 - **`ios-app.yml`, iOS app** (macOS: about 10 minutes on macos-26, up to 26 on xcode-27,
   which also tours the iPhone Duo; the two run side by side). On the same changes. Two jobs:
   `app (macos-26, Xcode 26.6)`, the one that counts, with Xcode pinned by its path; and
@@ -137,9 +138,16 @@ change rarely.
   generates the project, builds Debug and Release unsigned for the simulator, takes the
   picture tour, prints the colors at named points, and uploads the small pictures:
   `ios-shots` (and `ios-shots-27`), 14 days.
-- **`ios-words-watch.yml`, iOS words watch** (comes with M0b). On a change to the site's
-  code or the shared fixtures: do the app's golden answers still match? A warning only,
-  until testers hold the app.
+- **`ios-words-watch.yml`, iOS words watch** (Linux, under a minute). On a push that
+  changes the site's code (`web/src/**`, `web/scripts/check-copy.mjs`), the pipeline's
+  shared fixtures or the file itself: `sync-fixtures.mjs --check` and `gen-golden.mjs
+  --check`. **A warning only, until testers hold the app** (LEAD-RULINGS R6): the job never
+  fails. It writes one of two warnings on the run's page: "iPhone app words" when an answer
+  of the site or a shared fixture changed (the next iOS push then fails until the golden
+  files and the Swift port are brought up to date), or "iPhone app generator" when the
+  generator could not load the site's code (no word is known to have changed). It watches
+  all of `web/src`, and the generator refuses to load a site file from anywhere else (its
+  exit 4), so the watch cannot fall behind what the generator reads.
 
 **A change to any file under `.github/workflows/` runs the normal CI**, because the
 pipeline and web tests read every workflow file. Before pushing one, run these locally:
@@ -334,21 +342,67 @@ and the DUO LEG spec), with the piece that builds each:
 
 The golden files (`SnowlightCore/Tests/SnowlightCoreTests/Fixtures/golden/<family>.json`)
 are the site's own answers, made by running the site's TypeScript modules in plain Node
-(22.18 or newer; no `npm ci`). After a change to the site's words or rules:
+(22.18 or newer; no `npm ci`). The generator never writes a sentence or an answer of its
+own: every answer in a case is what a site function returned (`{"throws": true}` where it
+threw a RangeError, apart from `null`, where it said nothing). `tools/gen-golden.mjs` says,
+family by family, which site functions a case holds and in which order; a case is one line,
+a list of its inputs and then the answers (instants as milliseconds since 1970, UTC; a number
+JSON cannot hold, such as NaN, as the text `"NaN"`). `GoldenShapeTests` holds each family's
+shape.
+
+| Family | Site functions | Cases |
+|---|---|---|
+| `copy` | the `copy` object, `detailsCopy`, `chanceCopy.noSchool` | 1 |
+| `clock` | `format.clock` | 1,443 |
+| `time` | `format.time` | 2,810 |
+| `instant` | `parseInstant` | 50 |
+| `days` | `format.day`, `format.dayWithYear`, `chanceFormat.weekday`, `chanceFormat.chanceOn` | 373 |
+| `stamps` | `format.liveAt`, `updatedAt`, `offline`, `posted` | 600 |
+| `status-on` | `format.statusOn` | 403 |
+| `shift` | `format.delay`, `format.dismissal` | 894 |
+| `chance` | `format.chance`, `chanceFormat.chanceNumber`, `chanceFormat.delayInstead` | 209 |
+| `grades` | `format.grades`, `format.number` | 274 |
+| `details` | `detailsFormat.said` | 326 |
+| `season-line` | `seasonFormat.line` | 1,021 |
+| `season-file` | `parseSeason`, `schoolSeason`, `lastDayOver` | 224 |
+| `map-day` | `mapDay`, `nextMapTurn`, `localDay`, `todayEverywhere`, `clockToday`, `schoolToday` | 5,839 |
+| `zones` | `isTimeZone`, `regionOf` | 449 |
+| `closings` | `parseClosings`, `rowOn`, `schoolStatus` (no covered file), `litStatus` | 4,493 |
+| `predictions` | `parsePredictions`, `zonesOf` and `zoneOf`, `schoolOutlook`, `headlineDay`, `underWay` | 2,359 |
+| `freshness` | `updateState` | 532 |
+| `ids` | `isSchoolId`, `parseSchoolId` | 60 |
+
+The generator also writes `SnowlightCore/Sources/SnowlightCore/Files/ZoneNames.swift`, the
+app's list of time zone names (421 today): Node's own names, `UTC` and the long US
+spellings Node leaves out, each kept only where the site's `isTimeZone` accepts it, so the
+list is never wider than the site. It stops unless exactly 28 names on the list have a region
+in the site's `regionOf` table. Where the site accepts a zone name the list does not hold
+(`america/chicago`, `US/Central`, `EST`), a case says `narrower`, and there the app must
+refuse.
+
+The files the closings, predictions and season cases read are copies of the pipeline's
+synthetic test files, in `SnowlightCore/Tests/SnowlightCoreTests/Fixtures/site/` under their
+names in `pipeline/tests/` (`tools/sync-fixtures.mjs`, byte for byte; `--check` fails on any
+difference). Copy them first, then make the golden files. After a change to the site's words
+or rules, or to a shared fixture:
 
 ```
-node ios/tools/gen-golden.mjs                                     # write them
+node ios/tools/sync-fixtures.mjs                                  # copy the fixtures
+node ios/tools/gen-golden.mjs                                     # write the golden files
 node ios/tools/gen-golden.mjs                                     # again: git status shows no change
 TZ=Pacific/Kiritimati node ios/tools/gen-golden.mjs               # in another zone: still no change
 TZ=America/St_Johns node ios/tools/gen-golden.mjs --check         # what CI runs
 TZ=Pacific/Kiritimati node ios/tools/gen-golden.mjs --check
+node ios/tools/sync-fixtures.mjs --check
 ```
 
 `--check` compares answers, not bytes: a site file whose comment changed is printed as a
-note and fails nothing. Exit codes: 0 all match; 1 an answer differs (it prints the
-family, the first differing case and the changed site files); 2 the site's code could not
-be loaded; 3 Node too old or wrong usage; 4 a site file outside what the words watch
-covers. Then update the Swift port until its tests pass, and commit both together.
+note and fails nothing; the zone list is compared whole. Exit codes: 0 all match; 1 an
+answer differs (it prints the family, the first differing case and the changed site files);
+2 the site's code could not be loaded; 3 Node too old or wrong usage; 4 a site file outside
+what the words watch covers. Then update the Swift port until its tests pass, and commit
+both together. The golden folder is about 2.3 MB (at most 3 MB, no file over 700 KB), and
+making it takes about 4 seconds.
 
 ## Bumping the pinned Xcode
 
