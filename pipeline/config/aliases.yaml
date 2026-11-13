@@ -26,6 +26,15 @@ markets:
     # USD 203 is Piper-Kansas City (ST_LEAID KS-D0203), in Wyandotte County, the
     # county of Kansas City, Kansas, which the list writes "KCK".
     "Piper Schools - USD 203 KCK": "2010680"
+  gray-kolo:
+    # Tahoe-Truckee Unified (CA), which KOLO lists as "USD" under Placer County (seen
+    # 2025-02-07). Its schools lie in Nevada and Placer counties, just past KOLO's DMA
+    # counties, which the matcher reads.
+    "Tahoe Truckee USD": "0638770"
+    # Incline Elementary of the Washoe County School District, which KOLO lists with its
+    # grade span (seen 2025-02-07 beside Incline High and Incline Middle, which the matcher
+    # places); the span keeps the name under the matcher's bar.
+    "Incline Elementary School, K - 5": "320048000224"
   gray-kwch:
     # USD 470 is Arkansas City (KS-D0470), which the list writes "Ark City" as the
     # town calls itself; no record spells "Ark" for Arkansas.

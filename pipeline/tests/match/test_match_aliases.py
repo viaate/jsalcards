@@ -14,6 +14,7 @@ DIRECTORY = PIPELINE / "out" / "internal" / "directory"
 
 
 PINNED = {
+    "0638770": ("Tahoe-Truckee Unified", "CA"),
     "2003450": ("Arkansas City", "KS"),
     "2004830": ("North Jackson", "KS"),
     "2006420": ("Gardner Edgerton", "KS"),
@@ -28,20 +29,24 @@ PINNED = {
     "2611910": ("Delton Kellogg Schools", "MI"),
     "2629220": ("North Central Area Schools", "MI"),
     "2921540": ("MOUNTAIN VIEW-BIRCH TREE R-III", "MO"),
+    "320048000224": ("INCLINE ELEMENTARY", "NV"),
     "4025470": ("CANEY VALLEY", "OK"),
 }
-"""Every NCES id the shipped alias file pins, with the district's NCES name and state,
+"""Every NCES id the shipped alias file pins, with the record's NCES name and state,
 checked against the file everywhere and against the directory where it is built."""
+
+PINNED_KIND = {"320048000224": "school"}
+"""The pins that name a school; every other pin names a district."""
 
 
 def test_the_shipped_alias_file_loads_and_holds_only_checked_entries() -> None:
     aliases = load_aliases()
     assert DEFAULT_ALIASES_PATH.name == "aliases.yaml"
     # Every entry comes from a listing seen in a market of the registry.
-    assert len(aliases) == 16
+    assert len(aliases) == 18
     stations = load_registry(PIPELINE / "config" / "sources").stations
     assert set(aliases.table) <= set(stations)
-    # Each names a district checked by hand (:data:`PINNED`), of its market's states.
+    # Each names a record checked by hand (:data:`PINNED`), of its market's states.
     pinned = {
         (market, record_id)
         for market, entries in aliases.table.items()
@@ -62,7 +67,8 @@ def test_the_shipped_aliases_name_records_of_the_directory() -> None:
     assert aliases.problems(directory) == []
     for record_id, (name, state) in PINNED.items():
         record = directory[record_id]
-        assert (record.name, record.state, record.kind) == (name, state, "district")
+        kind = PINNED_KIND.get(record_id, "district")
+        assert (record.name, record.state, record.kind) == (name, state, kind)
 
 
 def test_alias_key_ignores_spacing_and_case() -> None:

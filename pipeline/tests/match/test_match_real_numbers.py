@@ -115,6 +115,8 @@ def _target(
         ("nexstar-wdaf", "Gardner-Edgerton-Antioch USD #231", "Schools", "2006420"),
         ("gray-kctv", "Piper Schools - USD 203 KCK", "Schools", "2010680"),
         ("gray-kwch", "USD 470 Ark City", "Schools", "2003450"),
+        ("gray-kolo", "Tahoe Truckee USD", "School", "0638770"),
+        ("gray-kolo", "Incline Elementary School, K - 5", "School", "320048000224"),
         # A district's name and number, past the station's counties, in its states.
         ("scripps-kshb", "Maysville R-1", None, "2920550"),
         ("nexstar-wdaf", "Maysville R-1 MO", "Schools", "2920550"),
