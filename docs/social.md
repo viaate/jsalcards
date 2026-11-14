@@ -25,8 +25,13 @@ own account as the managing one.
 - **The scheduled posts**: three runs a day, at good times for US parents and students:
   13:07, 17:37 and 00:41 UTC (about 8 AM, 12:30 PM and 7:40 PM Central in daylight time, an
   hour earlier after Nov 1). Each posts the next queued post if one is waiting; the owner
-  asked for at least one post a day and 2 to 3 is best, so the queue holds nine posts (three
-  days) until the Haiku writer is switched on. With the Haiku writer switched
+  asked for at least one post a day and 2 to 3 is best, so the lead keeps the queue filled
+  until the Haiku writer is switched on (the first nine, `0002` to `0010`, ran out on Oct 30;
+  `0011` to `0031`, queued Nov 14, are seven days at three a day). Posted files stay in the
+  queue as the voice reference: D1 records each as posted, so none goes twice, and one whose
+  words a later change of the facts file no longer holds is listed in
+  `POSTED_BEFORE_A_FACT_CHANGED` (`pipeline/tests/social/test_rules_real.py`) instead of being
+  checked against today's facts. With the Haiku writer switched
   on (below; it is **off** now), nothing queued, `ANTHROPIC_API_KEY` set and nothing posted
   in the last 3 hours, Haiku
   (`claude-haiku-5-5`) writes one post, in turn a dev log and a "join the waitlist" post,
@@ -74,13 +79,16 @@ Two rules hold for every post, Haiku's and the queued ones alike, and for every 
   "walk-forward" in a post): that Snowlight's chances come from a real prediction model
   trained on real closing records, not a guess, and something concrete about it (the 2,388 real past school
   days it is trained on, how it leans on a district's own records and its county's, state's
-  and region's, the weather service's winter alerts it sorts days by, the walk-forward test
-  on past winters it never saw, a new set about every 30 minutes). Haiku is given one of
-  them a day, in turn (`rules.model_fact_for`: seven LIVE model facts, so with the styles
+  and region's, the weather service's winter alerts it sorts days by, how the forecast for
+  the school morning moves an alert day's chance, the walk-forward test on past winters it
+  never saw, a new set about every 30 minutes, the learning step that labels each finished
+  school day, the storm drill). Haiku is given one of them a day, in turn
+  (`rules.model_fact_for`: eleven LIVE model facts, an odd count, so with the styles
   alternating each fact pairs with both), and the deterministic check refuses a draft that
   does not name it, or a post that names no model fact at all. A model fact that is TESTING
-  (the forecast reasons, the night-before outlook, the watch raise) or COMING (learning from
-  this winter's closings) is said as testing or coming, like any other. No accuracy number
+  (the reasons beyond the forecast, such as the districts next door, the night-before
+  outlook, the watch raise) is said as testing, like any other. A not-live word inside a
+  term never excuses it ("next" in "districts next door"). No accuracy number
   or score is ever posted: the past records lean toward big storm days.
 - **No one else.** A post says what Snowlight does and never describes, names or compares
   other products, sites or people. Refused: any competitor's name, also run together or
@@ -118,8 +126,10 @@ The site stays locked until the owner says its chances are ready, so a post neve
 the site still hides. One switch decides it: the status of the `chances` fact in
 `social/facts.md` (`rules.chances_shown`). While it is **TESTING** (now):
 
-- the render job does not read the predictions, so the picture is never a district's chance
-  view, and its description, card and alt text hold no chance at all (no number, percent,
+- the render job reads `predictions/latest.json` only for each district's time zone (a
+  private school's own), which decides the day the map lights each school on (below,
+  "The picture"), and never for a chance: the picture is never a district's chance view,
+  and its description, card and alt text hold no chance at all (no number, percent,
   "chance" or "odds"); the A card's chance line is gone and its model line stays;
 - `cards.py` refuses a card or alt text that holds any word of a chance, and the post job
   drops a fresh card whose picture, description or alt text gives one (the post then goes
@@ -335,11 +345,19 @@ network at all:
 
 1. Headless Chromium (installed in the job) reads the site's lock check from its own page and
    unlocks it in that browser only (never printed). Signed out, it opens the map at a view
-   where the site reads the school directory and `live/closings.json`, and keeps their bytes;
-   it reads `predictions/latest.json` from the same live root, only while the facts file
-   marks chances LIVE.
+   where the site reads the school directory and `live/closings.json`, and keeps their bytes.
+   It keeps `predictions/latest.json` too, always: the page's own read of it when it made
+   one, else read from the same live root. The site lights each school with its row on the
+   school's MAP DAY (`web/src/data/map-day.ts`, docs/live.md "What the page lights"): its own
+   today until 3:30 PM on its district's clock (a private school's own), its tomorrow from
+   then until midnight there. The clocks are the file's time zones, so the render reads them
+   from it, serves the page those same bytes, and counts what the page lights; without the
+   file (a 404) the page, and the count, light a school in the contiguous US only while every
+   contiguous clock is on the same day (about 08:00 to 20:30 UTC) and one elsewhere not at
+   all. The file's chances go to the picture only while the facts file marks chances LIVE.
 2. `picture.py` picks the view from those files: the busiest picture-sized area of lit
-   schools when closings light any today, zoomed closer (up to zoom 9.5) while every lit
+   schools when closings light any, each on its own map day (`picture.map_day`,
+   `picture.lit_schools`), zoomed closer (up to zoom 9.5) while every lit
    school of it still fits the middle of the picture and the picture still holds at least 400
    of the directory's schools, so a few lit schools sit among the specks of the towns around
    them instead of a dot in a dark country; else, only while chances are LIVE, the district
@@ -354,7 +372,9 @@ network at all:
    national map (the site draws no school specks at that zoom, so alone
    it reads as an empty black map; the words never say "night": the map is dark at any hour).
    It writes the description (time with its zone, place by state, counts, chance) and the
-   same facts as fields. A place is "mostly" its states only when they hold more than half of
+   same facts as fields. The count's day is the lit rows' own: "for November 13", or, in the
+   hours some lit schools' clocks are past 3:30 PM and others not, "for November 12 or 13,
+   each school's own day on its clock". A place is "mostly" its states only when they hold more than half of
    the schools counted (a second state only with at least 15%), and "in" them when they hold
    every lit school in view (one lit school is "1 school glows ... in Nevada", and the C stamp
    says "In Nevada"); lit private schools, whose ids
