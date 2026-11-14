@@ -364,7 +364,9 @@ class PastDay(BaseModel):
     written map in ``config/state-records.yaml``; a day of a weather code that the config's
     written ``not_weather`` list names (a closing the state listed under its weather code for
     another cause, such as a water main break) keeps the state's code but has cause ``named``
-    and is never a weather day (LR12). Its class that morning is ``unknown`` until a
+    and is never a weather day (LR12); one its written ``unconfirmed`` list names (a day the
+    review could not tie to the weather) keeps the code with cause ``any`` and is never a
+    weather day either. Its class that morning is ``unknown`` until a
     backfill or P2a2 fills it (LR14): such a row is counted and shown as unknown, and never
     fit-usable."""
 
@@ -457,9 +459,11 @@ class YearCount(BaseModel):
     district **made up**: a weather day not made up is removed from the amended calendar, so
     it is not a count of weather closings, and the state's weather code can carry a
     non-weather emergency. ``not_weather`` is how many of ``days`` the config's written
-    ``not_weather`` list names as another cause, so the weather days known are ``days -
-    not_weather``; an undated count (the trend's years) cannot be checked and may still hold
-    one. Internal field names as :class:`PastDay`'s (P2e maps them, LR8)."""
+    ``not_weather`` list names as another cause, and ``unconfirmed`` how many its written
+    ``unconfirmed`` list names (a day the review could not tie to the weather), so the weather
+    days known are ``days - not_weather - unconfirmed``. An undated count (the trend's years)
+    cannot be checked: both are ``None`` there, never ``0``. Internal field names as
+    :class:`PastDay`'s (P2e maps them, LR8)."""
 
     model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
 
@@ -472,9 +476,13 @@ class YearCount(BaseModel):
     days, ``I`` days closed for illness, ``D`` district-wide emergency days)."""
     days: int = Field(ge=0)
     """The state's own count."""
-    not_weather: int = Field(ge=0)
-    """Of ``days``, those the written ``not_weather`` list names as another cause (dated
-    years only; ``0`` for a code that is not the weather's)."""
+    not_weather: int | None = Field(ge=0)
+    """Of ``days``, those the written ``not_weather`` list names as another cause (``0`` for a
+    code that is not the weather's); ``None`` where the days are not dated and cannot be
+    checked."""
+    unconfirmed: int | None = Field(ge=0)
+    """Of ``days``, those the written ``unconfirmed`` list names: kept, never weather days;
+    ``None`` where the days are not dated and cannot be checked."""
     source_kind: SourceKind
     sources: tuple[str, ...]
     """The state file it was read from (its id)."""
@@ -488,7 +496,9 @@ class YearCount(BaseModel):
     def _kind(self) -> Self:
         if self.source_kind is not SourceKind.PAST_RECORDS:
             raise ValueError(f"{self.year} {self.unit}: a year count of a live kind")
-        if self.not_weather > self.days:
+        if (self.not_weather is None) != (self.unconfirmed is None):
+            raise ValueError(f"{self.year} {self.unit}: checked for one cause and not the other")
+        if (self.not_weather or 0) + (self.unconfirmed or 0) > self.days:
             raise ValueError(f"{self.year} {self.unit}: more days not the weather than counted")
         return self
 
@@ -1128,6 +1138,7 @@ def counts_table(counts: Iterable[YearCount]) -> pl.DataFrame:
         "code": pl.String,
         "days": pl.Int64,
         "not_weather": pl.Int64,
+        "unconfirmed": pl.Int64,
         "source_kind": pl.String,
         "sources": pl.List(pl.String),
         "covid": pl.Boolean,

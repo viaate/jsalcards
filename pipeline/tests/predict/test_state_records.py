@@ -208,6 +208,7 @@ def state(files: Mapping[str, tuple[str, Sequence[str], bytes]], **extra: Any) -
             "id_rule": "synthetic",
             "unmapped": extra.get("unmapped", {"606": "no LEA"}),
             "not_weather": extra.get("not_weather", ()),
+            "unconfirmed": extra.get("unconfirmed", ()),
         }
     )
 
@@ -447,6 +448,20 @@ def test_counts_are_kept_as_counts_and_never_spread_into_dates() -> None:
     assert counts["9900001", "2021-22", "W"].sources == ("ky-trend-2025-26",)
     assert counts["9900001", "2024-25", "W"].sources == ("ky-summary-2024-25",)
     assert counts["9900005", "2022-23", "W"].days == 3
+    # the summary's own year: its W count is the state's number of dated W days, never the NTI
+    # days added in, and a dated count is checked (0 named), an undated one cannot be (None)
+    w24 = counts["9900001", "2024-25", "W"]
+    assert (w24.days, w24.not_weather, w24.unconfirmed) == (1, 0, 0)
+    assert (counts["9900005", "2024-25", "W"].days, counts["9900005", "2024-25", "N"].days) == (
+        0, 0,
+    )  # fmt: skip
+    trend = counts["9900001", "2021-22", "W"]
+    assert (trend.not_weather, trend.unconfirmed) == (None, None)
+    assert all(
+        (c.not_weather, c.unconfirmed) == (None, None)
+        for c in found.counts
+        if c.sources == ("ky-trend-2025-26",)
+    )
     assert counts["9900001", "2024-25", "N"].days == 10
     assert counts["9900001", "2024-25", "D"].days == 2
     assert counts["9900001", "2024-25", "D"].disaster is True
@@ -598,10 +613,28 @@ def test_the_committed_config_pins_kentuckys_three_files_and_maps_171_of_172() -
         (1, ["counts", "days"]), (1, ["counts", "days"]), (1, ["counts"]),
     ]  # fmt: skip
     # the W days found by review to be another cause (each checked against the district's own
-    # notice): Jefferson County's shelter-in-place day and Bullitt County's water main break
+    # notice or local news): Jefferson County's shelter-in-place day, Bullitt County's water
+    # main break and its three illness days of the February 2025 flu wave, and Letcher County's
+    # two days with no water
     assert {(n.number, n.day, n.code) for n in ky.not_weather} == {
         ("275", date(2025, 11, 5), "W"), ("071", date(2025, 8, 19), "W"),
+        ("071", date(2025, 2, 5), "W"), ("071", date(2025, 2, 6), "W"),
+        ("071", date(2025, 2, 7), "W"), ("331", date(2026, 2, 12), "W"),
+        ("331", date(2026, 2, 13), "W"),
     }  # fmt: skip
+    # the checked W days the review could not tie to the weather: every W day of the illness
+    # wave's two weeks not tied to it, and every W date of three districts or fewer not tied
+    unsure = {(n.number, n.day) for n in ky.unconfirmed}
+    assert len(unsure) == len(ky.unconfirmed) == 40
+    assert {n.code for n in ky.unconfirmed} == {"W"}
+    assert {
+        ("301", date(2025, 2, 7)), ("325", date(2025, 2, 7)), ("331", date(2025, 2, 7)),
+        ("485", date(2025, 2, 7)), ("301", date(2025, 2, 13)), ("025", date(2025, 2, 6)),
+        ("415", date(2025, 2, 6)), ("495", date(2025, 2, 6)), ("271", date(2026, 1, 23)),
+        ("493", date(2026, 1, 20)), ("125", date(2024, 12, 4)), ("585", date(2025, 4, 15)),
+    } <= unsure  # fmt: skip
+    assert not unsure & {(n.number, n.day) for n in ky.not_weather}
+    assert all(date(2024, 7, 1) <= n.day < date(2026, 7, 1) for n in ky.unconfirmed)
     # the written map: only W is dated; N, I and D are counts
     assert {c for c, m in ky.codes.items() if m.dated} == {"W"}
     assert {c for c, m in ky.codes.items() if m.counted} == {"W", "N", "I", "D"}
@@ -693,6 +726,42 @@ def test_a_written_exception_the_files_do_not_list_refuses_them() -> None:
         )
 
 
+def test_a_weather_day_the_review_could_not_confirm_is_kept_never_a_weather_day() -> None:
+    found = built(
+        [district("001", weather=["01/07/25", "01/08/25"]), district("005", weather=["01/07/25"])],
+        unconfirmed=[_other("001", date(2025, 1, 7))],
+    )
+    rows = days_of(found)
+    unsure = rows["9900001", date(2025, 1, 7)]
+    assert (unsure.code, unsure.call, unsure.cause, unsure.weather_day, unsure.fit_usable) == (
+        "W", Call.CLOSED, Cause.ANY, False, False,
+    )  # fmt: skip
+    # the next day is the day after a day off school whose cause is not known
+    after = rows["9900001", date(2025, 1, 8)]
+    assert (after.weather_day, after.after, after.after_weather) == (True, True, None)
+    assert rows["9900005", date(2025, 1, 7)].weather_day
+    w = {c.unit: c for c in found.counts if c.code == "W"}
+    assert (w["9900001"].days, w["9900001"].not_weather, w["9900001"].unconfirmed) == (2, 0, 1)
+    assert (w["9900005"].days, w["9900005"].unconfirmed) == (1, 0)
+    assert all(c.unconfirmed == 0 for c in found.counts if c.code != "W")
+    said = next(line for line in found.lines if "ky-summary-2024-25: " in line)
+    assert "3 dated rows over 2 districts (2 weather days," in said
+    assert said.endswith("(D 0, I 0, N 0, W 3 days, 1 W days not confirmed the weather)")
+    assert (
+        "predict each-school past: ky: 1 days listed under a weather code the review could not"
+        " tie to the weather (written list), kept with cause any and never a weather day:"
+        " 001 2025-01-07"
+    ) in found.lines
+
+
+def test_an_unconfirmed_day_the_files_do_not_list_refuses_them() -> None:
+    with pytest.raises(StateRecordError, match="unconfirmed days the files do not list: 001"):
+        built(
+            [district("001", weather=["01/07/25"])],
+            unconfirmed=[_other("001", date(2025, 1, 8))],
+        )
+
+
 def test_a_date_listed_twice_in_a_cell_refuses_the_file() -> None:
     with pytest.raises(StateRecordError, match="001: a W date twice"):
         built([district("001", weather=["01/07/25", "01/07/25"])])
@@ -714,14 +783,26 @@ def test_the_config_refuses_an_unpinned_key_or_an_exception_of_no_weather_day(
         path.write_text(yaml.safe_dump(broken))
         with pytest.raises(StateRecordError, match="written keys are not all pinned"):
             state_records.load(path)
-    for entry in (
-        _other("606", date(2025, 11, 5)),
-        _other("275", date(2025, 11, 5)) | {"code": "N"},
+    for name in ("not_weather", "unconfirmed"):
+        for entry in (
+            _other("606", date(2025, 11, 5)),
+            _other("275", date(2025, 11, 5)) | {"code": "N"},
+        ):
+            broken = yaml.safe_load(yaml.safe_dump(raw))
+            broken["states"]["ky"][name].append(entry)
+            path.write_text(yaml.safe_dump(broken))
+            with pytest.raises(StateRecordError, match=f"{name} .* not a mapped weather day"):
+                state_records.load(path)
+    # a day in both lists, or twice in one, is refused
+    for name, entry in (
+        ("unconfirmed", _other("071", date(2025, 2, 5))),
+        ("not_weather", _other("071", date(2025, 2, 5))),
+        ("unconfirmed", _other("301", date(2025, 2, 7))),
     ):
         broken = yaml.safe_load(yaml.safe_dump(raw))
-        broken["states"]["ky"]["not_weather"].append(entry)
+        broken["states"]["ky"][name].append(entry)
         path.write_text(yaml.safe_dump(broken))
-        with pytest.raises(StateRecordError, match="not a mapped weather day"):
+        with pytest.raises(StateRecordError, match="a day written twice"):
             state_records.load(path)
 
 

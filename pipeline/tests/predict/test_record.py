@@ -1347,10 +1347,12 @@ def _past(day: date, unit: str = "9900001", **change: Any) -> record.PastDay:
     return record.PastDay.model_validate(body | change)
 
 
-def _count(unit: str, year: str, code: str, days: int, other: int = 0) -> record.YearCount:
+def _count(  # noqa: PLR0913, PLR0917 - one synthetic count
+    unit: str, year: str, code: str, days: int, other: int | None = 0, unsure: int | None = 0
+) -> record.YearCount:
     return record.YearCount(
         version=1, unit=unit, year=year, code=code, days=days, not_weather=other,
-        source_kind=SourceKind.PAST_RECORDS, sources=("ky-trend-2025-26",),
+        unconfirmed=unsure, source_kind=SourceKind.PAST_RECORDS, sources=("ky-trend-2025-26",),
         covid=year == "2020-21", disaster=None,
     )  # fmt: skip
 
@@ -1436,8 +1438,17 @@ def test_the_record_reads_only_each_files_newest_edition() -> None:
         "past/ky-summary-2024-25/v1/counts": record.lines_bytes(
             [_count("9900001", "2024-25", "W", 1)], "t"
         ),
+        "past/ky-summary-2024-25/v2/counts": record.lines_bytes(
+            [_count("9900001", "2024-25", "W", 1, 0, 1)], "t"
+        ),
         "past/ky-summary-2024-25/v12/counts": record.lines_bytes(
             [_count("9900001", "2024-25", "W", 1, 1)], "t"
+        ),
+        "past/ky-summary-2025-26/v9/counts": record.lines_bytes(
+            [_count("9900001", "2025-26", "W", 2)], "t"
+        ),
+        "past/ky-summary-2025-26/v10/counts": record.lines_bytes(
+            [_count("9900001", "2025-26", "W", 3)], "t"
         ),
         "past/ky-summary-2025-26/v1/days": record.lines_bytes([_past(date(2026, 1, 7))], "t"),
     }
@@ -1445,9 +1456,12 @@ def test_the_record_reads_only_each_files_newest_edition() -> None:
     rows = record.kept_rows(kept, learn, said.append)
     # v2 of one file (never v1), and the other file's only edition
     assert rows == [*new, _past(date(2026, 1, 7))]
-    # v12 is newer than v2..v9 (by number, never by text)
-    (count,) = record.kept_counts(kept, said.append)
-    assert count.not_weather == 1
+    # v12 is newer than v2 and v10 than v9 (by number, never by text, which puts v12 before
+    # v2 and v10 before v9)
+    counts = {c.year: c for c in record.kept_counts(kept, said.append)}
+    assert set(counts) == {"2024-25", "2025-26"}
+    assert (counts["2024-25"].not_weather, counts["2024-25"].unconfirmed) == (1, 0)
+    assert counts["2025-26"].days == 3
     assert said == []
     assert record.past_key("ky-summary-2024-25", 3, record.PAST_DAYS) == (
         "past/ky-summary-2024-25/v3/days"
@@ -1487,8 +1501,16 @@ def test_a_past_key_that_does_not_read_is_warned_of_and_left_out_never_the_recor
 
 def test_a_year_count_holds_no_more_days_not_the_weather_than_it_counts() -> None:
     assert _count("9900001", "2025-26", "W", 3, 1).not_weather == 1
+    assert _count("9900001", "2025-26", "W", 3, 1, 2).unconfirmed == 2
     with pytest.raises(ValueError, match="more days not the weather than counted"):
         _count("9900001", "2025-26", "W", 1, 2)
+    with pytest.raises(ValueError, match="more days not the weather than counted"):
+        _count("9900001", "2025-26", "W", 2, 1, 2)
+    # an undated count cannot be checked: both None, never one of them, never 0 for unknown
+    assert _count("9900001", "2021-22", "W", 2, None, None).not_weather is None
+    for other, unsure in ((None, 0), (0, None)):
+        with pytest.raises(ValueError, match="checked for one cause and not the other"):
+            _count("9900001", "2021-22", "W", 2, other, unsure)
 
 
 def _past_offer(file_id: str, kind: str, rows: int) -> Offer:

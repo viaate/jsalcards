@@ -4226,16 +4226,35 @@ district-years that list `D` days (the twelfth, 8 days, agrees).
 **What `W` means, and the days it carries that are not the weather.** A `W` count is the
 weather days a district *made up*: a weather day not made up is removed from the amended
 calendar, so it is not a count of weather closings. And the state's weather code can carry a
-closing for another cause. The config's written `not_weather` list names each such day found by
-review: every `W` day outside December to mid-March of the dated years was checked against the
-district's own notice and local news on Nov 14 2026, and two were another cause (Jefferson
-County, 2025-11-05, a shelter-in-place order after an aircraft crash nearby; Bullitt County,
-2025-08-19, a city water main break). Such a row keeps the state's code `W` but has cause
-`named` and is never a weather day (LR12), and the next school day's day-after flag reads it as
-a day off for a named cause. Its year's `W` count stays the state's number, and its
-`not_weather` says how many of those days the list names, so the weather days known are `days -
-not_weather`. An undated count (the trend's years) cannot be checked this way and may still hold
-one. A listed exception the files do not list refuses the state.
+closing for another cause. A review on Nov 14 2026 checked three windows of the dated years
+against each district's own notice and local news: every `W` day outside December to
+mid-March; every `W` date held by three districts or fewer; and every `W` day from 2025-02-03 to
+2025-02-14, the week a wave of flu and other illness closed many districts. `W` days held by
+four districts or more inside December to mid-March (the big storms) were not checked one by
+one. The review writes two lists in the config:
+
+- `not_weather`, a closing for another cause: 7 days (Jefferson County, 2025-11-05, a
+  shelter-in-place order after an aircraft crash nearby; Bullitt County, 2025-08-19, a city
+  water main break, and 2025-02-05 to 02-07, closed for illness in the flu wave; Letcher County,
+  2026-02-12 and 13, closed with no water after a leak drained the town's tanks). Such a row
+  keeps the state's code `W` but has cause `named` and is never a weather day (LR12), and the
+  next school day's day-after flag reads it as a day off for a named cause.
+- `unconfirmed`, a checked day the review could not tie to the weather for that district (no
+  notice or report found that ties it to the weather): 40 days, 29 of 2024-25 and 11 of 2025-26.
+  Such a row keeps the code `W` with cause `any` and is never a weather day either; the next
+  school day's day-after flag reads it as a day off of a cause not known. A later review that
+  ties one to the weather moves it out in a new edition. One of them may be the state's own
+  year slip: Jackson County's 2026-01-23 is the only `W` that day, and its 2024-25 row lists
+  2025-01-23 and 01-24. The row stays as the state lists it.
+
+The other checked days were tied to the weather (the Helene windstorm and its power cuts of
+2024-09-27 to 10-02, the first snow of 2024-11-22, the high water of 2025-02-06 in the
+northeast, the snow of 2025-02-11 and 12, the February and April 2025 floods, the snow of
+2025-11-10 and 11 and of 2026-03-17). A year's `W` count stays the state's number, and its
+`not_weather` and `unconfirmed` say how many of those days each list names, so the weather days
+known are `days - not_weather - unconfirmed`. An undated count (the trend's years) cannot be
+checked: both read `None` there, never `0`. A listed day the files do not list, or a day in
+both lists, refuses the state.
 
 **Internal names.** The past rows' fields `source_kind`, `source_complete` and `sources` follow
 the live record rows'. They stay in the evidence store and the runner's `record.parquet`
@@ -4258,10 +4277,11 @@ mapped: three of Green County's, in May 2026 after its last student day, and one
 County's); its yearly count stays the state's.
 
 **What it holds** (fetched Nov 14 2026, edition 1): 817 dated `W` rows over 143 districts in
-2024-25 (all weather days) and 782 over 148 in 2025-26 (780 weather days, 2 another cause), so
-1,599 rows, 1,597 of them weather days and 643 the day after a day off school; and 2,052 yearly
-counts (`W` 817 and 786 days in the summaries' years, 2 of 2025-26's not the weather, and 1,072
-over 2020-21 to 2023-24 in the trend's; `N` 1,351 and 1,328; `I` 14 and 11; `D` 21 and 9).
+2024-25 (785 weather days, 3 another cause, 29 unconfirmed) and 782 over 148 in 2025-26 (767
+weather days, 4 another cause, 11 unconfirmed), so 1,599 rows, 1,552 of them weather days and
+643 the day after a day off school; and 2,052 yearly counts (`W` 817 and 786 days in the
+summaries' years, of them 3 and 4 not the weather and 29 and 11 unconfirmed, and 1,072 over
+2020-21 to 2023-24 in the trend's; `N` 1,351 and 1,328; `I` 14 and 11; `D` 21 and 9).
 
 **Gate.** None serves. No learned value, served chance or published byte changes (the live
 score's sha256, the golden files, the storm drill's whole lines and the alerts digest are

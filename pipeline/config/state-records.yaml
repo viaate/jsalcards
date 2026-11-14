@@ -32,8 +32,8 @@ states:
         edition: 1
         # The SHA-256 of each record key's bytes this edition writes (a drift is refused).
         written:
-          days: 5ad5aa344da87e3e5f306061ba7b15d9252cfb1a0c5f0f064251941285e4ba57
-          counts: 47e02c437bff3db8e335ca4b5cce238a2b3b035a1d4387a4668d6af217132e38
+          days: 8d5571b02b07455094cf34f526d20ab6a359ade0fa7b4cf7d1ce923101a27490
+          counts: 32afa88ced7da63b9018f21e097a6491e82d09d2ea02624b2f7361df7ef6b27b
       - id: ky-summary-2025-26
         form: ky_summary
         url: https://www.education.ky.gov/districts/enrol/Documents/2025-2026%20AmendedCalendar_Summary.xlsx
@@ -46,8 +46,8 @@ states:
         edition: 1
         # The SHA-256 of each record key's bytes this edition writes (a drift is refused).
         written:
-          days: 64b1eba7e39d9b2e001df3a69faac7c91374bb83621d2f9949f4f7525fc9f318
-          counts: 8b61b8320fe6a80965e490fef17d7740d907a2035897e68f73ea30a95ff02a2d
+          days: fe2de0b3b16467bb55a0f491e6bfc9d15cde8f4c81037aab0b7e2b5e3f3d2be2
+          counts: 25f248720cce77c5a827888f2f58d628286b407b79721d3356a47a4bee817b74
       # The "Five Year Weather Trend": weather make-up days per district and school year.
       - id: ky-trend-2025-26
         form: ky_trend
@@ -61,7 +61,7 @@ states:
         edition: 1
         # The SHA-256 of each record key's bytes this edition writes (a drift is refused).
         written:
-          counts: 0de7b01728bc63d3677bff8fd2c7e6c9dbf0eb61d0ae1927bda7b6f0295204e4
+          counts: 6015073a17235b3d34a1b96911709c36cdebf20bdc1cd6f77dacd3949ca77162
     # The written map of the state's calendar codes (its "Amending the Calendar" guide,
     # https://www.education.ky.gov/districts/enrol/Documents/2025-26%20%20Amending%20the%20Calendar.pdf).
     codes:
@@ -269,14 +269,28 @@ states:
       "606": >-
         Model Laboratory Schools at EKU: its CCD LEA (2100291, an education agency of another
         type) is not a district of the directory.
-    # Days the state lists under its weather code (W) that were a closing for another cause,
-    # each checked by review against the district's own notice and local news. Their rows keep
-    # the code W but have cause named and are never weather days (LR12); their year's W count
-    # stays the state's number and says how many of its days are not the weather. Every W day
-    # outside December to mid-March of the dated years was checked on 2026-11-14: these two
-    # were another cause; the rest were the weather (the Helene windstorm of 2024-09-27 and its
-    # power cuts to 2024-10-02, the first snow of 2024-11-22, the April 2025 floods to
-    # 2025-04-18, the snow of 2025-11-10 and 11, and of 2026-03-17).
+    # The review of the days the state lists under its weather code (W), done on 2026-11-14
+    # against the district's own notices and local news. It checked three windows of the dated
+    # years: every W day outside December to mid-March; every W date held by three districts or
+    # fewer; and every W day from 2025-02-03 to 2025-02-14, the week a wave of flu and other
+    # illness closed many districts. W days held by four districts or more inside December to
+    # mid-March (the big storms) were not checked one by one.
+    # - not_weather: a closing for another cause. The row keeps the code W but has cause named
+    #   and is never a weather day (LR12).
+    # - unconfirmed: a checked day the review could not tie to the weather for that district
+    #   (no notice or report found that ties it to the weather). The row keeps the code W with
+    #   cause any and is never a weather day; a later review that ties it to the weather moves
+    #   it out in a new edition.
+    # Each year's W count stays the state's number and says how many of its days each list
+    # names. The other checked days were tied to the weather: the Helene windstorm of
+    # 2024-09-27 and its power cuts to 2024-10-02; the first snow of 2024-11-22; the high water
+    # of 2025-02-06 in the northeast (Boyd, Greenup, Carter, Lawrence, Elliott) and Lawrence's
+    # flood damage of 2025-02-07; the snow of 2025-02-11 and 12; the February 2025 flood and
+    # Pike County's closing after it to 2025-03-05; the April 2025 floods (McLean to 2025-04-18);
+    # the snow of 2025-11-10 and 11 and of 2026-03-17. One listed day may be the state's own
+    # year slip: Jackson County's 2026-01-23 (W) is the only W that day, and the district's
+    # 2024-25 row lists 2025-01-23 and 01-24, a snow it posted then. The row stays as the state
+    # lists it, in the unconfirmed list below.
     not_weather:
       - number: "275"
         day: 2025-11-05
@@ -291,4 +305,293 @@ states:
         why: >-
           A city water main break left the district's buildings without water, toilets or air
           conditioning; the district closed every school.
+        checked: 2026-11-14
+      - number: "071"
+        day: 2025-02-05
+        code: W
+        why: >-
+          Closed for illness: many staff and students out sick in the February 2025 flu wave;
+          the district said it was not the weather.
+        checked: 2026-11-14
+      - number: "071"
+        day: 2025-02-06
+        code: W
+        why: >-
+          Closed for illness: many staff and students out sick in the February 2025 flu wave;
+          the district said it was not the weather.
+        checked: 2026-11-14
+      - number: "071"
+        day: 2025-02-07
+        code: W
+        why: >-
+          Closed for illness: many staff and students out sick in the February 2025 flu wave;
+          the district said it was not the weather.
+        checked: 2026-11-14
+      - number: "331"
+        day: 2026-02-12
+        code: W
+        why: >-
+          A water system leak drained the town's tanks; the district closed with no water while
+          they refilled.
+        checked: 2026-11-14
+      - number: "331"
+        day: 2026-02-13
+        code: W
+        why: >-
+          A water system leak drained the town's tanks; the district closed with no water while
+          they refilled.
+        checked: 2026-11-14
+    unconfirmed:
+      - number: "125"
+        day: 2024-12-04
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "271"
+        day: 2024-12-05
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "365"
+        day: 2024-12-05
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "452"
+        day: 2024-12-05
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "125"
+        day: 2024-12-12
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "285"
+        day: 2024-12-12
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "485"
+        day: 2024-12-12
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "325"
+        day: 2025-01-28
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "331"
+        day: 2025-01-28
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "285"
+        day: 2025-01-31
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "371"
+        day: 2025-01-31
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "385"
+        day: 2025-01-31
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "025"
+        day: 2025-02-06
+        code: W
+        why: >-
+          In the February 2025 illness wave; no notice or report found that ties the district's day to
+          the weather.
+        checked: 2026-11-14
+      - number: "415"
+        day: 2025-02-06
+        code: W
+        why: >-
+          In the February 2025 illness wave; no notice or report found that ties the district's day to
+          the weather.
+        checked: 2026-11-14
+      - number: "495"
+        day: 2025-02-06
+        code: W
+        why: >-
+          In the February 2025 illness wave; no notice or report found that ties the district's day to
+          the weather.
+        checked: 2026-11-14
+      - number: "301"
+        day: 2025-02-07
+        code: W
+        why: >-
+          In the February 2025 illness wave; no notice or report found that ties the district's day to
+          the weather.
+        checked: 2026-11-14
+      - number: "325"
+        day: 2025-02-07
+        code: W
+        why: >-
+          In the February 2025 illness wave; no notice or report found that ties the district's day to
+          the weather.
+        checked: 2026-11-14
+      - number: "331"
+        day: 2025-02-07
+        code: W
+        why: >-
+          In the February 2025 illness wave; no notice or report found that ties the district's day to
+          the weather.
+        checked: 2026-11-14
+      - number: "485"
+        day: 2025-02-07
+        code: W
+        why: >-
+          In the February 2025 illness wave; no notice or report found that ties the district's day to
+          the weather.
+        checked: 2026-11-14
+      - number: "301"
+        day: 2025-02-13
+        code: W
+        why: >-
+          In the February 2025 illness wave; no notice or report found that ties the district's day to
+          the weather.
+        checked: 2026-11-14
+      - number: "175"
+        day: 2025-02-26
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "405"
+        day: 2025-02-26
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "175"
+        day: 2025-02-27
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "175"
+        day: 2025-02-28
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "435"
+        day: 2025-03-05
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "135"
+        day: 2025-04-08
+        code: W
+        why: >-
+          In the week after the April 2025 floods; no notice or report found that ties the district's day
+          to the weather.
+        checked: 2026-11-14
+      - number: "601"
+        day: 2025-04-08
+        code: W
+        why: >-
+          In the week after the April 2025 floods; no notice or report found that ties the district's day
+          to the weather.
+        checked: 2026-11-14
+      - number: "585"
+        day: 2025-04-14
+        code: W
+        why: >-
+          In the week after the April 2025 floods; no notice or report found that ties the district's day
+          to the weather.
+        checked: 2026-11-14
+      - number: "585"
+        day: 2025-04-15
+        code: W
+        why: >-
+          In the week after the April 2025 floods; no notice or report found that ties the district's day
+          to the weather.
+        checked: 2026-11-14
+      - number: "146"
+        day: 2025-12-03
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "461"
+        day: 2025-12-03
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "025"
+        day: 2025-12-09
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "371"
+        day: 2025-12-09
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "441"
+        day: 2025-12-09
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "301"
+        day: 2025-12-19
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "325"
+        day: 2025-12-19
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "493"
+        day: 2026-01-20
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "271"
+        day: 2026-01-23
+        code: W
+        why: >-
+          The only W that day; no notice found, and the district's 2024-25 row lists 2025-01-23
+          (a possible year slip in the state's file).
+        checked: 2026-11-14
+      - number: "175"
+        day: 2026-02-20
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
+        checked: 2026-11-14
+      - number: "371"
+        day: 2026-02-20
+        code: W
+        why: >-
+          No notice or report found that ties the district's day to the weather.
         checked: 2026-11-14

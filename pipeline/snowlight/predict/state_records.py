@@ -41,12 +41,16 @@ Education's school calendar page, fetched free by plain GET:
 **The written map** (``codes`` in the config) maps the state's calendar codes to the record's:
 ``W`` to a dated closed row for the weather and a yearly count; ``N``, ``I`` and ``D`` to yearly
 counts only in this piece. ``W`` counts the weather days a district made up (one not made up is
-removed), and the state's weather code can carry a closing for another cause: the config's
-written ``not_weather`` list names each such day found by review (each off-season ``W`` day is
-checked against the district's own notice). Its row keeps the code ``W`` but has cause
-``named`` and is never a weather day (LR12); its year's ``W`` count stays the state's number and
-says how many of its days are not the weather (``not_weather``). A listed exception the files
-do not list refuses the files.
+removed), and the state's weather code can carry a closing for another cause. The review
+checks every ``W`` day outside December to mid-March, every ``W`` date held by three districts
+or fewer, and every ``W`` day of the February 2025 illness wave (the config's comment says how).
+The config's written ``not_weather`` list names each day found to be another cause: its row
+keeps the code ``W`` but has cause ``named`` and is never a weather day (LR12). Its written
+``unconfirmed`` list names each checked day the review could not tie to the weather: its row
+keeps the code with cause ``any`` and is never a weather day either. The year's ``W`` count
+stays the state's number and says how many of its days each list names (``not_weather``,
+``unconfirmed``; ``None`` for the trend's undated years, which cannot be checked). A listed
+exception the files do not list, or a day in both lists, refuses the files.
 
 **Ids, never guessed.** A district is joined by the written id rule: the state's three-digit
 district number is digits 7-9 of the NCES ``ST_LEAID`` (``KY-CCCddd000``), written out once as
@@ -164,9 +168,12 @@ class StateCode(BaseModel):
 
 
 class NotWeather(BaseModel):
-    """A day the state lists under a weather code that was a closing for another cause,
-    written out by review (each one checked against the district's own notice): its row keeps
-    the state's code but has cause ``named`` and is never a weather day (LR12)."""
+    """A day the state lists under a weather code, written out by review. In the config's
+    ``not_weather`` list it was a closing for another cause (checked against the district's own
+    notice or local news): its row keeps the state's code but has cause ``named`` and is never a
+    weather day (LR12). In its ``unconfirmed`` list the review found no weather closing for the
+    district that day: its row keeps the code with cause ``any`` and is never a weather day
+    either, until a later review ties it to the weather (a new edition)."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -195,10 +202,16 @@ class StateRecords(BaseModel):
     """District numbers with no LEA, listed (with the state's name for them), never matched."""
     not_weather: tuple[NotWeather, ...] = ()
     """Days listed under a weather code that were not the weather (see :class:`NotWeather`)."""
+    unconfirmed: tuple[NotWeather, ...] = ()
+    """Days listed under a weather code that the review could not tie to the weather."""
 
     def other_cause(self, number: str, day: date, code: str) -> bool:
         """The written ``not_weather`` list names this listed day."""
         return any((n.number, n.day, n.code) == (number, day, code) for n in self.not_weather)
+
+    def unsure(self, number: str, day: date, code: str) -> bool:
+        """The written ``unconfirmed`` list names this listed day."""
+        return any((n.number, n.day, n.code) == (number, day, code) for n in self.unconfirmed)
 
 
 class StateRecordsConfig(BaseModel):
@@ -208,6 +221,23 @@ class StateRecordsConfig(BaseModel):
 
     version: int = Field(ge=1)
     states: dict[str, StateRecords]
+
+
+def _check_written(key: str, state: StateRecords) -> None:
+    """Each written exception is a mapped district's day of a weather code, in one list once."""
+    for name, entries in (
+        ("not_weather", state.not_weather),
+        ("unconfirmed", state.unconfirmed),
+    ):
+        for entry in entries:
+            mapped = state.codes.get(entry.code)
+            if mapped is None or not mapped.weather_day or entry.number not in state.ids:
+                raise StateRecordError(
+                    f"{key}: {name} {entry.number} {entry.day}: not a mapped weather day"
+                )
+    listed = [(n.number, n.day, n.code) for n in (*state.not_weather, *state.unconfirmed)]
+    if len(set(listed)) != len(listed):
+        raise StateRecordError(f"{key}: a day written twice in not_weather and unconfirmed")
 
 
 def load(path: Path = STATE_RECORDS_PATH) -> StateRecordsConfig:
@@ -233,12 +263,7 @@ def load(path: Path = STATE_RECORDS_PATH) -> StateRecordsConfig:
                 not re.fullmatch(r"[0-9a-f]{64}", pin) for pin in item.written.values()
             ):
                 raise StateRecordError(f"{item.id}: its written keys are not all pinned")
-        for entry in state.not_weather:
-            mapped = state.codes.get(entry.code)
-            if mapped is None or not mapped.weather_day or entry.number not in state.ids:
-                raise StateRecordError(
-                    f"{key}: not_weather {entry.number} {entry.day}: not a mapped weather day"
-                )
+        _check_written(key, state)
         if len({item.id for item in state.files}) != len(state.files):
             raise StateRecordError(f"{key}: a file id twice")
     return found
@@ -640,12 +665,17 @@ def previous_day(row: SummaryRow, day: date) -> date | None:
 
 def _after(row: SummaryRow, day: date, state: StateRecords) -> tuple[bool | None, bool | None]:
     """``(after, after_weather)`` of a dated day from the district's own calendar (a listed
-    day the written ``not_weather`` list names is a day off for a named cause)."""
+    day the written ``not_weather`` list names is a day off for a named cause; one its
+    ``unconfirmed`` list names is a day off of a cause not known)."""
     prior = previous_day(row, day)
     if prior is None:
         return None, None
     said = {
-        "named" if state.other_cause(row.number, prior, c) else state.codes[c].day_off
+        "named"
+        if state.other_cause(row.number, prior, c)
+        else "unsure"
+        if state.unsure(row.number, prior, c)
+        else state.codes[c].day_off
         for c, days in row.dated.items()
         if prior in days and c in state.codes
     }
@@ -696,27 +726,38 @@ def build_ky(state: StateRecords, files: Mapping[str, bytes]) -> Built:
         counts = _trend_counts(state, item, trend, summaries, built)
         built.keys[past_key(item.id, item.edition, PAST_COUNTS)] = lines_bytes(counts, item.id)
         built.counts.extend(counts)
-    unused = [
-        n
-        for n in state.not_weather
-        if not any(
-            n.day in row.dated.get(n.code, ())
-            for _, rows in summaries.values()
-            for row in rows
-            if row.number == n.number
-        )
-    ]
-    if unused:
-        raise StateRecordError(
-            f"{state.state}: not_weather days the files do not list: "
-            + ", ".join(f"{n.number} {n.day.isoformat()}" for n in unused)
-        )
+    for list_name, written in (
+        ("not_weather", state.not_weather),
+        ("unconfirmed", state.unconfirmed),
+    ):
+        unused = [
+            n
+            for n in written
+            if not any(
+                n.day in row.dated.get(n.code, ())
+                for _, rows in summaries.values()
+                for row in rows
+                if row.number == n.number
+            )
+        ]
+        if unused:
+            raise StateRecordError(
+                f"{state.state}: {list_name} days the files do not list: "
+                + ", ".join(f"{n.number} {n.day.isoformat()}" for n in unused)
+            )
     if state.not_weather:
         built.lines.append(
             f"predict each-school past: {state.state}: {len(state.not_weather)} days listed under"
             f" a weather code were another cause (written list), kept with cause named and never"
             f" a weather day: "
             + ", ".join(f"{n.number} {n.day.isoformat()}" for n in state.not_weather)
+        )
+    if state.unconfirmed:
+        built.lines.append(
+            f"predict each-school past: {state.state}: {len(state.unconfirmed)} days listed under"
+            f" a weather code the review could not tie to the weather (written list), kept with"
+            f" cause any and never a weather day: "
+            + ", ".join(f"{n.number} {n.day.isoformat()}" for n in state.unconfirmed)
         )
     if built.unmapped:
         built.lines.append(
@@ -749,9 +790,12 @@ def _summary_rows(
             continue
         for code, mapped in sorted(state.codes.items()):
             other = [d for d in row.dated.get(code, ()) if state.other_cause(row.number, d, code)]
+            unsure = [d for d in row.dated.get(code, ()) if state.unsure(row.number, d, code)]
             if mapped.counted and code in row.counts:
                 counts.append(
-                    _year_count(unit, year, code, row.counts[code], item, row, len(other))
+                    _year_count(
+                        unit, year, code, row.counts[code], item, row, (len(other), len(unsure))
+                    )
                 )
             if not mapped.dated:
                 continue
@@ -761,7 +805,14 @@ def _summary_rows(
                     continue
                 days.append(
                     _past_day(
-                        unit, day, code, mapped, item, *_after(row, day, state), other=day in other
+                        unit,
+                        day,
+                        code,
+                        mapped,
+                        item,
+                        *_after(row, day, state),
+                        other=day in other,
+                        unsure=day in unsure,
                     )
                 )
     days.sort(key=lambda d: (d.day, d.unit))
@@ -776,15 +827,18 @@ def _year_count(  # noqa: PLR0913, PLR0917 - one count and where it was read
     days: int,
     item: StateFile,
     row: SummaryRow | None,
-    not_weather: int = 0,
+    checked: tuple[int, int] | None,
 ) -> YearCount:
+    """``checked``: ``(not_weather, unconfirmed)`` of a dated count; ``None`` for an undated one
+    (the trend's years), which cannot be checked."""
     return YearCount(
         version=PAST_VERSION,
         unit=unit,
         year=year,
         code=code,
         days=days,
-        not_weather=not_weather,
+        not_weather=None if checked is None else checked[0],
+        unconfirmed=None if checked is None else checked[1],
         source_kind=SourceKind.PAST_RECORDS,
         sources=(item.id,),
         covid=year in COVID_YEARS,
@@ -802,9 +856,10 @@ def _past_day(  # noqa: PLR0913, PLR0917 - one dated day and its flags
     after_weather: bool | None,
     *,
     other: bool = False,
+    unsure: bool = False,
 ) -> PastDay:
     """``other``: the written ``not_weather`` list names the day (cause named, never a weather
-    day)."""
+    day). ``unsure``: its ``unconfirmed`` list names it (cause any, never a weather day)."""
     if mapped.call is None or mapped.cause is None:
         raise StateRecordError(f"{item.id}: code {code} is dated with no call or cause")
     return PastDay(
@@ -821,8 +876,8 @@ def _past_day(  # noqa: PLR0913, PLR0917 - one dated day and its flags
         source_complete=False,
         closings_only=True,
         scope=Scope.WHOLE,
-        cause=Cause.NAMED if other else mapped.cause,
-        weather_day=mapped.weather_day and not other,
+        cause=Cause.NAMED if other else Cause.ANY if unsure else mapped.cause,
+        weather_day=mapped.weather_day and not other and not unsure,
         fit_usable=False,
         reasons=(),
         tropical=None,
@@ -860,7 +915,7 @@ def _trend_counts(
         if unit is None:
             continue
         counts.extend(
-            _year_count(unit, year, "W", row.counts[year], item, None)
+            _year_count(unit, year, "W", row.counts[year], item, None, None)
             for year in item.years
             if year not in summaries
         )
@@ -876,12 +931,19 @@ def _say_file(item: StateFile, days: Sequence[PastDay], counts: Sequence[YearCou
     weather = sum(d.weather_day for d in days)
     by_code: dict[str, int] = {}
     other: dict[str, int] = {}
+    unsure: dict[str, int] = {}
     for count in counts:
         by_code[count.code] = by_code.get(count.code, 0) + count.days
         if count.not_weather:
             other[count.code] = other.get(count.code, 0) + count.not_weather
+        if count.unconfirmed:
+            unsure[count.code] = unsure.get(count.code, 0) + count.unconfirmed
     totals = ", ".join(f"{code} {n}" for code, n in sorted(by_code.items())) or "none"
-    not_weather = "".join(f", {n} {code} days not the weather" for code, n in sorted(other.items()))
+    not_weather = "".join(
+        f", {n} {code} days not the weather" for code, n in sorted(other.items())
+    ) + "".join(
+        f", {n} {code} days not confirmed the weather" for code, n in sorted(unsure.items())
+    )
     return (
         f"predict each-school past: {item.id}: {len(days)} dated rows over"
         f" {len({d.unit for d in days})} districts ({weather} weather days, {unknown} of class"
