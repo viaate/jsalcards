@@ -352,7 +352,10 @@ network at all:
    school's MAP DAY (`web/src/data/map-day.ts`, docs/live.md "What the page lights"): its own
    today until 3:30 PM on its district's clock (a private school's own), its tomorrow from
    then until midnight there. The clocks are the file's time zones, so the render reads them
-   from it, serves the page those same bytes, and counts what the page lights; without the
+   from it, serves the page those same bytes, and counts what the page lights; a file the
+   page's own check refuses (`parsePredictions`: its time, its days, a district's forecasts,
+   the private schools' rows and outlooks) gives the count no zones either
+   (`picture.school_zones`); without the
    file (a 404) the page, and the count, light a school in the contiguous US only while every
    contiguous clock is on the same day (about 08:00 to 20:30 UTC) and one elsewhere not at
    all. The file's chances go to the picture only while the facts file marks chances LIVE.
@@ -403,8 +406,10 @@ network at all:
    scheduled runs never meet this for today (7:07 AM Central names tomorrow); a run started by
    hand before 7:30 AM Eastern can. No district is named.
 3. It opens that view served exactly those files, hides every piece of the site's interface
-   with a style in that page only, waits until the map is at rest (twice), checks that the
-   map lit as many schools as the description counts at the zoom asked, and takes a
+   with a style in that page only, waits until the map is at rest (twice), then up to 10
+   seconds more until the map lights as many schools as the description counts (the page may
+   relight by the file's zones once it reads them, after the map has settled:
+   `render.RELIGHT_MS`), checks that the map lit that many at the zoom asked, and takes a
    1600 x 900 picture of the map alone.
 4. `cards.py` lays the Snowlight card over it for each kind of post (`dev-log`, `waitlist`)
    from three templates in `pipeline/snowlight/social/cards/` (the site's Geist fonts, OFL):

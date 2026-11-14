@@ -10,7 +10,7 @@ this machine and CI need none)."""
 import argparse
 import json
 import threading
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -28,6 +28,7 @@ from snowlight.social.picture import REGION_TRIES, Picture, Seen, Taken, calm_re
 from snowlight.social.render import (
     GL_ARGS,
     HOSTS,
+    SETTLE_AGAIN_MS,
     STATE,
     Attempt,
     RenderError,
@@ -140,16 +141,22 @@ window.snowlightMap = {
   }
   const zoneOf = (school) => (zones === null ? '*' : (zones.get(DISTRICT[school]) ?? null));
   const closings = await fetch('/live-root/v1/live/closings.json');
-  if (closings.ok) {
-    const file = await closings.json();
-    for (const group of file.days) {
+  const groups = closings.ok ? (await closings.json()).days : [];
+  const light = (zone) => {
+    let count = __GLOW_OFFSET__;
+    for (const group of groups) {
       let school = -1;
       for (const gap of group.gaps) {
         school += 1 + gap;
-        if (mapDay(zoneOf(school)) === group.day) stats.glowCount += 1;
+        if (mapDay(zone(school)) === group.day) count += 1;
       }
     }
-  }
+    stats.glowCount = count;
+  };
+  // As live.ts may: light first without the zones, and relight by them once they are read.
+  const LATE = __LATE_ZONES__;
+  light(LATE > 0 ? () => '*' : zoneOf);
+  if (LATE > 0) setTimeout(() => light(zoneOf), LATE);
   stats.frames = 1;
   window.snowlightMap.ready = true;
 })();
@@ -170,6 +177,8 @@ class Site:
     no_dust: list[str] = field(default_factory=list)
     """``at`` values whose map draws no school specks in view."""
     requests: list[str] = field(default_factory=list)
+    late_zones_ms: int = 0
+    """When over 0, the page first lights with no zones and relights by them this long after."""
 
 
 def _handler(site: Site) -> type[BaseHTTPRequestHandler]:
@@ -197,6 +206,7 @@ def _handler(site: Site) -> type[BaseHTTPRequestHandler]:
                     .replace("__STALL__", json.dumps(site.stall))
                     .replace("__NO_DUST__", json.dumps(site.no_dust))
                     .replace("__STAMP__", json.dumps(STAMP))
+                    .replace("__LATE_ZONES__", str(site.late_zones_ms))
                 )
                 if not site.lock:
                     page = page.replace("localStorage.getItem('sl-lock') === ''", "true")
@@ -363,6 +373,29 @@ def test_the_glow_and_the_words_count_each_school_on_its_own_map_day(
     assert not mentions_chance(taken.shows)
 
 
+def test_the_shot_waits_for_the_page_to_relight_by_the_zones(
+    served: tuple[Site, str], tmp_path: Path
+) -> None:
+    """The overnight run (SYNTHETIC files) on a page that lights first with no zones (no school:
+    no day is today everywhere) and relights by them only after both settled checks: the render
+    waits for the glow it counted, and takes the shot."""
+    site, base = served
+    site.now = datetime(2026, 12, 11, 7, 19, tzinfo=UTC)
+    site.closings = {
+        "generated_at": "2026-12-11T07:19:00Z",
+        "directory": STAMP,
+        "days": [{"day": "2026-12-11", "gaps": [0, 0, 1], "statuses": [0, 1, 0]}],
+    }
+    site.predictions = _zones()
+    site.late_zones_ms = SETTLE_AGAIN_MS + 2000
+    said: list[str] = []
+    taken = render(tmp_path, facts=NO_CHANCES, site=base, now=lambda: site.now, say=said.append)
+    assert taken is not None, said
+    assert taken.kind == "closings"
+    assert taken.lit == 3
+    assert not any("picture try" in line and "failed" in line for line in said), said
+
+
 def test_a_high_chance_frames_its_district(served: tuple[Site, str], tmp_path: Path) -> None:
     site, base = served
     site.predictions = _predictions([0.02, 0.41])
@@ -521,20 +554,31 @@ def test_a_region_that_does_not_settle_ends_the_attempt_never_the_national_map(
 
 
 def test_while_chances_are_testing_no_picture_or_card_gives_one(
-    served: tuple[Site, str], tmp_path: Path
+    served: tuple[Site, str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Rule F (SYNTHETIC predictions): a 74% district and a 1% nation give the national map,
     and neither the description, the cards' words nor their alt text hold any chance."""
     site, base = served
     site.predictions = _predictions([0.01, 0.74])
     said: list[str] = []
+    read: list[Mapping[str, object] | None] = []
+    zones = Attempt.zones
+
+    def recorded(self: Attempt, page: Any, root: str) -> Mapping[str, object] | None:
+        found = zones(self, page, root)
+        read.append(found)
+        return found
+
+    monkeypatch.setattr(Attempt, "zones", recorded)
     taken = render(tmp_path, facts=NO_CHANCES, site=base, now=lambda: site.now, say=said.append)
     assert taken is not None
     assert taken.kind == "region"
     assert taken.seen.chance is None
     assert not mentions_chance(taken.shows)
-    # The file is read for each school's time zone alone: no chance of it is said.
-    assert "/live-root/v1/predictions/latest.json" in site.requests
+    # The render reads the file itself, for each school's time zone alone: no chance of it is
+    # said.
+    assert read, "the render did not read the predictions file for the zones"
+    assert all(found == site.predictions for found in read), read
     for post in ("dev-log", "waitlist"):
         card = Card.model_validate_json((tmp_path / f"{post}.json").read_text())
         assert not mentions_chance(card.alt), card.alt

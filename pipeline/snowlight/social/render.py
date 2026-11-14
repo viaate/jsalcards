@@ -125,6 +125,9 @@ panels, the waitlist, credits) in this headless page only, keeping the layout (v
 not display), so the map frames itself exactly as the site does."""
 SETTLE_AGAIN_MS: Final = 2500
 """The pause between the two settled checks: late tiles and the glow's first frames."""
+RELIGHT_MS: Final = 10_000
+"""How long the shot waits, after the map settles, for it to light the schools the picture
+counts."""
 SETTLED: Final = """() => {
   if (document.querySelector('svg.still') !== null) return false;
   const map = window.snowlightMap;
@@ -404,6 +407,7 @@ class Attempt:
         page.goto(self.site + picture.query, wait_until="load", timeout=TIMEOUT_MS)
         page.add_style_tag(content=MAP_ONLY)
         self.settle(page)
+        self.relit(page, picture)
         checked = self.check(page, picture)
 
         def again() -> None:
@@ -415,6 +419,22 @@ class Attempt:
                 )
 
         screenshot(page, out / FILE, say=self.say, again=again)
+
+    def relit(self, page: Page, picture: Picture) -> None:
+        """Wait, at most :data:`RELIGHT_MS`, until the map lights as many schools as the picture
+        counts: the page may light first and relight by the zones of the predictions file once
+        it reads them (live.ts), after the map has settled. Then two more frames. When it does
+        not, :meth:`check` says what the map lit."""
+        try:
+            page.wait_for_function(
+                f"(lit) => ({STATE})().glow === lit",
+                arg=picture.lit,
+                timeout=RELIGHT_MS,
+                polling=250,
+            )
+        except PlaywrightError:
+            return
+        page.evaluate(TWO_FRAMES)
 
     def check(self, page: Page, picture: Picture) -> dict[str, object]:
         """The map's state, once it matches the picture: as many schools lit as the
