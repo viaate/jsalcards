@@ -5,10 +5,19 @@
 //
 // It imports the site's modules (web/src) through node-hooks.mjs, runs each family's
 // cases, and writes ios/SnowlightCore/Tests/SnowlightCoreTests/Fixtures/golden/<family>.json,
-// and the app's list of time zone names, ios/SnowlightCore/Sources/SnowlightCore/Files/
-// ZoneNames.swift. The Swift tests must give the same answers, character for character.
-// The closings, predictions and season cases read the copies of the pipeline's synthetic
-// files in Fixtures/site/ (sync-fixtures.mjs): run that first.
+// the app's list of time zone names, ios/SnowlightCore/Sources/SnowlightCore/Files/
+// ZoneNames.swift, and the rules version, Fixtures/rules-version.json (outside golden/). The
+// Swift tests must give the same answers, character for character. The closings,
+// predictions and season cases read the copies of the pipeline's synthetic files in
+// Fixtures/site/ (sync-fixtures.mjs): run that first. The school panel's cases also read the
+// picture tour's fixtures in Fixtures/tour/, which are the source from M1 on.
+//
+// The rules version is {"number", "sha256"}: the sha256 over every family's cases, family by
+// family in name order, each as its name and then its case lines, one per line, as the
+// golden files write them. Writing keeps the number while the sha256 is the same and raises
+// it by one when it is not; the same commit sets RulesVersion.number in
+// Sources/SnowlightCore/State/RulesVersion.swift to it (RulesVersionTests holds the two
+// equal). --check writes nothing and fails on any difference in the sha256.
 //
 // Every answer comes from the site's code. This script never builds a sentence itself.
 //
@@ -20,7 +29,8 @@
 //
 // --check compares answers, not files: `family`, `min_cases` and `cases`. A site file whose
 // bytes changed while every answer stayed the same (a comment, say) is printed as a note
-// and fails nothing. The zone list is compared whole.
+// and fails nothing. The zone list is compared whole, and the rules version's sha256 is
+// made again and compared.
 //
 // Exit codes:
 //   0  everything matches (or, when writing, everything was written)
@@ -59,6 +69,12 @@ const GOLDEN = join(FIXTURES, 'golden');
 const SITE_FIXTURES = join(FIXTURES, 'site');
 /** The app's list of time zone names (item 27), a Swift source written here and compared whole. */
 const ZONE_NAMES = join(REPO, 'ios', 'SnowlightCore', 'Sources', 'SnowlightCore', 'Files', 'ZoneNames.swift');
+/** The picture tour's fixtures (M1 5.1): whole files, each a school, its record and its two live files. */
+const TOUR_FIXTURES = join(FIXTURES, 'tour');
+/** The rules version (PLAN 5, lock 5): written beside the families, never inside golden/. */
+const RULES_VERSION = join(FIXTURES, 'rules-version.json');
+/** Where RulesVersion.number lives, named in the message when the number is raised. */
+const RULES_VERSION_SWIFT = join(REPO, 'ios', 'SnowlightCore', 'Sources', 'SnowlightCore', 'State', 'RulesVersion.swift');
 
 /**
  * What the words watch (.github/workflows/ios-words-watch.yml) covers. A site file loaded
@@ -255,6 +271,15 @@ function fixture(path) {
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
+/** A tour fixture (Fixtures/tour/<name>.json), read as JSON. */
+function tourFixture(name) {
+  const file = join(TOUR_FIXTURES, `${name}.json`);
+  if (!existsSync(file)) {
+    throw new Stop(EXIT_USAGE, `the tour fixture tour/${name}.json is missing`);
+  }
+  return JSON.parse(readFileSync(file, 'utf8'));
+}
+
 /**
  * Applies one change to a copy of a file: `path` is a list of keys and positions, and the
  * value is set there (or the key is removed, for REMOVE).
@@ -298,6 +323,24 @@ function rowCase(row) {
 
 /** The 22 detail codes of the closings file's details column (the site's DETAIL_COUNT). */
 const DETAIL_CODES = 22;
+
+/**
+ * The pipeline's synthetic school directory (pipeline/tests/schemas/examples/
+ * synthetic-school-directory.json), its ids and names as written there: made-up schools and
+ * districts, the inputs of the shown-name cases.
+ */
+const SYNTHETIC_DIRECTORY = Object.freeze({
+  ids: ['000000000001', '000000000002', '000000000003', '000000000004', '0000000A', '0000000B'],
+  names: [
+    'Synthetic Elementary School A',
+    'Synthetic Middle School B',
+    'Synthetic High School C',
+    'Synthetic Academy D',
+    'Synthetic Private School E',
+    'Synthetic Private School F',
+  ],
+  districts: { ids: ['0000001', '0000002'], names: ['Synthetic District One', 'Synthetic District Two'] },
+});
 
 const FAMILIES = [
   {
@@ -1234,6 +1277,243 @@ const FAMILIES = [
       return texts.map((text) => [text, isSchoolId(text), parseSchoolId(text)]);
     },
   },
+  {
+    // The school panel's lines (web/src/app/school.ts schoolView), for the app's My School
+    // model (M1 4.3): the site's schoolStatus, schoolView, mapDay and litStatus over four blocks
+    // of inputs, each a cross product inside itself, the blocks added and never crossed:
+    //   A. six closings files (the three copies and the three tour fixtures) x every school
+    //      position of each x six school zones x twelve times on the school's clock;
+    //   B. 30 one-change mutations of row 0 of synthetic-closings x three zones x twelve times;
+    //   C. five season files x tour-closed, school 1, New York x twelve times;
+    //   D. 4 kinds x 5 grade forms x tour-closed, school 1, New York x three times.
+    // The viewer's zone is always another than the school's. The kinds of case:
+    // ["closings", key, path, part, json]: a closings file the cases name: a copy or a tour
+    //   fixture by its path under Fixtures/ (part null, or "closings" for a tour fixture's
+    //   part; json null), or a mutation (path and part null; json the file);
+    // ["season", key, path, part, json]: a season file named the same way; all three null for
+    //   none;
+    // ["record", key, row]: a details row in data/details.ts recordOf's order; the site's
+    //   recordOf makes the record, with the case's school as its index and the closings
+    //   file's stamp as its directory;
+    // ["answer", index, answer]: every distinct answer once: "refused" where the site refuses
+    //   the closings file, else [lines, kind, season, mapDay, litStatus], each line [tone,
+    //   headline, detail, note, said, later, dated] (later and dated true or false);
+    // ["case", closings, school, schoolZone, viewerZone, now, season, record, answer].
+    // M1 has no outlook, so no line names what districts nearby said (that comes in M2).
+    family: 'school-view',
+    minCases: 4000,
+    maxBytes: 600_000,
+    modules: ['app/school.ts', 'data/closings.ts', 'data/school-day.ts', 'data/map-day.ts', 'data/season.ts', 'data/details.ts'],
+    cases: (site) => {
+      const { schoolView } = site['app/school.ts'];
+      const { parseClosings, litStatus } = site['data/closings.ts'];
+      const { schoolStatus } = site['data/school-day.ts'];
+      const { mapDay } = site['data/map-day.ts'];
+      const { parseSeason } = site['data/season.ts'];
+      const { recordOf } = site['data/details.ts'];
+
+      const tour = Object.fromEntries(['tour-closed', 'tour-details', 'tour-tomorrow'].map((name) => [name, tourFixture(name)]));
+      const copies = [
+        ['synthetic-closings', 'schemas/examples/synthetic-closings.json'],
+        ['golden-closings', 'live/golden/synthetic_closings.json'],
+        ['golden-manual', 'live/golden/synthetic_manual_closings.json'],
+      ];
+      /** Every closings file by key: [path, part, json], and the file itself. */
+      const closings = new Map();
+      for (const [key, path] of copies) closings.set(key, { line: [`site/${path}`, null, null], raw: fixture(path) });
+      for (const [key, file] of Object.entries(tour)) closings.set(key, { line: [`tour/${key}.json`, 'closings', null], raw: file.closings });
+
+      const base = fixture('schemas/examples/synthetic-closings.json');
+      const mutations = [];
+      const mutate = (name, change) => mutations.push([`mut:${name}`, made(base, (file) => change(file.days[0]))]);
+      for (const reason of [0, 1, 2, 3, 4, 5, 6, 7, 99, null]) mutate(`reason ${reason}`, (day) => { day.reasons[0] = reason; });
+      mutate('manual', (day) => { day.manual = [0]; });
+      mutate('manual, no reason', (day) => {
+        day.manual = [0];
+        day.reasons[0] = null;
+      });
+      for (const ago of [null, 0, 1, 59, 60, 719, 720, 1440]) mutate(`posted ${ago}`, (day) => { day.announced[0] = ago; });
+      mutate('details one', (day) => { day.details = [[0, [7]]]; });
+      mutate('details two', (day) => { day.details = [[0, [7, 16]]]; });
+      mutate('details all 22', (day) => { day.details = [[0, Array.from({ length: DETAIL_CODES }, (_, code) => code)]]; });
+      mutate('details unread', (day) => { day.details = [[0, [16, 7]]]; });
+      // Row 0 becomes the day's first shifted row, so its shift and clock go first.
+      const shifted = (status, shift, clock) => (day) => {
+        day.statuses[0] = status;
+        day.shifts = [shift, ...day.shifts];
+        day.clocks = [clock, ...day.clocks];
+      };
+      mutate('delayed 120 no clock', shifted(1, 120, null));
+      mutate('delayed 120 at 600', shifted(1, 120, 600));
+      mutate('early 180 at 750', shifted(3, 180, 750));
+      mutate('early no shift at 750', shifted(3, null, 750));
+      mutate('remote', (day) => { day.statuses[0] = 2; });
+      mutate('shift 0 (refused)', shifted(1, 0, null));
+      for (const [key, json] of mutations) closings.set(key, { line: [null, null, json], raw: json });
+
+      const tourSeason = tour['tour-closed'].season;
+      /** Every season file by key: [path, part, json], and the file itself (null for none). */
+      const seasons = new Map([
+        ['synthetic', { line: ['site/schemas/examples/synthetic-live-season.json', null, null], raw: fixture('schemas/examples/synthetic-live-season.json') }],
+        ['tour', { line: ['tour/tour-closed.json', 'season', null], raw: tourSeason }],
+        ['none', { line: [null, null, null], raw: null }],
+      ]);
+      const seasonMutations = [
+        ['refused', changed(tourSeason, ['schema_version'], 2)],
+        ['stale', changed(tourSeason, ['through'], '2026-12-01')],
+        ['other-directory', changed(tourSeason, ['directory', 'generated_on'], '2026-09-25')],
+        ['remote-early', made(tourSeason, (file) => {
+          file.remote = [1, 0, 1];
+          file.early_dismissal = [1, 1, 0];
+        })],
+      ];
+      for (const [key, json] of seasonMutations) seasons.set(key, { line: [null, null, json], raw: json });
+
+      // The tour's row (M1 5.1): only its kind flags and its grades reach an answer.
+      const tourRow = tour['tour-closed'].record.row;
+      const records = new Map([['directory', tourRow]]);
+      const kinds = [['public', 0], ['private', 0x01], ['charter', 0x02], ['virtual', 0x04]];
+      const grades = [['none', null, null], ['KG-05', 'KG', '05'], ['06-08', '06', '08'], ['PK-12', 'PK', '12'], ['ZZ-08', 'ZZ', '08']];
+      for (const [kind, flags] of kinds) {
+        for (const [form, low, high] of grades) {
+          const row = copyOf(tourRow);
+          row[2] = flags;
+          row[11] = low;
+          row[12] = high;
+          records.set(`${kind} ${form}`, row);
+        }
+      }
+
+      const SCHOOL_ZONES = ['America/New_York', 'America/Chicago', 'America/Los_Angeles', null, '*', '?'];
+      const VIEWERS = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix', 'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu'];
+      // The next viewer zone after the school's; New York for no zone, the unread and the unknown.
+      const viewerFor = (zone) => VIEWERS[(VIEWERS.indexOf(zone) + 1) % VIEWERS.length];
+      const clockOf = (zone) => (zone === null || zone === '*' || zone === '?' ? 'America/New_York' : zone);
+      const TIMES = [[0, '00:00'], [0, '05:41'], [0, '07:29'], [0, '07:30'], [0, '07:31'], [0, '12:00'], [0, '15:29'], [0, '15:30'], [0, '15:31'], [0, '23:59'], [1, '00:00'], [1, '15:31']];
+      /** A wall time on the school's clock (New York's for a zone that is none), as an instant. */
+      const at = (firstDay, plus, time, zone) => {
+        const [hour, minute] = time.split(':').map(Number);
+        return atLocal(addDays(firstDay, plus), hour * 60 + minute, clockOf(zone));
+      };
+
+      const answers = new Map();
+      const caseLines = [];
+      const blocks = { A: 0, B: 0, C: 0, D: 0 };
+      let block = 'A';
+      const one = (fileKey, school, zone, now, seasonKey, recordKey) => {
+        blocks[block] += 1;
+        const viewer = viewerFor(zone);
+        let shown;
+        const file = parseClosings(copyOf(closings.get(fileKey).raw));
+        if (file === null) {
+          shown = 'refused';
+        } else {
+          const seasonRaw = seasons.get(seasonKey).raw;
+          const season = seasonRaw === null ? null : parseSeason(copyOf(seasonRaw));
+          const record = recordOf(records.get(recordKey), school, file.directory);
+          const when = new Date(now);
+          const status = schoolStatus({ school, directory: file.directory, closings: file, covered: null, now: when, timeZone: zone });
+          const view = schoolView({ id: record.id, hint: null, record, settled: true, status, outlook: null, zone, closings: file, names: null, now: when, timeZone: viewer, season });
+          shown = [
+            view.status.map((line) => [line.tone, line.headline, line.detail, line.note, line.said, line.later === true, line.dated === true]),
+            view.kind,
+            view.season ?? null,
+            mapDay(when, zone),
+            litStatus(file, file.directory, school, zone, when),
+          ];
+        }
+        const text = JSON.stringify(shown);
+        if (!answers.has(text)) answers.set(text, { index: answers.size, shown });
+        caseLines.push(['case', fileKey, school, zone, viewer, now, seasonKey, recordKey, answers.get(text).index]);
+      };
+
+      // A. Every copy and tour fixture, every school of it, six zones, twelve times.
+      for (const key of ['synthetic-closings', 'golden-closings', 'golden-manual', 'tour-closed', 'tour-details', 'tour-tomorrow']) {
+        const raw = closings.get(key).raw;
+        for (let school = 0; school < raw.directory.schools; school += 1) {
+          for (const zone of SCHOOL_ZONES) {
+            for (const [plus, time] of TIMES) {
+              one(key, school, zone, at(raw.days[0].day, plus, time, zone), key.startsWith('tour') ? 'tour' : 'synthetic', 'directory');
+            }
+          }
+        }
+      }
+      // B. The mutations of school 0's first row, three zones, twelve times.
+      block = 'B';
+      for (const [key] of mutations) {
+        for (const zone of ['America/New_York', 'America/Chicago', 'America/Los_Angeles']) {
+          for (const [plus, time] of TIMES) one(key, 0, zone, at(base.days[0].day, plus, time, zone), 'synthetic', 'directory');
+        }
+      }
+      // C. The season files (the tour's own is block A's), tour-closed, school 1, New York.
+      const tourDay = tour['tour-closed'].closings.days[0].day;
+      block = 'C';
+      for (const key of ['none', 'refused', 'stale', 'other-directory', 'remote-early']) {
+        for (const [plus, time] of TIMES) one('tour-closed', 1, 'America/New_York', at(tourDay, plus, time, 'America/New_York'), key, 'directory');
+      }
+      // D. The record forms, tour-closed, school 1, New York, at 7:29, 7:31 and 3:31 PM.
+      block = 'D';
+      for (const [kind] of kinds) {
+        for (const [form] of grades) {
+          for (const time of ['07:29', '07:31', '15:31']) {
+            one('tour-closed', 1, 'America/New_York', at(tourDay, 0, time, 'America/New_York'), 'tour', `${kind} ${form}`);
+          }
+        }
+      }
+
+      const header = [
+        ...[...closings].map(([key, { line }]) => ['closings', key, ...line]),
+        ...[...seasons].map(([key, { line }]) => ['season', key, ...line]),
+        ...[...records].map(([key, row]) => ['record', key, row]),
+        ...[...answers.values()].map(({ index, shown }) => ['answer', index, shown]),
+      ];
+      const seen = new Set();
+      for (const line of caseLines) {
+        const inputs = JSON.stringify(line.slice(1, 8));
+        if (seen.has(inputs)) throw new Stop(EXIT_CANNOT_LOAD, `school-view: two cases have the same inputs: ${inputs}`);
+        seen.add(inputs);
+      }
+      if (caseLines.length < 4000) throw new Stop(EXIT_DIFFERS, `school-view has ${caseLines.length} cases, fewer than 4,000`);
+      say(`school-view: ${caseLines.length} cases (A ${blocks.A}, B ${blocks.B}, C ${blocks.C}, D ${blocks.D}), ${answers.size} distinct answers, ${mutations.length} mutations`);
+      return [...header, ...caseLines];
+    },
+  },
+  {
+    // ["school", id, raw, shownName(id, raw), name, campus]: the site's shown name for a school
+    //   and the name and campus its panel shows (schoolView's name and campus);
+    // ["district", id, raw, districtShown(id, raw)]: the site's shown name for a district.
+    // Every school (6) and district (2) of the pipeline's synthetic directory, each written 7
+    // ways: as written; with " - North Campus"; with a dangling " - "; with " - " in front; with
+    // doubled spaces; in capitals; with "School" written "Sch". The build's name tables are
+    // given empty here (node-hooks.mjs), which is the deployed site's answer for these made-up
+    // ids: its tables are keyed by real ones.
+    family: 'school-names',
+    minCases: 56,
+    modules: ['app/school.ts', 'data/closings.ts', 'data/school-day.ts'],
+    cases: (site) => {
+      const { schoolView, shownName, districtShown } = site['app/school.ts'];
+      const { parseClosings } = site['data/closings.ts'];
+      const { schoolStatus } = site['data/school-day.ts'];
+      const file = parseClosings(fixture('schemas/examples/synthetic-closings.json'));
+      const now = new Date(Date.parse('2027-01-12T12:00:00Z'));
+      const zone = 'America/New_York';
+      const status = schoolStatus({ school: 0, directory: file.directory, closings: file, covered: null, now, timeZone: zone });
+      const forms = (name) => [name, `${name} - North Campus`, `${name} - `, ` - ${name}`, name.replace(/ /g, '  '), name.toUpperCase(), name.replace('School', 'Sch')];
+      const cases = [];
+      SYNTHETIC_DIRECTORY.ids.forEach((id, i) => {
+        for (const raw of forms(SYNTHETIC_DIRECTORY.names[i])) {
+          const record = { id, index: 0, name: raw, private: false, charter: false, virtual: false, district: null, street: null, city: null,
+            state: 'GA', zip: null, county: null, grades: null, enrollment: null, phone: null, nearby: [], directory: file.directory };
+          const view = schoolView({ id, hint: null, record, settled: true, status, outlook: null, zone, closings: file, names: null, now, timeZone: zone, season: null });
+          cases.push(['school', id, raw, shownName(id, raw), view.name, view.campus]);
+        }
+      });
+      SYNTHETIC_DIRECTORY.districts.ids.forEach((id, i) => {
+        for (const raw of forms(SYNTHETIC_DIRECTORY.districts.names[i])) cases.push(['district', id, raw, districtShown(id, raw)]);
+      });
+      return cases;
+    },
+  },
 ];
 
 class Stop extends Error {
@@ -1402,7 +1682,7 @@ async function makeAll() {
       }))
       .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 
-    made.push({ family: spec.family, minCases: spec.minCases, madeFrom, caseLines });
+    made.push({ family: spec.family, minCases: spec.minCases, maxBytes: spec.maxBytes, madeFrom, caseLines });
   }
 
   // Nothing may have been loaded from outside what the words watch covers: neither a file
@@ -1448,6 +1728,39 @@ function zoneNamesText(names) {
     '}',
   ];
   return `${lines.join('\n')}\n`;
+}
+
+/** The sha256 the rules version keeps: every family's name and case lines, in name order. */
+function rulesDigest(made) {
+  const hash = createHash('sha256');
+  const families = [...made].sort((a, b) => (a.family < b.family ? -1 : a.family > b.family ? 1 : 0));
+  for (const one of families) {
+    hash.update(`${one.family}\n`);
+    for (const line of one.caseLines) hash.update(`${line}\n`);
+  }
+  return hash.digest('hex');
+}
+
+/** The text of rules-version.json. */
+function rulesVersionText(number, sha256) {
+  return `{"number": ${number}, "sha256": ${quote(sha256)}}\n`;
+}
+
+/** The committed rules version, or null where there is none or it does not read. */
+function readRulesVersion() {
+  if (!existsSync(RULES_VERSION)) return null;
+  let value;
+  try {
+    value = JSON.parse(readFileSync(RULES_VERSION, 'utf8'));
+  } catch {
+    return null;
+  }
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
+  const keys = Object.keys(value).sort();
+  if (keys.length !== 2 || keys[0] !== 'number' || keys[1] !== 'sha256') return null;
+  if (!Number.isSafeInteger(value.number) || value.number < 1) return null;
+  if (typeof value.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(value.sha256)) return null;
+  return { number: value.number, sha256: value.sha256 };
 }
 
 // Checking -------------------------------------------------------------------------------
@@ -1585,18 +1898,33 @@ async function main(argv) {
     if (one.caseLines.length < one.minCases) {
       throw new Stop(EXIT_DIFFERS, `the family '${one.family}' has ${one.caseLines.length} cases, below its minimum of ${one.minCases}`);
     }
+    if (one.maxBytes !== undefined) {
+      const bytes = Buffer.byteLength(fileText(one));
+      say(`${one.family}: ${bytes} bytes (at most ${one.maxBytes})`);
+      if (bytes > one.maxBytes) {
+        throw new Stop(EXIT_DIFFERS, `the family '${one.family}' is ${bytes} bytes, above its cap of ${one.maxBytes}`);
+      }
+    }
   }
+  const digest = rulesDigest(made);
+  const committedRules = readRulesVersion();
 
   if (checking) {
     const zonesSame = existsSync(ZONE_NAMES) && readFileSync(ZONE_NAMES, 'utf8') === zoneText;
     if (!zonesSame) say(`differs: ${repoPath(ZONE_NAMES)} is not the zone list the site's code gives now`);
-    if (!check(made) || !zonesSame) {
+    const rulesSame = committedRules !== null && committedRules.sha256 === digest;
+    if (committedRules === null) {
+      say(`differs: ${repoPath(RULES_VERSION)} is missing or is not {"number": a whole number from 1, "sha256": 64 hex digits}`);
+    } else if (!rulesSame) {
+      say(`differs: the rules version's sha256 is ${committedRules.sha256} in ${repoPath(RULES_VERSION)} and ${digest} over the families now: an answer changed, so make the files again and raise the rules version`);
+    }
+    if (!check(made) || !zonesSame || !rulesSame) {
       throw new Stop(
         EXIT_DIFFERS,
         "an answer of the site's code differs from the committed golden files. Make them again (node ios/tools/gen-golden.mjs) and update the Swift port",
       );
     }
-    say(`golden: ${made.length} ${made.length === 1 ? 'family matches' : 'families match'} the site's code, and the zone list (zone ${process.env.TZ}, ${Date.now() - started} ms)`);
+    say(`golden: ${made.length} ${made.length === 1 ? 'family matches' : 'families match'} the site's code, and the zone list, and rules version ${committedRules.number} (zone ${process.env.TZ}, ${Date.now() - started} ms)`);
     return;
   }
 
@@ -1610,7 +1938,13 @@ async function main(argv) {
   for (const one of made) writeFileSync(join(GOLDEN, `${one.family}.json`), fileText(one));
   mkdirSync(dirname(ZONE_NAMES), { recursive: true });
   writeFileSync(ZONE_NAMES, zoneText);
-  say(`golden: wrote ${made.length} ${made.length === 1 ? 'file' : 'files'} and the zone list (zone ${process.env.TZ}, ${Date.now() - started} ms)`);
+  const sameRules = committedRules !== null && committedRules.sha256 === digest;
+  const number = sameRules ? committedRules.number : (committedRules?.number ?? 0) + 1;
+  writeFileSync(RULES_VERSION, rulesVersionText(number, digest));
+  if (!sameRules) {
+    say(`rules version: ${committedRules === null ? 'none was committed' : `was ${committedRules.number}`}, now ${number}: set RulesVersion.number in ${repoPath(RULES_VERSION_SWIFT)} to ${number} in the same commit`);
+  }
+  say(`golden: wrote ${made.length} ${made.length === 1 ? 'file' : 'files'}, the zone list and rules version ${number} (zone ${process.env.TZ}, ${Date.now() - started} ms)`);
 }
 
 try {
