@@ -58,6 +58,7 @@ many schools as the description counts.
 """
 
 import math
+import re
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -393,39 +394,157 @@ def school_zones(predictions: Mapping[str, object] | None, directory: Directory)
 
 
 def _index(value: object) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= _MAX_INDEX:
         raise ValueError("not an index")
     return value
 
 
+_INSTANT: Final = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z")
+_LOCAL_DATE: Final = re.compile(r"\d{4}-\d{2}-\d{2}")
+_MAX_INDEX: Final = 4_294_967_294
+_REASONS: Final = 8
+_CHANCES: Final = (0.01, 0.99)
+"""A chance of no school the page reads: never a certainty (map-day.ts ``isChance``)."""
+
+
+def _reads_instant(value: object) -> bool:
+    """A UTC instant the page reads (instant.ts ``parseInstant``): "2026-11-13T22:30:00Z"."""
+    if not isinstance(value, str) or not _INSTANT.fullmatch(value):
+        return False
+    try:
+        datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        return False
+    return True
+
+
+def _days(value: object) -> list[str]:
+    """The file's days, consecutive and today first (map-day.ts ``parsePredictions``).
+
+    Raises:
+        ValueError: none, or one the page does not read.
+    """
+    if not isinstance(value, list) or not value:
+        raise ValueError("no days")
+    days: list[str] = []
+    for day in value:
+        if not isinstance(day, str) or not _LOCAL_DATE.fullmatch(day):
+            raise ValueError("a day the page does not read")
+        try:
+            parsed = date.fromisoformat(day)
+        except ValueError as error:
+            raise ValueError("a day the page does not read") from error
+        if days and parsed != date.fromisoformat(days[-1]) + timedelta(days=1):
+            raise ValueError("the days are not consecutive")
+        days.append(day)
+    return days
+
+
+def _reads_forecast(value: object) -> bool:
+    """One day of a district or one outlook as the page reads it (map-day.ts ``parseForecast``)."""
+    if not isinstance(value, dict):
+        return False
+    if value.get("state") == "no_threat":
+        return True
+    if value.get("state") != "forecast":
+        return False
+    chance, delay, reasons = value.get("p_no_school"), value.get("p_delay"), value.get("reasons")
+
+    def probability(number: object) -> bool:
+        return (
+            isinstance(number, int | float)
+            and not isinstance(number, bool)
+            and math.isfinite(number)
+            and 0 <= number <= 1
+        )
+
+    return (
+        probability(chance)
+        and _CHANCES[0] <= float(chance) <= _CHANCES[1]  # type: ignore[arg-type]
+        and probability(delay)
+        and isinstance(reasons, list)
+        and all(
+            isinstance(reason, int) and not isinstance(reason, bool) and 0 <= reason < _REASONS
+            for reason in reasons
+        )
+    )
+
+
 def _zones_of(predictions: Mapping[str, object]) -> Zones:
-    """Each district's and private school's zone in a predictions file.
+    """Each district's and private school's zone in a predictions file, read only where the page
+    reads the whole file (map-day.ts ``parsePredictions``): its time, its days, every district's
+    forecasts and every private school's row and outlooks, so the picture never lights by zones
+    a page that refused the file lights without.
 
     Raises:
         ValueError: the page would not read the file (a row or a zone is malformed).
     """
+    if not _reads_instant(predictions.get("generated_at")):
+        raise ValueError("no time the page reads")
+    count = len(_days(predictions.get("days")))
     districts = predictions.get("districts")
-    schools = predictions.get("schools", [])
-    names = predictions.get("zones", [])
+    # A section that is missing or null is empty, as the page's ``?? []`` reads it.
+    schools, names, outlooks = (
+        [] if predictions.get(name) is None else predictions.get(name)
+        for name in ("schools", "zones", "outlooks")
+    )
     if not isinstance(districts, list) or not isinstance(schools, list):
         raise ValueError("no districts")
     if not isinstance(names, list) or not all(_known_zone(name) for name in names):
         raise ValueError("a zone the page cannot read")
+    if not isinstance(outlooks, list) or not all(_reads_forecast(outlook) for outlook in outlooks):
+        raise ValueError("an outlook the page cannot read")
+    return Zones(_district_zones(districts, count), _school_zones(schools, names, outlooks, count))
+
+
+def _district_zones(districts: list[object], count: int) -> dict[int, str]:
+    """Each district's zone, where every row and day reads (map-day.ts ``parsePredictions``).
+
+    Raises:
+        ValueError: a row the page would not read.
+    """
     by_district: dict[int, str] = {}
     for row in districts:
         zone = row.get("time_zone") if isinstance(row, dict) else None
         if not isinstance(row, dict) or not _known_zone(zone):
             raise ValueError("a district is malformed")
+        forecasts = row.get("days")
+        if not isinstance(forecasts, list) or len(forecasts) != count:
+            raise ValueError("a district's days are not the file's")
+        if not all(_reads_forecast(forecast) for forecast in forecasts):
+            raise ValueError("a district's forecast the page cannot read")
         by_district[_index(row.get("district"))] = str(zone)
+    return by_district
+
+
+def _school_zones(
+    schools: list[object], names: list[object], outlooks: list[object], count: int
+) -> dict[int, str]:
+    """Each private school's zone, where the section reads (map-day.ts ``parseSchools``): each
+    school once and sorted, its zone and each day's outlook named within the file's.
+
+    Raises:
+        ValueError: a row the page would not read.
+    """
     by_school: dict[int, str] = {}
+    previous = -1
     for row in schools:
         if not isinstance(row, dict):
             raise ValueError("a private school is malformed")
+        school = _index(row.get("school"))
+        if school <= previous:
+            raise ValueError("the private schools are not sorted")
+        previous = school
         place = _index(row.get("zone"))
         if place >= len(names):
             raise ValueError("a private school's zone is past the file's zones")
-        by_school[_index(row.get("school"))] = str(names[place])
-    return Zones(by_district, by_school)
+        named = row.get("days")
+        if not isinstance(named, list) or len(named) != count:
+            raise ValueError("a private school's days are not the file's")
+        if not all(_index(index) < len(outlooks) for index in named):
+            raise ValueError("a private school's day is past the file's outlooks")
+        by_school[school] = str(names[place])
+    return by_school
 
 
 def clock(moment: datetime) -> str:
@@ -1069,8 +1188,9 @@ def choose(  # noqa: PLR0913 - the live files, the time and the facts file's swi
     page lights, each on its own map day; it gives no chance, whatever the switch.
 
     ``chances`` is the facts file's switch (:func:`snowlight.social.rules.chances_shown`):
-    without it the predictions are not read at all, so the picture is never a district's
-    chance and its description and facts hold no chance. ``closings_shown``
+    without it the predictions are never read for a chance (only for ``zones``, above), so the
+    picture is never a district's chance and its description and facts hold no chance.
+    ``closings_shown``
     (:func:`snowlight.social.rules.closings_shown`) is the closings switch: without it the
     closings file is not read at all, so the picture is never a closings view and its
     description and facts say nothing about closings, and no decision in it spends a chance

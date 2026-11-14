@@ -1,9 +1,11 @@
 """The fresh picture's view and description, from SYNTHETIC live files
 (snowlight.social.picture)."""
 
+import json
 import math
 import os
 import re
+from collections.abc import Callable
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
@@ -1519,6 +1521,93 @@ def test_zones_the_page_cannot_use_leave_it_the_unread_rule() -> None:
         assert lit_at(rows, "2026-11-13T22:49", file) is None
     # With the file's zones the Alaska school lights by its district's clock (10 AM there).
     assert lit_at(rows, "2026-11-13T18:00", zone_file()) == ([0, 3], {date(2026, 11, 13)})
+
+
+def _broken(change: str) -> dict[str, Any]:
+    """The zone file with one thing the page's parsePredictions refuses (SYNTHETIC)."""
+    file: dict[str, Any] = json.loads(json.dumps(zone_file()))
+    district, school = file["districts"][1], file["schools"][0]
+    edits: dict[str, Callable[[], None]] = {
+        "no time": lambda: file.pop("generated_at"),
+        "a time with its milliseconds": lambda: file.update(
+            generated_at="2026-11-13T22:30:00.000Z"
+        ),
+        "a time that is no day": lambda: file.update(generated_at="2026-02-30T22:30:00Z"),
+        "no days": lambda: file.update(days=[]),
+        "days not consecutive": lambda: file.update(days=["2026-11-13", "2026-11-15"]),
+        "a day that is no day": lambda: file.update(days=["2026-11-13", "2026-11-31"]),
+        "a district with a day too few": lambda: district.update(days=[{"state": "no_threat"}]),
+        "a district's forecast that does not read": lambda: district.update(
+            days=[{"state": "no_threat"}, {"state": "forecast", "p_no_school": 1.0}]
+        ),
+        "a forecast with no reasons": lambda: district.update(
+            days=[{"state": "no_threat"}, {"state": "forecast", "p_no_school": 0.2, "p_delay": 0.1}]
+        ),
+        "an outlook that does not read": lambda: file.update(outlooks=[{"state": "maybe"}]),
+        "private schools out of order": lambda: file.update(
+            schools=[school, {**school, "school": 1}]
+        ),
+        "the same private school twice": lambda: file.update(schools=[school, school]),
+        "a private school with a day too few": lambda: school.update(days=[0]),
+        "a private school's day past the outlooks": lambda: school.update(days=[0, 1]),
+        "an index past the page's": lambda: district.update(district=4_294_967_295),
+    }
+    edits[change]()
+    return file
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "no time",
+        "a time with its milliseconds",
+        "a time that is no day",
+        "no days",
+        "days not consecutive",
+        "a day that is no day",
+        "a district with a day too few",
+        "a district's forecast that does not read",
+        "a forecast with no reasons",
+        "an outlook that does not read",
+        "private schools out of order",
+        "the same private school twice",
+        "a private school with a day too few",
+        "a private school's day past the outlooks",
+        "an index past the page's",
+    ],
+)
+def test_a_file_the_page_refuses_gives_no_zones(change: str) -> None:
+    """Wherever the page's parsePredictions gives null (map-day.ts), the picture reads no zones
+    either, so both light by the unread rule and the counts agree (an Alaska school: none)."""
+    file = _broken(change)
+    assert school_zones(file, zone_directory()) is None
+    assert lit_at({"2026-11-13": [(0, 0), (3, 0)]}, "2026-11-13T18:00", file) == (
+        [0],
+        {date(2026, 11, 13)},
+    )
+
+
+def test_a_file_the_page_reads_in_full_gives_its_zones() -> None:
+    """A forecast day with its reasons, outlooks the private schools name, and a file of one
+    day: the page reads each, so the zones stand (SYNTHETIC)."""
+    file = zone_file()
+    file["districts"][1]["days"] = [
+        {"state": "no_threat"},
+        {"state": "forecast", "p_no_school": 0.2, "p_delay": 0.1, "reasons": [0, 7]},
+    ]
+    file["outlooks"].append({"state": "forecast", "p_no_school": 0.01, "p_delay": 0, "reasons": []})
+    file["schools"][0]["days"] = [0, 1]
+    assert school_zones(file, zone_directory()) is not None
+    single = {
+        **zone_file(),
+        "days": ["2026-11-13"],
+        "districts": [
+            {"district": index, "time_zone": zone, "days": [{"state": "no_threat"}]}
+            for index, zone in ((0, "America/New_York"), (1, "America/Los_Angeles"))
+        ],
+        "schools": [{"school": 2, "zone": 0, "days": [0]}],
+    }
+    assert school_zones(single, zone_directory()) is not None
 
 
 def test_the_description_counts_what_the_page_lights_each_on_its_own_day() -> None:

@@ -28,6 +28,7 @@ from snowlight.social.rules import (
 )
 from social.test_picture import closings as closings_file
 from social.test_picture import directory as picture_directory
+from social.test_picture import zone_closings, zone_directory, zone_file
 
 REPO = Path(__file__).resolve().parents[3]
 FACTS = load(REPO).facts
@@ -530,7 +531,9 @@ def _shows() -> dict[str, list[str]]:
     """The pictures a queued post may go with, as picture.py words them over the SYNTHETIC
     test directory and closings files (so a change of its wording is checked here too): every
     calm region, with and without "mostly", and closings views (public schools by state,
-    private schools by the view's place, few and many), each "taken for this post"."""
+    private schools by the view's place, few and many, and an evening run's two-day view, each
+    school counted on its own map day by the zones of the predictions file), each "taken for
+    this post"."""
     now = datetime(2026, 12, 10, 12, 10, tzinfo=UTC)
     calm = closings_file([], "2026-12-10", "2026-12-10T12:05:00Z")
     regions = [
@@ -561,6 +564,20 @@ def _shows() -> dict[str, list[str]]:
         ).shows
         for rows in lit
     ]
+    evening = choose(
+        chances=False,
+        closings_shown=True,
+        closings=zone_closings(
+            {"2026-12-10": [(0, 1), (1, 0)], "2026-12-11": [(0, 0), (1, 2)]},
+            "2026-12-10T22:45:00Z",
+        ),
+        predictions=None,
+        directory=zone_directory(),
+        now=datetime(2026, 12, 10, 22, 50, tzinfo=UTC),
+        zones={**zone_file(), "days": ["2026-12-10", "2026-12-11"]},
+    ).shows
+    assert "for December 10 or 11, each school's own day on its clock." in evening
+    views.append(evening)
     assert any("mostly" in text for text in regions)
     assert any("mostly" not in text for text in regions)
     return {
