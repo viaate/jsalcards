@@ -87,11 +87,12 @@ FROZEN: Final = "frozen"
 """The frozen record (predict-next P1, :mod:`snowlight.predict.frozen`): every chance served
 and its inputs at four freezes a night, one finished day a key."""
 RECORD: Final = "record"
-"""Each district's and private school's own record (each-school P2a1, not built yet: nothing
-writes it today): the parsed record rows of a day, one key a day. Codes, ids, counts and times
-only, as every kind here: never a URL (a source's address stays in config) and never list text;
-the writer refuses a version whose bytes hold an address (:func:`_checked_records`, a backstop
-only), and any write over :data:`RECORD_DAY_BYTES` or :data:`RECORD_TOTAL_BYTES`."""
+"""Each district's and private school's own record (each-school P2a1,
+:mod:`snowlight.predict.record`): the parsed record rows of a day, one key a day. Codes, ids,
+counts and times only, as every kind here: never a URL (a source's address stays in config)
+and never list text; the writer refuses a version whose bytes hold an address
+(:func:`_checked_records`, a backstop only), and any write over :data:`RECORD_DAY_BYTES` or
+:data:`RECORD_TOTAL_BYTES`."""
 KINDS: Final = (MORNING, CHANGES, SNAPSHOT, DISTRICTS, LABELS, TRIALS, AUDIT, FROZEN, RECORD)
 WRITERS: Final[Mapping[str, frozenset[str]]] = {
     "live-read": frozenset({MORNING, CHANGES}),
@@ -100,8 +101,8 @@ WRITERS: Final[Mapping[str, frozenset[str]]] = {
 }
 """The kinds each workflow (``GITHUB_WORKFLOW``) may write: only the live reader's evidence job
 holds the morning record and change log, only the predict chain the snapshots, district
-tables and labels, and only the daily record job the record (each-school P2a1, not built yet:
-its workflow, outside the serving chain, will be named ``each-school record``)."""
+tables and labels, and only the daily record job the record (each-school P2a1: the workflow
+``each-school record``, outside the serving chain)."""
 RECORD_DAY_BYTES: Final = 2 * 1024 * 1024
 """Raw bytes one record day may hold in a database, every version of its key together."""
 RECORD_TOTAL_BYTES: Final = 30_000_000
@@ -877,6 +878,7 @@ EXTENSIONS: Final[Mapping[str, str]] = {
     TRIALS: ".jsonl",
     AUDIT: ".json",
     FROZEN: ".jsonl",
+    RECORD: ".jsonl",
 }
 
 

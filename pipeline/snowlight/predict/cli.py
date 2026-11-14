@@ -83,6 +83,7 @@ from snowlight.predict import (
     outlook_cli,
     pool,
     read_cli,
+    record,
     terms_cli,
     terms_file,
     train,
@@ -356,6 +357,7 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
                 night_replay,
                 drill,
                 read_cli,
+                record,
                 anchor_cli,
                 forecast_adjust_cli,
             )

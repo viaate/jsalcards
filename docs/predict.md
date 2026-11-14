@@ -4077,6 +4077,101 @@ doubt a read does not label a district open).**
    warning mornings come (above). The served number stays the class level's prior-based
    value until labels come (Addendum B2), which is correct, never stale.
 
+## Each district's own record (each-school P2a1: a record, nothing served)
+
+The owner's ruling: each district's own record, whether it tends to close early or hold out,
+is the spine of the prediction. The record starts here, from every live school morning. **It
+changes no number:** no pass, refit or published file reads it (a test holds every serving and
+learning module to that), and nothing is published.
+
+**The job.** `.github/workflows/each-school-record.yml` (workflow `each-school record`), once a
+day at 18:43 UTC, on its own concurrency group, outside the serving chain (predict.yml is not
+touched). It restores the read labels' record (the predict chain's `predict-reads-` cache) read
+only and saves no cache of any kind (setup-uv's own cache is off, since the repository's cache
+room is shared with the predict chain's); a run whose restore missed writes nothing and says
+so. It reads the deployed directory as the serving pass does and each day's timeline and the
+day index from the live host's public files, then runs `snowlight predict each-school record`
+(`snowlight/predict/record.py`): every labeled day the evidence store does not hold yet (the
+newest 10 a run; the older ones are counted and wait) whose map is known for good becomes one
+record day, kept in the store's `record` kind (only this workflow may write it) and never
+written again. A day whose timeline (or the previous school day's) is not final, answers an
+error, or is missing while the day index lists it, waits; so does a day of another directory or
+whose read day does not read (only the error's kind is logged). A missing timeline means the
+map lit nothing only once the index, written after the day was over everywhere, does not list
+the day (labels' own rule). A day still left 7 days after the newest labeled day is a
+`::warning::`. It then writes `out/internal/predict/record.parquet` from every kept day but the
+take-back days and rows (`learn.excluded_days`, `learn.excluded_rows`), in the runner only. One
+log line a day says its rows by call, how many came from the read labels and how many from the
+map alone, the weather days, those for a stated cause that is not the weather, the days after a
+closing, the read calls the 09:30 map does not give, and the fit-usable rows.
+
+**A row** is one district's morning: codes, ids, counts and times only (each day's bytes are
+checked before they are offered, and the store checks again). A read row's market is kept as a
+code (`m` and 12 hex digits of the sha256 of the registry's market text), never its name.
+- **Which districts.** A district whose read row is labeled `no_school` or `delayed`, or
+  `unnamed` while the map lit none of its schools at 09:30 or later that day, is a *live read* row:
+  `source_complete` true, `closings_only` false, scope whole. Any other district the map lit
+  closed, remote or delayed at one of its eligible schools at 09:30 is a *live map* row:
+  `source_complete` false, `closings_only` true (the map shows what lists named, so a district
+  it did not light is not known open). That takes in every no-alert closing, every closing no
+  list read whole, every closing for a stated cause that is not the weather, and a district a
+  read called `unnamed` while the map lit it (its label kept in `read`). A district the map lit
+  only after 09:30 is a live map row too, its call from the day's last change, `agrees` false,
+  and never a weather day.
+- **The call.** `closed`, `remote` (every school lit no school was remote), `delayed`, or
+  `unnamed` (a read list did not name it; never written `open`, since a list misses closings
+  at its sensitivity). It is read from each school's status at the read window's end
+  (`labels.read_until`, 09:30 local), not the day's last change: lists clear their rows in the
+  afternoon (every one of Nov 4's 27 statuses was taken back after 13:00 local), and a status
+  taken back before 09:30 counts as none. An early dismissal is no morning call. A read row
+  takes the 09:30 map's call when it is of the label's kind and whole (`agrees` true); else
+  (posted after 09:30, or changed later) it keeps the label's kind of call with `lit`, `cause`
+  and `reasons` from the day's last change, `agrees` false, and is no weather day. Every row
+  carries `map_call`, the 09:30 map's own call for any reason and of any scope (`null` when it
+  lit nothing), so a row that does not agree shows both. `taken_back`: a school lit with a
+  morning call at any change of the day shows no status at the day's end.
+- **Class** at the read day's snapshot: `advisory`, `warning` (warning or above, tropical
+  included, as the serving classes name them), `cold`, `none`, or `unknown` (the read day holds
+  unclassed districts and this one has no row there); the class number and situation beside.
+- **Day after.** `after`, the flag a page filters on, true to the map: on the previous school day
+  the map lit no school (closed or remote, any reason or none) at at least the no-school share
+  of its eligible schools at 09:30 or at that day's last change (a closing posted after 09:30
+  is a closing), or its read row that day was labeled `no_school`, or `after_weather` is true
+  (a closing for the weather is a closing; the row model refuses `after_weather` true with
+  `after` not true). `after_weather`: labels.py's
+  flag, for the weather only, which the situations use; `situation` is made from it. Either is
+  `null` when not known (no previous map: the host holds no timeline of a day older than every
+  day its index lists; or no previous read day), and `situation` is then `null` for a class with
+  an after situation.
+- **Cause and weather days** (owner ruling, Nov 13: every real closing is shown with its
+  reason, and the snow-day prediction never learns from a closing that is not for the
+  weather). A school's reasons are read at every change of the day with a morning call, not
+  only at 09:30: a status naming no reason at 07:00 and a power outage at 10:00 was a closing
+  for a power outage (Oct 26 2026 held same-status reason changes). `cause` is `named` and
+  `weather_day` false when any of the district's eligible schools names a cause that is not the
+  weather (heat, a power outage, any code above 7) with a morning call at any change of the
+  day. Otherwise `weather_day` is true only when the schools lit for the weather at 09:30 (a
+  weather reason named, or none named on an alerted morning: labels.py's rule) reach the call
+  on their own by the label rule's shares; `cause` is then `weather` (a reason named) or `any`
+  (none named). Else `cause` is `weather` when only weather reasons are named (a tropical
+  reason on a day that is not tropical), else `any`, and `weather_day` is false. A read row is
+  held to the same rule, whatever its label. `reasons` keeps every code the district's schools
+  named with a morning call that day. The row model
+  refuses a weather day with a `named` cause, nothing lit, no morning call, or no agreement.
+- **Fit use.** `weather_day` is not a fit filter. `fit_usable` is: `source_complete`, scope whole,
+  `agrees`, no `named` cause, not tropical, `after` false and `after_weather` not true, nothing
+  taken back, and a weather day or `unnamed` (spec rules 6, 6b, 10 and 13, as far as the rows
+  can say; held-out checks and the hand audit come on top). The row model refuses any other
+  value.
+- **Scope**: `whole` when the label rule's shares give the call, else `share` (`lit` of
+  `eligible`, the district's deciding schools). Also kept: the read row's tier, market code,
+  list ids and first slot, its label and why when it did not decide the call, and `tropical`.
+
+**Gate.** None serves: the record is evidence only. No learned value, served chance or published
+byte changes (the live score's sha256, the golden files, the storm drill's lines and the alerts
+digest are unchanged). Its weather fields (observed snow, `snow_seen`) come with P2a2; what a
+page shows comes with P2e.
+
 ## The forecast history (S7-F, piece F1: data only)
 
 Nothing on the site changes with this piece, and `predict.yml` serves exactly as before. It
@@ -4204,9 +4299,9 @@ workflow is not touched. Three runs fall within an artifact's 90 days, so one mi
 nothing.
 
 **The record kind** (each-school P0). The evidence store (docs/live.md) gains kind `record`, each
-school's own record, one day a key. Nothing writes it yet: only the daily record job will
-(each-school P2a1, not built yet; workflow `each-school record`). It holds codes, ids, counts and
-times only. The writer refuses, before anything is written, a version whose bytes hold `://` or
+school's own record, one day a key. Only the daily record job writes it (each-school P2a1,
+workflow `each-school record`; "Each district's own record" above). It holds codes, ids, counts
+and times only. The writer refuses, before anything is written, a version whose bytes hold `://` or
 `www.` (a backstop: the record job checks its decoded rows too), and a push after which a
 database would hold over 2 MiB raw of one day (every version of it together) or over 30,000,000 B
 stored in the kind, counting every record version either database holds and the ones offered.

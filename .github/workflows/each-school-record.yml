@@ -1,0 +1,85 @@
+# Each district's own record (each-school P2a1, docs/predict.md "Each district's own record"):
+# once a day, the record rows of every live school morning the outcome-blind read labels hold
+# and the record does not yet (`snowlight predict each-school record`). Each row is one
+# district's call that morning (closed, remote, delayed or unnamed), its class, its day-after
+# flag, the cause its schools named, whether the source lists only closings, its scope and
+# whether the source was read whole. Codes, ids, counts and times only.
+#
+# It changes no number: nothing that learns or serves reads the record, and it publishes
+# nothing. It keeps each new day in the two evidence databases (the `record` kind, which only
+# this workflow may write: snowlight/live/evidence.py WRITERS, keyed by this file's name), and
+# writes out/internal/predict/record.parquet in the runner, which is not kept.
+#
+# Outside the serving chain: its own concurrency group (never `predict`), and predict.yml is
+# not touched. It restores the read labels' record (the predict chain's `predict-reads-`
+# cache) read only and never saves a cache of any kind (setup-uv's own cache is off): the
+# predict chain alone writes under that prefix.
+# A run with no read record (the cache missed) writes nothing and says so. The directory is
+# read as the serving pass reads it (the deployed edition), and each day's timeline from the
+# live host's public files.
+#
+# Free: a public repository's runner, a few minutes a day, and tens of evidence rows a day.
+name: each-school record
+
+on:
+  schedule:
+    - cron: "43 18 * * *"
+
+concurrency:
+  group: each-school-record
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read # the Pages artifact of the deployed directory (S8-0)
+  deployments: read # the deployed directory's handshake (S8-0)
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: live
+    defaults:
+      run:
+        working-directory: pipeline
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # The read labels' private record, read only (the newest the predict chain saved).
+      - id: reads
+        uses: actions/cache/restore@v4
+        continue-on-error: true
+        timeout-minutes: 2
+        with:
+          path: pipeline/out/internal/predict/reads
+          key: predict-reads-${{ github.run_id }}
+          restore-keys: predict-reads-
+
+      - if: steps.reads.outputs.cache-matched-key == ''
+        run: |
+          echo "::notice::No read labels' record reached this run (the predict-reads- cache missed): nothing is written."
+
+      - if: steps.reads.outputs.cache-matched-key != ''
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          # No uv cache: setup-uv would save one in its post step, and the repository's cache
+          # room is shared with the predict chain's caches. This job saves no cache at all.
+          enable-cache: false
+
+      - if: steps.reads.outputs.cache-matched-key != ''
+        run: uv sync --locked --no-dev
+
+      - if: steps.reads.outputs.cache-matched-key != ''
+        name: Write the new mornings' record rows
+        timeout-minutes: 8
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: uv run snowlight predict each-school record
