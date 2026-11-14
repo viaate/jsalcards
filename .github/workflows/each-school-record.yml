@@ -14,9 +14,17 @@
 # not touched. It restores the read labels' record (the predict chain's `predict-reads-`
 # cache) read only and never saves a cache of any kind (setup-uv's own cache is off): the
 # predict chain alone writes under that prefix.
-# A run with no read record (the cache missed) writes nothing and says so. The directory is
-# read as the serving pass reads it (the deployed edition), and each day's timeline from the
-# live host's public files.
+# A run with no read record (the cache missed) writes no live morning and says so. The
+# directory is read as the serving pass reads it (the deployed edition), and each day's
+# timeline from the live host's public files.
+#
+# The past records (each-school P2d, docs/predict.md "Past records"): public state records of
+# past school days (`snowlight predict each-school past`, config/state-records.yaml). Each state
+# file is fetched by plain GET only while the store does not yet hold its rows, refused unless
+# its size and SHA-256 are the pinned ones, and its day rows and yearly counts are kept once in
+# the same record kind, as their own coarse kind (`past_records`). This step does not need the
+# read labels' record, so it runs whether or not the cache matched, and after the live step
+# whatever that step did. It changes no number either.
 #
 # Free: a public repository's runner, a few minutes a day, and tens of evidence rows a day.
 name: each-school record
@@ -62,10 +70,9 @@ jobs:
 
       - if: steps.reads.outputs.cache-matched-key == ''
         run: |
-          echo "::notice::No read labels' record reached this run (the predict-reads- cache missed): nothing is written."
+          echo "::notice::No read labels' record reached this run (the predict-reads- cache missed): no live morning is written."
 
-      - if: steps.reads.outputs.cache-matched-key != ''
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: "3.12"
           working-directory: pipeline
@@ -73,8 +80,7 @@ jobs:
           # room is shared with the predict chain's caches. This job saves no cache at all.
           enable-cache: false
 
-      - if: steps.reads.outputs.cache-matched-key != ''
-        run: uv sync --locked --no-dev
+      - run: uv sync --locked --no-dev
 
       - if: steps.reads.outputs.cache-matched-key != ''
         name: Write the new mornings' record rows
@@ -83,3 +89,11 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: uv run snowlight predict each-school record
+
+      - if: ${{ !cancelled() }}
+        name: Write the past records not yet kept
+        timeout-minutes: 5
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: uv run snowlight predict each-school past

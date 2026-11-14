@@ -1,0 +1,256 @@
+# Public state records of past school days (each-school P2d; docs/predict.md, "Past records";
+# snowlight/predict/state_records.py). Read by `snowlight predict each-school past`
+# (.github/workflows/each-school-record.yml), which fetches each file by plain GET from its URL,
+# refuses any file whose size or SHA-256 is not the one pinned here (a changed file needs a
+# reviewed pin and parser check), and writes its rows once into the evidence store's record
+# kind. Nothing that learns or serves reads them. The record keeps ids, codes, counts and dates
+# only: every URL and every name stays here.
+#
+# Field names here never contain the two words the schema guard refuses (LR8).
+version: 1
+states:
+  ky:
+    state: ky
+    complete: >-
+      Dated weather days (W) are the days a district missed for the weather and made up; a
+      weather day not made up is removed from the amended calendar, and at-home NTI days (N)
+      are not dated, so a day not listed is not known open: the dated rows are closings only
+      and never complete. W may also carry a non-weather emergency (Jefferson County lists
+      11/05/25). Yearly W counts are complete for made-up weather days; NTI counts (2024-25 and
+      2025-26 only) are not split by cause. No delays.
+    files:
+      - id: ky-summary-2024-25
+        form: ky_summary
+        url: https://www.education.ky.gov/districts/enrol/Documents/2024-2025%20AmendedCalendar_Summary.xlsx
+        page: https://www.education.ky.gov/districts/enrol/Pages/School-Calendar.aspx
+        fetched: 2026-11-14
+        bytes: 91389
+        sha256: 3732d6556382bca7f42d112d0b5e6ff999e112133710f98b1d2bafb649c74acf
+        years: ["2024-25"]
+        parser: 1
+      - id: ky-summary-2025-26
+        form: ky_summary
+        url: https://www.education.ky.gov/districts/enrol/Documents/2025-2026%20AmendedCalendar_Summary.xlsx
+        page: https://www.education.ky.gov/districts/enrol/Pages/School-Calendar.aspx
+        fetched: 2026-11-14
+        bytes: 79304
+        sha256: 69e00e92b95d66d8ef2920c39e3d7d1c016536806aedc4e17c1975a3d5c7dbae
+        years: ["2025-26"]
+        parser: 1
+      # The "Five Year Weather Trend": weather make-up days per district and school year.
+      - id: ky-trend-2025-26
+        form: ky_trend
+        url: https://www.education.ky.gov/districts/enrol/Documents/2025-26%20School%20Year%20Calendar.pdf
+        page: https://www.education.ky.gov/districts/enrol/Pages/School-Calendar.aspx
+        fetched: 2026-11-14
+        bytes: 145246
+        sha256: ea219f5b8574f28386ab7284b9d9f9b843a4ecb4b0bd1b46b207ce01e0207a14
+        years: ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25"]
+        parser: 1
+    # The written map of the state's calendar codes (its "Amending the Calendar" guide,
+    # https://www.education.ky.gov/districts/enrol/Documents/2025-26%20%20Amending%20the%20Calendar.pdf).
+    codes:
+      "W":
+        name: Weather Day
+        dated: true
+        counted: true
+        call: closed
+        cause: weather
+        weather_day: true
+        day_off: weather
+      "N":
+        name: Non-Traditional Instruction day (at home), counted only
+        dated: false
+        counted: true
+      "I":
+        name: Closed Due to Illness, counted only
+        dated: false
+        counted: true
+        day_off: named
+      "D":
+        name: District Wide Emergency Day, counted only
+        dated: false
+        counted: true
+        day_off: unknown
+    id_rule: >-
+      The state's three-digit district number is digits 7-9 of the NCES ST_LEAID (KY-CCCddd000),
+      read from the CCD LEA directory 2024-25
+      (https://nces.ed.gov/ccd/Data/zip/ccd_lea_029_2425_w_1a_073025.zip, fetched 2026-11-14,
+      SHA-256 2745169e4bc7cd53adff179830c3d4b9bb035ac79580ecea01ef389a161936a9). 171 of the
+      files' 172 numbers map to a district of the directory.
+    ids:
+      "001": "2100030"
+      "005": "2100070"
+      "006": "2100090"
+      "011": "2100120"
+      "012": "2100150"
+      "013": "2100180"
+      "015": "2100210"
+      "016": "2100240"
+      "017": "2100270"
+      "021": "2100300"
+      "025": "2100330"
+      "026": "2100360"
+      "031": "2100390"
+      "032": "2100420"
+      "034": "2100480"
+      "035": "2100510"
+      "041": "2100540"
+      "042": "2100570"
+      "045": "2100620"
+      "051": "2100630"
+      "055": "2100660"
+      "061": "2100690"
+      "065": "2100720"
+      "071": "2100750"
+      "072": "2100780"
+      "075": "2100810"
+      "081": "2100840"
+      "085": "2100870"
+      "091": "2100900"
+      "092": "2100930"
+      "095": "2100960"
+      "101": "2100990"
+      "105": "2101020"
+      "111": "2101050"
+      "113": "2101110"
+      "115": "2101150"
+      "121": "2101200"
+      "125": "2101230"
+      "131": "2101260"
+      "132": "2101290"
+      "133": "2101320"
+      "134": "2101350"
+      "135": "2101380"
+      "141": "2101410"
+      "143": "2101440"
+      "145": "2101470"
+      "146": "2101500"
+      "147": "2101530"
+      "149": "2101590"
+      "151": "2101620"
+      "152": "2101650"
+      "155": "2101680"
+      "156": "2101710"
+      "157": "2101740"
+      "161": "2101760"
+      "162": "2101800"
+      "165": "2101860"
+      "171": "2101920"
+      "175": "2101950"
+      "176": "2102040"
+      "177": "2101980"
+      "181": "2102010"
+      "185": "2102100"
+      "186": "2102070"
+      "191": "2102130"
+      "195": "2102160"
+      "197": "2102220"
+      "201": "2102250"
+      "205": "2102280"
+      "211": "2102300"
+      "215": "2102340"
+      "221": "2102400"
+      "225": "2102460"
+      "231": "2102490"
+      "235": "2102540"
+      "236": "2102520"
+      "241": "2102580"
+      "245": "2102640"
+      "246": "2102670"
+      "251": "2102710"
+      "255": "2102760"
+      "261": "2102790"
+      "265": "2102860"
+      "271": "2102940"
+      "272": "2102910"
+      "275": "2102990"
+      "276": "2103000"
+      "281": "2103030"
+      "285": "2103060"
+      "291": "2103090"
+      "295": "2103120"
+      "301": "2103150"
+      "305": "2103180"
+      "311": "2103210"
+      "315": "2103240"
+      "321": "2103270"
+      "325": "2103330"
+      "331": "2103360"
+      "335": "2103390"
+      "341": "2103480"
+      "345": "2103510"
+      "351": "2103540"
+      "354": "2103630"
+      "361": "2103690"
+      "365": "2103720"
+      "371": "2103750"
+      "375": "2103780"
+      "381": "2103810"
+      "385": "2103840"
+      "391": "2103870"
+      "392": "2103900"
+      "395": "2103960"
+      "401": "2103990"
+      "405": "2104020"
+      "411": "2104050"
+      "415": "2104080"
+      "421": "2104110"
+      "425": "2104140"
+      "426": "2104170"
+      "431": "2104200"
+      "435": "2104250"
+      "441": "2104290"
+      "445": "2100081"
+      "446": "2104380"
+      "451": "2104410"
+      "452": "2104440"
+      "455": "2104470"
+      "461": "2104500"
+      "465": "2104530"
+      "471": "2104560"
+      "472": "2104590"
+      "475": "2104620"
+      "476": "2104650"
+      "477": "2104680"
+      "478": "2104710"
+      "481": "2104740"
+      "485": "2104770"
+      "491": "2104800"
+      "492": "2104830"
+      "493": "2104860"
+      "495": "2104890"
+      "501": "2104950"
+      "502": "2104980"
+      "505": "2105040"
+      "511": "2105070"
+      "515": "2105100"
+      "521": "2105160"
+      "522": "2105130"
+      "523": "2105190"
+      "524": "2105220"
+      "525": "2105260"
+      "531": "2105320"
+      "535": "2105400"
+      "536": "2105430"
+      "537": "2105460"
+      "541": "2105490"
+      "545": "2105520"
+      "551": "2105550"
+      "555": "2105580"
+      "561": "2105610"
+      "565": "2105640"
+      "567": "2105700"
+      "571": "2105730"
+      "575": "2105760"
+      "581": "2105790"
+      "585": "2105820"
+      "591": "2105880"
+      "592": "2105910"
+      "593": "2105940"
+      "595": "2105970"
+      "601": "2106000"
+    unmapped:
+      "606": >-
+        Model Laboratory Schools at EKU: its CCD LEA (2100291, an education agency of another
+        type) is not a district of the directory.

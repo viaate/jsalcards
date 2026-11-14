@@ -888,7 +888,8 @@ def test_the_table_holds_every_row_with_every_field(tmp_path: Path) -> None:
     path = tmp_path / "record.parquet"
     assert record.write_table(rows, path) == len(rows) == 3
     frame = pl.read_parquet(path)
-    assert tuple(frame.columns) == record.COLUMNS == tuple(RecordRow.model_fields)
+    assert tuple(frame.columns) == record.COLUMNS == (*RecordRow.model_fields, "code")
+    assert frame["code"].to_list() == [None, None, None]
     assert frame["unit"].to_list() == ["9900001", "9900003", "9900004"]
     assert frame.filter(pl.col("unit") == "9900004")["reasons"].to_list() == [[7]]
     assert record.write_table([], path) == 0
@@ -1301,6 +1302,14 @@ def test_the_record_job_is_its_own_daily_workflow_and_only_reads_the_predict_cac
         assert all(k.startswith(("predict-reads-", "predict-frozen-")) for k in keys), keys
     runs = [str(step.get("run", "")) for step in steps]
     assert any("snowlight predict each-school record" in r for r in runs)
+    # the past records (P2d) need no read record: they run whether the cache matched or not,
+    # after the live step whatever it did, with setup-uv and the sync unconditional
+    (past,) = [s for s in steps if "snowlight predict each-school past" in str(s.get("run", ""))]
+    assert past["if"] == "${{ !cancelled() }}"
+    assert steps.index(past) == len(steps) - 1
+    for step in steps:
+        if "setup-uv" in str(step.get("uses", "")) or "uv sync" in str(step.get("run", "")):
+            assert "if" not in step, step
     assert not any("predict run" in r or "predict learn" in r or "publish" in r for r in runs)
 
 
@@ -1321,3 +1330,96 @@ def test_no_pass_and_no_learning_step_reads_the_record() -> None:
         text = (root / name).read_text(encoding="utf-8")
         assert "predict.record" not in text, name
         assert "import record" not in text, name
+        assert "state_records" not in text, name
+
+
+# --- past records (each-school P2d) -------------------------------------------------------------
+
+
+def _past(day: date, unit: str = "9900001", **change: Any) -> record.PastDay:
+    body: dict[str, Any] = {
+        "version": 1, "day": day, "unit": unit, "weather": None, "klass": "unknown",
+        "after": None, "after_weather": None, "situation": None, "call": Call.CLOSED,
+        "source_kind": SourceKind.PAST_RECORDS, "source_complete": False, "closings_only": True,
+        "scope": Scope.WHOLE, "cause": Cause.WEATHER, "weather_day": True, "fit_usable": False,
+        "reasons": (), "tropical": None, "sources": ("ky-summary-2024-25",), "code": "W",
+    }  # fmt: skip
+    return record.PastDay.model_validate(body | change)
+
+
+def _count(unit: str, year: str, code: str, days: int) -> record.YearCount:
+    return record.YearCount(
+        version=1, unit=unit, year=year, code=code, days=days,
+        source_kind=SourceKind.PAST_RECORDS, sources=("ky-trend-2025-26",),
+        covid=year == "2020-21", disaster=None,
+    )  # fmt: skip
+
+
+def test_a_live_row_is_never_of_the_past_records_kind() -> None:
+    read = _read(rows=[_row("9900001", "no_school")])
+    (row, *_) = _rows(read, [(s, AT, Status.CLOSED, 7) for s in (0, 1)]).values()
+    with pytest.raises(ValueError, match="past records' kind"):
+        RecordRow.model_validate(row.model_dump() | {"source_kind": SourceKind.PAST_RECORDS})
+
+
+def test_past_rows_fit_only_by_their_own_rule_and_never_while_closings_only() -> None:
+    known = _past(
+        date(2025, 1, 7), klass="warning", weather=3, tropical=False, after=False,
+        source_complete=True, closings_only=False, fit_usable=True,
+    )  # fmt: skip
+    assert record.past_fit_rule(known)
+    for change in (
+        {"after": None},
+        {"klass": "unknown", "weather": None, "tropical": None},
+        {"scope": Scope.SHARE},
+        {"cause": Cause.NAMED, "weather_day": False},
+        {"tropical": True},
+    ):
+        with pytest.raises(ValueError, match="fit_usable"):
+            record.PastDay.model_validate(known.model_dump() | change)
+    # a closings-only source is never complete, so never fit-usable
+    assert not record.past_fit_rule(_past(date(2025, 1, 7)))
+
+
+def test_the_kept_record_reads_live_days_past_days_and_yearly_counts_apart(
+    tmp_path: Path,
+) -> None:
+    learn = PredictConfig.load(PIPELINE_ROOT / "config" / "predict.yaml").learn
+    closing = [(s, AT, Status.CLOSED, None) for s in (0, 1, 7, 8)]
+    live = list(_rows(_read(WED), closing).values())
+    past = [_past(WED, "9900001"), _past(date(2025, 1, 7), "9900004")]
+    counts = [_count("9900001", "2020-21", "W", 1), _count("9900001", "2021-22", "W", 2)]
+    kept = {
+        WED.isoformat(): record.day_bytes(live),
+        "past/ky-summary-2024-25/days": record.lines_bytes(past, "t"),
+        "past/ky-trend-2025-26/counts": record.lines_bytes(counts, "t"),
+    }
+    rows = record.kept_rows(kept, learn)
+    assert rows == [*live, *past]
+    assert record.kept_counts(kept) == counts
+    # a live take-back day leaves the live rows out, never a state's past row of that day
+    no_wed = learn.model_copy(update={"excluded_days": (WED,)})
+    assert record.kept_rows(kept, no_wed) == past
+    path = tmp_path / "record.parquet"
+    assert record.write_table(rows, path, record.kept_counts(kept)) == len(live) + len(past)
+    frame = pl.read_parquet(path)
+    assert tuple(frame.columns) == record.COLUMNS
+    on_wed = frame.filter(pl.col("day") == WED)
+    # by day, district, then kind: a district's live row before its past row of the day
+    assert list(zip(on_wed["unit"], on_wed["source_kind"], strict=True)) == [
+        ("9900001", "live_map"), ("9900001", "past_records"), ("9900004", "live_map"),
+    ]  # fmt: skip
+    pasts = frame.filter(pl.col("source_kind") == "past_records")
+    assert pasts["code"].to_list() == ["W", "W"]
+    assert pasts["agrees"].to_list() == [None, None]
+    assert pasts["eligible"].to_list() == [None, None]
+    assert pasts["klass"].to_list() == ["unknown", "unknown"]
+    assert not any(pasts["fit_usable"].to_list())
+    years = pl.read_parquet(path.with_name(record.COUNTS_NAME))
+    assert years["days"].to_list() == [1, 2]
+    assert years["covid"].to_list() == [True, False]
+
+
+def test_a_past_record_key_holds_no_address_and_strings_are_codes() -> None:
+    with pytest.raises(RecordError, match="not a code"):
+        record.lines_bytes([_past(WED, code="W W")], "t")

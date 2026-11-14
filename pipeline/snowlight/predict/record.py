@@ -213,6 +213,11 @@ class SourceKind(StrEnum):
     """The outcome-blind live labels (advisory-sane L1)."""
     LIVE_MAP = "live_map"
     """What the live map lit, with no read deciding it (closings only)."""
+    PAST_RECORDS = "past_records"
+    """A public state record of past school days (each-school P2d,
+    :mod:`snowlight.predict.state_records`): the coarse kind a page may say (LR8: seen live by
+    us, or from past records), never the agency's name. Rows of this kind are
+    :class:`PastDay` and :class:`YearCount`, never :class:`RecordRow`."""
 
 
 type ClassKey = Literal["advisory", "warning", "cold", "none", "unknown"]
@@ -298,6 +303,8 @@ class RecordRow(BaseModel):
     def _honest(self) -> Self:
         """A weather day names no other cause, lights a school with a morning call and agrees
         with the map; ``fit_usable`` is exactly the module's rule."""
+        if self.source_kind not in LIVE_KINDS:
+            raise ValueError(f"{self.day} {self.unit}: a live row of the past records' kind")
         if self.weather_day and (
             self.cause is Cause.NAMED
             or self.lit == 0
@@ -335,6 +342,141 @@ def fit_rule(fields: Mapping[str, Any]) -> bool:
         and not fields["taken_back"]
         and (fields["weather_day"] or Call(fields["call"]) is Call.UNNAMED)
     )
+
+
+LIVE_KINDS: Final = frozenset({SourceKind.LIVE_READ, SourceKind.LIVE_MAP})
+"""The kinds a :class:`RecordRow` (a live morning) may carry: seen live by us."""
+
+
+class PastDay(BaseModel):
+    """One district's dated day from a public state record of past school days (each-school
+    P2d; :mod:`snowlight.predict.state_records`). Codes, ids and dates only.
+
+    Unlike a live row it has no 09:30 map, no read and no schools counted, so it carries none
+    of those fields (``record.parquet`` holds them empty for it). ``code`` is the state's own
+    calendar code (Kentucky's ``W``, a weather day), mapped to ``call`` and ``cause`` by the
+    written map in ``config/state-records.yaml``. Its class that morning is ``unknown`` until a
+    backfill or P2a2 fills it (LR14): such a row is counted and shown as unknown, and never
+    fit-usable."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
+
+    version: int = Field(ge=1)
+    day: date
+    unit: str = Field(pattern=r"^\d{7}$")
+    """The district's LEAID (the state's id joined by the written id rule, never guessed)."""
+    weather: int | None = Field(ge=0, le=7)
+    klass: ClassKey
+    after: bool | None
+    """On its previous scheduled school day (its own calendar in the same file) the source
+    lists a day it did not hold school (``True``); ``None`` when that day is not known to be
+    one (an at-home NTI day is not dated, so a day the source does not list is not known to
+    be a school day held)."""
+    after_weather: bool | None
+    """That previous day was listed for the weather (``True``) or for another named cause
+    (``False``); ``None``: not known."""
+    situation: str | None
+    call: Call
+    source_kind: SourceKind
+    source_complete: bool
+    closings_only: bool
+    scope: Scope
+    cause: Cause
+    weather_day: bool
+    """The state's code names the weather (see ``code``); never for another named cause."""
+    fit_usable: bool
+    """Always the rule of :func:`past_fit_rule` (false for every closings-only source and
+    every row whose class is not known)."""
+    reasons: tuple[int, ...]
+    tropical: bool | None
+    """``None`` while the class is not known."""
+    sources: tuple[str, ...]
+    """The state file it was read from (its id in ``config/state-records.yaml``, never a URL
+    or an agency's name)."""
+    code: str = Field(min_length=1, max_length=16)
+    """The state's calendar code for the day (``W``)."""
+
+    @model_validator(mode="after")
+    def _honest(self) -> Self:
+        """A past record row is of the past-records kind; a closings-only source is never
+        complete and never says open; an unknown class knows no situation; a weather day
+        names no other cause; ``fit_usable`` is exactly :func:`past_fit_rule`."""
+        where = f"{self.day} {self.unit}"
+        if self.source_kind is not SourceKind.PAST_RECORDS:
+            raise ValueError(f"{where}: a past record row of a live kind")
+        if self.closings_only and (
+            self.source_complete or self.call in {Call.OPEN, Call.UNNAMED, Call.SAID_OPEN}
+        ):
+            raise ValueError(f"{where}: a closings-only source cannot be complete or say open")
+        if self.klass == "unknown" and (
+            self.weather is not None or self.situation is not None or self.tropical is not None
+        ):
+            raise ValueError(f"{where}: an unknown class with a weather class, situation or flag")
+        if self.weather_day and (self.cause is Cause.NAMED or self.call not in MORNING_CALLS):
+            raise ValueError(f"{where}: a weather day it cannot be")
+        if self.after_weather is not None and self.after is not True:
+            raise ValueError(f"{where}: a day-after cause with no day after")
+        if self.fit_usable != past_fit_rule(self):
+            raise ValueError(f"{where}: fit_usable is not the past rows' rule")
+        return self
+
+
+def past_fit_rule(row: "PastDay") -> bool:
+    """Whether a past record row may reach a fit as far as the row can say (spec rules 6, 6b,
+    8, 10 and 13; a held-out check and the hand audit come on top): a complete source, whole
+    scope, no named cause, a weather day, a known class that is not tropical, and not a day
+    after a closing. Closings-only sources (Kentucky's dated weather days) never are (rule 6;
+    rule 9's statewide slope is a serving piece's own filter, never this flag)."""
+    return bool(
+        row.source_complete
+        and not row.closings_only
+        and row.scope is Scope.WHOLE
+        and row.cause is not Cause.NAMED
+        and row.weather_day
+        and row.klass != "unknown"
+        and row.tropical is False
+        and row.after is False
+        and row.after_weather is not True
+    )
+
+
+class YearCount(BaseModel):
+    """One district's count of one kind of day in one school year, from a public state
+    record (each-school P2d). Kept as a count: never spread into dates (spec rule 9)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", strict=True)
+
+    version: int = Field(ge=1)
+    unit: str = Field(pattern=r"^\d{7}$")
+    year: str = Field(pattern=r"^\d{4}-\d{2}$")
+    """The school year, ``2024-25``."""
+    code: str = Field(min_length=1, max_length=16)
+    """The state's calendar code counted (Kentucky: ``W`` weather days, ``N`` at-home NTI
+    days, ``I`` days closed for illness, ``D`` district-wide emergency days)."""
+    days: int = Field(ge=0)
+    source_kind: SourceKind
+    sources: tuple[str, ...]
+    """The state file it was read from (its id)."""
+    covid: bool
+    """A COVID year (2019-20, 2020-21): kept, never in a count fit (spec rule 9)."""
+    disaster: bool | None
+    """The district had a district-wide emergency day that year (kept and flagged, never in a
+    winter fit: spec rule 8); ``None`` where the file does not say."""
+
+    @model_validator(mode="after")
+    def _kind(self) -> Self:
+        if self.source_kind is not SourceKind.PAST_RECORDS:
+            raise ValueError(f"{self.year} {self.unit}: a year count of a live kind")
+        return self
+
+
+PAST_PREFIX: Final = "past/"
+"""The record kind's keys of past records: ``past/<file id>/days`` (:class:`PastDay` lines) and
+``past/<file id>/counts`` (:class:`YearCount` lines). A live day's key is its ISO date."""
+PAST_DAYS: Final = "/days"
+PAST_COUNTS: Final = "/counts"
+COUNTS_NAME: Final = "record-counts.parquet"
+"""The past records' yearly counts, beside ``record.parquet`` (internal, never published)."""
 
 
 def market_code(market: str | None) -> str | None:
@@ -884,12 +1026,22 @@ def rows_of(data: bytes) -> list[RecordRow]:
     ]
 
 
-COLUMNS: Final = tuple(RecordRow.model_fields)
+PAST_COLUMNS: Final = tuple(
+    name for name in PastDay.model_fields if name not in RecordRow.model_fields
+)
+"""The columns only a past record row has (``code``)."""
+COLUMNS: Final = (*RecordRow.model_fields, *PAST_COLUMNS)
+"""``record.parquet``'s columns: a live row's, then a past row's own. A live row holds its
+past-only columns empty, a past row the live-only ones (it has no 09:30 map, read or schools
+counted)."""
 
 
-def table(rows: Iterable[RecordRow]) -> pl.DataFrame:
-    """The record as a table (``record.parquet``), by day then district."""
-    found = [row.model_dump(mode="json") for row in rows]
+def table(rows: Iterable[RecordRow | PastDay]) -> pl.DataFrame:
+    """The record as a table (``record.parquet``), by day then district (a district's live and
+    past rows of one day both kept, the live one first)."""
+    found: list[dict[str, Any]] = [
+        dict.fromkeys(COLUMNS) | row.model_dump(mode="json") for row in rows
+    ]
     schema: dict[str, Any] = {
         "version": pl.Int64,
         "day": pl.Date,
@@ -920,16 +1072,49 @@ def table(rows: Iterable[RecordRow]) -> pl.DataFrame:
         "market": pl.String,
         "sources": pl.List(pl.String),
         "slot": pl.String,
+        "code": pl.String,
     }
     for item in found:
         item["day"] = date.fromisoformat(item["day"])
     frame = pl.DataFrame(found, schema=schema) if found else pl.DataFrame(schema=schema)
-    return frame.sort("day", "unit")
+    return frame.sort("day", "unit", "source_kind", maintain_order=True)
 
 
-def write_table(rows: Iterable[RecordRow], path: Path = RECORD_PATH) -> int:
-    """Write ``record.parquet`` whole (atomically); returns its rows."""
-    frame = table(rows)
+COUNT_COLUMNS: Final = tuple(YearCount.model_fields)
+
+
+def counts_table(counts: Iterable[YearCount]) -> pl.DataFrame:
+    """The past records' yearly counts as a table (``record-counts.parquet``), by district,
+    year and code."""
+    schema: dict[str, Any] = {
+        "version": pl.Int64,
+        "unit": pl.String,
+        "year": pl.String,
+        "code": pl.String,
+        "days": pl.Int64,
+        "source_kind": pl.String,
+        "sources": pl.List(pl.String),
+        "covid": pl.Boolean,
+        "disaster": pl.Boolean,
+    }
+    found = [count.model_dump(mode="json") for count in counts]
+    frame = pl.DataFrame(found, schema=schema) if found else pl.DataFrame(schema=schema)
+    return frame.sort("unit", "year", "code")
+
+
+def write_table(
+    rows: Iterable[RecordRow | PastDay],
+    path: Path = RECORD_PATH,
+    counts: Iterable[YearCount] | None = None,
+) -> int:
+    """Write ``record.parquet`` whole (atomically), and with ``counts`` its yearly counts beside
+    it (:data:`COUNTS_NAME`); returns the record's rows."""
+    if counts is not None:
+        _write_frame(counts_table(counts), path.with_name(COUNTS_NAME))
+    return _write_frame(table(rows), path)
+
+
+def _write_frame(frame: pl.DataFrame, path: Path) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     scratch = path.with_suffix(".parquet.part")
     frame.write_parquet(scratch)
@@ -938,15 +1123,76 @@ def write_table(rows: Iterable[RecordRow], path: Path = RECORD_PATH) -> int:
     return frame.height
 
 
-def kept_rows(kept: Mapping[str, bytes], learn: LearnSettings) -> list[RecordRow]:
-    """Every row of the days the evidence store keeps, oldest first, but the take-back days
-    and rows (``learn.excluded_days``, ``learn.excluded_rows``: spec rule 5)."""
-    return [
+def kept_rows(kept: Mapping[str, bytes], learn: LearnSettings) -> list[RecordRow | PastDay]:
+    """Every row of the days the evidence store keeps, oldest first, but the take-back days and
+    rows (``learn.excluded_days``, ``learn.excluded_rows``: spec rule 5, live corrections of
+    the live map), then every past record row (``past/<file>/days``). Yearly counts are
+    :func:`kept_counts`'."""
+    live: list[RecordRow | PastDay] = [
         row
-        for _, data in sorted(kept.items())
+        for key, data in sorted(kept.items())
+        if not key.startswith(PAST_PREFIX)
         for row in rows_of(data)
         if not learn.excludes_row(row.day, row.unit)
     ]
+    past = [
+        row
+        for key, data in sorted(kept.items())
+        if key.startswith(PAST_PREFIX) and key.endswith(PAST_DAYS)
+        for row in past_days_of(data)
+    ]
+    return [*live, *past]
+
+
+def kept_counts(kept: Mapping[str, bytes]) -> list[YearCount]:
+    """Every yearly count the evidence store keeps (``past/<file>/counts``)."""
+    return [
+        count
+        for key, data in sorted(kept.items())
+        if key.startswith(PAST_PREFIX) and key.endswith(PAST_COUNTS)
+        for count in counts_of(data)
+    ]
+
+
+def past_days_of(data: bytes) -> list[PastDay]:
+    """A past record file's day rows from their bytes.
+
+    Raises:
+        pydantic.ValidationError: a line is not a past record row.
+    """
+    return [
+        PastDay.model_validate_json(line, strict=False)
+        for line in data.decode().splitlines()
+        if line.strip()
+    ]
+
+
+def counts_of(data: bytes) -> list[YearCount]:
+    """A past record file's yearly counts from their bytes.
+
+    Raises:
+        pydantic.ValidationError: a line is not a yearly count.
+    """
+    return [
+        YearCount.model_validate_json(line, strict=False)
+        for line in data.decode().splitlines()
+        if line.strip()
+    ]
+
+
+def lines_bytes(rows: Sequence[PastDay] | Sequence[YearCount], where: str) -> bytes:
+    """A past record key's bytes: one JSON object a line, keys sorted, every string a code
+    (:data:`SAFE`), in the order given.
+
+    Raises:
+        RecordError: a row holds a string that is not a code, id, date or time.
+    """
+    lines: list[str] = []
+    for row in rows:
+        body = row.model_dump(mode="json")
+        _checked(body, where)
+        lines.append(json.dumps(body, sort_keys=True, separators=(",", ":")))
+    return ("\n".join(lines) + "\n").encode() if lines else b""
 
 
 def counts_line(day: date, rows: Sequence[RecordRow]) -> str:
@@ -1152,6 +1398,9 @@ def register(actions: "argparse._SubParsersAction[argparse.ArgumentParser]") -> 
         help="write each new day's rows to this folder; the evidence store is not asked",
     )
     record.set_defaults(handler=run_record)
+    from snowlight.predict import state_records  # noqa: PLC0415
+
+    state_records.register(steps)
 
 
 def _say(line: str) -> None:
@@ -1253,9 +1502,12 @@ def run_record(args: argparse.Namespace) -> int:  # pragma: no cover - the real 
         _say(f"::error::predict each-school record: {error}")
         return 1
     rows = kept_rows(kept, config.learn)
-    count = write_table(rows, args.out)
+    counts = kept_counts(kept)
+    count = write_table(rows, args.out, counts)
+    past = sum(key.startswith(PAST_PREFIX) for key in kept)
     _say(
-        f"predict each-school record: {len(kept)} days, {count} rows in {args.out.name}"
-        f" (take-back days and rows left out)"
+        f"predict each-school record: {len(kept) - past} days and {past} past record keys,"
+        f" {count} rows in {args.out.name} (take-back days and rows left out),"
+        f" {len(counts)} yearly counts in {COUNTS_NAME}"
     )
     return 0
