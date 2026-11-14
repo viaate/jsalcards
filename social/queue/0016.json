@@ -1,7 +1,7 @@
 {
   "id": "0016",
   "style": "dev_log",
-  "text": "I wired it so my snow day model works out a new set of chances about every 30 minutes, and sooner when the weather service changes its winter alerts. Waitlist link in my bio.",
+  "text": "I wired it so my snow day model works out a new set of chances about every 30 minutes. Waitlist link in my bio.",
   "pictures": [
     "closings",
     "region"

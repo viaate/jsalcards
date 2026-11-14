@@ -1,7 +1,7 @@
 {
   "id": "0020",
   "style": "dev_log",
-  "text": "I keep a history of the weather service's past forecasts for the model, and its forecast part is fitted to those forecasts on the alert days of past winters. Join the waitlist, link in my bio.",
+  "text": "I keep a history of past forecasts so the forecast part of my snow day model can be fitted to the alert days of past winters. Join the waitlist, link in my bio.",
   "pictures": [
     "closings",
     "region"

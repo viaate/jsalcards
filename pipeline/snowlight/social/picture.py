@@ -385,10 +385,29 @@ def school_zones(predictions: Mapping[str, object] | None, directory: Directory)
     elsewhere. The file's age is no matter: a district's clock does not age."""
     if predictions is None or predictions.get("schema_version") != 1:
         return None
-    if predictions.get("directory") != directory.stamp():
+    if _stamp(predictions.get("directory")) != directory.stamp():
         return None
     try:
         return _zones_of(predictions)
+    except ValueError:
+        return None
+
+
+def _stamp(value: object) -> dict[str, object] | None:
+    """The directory stamp the page reads from a file (map-day.ts ``parseStamp``): its day and
+    counts alone, so a key the page does not read never parts the two (``zonesFor`` compares
+    only these three); ``None`` for one the page does not read, which it refuses the file for."""
+    if not isinstance(value, Mapping):
+        return None
+    day = value.get("generated_on")
+    if not isinstance(day, str) or not _LOCAL_DATE.fullmatch(day):
+        return None
+    try:
+        return {
+            "generated_on": day,
+            "schools": _index(value.get("schools")),
+            "districts": _index(value.get("districts")),
+        }
     except ValueError:
         return None
 

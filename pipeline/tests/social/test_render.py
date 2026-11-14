@@ -24,7 +24,7 @@ from playwright.sync_api import sync_playwright
 from snowlight.directory.points import encode
 from snowlight.social import cli
 from snowlight.social.cards import Card
-from snowlight.social.picture import REGION_TRIES, Picture, Seen, Taken, calm_regions
+from snowlight.social.picture import REGION_TRIES, Picture, Seen, Taken, calm_regions, choose
 from snowlight.social.render import (
     GL_ARGS,
     HOSTS,
@@ -570,9 +570,24 @@ def test_while_chances_are_testing_no_picture_or_card_gives_one(
         return found
 
     monkeypatch.setattr(Attempt, "zones", recorded)
+    chosen: list[dict[str, Any]] = []
+
+    def chose(**given: Any) -> Picture:
+        chosen.append(given)
+        return choose(**given)
+
+    monkeypatch.setattr("snowlight.social.render.choose", chose)
     taken = render(tmp_path, facts=NO_CHANCES, site=base, now=lambda: site.now, say=said.append)
     assert taken is not None
     assert taken.kind == "region"
+    # The picture is chosen with the file's zones but never its chances: while chances are
+    # TESTING it is told no predictions at all, even though the render read the file.
+    assert chosen, "the render chose no picture"
+    for given in chosen:
+        assert given["predictions"] is None, "the picture was given the chances"
+        assert given["chances"] is False
+        assert given["zones"] == site.predictions
+    monkeypatch.setattr("snowlight.social.render.choose", choose)
     assert taken.seen.chance is None
     assert not mentions_chance(taken.shows)
     # The render reads the file itself, for each school's time zone alone: no chance of it is

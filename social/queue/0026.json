@@ -1,7 +1,7 @@
 {
   "id": "0026",
   "style": "dev_log",
-  "text": "Beside a closing on my private test map, a school's panel gives plain details like buses on snow routes. My snow day model sorts each school day by the winter alerts over the district. Waitlist link in my bio.",
+  "text": "My private test map gives plain details beside a closing. On an alert day, a private school in my snow day model takes the level of a district with its county's usual number of those alerts. Waitlist link in my bio.",
   "pictures": [
     "closings",
     "region"

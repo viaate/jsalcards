@@ -82,8 +82,11 @@ Two rules hold for every post, Haiku's and the queued ones alike, and for every 
   and region's, the weather service's winter alerts it sorts days by, how the forecast for
   the school morning moves the chance on most winter advisory and warning days, the
   walk-forward test on past winters it never saw, a new set about every 30 minutes, the
-  learning step that labels finished school days several times a day, the storm drill that
-  every change pushed to the model runs). Haiku is given one of them a day, in turn
+  learning step that labels finished school days several times a day so the model can learn
+  from them, the storm drill that every change pushed to the model runs). The model is
+  unchanged by what it labels so far: a refit taking over is the COMING fact `model-refit`, so
+  a draft that says the model learns, retrains or refits is refused unless it says that is
+  still to come ("so it can learn from them" is the LIVE learning step). Haiku is given one of them a day, in turn
   (`rules.model_fact_for`: eleven LIVE model facts, an odd count, so with the styles
   alternating each fact pairs with both), and the deterministic check refuses a draft that
   does not name it, or a post that names no model fact at all. A model fact that is TESTING
@@ -198,7 +201,7 @@ Marking `closings` LIVE brings the closings view and its counts back with no cod
   claimed in the last 14 days, queued or Haiku, or as a post still in the queue, is dropped
   as a failed try with no call to X: every post's mark (`post.draft_mark`, its words with case
   and punctuation aside) is kept in the `social_marks` table just before its claim, since a
-  posted queue file is removed, and X refuses a duplicate with a 403 that would hold all
+  posted queue file may later be removed, and X refuses a duplicate with a 403 that would hold all
   posting.
 - At most **4 Haiku calls a run** (write, check, and one more try of each), each capped at
   **1,024 output tokens**, effort `low`, and no SDK retries, and **3 Haiku tries a UTC day**

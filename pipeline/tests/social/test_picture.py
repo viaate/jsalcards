@@ -1610,6 +1610,25 @@ def test_a_file_the_page_reads_in_full_gives_its_zones() -> None:
     assert school_zones(single, zone_directory()) is not None
 
 
+def test_the_stamp_is_read_by_its_day_and_counts_alone() -> None:
+    """The page compares a file's directory by its day and two counts only (map-day.ts
+    ``zonesFor``) and refuses the file for a stamp it does not read (``parseStamp``): a key
+    it does not read never parts the two, and a stamp it cannot read gives no zones (SYNTHETIC)."""
+    extra = {**zone_file(), "directory": {**ZONE_STAMP, "built_by": "SYNTHETIC"}}
+    assert school_zones(extra, zone_directory()) == school_zones(zone_file(), zone_directory())
+    assert school_zones(extra, zone_directory()) is not None
+    unread = [
+        {**ZONE_STAMP, "generated_on": "Oct 14"},
+        {**ZONE_STAMP, "schools": -1},
+        {**ZONE_STAMP, "districts": True},
+        {key: value for key, value in ZONE_STAMP.items() if key != "districts"},
+        "2026-10-14",
+        None,
+    ]
+    for stamp in unread:
+        assert school_zones({**zone_file(), "directory": stamp}, zone_directory()) is None
+
+
 def test_the_description_counts_what_the_page_lights_each_on_its_own_day() -> None:
     """The picture's words count the schools lit on each one's own day, and name the days."""
     rows = {"2026-11-12": [(0, 1), (1, 0)], "2026-11-13": [(0, 0), (1, 2)]}

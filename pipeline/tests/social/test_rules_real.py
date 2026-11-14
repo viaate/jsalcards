@@ -182,6 +182,7 @@ MODEL_TRUE = [
     "The model works out a new set of chances about every 30 minutes.",
     "The model's forecast reasons are built, and I am testing them with them switched off.",
     "Once closings are on the map this winter, the model will learn from them.",
+    "Several times a day my snow day model labels finished school days so it can learn from them.",
 ]
 
 
@@ -199,7 +200,13 @@ def test_true_model_drafts_pass(text: str) -> None:
         "Join the waitlist. Link in my bio.",
         # TESTING or COMING model work called live.
         "The model reads the snow forecast for every district.",
+        "The prediction model learns from real closings every night.",
         "The model retrains itself after every school day.",
+        # The learning step labels days so the model can learn from them; the model has not
+        # changed by them (model-refit is COMING), so no draft says it learns or retrains.
+        "My model retrains.",
+        "My snow day model learns from every closing.",
+        "My snow day model keeps learning from closings.",
         "The night-before outlook raises the chance in the prediction model.",
         "A winter storm watch raises your chance in my prediction model.",
         "The model counts how much snow is on the way.",
@@ -665,6 +672,7 @@ NOT_LIVE_BLEED = [
     "The reader finds closings and they show on the map, with more coming.",
     "The night-before outlook is on for every district and notifications are coming.",
     "The model weighs the districts next door for every chance, with more coming.",
+    "The model learns from every closing each night, with more coming.",
     "The model uses the forecast for every chance, and the waitlist is open before launch.",
     "Winter storm watches raise the chance now, and I am still building the rest.",
     "I finished the map; every school on it, with launch this winter.",
