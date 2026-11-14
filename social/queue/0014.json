@@ -1,7 +1,7 @@
 {
   "id": "0014",
   "style": "dev_log",
-  "text": "Every time the model runs, it first labels each finished school day from the closings the live reader found. A refit takes over only when held-out days show it is no worse. Waitlist link in my bio.",
+  "text": "Several times a day, my snow day model labels finished school days from the closings the live reader found, so it can learn from them. Get on the waitlist, link in my bio.",
   "pictures": [
     "closings",
     "region"

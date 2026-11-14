@@ -80,9 +80,10 @@ Two rules hold for every post, Haiku's and the queued ones alike, and for every 
   trained on real closing records, not a guess, and something concrete about it (the 2,388 real past school
   days it is trained on, how it leans on a district's own records and its county's, state's
   and region's, the weather service's winter alerts it sorts days by, how the forecast for
-  the school morning moves an alert day's chance, the walk-forward test on past winters it
-  never saw, a new set about every 30 minutes, the learning step that labels each finished
-  school day, the storm drill). Haiku is given one of them a day, in turn
+  the school morning moves the chance on most winter advisory and warning days, the
+  walk-forward test on past winters it never saw, a new set about every 30 minutes, the
+  learning step that labels finished school days several times a day, the storm drill that
+  every change pushed to the model runs). Haiku is given one of them a day, in turn
   (`rules.model_fact_for`: eleven LIVE model facts, an odd count, so with the styles
   alternating each fact pairs with both), and the deterministic check refuses a draft that
   does not name it, or a post that names no model fact at all. A model fact that is TESTING

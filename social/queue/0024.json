@@ -1,7 +1,7 @@
 {
   "id": "0024",
   "style": "dev_log",
-  "text": "On an alert day in my snow day model, the chance starts from one level for that kind of alert, moved by how often the district gets those alerts. Waitlist link in my bio.",
+  "text": "How often a district gets winter advisories counts in my snow day model: a district that gets many of them starts its advisory days from a lower level. Get on the waitlist, link in my bio.",
   "pictures": [
     "closings",
     "region"
