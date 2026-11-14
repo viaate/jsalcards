@@ -30,6 +30,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.snowlightmap.app
         PRODUCT_NAME: Snowlight
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: "YES"
         INFOPLIST_KEY_CFBundleDisplayName: Snowlight
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"

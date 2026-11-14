@@ -18,7 +18,9 @@
 //       UTC or not stated;
 //   (d) golden families that no test reads, and tests that name a family that is not there;
 //   (e) debug code that a release build would hold: the picture tour's folder is outside
-//       the words rules, so every line of code in it must sit inside `#if DEBUG`.
+//       the words rules, so every line of code in it must sit inside `#if DEBUG`;
+//   (f) a glyph that is not flat: every .svg is one plain path filled #000, with no mask,
+//       no variable, no currentColor, no stroke, no transform, no style and no opacity.
 //
 // It reads code, not comments. It skips itself and ios/README.md: both must be able to
 // name what is banned. Its lists of names are lists: what a list leaves out passes. The
@@ -81,7 +83,7 @@ const RUNNERS = ['ubuntu-24.04', 'macos-26', 'xcode-27'];
 const ACTIONS = ['actions/checkout@v7', 'actions/setup-node@v7', 'actions/upload-artifact@v7'];
 const SIGNING_ENDINGS = ['.p8', '.p12', '.cer', '.mobileprovision', '.pem'];
 const LANGUAGE_ENDINGS = ['.strings', '.stringsdict', '.xcstrings'];
-const TEXT_ENDINGS = ['.swift', '.mjs', '.js', '.sh', '.yml', '.yaml', '.txt', '.md', '.json', '.xcconfig', '.plist', '.gitignore', '.command'];
+const TEXT_ENDINGS = ['.swift', '.mjs', '.js', '.sh', '.yml', '.yaml', '.txt', '.md', '.json', '.xcconfig', '.plist', '.gitignore', '.command', '.svg'];
 const NAME_LITERAL = /^[a-z0-9.]+$/;
 
 function isIosWorkflow(path) {
@@ -578,6 +580,40 @@ const EMOJI = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u;
 const EM_DASH = /[\u2014\u2015\u2E3A\u2E3B]|--/u;
 const EXCLAMATION = /[!\u00A1\u203C\u2049]/u;
 
+/** What a flat glyph never holds (M1 2.9): each would draw it other than as one filled shape. (f) */
+const GLYPH_NEVER = ['<mask', 'var(', 'currentColor', 'stroke', 'transform', 'style=', 'opacity'];
+
+/**
+ * (f) A glyph is flat: one `<path`, one `fill=` and it is `fill="#000"`, and none of
+ * GLYPH_NEVER. An .svg that was not read as text is itself a hit.
+ * @param {string} path
+ * @param {string | null} text
+ * @param {(rule: string, path: string, line: number, what: string) => void} hit
+ */
+function checkGlyph(path, text, hit) {
+  if (text === null) {
+    hit('glyph.flat', path, 0, 'an .svg that was not read as text');
+    return;
+  }
+  const lineOf = (index) => text.slice(0, index).split('\n').length;
+  const all = (needle) => {
+    const found = [];
+    for (let at = text.indexOf(needle); at >= 0; at = text.indexOf(needle, at + 1)) found.push(at);
+    return found;
+  };
+  const paths = all('<path');
+  if (paths.length !== 1) hit('glyph.flat', path, lineOf(paths[1] ?? 0), `${paths.length} <path elements, not one`);
+  const fills = all('fill=');
+  if (fills.length !== 1) hit('glyph.flat', path, lineOf(fills[1] ?? 0), `${fills.length} fill= attributes, not one`);
+  for (const at of fills) {
+    if (!text.startsWith('fill="#000"', at)) hit('glyph.flat', path, lineOf(at), `a fill that is not fill="#000": ${text.slice(at, at + 24)}`);
+  }
+  for (const never of GLYPH_NEVER) {
+    const found = all(never);
+    if (found.length > 0) hit('glyph.flat', path, lineOf(found[0]), `${never} in a glyph`);
+  }
+}
+
 /**
  * Checks a tree of files. `files` maps a repository path to the file's text; a file
  * that is not text maps to null. `banned` is the site's list of banned words.
@@ -608,6 +644,9 @@ function checkTree(files, banned) {
     if (underIos && LANGUAGE_ENDINGS.some((ending) => path.endsWith(ending))) {
       hit('language.file', path, 0, 'a strings file');
     }
+
+    // (f) Our own glyphs are flat.
+    if (underIos && path.endsWith('.svg')) checkGlyph(path, text, hit);
 
     if (text === null || path === SELF || path === README) continue;
     const values = withoutComments(path, text);
@@ -1171,6 +1210,10 @@ const SEARCH_VIEW = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/SampleSearch.sw
 const LAYOUT_VIEW = 'ios/SnowlightKit/Sources/SnowlightKit/Layout/Sample.swift';
 const WORKFLOW = '.github/workflows/ios-sample.yml';
 const PROJECT = 'ios/project.yml';
+const GLYPH = 'ios/SnowlightKit/Sources/SnowlightKit/Glyphs.xcassets/glyph.sample.imageset/sample.svg';
+/** A glyph's file, as glyphs-r3.mjs writes them: one path filled #000 inside the draft's viewBox. */
+const glyph = (inside) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${inside}</svg>\n`;
+const FLAT_PATH = '<path fill="#000" fill-rule="evenodd" d="M3 7.2L8 3.6L8 17.9Z"/>';
 /** Ten characters shaped like a team value, made here so that none is ever written down. */
 const TEAM_SHAPE = 'X'.repeat(10);
 
@@ -1216,7 +1259,9 @@ const SWAPPED = [...MONTHS.slice(0, 3), 'May', 'April', ...MONTHS.slice(5)];
 /** A tree that every rule must pass: the allowed forms, side by side. */
 const CLEAN = new Map([
   [SHOWN, 'import SwiftUI\nextension ShownText {\n    var text: Text { Text(verbatim: drawnString) }\n}\n'],
-  [NAMES, 'import SwiftUI\nstruct SymbolName {\n    fileprivate let name: String\n    static let map = SymbolName(name: "map")\n    static let done = SymbolName(name: "checkmark.square")\n}\n'],
+  [NAMES, 'import SwiftUI\nstruct SymbolName {\n    fileprivate let name: String\n    static let map = SymbolName(name: "map")\n    static let done = SymbolName(name: "checkmark.square")\n}\nstruct GlyphName {\n    fileprivate let name: String\n    var tabImage: Image {\n        Image(name, bundle: .module)\n    }\n    static let clock = GlyphName(name: "glyph.clock")\n}\n'],
+  // A flat glyph: one path filled #000 (its fill-rule is not a fill).
+  [GLYPH, glyph(FLAT_PATH)],
   // A comment may name what is banned; so may the debug tour, which no release build holds.
   [VIEW, view('ShownLabel(model.title) // never Text("x"), never Date() or String(x)')],
   [TOUR, '// The tour.\n#if DEBUG\nimport MetalKit\nlet key = "tour.name"\nlet said = String(describing: 3) + "Text(\\"x\\")"\n#if targetEnvironment(simulator)\nlet where = "#endif is only named in this string"\n#else\nlet where = "a phone"\n#endif\n#endif // DEBUG\n'],
@@ -1352,6 +1397,12 @@ const SAMPLES = [
   { name: 'a plain list line ending in a space', rules: ['appwords.format'], files: [[APP_WORDS_LIST, `${tableList(MONTHS)}approved\towner\tMy School \n`]] },
   { name: 'a quoted list word with a backslash', rules: ['appwords.format'], files: [[APP_WORDS_LIST, `${tableList(MONTHS)}approved\towner\t"\\u00b7"\n`]] },
   { name: "a string literal in the app's formats", rules: ['appformat.literal'], files: [[APP_FORMAT, 'enum AppFormat {\n    static let dash = ShownText(" - ")\n}\n']] },
+  // (f) Our glyphs are flat.
+  { name: 'a glyph with a mask', rules: ['glyph.flat'], files: [[GLYPH, glyph(`<mask id="m"><rect width="24" height="24"/></mask>${FLAT_PATH}`)]] },
+  { name: 'a glyph in currentColor', rules: ['glyph.flat'], files: [[GLYPH, glyph('<path fill="currentColor" d="M3 7.2L8 3.6L8 17.9Z"/>')]] },
+  { name: 'a glyph with a stroke', rules: ['glyph.flat'], files: [[GLYPH, glyph('<path fill="#000" stroke="#000" stroke-width="1.8" d="M3 7.2L8 3.6L8 17.9Z"/>')]] },
+  { name: 'a glyph with two paths', rules: ['glyph.flat'], files: [[GLYPH, glyph(`${FLAT_PATH}${FLAT_PATH}`)]] },
+  { name: 'a glyph filled other than #000', rules: ['glyph.flat'], files: [[GLYPH, glyph('<path fill="#1d9be6" fill-rule="evenodd" d="M3 7.2L8 3.6L8 17.9Z"/>')]] },
   // (b) English only.
   { name: 'a .lproj folder', rules: ['language.file'], files: [['ios/App/es.lproj/InfoPlist.txt', 'x\n']] },
   { name: 'a .strings file', rules: ['language.file'], files: [['ios/App/Localizable.strings', 'x\n']] },
@@ -1547,6 +1598,7 @@ const RULES = [
   'tests.device', 'tests.network', 'tests.import', 'tests.skip', 'tests.count',
   'families.unnamed', 'families.missing',
   'tour.debug',
+  'glyph.flat',
 ];
 
 /**

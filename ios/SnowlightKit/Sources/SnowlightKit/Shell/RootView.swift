@@ -1,6 +1,7 @@
 // The app's root view: the system's tab bar with the four tabs, then the search tab.
 //
 // The system draws the bar, its glass and the search button; none of that is drawn here.
+// Only the four tab icons are ours: approved draft 3's glyphs (Shell/Names.swift).
 // Every word on screen is a field of the shell's model: a view never names a word table
 // (they are not public, so the compiler refuses) and holds no text in quotes.
 
@@ -73,17 +74,17 @@ public struct RootView: View {
             Tab(value: ScreenID.mySchool) {
                 EmptyTab(model: model.mySchool)
             } label: {
-                tabLabel(model.tabs.mySchool, SymbolName.mySchool)
+                tabLabel(model.tabs.mySchool, ScreenID.mySchool, GlyphName.schoolFill, GlyphName.schoolLine)
             }
             Tab(value: ScreenID.map) {
                 EmptyTab(model: model.map)
             } label: {
-                tabLabel(model.tabs.map, SymbolName.map)
+                tabLabel(model.tabs.map, ScreenID.map, GlyphName.mapFill, GlyphName.mapLine)
             }
             Tab(value: ScreenID.callIt) {
                 EmptyTab(model: model.callIt)
             } label: {
-                tabLabel(model.tabs.callIt, SymbolName.callIt)
+                tabLabel(model.tabs.callIt, ScreenID.callIt, GlyphName.pickFill, GlyphName.pickLine)
             }
             Tab(value: ScreenID.settings) {
                 SettingsScreen(
@@ -96,7 +97,7 @@ public struct RootView: View {
                     }
                 )
             } label: {
-                tabLabel(model.tabs.settings, SymbolName.settings)
+                tabLabel(model.tabs.settings, ScreenID.settings, GlyphName.gearFill, GlyphName.gearLine)
             }
             // The system gives this tab its own place beside the bar, and its symbol.
             Tab(value: ScreenID.search, role: .search) {
@@ -113,12 +114,13 @@ public struct RootView: View {
         }
     }
 
-    /// A tab's label: its name from the model, and its symbol.
-    private func tabLabel(_ tab: TabModel, _ symbol: SymbolName) -> some View {
+    /// A tab's label: its name from the model, and its glyph: the filled one while the
+    /// tab is chosen, the line one when it is not.
+    private func tabLabel(_ tab: TabModel, _ screen: ScreenID, _ chosen: GlyphName, _ other: GlyphName) -> some View {
         Label {
             ShownLabel(tab.title)
         } icon: {
-            symbol.image
+            (selection == screen ? chosen : other).tabImage
         }
     }
 }

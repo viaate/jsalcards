@@ -10,6 +10,7 @@ let package = Package(
         .target(
             name: "SnowlightKit",
             dependencies: [.product(name: "SnowlightCore", package: "SnowlightCore")],
+            resources: [.process("Glyphs.xcassets")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]
