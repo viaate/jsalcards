@@ -198,7 +198,6 @@ def test_true_model_drafts_pass(text: str) -> None:
         "Join the waitlist. Link in my bio.",
         # TESTING or COMING model work called live.
         "The model reads the snow forecast for every district.",
-        "The prediction model learns from real closings every night.",
         "The model retrains itself after every school day.",
         "The night-before outlook raises the chance in the prediction model.",
         "A winter storm watch raises your chance in my prediction model.",
@@ -572,6 +571,16 @@ def _shows() -> dict[str, list[str]]:
 
 SHOWS = _shows()
 QUEUE = sorted((REPO / "social" / "queue").glob("*.json"))
+POSTED_BEFORE_A_FACT_CHANGED: dict[str, str] = {
+    "0005": (
+        "posted Oct 28, 2026 (a queued post is posted at most once, ever); its 'before the"
+        " first real snow' left the launch fact on Nov 14, when that plan could no longer be"
+        " checked"
+    ),
+}
+"""Queued posts already posted whose words a later change of the facts file no longer holds:
+never sent again (the D1 record), kept as the voice reference, and not checked against today's
+facts."""
 
 
 def test_the_queue_holds_posts() -> None:
@@ -586,6 +595,8 @@ def test_every_queued_post_passes_the_real_rules_with_every_picture_it_may_go_wi
     """Each queued post, in the owner's voice, against the real facts file: with a fresh card
     of each kind its ``pictures`` allow, and with the library's dated card it goes with when
     the render fails (an older picture, so nothing in it may call the picture current)."""
+    if path.stem in POSTED_BEFORE_A_FACT_CHANGED:
+        pytest.skip(POSTED_BEFORE_A_FACT_CHANGED[path.stem])
     content = load(REPO)
     item = next(entry for entry in content.queue if entry.id == path.stem)
     assert item.pictures is not None, "a queued post names the pictures its words fit"
@@ -636,7 +647,7 @@ NOT_LIVE_BLEED = [
     "Before launch I put every closed school on the map.",
     "The reader finds closings and they show on the map, with more coming.",
     "The night-before outlook is on for every district and notifications are coming.",
-    "The model learns from every closing each night, with more coming.",
+    "The model weighs the districts next door for every chance, with more coming.",
     "The model uses the forecast for every chance, and the waitlist is open before launch.",
     "Winter storm watches raise the chance now, and I am still building the rest.",
     "I finished the map; every school on it, with launch this winter.",
@@ -1154,8 +1165,15 @@ def test_running_but_private_closings_and_glow_are_never_public_or_coming(
     assert any(said in line for line in found), found
 
 
-def test_the_private_marker_is_on_the_closings_and_the_glow_only() -> None:
-    assert {fact.id for fact in FACTS.facts if fact.private} == {"closings", "glow"}
+def test_the_private_marker_is_on_the_running_features_behind_the_lock_only() -> None:
+    assert {fact.id for fact in FACTS.facts if fact.private} == {
+        "closings",
+        "glow",
+        "evening",
+        "later-days",
+        "share-cards",
+        "details",
+    }
     with pytest.raises(FactsError, match="only a LIVE fact is marked private"):
         parse_facts("- [COMING] x: SYNTHETIC. | terms: x | private\n")
 

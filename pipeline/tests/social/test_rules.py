@@ -16,6 +16,7 @@ from snowlight.social.rules import (
     weight,
 )
 from social.fakes import FACTS
+from social.test_rules_real import POSTED_BEFORE_A_FACT_CHANGED
 
 REPO = Path(__file__).resolve().parents[3]
 FACT_SET = parse_facts(FACTS)
@@ -137,6 +138,8 @@ def test_the_repository_facts_and_queue_pass_their_own_checks() -> None:
     newest = content.newest()
     assert newest is not None
     for item in content.queue:
+        if item.id in POSTED_BEFORE_A_FACT_CHANGED:
+            continue
         # The strictest case: no fresh picture fits, so it goes with an older image.
         image = item.image or newest
         assert (

@@ -1830,9 +1830,12 @@ def _excused(text: str, one: Named, named: list[Named], boundaries: list[int]) -
     closing on one map, coming this winter"); or, for a TESTING term, as a testing word after
     it with a word of :data:`BACK` as its object ("..., and I am testing them"). A not-live
     word said of another thing never counts ("Closings glow on the map; notifications are
-    coming", "Phone alerts are coming; closings light up every state")."""
+    coming", "Phone alerts are coming; closings light up every state"), nor a word inside the
+    term itself ("next" in "districts next door")."""
     starts = _clause_starts(text)
     for word in _spans(text, _excuses(one.fact)):
+        if one.span[0] <= word[0] and word[1] <= one.span[1]:
+            continue
         clause = _clause_of(boundaries, word[0])
         if clause == one.clause:
             in_clause = [other for other in named if other.clause == clause]
