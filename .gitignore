@@ -2,7 +2,7 @@
 node_modules/
 # A node_modules symlink (a worktree sharing another checkout's) is a file, not a directory.
 node_modules
-.venv/
+.venv
 
 # Build output
 dist/
