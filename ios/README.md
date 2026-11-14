@@ -66,7 +66,7 @@ Each rule is held by a script, a test or the compiler, named beside it.
    the device's zone by mistake gives right answers. Each `swift test` step sets `TZ` and
    `SNOWLIGHT_EXPECT_ZONE` to the same odd zone (`workflow.zone`); no test may be skipped
    or kept from a platform (`tests.skip`); the count of tests in the source is the number
-   in `tools/test-count.txt` (`tests.count`, 67 today).
+   in `tools/test-count.txt` (`tests.count`, 88 today).
 7. **Made-up schools only.** Fixtures are the pipeline's synthetic ones; no school crest or
    logo is ever committed.
 8. **The picture tour is debug code.** Everything under `Tour/` is inside one `#if DEBUG`
@@ -403,6 +403,28 @@ answer differs (it prints the family, the first differing case and the changed s
 what the words watch covers. Then update the Swift port until its tests pass, and commit
 both together. The golden folder is about 2.3 MB (at most 3 MB, no file over 700 KB), and
 making it takes about 4 seconds.
+
+## The port
+
+The site's rules are ported to Swift in slices (M0b), each with the tests that read its
+golden families. Slice A, the files, is in `SnowlightCore/Sources/SnowlightCore/Files/`:
+
+| Swift file | Site code it ports | Read by |
+|---|---|---|
+| `JSONValue.swift` | JSON as the site's checks see it; `isWhole`, `isIndex`, `isTimeZone` (narrower: the list, then this machine) | `JSONValueTests`, `ZoneNamesTests` |
+| `Instant.swift` | `parseInstant` (`state/instant.ts`), `nextDay`, and the calendar sums by hand | `InstantTests` |
+| `Stamp.swift` | `parseStamp` (`data/map-day.ts`), `sameStamp` (`data/school-day.ts`) | every file's tests |
+| `ClosingsFile.swift` | `parseClosings`, `decodeDay` (`data/closings.ts`), `rowOn` and the details column (`data/school-day.ts`) | `ClosingsFileTests` |
+| `SeasonFile.swift` | `parseSeason`, `lastDayOver`, `schoolSeason` (`data/season.ts`) | `SeasonTests` |
+| `PredictionsFile.swift` | `parsePredictions` and the private schools (`data/map-day.ts`), `zonesOf`, `zonesFor`, `zoneOf`, `schoolZone`, `regionOf`, `inContiguous`; `schoolEntry` (`data/school-day.ts`) | `PredictionsFileTests`, `ZoneNamesTests` |
+| `EditionFile.swift` | `schools/edition.json` by its schema (the site has no check of it) | `EditionFileTests` |
+
+Everything in `Files/` is internal to SnowlightCore: no text leaves the package but a
+`ShownText`. An instant is whole milliseconds (`Int64`); a JavaScript Date that is invalid
+(the golden files' `"NaN"`) cannot be one, and the site says nothing there. Where a site
+function throws, the Swift one throws (`lastDayOver`, `schoolSeason`). A forecast's
+`buses_at` and every part of the predictions file M0 does not read are kept as the file holds
+them. 88 tests today (`tools/test-count.txt`).
 
 ## Bumping the pinned Xcode
 
