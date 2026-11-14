@@ -15,13 +15,13 @@ import pytest
 from snowlight.directory.points import NO_DISTRICT, Points
 from snowlight.social.cards import alt_text
 from snowlight.social.picture import (
+    CONTIGUOUS_ZONES,
     DISTRICT_X,
     FIT_BOX,
     HEIGHT,
     MAX_ZOOM,
     REGIONS,
     SCHOOL_STARTS,
-    CONTIGUOUS_ZONES,
     UNKNOWN_ZONE,
     UNREAD_ZONE,
     WIDTH,
@@ -1332,15 +1332,16 @@ def test_states_holding_every_lit_school_are_said_with_in_and_counts_agree_in_nu
 # -- each school on its own map day (web/src/data/map-day.ts), as the page lights it ------------
 
 MAP_DAY_TURNS = [
-    # zone, the minute before its 3:30 PM, its 3:30 PM, before its midnight, its midnight
-    ("America/New_York", "2026-11-09T20:29", "2026-11-09T20:30", "2026-11-10T04:59", "2026-11-10T05:00"),
-    ("America/Chicago", "2026-11-09T21:29", "2026-11-09T21:30", "2026-11-10T05:59", "2026-11-10T06:00"),
-    ("America/Denver", "2026-11-09T22:29", "2026-11-09T22:30", "2026-11-10T06:59", "2026-11-10T07:00"),
-    ("America/Phoenix", "2026-11-09T22:29", "2026-11-09T22:30", "2026-11-10T06:59", "2026-11-10T07:00"),
-    ("America/Los_Angeles", "2026-11-09T23:29", "2026-11-09T23:30", "2026-11-10T07:59", "2026-11-10T08:00"),
-    ("America/Anchorage", "2026-11-10T00:29", "2026-11-10T00:30", "2026-11-10T08:59", "2026-11-10T09:00"),
-    ("Pacific/Honolulu", "2026-11-10T01:29", "2026-11-10T01:30", "2026-11-10T09:59", "2026-11-10T10:00"),
-]  # fmt: skip
+    # zone, then in November 2026: the minute before its 3:30 PM, its 3:30 PM, the minute
+    # before its midnight, its midnight
+    ("America/New_York", "09T20:29", "09T20:30", "10T04:59", "10T05:00"),
+    ("America/Chicago", "09T21:29", "09T21:30", "10T05:59", "10T06:00"),
+    ("America/Denver", "09T22:29", "09T22:30", "10T06:59", "10T07:00"),
+    ("America/Phoenix", "09T22:29", "09T22:30", "10T06:59", "10T07:00"),
+    ("America/Los_Angeles", "09T23:29", "09T23:30", "10T07:59", "10T08:00"),
+    ("America/Anchorage", "10T00:29", "10T00:30", "10T08:59", "10T09:00"),
+    ("Pacific/Honolulu", "10T01:29", "10T01:30", "10T09:59", "10T10:00"),
+]
 """The site's own table (web/src/data/tests/map-day.test.ts ``ZONES``)."""
 
 
@@ -1350,11 +1351,11 @@ def test_a_school_s_map_day_is_its_today_until_3_30_pm_on_its_clock_then_its_tom
 ) -> None:
     monday, tuesday = date(2026, 11, 9), date(2026, 11, 10)
     assert map_day(at("2026-11-09T12:00"), zone) == monday
-    assert map_day(at(before), zone) == monday
-    assert map_day(at(turn), zone) == tuesday
-    assert map_day(at(late), zone) == tuesday
+    assert map_day(at(f"2026-11-{before}"), zone) == monday
+    assert map_day(at(f"2026-11-{turn}"), zone) == tuesday
+    assert map_day(at(f"2026-11-{late}"), zone) == tuesday
     # After midnight that same Tuesday is its today: nothing changes at midnight.
-    assert map_day(at(midnight), zone) == tuesday
+    assert map_day(at(f"2026-11-{midnight}"), zone) == tuesday
 
 
 def test_the_map_day_keeps_each_clock_across_its_changes() -> None:

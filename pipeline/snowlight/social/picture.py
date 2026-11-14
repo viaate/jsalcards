@@ -386,31 +386,45 @@ def school_zones(predictions: Mapping[str, object] | None, directory: Directory)
         return None
     if predictions.get("directory") != directory.stamp():
         return None
+    try:
+        return _zones_of(predictions)
+    except ValueError:
+        return None
+
+
+def _index(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError("not an index")
+    return value
+
+
+def _zones_of(predictions: Mapping[str, object]) -> Zones:
+    """Each district's and private school's zone in a predictions file.
+
+    Raises:
+        ValueError: the page would not read the file (a row or a zone is malformed).
+    """
     districts = predictions.get("districts")
     schools = predictions.get("schools", [])
     names = predictions.get("zones", [])
     if not isinstance(districts, list) or not isinstance(schools, list):
-        return None
+        raise ValueError("no districts")
     if not isinstance(names, list) or not all(_known_zone(name) for name in names):
-        return None
+        raise ValueError("a zone the page cannot read")
     by_district: dict[int, str] = {}
     for row in districts:
-        if not isinstance(row, dict):
-            return None
-        index, zone = row.get("district"), row.get("time_zone")
-        if isinstance(index, bool) or not isinstance(index, int) or not _known_zone(zone):
-            return None
-        by_district[index] = str(zone)
+        zone = row.get("time_zone") if isinstance(row, dict) else None
+        if not isinstance(row, dict) or not _known_zone(zone):
+            raise ValueError("a district is malformed")
+        by_district[_index(row.get("district"))] = str(zone)
     by_school: dict[int, str] = {}
     for row in schools:
         if not isinstance(row, dict):
-            return None
-        index, place = row.get("school"), row.get("zone")
-        if isinstance(index, bool) or not isinstance(index, int):
-            return None
-        if isinstance(place, bool) or not isinstance(place, int) or not 0 <= place < len(names):
-            return None
-        by_school[index] = str(names[place])
+            raise ValueError("a private school is malformed")
+        place = _index(row.get("zone"))
+        if place >= len(names):
+            raise ValueError("a private school's zone is past the file's zones")
+        by_school[_index(row.get("school"))] = str(names[place])
     return Zones(by_district, by_school)
 
 
