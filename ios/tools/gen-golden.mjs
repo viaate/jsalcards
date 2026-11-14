@@ -918,7 +918,9 @@ const FAMILIES = [
     //   ["no_threat"]; then headlineDay(outlook, decided, now)'s day for decided {today, tomorrow}
     //   = [false, false], [true, false], [false, true], [true, true]. `directory` is null for
     //   the file's own stamp.
-    // ["underWay", day, now, zone, buses, underWay(day, now, zone, buses)]
+    // ["underWay", day, now, zone, buses, underWay(day, now, zone, buses), narrower]: `narrower`
+    //   is true where the site accepted a zone name that is not on the app's list (the app then
+    //   reads no clock: the day is not said, as for a zone the site cannot read).
     family: 'predictions',
     minCases: 1500,
     modules: ['data/map-day.ts', 'data/school-day.ts', 'app/chance.ts'],
@@ -1054,7 +1056,15 @@ const FAMILIES = [
           for (const minute of [6 * 60 + 44, 6 * 60 + 45, 7 * 60 + 29, 7 * 60 + 30, 7 * 60 + 31, 8 * 60, 23 * 60 + 59]) {
             const now = atLocal(schoolDay, minute, clock);
             for (const buses of busTimes) {
-              cases.push(['underWay', schoolDay, now, zone, buses, answer(() => underWay(schoolDay, new Date(now), zone, buses === null ? null : new Date(buses)))]);
+              cases.push([
+                'underWay',
+                schoolDay,
+                now,
+                zone,
+                buses,
+                answer(() => underWay(schoolDay, new Date(now), zone, buses === null ? null : new Date(buses))),
+                narrowerZone(zone, context.onList, mapDay),
+              ]);
             }
           }
         }

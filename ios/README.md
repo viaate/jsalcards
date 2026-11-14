@@ -66,7 +66,7 @@ Each rule is held by a script, a test or the compiler, named beside it.
    the device's zone by mistake gives right answers. Each `swift test` step sets `TZ` and
    `SNOWLIGHT_EXPECT_ZONE` to the same odd zone (`workflow.zone`); no test may be skipped
    or kept from a platform (`tests.skip`); the count of tests in the source is the number
-   in `tools/test-count.txt` (`tests.count`, 88 today).
+   in `tools/test-count.txt` (`tests.count`, 122 today).
 7. **Made-up schools only.** Fixtures are the pipeline's synthetic ones; no school crest or
    logo is ever committed.
 8. **The picture tour is debug code.** Everything under `Tour/` is inside one `#if DEBUG`
@@ -377,8 +377,9 @@ app's list of time zone names (421 today): Node's own names, `UTC` and the long 
 spellings Node leaves out, each kept only where the site's `isTimeZone` accepts it, so the
 list is never wider than the site. It stops unless exactly 28 names on the list have a region
 in the site's `regionOf` table. Where the site accepts a zone name the list does not hold
-(`america/chicago`, `US/Central`, `EST`), a case says `narrower`, and there the app must
-refuse.
+(`america/chicago`, `US/Central`, `EST`), a case says `narrower` (the `predictions` file
+cases, the `map-day` cases and the `underWay` cases), and there the app must refuse: no file,
+no clock, a day not said.
 
 The files the closings, predictions and season cases read are copies of the pipeline's
 synthetic test files, in `SnowlightCore/Tests/SnowlightCoreTests/Fixtures/site/` under their
@@ -424,7 +425,37 @@ Everything in `Files/` is internal to SnowlightCore: no text leaves the package 
 (the golden files' `"NaN"`) cannot be one, and the site says nothing there. Where a site
 function throws, the Swift one throws (`lastDayOver`, `schoolSeason`). A forecast's
 `buses_at` and every part of the predictions file M0 does not read are kept as the file holds
-them. 88 tests today (`tools/test-count.txt`).
+them.
+
+Slices B and C, the days and the words, are in `Days/`, `Words/` and `State/`:
+
+| Swift file | Site code it ports | Read by |
+|---|---|---|
+| `Days/LocalDate.swift` | `parseLocalDate` (`copy-format.ts`), the day `Date.parse` reads, the day of the week | `DaysTests` |
+| `Days/WallClock.swift` | the day and minute on a zone's clock (`wallClock`, `localDay`), `atWall` (`data/map-day.ts`) and `atLocalTime` (`app/chance.ts`) | every day rule's tests |
+| `Days/MapDay.swift` | `todayEverywhere`, `mapDay`, `nextMapTurn`, `nextTurnOf`, `clockToday`, `unreadZoneOf`, the 3:30 PM turn (`data/map-day.ts`) | `MapDayTests` |
+| `Days/SchoolDay.swift` | `schoolToday`, `schoolStatus` with no covered file (`data/school-day.ts`): no "open" | `SchoolStatusTests` |
+| `Days/Light.swift` | `litStatus` (`data/closings.ts`) | `LightTests` |
+| `Days/ChanceDay.swift` | `schoolOutlook` and its gates (`data/school-day.ts`), the bus time (`data/forecast-detail.ts`), `underWay`, `headlineDay` (`app/chance.ts`) | `ChanceDayTests` |
+| `Days/MySchoolDay.swift` | the app's one new rule (PLAN section 4, rules A and B2): the big status and the other posted days | `MySchoolDayTests` |
+| `Words/SiteWords.swift` | the fixed words M0 needs (`copy.ts`, `copy-details.ts`, `copy-chance.ts`) | `SiteWordsTests`, `DetailsWordsTests` |
+| `Words/SiteFormat.swift` | `format.number`, `clock`, `time`, `day`, `dayWithYear`, `liveAt`, `updatedAt`, `offline`, `posted`, `statusOn`, `delay`, `dismissal`, `chance`, `grades` (`copy-format.ts`); `weekday`, `chanceOn`, `chanceNumber`, `delayInstead` (`copy-chance.ts`); `dotted` | `ClockAndTimeTests`, `DaysTests`, `StampsTests`, `StatusOnTests`, `ShiftTests`, `ChanceWordsTests`, `GradesTests` |
+| `Words/DetailsWords.swift` | `detailsFormat.said` (`copy-details.ts`) | `DetailsWordsTests` |
+| `Words/SeasonWords.swift` | `seasonFormat.line` (`copy-season.ts`) | `SeasonTests` |
+| `State/Freshness.swift` | `updateState`, `LIVE_FRESH_MS`, `LIVE_LEAD_MS` (`state/freshness.ts`), the viewer's zone and the time held as parameters | `FreshnessTests` |
+| `State/SchoolID.swift` | `isSchoolId`, `parseSchoolId` (`state/ids.ts`), JavaScript's `trim()` by hand | `SchoolIDTests` |
+| `State/SavedSchools.swift` | the app's own: ids only, at most five, each once, the first home | `SavedSchoolsTests` |
+
+A zone is asked one thing only, its offset at an instant, and only a name the app's zone check
+accepts is asked; any other name has no clock (no day, no time, a refused line), never a
+crash. The clock and the zones are always parameters. Month and weekday names come from small
+English tables; no formatter of the system's is used. Where the site's function throws, the
+Swift one throws (`SiteRefusal`); where it returns null, nil, and `delay` and `dismissal` keep
+the two apart. Where the site accepts a zone name the app does not hold, the app reads no
+clock: the `map-day` and `underWay` cases mark those `narrower`. The big status is always the
+school's light (`litStatus`), and it and the other posted days are always exactly the rows of
+the site's `schoolStatus`, the rows after tomorrow included. 122 tests today
+(`tools/test-count.txt`).
 
 ## Bumping the pinned Xcode
 

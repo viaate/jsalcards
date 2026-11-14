@@ -21,6 +21,45 @@ final class SiteWordsTests: XCTestCase {
         XCTAssertEqual(SiteWords.searchPlaceholder.drawnString, try siteCopy(["search", "placeholder"]))
     }
 
+    func testStatusNames() throws {
+        let names: [(ClosingStatus, String)] = [(.closed, "closed"), (.delayed, "delayed"), (.remote, "remote"), (.earlyDismissal, "earlyDismissal")]
+        for (status, key) in names {
+            XCTAssertEqual(SiteWords.status(status).drawnString, try siteCopy(["status", key]), "copy.status.\(key)")
+        }
+    }
+
+    func testStatusLines() throws {
+        let lines: [(ClosingStatus, String)] = [(.closed, "closed"), (.delayed, "delayed"), (.remote, "remote"), (.earlyDismissal, "earlyDismissal")]
+        for (status, key) in lines {
+            let words = SiteWords.statusLine(status)
+            XCTAssertEqual(words.today.drawnString, try siteCopy(["statusLine", key, "today"]), "copy.statusLine.\(key).today")
+            XCTAssertEqual(words.tomorrow.drawnString, try siteCopy(["statusLine", key, "tomorrow"]), "copy.statusLine.\(key).tomorrow")
+            XCTAssertEqual(words.on.drawnString, try siteCopy(["statusLine", key, "on"]), "copy.statusLine.\(key).on")
+        }
+    }
+
+    func testDaysLiveNavAndDetail() throws {
+        let words: [(ShownText, [String])] = [
+            (SiteWords.daysToday, ["days", "today"]),
+            (SiteWords.daysTomorrow, ["days", "tomorrow"]),
+            (SiteWords.liveUpdated, ["live", "updated"]),
+            (SiteWords.liveOffline, ["live", "offline"]),
+            (SiteWords.navLive, ["nav", "live"]),
+            (SiteWords.detailPosted, ["detail", "posted"]),
+            (SiteWords.detailConfirmed, ["detail", "confirmed"]),
+        ]
+        for (word, path) in words {
+            XCTAssertEqual(word.drawnString, try siteCopy(path), "copy.\(path.joined(separator: "."))")
+        }
+    }
+
+    func testChanceOfNoSchool() throws {
+        let file = try GoldenFile.family("copy")
+        let first = try XCTUnwrap(file.cases.first, "copy.json holds no case.")
+        let value = try XCTUnwrap(first.at(["chanceCopy", "noSchool"])?.text, "copy.json holds no chanceCopy.noSchool.")
+        XCTAssertEqual(SiteWords.chanceNoSchool.drawnString, value)
+    }
+
     func testTheGoldenFileHoldsTheWholeOfTheSitesFixedWords() throws {
         let file = try GoldenFile.family("copy")
         let first = try XCTUnwrap(file.cases.first, "copy.json holds no case.")

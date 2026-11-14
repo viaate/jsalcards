@@ -116,4 +116,39 @@ final class SeasonTests: XCTestCase {
         }
         differences.report("season-file, lastDayOver")
     }
+
+    func testSeasonLineAsTheSite() throws {
+        let file = try GoldenFile.family("season-line")
+        let differences = Differences()
+        var refused = 0
+        for value in file.cases {
+            // [closed, delayed, remote, earlyDismissal, since, seasonFormat.line(days, since)]
+            guard let entries = value.entries, entries.count == 6 else {
+                differences.note("a case this test cannot read: \(value)")
+                continue
+            }
+            var counts: [Int] = []
+            for entry in entries[0..<4] {
+                if let number = entry.numeric, let whole = Int(exactly: number) {
+                    counts.append(whole)
+                }
+            }
+            let since = entries[4].text
+            guard counts.count == 4, since != nil || entries[4] == .null else {
+                differences.note("a case this test cannot read: \(value)")
+                continue
+            }
+            differences.compared()
+            let days = SeasonDays(closed: counts[0], delayed: counts[1], remote: counts[2], earlyDismissal: counts[3])
+            let mine = shownAnswer { try SeasonWords.line(days, since: since) }
+            if mine != entries[5] {
+                differences.note("\(counts) since \(entries[4]): the site \(entries[5]), the app \(mine)")
+            }
+            if entries[5] == GoldenValue.throwsMark {
+                refused += 1
+            }
+        }
+        differences.report("season-line")
+        XCTAssertEqual(refused, 1, "season-line.json holds one line of no day at all, which the site refuses.")
+    }
 }

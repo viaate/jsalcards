@@ -112,15 +112,31 @@ func isIndex(_ value: JSONValue?) -> Bool {
     return indexValue(value) != nil
 }
 
-/// The names on the app's list that this machine's Foundation also knows, worked out once.
+/// The names on the app's list that this machine's Foundation also knows, worked out once,
+/// each with its zone: the day rules ask a zone its offset many times, and the zones are
+/// made here once rather than at every question.
 private enum KnownZones {
-    static let here: Set<String> = {
-        var known: Set<String> = []
-        for name in ZoneNames.all where TimeZone(identifier: name) != nil {
-            known.insert(name)
+    static let zones: [String: TimeZone] = {
+        var known: [String: TimeZone] = [:]
+        for name in ZoneNames.all {
+            if let zone = TimeZone(identifier: name) {
+                known[name] = zone
+            }
         }
         return known
     }()
+
+    static let here: Set<String> = Set(zones.keys)
+}
+
+/// The zone of a name `isTimeZone` accepts, as this machine's Foundation knows it; nil for
+/// any other name. The only door to a zone in the package: the wall clock asks it nothing
+/// but its offset at an instant.
+func knownZone(_ name: String) -> TimeZone? {
+    guard isTimeZone(name) else {
+        return nil
+    }
+    return KnownZones.zones[name]
 }
 
 /// Whether a name is a time zone, narrower than the site's on purpose (item 27).

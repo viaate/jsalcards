@@ -69,7 +69,7 @@ final class GoldenShapeTests: XCTestCase {
     }
 
     func testPredictions() throws {
-        try checkShape(GoldenFile.family("predictions"), ["file": 7, "outlook": 9, "underWay": 6])
+        try checkShape(GoldenFile.family("predictions"), ["file": 7, "outlook": 9, "underWay": 7])
     }
 
     func testFreshness() throws {
