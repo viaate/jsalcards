@@ -28,6 +28,17 @@
 //     33% to 47%, all the page color: no Outside screen row, which only the Duo has;
 //   - search: the page point only (iOS folds the bar into one button there);
 //   - the probe: 10%, 25% is the teal the Metal view is cleared to.
+//   - My School drawn from a tour fixture (<look>-myschool-closed, M1 5.4): the panel's
+//     ground in place of the page, at 50%, 75% (201, 655.5 pt: the empty panel below the
+//     season card, which ends at 547, and above the tab bar at 791), `sheet` within 8; the
+//     tab bar's points as above, held to `sheet` (the bar floats over the panel, which runs
+//     to the bottom edge; in light `sheet` is the page's white); the map's ground at 5%,
+//     23% (20.1, 201.0 pt: below the marker's halo, above the panel's shadow), `mapBg`
+//     within 8; the marker's core at 43%, 17% (172.9, 148.6 pt, inside the 8 pt core round
+//     the dot at 175, 151), `closed` within 12; the season card at 8%, 56% (32.2, 489.4 pt:
+//     left of its text, inside its corner), `fill` within 8; and the grabber at 50%, 31%
+//     (201.0, 270.9 pt; it is 183 to 219 by 267 to 272), `grab` within 16. Each is judged
+//     only on the device the places were measured on (the build spec's geometry-r2.out).
 //   - the iPhone Duo's closed pictures (duo-closed-<look>-<screen>[-<variant>]): their own
 //     points, measured on the Duo, with the Outside screen row and the two layouts (see
 //     duoPoints below).
@@ -127,6 +138,24 @@ enum Wanted {
     static func chanceTeal(for rest: String) -> Shade {
         rest.hasPrefix("dark-") ? chanceDark : chanceLight
     }
+
+    // My School's colors, the tokens of SnowlightCore's State/Tokens.swift (approved draft 3,
+    // d3t/app.css), light and dark.
+    /// `sheet`, the panel's ground: CSS:17, :71.
+    static let sheetLight = Shade(red: 0xff, green: 0xff, blue: 0xff)
+    static let sheetDark = Shade(red: 0x1b, green: 0x1c, blue: 0x21)
+    /// `mapBg`, the map's ground: CSS:50, :102.
+    static let mapBgLight = Shade(red: 0xe6, green: 0xeb, blue: 0xf2)
+    static let mapBgDark = Shade(red: 0x00, green: 0x00, blue: 0x00)
+    /// The closed marker's core: `closed` by day (CSS:234), #7fd4ff at night (CSS:230).
+    static let markerLight = Shade(red: 0x1d, green: 0x9b, blue: 0xe6)
+    static let markerDark = Shade(red: 0x7f, green: 0xd4, blue: 0xff)
+    /// `fill`, the season card: CSS:15, :69.
+    static let fillLight = Shade(red: 0xf2, green: 0xf3, blue: 0xf5)
+    static let fillDark = Shade(red: 0x2a, green: 0x2b, blue: 0x31)
+    /// `grab`, the grabber: CSS:20, :74.
+    static let grabLight = Shade(red: 0xd4, green: 0xd5, blue: 0xda)
+    static let grabDark = Shade(red: 0x55, green: 0x57, blue: 0x5f)
 }
 
 /// The device the tab and tile places were measured on.
@@ -137,6 +166,39 @@ let placesMeasuredHere = device == measuredOn
 /// The four tabs in the order of the bar, each with the x of its point.
 let tabs: [(screen: String, x: Int)] = [("myschool", 10), ("map", 28), ("callit", 45), ("settings", 61)]
 let tabBarY = 94
+
+/// The points of a My School picture drawn from a tour fixture, <look>-myschool-<variant>
+/// (M1 5.4), in its look; empty for a variant whose places are not written here.
+func mySchoolPoints(look dark: Bool, variant: String) -> [NamedPoint] {
+    guard variant == "closed" else {
+        return []
+    }
+    let pick = { (light: Shade, darkShade: Shade) -> Shade in dark ? darkShade : light }
+    let sheet = pick(Wanted.sheetLight, Wanted.sheetDark)
+    let mapBg = pick(Wanted.mapBgLight, Wanted.mapBgDark)
+    let marker = pick(Wanted.markerLight, Wanted.markerDark)
+    let fill = pick(Wanted.fillLight, Wanted.fillDark)
+    let grab = pick(Wanted.grabLight, Wanted.grabDark)
+    var points = [
+        NamedPoint(x: 50, y: 75, expect: .near(sheet, 8), what: "the panel's ground, sheet " + sheet.hex, judged: placesMeasuredHere),
+    ]
+    for tab in tabs {
+        if tab.screen == "myschool" {
+            let what = "the chosen tab's capsule (" + tab.screen + "), at least 12 from the panel's sheet"
+            points.append(NamedPoint(x: tab.x, y: tabBarY, expect: .awayFrom(sheet, 12), what: what, judged: placesMeasuredHere))
+        } else {
+            let what = "the bar's glass over " + tab.screen + ", within 10 of the panel's sheet"
+            points.append(NamedPoint(x: tab.x, y: tabBarY, expect: .near(sheet, 10), what: what, judged: placesMeasuredHere))
+        }
+    }
+    points += [
+        NamedPoint(x: 5, y: 23, expect: .near(mapBg, 8), what: "the map's ground, mapBg " + mapBg.hex, judged: placesMeasuredHere),
+        NamedPoint(x: 43, y: 17, expect: .near(marker, 12), what: "the closed marker's core " + marker.hex, judged: placesMeasuredHere),
+        NamedPoint(x: 8, y: 56, expect: .near(fill, 8), what: "the season card, fill " + fill.hex, judged: placesMeasuredHere),
+        NamedPoint(x: 50, y: 31, expect: .near(grab, 16), what: "the grabber, grab " + grab.hex, judged: placesMeasuredHere),
+    ]
+    return points
+}
 
 /// The page color a picture's screen is in: the forced pictures are in the look opposite
 /// to the one their name begins with.
@@ -266,9 +328,12 @@ func namedPoints(for picture: String) -> [NamedPoint] {
     guard let page = pageShade(for: picture) else {
         return []
     }
-    var points = [NamedPoint(x: 50, y: 60, expect: .near(page.shade, 8), what: page.name, judged: true)]
     let parts = picture.split(separator: "-").map { String($0) }
     let screen = parts.count > 1 ? parts[1] : ""
+    if screen == "myschool" && parts.count > 2 {
+        return mySchoolPoints(look: page.shade.hex == Wanted.pageDark.hex, variant: parts[2...].joined(separator: "-"))
+    }
+    var points = [NamedPoint(x: 50, y: 60, expect: .near(page.shade, 8), what: page.name, judged: true)]
     if tabs.contains(where: { $0.screen == screen }) {
         for tab in tabs {
             if tab.screen == screen {

@@ -42,6 +42,12 @@
 //      Documents/tour/<picture>.txt. The script waits for that file and then takes its
 //      picture of the simulator's screen.
 //
+// With a fixture, the My School tab draws the school's panel from it: the tour reads the
+// fixture once, makes the screen's model from it (`school` below) and hands that model to
+// the root view, which draws it; the words file is then that model's words. While the
+// panel is shown, the room it was given and the place SnowlightCore gave it go to the log
+// (`notePanel`), so the pictures can be judged against the build spec's numbers.
+//
 // What the file is: every string the screen's model offers the view, read off the model
 // itself. It is not a reading of the screen.
 //
@@ -408,6 +414,31 @@ enum Tour {
         }
     }
 
+    /// The My School screen's model on a launch that names a fixture, made once from the
+    /// fixture as the app makes it from its input; nil on every other launch.
+    static let school: MySchoolModel? = TourPlan.ofThisLaunch?.fixture?.input.map { input in
+        mySchoolModel(input)
+    }
+
+    /// Writes the room the My School panel was given and the place SnowlightCore gave it
+    /// (M1 2.0), in points: the build spec's measured rooms are 874 high with a bottom inset
+    /// of 83 and 402 wide (an iPhone 17 Pro), and 678 high and 382 wide (the closed Duo).
+    static func notePanel(window: CGSize, insets: EdgeInsets, shape: PanelShape, place: PanelPlace) {
+        guard TourPlan.ofThisLaunch != nil else {
+            return
+        }
+        var shapeName = "bottom bar"
+        switch shape {
+        case .bottomBar:
+            shapeName = "bottom bar"
+        case .outsideBeside:
+            shapeName = "outside, beside the map"
+        case .outsideUnder:
+            shapeName = "outside, under the controls"
+        }
+        note("my school: window \(window.width) x \(window.height) pt; safe area top \(insets.top) leading \(insets.leading) bottom \(insets.bottom) trailing \(insets.trailing); shape \(shapeName); rest \(place.rest); marker \(place.markerX), \(place.markerY); margin \(place.margin), trailing \(place.trailing); grabber centre \(place.grabberCentre); callout from \(place.calloutFrom) to \(place.calloutTo)")
+    }
+
     /// True when Settings shows the Outside screen row on this launch: on a phone with an
     /// outside screen, and on the one tour launch that forces it as a negative sample.
     static var showsOutsideScreenRow: Bool {
@@ -430,6 +461,11 @@ enum Tour {
     static func writeWords(for plan: TourPlan, shownWith store: AppearanceStore, layout: OutsideScreenStore) {
         guard let screen = plan.screen else {
             note("the picture " + plan.name + " shows no screen of the shell, so it has no words")
+            return
+        }
+        // The My School screen drawn from a fixture: the model the root view draws.
+        if screen == ScreenID.mySchool, let school = Tour.school {
+            Tour.write(shownTexts(in: school).map { $0.drawnString }, for: plan)
             return
         }
         // The same model the root view draws: with the Outside screen row only on a phone

@@ -93,7 +93,11 @@ xcrun simctl bootstatus "$UDID" -b
 echo "[$SECONDS s] the simulator is up"
 xcrun simctl install "$UDID" "$APP"
 echo "[$SECONDS s] the app is installed"
-xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 \
+# The status bar as approved draft 3 draws it on My School (M1 5.3): 6:55, four signal
+# bars, full Wi-Fi and the battery 85% full (myschool-closed-light.html:153; app.js:117-121,
+# :127-130; duo.js:18). The flags this simctl takes are printed first, to check them by.
+xcrun simctl help status_bar 2>&1 | head -40 || true
+xcrun simctl status_bar "$UDID" override --time "6:55" --batteryState discharging --batteryLevel 85 \
   --wifiBars 3 --cellularBars 4 || echo "::warning::The status bar override was refused."
 
 FAILED=0
@@ -199,6 +203,11 @@ for mode in light dark; do
   for screen in myschool map callit settings search; do
     shoot "$mode" "$mode-$screen" "$screen" diff
   done
+done
+# My School drawn from the tour's fixtures (M1 5.4), light and dark: closed, status only
+# (approved draft 3's "My School, closed"), at the fixture's own time and in its own zone.
+for mode in light dark; do
+  shoot "$mode" "$mode-myschool-closed" myschool diff -tour.fixture tour-closed
 done
 # The stored choice beats the phone: forced Dark on a light simulator, forced Light on a
 # dark one. Only keys that begin with tour. are passed, never the app's own key: a launch

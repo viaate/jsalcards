@@ -1,7 +1,9 @@
 // The app's root view: the system's tab bar with the four tabs, then the search tab.
 //
 // The system draws the bar, its glass and the search button; none of that is drawn here.
-// Only the four tab icons are ours: approved draft 3's glyphs (Shell/Names.swift).
+// Only the four tab icons are ours: approved draft 3's glyphs (Shell/Names.swift). The My
+// School tab shows the school's panel over the map (MySchool/MySchoolScreen.swift) when it
+// is handed a model, and the plain tab otherwise.
 // Every word on screen is a field of the shell's model: a view never names a word table
 // (they are not public, so the compiler refuses) and holds no text in quotes.
 
@@ -47,6 +49,18 @@ public struct RootView: View {
         return ScreenID.mySchool
     }
 
+    /// The My School screen's model, when there is one to draw. In M1 the app reads no data
+    /// yet, so only a launch of the debug tour that names a fixture hands one (Tour/Tour.swift);
+    /// on every other launch, and always in a release build, the tab is the plain one.
+    private static var school: MySchoolModel? {
+        #if DEBUG
+        if let school = Tour.school {
+            return school
+        }
+        #endif
+        return nil
+    }
+
     /// What the shell shows, for the appearance now chosen and, on an iPhone Duo, the
     /// Outside screen layout now chosen.
     private var model: ShellModel {
@@ -72,7 +86,11 @@ public struct RootView: View {
     private var shell: some View {
         TabView(selection: $selection) {
             Tab(value: ScreenID.mySchool) {
-                EmptyTab(model: model.mySchool)
+                if let school = RootView.school {
+                    MySchoolScreen(model: school, plain: model.mySchool)
+                } else {
+                    EmptyTab(model: model.mySchool)
+                }
             } label: {
                 tabLabel(model.tabs.mySchool, ScreenID.mySchool, GlyphName.schoolFill, GlyphName.schoolLine)
             }

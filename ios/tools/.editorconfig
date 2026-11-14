@@ -1,0 +1,2 @@
+[tour-words/**.txt]
+trim_trailing_whitespace = false
