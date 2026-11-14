@@ -40,7 +40,13 @@ Education's school calendar page, fetched free by plain GET:
 
 **The written map** (``codes`` in the config) maps the state's calendar codes to the record's:
 ``W`` to a dated closed row for the weather and a yearly count; ``N``, ``I`` and ``D`` to yearly
-counts only in this piece.
+counts only in this piece. ``W`` counts the weather days a district made up (one not made up is
+removed), and the state's weather code can carry a closing for another cause: the config's
+written ``not_weather`` list names each such day found by review (each off-season ``W`` day is
+checked against the district's own notice). Its row keeps the code ``W`` but has cause
+``named`` and is never a weather day (LR12); its year's ``W`` count stays the state's number and
+says how many of its days are not the weather (``not_weather``). A listed exception the files
+do not list refuses the files.
 
 **Ids, never guessed.** A district is joined by the written id rule: the state's three-digit
 district number is digits 7-9 of the NCES ``ST_LEAID`` (``KY-CCCddd000``), written out once as
@@ -52,7 +58,13 @@ of 172 map: 606, the Model Laboratory School, has no LEA) is listed, never match
 every summary row's weather-day count equals its dated weather days; the trend's 2024-25 count
 equals the 2024-25 summary's in every row; every date lies in the file's school year; every
 weather day is a school day by the district's own calendar (one that is not is listed and not
-written).
+written); no date is listed twice in one cell.
+
+**Written once, by edition.** The record is append-only and each key is written once, so each
+file's keys carry its reviewed ``edition`` (``past/<file id>/v<edition>/days``) and the
+SHA-256 of each key's bytes is pinned (``written``): a build whose bytes differ from the pins
+(a parser, model, map or exception drift) is refused and warned of, never written. A reviewed
+change bumps the edition and its pins; the record reads only each file's newest edition.
 
 Codes, ids, counts and dates only: no name, no URL and no file text leaves this module but in
 the said lines (district numbers, counts and the unmapped row's number).
@@ -76,7 +88,6 @@ from snowlight.predict.config import PIPELINE_ROOT
 from snowlight.predict.record import (
     PAST_COUNTS,
     PAST_DAYS,
-    PAST_PREFIX,
     Call,
     Cause,
     PastDay,
@@ -85,6 +96,7 @@ from snowlight.predict.record import (
     SourceKind,
     YearCount,
     lines_bytes,
+    past_key,
 )
 from snowlight.sources.nces.xlsx import XlsxFormatError, iter_rows
 
@@ -123,6 +135,12 @@ class StateFile(BaseModel):
     years: tuple[str, ...] = Field(min_length=1)
     """The school years it holds (``2024-25``)."""
     parser: int = Field(ge=1)
+    edition: int = Field(ge=1, le=9999)
+    """Its rows' edition, in its record keys (``past/<id>/v<edition>/<kind>``): the record is
+    append-only, so a reviewed change to its rows bumps this and writes new keys."""
+    written: dict[Literal["days", "counts"], str] = Field(default_factory=dict)
+    """The SHA-256 of each record key's bytes this edition writes (reviewed): a build whose
+    bytes differ (a parser, model or map drift) is refused, never written."""
 
 
 class StateCode(BaseModel):
@@ -145,6 +163,21 @@ class StateCode(BaseModel):
     ``unknown`` (no school, cause not said); ``None``: not a day off school (NTI)."""
 
 
+class NotWeather(BaseModel):
+    """A day the state lists under a weather code that was a closing for another cause,
+    written out by review (each one checked against the district's own notice): its row keeps
+    the state's code but has cause ``named`` and is never a weather day (LR12)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    number: str = Field(pattern=r"^\d{3}$")
+    day: date
+    code: str
+    why: str
+    """The cause, in plain words (no name of a person)."""
+    checked: date
+
+
 class StateRecords(BaseModel):
     """One state's files, codes and ids."""
 
@@ -160,6 +193,12 @@ class StateRecords(BaseModel):
     id_rule: str
     unmapped: dict[str, str]
     """District numbers with no LEA, listed (with the state's name for them), never matched."""
+    not_weather: tuple[NotWeather, ...] = ()
+    """Days listed under a weather code that were not the weather (see :class:`NotWeather`)."""
+
+    def other_cause(self, number: str, day: date, code: str) -> bool:
+        """The written ``not_weather`` list names this listed day."""
+        return any((n.number, n.day, n.code) == (number, day, code) for n in self.not_weather)
 
 
 class StateRecordsConfig(BaseModel):
@@ -190,6 +229,16 @@ def load(path: Path = STATE_RECORDS_PATH) -> StateRecordsConfig:
         for item in state.files:
             if item.parser != PARSER_VERSION:
                 raise StateRecordError(f"{item.id}: pinned for parser {item.parser}")
+            if set(item.written) != set(KINDS[item.form]) or any(
+                not re.fullmatch(r"[0-9a-f]{64}", pin) for pin in item.written.values()
+            ):
+                raise StateRecordError(f"{item.id}: its written keys are not all pinned")
+        for entry in state.not_weather:
+            mapped = state.codes.get(entry.code)
+            if mapped is None or not mapped.weather_day or entry.number not in state.ids:
+                raise StateRecordError(
+                    f"{key}: not_weather {entry.number} {entry.day}: not a mapped weather day"
+                )
         if len({item.id for item in state.files}) != len(state.files):
             raise StateRecordError(f"{key}: a file id twice")
     return found
@@ -589,14 +638,17 @@ def previous_day(row: SummaryRow, day: date) -> date | None:
     return None
 
 
-def _after(
-    row: SummaryRow, day: date, codes: Mapping[str, StateCode]
-) -> tuple[bool | None, bool | None]:
-    """``(after, after_weather)`` of a dated day from the district's own calendar."""
+def _after(row: SummaryRow, day: date, state: StateRecords) -> tuple[bool | None, bool | None]:
+    """``(after, after_weather)`` of a dated day from the district's own calendar (a listed
+    day the written ``not_weather`` list names is a day off for a named cause)."""
     prior = previous_day(row, day)
     if prior is None:
         return None, None
-    said = {codes[c].day_off for c, days in row.dated.items() if prior in days and c in codes}
+    said = {
+        "named" if state.other_cause(row.number, prior, c) else state.codes[c].day_off
+        for c, days in row.dated.items()
+        if prior in days and c in state.codes
+    }
     said.discard(None)
     if not said:
         return None, None  # a school day held, or an undated at-home NTI day
@@ -636,14 +688,36 @@ def build_ky(state: StateRecords, files: Mapping[str, bytes]) -> Built:
             trends.append((item, read_trend(files[item.id])))
     for year, (item, listed) in sorted(summaries.items()):
         days, counts = _summary_rows(state, item, year, listed, built)
-        built.keys[f"{PAST_PREFIX}{item.id}{PAST_DAYS}"] = lines_bytes(days, item.id)
-        built.keys[f"{PAST_PREFIX}{item.id}{PAST_COUNTS}"] = lines_bytes(counts, item.id)
+        built.keys[past_key(item.id, item.edition, PAST_DAYS)] = lines_bytes(days, item.id)
+        built.keys[past_key(item.id, item.edition, PAST_COUNTS)] = lines_bytes(counts, item.id)
         built.days.extend(days)
         built.counts.extend(counts)
     for item, trend in trends:
         counts = _trend_counts(state, item, trend, summaries, built)
-        built.keys[f"{PAST_PREFIX}{item.id}{PAST_COUNTS}"] = lines_bytes(counts, item.id)
+        built.keys[past_key(item.id, item.edition, PAST_COUNTS)] = lines_bytes(counts, item.id)
         built.counts.extend(counts)
+    unused = [
+        n
+        for n in state.not_weather
+        if not any(
+            n.day in row.dated.get(n.code, ())
+            for _, rows in summaries.values()
+            for row in rows
+            if row.number == n.number
+        )
+    ]
+    if unused:
+        raise StateRecordError(
+            f"{state.state}: not_weather days the files do not list: "
+            + ", ".join(f"{n.number} {n.day.isoformat()}" for n in unused)
+        )
+    if state.not_weather:
+        built.lines.append(
+            f"predict each-school past: {state.state}: {len(state.not_weather)} days listed under"
+            f" a weather code were another cause (written list), kept with cause named and never"
+            f" a weather day: "
+            + ", ".join(f"{n.number} {n.day.isoformat()}" for n in state.not_weather)
+        )
     if built.unmapped:
         built.lines.append(
             f"predict each-school past: {state.state}: district numbers with no LEA, listed and"
@@ -659,6 +733,8 @@ def _summary_rows(
     counts: list[YearCount] = []
     for row in rows:
         for code, listed in row.dated.items():
+            if len(set(listed)) != len(listed):
+                raise StateRecordError(f"{item.id} {row.number}: a {code} date twice")
             if (
                 code in state.codes
                 and state.codes[code].counted
@@ -672,16 +748,21 @@ def _summary_rows(
         if unit is None:
             continue
         for code, mapped in sorted(state.codes.items()):
+            other = [d for d in row.dated.get(code, ()) if state.other_cause(row.number, d, code)]
             if mapped.counted and code in row.counts:
-                counts.append(_year_count(unit, year, code, row.counts[code], item, row))
+                counts.append(
+                    _year_count(unit, year, code, row.counts[code], item, row, len(other))
+                )
             if not mapped.dated:
                 continue
-            for day in sorted(set(row.dated.get(code, ()))):
+            for day in sorted(row.dated.get(code, ())):
                 if not school_day(row, day):
                     built.dropped.append((row.number, day))
                     continue
                 days.append(
-                    _past_day(unit, day, code, mapped, item, *_after(row, day, state.codes))
+                    _past_day(
+                        unit, day, code, mapped, item, *_after(row, day, state), other=day in other
+                    )
                 )
     days.sort(key=lambda d: (d.day, d.unit))
     built.lines.append(_say_file(item, days, counts))
@@ -689,7 +770,13 @@ def _summary_rows(
 
 
 def _year_count(  # noqa: PLR0913, PLR0917 - one count and where it was read
-    unit: str, year: str, code: str, days: int, item: StateFile, row: SummaryRow | None
+    unit: str,
+    year: str,
+    code: str,
+    days: int,
+    item: StateFile,
+    row: SummaryRow | None,
+    not_weather: int = 0,
 ) -> YearCount:
     return YearCount(
         version=PAST_VERSION,
@@ -697,6 +784,7 @@ def _year_count(  # noqa: PLR0913, PLR0917 - one count and where it was read
         year=year,
         code=code,
         days=days,
+        not_weather=not_weather,
         source_kind=SourceKind.PAST_RECORDS,
         sources=(item.id,),
         covid=year in COVID_YEARS,
@@ -712,7 +800,11 @@ def _past_day(  # noqa: PLR0913, PLR0917 - one dated day and its flags
     item: StateFile,
     after: bool | None,
     after_weather: bool | None,
+    *,
+    other: bool = False,
 ) -> PastDay:
+    """``other``: the written ``not_weather`` list names the day (cause named, never a weather
+    day)."""
     if mapped.call is None or mapped.cause is None:
         raise StateRecordError(f"{item.id}: code {code} is dated with no call or cause")
     return PastDay(
@@ -729,8 +821,8 @@ def _past_day(  # noqa: PLR0913, PLR0917 - one dated day and its flags
         source_complete=False,
         closings_only=True,
         scope=Scope.WHOLE,
-        cause=mapped.cause,
-        weather_day=mapped.weather_day,
+        cause=Cause.NAMED if other else mapped.cause,
+        weather_day=mapped.weather_day and not other,
         fit_usable=False,
         reasons=(),
         tropical=None,
@@ -781,16 +873,29 @@ def _say_file(item: StateFile, days: Sequence[PastDay], counts: Sequence[YearCou
     unknown = sum(d.klass == "unknown" for d in days)
     after = sum(d.after is True for d in days)
     usable = sum(d.fit_usable for d in days)
+    weather = sum(d.weather_day for d in days)
     by_code: dict[str, int] = {}
+    other: dict[str, int] = {}
     for count in counts:
         by_code[count.code] = by_code.get(count.code, 0) + count.days
+        if count.not_weather:
+            other[count.code] = other.get(count.code, 0) + count.not_weather
     totals = ", ".join(f"{code} {n}" for code, n in sorted(by_code.items())) or "none"
+    not_weather = "".join(f", {n} {code} days not the weather" for code, n in sorted(other.items()))
     return (
         f"predict each-school past: {item.id}: {len(days)} dated rows over"
-        f" {len({d.unit for d in days})} districts ({unknown} of class unknown, {after} the day"
-        f" after a day off school, {usable} fit-usable); {len(counts)} yearly counts"
-        f" ({totals} days)"
+        f" {len({d.unit for d in days})} districts ({weather} weather days, {unknown} of class"
+        f" unknown, {after} the day after a day off school, {usable} fit-usable); {len(counts)}"
+        f" yearly counts ({totals} days{not_weather})"
     )
+
+
+type Kind = Literal["days", "counts"]
+KINDS: Final[Mapping[str, tuple[Kind, ...]]] = {
+    "ky_summary": (PAST_DAYS, PAST_COUNTS),
+    "ky_trend": (PAST_COUNTS,),
+}
+"""The record keys each file form writes."""
 
 
 BUILDERS: Final[Mapping[str, Callable[[StateRecords, Mapping[str, bytes]], Built]]] = {
@@ -873,11 +978,22 @@ def _fetch(url: str) -> bytes:  # pragma: no cover - the network
 def wanted(state: StateRecords, held: Iterable[str]) -> list[str]:
     """The state's record keys the store does not hold."""
     keys = {
-        f"{PAST_PREFIX}{item.id}{suffix}"
-        for item in state.files
-        for suffix in ((PAST_DAYS, PAST_COUNTS) if item.form == "ky_summary" else (PAST_COUNTS,))
+        past_key(item.id, item.edition, kind) for item in state.files for kind in KINDS[item.form]
     }
     return sorted(keys - set(held))
+
+
+def unpinned(state: StateRecords, built: Built) -> list[str]:
+    """Each built key whose bytes are not the SHA-256 its file pins (``written``), said."""
+    found: list[str] = []
+    for item in state.files:
+        for kind in KINDS[item.form]:
+            key = past_key(item.id, item.edition, kind)
+            digest = hashlib.sha256(built.keys.get(key, b"")).hexdigest()
+            pin = item.written.get(kind)
+            if pin != digest:
+                found.append(f"{key} SHA-256 {digest[:12]}, pinned {(pin or 'none')[:12]}")
+    return found
 
 
 def past_keys(
@@ -911,6 +1027,13 @@ def past_keys(
                 f" not school days on the district's own calendar, not written: "
                 + ", ".join(f"{n} {d.isoformat()}" for n, d in built.dropped)
             )
+        drift = unpinned(state, built)
+        if drift:
+            say(
+                f"::warning::predict each-school past: {state.state}: {'; '.join(drift)}: a"
+                f" changed output needs a reviewed pin and a new edition: nothing written"
+            )
+            continue
         found.update((key, built.keys[key]) for key in keys)
     return found
 

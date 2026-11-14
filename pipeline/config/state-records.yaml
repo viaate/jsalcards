@@ -16,7 +16,8 @@ states:
       weather day not made up is removed from the amended calendar, and at-home NTI days (N)
       are not dated, so a day not listed is not known open: the dated rows are closings only
       and never complete. W may also carry a non-weather emergency (Jefferson County lists
-      11/05/25). Yearly W counts are complete for made-up weather days; NTI counts (2024-25 and
+      11/05/25, written in not_weather below). Yearly W counts are complete for made-up weather
+      days; NTI counts (2024-25 and
       2025-26 only) are not split by cause. No delays.
     files:
       - id: ky-summary-2024-25
@@ -28,6 +29,11 @@ states:
         sha256: 3732d6556382bca7f42d112d0b5e6ff999e112133710f98b1d2bafb649c74acf
         years: ["2024-25"]
         parser: 1
+        edition: 1
+        # The SHA-256 of each record key's bytes this edition writes (a drift is refused).
+        written:
+          days: 5ad5aa344da87e3e5f306061ba7b15d9252cfb1a0c5f0f064251941285e4ba57
+          counts: 47e02c437bff3db8e335ca4b5cce238a2b3b035a1d4387a4668d6af217132e38
       - id: ky-summary-2025-26
         form: ky_summary
         url: https://www.education.ky.gov/districts/enrol/Documents/2025-2026%20AmendedCalendar_Summary.xlsx
@@ -37,6 +43,11 @@ states:
         sha256: 69e00e92b95d66d8ef2920c39e3d7d1c016536806aedc4e17c1975a3d5c7dbae
         years: ["2025-26"]
         parser: 1
+        edition: 1
+        # The SHA-256 of each record key's bytes this edition writes (a drift is refused).
+        written:
+          days: 64b1eba7e39d9b2e001df3a69faac7c91374bb83621d2f9949f4f7525fc9f318
+          counts: 8b61b8320fe6a80965e490fef17d7740d907a2035897e68f73ea30a95ff02a2d
       # The "Five Year Weather Trend": weather make-up days per district and school year.
       - id: ky-trend-2025-26
         form: ky_trend
@@ -47,6 +58,10 @@ states:
         sha256: ea219f5b8574f28386ab7284b9d9f9b843a4ecb4b0bd1b46b207ce01e0207a14
         years: ["2020-21", "2021-22", "2022-23", "2023-24", "2024-25"]
         parser: 1
+        edition: 1
+        # The SHA-256 of each record key's bytes this edition writes (a drift is refused).
+        written:
+          counts: 0de7b01728bc63d3677bff8fd2c7e6c9dbf0eb61d0ae1927bda7b6f0295204e4
     # The written map of the state's calendar codes (its "Amending the Calendar" guide,
     # https://www.education.ky.gov/districts/enrol/Documents/2025-26%20%20Amending%20the%20Calendar.pdf).
     codes:
@@ -254,3 +269,26 @@ states:
       "606": >-
         Model Laboratory Schools at EKU: its CCD LEA (2100291, an education agency of another
         type) is not a district of the directory.
+    # Days the state lists under its weather code (W) that were a closing for another cause,
+    # each checked by review against the district's own notice and local news. Their rows keep
+    # the code W but have cause named and are never weather days (LR12); their year's W count
+    # stays the state's number and says how many of its days are not the weather. Every W day
+    # outside December to mid-March of the dated years was checked on 2026-11-14: these two
+    # were another cause; the rest were the weather (the Helene windstorm of 2024-09-27 and its
+    # power cuts to 2024-10-02, the first snow of 2024-11-22, the April 2025 floods to
+    # 2025-04-18, the snow of 2025-11-10 and 11, and of 2026-03-17).
+    not_weather:
+      - number: "275"
+        day: 2025-11-05
+        code: W
+        why: >-
+          A shelter-in-place order near the district after an aircraft crash the evening
+          before; the district closed every school.
+        checked: 2026-11-14
+      - number: "071"
+        day: 2025-08-19
+        code: W
+        why: >-
+          A city water main break left the district's buildings without water, toilets or air
+          conditioning; the district closed every school.
+        checked: 2026-11-14

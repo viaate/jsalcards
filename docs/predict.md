@@ -4196,8 +4196,14 @@ whose record keys the store holds already is not fetched again. Otherwise each f
 refused unless its size and SHA-256 are the pinned ones (a changed file needs a reviewed pin),
 read (the summaries by column header, never position; the trend by a small reader of the PDF's
 text runs, a page's content streams joined in order), checked, and its keys offered once:
-`past/<file id>/days` and `past/<file id>/counts` in the `record` kind. A state that fails any
-check writes nothing and is warned of. The record job's `record.parquet` then holds the past
+`past/<file id>/v<edition>/days` and `past/<file id>/v<edition>/counts` in the `record` kind.
+The record is append-only and a key is written once, so each file's rows carry its reviewed
+`edition` and the SHA-256 of each key's bytes is pinned in the config (`written`): a build whose
+bytes differ from the pins (a parser, model, map or exception drift) is refused and warned of,
+never written. A reviewed change to a file's rows bumps its edition and its pins and writes new
+keys beside the old; the record job reads only each file's newest edition, and a past key whose
+name or rows do not read is warned of and left out, never the whole record. A state that fails
+any check writes nothing and is warned of. The record job's `record.parquet` then holds the past
 rows beside the live ones (the columns a past row lacks left empty, plus its `code`), and
 `record-counts.parquet` the yearly counts, both in the runner only.
 
@@ -4217,6 +4223,25 @@ are kept and flagged `covid`; a district-year with a `D` day is flagged `disaste
 `D` is counted from its dated days: the file's own `D` total reads 0 in 11 of the 12
 district-years that list `D` days (the twelfth, 8 days, agrees).
 
+**What `W` means, and the days it carries that are not the weather.** A `W` count is the
+weather days a district *made up*: a weather day not made up is removed from the amended
+calendar, so it is not a count of weather closings. And the state's weather code can carry a
+closing for another cause. The config's written `not_weather` list names each such day found by
+review: every `W` day outside December to mid-March of the dated years was checked against the
+district's own notice and local news on Nov 14 2026, and two were another cause (Jefferson
+County, 2025-11-05, a shelter-in-place order after an aircraft crash nearby; Bullitt County,
+2025-08-19, a city water main break). Such a row keeps the state's code `W` but has cause
+`named` and is never a weather day (LR12), and the next school day's day-after flag reads it as
+a day off for a named cause. Its year's `W` count stays the state's number, and its
+`not_weather` says how many of those days the list names, so the weather days known are `days -
+not_weather`. An undated count (the trend's years) cannot be checked this way and may still hold
+one. A listed exception the files do not list refuses the state.
+
+**Internal names.** The past rows' fields `source_kind`, `source_complete` and `sources` follow
+the live record rows'. They stay in the evidence store and the runner's `record.parquet`
+(neither is published); the published shard (P2e) maps them to its coarse two-value `seen`
+field (seen live by us, or from past records) and never carries these names (LR8).
+
 **Ids, never guessed.** The state's three-digit district number is digits 7-9 of the NCES
 `ST_LEAID` (`KY-CCCddd000`), written once into the config as a number-to-LEAID table from the
 CCD LEA directory 2024-25. 171 of the files' 172 numbers map to a district of the directory; 606
@@ -4226,15 +4251,17 @@ state.
 
 **Checks** (each refuses the state): every summary row's `W` and `I` counts equal its dated
 days; the trend's 2024-25 counts equal the 2024-25 summary's in every row (172 of 172); every
-date reads and lies in its file's school year; no district number comes twice. A `W` day that
+date reads and lies in its file's school year; no date comes twice in one cell; no district
+number comes twice. A `W` day that
 is not a student day on the district's own calendar is listed and not written (4 of 1,603
 mapped: three of Green County's, in May 2026 after its last student day, and one of Hardin
 County's); its yearly count stays the state's.
 
-**What it holds** (fetched Nov 14 2026): 817 dated `W` rows over 143 districts in 2024-25 and
-782 over 148 in 2025-26 (1,599 rows; 643 the day after a day off school), and 2,052 yearly
-counts (`W` 817 and 786 days in the summaries' years and 1,072 over 2020-21 to 2023-24 in the
-trend's; `N` 1,351 and 1,328; `I` 14 and 11; `D` 21 and 9).
+**What it holds** (fetched Nov 14 2026, edition 1): 817 dated `W` rows over 143 districts in
+2024-25 (all weather days) and 782 over 148 in 2025-26 (780 weather days, 2 another cause), so
+1,599 rows, 1,597 of them weather days and 643 the day after a day off school; and 2,052 yearly
+counts (`W` 817 and 786 days in the summaries' years, 2 of 2025-26's not the weather, and 1,072
+over 2020-21 to 2023-24 in the trend's; `N` 1,351 and 1,328; `I` 14 and 11; `D` 21 and 9).
 
 **Gate.** None serves. No learned value, served chance or published byte changes (the live
 score's sha256, the golden files, the storm drill's whole lines and the alerts digest are

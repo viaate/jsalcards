@@ -6,7 +6,7 @@ import io
 import re
 import zipfile
 import zlib
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -188,6 +188,7 @@ def _file(id_: str, form: str, years: Sequence[str], data: bytes) -> StateFile:
         sha256=hashlib.sha256(data).hexdigest(),
         years=tuple(years),
         parser=state_records.PARSER_VERSION,
+        edition=1,
     )
 
 
@@ -206,6 +207,29 @@ def state(files: Mapping[str, tuple[str, Sequence[str], bytes]], **extra: Any) -
             "ids": extra.get("ids", {"001": "9900001", "005": "9900005"}),
             "id_rule": "synthetic",
             "unmapped": extra.get("unmapped", {"606": "no LEA"}),
+            "not_weather": extra.get("not_weather", ()),
+        }
+    )
+
+
+def pinned(ky: StateRecords, files: Mapping[str, bytes]) -> StateRecords:
+    """``ky`` with each file's ``written`` pins set to what it builds now (a reviewed pin)."""
+    keys = build_ky(ky, files).keys
+    return ky.model_copy(
+        update={
+            "files": tuple(
+                item.model_copy(
+                    update={
+                        "written": {
+                            kind: hashlib.sha256(
+                                keys[record.past_key(item.id, item.edition, kind)]
+                            ).hexdigest()
+                            for kind in state_records.KINDS[item.form]
+                        }
+                    }
+                )
+                for item in ky.files
+            )
         }
     )
 
@@ -432,7 +456,7 @@ def test_counts_are_kept_as_counts_and_never_spread_into_dates() -> None:
     assert not counts["9900001", "2021-22", "W"].covid
     # the only dated rows are the summary's weather days: no count became a date
     assert [(d.unit, d.day) for d in found.days] == [("9900001", date(2025, 1, 7))]
-    assert "past/ky-trend-2025-26/days" not in found.keys
+    assert "past/ky-trend-2025-26/v1/days" not in found.keys
     assert all(c.source_kind is SourceKind.PAST_RECORDS for c in found.counts)
 
 
@@ -452,12 +476,12 @@ def test_the_keys_hold_the_rows_and_read_back_as_the_record() -> None:
         trend=[("001", (1, 1, 1, 1, 2)), ("005", (0, 0, 0, 0, 1))],
     )
     assert sorted(found.keys) == [
-        "past/ky-summary-2024-25/counts", "past/ky-summary-2024-25/days",
-        "past/ky-trend-2025-26/counts",
+        "past/ky-summary-2024-25/v1/counts", "past/ky-summary-2024-25/v1/days",
+        "past/ky-trend-2025-26/v1/counts",
     ]  # fmt: skip
-    assert past_days_of(found.keys["past/ky-summary-2024-25/days"]) == found.days
-    assert counts_of(found.keys["past/ky-trend-2025-26/counts"]) + counts_of(
-        found.keys["past/ky-summary-2024-25/counts"]
+    assert past_days_of(found.keys["past/ky-summary-2024-25/v1/days"]) == found.days
+    assert counts_of(found.keys["past/ky-trend-2025-26/v1/counts"]) + counts_of(
+        found.keys["past/ky-summary-2024-25/v1/counts"]
     ) == sorted(found.counts, key=lambda c: c.sources != ("ky-trend-2025-26",))
     # codes, ids, counts and dates only: no name, no address
     for data in found.keys.values():
@@ -467,8 +491,8 @@ def test_the_keys_hold_the_rows_and_read_back_as_the_record() -> None:
     # the counts said equal the rows written (the truth test)
     said = next(line for line in found.lines if "ky-summary-2024-25: " in line)
     assert said.startswith(
-        "predict each-school past: ky-summary-2024-25: 3 dated rows over 2 districts (3 of class"
-        " unknown, 1 the day after a day off school, 0 fit-usable)"
+        "predict each-school past: ky-summary-2024-25: 3 dated rows over 2 districts (3 weather"
+        " days, 3 of class unknown, 1 the day after a day off school, 0 fit-usable)"
     )
     w = sum(c.days for c in found.counts if c.code == "W" and c.year == "2024-25")
     assert f"W {w} days" in said
@@ -487,10 +511,12 @@ def test_a_file_unlike_its_pin_is_refused() -> None:
         checked(item, data[:-1] + bytes([data[-1] ^ 1]))
 
 
-def _sources(rows: Sequence[list[str]]) -> tuple[StateRecords, dict[str, bytes]]:
+def _sources(rows: Sequence[list[str]], **extra: Any) -> tuple[StateRecords, dict[str, bytes]]:
     data = {"ky-summary-2024-25": summary(*rows)}
-    ky = state({"ky-summary-2024-25": ("ky_summary", ("2024-25",), data["ky-summary-2024-25"])})
-    return ky, {f"https://example.invalid/{k}": v for k, v in data.items()}
+    ky = state(
+        {"ky-summary-2024-25": ("ky_summary", ("2024-25",), data["ky-summary-2024-25"])}, **extra
+    )
+    return pinned(ky, data), {f"https://example.invalid/{k}": v for k, v in data.items()}
 
 
 def test_past_keys_reads_a_state_only_while_a_key_is_missing() -> None:
@@ -503,14 +529,14 @@ def test_past_keys_reads_a_state_only_while_a_key_is_missing() -> None:
 
     said: list[str] = []
     keys = past_keys([ky], (), None, fetch, said.append)
-    assert sorted(keys) == ["past/ky-summary-2024-25/counts", "past/ky-summary-2024-25/days"]
+    assert sorted(keys) == ["past/ky-summary-2024-25/v1/counts", "past/ky-summary-2024-25/v1/days"]
     assert asked == ["https://example.invalid/ky-summary-2024-25"]
     # one key held: only the other is offered (the file is read again to make it)
-    keys = past_keys([ky], ("past/ky-summary-2024-25/days",), None, fetch, said.append)
-    assert sorted(keys) == ["past/ky-summary-2024-25/counts"]
+    keys = past_keys([ky], ("past/ky-summary-2024-25/v1/days",), None, fetch, said.append)
+    assert sorted(keys) == ["past/ky-summary-2024-25/v1/counts"]
     # every key held: nothing is fetched
     asked.clear()
-    held = ("past/ky-summary-2024-25/days", "past/ky-summary-2024-25/counts")
+    held = ("past/ky-summary-2024-25/v1/days", "past/ky-summary-2024-25/v1/counts")
     assert past_keys([ky], held, None, fetch, said.append) == {}
     assert asked == []
     assert wanted(ky, held) == []
@@ -567,6 +593,15 @@ def test_the_committed_config_pins_kentuckys_three_files_and_maps_171_of_172() -
     assert len(ky.ids) == 171
     assert set(ky.unmapped) == {"606"}
     assert all(u.startswith("21") for u in ky.ids.values())
+    # each file's keys are of a reviewed edition and their bytes pinned
+    assert [(f.edition, sorted(f.written)) for f in ky.files] == [
+        (1, ["counts", "days"]), (1, ["counts", "days"]), (1, ["counts"]),
+    ]  # fmt: skip
+    # the W days found by review to be another cause (each checked against the district's own
+    # notice): Jefferson County's shelter-in-place day and Bullitt County's water main break
+    assert {(n.number, n.day, n.code) for n in ky.not_weather} == {
+        ("275", date(2025, 11, 5), "W"), ("071", date(2025, 8, 19), "W"),
+    }  # fmt: skip
     # the written map: only W is dated; N, I and D are counts
     assert {c for c, m in ky.codes.items() if m.dated} == {"W"}
     assert {c for c, m in ky.codes.items() if m.counted} == {"W", "N", "I", "D"}
@@ -609,3 +644,140 @@ def test_past_rows_refuse_what_they_cannot_be() -> None:
     count = built([district("001")]).counts[0].model_dump()
     with pytest.raises(ValueError, match="live kind"):
         YearCount.model_validate(count | {"source_kind": SourceKind.LIVE_READ})
+
+
+# --- days listed under the weather code that were another cause (LR12) ------------------------
+
+
+def _other(number: str, day: date) -> dict[str, Any]:
+    return {"number": number, "day": day, "code": "W", "why": "synthetic", "checked": day}
+
+
+def test_a_weather_day_the_written_list_names_is_kept_never_a_weather_day() -> None:
+    found = built(
+        [district("001", weather=["01/07/25", "01/08/25"]), district("005", weather=["01/07/25"])],
+        not_weather=[_other("001", date(2025, 1, 7))],
+    )
+    rows = days_of(found)
+    other = rows["9900001", date(2025, 1, 7)]
+    assert (other.code, other.call, other.cause, other.weather_day, other.fit_usable) == (
+        "W", Call.CLOSED, Cause.NAMED, False, False,
+    )  # fmt: skip
+    # the next day is the day after a day off for a named cause, never for the weather
+    after = rows["9900001", date(2025, 1, 8)]
+    assert (after.cause, after.weather_day, after.after, after.after_weather) == (
+        Cause.WEATHER, True, True, False,
+    )  # fmt: skip
+    # another district's day of the same date stays a weather day
+    assert rows["9900005", date(2025, 1, 7)].weather_day
+    # the count stays the state's number and says how many of it are not the weather
+    w = {c.unit: c for c in found.counts if c.code == "W"}
+    assert (w["9900001"].days, w["9900001"].not_weather) == (2, 1)
+    assert (w["9900005"].days, w["9900005"].not_weather) == (1, 0)
+    assert all(c.not_weather == 0 for c in found.counts if c.code != "W")
+    said = next(line for line in found.lines if "ky-summary-2024-25: " in line)
+    assert "(3 dated rows" not in said
+    assert "3 dated rows over 2 districts (2 weather days," in said
+    assert said.endswith("(D 0, I 0, N 0, W 3 days, 1 W days not the weather)")
+    assert (
+        "predict each-school past: ky: 1 days listed under a weather code were another cause"
+        " (written list), kept with cause named and never a weather day: 001 2025-01-07"
+    ) in found.lines
+
+
+def test_a_written_exception_the_files_do_not_list_refuses_them() -> None:
+    with pytest.raises(StateRecordError, match="not_weather days the files do not list: 001"):
+        built(
+            [district("001", weather=["01/07/25"])],
+            not_weather=[_other("001", date(2025, 1, 8))],
+        )
+
+
+def test_a_date_listed_twice_in_a_cell_refuses_the_file() -> None:
+    with pytest.raises(StateRecordError, match="001: a W date twice"):
+        built([district("001", weather=["01/07/25", "01/07/25"])])
+
+
+def test_the_config_refuses_an_unpinned_key_or_an_exception_of_no_weather_day(
+    tmp_path: Path,
+) -> None:
+    raw = yaml.safe_load(state_records.STATE_RECORDS_PATH.read_text("utf-8"))
+    path = tmp_path / "s.yaml"
+    changes: tuple[Callable[[dict[str, Any]], object], ...] = (
+        lambda r: r["files"][0]["written"].pop("days"),
+        lambda r: r["files"][2]["written"].update(days="0" * 64),
+        lambda r: r["files"][1]["written"].update(counts="xyz"),
+    )
+    for change in changes:
+        broken = yaml.safe_load(yaml.safe_dump(raw))
+        change(broken["states"]["ky"])
+        path.write_text(yaml.safe_dump(broken))
+        with pytest.raises(StateRecordError, match="written keys are not all pinned"):
+            state_records.load(path)
+    for entry in (
+        _other("606", date(2025, 11, 5)),
+        _other("275", date(2025, 11, 5)) | {"code": "N"},
+    ):
+        broken = yaml.safe_load(yaml.safe_dump(raw))
+        broken["states"]["ky"]["not_weather"].append(entry)
+        path.write_text(yaml.safe_dump(broken))
+        with pytest.raises(StateRecordError, match="not a mapped weather day"):
+            state_records.load(path)
+
+
+# --- the step's own report and its pins ---------------------------------------------------------
+
+
+def test_past_keys_says_each_files_line_the_unmapped_and_the_days_not_written() -> None:
+    ky, served = _sources(
+        [
+            district("001", weather=["01/07/25", "01/20/25"], holidays=["01/20/25"]),
+            district("606", weather=["01/07/25"]),
+        ]
+    )
+    said: list[str] = []
+    assert len(past_keys([ky], (), None, lambda u: served[u], said.append)) == 2
+    assert said[0].startswith(
+        "predict each-school past: ky-summary-2024-25: 1 dated rows over 1 districts (1 weather"
+        " days,"
+    )
+    assert (
+        "predict each-school past: ky: district numbers with no LEA, listed and not matched: 606"
+        in said
+    )
+    assert said[-1] == (
+        "predict each-school past: ky: 1 weather days are not school days on the district's own"
+        " calendar, not written: 001 2025-01-20"
+    )
+
+
+def test_past_keys_refuses_a_build_unlike_its_pins_and_writes_nothing() -> None:
+    ky, served = _sources([district("001", weather=["01/07/25"])])
+    item = ky.files[0]
+    for written in ({"days": item.written["days"]}, item.written | {"counts": "0" * 64}):
+        drifted = ky.model_copy(update={"files": (item.model_copy(update={"written": written}),)})
+        said: list[str] = []
+        assert past_keys([drifted], (), None, lambda u: served[u], said.append) == {}
+        (warning,) = [line for line in said if line.startswith("::warning::")]
+        assert "past/ky-summary-2024-25/v1/counts SHA-256" in warning
+        assert warning.endswith(
+            "a changed output needs a reviewed pin and a new edition: nothing written"
+        )
+        assert "/v1/days" not in warning
+
+
+def test_a_new_edition_writes_new_keys_beside_the_kept_ones() -> None:
+    ky, served = _sources([district("001", weather=["01/07/25"])])
+    held = ("past/ky-summary-2024-25/v1/days", "past/ky-summary-2024-25/v1/counts")
+    assert wanted(ky, held) == []
+    # a reviewed fix bumps the edition (and its pins): its keys are new, the old ones stay
+    item = ky.files[0].model_copy(update={"edition": 2})
+    two = pinned(
+        ky.model_copy(update={"files": (item,)}),
+        {item.id: served[f"https://example.invalid/{item.id}"]},
+    )
+    assert wanted(two, held) == [
+        "past/ky-summary-2024-25/v2/counts", "past/ky-summary-2024-25/v2/days",
+    ]  # fmt: skip
+    keys = past_keys([two], held, None, lambda u: served[u], lambda _: None)
+    assert sorted(keys) == wanted(two, held)

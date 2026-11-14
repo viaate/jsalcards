@@ -1347,9 +1347,9 @@ def _past(day: date, unit: str = "9900001", **change: Any) -> record.PastDay:
     return record.PastDay.model_validate(body | change)
 
 
-def _count(unit: str, year: str, code: str, days: int) -> record.YearCount:
+def _count(unit: str, year: str, code: str, days: int, other: int = 0) -> record.YearCount:
     return record.YearCount(
-        version=1, unit=unit, year=year, code=code, days=days,
+        version=1, unit=unit, year=year, code=code, days=days, not_weather=other,
         source_kind=SourceKind.PAST_RECORDS, sources=("ky-trend-2025-26",),
         covid=year == "2020-21", disaster=None,
     )  # fmt: skip
@@ -1391,8 +1391,8 @@ def test_the_kept_record_reads_live_days_past_days_and_yearly_counts_apart(
     counts = [_count("9900001", "2020-21", "W", 1), _count("9900001", "2021-22", "W", 2)]
     kept = {
         WED.isoformat(): record.day_bytes(live),
-        "past/ky-summary-2024-25/days": record.lines_bytes(past, "t"),
-        "past/ky-trend-2025-26/counts": record.lines_bytes(counts, "t"),
+        "past/ky-summary-2024-25/v1/days": record.lines_bytes(past, "t"),
+        "past/ky-trend-2025-26/v1/counts": record.lines_bytes(counts, "t"),
     }
     rows = record.kept_rows(kept, learn)
     assert rows == [*live, *past]
@@ -1416,6 +1416,7 @@ def test_the_kept_record_reads_live_days_past_days_and_yearly_counts_apart(
     assert pasts["klass"].to_list() == ["unknown", "unknown"]
     assert not any(pasts["fit_usable"].to_list())
     years = pl.read_parquet(path.with_name(record.COUNTS_NAME))
+    assert tuple(years.columns) == record.COUNT_COLUMNS
     assert years["days"].to_list() == [1, 2]
     assert years["covid"].to_list() == [True, False]
 
@@ -1423,3 +1424,94 @@ def test_the_kept_record_reads_live_days_past_days_and_yearly_counts_apart(
 def test_a_past_record_key_holds_no_address_and_strings_are_codes() -> None:
     with pytest.raises(RecordError, match="not a code"):
         record.lines_bytes([_past(WED, code="W W")], "t")
+
+
+def test_the_record_reads_only_each_files_newest_edition() -> None:
+    learn = PredictConfig.load(PIPELINE_ROOT / "config" / "predict.yaml").learn
+    old = [_past(date(2025, 1, 7), "9900001")]
+    new = [_past(date(2025, 1, 7), "9900001", cause=Cause.NAMED, weather_day=False)]
+    kept = {
+        "past/ky-summary-2024-25/v1/days": record.lines_bytes(old, "t"),
+        "past/ky-summary-2024-25/v2/days": record.lines_bytes(new, "t"),
+        "past/ky-summary-2024-25/v1/counts": record.lines_bytes(
+            [_count("9900001", "2024-25", "W", 1)], "t"
+        ),
+        "past/ky-summary-2024-25/v12/counts": record.lines_bytes(
+            [_count("9900001", "2024-25", "W", 1, 1)], "t"
+        ),
+        "past/ky-summary-2025-26/v1/days": record.lines_bytes([_past(date(2026, 1, 7))], "t"),
+    }
+    said: list[str] = []
+    rows = record.kept_rows(kept, learn, said.append)
+    # v2 of one file (never v1), and the other file's only edition
+    assert rows == [*new, _past(date(2026, 1, 7))]
+    # v12 is newer than v2..v9 (by number, never by text)
+    (count,) = record.kept_counts(kept, said.append)
+    assert count.not_weather == 1
+    assert said == []
+    assert record.past_key("ky-summary-2024-25", 3, record.PAST_DAYS) == (
+        "past/ky-summary-2024-25/v3/days"
+    )
+
+
+def test_a_past_key_that_does_not_read_is_warned_of_and_left_out_never_the_record() -> None:
+    learn = PredictConfig.load(PIPELINE_ROOT / "config" / "predict.yaml").learn
+    good = [_past(date(2025, 1, 7))]
+    body = json.loads(record.lines_bytes(good, "t"))
+    body.pop("code")  # a row of an older model, say
+    kept = {
+        "past/ky-summary-2024-25/v1/days": (json.dumps(body) + "\n").encode(),
+        "past/ky-summary-2025-26/v1/days": record.lines_bytes(good, "t"),
+        "past/ky-summary-2025-26/v1/counts": b"not json\n",
+        "past/ky-summary-2025-26/days": record.lines_bytes(good, "t"),  # no edition
+        "past/ky-summary-2025-26/v1/counts.bak": b"",
+    }
+    said: list[str] = []
+    assert record.kept_rows(kept, learn, said.append) == good
+    assert record.kept_counts(kept, said.append) == []
+    assert said == [
+        "::warning::predict each-school record: past/ky-summary-2025-26/days: not a past record"
+        " key, left out",
+        "::warning::predict each-school record: past/ky-summary-2025-26/v1/counts.bak: not a"
+        " past record key, left out",
+        "::warning::predict each-school record: past/ky-summary-2024-25/v1/days:"
+        " ValidationError, its rows do not read; left out",
+        "::warning::predict each-school record: past/ky-summary-2025-26/days: not a past record"
+        " key, left out",
+        "::warning::predict each-school record: past/ky-summary-2025-26/v1/counts.bak: not a"
+        " past record key, left out",
+        "::warning::predict each-school record: past/ky-summary-2025-26/v1/counts:"
+        " ValidationError, its rows do not read; left out",
+    ]
+
+
+def test_a_year_count_holds_no_more_days_not_the_weather_than_it_counts() -> None:
+    assert _count("9900001", "2025-26", "W", 3, 1).not_weather == 1
+    with pytest.raises(ValueError, match="more days not the weather than counted"):
+        _count("9900001", "2025-26", "W", 1, 2)
+
+
+def _past_offer(file_id: str, kind: str, rows: int) -> Offer:
+    """A SYNTHETIC past record key's offer (the past keys go through the record kind's caps)."""
+    found = [_past(date(2025, 1, 6 + n % 20), f"{9_900_000 + n}") for n in range(rows)]
+    return Offer(evidence.RECORD, record.past_key(file_id, 1, kind), record.lines_bytes(found, "t"))
+
+
+def test_the_record_kinds_caps_hold_a_past_key_too(monkeypatch: pytest.MonkeyPatch) -> None:
+    api = FakeD1()
+    days = _past_offer("ky-summary-2024-25", record.PAST_DAYS, 30)
+    over = _past_offer("ky-summary-2025-26", record.PAST_DAYS, 31)
+    monkeypatch.setattr(evidence, "RECORD_DAY_BYTES", len(days.data))
+    # one past key over the day cap: nothing of the push is written, the key at the cap included
+    with pytest.raises(EvidenceError, match=r"past/ky-summary-2025-26/v1/days: refused, .* over"):
+        _store(api, RECORD_JOB).push([days, over], (evidence.RECORD,))
+    assert set(_items(api).values()) <= {0}
+    # a past key at the cap is kept and read back
+    assert [r.kept for r in _store(api, RECORD_JOB).push([days], (evidence.RECORD,))] == [1, 1]
+    # past keys count toward the total cap with the live days
+    live = _record_day("2026-12-01", 3)
+    monkeypatch.setattr(evidence, "RECORD_TOTAL_BYTES", _stored(days, live) - 1)
+    with pytest.raises(EvidenceError, match=r"record: refused, .* over its"):
+        _store(api, RECORD_JOB).push([live], (evidence.RECORD,))
+    monkeypatch.setattr(evidence, "RECORD_TOTAL_BYTES", _stored(days, live))
+    assert [r.kept for r in _store(api, RECORD_JOB).push([live], (evidence.RECORD,))] == [1, 1]
