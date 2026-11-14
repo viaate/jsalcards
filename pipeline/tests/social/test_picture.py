@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pytest
 
-from snowlight.directory.points import Points
+from snowlight.directory.points import NO_DISTRICT, Points
 from snowlight.social.cards import alt_text
 from snowlight.social.picture import (
     DISTRICT_X,
@@ -21,6 +21,9 @@ from snowlight.social.picture import (
     MAX_ZOOM,
     REGIONS,
     SCHOOL_STARTS,
+    CONTIGUOUS_ZONES,
+    UNKNOWN_ZONE,
+    UNREAD_ZONE,
     WIDTH,
     ZOOM,
     ZOOM_STEP,
@@ -38,15 +41,17 @@ from snowlight.social.picture import (
     clock,
     district_frame,
     lit_schools,
+    map_day,
     project,
     region,
+    school_zones,
     slot_of,
     today_everywhere,
     unproject,
     view_states,
 )
 from snowlight.social.render import directory_of
-from snowlight.social.rules import mentions_closings
+from snowlight.social.rules import mentions_chance, mentions_closings
 
 # Ten public schools: six around Buffalo, NY (36...), two in Pennsylvania (42...) near them,
 # one in Minnesota (27...) and one in Texas (48...). Two districts: NY (3600001), MN (2700001).
@@ -1322,3 +1327,283 @@ def test_states_holding_every_lit_school_are_said_with_in_and_counts_agree_in_nu
     assert "1 schools" not in picture.shows
     if len(rows) == 1:
         assert "the map shows 1 school closed, delayed" in picture.shows
+
+
+# -- each school on its own map day (web/src/data/map-day.ts), as the page lights it ------------
+
+MAP_DAY_TURNS = [
+    # zone, the minute before its 3:30 PM, its 3:30 PM, before its midnight, its midnight
+    ("America/New_York", "2026-11-09T20:29", "2026-11-09T20:30", "2026-11-10T04:59", "2026-11-10T05:00"),
+    ("America/Chicago", "2026-11-09T21:29", "2026-11-09T21:30", "2026-11-10T05:59", "2026-11-10T06:00"),
+    ("America/Denver", "2026-11-09T22:29", "2026-11-09T22:30", "2026-11-10T06:59", "2026-11-10T07:00"),
+    ("America/Phoenix", "2026-11-09T22:29", "2026-11-09T22:30", "2026-11-10T06:59", "2026-11-10T07:00"),
+    ("America/Los_Angeles", "2026-11-09T23:29", "2026-11-09T23:30", "2026-11-10T07:59", "2026-11-10T08:00"),
+    ("America/Anchorage", "2026-11-10T00:29", "2026-11-10T00:30", "2026-11-10T08:59", "2026-11-10T09:00"),
+    ("Pacific/Honolulu", "2026-11-10T01:29", "2026-11-10T01:30", "2026-11-10T09:59", "2026-11-10T10:00"),
+]  # fmt: skip
+"""The site's own table (web/src/data/tests/map-day.test.ts ``ZONES``)."""
+
+
+@pytest.mark.parametrize(("zone", "before", "turn", "late", "midnight"), MAP_DAY_TURNS)
+def test_a_school_s_map_day_is_its_today_until_3_30_pm_on_its_clock_then_its_tomorrow(
+    zone: str, before: str, turn: str, late: str, midnight: str
+) -> None:
+    monday, tuesday = date(2026, 11, 9), date(2026, 11, 10)
+    assert map_day(at("2026-11-09T12:00"), zone) == monday
+    assert map_day(at(before), zone) == monday
+    assert map_day(at(turn), zone) == tuesday
+    assert map_day(at(late), zone) == tuesday
+    # After midnight that same Tuesday is its today: nothing changes at midnight.
+    assert map_day(at(midnight), zone) == tuesday
+
+
+def test_the_map_day_keeps_each_clock_across_its_changes() -> None:
+    # Arizona keeps its own clock, an hour behind Denver's in summer.
+    assert map_day(at("2026-07-14T21:45"), "America/Denver") == date(2026, 7, 15)
+    assert map_day(at("2026-07-14T21:45"), "America/Phoenix") == date(2026, 7, 14)
+    # The clocks go back on Nov 1, 2026: 3:30 PM EST is 20:30 UTC, EDT the day before 19:30.
+    assert map_day(at("2026-11-01T20:29"), "America/New_York") == date(2026, 11, 1)
+    assert map_day(at("2026-11-01T20:30"), "America/New_York") == date(2026, 11, 2)
+    assert map_day(at("2026-10-31T19:29"), "America/New_York") == date(2026, 10, 31)
+    assert map_day(at("2026-10-31T19:30"), "America/New_York") == date(2026, 11, 1)
+    assert map_day(at("2026-11-01T23:29"), "America/Los_Angeles") == date(2026, 11, 1)
+    assert map_day(at("2026-11-01T23:30"), "America/Los_Angeles") == date(2026, 11, 2)
+    # They go forward on Mar 14, 2027: 3:30 PM CDT is 20:30 UTC; Arizona keeps 22:30.
+    assert map_day(at("2027-03-14T20:29"), "America/Chicago") == date(2027, 3, 14)
+    assert map_day(at("2027-03-14T20:30"), "America/Chicago") == date(2027, 3, 15)
+    assert map_day(at("2027-03-14T22:29"), "America/Phoenix") == date(2027, 3, 14)
+    assert map_day(at("2027-03-14T22:30"), "America/Phoenix") == date(2027, 3, 15)
+
+
+def test_a_school_with_no_zone_keeps_the_day_that_is_today_everywhere() -> None:
+    assert map_day(at("2026-11-09T20:45"), None) == date(2026, 11, 9)
+    for hour in ("04:00", "05:30", "07:19", "07:59"):
+        assert map_day(at(f"2026-11-10T{hour}"), None) is None
+    assert map_day(at("2026-11-10T08:00"), None) == date(2026, 11, 10)
+
+
+def test_a_school_whose_zone_is_unread_lights_only_while_every_clock_agrees() -> None:
+    for moment in ("2026-11-09T20:45", "2026-11-09T23:30", "2026-11-10T03:59", "2026-11-10T07:59"):
+        assert map_day(at(moment), UNREAD_ZONE) is None, moment
+    assert map_day(at("2026-11-10T08:00"), UNREAD_ZONE) == date(2026, 11, 10)
+    assert map_day(at("2026-11-10T20:29"), UNREAD_ZONE) == date(2026, 11, 10)
+    assert map_day(at("2026-11-10T20:30"), UNREAD_ZONE) is None
+    # Where it gives a day, every contiguous clock and a school with no zone give it too.
+    for minute in range(0, 3 * 24 * 60, 7):
+        now = at("2026-10-31T00:00") + timedelta(minutes=minute)
+        day = map_day(now, UNREAD_ZONE)
+        if day is not None:
+            assert map_day(now, None) == day
+            assert all(map_day(now, zone) == day for zone in CONTIGUOUS_ZONES)
+
+
+def test_a_clock_that_cannot_be_told_gives_no_day() -> None:
+    assert map_day(at("2026-11-10T12:00"), UNKNOWN_ZONE) is None
+    assert map_day(at("2026-11-10T12:00"), "Not/A_Zone") is None
+
+
+# Four schools (SYNTHETIC): an Eastern public school (district 0), a Pacific public school
+# (district 1), a private school near Buffalo whose zone is its own entry, and a public
+# school in Alaska (district 1 too, so the file gives it a zone; without the file it has none).
+ZONE_IDS = ("360000100001", "060000100001", "A0000001", "020000100001")
+ZONE_LON = (-78.88, -118.24, -78.86, -149.90)
+ZONE_LAT = (42.89, 34.05, 42.91, 61.22)
+ZONE_STAMP = {"generated_on": "2026-10-14", "schools": 4, "districts": 2}
+
+
+def zone_directory() -> Directory:
+    points = Points(
+        lon_e6=np.asarray([round(v * 1e6) for v in ZONE_LON], dtype=np.int32),
+        lat_e6=np.asarray([round(v * 1e6) for v in ZONE_LAT], dtype=np.int32),
+        district=np.asarray([0, 1, NO_DISTRICT, 1], dtype=np.uint32),
+        kind=np.asarray([0, 0, 1, 0], dtype=np.uint8),
+        district_count=2,
+    )
+    return Directory("2026-10-14", ZONE_IDS, ("3600001", "0600001"), points)
+
+
+def zone_file(east: str = "America/New_York", west: str = "America/Los_Angeles") -> dict[str, Any]:
+    """The predictions file the page is served, for its zones: district 0 in ``east``,
+    district 1 in ``west``, the private school in Eastern time (SYNTHETIC)."""
+    return {
+        "schema_version": 1,
+        "generated_at": "2026-11-13T22:30:00Z",
+        "directory": dict(ZONE_STAMP),
+        "days": ["2026-11-13", "2026-11-14"],
+        "districts": [
+            {"district": 0, "time_zone": east, "days": [{"state": "no_threat"}] * 2},
+            {"district": 1, "time_zone": west, "days": [{"state": "no_threat"}] * 2},
+        ],
+        "zones": ["America/New_York"],
+        "outlooks": [{"state": "no_threat"}],
+        "schools": [{"school": 2, "zone": 0, "days": [0, 0]}],
+    }
+
+
+def zone_closings(days: dict[str, list[tuple[int, int]]], generated_at: str) -> dict[str, Any]:
+    file: dict[str, Any] = {
+        "generated_at": generated_at,
+        "directory": dict(ZONE_STAMP),
+        "days": [],
+    }
+    for day, rows in days.items():
+        file["days"].append(closings(rows, day, generated_at)["days"][0])
+    return file
+
+
+def lit_at(
+    days: dict[str, list[tuple[int, int]]], moment: str, zones: dict[str, Any] | None
+) -> tuple[list[int], set[date]] | None:
+    file = zone_closings(days, f"{moment}:00Z")
+    here = zone_directory()
+    lit = lit_schools(file, here, at(moment), school_zones(zones, here))
+    return None if lit is None else ([int(school) for school in lit.schools], set(lit.days))
+
+
+def test_after_3_30_pm_on_its_clock_a_school_s_today_rows_no_longer_light() -> None:
+    """Nov 13, 22:49 UTC (5:49 PM Eastern; the run that counted 83 while the map lit none):
+    the Eastern school shows its Nov 14, which has no row, so it lights none; without the
+    zones the page lights none either (the clocks no longer agree)."""
+    rows = {"2026-11-13": [(0, 0)]}
+    assert lit_at(rows, "2026-11-13T22:49", zone_file()) is None
+    assert lit_at(rows, "2026-11-13T22:49", None) is None
+
+
+def test_overnight_each_school_lights_its_own_today() -> None:
+    """Nov 13, 07:19 UTC (the run that counted 0 while the map lit 16): no day is today
+    everywhere, yet each school's own clock is on Nov 13 (Pacific is past midnight)."""
+    rows = {"2026-11-13": [(0, 0), (1, 1)]}
+    assert lit_at(rows, "2026-11-13T07:19", zone_file()) == ([0, 1], {date(2026, 11, 13)})
+    # Without the zones the page lights none in those hours: nor does the count.
+    assert lit_at(rows, "2026-11-13T07:19", None) is None
+
+
+def test_in_the_evening_east_and_west_light_rows_of_different_days() -> None:
+    """Nov 12, 22:50 UTC: 5:50 PM Eastern (its Nov 13) and 2:50 PM Pacific (its Nov 12). The
+    Eastern school lights its Nov 13 row, the Pacific school its Nov 12 row, one row each."""
+    rows = {"2026-11-12": [(0, 1), (1, 0)], "2026-11-13": [(0, 0), (1, 2)]}
+    lit = lit_schools(
+        zone_closings(rows, "2026-11-12T22:50:00Z"),
+        zone_directory(),
+        at("2026-11-12T22:50"),
+        school_zones(zone_file(), zone_directory()),
+    )
+    assert lit is not None
+    assert [int(school) for school in lit.schools] == [0, 1]
+    assert [int(status) for status in lit.statuses] == [0, 0], "Eastern: Nov 13; Pacific: Nov 12"
+    assert lit.days == frozenset({date(2026, 11, 12), date(2026, 11, 13)})
+
+
+def test_a_private_school_keeps_its_own_zone_and_one_with_none_today_everywhere() -> None:
+    rows = {"2026-11-13": [(2, 0)], "2026-11-14": [(2, 1)]}
+    # 21:00 UTC: 4 PM Eastern, the private school's own clock: its Nov 14 row lights.
+    assert lit_at(rows, "2026-11-13T21:00", zone_file()) == ([2], {date(2026, 11, 14)})
+    # A file that gives it no zone: the day that is today everywhere, Nov 13.
+    bare = {**zone_file(), "schools": [], "zones": []}
+    assert lit_at(rows, "2026-11-13T21:00", bare) == ([2], {date(2026, 11, 13)})
+
+
+def test_zones_the_page_cannot_use_leave_it_the_unread_rule() -> None:
+    """A file for another directory, of another schema, or with a zone that cannot be read
+    gives the page no zones (live.ts toldZones, map-day.ts parsePredictions): it lights each
+    contiguous school by the day every clock agrees on, and an Alaska school not at all."""
+    rows = {"2026-11-13": [(0, 0), (3, 0)]}
+    other = {**zone_file(), "directory": {**ZONE_STAMP, "schools": 5}}
+    unread = [other, {**zone_file(), "schema_version": 2}, zone_file(west="Not/A_Zone"), None]
+    for file in unread:
+        assert school_zones(file, zone_directory()) is None
+        # 18:00 UTC: every contiguous clock is before 3:30 PM: the Eastern school lights.
+        assert lit_at(rows, "2026-11-13T18:00", file) == ([0], {date(2026, 11, 13)})
+        # 22:49 UTC: the clocks no longer agree: none.
+        assert lit_at(rows, "2026-11-13T22:49", file) is None
+    # With the file's zones the Alaska school lights by its district's clock (10 AM there).
+    assert lit_at(rows, "2026-11-13T18:00", zone_file()) == ([0, 3], {date(2026, 11, 13)})
+
+
+def test_the_description_counts_what_the_page_lights_each_on_its_own_day() -> None:
+    """The picture's words count the schools lit on each one's own day, and name the days."""
+    rows = {"2026-11-12": [(0, 1), (1, 0)], "2026-11-13": [(0, 0), (1, 2)]}
+    file = zone_closings(rows, "2026-11-12T22:45:00Z")
+    picture = choose(
+        chances=False,
+        closings_shown=True,
+        closings=file,
+        predictions=None,
+        directory=zone_directory(),
+        now=at("2026-11-12T22:50"),
+        zones=zone_file(),
+    )
+    assert picture.kind == "closings"
+    assert picture.lit == 2
+    assert "for November 12 or 13, each school's own day on its clock." in picture.shows
+    assert "today" not in picture.shows.lower()
+    one = choose(
+        chances=False,
+        closings_shown=True,
+        closings=zone_closings({"2026-11-13": [(0, 0), (1, 2)]}, "2026-11-13T07:15:00Z"),
+        predictions=None,
+        directory=zone_directory(),
+        now=at("2026-11-13T07:19"),
+        zones=zone_file(),
+    )
+    assert one.lit == 2
+    assert "dismissing early for November 13. The closings" in one.shows
+    # The evening run with today's rows only: nothing lit, the calm view's words.
+    calm = choose(
+        chances=False,
+        closings_shown=True,
+        closings=zone_closings({"2026-11-13": [(0, 0)]}, "2026-11-13T22:45:00Z"),
+        predictions=None,
+        directory=zone_directory(),
+        now=at("2026-11-13T22:49"),
+        zones=zone_file(),
+    )
+    assert calm.kind == "national"
+    assert calm.lit == 0
+    assert "No school is lit up" in calm.shows
+
+
+def test_a_calm_region_is_refused_only_where_the_page_lights_schools() -> None:
+    file = zone_closings({"2026-11-13": [(0, 0)]}, "2026-11-13T07:15:00Z")
+    with pytest.raises(PictureError, match="schools are lit"):
+        region(
+            query="?at=43,-79,6",
+            place="the Great Lakes",
+            closings=file,
+            directory=zone_directory(),
+            now=at("2026-11-13T07:19"),
+            closings_shown=True,
+            zones=zone_file(),
+        )
+    evening = region(
+        query="?at=43,-79,6",
+        place="the Great Lakes",
+        closings=file,
+        directory=zone_directory(),
+        now=at("2026-11-13T22:49"),
+        closings_shown=True,
+        zones=zone_file(),
+    )
+    assert evening.kind == "region"
+
+
+def test_while_chances_are_testing_the_zones_give_no_chance() -> None:
+    """The zones come from the predictions file, but no chance does while chances are
+    TESTING: a 90% forecast in it is never said."""
+    file = zone_file()
+    file["days"] = ["2026-11-13", "2026-11-14"]
+    for row in file["districts"]:
+        row["days"] = [{"state": "no_threat"}, {"state": "forecast", "p_no_school": 0.9}]
+    file["generated_at"] = "2026-11-13T15:00:00Z"
+    picture = choose(
+        chances=False,
+        closings_shown=True,
+        closings=None,
+        predictions=None,
+        directory=zone_directory(),
+        now=at("2026-11-13T15:10"),
+        zones=file,
+    )
+    assert picture.seen.chance is None
+    assert not mentions_chance(picture.shows)
+    assert "90" not in picture.shows

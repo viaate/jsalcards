@@ -9,8 +9,11 @@ One attempt:
 2. Open the map at :data:`FILES_VIEW`, signed out, and keep the bytes of the files it reads:
    the school directory (``schools/meta.*.json``, ``schools/points.*.bin``) and
    ``live/closings.json`` from the live root the page names (the site reads them only at the
-   zooms it draws schools at, not at the national view). Read ``predictions/latest.json``
-   from the same root, only while the facts file marks chances LIVE. While it marks closings
+   zooms it draws schools at, not at the national view). Keep ``predictions/latest.json``
+   too: the page's own read when it made one, else read from the same root. It is read for
+   each school's time zone, which decides the day the map lights each school on (from 3:30 PM
+   on its clock, its tomorrow), and for a chance only while the facts file marks chances
+   LIVE. While it marks closings
    not LIVE, the closings file is dropped: nothing is said about it and the page is served a
    404 for it (as in practice mode), so no school glows in the picture.
 3. :func:`snowlight.social.picture.choose` picks the view and writes what it shows. When it
@@ -379,6 +382,17 @@ class Attempt:
         self.kept["predictions"] = kept
         return _json(kept)
 
+    def zones(self, page: Page, root: str) -> Mapping[str, object] | None:
+        """The predictions file the page lights each school's day by (its time zones): the
+        page's own read when it made one, else read from ``root`` (:meth:`predictions`); kept
+        either way, so the page is served these same bytes (:meth:`take`) and the picture's
+        words count the schools it lights. ``None`` when the read gave no file (the page then
+        tells each school's day without the zones, as the description does)."""
+        kept = self.kept.get("predictions")
+        if kept is not None:
+            return _json(kept)
+        return self.predictions(page, root)
+
     def take(self, page: Page, picture: Picture, out: Path) -> None:
         """Open the picture's view with the described files, hide the site's interface, and
         check the map before the shot: as many schools lit as the description counts, at
@@ -481,9 +495,12 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
                 # served a 404 for the file, so no school glows (practice mode's map).
                 attempt.hide_closings()
                 closings_file = None
-            # While chances are TESTING the predictions are not even read (no picture of a
-            # chance, and nothing about one in its description).
-            predictions = attempt.predictions(page, root) if chances else None
+            # The predictions file decides the day the page lights each school on (its time
+            # zone: from 3:30 PM on its clock, its tomorrow), so it is always read, and the page
+            # is served the same bytes. Its chances go to the picture only while chances are
+            # LIVE: while they are TESTING no picture is of a chance, and no words give one.
+            zones = attempt.zones(page, root)
+            predictions = zones if chances else None
             picture = (
                 choose(
                     closings=closings_file,
@@ -492,6 +509,7 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
                     now=now(),
                     chances=chances,
                     closings_shown=closings,
+                    zones=zones,
                 )
                 if view is None
                 else region(
@@ -501,6 +519,7 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
                     directory=directory,
                     now=now(),
                     closings_shown=closings,
+                    zones=zones,
                 )
             )
             if view is None and picture.kind == "national" and picture.seen.chance is None:
@@ -515,6 +534,7 @@ def _attempt(  # noqa: PLR0913 - the attempt's parts
                     directory=directory,
                     shown=closings,
                     now=now,
+                    zones=zones,
                 )
             else:
                 say(
@@ -549,6 +569,7 @@ def _calm(  # noqa: PLR0913 - the attempt and the live files
     directory: Directory,
     shown: bool,
     now: Callable[[], datetime],
+    zones: Mapping[str, object] | None,
 ) -> Picture:
     """The picture of a calm map, taken: the slot's regions in turn (:func:`calm_regions`, at
     most :data:`REGION_TRIES`), each checked to draw school specks in view; the national map
@@ -569,6 +590,7 @@ def _calm(  # noqa: PLR0913 - the attempt and the live files
             directory=directory,
             now=now(),
             closings_shown=shown,
+            zones=zones,
         )
         attempt.say(f"social: the picture is the region view {picture.query} ({place.place})")
         try:

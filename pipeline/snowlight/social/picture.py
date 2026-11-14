@@ -7,9 +7,12 @@ files the page reads and picks the view:
 
 * **Closings on the map** (only while the facts file marks closings LIVE: while they are not,
   the file is not read at all and nothing is said about closings): when
-  ``live/closings.json`` holds schools for the day the map
-  shows (the day that is today in every contiguous US time zone, 08:00 to 04:00 UTC, as
-  ``web/src/data/closings.ts`` has it) under the deployed directory's stamp, the map is
+  ``live/closings.json`` holds schools for the day the map shows each of them (its MAP DAY,
+  :func:`map_day`, as ``web/src/data/map-day.ts`` and ``closings.ts`` have it: its own today
+  on its district's clock until 3:30 PM there, its tomorrow from then; the clock is its
+  district's time zone, or a private school's own, from ``predictions/latest.json``, which
+  the render reads for the zones alone, never for a chance while chances are TESTING:
+  :func:`school_zones`) under the deployed directory's stamp, the map is
   zoomed (``?at=lat,lon,zoom``) to the window of the picture's size holding the most of them
   at :data:`ZOOM`, then closer (up to :data:`MAX_ZOOM`) while every lit school of the window
   still fits :data:`FIT_BOX` in the middle of the picture, so a few lit schools fill the
@@ -66,7 +69,7 @@ import numpy as np
 import numpy.typing as npt
 from pydantic import BaseModel, ConfigDict, Field
 
-from snowlight.directory.points import Points
+from snowlight.directory.points import NO_DISTRICT, Points
 
 ZOOM: Final = 6.5
 """The widest zoom of a closings view: a few states across on a 1600 x 900 picture."""
@@ -299,6 +302,118 @@ def today_everywhere(now: datetime) -> date | None:
     return east if east == west else None
 
 
+MAP_DAY_TURN: Final = time(15, 30)
+"""When a school's map day turns to its tomorrow: 3:30 PM on its own clock (web/src/data/
+map-day.ts ``MAP_DAY_TURN``, an owner decision of Nov 9, 2026)."""
+UNREAD_ZONE: Final = "*"
+"""The clock of a school in the contiguous US while the page has no zones for the directory
+(map-day.ts ``UNREAD_ZONE``): the day that is today everywhere, only while every contiguous
+clock's map day is that day too (about 08:00 to 20:30 UTC), else none."""
+UNKNOWN_ZONE: Final = "?"
+"""The clock of a school outside the contiguous US while the page has no zones (map-day.ts
+``UNKNOWN_ZONE``): no day, so it lights none."""
+CONTIGUOUS_ZONES: Final = (
+    "America/New_York",
+    "America/Chicago",
+    "America/Denver",
+    "America/Phoenix",
+    "America/Los_Angeles",
+)
+"""The five clocks every school in the contiguous US keeps (map-day.ts ``CONTIGUOUS``)."""
+
+
+def in_contiguous(lon: float, lat: float) -> bool:
+    """Whether a place is in the contiguous US, by the site's box (map-day.ts
+    ``inContiguous``)."""
+    return 24.3 <= lat <= 49.5 and -125.0 <= lon <= -66.8  # noqa: PLR2004
+
+
+def map_day(now: datetime, zone: str | None) -> date | None:
+    """A school's map day at ``now`` (map-day.ts ``mapDay``, the one rule the site's glow
+    follows): its today before 3:30 PM on its clock (:data:`MAP_DAY_TURN`), its tomorrow from
+    then; with no zone, the day that is today everywhere (:func:`today_everywhere`, none
+    overnight); with :data:`UNREAD_ZONE`, the day that is today everywhere only while it is
+    every contiguous clock's map day too; none for :data:`UNKNOWN_ZONE` or a zone this machine
+    does not know."""
+    if zone is None:
+        return today_everywhere(now)
+    if zone == UNREAD_ZONE:
+        today = today_everywhere(now)
+        if today is None:
+            return None
+        return today if all(map_day(now, name) == today for name in CONTIGUOUS_ZONES) else None
+    try:
+        clock_there = now.astimezone(ZoneInfo(zone))
+    except (ValueError, KeyError):  # ZoneInfoNotFoundError is a KeyError
+        return None
+    day = clock_there.date()
+    turned = (clock_there.hour, clock_there.minute) >= (MAP_DAY_TURN.hour, MAP_DAY_TURN.minute)
+    return day + timedelta(days=1) if turned else day
+
+
+@dataclass(frozen=True, slots=True)
+class Zones:
+    """Each school's time zone, as ``predictions/latest.json`` gives it (map-day.ts
+    ``MapZones``): its district's, or a private school's own."""
+
+    district: Mapping[int, str]
+    school: Mapping[int, str]
+
+    def of(self, school: int, district: int) -> str | None:
+        """A school's zone (map-day.ts ``zoneOf``): its district's (``district`` is -1 for
+        none), else its own entry's; ``None`` where the file gives none."""
+        return self.district.get(district) if district >= 0 else self.school.get(school)
+
+
+def _known_zone(name: object) -> bool:
+    if not isinstance(name, str) or not name:
+        return False
+    try:
+        ZoneInfo(name)
+    except (ValueError, KeyError):  # ZoneInfoNotFoundError is a KeyError
+        return False
+    return True
+
+
+def school_zones(predictions: Mapping[str, object] | None, directory: Directory) -> Zones | None:
+    """The zones the page lights each school's day by, from the predictions file it is served
+    (live.ts ``toldZones``, map-day.ts ``zonesOf``); ``None`` when it has none for the
+    directory: no file (a 404), a file the page does not read (``parsePredictions``: not
+    schema 1, or a zone it cannot read), or one for another directory. The page then tells a
+    school's day by :data:`UNREAD_ZONE` in the contiguous US and :data:`UNKNOWN_ZONE`
+    elsewhere. The file's age is no matter: a district's clock does not age."""
+    if predictions is None or predictions.get("schema_version") != 1:
+        return None
+    if predictions.get("directory") != directory.stamp():
+        return None
+    districts = predictions.get("districts")
+    schools = predictions.get("schools", [])
+    names = predictions.get("zones", [])
+    if not isinstance(districts, list) or not isinstance(schools, list):
+        return None
+    if not isinstance(names, list) or not all(_known_zone(name) for name in names):
+        return None
+    by_district: dict[int, str] = {}
+    for row in districts:
+        if not isinstance(row, dict):
+            return None
+        index, zone = row.get("district"), row.get("time_zone")
+        if isinstance(index, bool) or not isinstance(index, int) or not _known_zone(zone):
+            return None
+        by_district[index] = str(zone)
+    by_school: dict[int, str] = {}
+    for row in schools:
+        if not isinstance(row, dict):
+            return None
+        index, place = row.get("school"), row.get("zone")
+        if isinstance(index, bool) or not isinstance(index, int):
+            return None
+        if isinstance(place, bool) or not isinstance(place, int) or not 0 <= place < len(names):
+            return None
+        by_school[index] = str(names[place])
+    return Zones(by_district, by_school)
+
+
 def clock(moment: datetime) -> str:
     """The time in the shown zone, with the zone: "6:42 AM CT"."""
     local = moment.astimezone(SHOWN_ZONE)
@@ -346,9 +461,10 @@ def _rows(group: Mapping[str, object], count: int) -> tuple[list[int], list[int]
 
 @dataclass(frozen=True, slots=True)
 class Lit:
-    """The schools the map lights, and on which day."""
+    """The schools the map lights, and the days their lit rows are for (each school's own map
+    day: one day, or two in the hours some clocks are past 3:30 PM and others not)."""
 
-    day: date
+    days: frozenset[date]
     schools: npt.NDArray[np.int64]
     statuses: npt.NDArray[np.int64]
     generated_at: datetime
@@ -360,10 +476,16 @@ def closings_read(closings: Mapping[str, object] | None, directory: Directory) -
 
 
 def lit_schools(
-    closings: Mapping[str, object] | None, directory: Directory, now: datetime
+    closings: Mapping[str, object] | None,
+    directory: Directory,
+    now: datetime,
+    zones: Zones | None = None,
 ) -> Lit | None:
-    """The schools the page lights at ``now``: ``None`` when it lights none (no file, a file
-    under another directory, or the hours between days).
+    """The schools the page lights at ``now`` (closings.ts ``lightAndSee``): each school with a
+    row on its own map day (:func:`map_day`), by its zone in ``zones`` (:func:`school_zones`),
+    or without them by :data:`UNREAD_ZONE` in the contiguous US and :data:`UNKNOWN_ZONE`
+    elsewhere; at most one row a school, in school order. ``None`` when it lights none (no
+    file, a file under another directory, or no row on any school's map day).
 
     Raises:
         PictureError: the file is malformed.
@@ -373,25 +495,39 @@ def lit_schools(
     generated_at = _instant(closings.get("generated_at"), "closings.json")
     if not closings_read(closings, directory):
         return None
-    shown = today_everywhere(now)
     days = closings.get("days")
     if not isinstance(days, list):
         raise PictureError("closings.json: days is missing")
+    points = directory.points
+    shown: dict[str | None, date | None] = {}
+    picked: list[tuple[int, int, date]] = []
     for group in days:
         if not isinstance(group, dict):
             raise PictureError("closings.json: a day is malformed")
-        if shown is None or group.get("day") != shown.isoformat():
-            continue
         schools, statuses = _rows(group, len(directory.school_ids))
-        if not schools:
-            return None
-        return Lit(
-            day=shown,
-            schools=np.asarray(schools, dtype=np.int64),
-            statuses=np.asarray(statuses, dtype=np.int64),
-            generated_at=generated_at,
-        )
-    return None
+        for school, status in zip(schools, statuses, strict=True):
+            owner = int(points.district[school])
+            district = -1 if owner == NO_DISTRICT else owner
+            if zones is not None:
+                zone = zones.of(school, district)
+            elif in_contiguous(points.lon_e6[school] / 1e6, points.lat_e6[school] / 1e6):
+                zone = UNREAD_ZONE
+            else:
+                zone = UNKNOWN_ZONE
+            if zone not in shown:
+                shown[zone] = map_day(now, zone)
+            day = shown[zone]
+            if day is not None and group.get("day") == day.isoformat():
+                picked.append((school, status, day))
+    if not picked:
+        return None
+    picked.sort(key=lambda row: row[0])
+    return Lit(
+        days=frozenset(day for _, _, day in picked),
+        schools=np.asarray([school for school, _, _ in picked], dtype=np.int64),
+        statuses=np.asarray([status for _, status, _ in picked], dtype=np.int64),
+        generated_at=generated_at,
+    )
 
 
 def project(
@@ -559,7 +695,7 @@ def _closings_picture(lit: Lit, directory: Directory, now: datetime) -> Picture:
         f"area with the most schools lit up: {_schools(len(in_view))} "
         f"{'glows' if len(in_view) == 1 else 'glow'} in this view ({_status_counts(counts)})"
         f"{place}. Across the country the map shows {_schools(total)} closed, delayed, remote or"
-        f" dismissing early for {_day_of(lit.day)}. {updated}"
+        f" dismissing early for {_days_of(lit.days)}. {updated}"
     )
     seen = Seen(
         in_view=counts,
@@ -576,6 +712,18 @@ def _closings_picture(lit: Lit, directory: Directory, now: datetime) -> Picture:
 
 def _day_of(day: date) -> str:
     return f"{day:%B} {day.day}"
+
+
+def _days_of(days: frozenset[date]) -> str:
+    """The days lit rows are for: "November 13", or "November 13 or 14, each school's own day
+    on its clock" while some schools' clocks are past 3:30 PM and others not."""
+    ordered = sorted(days)
+    if len(ordered) == 1:
+        return _day_of(ordered[0])
+    words = [_day_of(ordered[0])]
+    for day in ordered[1:]:
+        words.append(str(day.day) if day.month == ordered[0].month else _day_of(day))
+    return f"{', '.join(words[:-1])} or {words[-1]}, each school's own day on its clock"
 
 
 def _chance_day(predictions: Mapping[str, object], today: date) -> int | None:
@@ -898,8 +1046,13 @@ def choose(  # noqa: PLR0913 - the live files, the time and the facts file's swi
     now: datetime,
     chances: bool,
     closings_shown: bool,
+    zones: Mapping[str, object] | None = None,
 ) -> Picture:
     """The view to take at ``now`` and its description (see the module's docstring).
+
+    ``zones`` is the predictions file the page is served (or ``None`` for a 404), read for
+    each school's time zone alone (:func:`school_zones`), so the schools counted are those the
+    page lights, each on its own map day; it gives no chance, whatever the switch.
 
     ``chances`` is the facts file's switch (:func:`snowlight.social.rules.chances_shown`):
     without it the predictions are not read at all, so the picture is never a district's
@@ -915,7 +1068,7 @@ def choose(  # noqa: PLR0913 - the live files, the time and the facts file's swi
     now = now.astimezone(UTC)
     if not closings_shown:
         closings = None
-    lit = lit_schools(closings, directory, now)
+    lit = lit_schools(closings, directory, now, school_zones(zones, directory))
     if lit is not None:
         return _closings_picture(lit, directory, now)
     read = closings_read(closings, directory)
@@ -1081,10 +1234,13 @@ def region(  # noqa: PLR0913 - the view, the live files, the time and the switch
     directory: Directory,
     now: datetime,
     closings_shown: bool,
+    zones: Mapping[str, object] | None = None,
 ) -> Picture:
     """A calm view of ``place`` at a zoom where the map draws every school as a faint speck:
     a post's view when nothing is lit (:func:`calm_regions`), or the image library's. Only
-    when the map lights no school. Without ``closings_shown`` the closings file is not read.
+    when the map lights no school (each on its own map day, by ``zones``, the predictions file
+    the page is served: :func:`choose`). Without ``closings_shown`` the closings file is not
+    read.
     The description names the states most of the view's public schools are in, only by
     share (:func:`_states`): none when no one or two states hold most of them.
 
@@ -1094,7 +1250,7 @@ def region(  # noqa: PLR0913 - the view, the live files, the time and the switch
     now = now.astimezone(UTC)
     if not closings_shown:
         closings = None
-    if lit_schools(closings, directory, now) is not None:
+    if lit_schools(closings, directory, now, school_zones(zones, directory)) is not None:
         raise PictureError("schools are lit: a calm region picture would leave them out")
     read = closings_read(closings, directory)
     closings_line, current = calm_closings(closings, read, now)
