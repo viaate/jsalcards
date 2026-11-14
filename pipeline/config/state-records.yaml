@@ -46,8 +46,8 @@ states:
         edition: 1
         # The SHA-256 of each record key's bytes this edition writes (a drift is refused).
         written:
-          days: fe2de0b3b16467bb55a0f491e6bfc9d15cde8f4c81037aab0b7e2b5e3f3d2be2
-          counts: 25f248720cce77c5a827888f2f58d628286b407b79721d3356a47a4bee817b74
+          days: 94b55e5e3d1dddb08d4baaef9c3088e7b1a29f21218a1976925067bf7514d9fd
+          counts: d562d29f679cba79ec3ce3e62162efaa27db700fc89bd1b76c2c3d3b092da6e6
       # The "Five Year Weather Trend": weather make-up days per district and school year.
       - id: ky-trend-2025-26
         form: ky_trend
@@ -290,7 +290,9 @@ states:
     # the snow of 2025-11-10 and 11 and of 2026-03-17. One listed day may be the state's own
     # year slip: Jackson County's 2026-01-23 (W) is the only W that day, and the district's
     # 2024-25 row lists 2025-01-23 and 01-24, a snow it posted then. The row stays as the state
-    # lists it, in the unconfirmed list below.
+    # lists it, in the unconfirmed list below. Letcher County's 2026-02-12 and 13 (closed with no
+    # water after line breaks drained the town's tanks) are unconfirmed, not another cause:
+    # reports tie the breaks to the freeze and thaw.
     not_weather:
       - number: "275"
         day: 2025-11-05
@@ -326,20 +328,6 @@ states:
         why: >-
           Closed for illness: many staff and students out sick in the February 2025 flu wave;
           the district said it was not the weather.
-        checked: 2026-11-14
-      - number: "331"
-        day: 2026-02-12
-        code: W
-        why: >-
-          A water system leak drained the town's tanks; the district closed with no water while
-          they refilled.
-        checked: 2026-11-14
-      - number: "331"
-        day: 2026-02-13
-        code: W
-        why: >-
-          A water system leak drained the town's tanks; the district closed with no water while
-          they refilled.
         checked: 2026-11-14
     unconfirmed:
       - number: "125"
@@ -582,6 +570,22 @@ states:
         why: >-
           The only W that day; no notice found, and the district's 2024-25 row lists 2025-01-23
           (a possible year slip in the state's file).
+        checked: 2026-11-14
+      - number: "331"
+        day: 2026-02-12
+        code: W
+        why: >-
+          Closed with no water after line breaks drained the town's tanks; reports tie the breaks
+          to the freeze and thaw, so the day is not another cause, but its tie to the weather is
+          not confirmed.
+        checked: 2026-11-14
+      - number: "331"
+        day: 2026-02-13
+        code: W
+        why: >-
+          Closed with no water after line breaks drained the town's tanks; reports tie the breaks
+          to the freeze and thaw, so the day is not another cause, but its tie to the weather is
+          not confirmed.
         checked: 2026-11-14
       - number: "175"
         day: 2026-02-20

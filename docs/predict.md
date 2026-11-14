@@ -4233,19 +4233,21 @@ mid-March; every `W` date held by three districts or fewer; and every `W` day fr
 four districts or more inside December to mid-March (the big storms) were not checked one by
 one. The review writes two lists in the config:
 
-- `not_weather`, a closing for another cause: 7 days (Jefferson County, 2025-11-05, a
+- `not_weather`, a closing for another cause: 5 days (Jefferson County, 2025-11-05, a
   shelter-in-place order after an aircraft crash nearby; Bullitt County, 2025-08-19, a city
-  water main break, and 2025-02-05 to 02-07, closed for illness in the flu wave; Letcher County,
-  2026-02-12 and 13, closed with no water after a leak drained the town's tanks). Such a row
+  water main break, and 2025-02-05 to 02-07, closed for illness in the flu wave). Such a row
   keeps the state's code `W` but has cause `named` and is never a weather day (LR12), and the
   next school day's day-after flag reads it as a day off for a named cause.
 - `unconfirmed`, a checked day the review could not tie to the weather for that district (no
-  notice or report found that ties it to the weather): 40 days, 29 of 2024-25 and 11 of 2025-26.
+  notice or report found that ties it to the weather): 42 days, 29 of 2024-25 and 13 of 2025-26.
   Such a row keeps the code `W` with cause `any` and is never a weather day either; the next
-  school day's day-after flag reads it as a day off of a cause not known. A later review that
-  ties one to the weather moves it out in a new edition. One of them may be the state's own
-  year slip: Jackson County's 2026-01-23 is the only `W` that day, and its 2024-25 row lists
-  2025-01-23 and 01-24. The row stays as the state lists it.
+  school day's day-after flag reads it as a day off of a cause not known (its `after_weather`
+  is unset, not false). A later review that ties one to the weather moves it out in a new
+  edition. Letcher County's 2026-02-12 and 13 are here, not in `not_weather`: the district
+  closed with no water after line breaks drained the town's tanks, and reports tie the breaks
+  to the freeze and thaw, so the record does not claim another cause. One of them may be the
+  state's own year slip: Jackson County's 2026-01-23 is the only `W` that day, and its 2024-25
+  row lists 2025-01-23 and 01-24. The row stays as the state lists it.
 
 The other checked days were tied to the weather (the Helene windstorm and its power cuts of
 2024-09-27 to 10-02, the first snow of 2024-11-22, the high water of 2025-02-06 in the
@@ -4278,9 +4280,9 @@ County's); its yearly count stays the state's.
 
 **What it holds** (fetched Nov 14 2026, edition 1): 817 dated `W` rows over 143 districts in
 2024-25 (785 weather days, 3 another cause, 29 unconfirmed) and 782 over 148 in 2025-26 (767
-weather days, 4 another cause, 11 unconfirmed), so 1,599 rows, 1,552 of them weather days and
+weather days, 2 another cause, 13 unconfirmed), so 1,599 rows, 1,552 of them weather days and
 643 the day after a day off school; and 2,052 yearly counts (`W` 817 and 786 days in the
-summaries' years, of them 3 and 4 not the weather and 29 and 11 unconfirmed, and 1,072 over
+summaries' years, of them 3 and 2 not the weather and 29 and 13 unconfirmed, and 1,072 over
 2020-21 to 2023-24 in the trend's; `N` 1,351 and 1,328; `I` 14 and 11; `D` 21 and 9).
 
 **Gate.** None serves. No learned value, served chance or published byte changes (the live

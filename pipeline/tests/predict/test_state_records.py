@@ -614,18 +614,20 @@ def test_the_committed_config_pins_kentuckys_three_files_and_maps_171_of_172() -
     ]  # fmt: skip
     # the W days found by review to be another cause (each checked against the district's own
     # notice or local news): Jefferson County's shelter-in-place day, Bullitt County's water
-    # main break and its three illness days of the February 2025 flu wave, and Letcher County's
-    # two days with no water
+    # main break and its three illness days of the February 2025 flu wave
     assert {(n.number, n.day, n.code) for n in ky.not_weather} == {
         ("275", date(2025, 11, 5), "W"), ("071", date(2025, 8, 19), "W"),
         ("071", date(2025, 2, 5), "W"), ("071", date(2025, 2, 6), "W"),
-        ("071", date(2025, 2, 7), "W"), ("331", date(2026, 2, 12), "W"),
-        ("331", date(2026, 2, 13), "W"),
+        ("071", date(2025, 2, 7), "W"),
     }  # fmt: skip
     # the checked W days the review could not tie to the weather: every W day of the illness
-    # wave's two weeks not tied to it, and every W date of three districts or fewer not tied
+    # wave's two weeks not tied to it, every W date of three districts or fewer not tied, and
+    # Letcher County's two days with no water after line breaks the reports tie to the freeze
+    # and thaw (so never another cause)
     unsure = {(n.number, n.day) for n in ky.unconfirmed}
-    assert len(unsure) == len(ky.unconfirmed) == 40
+    assert len(unsure) == len(ky.unconfirmed) == 42
+    assert sum(n.day >= date(2025, 7, 1) for n in ky.unconfirmed) == 13
+    assert {("331", date(2026, 2, 12)), ("331", date(2026, 2, 13))} <= unsure
     assert {n.code for n in ky.unconfirmed} == {"W"}
     assert {
         ("301", date(2025, 2, 7)), ("325", date(2025, 2, 7)), ("331", date(2025, 2, 7)),
