@@ -67,11 +67,45 @@ if [ ! -d "$RAPP" ]; then
   exit 1
 fi
 du -sh "$RAPP" || true
-if grep -r -a -l -F -e tour.screen -e tour.name "$RAPP"; then
+if grep -r -a -l -F -e tour.screen -e tour.name -e tour.fixture -e tour.zone "$RAPP"; then
   echo "::error::The Release app holds the picture tour's launch keys (the files above): debug code reached a release build."
   exit 1
 fi
-echo "The Release app holds no trace of the picture tour."
+# Nor any of the tour's fixtures. The app holds them only in the debug tour, each as the
+# base64 text of its source file on one line (Tour/TourFixtures.swift, which
+# sync-fixtures.mjs writes from Fixtures/tour/), never as a resource. Each fixture's whole
+# text is looked for, and its name. The Debug app is searched too, and only reported, so the
+# log shows the search finds a fixture where one is.
+FIXTURES=ios/SnowlightCore/Tests/SnowlightCoreTests/Fixtures/tour
+COUNT=0
+HELD=0
+for FIXTURE in "$FIXTURES"/*.json; do
+  [ -f "$FIXTURE" ] || continue
+  COUNT=$((COUNT + 1))
+  NAME=$(basename "$FIXTURE" .json)
+  TEXT=$(base64 < "$FIXTURE" | tr -d '\n')
+  if grep -rqaF -e "$TEXT" "$RAPP"; then
+    echo "::error::The Release app holds the tour fixture $NAME (its whole base64 text): debug code reached a release build."
+    HELD=1
+  fi
+  if grep -rqaF -e "$NAME" "$RAPP"; then
+    echo "::error::The Release app holds the name of the tour fixture $NAME: debug code reached a release build."
+    HELD=1
+  fi
+  if grep -rqaF -e "$TEXT" "$APP"; then
+    echo "The Debug app holds the tour fixture $NAME (${#TEXT} base64 characters)."
+  else
+    echo "The Debug app does not hold the tour fixture $NAME's base64 text."
+  fi
+done
+if [ "$COUNT" -eq 0 ]; then
+  echo "::error::No tour fixture was found in $FIXTURES, so the Release app could not be looked at for one."
+  exit 1
+fi
+if [ "$HELD" -ne 0 ]; then
+  exit 1
+fi
+echo "The Release app holds no trace of the picture tour: no launch key and none of its $COUNT fixtures."
 
 # On the macos-26 job: the Release app once more, for a generic iPhone rather than the
 # simulator, unsigned (no certificate, no team, no profile): so the code only a real phone

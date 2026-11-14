@@ -18,6 +18,14 @@
 //                                 the row is absent on an iPhone (that check must fail on it)
 //     -tour.proof ground          the placeholder tabs' ground in the chance teal instead of
 //                                 the page color, so a picture shows where it stops
+//     -tour.fixture <fixture>     with -tour.screen myschool only: the My School fixture to
+//                                 read (TourFixtures.swift: tour-closed, tour-details or
+//                                 tour-tomorrow), read as the app reads its input
+//                                 (MySchoolInput.decode)
+//     -tour.zone <zone>           with -tour.fixture only: the viewer's time zone for the
+//                                 picture, an IANA name, in place of the fixture's own; its
+//                                 UTF-8 bytes go to the decoder, which refuses a name off the
+//                                 app's list
 //
 // On such a launch the app:
 //
@@ -45,7 +53,9 @@
 // they were, the app could keep "system" and still read back "dark", and the picture of
 // the switch would prove nothing.
 //
-// Reserved and not read yet: tour.zone, the viewer's time zone for a picture.
+// A fixture that is not one of the tour's, or that does not read (a zone off the app's list
+// included), makes the launch no tour launch at all: no words file is written, so the
+// script's wait for it fails rather than show a guessed screen.
 
 #if DEBUG
 
@@ -84,6 +94,8 @@ struct TourPlan: Sendable {
     let forcesRow: Bool
     /// True when the placeholder tabs' ground is drawn in the chance teal.
     let proofGround: Bool
+    /// The My School fixture the launch reads, or nil when it names none.
+    let fixture: TourFixture?
 
     /// The screen of the shell to open on, or nil when the launch shows the probe.
     var screen: ScreenID? {
@@ -125,6 +137,30 @@ struct TourPlan: Sendable {
             Tour.note("there is no screen named " + screenName)
             return nil
         }
+        var fixture: TourFixture?
+        if let fixtureName = defaults.string(forKey: "tour.fixture") {
+            guard screenName == "myschool" else {
+                Tour.note("tour.fixture is read only with the screen myschool, not " + screenName)
+                return nil
+            }
+            guard TourPlan.isPlainName(fixtureName) else {
+                Tour.note("the fixture's name is not a plain name")
+                return nil
+            }
+            guard let bytes = TourFixtures.bytes(named: fixtureName) else {
+                Tour.note("there is no tour fixture named " + fixtureName)
+                return nil
+            }
+            let named = TourFixture(name: fixtureName, bytes: bytes, viewerZone: defaults.string(forKey: "tour.zone"))
+            guard named.input != nil else {
+                Tour.note("the tour fixture " + fixtureName + " does not read" + named.zoneNote)
+                return nil
+            }
+            fixture = named
+        } else if defaults.string(forKey: "tour.zone") != nil {
+            Tour.note("tour.zone is read only with tour.fixture")
+            return nil
+        }
         let keepsOutside = defaults.string(forKey: "tour.outside") == "kept"
         return TourPlan(
             name: name,
@@ -136,7 +172,8 @@ struct TourPlan: Sendable {
             keepsOutside: keepsOutside,
             outsideThen: TourPlan.layout(under: "tour.outsideThen", in: defaults),
             forcesRow: TourPlan.forcesRow(in: defaults),
-            proofGround: TourPlan.proofGround(in: defaults)
+            proofGround: TourPlan.proofGround(in: defaults),
+            fixture: fixture
         )
     }
 
@@ -224,6 +261,30 @@ struct TourPlan: Sendable {
             }
         }
         return true
+    }
+}
+
+/// A My School fixture a launch names, and the viewer's zone the launch gives for it.
+struct TourFixture: Sendable {
+    /// The fixture's name, as tour.fixture gives it.
+    let name: String
+    /// The fixture's bytes (TourFixtures.swift).
+    let bytes: Data
+    /// The zone tour.zone names, or nil to keep the fixture's own viewer_zone.
+    let viewerZone: String?
+
+    /// The screen's input the fixture holds, read as the app reads its input: the zone goes
+    /// in as its UTF-8 bytes. Nil when the fixture does not read.
+    var input: MySchoolInput? {
+        MySchoolInput.decode(bytes, viewerZone: viewerZone.map { Data($0.utf8) })
+    }
+
+    /// The words of a note that name the viewer's zone the launch gave, or none.
+    var zoneNote: String {
+        guard let zone = viewerZone else {
+            return ""
+        }
+        return " with the viewer's zone " + zone
     }
 }
 
@@ -317,6 +378,9 @@ enum Tour {
         }
         if plan.proofGround {
             Tour.note("the placeholder tabs' ground is drawn in the chance teal for the picture " + plan.name)
+        }
+        if let fixture = plan.fixture {
+            Tour.note("read the My School fixture " + fixture.name + fixture.zoneNote + " for the picture " + plan.name)
         }
         return true
     }()
