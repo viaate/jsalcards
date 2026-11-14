@@ -1,0 +1,9 @@
+{
+  "id": "0020",
+  "style": "dev_log",
+  "text": "Quiet work: the forecast part of the model was measured on the weather service's own past forecasts for the school days of past winters, a history I keep for the model to learn from. Waitlist link in my bio.",
+  "pictures": [
+    "closings",
+    "region"
+  ]
+}

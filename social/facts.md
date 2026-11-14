@@ -64,7 +64,7 @@ past records lean toward big storm days, so a score on them would not be a fair 
 - [LIVE] later-days: Closings announced ahead for a later day show as quiet dashed rings up close, apart from the glow. | terms: later day, later days, dashed rings, announced ahead | private
 - [LIVE] share-cards: A school's panel can make a Story or a Post picture of that school's day, ready to share, with the link. | terms: share card, share cards, post picture, story picture | private
 - [LIVE] details: Beside a closing, a school's panel gives plain details in Snowlight's own words, like buses on snow routes or no breakfast. | terms: plain details, snow routes, no breakfast | private
-- [LIVE] logo: Snowlight's logo is a snow crystal coming up over a snowy hill the way the sun would. | terms: logo, snow crystal
+- [LIVE] logo: Snowlight's logo is a snow crystal rising over a snowy hill the way the sun would. | terms: logo, snow crystal
 - [COMING] aim: Every school closing in the US on one map, coming this winter. | terms: every school closing, one map
 - [TESTING] notifications: Notifications on your phone or computer when a saved school closes, starts late, goes remote or lets out early, or when its chance for tomorrow gets high; built, and in private testing behind the lock until launch. | terms: notification, notifications, notify, push alert, push alerts, phone alert, phone alerts, text alert, text alerts, alert you, alerts you, alerted, text, texts, phone
 - [COMING] launch: Snowlight goes live this winter. | terms: launch, launches, launching, launched, goes live, go live, going live
