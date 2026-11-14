@@ -3,6 +3,8 @@
 #
 # One line per word, three parts with a tab between them:
 #   approved or pending, then who approved it and where, then the words exactly as shown.
+# Words with a space at either end are written quoted, as a JSON string of the raw characters
+# with no backslash (", "), so that no line ends in a space.
 #
 # These lines are exactly the words typed in
 # ios/SnowlightCore/Sources/SnowlightCore/Words/AppWords.swift. ios/tools/check-ios.mjs fails
@@ -23,3 +25,22 @@ approved	owner, Nov 12 2026, on the drawn Settings row of the iPhone Duo: I like
 approved	owner, Nov 12 2026, on the drawn Settings row of the iPhone Duo: I like the wording	When your iPhone is closed
 approved	owner, Nov 12 2026, on the drawn Settings row of the iPhone Duo: I like the wording	Beside the map
 approved	owner, Nov 12 2026, on the drawn Settings row of the iPhone Duo: I like the wording	Under the controls
+approved	lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a), the owner-approved draft-3 picture: AppWords.months[0]	January
+approved	lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a), the owner-approved draft-3 picture: AppWords.months[1]	February
+approved	lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a), the owner-approved draft-3 picture: AppWords.months[2]	March
+approved	lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a), the owner-approved draft-3 picture: AppWords.months[3]	April
+approved	lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a), the owner-approved draft-3 picture: AppWords.months[4]	May
+approved	lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a), the owner-approved draft-3 picture: AppWords.months[5]	June
+approved	lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a), the owner-approved draft-3 picture: AppWords.months[6]	July
+approved	lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a), the owner-approved draft-3 picture: AppWords.months[7]	August
+approved	lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a), the owner-approved draft-3 picture: AppWords.months[8]	September
+approved	lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a), the owner-approved draft-3 picture: AppWords.months[9]	October
+approved	lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a), the owner-approved draft-3 picture: AppWords.months[10]	November
+approved	lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a), the owner-approved draft-3 picture: AppWords.months[11]	December
+approved	lead ruling of Nov 14 on SPEC r3, RD-7 (a), as drawn (H:85)	", "
+approved	lead ruling of Nov 14 on SPEC r3, RD-6 (a), RD-7 (a) and RD-10, as drawn	" "
+approved	lead ruling of Nov 14 on SPEC r3, RD-6 (a) and RD-10: the site's dot	" · "
+approved	lead ruling of Nov 14 on SPEC r3, RD-6 (a): Grades is approved	Grades
+approved	lead ruling of Nov 14 on SPEC r3, RD-10, as drawn (H:100)	closed
+approved	lead ruling of Nov 14 on SPEC r3, RD-10, as drawn (H:100)	delayed
+approved	lead ruling of Nov 14 on SPEC r3, RD-10, as drawn (H:100)	since

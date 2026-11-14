@@ -1,5 +1,6 @@
 // The words only the app has: the site has no tab bar, no appearance setting and no Outside
-// screen setting.
+// screen setting, and My School writes its day line, district line and season card as the
+// approved draft 3 draws them.
 //
 // Each is also a line of ios/tools/app-words.txt, which says whether the owner has
 // approved it and where that was said. A script (ios/tools/check-ios.mjs) fails the build
@@ -43,4 +44,41 @@ enum AppWords {
     static let besideTheMap = ShownText("Beside the map")
     /// Approved: owner, Nov 12 2026, on the drawn Settings row (layout B, the owner's own phrase).
     static let underTheControls = ShownText("Under the controls")
+
+    // My School: the pieces of its day line, district line and season card (M1 4.2a). Each
+    // is in the owner-approved draft-3 picture, or is the punctuation between its words, and
+    // is joined to the site's own words only by Words/AppFormat.swift.
+
+    /// Approved: lead rulings of Nov 14 on SPEC r3 and r4, RD-7 (a): the 12 English month names, through the
+    /// owner-approved draft-3 picture. One name a line, in calendar order: check-ios lets "May" pass only as the
+    /// fifth line of this table.
+    static let months: [ShownText] = [
+        ShownText("January"),
+        ShownText("February"),
+        ShownText("March"),
+        ShownText("April"),
+        ShownText("May"),
+        ShownText("June"),
+        ShownText("July"),
+        ShownText("August"),
+        ShownText("September"),
+        ShownText("October"),
+        ShownText("November"),
+        ShownText("December"),
+    ]
+    /// Approved: lead ruling of Nov 14 on SPEC r3, RD-7 (a), as drawn (H:85): after the weekday.
+    static let dayComma = ShownText(", ")
+    /// Approved: lead ruling of Nov 14 on SPEC r3, RD-6 (a), RD-7 (a) and RD-10, as drawn.
+    static let space = ShownText(" ")
+    /// Approved: lead ruling of Nov 14 on SPEC r3, RD-6 (a) and RD-10: the site's dot (`DOT`),
+    /// typed as its raw characters.
+    static let dot = ShownText(" · ")
+    /// Approved: lead ruling of Nov 14 on SPEC r3, RD-6 (a): "Grades" is approved.
+    static let grades = ShownText("Grades")
+    /// Approved: lead ruling of Nov 14 on SPEC r3, RD-10, as drawn (H:100).
+    static let closed = ShownText("closed")
+    /// Approved: lead ruling of Nov 14 on SPEC r3, RD-10, as drawn (H:100).
+    static let delayed = ShownText("delayed")
+    /// Approved: lead ruling of Nov 14 on SPEC r3, RD-10, as drawn (H:100).
+    static let since = ShownText("since")
 }

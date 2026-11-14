@@ -1,9 +1,11 @@
 // The site's school panel lines (web/src/app/school.ts), ported for the app's My School
 // model: a status line and the lines of a school's days (`statusLine`, `statusLines`), what
 // the school is (`kindOf`), its season line (`seasonLine`), and its shown name cut where the
-// site cuts it (`splitName`). `schoolName` and `districtName` are the only makers of a
-// school's or a district's name as words. Held to the site, string for string, by the golden
-// families school-view.json (SchoolViewTests) and school-names.json (SchoolNameTests).
+// site cuts it (`splitName`); and the two lines the lead ruled for the draft's own form, the
+// district line (`districtLine`) and the season card (`seasonCard`, M1 4.2a). `schoolName`
+// and `districtName` are the only makers of a school's or a district's name as words. Held to
+// the site, string for string, by the golden families school-view.json (SchoolViewTests,
+// MySchoolModelTests) and school-names.json (SchoolNameTests).
 //
 // M1 has no outlook, so no line names what districts nearby said: the site's view gives
 // nothing there without one (school.ts `nearbySaid`). That comes with the predictions port.
@@ -212,6 +214,23 @@ enum SchoolLines {
         return ShownText(kind.drawnString + SiteFormat.dot + said.drawnString)
     }
 
+    /// The line under the school's name (M1 4.2a, RD-6 as the lead ruled): for a public
+    /// school with S3's district name, the district and its grades as the draft writes them
+    /// ("Synthetic District One · Grades 6–8"), or the district alone where the site cannot
+    /// say the grades; for a private, charter or virtual school, whatever district its record
+    /// names, and for a public school with no S3 district name, the site's own kind line
+    /// (`kindOf`).
+    static func districtLine(_ record: SchoolRecord) -> ShownText {
+        let isPublic = record.isPrivate == false && record.virtual == false && record.charter == false
+        guard isPublic, let district = districtName(record) else {
+            return kindOf(record)
+        }
+        guard let grades = record.grades, let said = try? SiteFormat.grades(grades.low, grades.high) else {
+            return district
+        }
+        return AppFormat.districtLine(district: district, grades: said)
+    }
+
     // The season line ------------------------------------------------------------------
 
     /// The school's season line, or nil where the file says nothing that holds now
@@ -223,6 +242,32 @@ enum SchoolLines {
             return nil
         }
         return try? SeasonWords.line(found.days, since: found.since)
+    }
+
+    /// The school's season card, or nil exactly where the site has no season line
+    /// (`seasonLine`). It throws where `seasonLine` throws.
+    static func seasonCard(_ file: SeasonFile?, record: SchoolRecord, now: Int64) throws -> MySchoolModel.Season? {
+        guard let season = file,
+              let found = try schoolSeason(season, school: record.index, directory: record.directory, now: now) else {
+            return nil
+        }
+        return seasonCard(found.days, since: found.since)
+    }
+
+    /// The season card for a school's days (M1 4.2a, RD-10 as the lead ruled): the draft's
+    /// form, "2 closed · 1 delayed " and "since Oct 27", when the school has closed or
+    /// delayed days, no remote and no early-dismissal day, and a since; for every other count
+    /// the site's own line, cut after its key "This school year"; nil where the site's
+    /// formatter refuses the counts, which gives the site no line.
+    static func seasonCard(_ days: SeasonDays, since: String?) -> MySchoolModel.Season? {
+        guard let cut = try? SeasonWords.parts(days, since: since) else {
+            return nil
+        }
+        if days.remote == 0, days.earlyDismissal == 0, days.closed > 0 || days.delayed > 0, let day = since,
+           let counts = try? AppFormat.seasonCounts(days), let from = try? AppFormat.seasonSince(day) {
+            return MySchoolModel.Season.drawn(key: cut.key, counts: counts, since: from)
+        }
+        return MySchoolModel.Season.site(key: cut.key, rest: cut.rest)
     }
 
     // Names ----------------------------------------------------------------------------

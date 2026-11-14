@@ -67,6 +67,9 @@ const THIS_PHONE_READS = 'ProcessInfo';
 const TEST_COUNT = 'ios/tools/test-count.txt';
 const APP_WORDS_SWIFT = 'ios/SnowlightCore/Sources/SnowlightCore/Words/AppWords.swift';
 const APP_WORDS_LIST = 'ios/tools/app-words.txt';
+const APP_FORMAT = 'ios/SnowlightCore/Sources/SnowlightCore/Words/AppFormat.swift';
+/** The 12 month names of AppWords.months, in calendar order (M1 4.2a, RD-7 (a)). */
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const LOCAL_CONFIG = 'ios/Local.xcconfig';
 const THIS_MACHINE = 'ThisMachineTests.swift';
 const WORKFLOWS = '.github/workflows/';
@@ -713,6 +716,12 @@ function checkTree(files, banned) {
           hit('core.screenliteral', path, literal.line, `a string literal in a screen model: "${literal.value}"`);
         }
       }
+      // (b) The app's formats join the site's words and the app words, and type none.
+      if (path === APP_FORMAT) {
+        for (const literal of swift.literals) {
+          hit('appformat.literal', path, literal.line, `a string literal in the app's formats: "${literal.value}" (an app word belongs in AppWords.swift)`);
+        }
+      }
       // (c) Purity.
       for (const found of matches(swift.code, /^[ \t]*(?:@[A-Za-z_]+[ \t]+)*import[ \t]+([^\n]*)$/m)) {
         const module = found.match[1].trim();
@@ -1003,6 +1012,9 @@ function checkTestZones(path, lines, hit) {
  * (b) The words only the app has: the literals of AppWords.swift are exactly the lines of
  * app-words.txt, each marked approved or pending with where that was said, and none uses
  * a word the site bans, an exclamation mark, an em dash or an emoji.
+ * The month exemption (M1 4.2a): the site bans "may", and lets the month pass only before a
+ * day; here the word "May" passes the pattern `may` only as AppWords.months[4], the fifth
+ * line of the one table of the 12 names in calendar order (`monthTableHolds`).
  */
 function checkAppWords(files, banned, hit) {
   const swift = files.get(APP_WORDS_SWIFT);
@@ -1017,16 +1029,38 @@ function checkAppWords(files, banned, hit) {
     return;
   }
 
-  /** @type {Array<{ line: number, words: string }>} */
+  /** @type {Array<{ line: number, words: string, who: string }>} */
   const listed = [];
   list.split('\n').forEach((raw, index) => {
     if (raw.trim() === '' || raw.startsWith('#')) return;
+    if (/[ \t]$/.test(raw)) {
+      hit('appwords.format', APP_WORDS_LIST, index + 1, 'no line may end in a space or a tab: write words with a space at either end as a quoted string');
+      return;
+    }
     const parts = raw.split('\t');
     if (parts.length !== 3 || !['approved', 'pending'].includes(parts[0]) || parts[1].trim() === '' || parts[2] === '') {
       hit('appwords.format', APP_WORDS_LIST, index + 1, 'a line must be: approved or pending, a tab, who or where, a tab, the words');
       return;
     }
-    listed.push({ line: index + 1, words: parts[2] });
+    let words = parts[2];
+    if (words.startsWith('"')) {
+      // The quoted form: a JSON string of the raw characters, with no backslash.
+      let read = null;
+      try {
+        read = JSON.parse(words);
+      } catch {
+        read = null;
+      }
+      if (!words.endsWith('"') || words.length < 2 || words.includes('\\') || typeof read !== 'string' || read === '') {
+        hit('appwords.format', APP_WORDS_LIST, index + 1, 'quoted words must be a JSON string of the raw characters: not empty, with no backslash');
+        return;
+      }
+      words = read;
+    } else if (words.startsWith(' ')) {
+      hit('appwords.format', APP_WORDS_LIST, index + 1, 'words may not start with a space: write words with a space at either end as a quoted string');
+      return;
+    }
+    listed.push({ line: index + 1, words, who: parts[1] });
   });
 
   const typed = readSwift(swift).literals;
@@ -1056,8 +1090,11 @@ function checkAppWords(files, banned, hit) {
   const words = new Map();
   for (const literal of typed) words.set(literal.value, { path: APP_WORDS_SWIFT, line: literal.line });
   for (const entry of listed) if (!words.has(entry.words)) words.set(entry.words, { path: APP_WORDS_LIST, line: entry.line });
+  const monthsHold = monthTableHolds(swift, typed, listed);
   for (const [text, where] of words) {
     for (const [label, pattern] of banned) {
+      // The month exemption: only the word "May", only for the pattern `may`, only as the table's fifth name.
+      if (text === 'May' && pattern === 'may' && monthsHold) continue;
       // The site's own rule: whole words, any case (web/scripts/check-copy.mjs).
       if (new RegExp(`(?<![\\p{L}\\p{N}_])(?:${pattern})(?![\\p{L}\\p{N}_])`, 'iu').test(text)) {
         hit('appwords.banned', where.path, where.line, `"${text}" uses the banned word "${label}"`);
@@ -1067,6 +1104,32 @@ function checkAppWords(files, banned, hit) {
     if (EM_DASH.test(text)) hit('appwords.style', where.path, where.line, `"${text}" has an em dash`);
     if (EMOJI.test(text)) hit('appwords.style', where.path, where.line, `"${text}" has an emoji`);
   }
+}
+
+/**
+ * Whether AppWords.swift holds the month table exactly as M1 4.2a writes it, and "May" only
+ * there: one line `static let months: [ShownText] = [`, then the 12 lines
+ * `ShownText("<name>"),` in calendar order, then `]`; the literal "May" once in the file, on
+ * the table's fifth name; and one list line of the words May, whose who-or-where ends with
+ * AppWords.months[4].
+ */
+function monthTableHolds(swift, typed, listed) {
+  const lines = readSwift(swift).uncommented.split('\n').map((line) => line.trim());
+  const starts = [];
+  lines.forEach((line, index) => {
+    if (line === 'static let months: [ShownText] = [') starts.push(index);
+  });
+  if (starts.length !== 1) return false;
+  const first = starts[0];
+  for (let k = 0; k < MONTHS.length; k += 1) {
+    if (lines[first + 1 + k] !== `ShownText("${MONTHS[k]}"),`) return false;
+  }
+  if (lines[first + 1 + MONTHS.length] !== ']') return false;
+  const mays = typed.filter((literal) => literal.value === 'May');
+  // Lines are counted from 1; the fifth name stands five lines after the table's first line.
+  if (mays.length !== 1 || mays[0].line !== first + 1 + 5) return false;
+  const marked = listed.filter((entry) => entry.words === 'May');
+  return marked.length === 1 && marked[0].who.endsWith('AppWords.months[4]');
 }
 
 /**
@@ -1133,6 +1196,22 @@ const workflow = (changes = {}) =>
   ].join('\n');
 const appWords = (...words) => `enum AppWords {\n${words.map((word, index) => `    static let w${index} = ShownText("${word}")`).join('\n')}\n}\n`;
 const appList = (...words) => `# the list\n${words.map((word) => `approved\towner\t${word}`).join('\n')}\n`;
+/** The month table as AppWords.swift writes it (M1 4.2a), with its names in the order given. */
+const monthTable = (names) => `    static let months: [ShownText] = [\n${names.map((name) => `        ShownText("${name}"),`).join('\n')}\n    ]\n`;
+/** The three app words with a space at either end, which the list writes quoted. */
+const SEPARATORS = [', ', ' ', ' \u00B7 '];
+/** The clean AppWords.swift: the month table, the three separators, two tab names and any more. */
+const tableWords = (names, ...more) =>
+  `enum AppWords {\n${monthTable(names)}${[...SEPARATORS, 'My School', 'Call it', ...more].map((word, index) => `    static let w${index} = ShownText("${word}")`).join('\n')}\n}\n`;
+/** Its list: the 12 marked month lines, the separators quoted, the two tab names and any more. */
+const tableList = (names, ...more) =>
+  `# the list\n${[
+    ...names.map((name, index) => `approved\towner, the month table: AppWords.months[${index}]\t${name}`),
+    ...SEPARATORS.map((word) => `approved\towner\t${JSON.stringify(word)}`),
+    ...['My School', 'Call it', ...more].map((word) => `approved\towner\t${word}`),
+  ].join('\n')}\n`;
+/** The months with April and May swapped. */
+const SWAPPED = [...MONTHS.slice(0, 3), 'May', 'April', ...MONTHS.slice(5)];
 
 /** A tree that every rule must pass: the allowed forms, side by side. */
 const CLEAN = new Map([
@@ -1150,8 +1229,11 @@ const CLEAN = new Map([
   // The two places SnowlightCore's public surface may hold text.
   [`${CORE_WORDS}ShownText.swift`, 'public struct ShownText: Equatable {\n    public let drawnString: String\n    init(_ characters: String) {\n        drawnString = characters\n    }\n}\n'],
   [`${CORE_SCREENS}ShellModel.swift`, 'public struct SearchQuery: Equatable {\n    public var typed: String\n    public init() {\n        typed = String()\n    }\n}\n'],
-  [APP_WORDS_SWIFT, appWords('My School', 'Call it')],
-  [APP_WORDS_LIST, appList('My School', 'Call it')],
+  // The app words: the month table with "May" its fifth name, and the quoted separators.
+  [APP_WORDS_SWIFT, tableWords(MONTHS)],
+  [APP_WORDS_LIST, tableList(MONTHS)],
+  // The app's formats join words they are handed and type none.
+  [APP_FORMAT, 'enum AppFormat {\n    static func line(_ one: ShownText, _ other: ShownText) -> ShownText {\n        ShownText(one.drawnString + AppWords.w0.drawnString + other.drawnString)\n    }\n}\n'],
   [TEST_FILE, test('let fixed = Date(timeIntervalSince1970: 1_800_000_000)\n        let zone = TimeZone(identifier: "America/St_Johns")\n        let folder = Bundle.module.resourceURL\n        _ = (fixed, zone, folder)')],
   [`ios/SnowlightCore/Tests/SnowlightCoreTests/${THIS_MACHINE}`, 'import Foundation\nimport XCTest\nlet zone = TimeZone.current\nlet env = ProcessInfo.processInfo.environment\n'],
   [TEST_COUNT, '# the tests\n1\n'],
@@ -1262,6 +1344,14 @@ const SAMPLES = [
   { name: 'an app word with an em dash', rules: ['appwords.style'], files: [[APP_WORDS_SWIFT, appWords('Map \u2014 live')], [APP_WORDS_LIST, appList('Map \u2014 live')]] },
   { name: 'an app word with an emoji', rules: ['appwords.style'], files: [[APP_WORDS_SWIFT, appWords('Map \u{2744}')], [APP_WORDS_LIST, appList('Map \u{2744}')]] },
   { name: 'app words with no list', rules: ['appwords.list'], files: [[APP_WORDS_LIST, null]] },
+  // The month exemption holds for "May" as the table's fifth name only (M1 4.2a).
+  { name: 'the app words "May close"', rules: ['appwords.banned'], files: [[APP_WORDS_SWIFT, tableWords(MONTHS, 'May close')], [APP_WORDS_LIST, tableList(MONTHS, 'May close')]] },
+  { name: 'a lone "May" outside the month table', rules: ['appwords.banned'], files: [[APP_WORDS_SWIFT, tableWords(MONTHS, 'May')], [APP_WORDS_LIST, tableList(MONTHS, 'May')]] },
+  { name: 'the month table with April and May swapped', rules: ['appwords.banned'], files: [[APP_WORDS_SWIFT, tableWords(SWAPPED)], [APP_WORDS_LIST, tableList(SWAPPED)]] },
+  // The list's quoted form: no line ends in a space, and a quoted word holds no escape.
+  { name: 'a plain list line ending in a space', rules: ['appwords.format'], files: [[APP_WORDS_LIST, `${tableList(MONTHS)}approved\towner\tMy School \n`]] },
+  { name: 'a quoted list word with a backslash', rules: ['appwords.format'], files: [[APP_WORDS_LIST, `${tableList(MONTHS)}approved\towner\t"\\u00b7"\n`]] },
+  { name: "a string literal in the app's formats", rules: ['appformat.literal'], files: [[APP_FORMAT, 'enum AppFormat {\n    static let dash = ShownText(" - ")\n}\n']] },
   // (b) English only.
   { name: 'a .lproj folder', rules: ['language.file'], files: [['ios/App/es.lproj/InfoPlist.txt', 'x\n']] },
   { name: 'a .strings file', rules: ['language.file'], files: [['ios/App/Localizable.strings', 'x\n']] },
@@ -1452,7 +1542,7 @@ const RULES = [
   'words.literal', 'words.names', 'words.text', 'words.table', 'words.drawn', 'words.system', 'words.value',
   'view.device', 'view.layout', 'view.network', 'view.import', 'code.unsafe',
   'core.showntext', 'core.screenliteral', 'core.publicstring', 'language.file',
-  'appwords.list', 'appwords.format', 'appwords.banned', 'appwords.style',
+  'appwords.list', 'appwords.format', 'appwords.banned', 'appwords.style', 'appformat.literal',
   'core.import', 'core.device', 'core.network', 'core.formatter', 'core.pattern', 'core.crash',
   'tests.device', 'tests.network', 'tests.import', 'tests.skip', 'tests.count',
   'families.unnamed', 'families.missing',
