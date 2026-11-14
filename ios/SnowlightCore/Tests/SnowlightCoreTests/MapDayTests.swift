@@ -7,7 +7,8 @@ import XCTest
 /// windows (two US clock changes and the design's week) in each zone, no zone, the unread
 /// zone and the unknown zone, every minute within two of each 3:30 PM, midnight and 7:30 AM
 /// and of each clock change, and each odd zone name. Where the site accepted a zone name the
-/// app's list does not hold (`narrower`), the app reads no clock: no day, no turn.
+/// app's list does not hold (`narrower`), the app reads no clock: no day, no turn. And
+/// `unreadZoneOf` and `nextTurnOf` give the site's answers for every case of turns.json.
 final class MapDayTests: XCTestCase {
     /// The app's answers in the golden order: mapDay, nextMapTurn, localDay, todayEverywhere,
     /// clockToday, schoolToday.
@@ -80,9 +81,72 @@ final class MapDayTests: XCTestCase {
         }
     }
 
+    func testTheUnreadZoneOfEveryStateCodeAsTheSite() throws {
+        // turns.json "unread": every two-letter code AA ... ZZ and the traps, each with the
+        // site's unreadZoneOf answer, so the app's copy of the contiguous states is the site's.
+        let file = try GoldenFile.family("turns")
+        let differences = Differences()
+        var unread = 0
+        for value in file.cases {
+            guard let found = kindOf(value), found.kind == "unread" else {
+                continue
+            }
+            guard found.entries.count == 3, let state = found.entries[1].text, let theirs = found.entries[2].text else {
+                differences.note("a case this test cannot read: \(value)")
+                continue
+            }
+            differences.compared()
+            if theirs == unreadZone {
+                unread += 1
+            }
+            let mine = unreadZoneOf(state)
+            if mine != theirs {
+                differences.note("\(Array(state.unicodeScalars).map { $0.value }): the site \(theirs), the app \(mine)")
+            }
+        }
+        differences.report("turns unread")
+        XCTAssertGreaterThan(unread, 0, "turns.json holds no state in the contiguous US.")
+    }
+
+    func testTheNextTurnOfZoneListsAsTheSite() throws {
+        // turns.json "nextTurn": the earliest next turn of each zone list, every 3 hours over
+        // the three windows and within a minute of each 3:30 PM on the list's clocks.
+        let file = try GoldenFile.family("turns")
+        let differences = Differences()
+        for value in file.cases {
+            guard let found = kindOf(value), found.kind == "nextTurn" else {
+                continue
+            }
+            guard found.entries.count == 4, let now = inputInstant(found.entries[1]), let listed = found.entries[2].entries else {
+                differences.note("a case this test cannot read: \(value)")
+                continue
+            }
+            var zones: [String?] = []
+            var readable = true
+            for entry in listed {
+                let told = inputZone(entry)
+                readable = readable && told.known
+                zones.append(told.zone)
+            }
+            guard readable else {
+                differences.note("a case this test cannot read: \(value)")
+                continue
+            }
+            differences.compared()
+            let theirs = found.entries[3]
+            let mine = golden(nextTurnOf(now, zones))
+            if mine != theirs {
+                differences.note("\(now) \(zones): the site \(theirs), the app \(mine)")
+            }
+        }
+        differences.report("turns nextTurn")
+    }
+
     func testTheTurnIsAtHalfPastThreeOnTheSchoolsClock() throws {
-        // A written check beside the vectors: in Chicago on Jan 12, 2027 (UTC-6), 3:29 PM is
-        // still the 12th and 3:30 PM is the 13th; midnight changes nothing.
+        // A readable example only: map-day.json and turns.json are the proof, and supersede
+        // these written values (a site change is followed there first, then here by hand).
+        // In Chicago on Jan 12, 2027 (UTC-6), 3:29 PM is still the 12th and 3:30 PM is the
+        // 13th; midnight changes nothing.
         let before = try XCTUnwrap(parseInstant("2027-01-12T21:29:00Z"))
         let at = try XCTUnwrap(parseInstant("2027-01-12T21:30:00Z"))
         let midnight = try XCTUnwrap(parseInstant("2027-01-13T06:00:00Z"))

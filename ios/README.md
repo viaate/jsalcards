@@ -146,7 +146,8 @@ change rarely.
   of the site or a shared fixture changed (the next iOS push then fails until the golden
   files and the Swift port are brought up to date), or "iPhone app generator" when the
   generator could not load the site's code (no word is known to have changed). It watches
-  all of `web/src`, and the generator refuses to load a site file from anywhere else (its
+  all of `web/src`, and the generator refuses any file the site's modules load or import
+  from anywhere else, under `web/` outside `src`, under `pipeline/` or at the root (its
   exit 4), so the watch cannot fall behind what the generator reads.
 
 **A change to any file under `.github/workflows/` runs the normal CI**, because the
@@ -366,8 +367,9 @@ shape.
 | `season-line` | `seasonFormat.line` | 1,021 |
 | `season-file` | `parseSeason`, `schoolSeason`, `lastDayOver` | 224 |
 | `map-day` | `mapDay`, `nextMapTurn`, `localDay`, `todayEverywhere`, `clockToday`, `schoolToday` | 5,839 |
+| `turns` | `unreadZoneOf` (every code AA to ZZ and traps), `nextTurnOf` | 2,032 |
 | `zones` | `isTimeZone`, `regionOf` | 449 |
-| `closings` | `parseClosings`, `rowOn`, `schoolStatus` (no covered file), `litStatus` | 4,493 |
+| `closings` | `parseClosings`, `rowOn`, `schoolStatus` (no covered file), `litStatus` | 6,043 |
 | `predictions` | `parsePredictions`, `zonesOf` and `zoneOf`, `schoolOutlook`, `headlineDay`, `underWay` | 2,359 |
 | `freshness` | `updateState` | 532 |
 | `ids` | `isSchoolId`, `parseSchoolId` | 60 |
@@ -402,7 +404,7 @@ note and fails nothing; the zone list is compared whole. Exit codes: 0 all match
 answer differs (it prints the family, the first differing case and the changed site files);
 2 the site's code could not be loaded; 3 Node too old or wrong usage; 4 a site file outside
 what the words watch covers. Then update the Swift port until its tests pass, and commit
-both together. The golden folder is about 2.3 MB (at most 3 MB, no file over 700 KB), and
+both together. The golden folder is about 2.5 MB (at most 3 MB, no file over 700 KB), and
 making it takes about 4 seconds.
 
 ## The port

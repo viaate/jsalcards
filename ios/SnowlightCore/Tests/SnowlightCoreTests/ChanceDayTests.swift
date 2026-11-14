@@ -38,7 +38,8 @@ final class ChanceDayTests: XCTestCase {
         return found
     }
 
-    /// A day of an outlook in the golden files' encoding.
+    /// A day of an outlook in the golden files' encoding: ["forecast", noSchool, delay, day,
+    /// busesAt, reasons] or ["no_threat"].
     private func encoded(_ day: DayOutlook?) -> GoldenValue {
         switch day {
         case .none:
@@ -46,7 +47,8 @@ final class ChanceDayTests: XCTestCase {
         case .some(.noThreat):
             return .array([.string("no_threat")])
         case .some(.forecast(let forecast)):
-            return .array([.string("forecast"), .number(forecast.noSchool), .number(forecast.delay), .string(forecast.day), golden(forecast.busesAt)])
+            let reasons = GoldenValue.array(forecast.reasons.map { GoldenValue.number(Double($0)) })
+            return .array([.string("forecast"), .number(forecast.noSchool), .number(forecast.delay), .string(forecast.day), golden(forecast.busesAt), reasons])
         }
     }
 

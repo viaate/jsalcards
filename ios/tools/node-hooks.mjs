@@ -12,7 +12,9 @@
 //   3. give `import.meta.env` the one value the deployed site is built with that these
 //      modules read: a live root;
 //   4. report every site file they resolved or loaded to the generator, over the port
-//      that node-register.mjs passed in.
+//      that node-register.mjs passed in. A file a site module imports is reported as
+//      loaded wherever it lies, inside web/ or not, so the generator can refuse a file
+//      from outside what the words watch covers.
 //
 // Node's built-in modules only.
 
@@ -28,6 +30,8 @@ let port = null;
 let webRoot = null;
 /** Absolute path of web/src/, ending in a separator. */
 let siteRoot = null;
+/** The URL of every file a site module's import was resolved to, wherever it lies. */
+const resolvedFromSite = new Set();
 
 export function initialize(data) {
   port = data.port;
@@ -68,7 +72,9 @@ export async function resolve(specifier, context, nextResolve) {
     for (const candidate of [base, `${base}.ts`, join(base, 'index.ts')]) {
       if (isFile(candidate)) {
         report({ kind: 'import', from: parent, to: candidate });
-        return { url: pathToFileURL(candidate).href, shortCircuit: true };
+        const url = pathToFileURL(candidate).href;
+        resolvedFromSite.add(url);
+        return { url, shortCircuit: true };
       }
     }
     throw new Error(`refused: ${parent} imports '${specifier}', and no such file was found.`);
@@ -81,7 +87,12 @@ export async function resolve(specifier, context, nextResolve) {
 
 export async function load(url, context, nextLoad) {
   const path = fileOf(url);
-  if (path === null || webRoot === null || !path.startsWith(webRoot)) return nextLoad(url, context);
+  if (path === null || webRoot === null) return nextLoad(url, context);
+  if (!path.startsWith(webRoot)) {
+    // A file outside web/ that a site module imports: reported, so the generator refuses it.
+    if (resolvedFromSite.has(url)) report({ kind: 'load', path });
+    return nextLoad(url, context);
+  }
 
   report({ kind: 'load', path });
   if (siteRoot !== null && path.startsWith(siteRoot) && path.endsWith('.ts')) {

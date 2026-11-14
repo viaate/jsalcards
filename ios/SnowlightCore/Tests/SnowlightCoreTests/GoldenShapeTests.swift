@@ -60,6 +60,10 @@ final class GoldenShapeTests: XCTestCase {
         try checkShape(GoldenFile.family("map-day"), ["": 9])
     }
 
+    func testTurns() throws {
+        try checkShape(GoldenFile.family("turns"), ["unread": 3, "nextTurn": 4])
+    }
+
     func testZones() throws {
         try checkShape(GoldenFile.family("zones"), ["": 4])
     }

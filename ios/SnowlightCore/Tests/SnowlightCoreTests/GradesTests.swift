@@ -41,4 +41,17 @@ final class GradesTests: XCTestCase {
         XCTAssertEqual(grades, 16 * 16 + 7)
         XCTAssertEqual(numbers, 11)
     }
+
+    func testDottedJoinsPartsAsTheSitesJoinDot() throws {
+        // A written example of SiteFormat.dotted, which nothing in M0 calls yet: school.ts joins
+        // a line's parts with join(DOT), DOT = ' · ' (U+00B7 between two spaces), and says
+        // nothing (null) for no part. M1 proves it with generated cases when it ports the
+        // school.ts lines that use it.
+        let one = try SiteFormat.number(1)
+        let many = try SiteFormat.number(1284)
+        XCTAssertNil(SiteFormat.dotted([]))
+        XCTAssertEqual(SiteFormat.dotted([many])?.drawnString, "1,284")
+        XCTAssertEqual(SiteFormat.dotted([one, many])?.drawnString, "1 \u{00B7} 1,284")
+        XCTAssertEqual(SiteFormat.dotted([one, many, one])?.drawnString, "1 \u{00B7} 1,284 \u{00B7} 1")
+    }
 }

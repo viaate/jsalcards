@@ -27,7 +27,9 @@
 //   1  an answer differs from the committed golden files, or a family is below its minimum
 //   2  the site's code could not be loaded or run
 //   3  Node is older than 22.18, or the arguments are wrong
-//   4  a site file that was loaded lies outside what the words watch covers
+//   4  a site file that was loaded, or that a site file imports, lies outside what the
+//      words watch covers (anywhere outside web/src and web/scripts/check-copy.mjs: under
+//      web/, under pipeline/ or at the repository root)
 //
 // Node's built-in modules only: it needs no `npm ci`.
 
@@ -752,6 +754,60 @@ const FAMILIES = [
     },
   },
   {
+    // ["unread", state, unreadZoneOf(state)]: every two-letter code AA ... ZZ, then the traps
+    //   (lower and mixed case, padded, full-width, the Kelvin sign, a dotted DC, empty, one and
+    //   three letters), so the app's copy of the contiguous states is held to the site's.
+    // ["nextTurn", now, zones, nextTurnOf(now, zones)] (an instant, or null): each zone list
+    //   every 3 hours over W3 and within a minute of each 3:30 PM on its clocks.
+    family: 'turns',
+    minCases: 1500,
+    modules: ['data/map-day.ts'],
+    cases: (site) => {
+      const { unreadZoneOf, nextTurnOf } = site['data/map-day.ts'];
+      const cases = [];
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      for (const a of letters) for (const b of letters) cases.push(['unread', `${a}${b}`, unreadZoneOf(`${a}${b}`)]);
+      const fullWidth = (text) => text.replace(/[A-Z]/g, (letter) => String.fromCharCode(0xff21 + letter.charCodeAt(0) - 65));
+      const traps = [];
+      for (const state of ['KS', 'NY', 'DC', 'AK', 'HI', 'PR']) {
+        traps.push(state.toLowerCase(), `${state[0]}${state[1].toLowerCase()}`, ` ${state}`, `${state} `, `${state}\n`, fullWidth(state), `\ufeff${state}`);
+      }
+      traps.push('\u212aS', '\u212aY', 'D.C.', '', 'K', 'KSS', 'USA', 'AL ', 'W');
+      for (const state of traps) cases.push(['unread', state, unreadZoneOf(state)]);
+      const lists = [
+        ['America/Chicago', 'America/New_York'],
+        ['America/New_York', 'America/Chicago'],
+        ['America/Los_Angeles', 'Pacific/Honolulu'],
+        ['America/Phoenix', 'America/Denver'],
+        ['America/Anchorage'],
+        [null],
+        ['?'],
+        ['*'],
+        [],
+        [null, 'America/Denver'],
+        ['?', 'America/Anchorage', '*'],
+        ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix', 'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu'],
+      ];
+      for (const zones of lists) {
+        const instants = new Set();
+        for (const start of W3) {
+          for (let at = start; at < start + WINDOW_MS; at += 3 * HOUR_MS) instants.add(at);
+          for (const clock of zones.filter((zone) => zone !== null && zone.length > 1)) {
+            const first = new Date(start).toISOString().slice(0, 10);
+            for (let day = first; day <= addDays(first, 2); day = addDays(day, 1)) {
+              const turn = atLocal(day, 15 * 60 + 30, clock);
+              for (const k of [-1, 0, 1]) instants.add(turn + k * MINUTE_MS);
+            }
+          }
+        }
+        for (const at of [...instants].sort((a, b) => a - b)) {
+          cases.push(['nextTurn', num(at), zones, answer(() => ms(nextTurnOf(new Date(at), zones)))]);
+        }
+      }
+      return cases;
+    },
+  },
+  {
     // [name, isTimeZone(name), regionOf(name), on the app's list]: every name on the list, then
     // every odd name.
     family: 'zones',
@@ -873,8 +929,10 @@ const FAMILIES = [
         // A file of three days also has rows after tomorrow: schoolStatus's later rows.
         if (file !== null && name === 'three days') files.push([name, file]);
       }
-      // Across the files' days: 4 or more before 3:30 PM and 4 or more after it on every US clock.
-      const offsets = [9, 12, 15, 19, 20.5, 21.5, 22.5, 23.5, 26, 28, 30, 33, 36, 40].map((hours) => hours * HOUR_MS);
+      // Hours after the first day's UTC midnight: across the files' days, 4 or more before
+      // 3:30 PM and 4 or more from 3:30 PM to midnight on every US clock (24.5 and 25 are
+      // Anchorage's 3:30 and 4:00 PM), and evenings of the second day too (47 and 50).
+      const offsets = [9, 12, 15, 19, 20.5, 21.5, 22.5, 23.5, 24.5, 25, 26, 28, 30, 33, 36, 40, 44, 47, 50].map((hours) => hours * HOUR_MS);
       for (const [name, file] of files) {
         const first = Date.parse(`${file.days[0].day}T00:00:00Z`);
         const others = [null, { ...file.directory, generated_on: addDays(file.directory.generated_on, 1) }];
@@ -914,7 +972,7 @@ const FAMILIES = [
     //   its zones is not on the app's list: there the app must refuse the file.
     // ["outlook", name, directory, shipped, district, school, now, outlook, headline]: the site's
     //   schoolOutlook({district, school, directory, shipped, predictions, now}) as [timeZone,
-    //   today, tomorrow], each day as ["forecast", noSchool, delay, day, busesAt] or
+    //   today, tomorrow], each day as ["forecast", noSchool, delay, day, busesAt, reasons] or
     //   ["no_threat"]; then headlineDay(outlook, decided, now)'s day for decided {today, tomorrow}
     //   = [false, false], [true, false], [false, true], [true, true]. `directory` is null for
     //   the file's own stamp.
@@ -1013,7 +1071,7 @@ const FAMILIES = [
       const day = (value) => {
         if (value === null) return null;
         if (value.state === 'no_threat') return ['no_threat'];
-        return ['forecast', value.noSchool, value.delay, value.day ?? null, ms(value.detail?.busesAt ?? null)];
+        return ['forecast', value.noSchool, value.delay, value.day ?? null, ms(value.detail?.busesAt ?? null), [...value.reasons]];
       };
       const DECIDED = [
         { today: false, tomorrow: false },
@@ -1328,8 +1386,15 @@ async function makeAll() {
     made.push({ family: spec.family, minCases: spec.minCases, madeFrom, caseLines });
   }
 
-  // Nothing may have been loaded from outside what the words watch covers.
-  const outside = [...loaded]
+  // Nothing may have been loaded from outside what the words watch covers: neither a file
+  // the hooks saw loaded nor any file in the resolved import graph (the set made_from is
+  // built from), wherever it lies, inside web/ or not.
+  const everyFile = new Set(loaded);
+  for (const [from, targets] of imports) {
+    everyFile.add(from);
+    for (const to of targets) everyFile.add(to);
+  }
+  const outside = [...everyFile]
     .map(repoPath)
     .filter((path) => !path.startsWith(WATCHED_FOLDER) && !WATCHED_FILES.includes(path))
     .sort();

@@ -49,6 +49,9 @@ final class FreshnessTests: XCTestCase {
     }
 
     func testTheThresholds() throws {
+        // A readable example only, never a second source of truth: freshness.json's cases,
+        // dense about 2 and 20 minutes, are the proof and supersede these written values
+        // (after a site change, the golden check fails first; then these follow by hand).
         XCTAssertEqual(liveFreshMs, 20 * 60_000)
         XCTAssertEqual(liveLeadMs, 2 * 60_000)
     }
