@@ -19,13 +19,14 @@ extension UIColor {
         }
     }
 
-    /// One value of the table as a color that never changes.
+    /// One value of the table as a color that never changes, with its alpha (0 to 255 in
+    /// the table, the CSS alpha times 255).
     static func fixed(_ color: TokenColor) -> UIColor {
         UIColor(
             red: CGFloat(color.red) / 255,
             green: CGFloat(color.green) / 255,
             blue: CGFloat(color.blue) / 255,
-            alpha: 1
+            alpha: CGFloat(color.alpha) / 255
         )
     }
 }
