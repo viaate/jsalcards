@@ -1,8 +1,11 @@
 """The fresh picture's render in the pre-installed headless Chromium, against a SYNTHETIC
 fixture page that stands in for the site: the same lock check, the same files read from the
 same paths, and a stand-in ``window.snowlightMap`` whose glow layer counts the schools the
-closings file lights today (snowlight.social.render). Skipped where no Chromium is installed
-(the workflow installs one; this machine and CI need none)."""
+closings file lights, each on its own map day by the site's rule (web/src/data/map-day.ts:
+its today until 3:30 PM on its district's clock, from the predictions file it is served, its
+tomorrow from then; without the file, the day every contiguous clock agrees on)
+(snowlight.social.render). Skipped where no Chromium is installed (the workflow installs one;
+this machine and CI need none)."""
 
 import argparse
 import json
@@ -86,6 +89,25 @@ else { document.getElementById('lock').hidden = false; }
 const NOW = Date.parse('__NOW__');
 const day = (offset) => new Date(NOW + offset * 3600000).toISOString().slice(0, 10);
 const today = day(-4) === day(-8) ? day(-4) : null;
+// The site's map day (web/src/data/map-day.ts mapDay), for this fixture's four schools.
+const DISTRICT = [0, 0, 0, 1];
+const STAMP = __STAMP__;
+const CONTIGUOUS = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix',
+  'America/Los_Angeles'];
+const nextDay = (d) => new Date(Date.parse(d + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10);
+const mapDay = (zone) => {
+  if (zone === null) return today;
+  if (zone === '*') {
+    return today !== null && CONTIGUOUS.every((z) => mapDay(z) === today) ? today : null;
+  }
+  try {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: zone,
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: 'numeric', minute: '2-digit',
+      hourCycle: 'h23' }).formatToParts(new Date(NOW)).map((p) => [p.type, p.value]));
+    const local = `${parts.year}-${parts.month}-${parts.day}`;
+    return Number(parts.hour) * 60 + Number(parts.minute) >= 15 * 60 + 30 ? nextDay(local) : local;
+  } catch { return null; }
+};
 const stats = { dust: 0, frames: 0, glowCount: __GLOW_OFFSET__, dustInView: 0 };
 const at = new URLSearchParams(location.search).get('at');
 const STALL = __STALL__;  // views whose map never settles
@@ -106,10 +128,27 @@ window.snowlightMap = {
     stats.dust = 4;
     stats.dustInView = NO_DUST.includes(at) ? 0 : __DUST_IN_VIEW__;
   }
+  // The zones, as the site reads them: only a file for this directory (else every school here,
+  // all in the contiguous US, keeps the day every clock agrees on).
+  let zones = null;
+  const predictions = await fetch('/live-root/v1/predictions/latest.json');
+  if (predictions.ok) {
+    const file = await predictions.json();
+    if (file.schema_version === 1 && JSON.stringify(file.directory) === JSON.stringify(STAMP)) {
+      zones = new Map(file.districts.map((row) => [row.district, row.time_zone]));
+    }
+  }
+  const zoneOf = (school) => (zones === null ? '*' : (zones.get(DISTRICT[school]) ?? null));
   const closings = await fetch('/live-root/v1/live/closings.json');
   if (closings.ok) {
     const file = await closings.json();
-    for (const group of file.days) if (group.day === today) stats.glowCount += group.gaps.length;
+    for (const group of file.days) {
+      let school = -1;
+      for (const gap of group.gaps) {
+        school += 1 + gap;
+        if (mapDay(zoneOf(school)) === group.day) stats.glowCount += 1;
+      }
+    }
   }
   stats.frames = 1;
   window.snowlightMap.ready = true;
@@ -157,6 +196,7 @@ def _handler(site: Site) -> type[BaseHTTPRequestHandler]:
                     .replace("__DUST_IN_VIEW__", str(site.dust_in_view))
                     .replace("__STALL__", json.dumps(site.stall))
                     .replace("__NO_DUST__", json.dumps(site.no_dust))
+                    .replace("__STAMP__", json.dumps(STAMP))
                 )
                 if not site.lock:
                     page = page.replace("localStorage.getItem('sl-lock') === ''", "true")
@@ -253,6 +293,74 @@ def test_lit_schools_zoom_in_and_match_the_glow(served: tuple[Site, str], tmp_pa
     assert taken.lit == 3
     assert taken.query.startswith("?at=42.")
     assert "Across the country the map shows 3 schools" in taken.shows
+
+
+def _zones() -> dict[str, Any]:
+    """The predictions file the page is served, for its zones (SYNTHETIC): the New York
+    district in Eastern time, the Minnesota one in Central, no threat on either day."""
+    return {
+        "schema_version": 1,
+        "generated_at": "2026-12-10T12:00:00Z",
+        "directory": STAMP,
+        "days": ["2026-12-10", "2026-12-11"],
+        "districts": [
+            {"district": 0, "time_zone": "America/New_York", "days": [{"state": "no_threat"}] * 2},
+            {"district": 1, "time_zone": "America/Chicago", "days": [{"state": "no_threat"}] * 2},
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        # 7:10 AM Eastern: every school's own today, Dec 10.
+        ("2026-12-10T12:10:00", False, 3, "for December 10."),
+        ("2026-12-10T12:10:00", True, 3, "for December 10."),
+        # 5:49 PM Eastern, 4:49 PM Central: every school shows Dec 11. Today's rows light none.
+        ("2026-12-10T22:49:00", False, 0, ""),
+        ("2026-12-10T22:49:00", True, 2, "for December 11."),
+        # 2:19 AM Eastern, 1:19 AM Central: no day is today everywhere, yet each school's is
+        # Dec 11, and the page lights it.
+        ("2026-12-11T07:19:00", False, 3, "for December 11."),
+        ("2026-12-11T07:19:00", True, 3, "for December 11."),
+    ],
+)
+def test_the_glow_and_the_words_count_each_school_on_its_own_map_day(
+    served: tuple[Site, str], tmp_path: Path, case: tuple[str, bool, int, str]
+) -> None:
+    """The evening and the overnight runs (SYNTHETIC files): the page lights each school's row
+    of its own map day, by the zones of the predictions file it is served, and the render's
+    words count those same schools and name their day, so the shot is taken (a mismatch drops
+    it). The rows: "today" (the first run's local day) for three schools; with ``both``, the
+    next day for two."""
+    site, base = served
+    now, both, lit, days = case
+    site.now = datetime.fromisoformat(now).replace(tzinfo=UTC)
+    first = "2026-12-10" if now.startswith("2026-12-10") else "2026-12-11"
+    second = "2026-12-11" if first == "2026-12-10" else "2026-12-12"
+    groups = [{"day": first, "gaps": [0, 0, 1], "statuses": [0, 1, 0]}]
+    if both:
+        groups.append({"day": second, "gaps": [0, 1], "statuses": [2, 0]})
+    site.closings = {
+        "generated_at": now + "Z",
+        "directory": STAMP,
+        "days": groups,
+    }
+    site.predictions = _zones()
+    said: list[str] = []
+    taken = render(tmp_path, facts=NO_CHANCES, site=base, now=lambda: site.now, say=said.append)
+    assert taken is not None, said
+    assert taken.lit == lit
+    assert "/live-root/v1/predictions/latest.json" in site.requests
+    if lit:
+        assert taken.kind == "closings"
+        counted = f"the map shows {lit} schools closed, delayed, remote or dismissing early"
+        assert f"{counted} {days}" in taken.shows
+    else:
+        assert taken.kind == "region"
+        assert "No school is lit up" in taken.shows
+    assert taken.seen.chance is None
+    assert not mentions_chance(taken.shows)
 
 
 def test_a_high_chance_frames_its_district(served: tuple[Site, str], tmp_path: Path) -> None:
@@ -425,7 +533,8 @@ def test_while_chances_are_testing_no_picture_or_card_gives_one(
     assert taken.kind == "region"
     assert taken.seen.chance is None
     assert not mentions_chance(taken.shows)
-    assert "/live-root/v1/predictions/latest.json" not in site.requests
+    # The file is read for each school's time zone alone: no chance of it is said.
+    assert "/live-root/v1/predictions/latest.json" in site.requests
     for post in ("dev-log", "waitlist"):
         card = Card.model_validate_json((tmp_path / f"{post}.json").read_text())
         assert not mentions_chance(card.alt), card.alt
