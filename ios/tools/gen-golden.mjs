@@ -29,7 +29,8 @@
 //   3  Node is older than 22.18, or the arguments are wrong
 //   4  a site file that was loaded, or that a site file imports, lies outside what the
 //      words watch covers (anywhere outside web/src and web/scripts/check-copy.mjs: under
-//      web/, under pipeline/ or at the repository root)
+//      web/, under pipeline/ or at the repository root), each judged by the real file it
+//      is, through any symbolic link to a file or a folder
 //
 // Node's built-in modules only: it needs no `npm ci`.
 
@@ -40,7 +41,7 @@ if (process.env.TZ === undefined || process.env.TZ === '' || process.env.TZ === 
 }
 
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -50,7 +51,8 @@ const EXIT_USAGE = 3;
 const EXIT_OUTSIDE_WATCH = 4;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const REPO = join(HERE, '..', '..');
+/** The repository's real path, through any symbolic link, as every site file is judged by its real path. */
+const REPO = realpathSync(join(HERE, '..', '..'));
 const FIXTURES = join(REPO, 'ios', 'SnowlightCore', 'Tests', 'SnowlightCoreTests', 'Fixtures');
 const GOLDEN = join(FIXTURES, 'golden');
 /** The copies of the pipeline's synthetic files (sync-fixtures.mjs): the files the Swift tests read. */
@@ -1083,6 +1085,12 @@ const FAMILIES = [
         const generated = Date.parse(file.generated_at);
         const nows = [];
         for (let minutes = -20; minutes <= 100; minutes += 5) nows.push(generated + minutes * MINUTE_MS);
+        // Each of the file's two gates (stamped at most 15 minutes ahead, at most 90 minutes
+        // old) also at 1 ms, 1 s and 1 min to either side, so a bound moved by any of those
+        // changes an answer.
+        for (const bound of [-15 * MINUTE_MS, 90 * MINUTE_MS]) {
+          for (const step of [1, 1000, MINUTE_MS]) nows.push(generated + bound - step, generated + bound + step);
+        }
         const units = [];
         for (let d = 0; d <= file.directory.districts; d += 1) units.push([d, null]);
         for (let s = 0; s <= file.directory.schools; s += 1) units.push([null, s]);
@@ -1105,13 +1113,15 @@ const FAMILIES = [
         cases.push(outlookCase(null, false, [0, null], generated));
       }
       // underWay: around 7:30 AM on each school day's clock, with no bus time, buses before
-      // 7:30 and buses after it.
-      const days = ['2026-01-06', '2026-01-07', '2027-01-12', '2027-01-13'];
+      // 7:30 and buses after it; on two winter days of each year and on the days the clocks
+      // turn back (2026-11-01) and forward (2027-03-14), with nows in the hour a clock change
+      // repeats or skips (1:30 and 2:30 AM) too.
+      const days = ['2026-01-06', '2026-01-07', '2027-01-12', '2027-01-13', '2026-11-01', '2027-03-14'];
       for (const zone of [...Z8.slice(0, 7), 'Mars/Olympus', 'america/chicago']) {
         for (const schoolDay of days) {
           const clock = zone === 'Mars/Olympus' || zone === 'america/chicago' ? 'America/Chicago' : zone;
           const busTimes = [null, atLocal(schoolDay, 6 * 60 + 45, clock), atLocal(schoolDay, 8 * 60, clock)];
-          for (const minute of [6 * 60 + 44, 6 * 60 + 45, 7 * 60 + 29, 7 * 60 + 30, 7 * 60 + 31, 8 * 60, 23 * 60 + 59]) {
+          for (const minute of [90, 150, 6 * 60 + 44, 6 * 60 + 45, 7 * 60 + 29, 7 * 60 + 30, 7 * 60 + 31, 8 * 60, 23 * 60 + 59]) {
             const now = atLocal(schoolDay, minute, clock);
             for (const buses of busTimes) {
               cases.push([
@@ -1239,6 +1249,15 @@ class Stop extends Error {
 
 function say(line) {
   process.stdout.write(`${line}\n`);
+}
+
+/** The real file a path names, through every symbolic link; the path itself if there is none. */
+function realFile(path) {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
 }
 
 /** A repository path with forward slashes, whatever the machine. */
@@ -1387,14 +1406,18 @@ async function makeAll() {
   }
 
   // Nothing may have been loaded from outside what the words watch covers: neither a file
-  // the hooks saw loaded nor any file in the resolved import graph (the set made_from is
-  // built from), wherever it lies, inside web/ or not.
+  // the hooks saw loaded, nor a module this generator imports, nor any file in the resolved
+  // import graph (the set made_from is built from), wherever it lies, inside web/ or not.
+  // Each is judged by its real file: a symbolic link inside web/src, to a file or through a
+  // folder, counts where it points, since that is the file Node reads.
   const everyFile = new Set(loaded);
+  everyFile.add(mapDayFile);
+  for (const spec of FAMILIES) for (const name of spec.modules) everyFile.add(join(siteRoot, ...name.split('/')));
   for (const [from, targets] of imports) {
     everyFile.add(from);
     for (const to of targets) everyFile.add(to);
   }
-  const outside = [...everyFile]
+  const outside = [...new Set([...everyFile].map(realFile))]
     .map(repoPath)
     .filter((path) => !path.startsWith(WATCHED_FOLDER) && !WATCHED_FILES.includes(path))
     .sort();

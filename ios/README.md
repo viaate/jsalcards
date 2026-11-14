@@ -66,7 +66,7 @@ Each rule is held by a script, a test or the compiler, named beside it.
    the device's zone by mistake gives right answers. Each `swift test` step sets `TZ` and
    `SNOWLIGHT_EXPECT_ZONE` to the same odd zone (`workflow.zone`); no test may be skipped
    or kept from a platform (`tests.skip`); the count of tests in the source is the number
-   in `tools/test-count.txt` (`tests.count`, 122 today).
+   in `tools/test-count.txt` (`tests.count`, 131 today).
 7. **Made-up schools only.** Fixtures are the pipeline's synthetic ones; no school crest or
    logo is ever committed.
 8. **The picture tour is debug code.** Everything under `Tour/` is inside one `#if DEBUG`
@@ -148,7 +148,9 @@ change rarely.
   generator could not load the site's code (no word is known to have changed). It watches
   all of `web/src`, and the generator refuses any file the site's modules load or import
   from anywhere else, under `web/` outside `src`, under `pipeline/` or at the root (its
-  exit 4), so the watch cannot fall behind what the generator reads.
+  exit 4), judging each by the real file it is, through any symbolic link to a file or a
+  folder, and lets no site module import one of Node's own modules (its exit 2), so the
+  watch cannot fall behind what the generator reads.
 
 **A change to any file under `.github/workflows/` runs the normal CI**, because the
 pipeline and web tests read every workflow file. Before pushing one, run these locally:
@@ -370,7 +372,7 @@ shape.
 | `turns` | `unreadZoneOf` (every code AA to ZZ and traps), `nextTurnOf` | 2,032 |
 | `zones` | `isTimeZone`, `regionOf` | 449 |
 | `closings` | `parseClosings`, `rowOn`, `schoolStatus` (no covered file), `litStatus` | 6,043 |
-| `predictions` | `parsePredictions`, `zonesOf` and `zoneOf`, `schoolOutlook`, `headlineDay`, `underWay` | 2,359 |
+| `predictions` | `parsePredictions`, `zonesOf` and `zoneOf`, `schoolOutlook`, `headlineDay`, `underWay` | 3,781 |
 | `freshness` | `updateState` | 532 |
 | `ids` | `isSchoolId`, `parseSchoolId` | 60 |
 
@@ -456,7 +458,7 @@ Swift one throws (`SiteRefusal`); where it returns null, nil, and `delay` and `d
 the two apart. Where the site accepts a zone name the app does not hold, the app reads no
 clock: the `map-day` and `underWay` cases mark those `narrower`. The big status is always the
 school's light (`litStatus`), and it and the other posted days are always exactly the rows of
-the site's `schoolStatus`, the rows after tomorrow included. 122 tests today
+the site's `schoolStatus`, the rows after tomorrow included. 131 tests today
 (`tools/test-count.txt`).
 
 ## Bumping the pinned Xcode

@@ -6,6 +6,7 @@
 //
 // Node's built-in modules only.
 
+import { realpathSync } from 'node:fs';
 import { register } from 'node:module';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,8 +14,11 @@ import { MessageChannel, receiveMessageOnPort } from 'node:worker_threads';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-/** The repository's root: this file is ios/tools/node-register.mjs. */
-export const repoRoot = join(here, '..', '..');
+/**
+ * The repository's root: this file is ios/tools/node-register.mjs. Its real path, through
+ * any symbolic link, as the hooks judge every site file by its real path.
+ */
+export const repoRoot = realpathSync(join(here, '..', '..'));
 /** web/, ending in a separator. */
 export const webRoot = join(repoRoot, 'web') + sep;
 /** web/src/, ending in a separator. */

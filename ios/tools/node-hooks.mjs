@@ -5,10 +5,15 @@
 // do four things:
 //
 //   1. resolve a relative import inside web/src that has no extension to its .ts file,
-//      or to index.ts in a folder of that name;
-//   2. refuse every `virtual:` import, and every import of a package, with a clear error.
-//      The site's modules that the app's tools call import neither; if one starts to, the
-//      generator must say so rather than load something else in its place;
+//      or to index.ts in a folder of that name, and then to the real file it is: through
+//      every symbolic link on the way, file or folder, so a link inside web/src that
+//      points elsewhere is judged where it points;
+//   2. refuse every `virtual:` import, every import of a package, and every import of one
+//      of Node's built-in modules from a file under web/src (the site's modules are code
+//      for the browser; through `node:module` one could load a file these hooks never
+//      see), with a clear error. The site's modules that the app's tools call import none
+//      of these; if one starts to, the generator must say so rather than load something
+//      else in its place;
 //   3. give `import.meta.env` the one value the deployed site is built with that these
 //      modules read: a live root;
 //   4. report every site file they resolved or loaded to the generator, over the port
@@ -18,7 +23,7 @@
 //
 // Node's built-in modules only.
 
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, realpathSync, statSync } from 'node:fs';
 import { dirname, join, resolve as resolvePath } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -71,15 +76,24 @@ export async function resolve(specifier, context, nextResolve) {
     const base = resolvePath(dirname(parent), specifier);
     for (const candidate of [base, `${base}.ts`, join(base, 'index.ts')]) {
       if (isFile(candidate)) {
-        report({ kind: 'import', from: parent, to: candidate });
-        const url = pathToFileURL(candidate).href;
+        // The real file, not the path as written: Node reads through a link to its target.
+        const real = realpathSync(candidate);
+        report({ kind: 'import', from: parent, to: real });
+        const url = pathToFileURL(real).href;
         resolvedFromSite.add(url);
         return { url, shortCircuit: true };
       }
     }
     throw new Error(`refused: ${parent} imports '${specifier}', and no such file was found.`);
   }
-  if (specifier.startsWith('node:')) return nextResolve(specifier, context);
+  if (specifier.startsWith('node:')) {
+    if (siteRoot !== null && parent.startsWith(siteRoot)) {
+      throw new Error(
+        `refused: ${parent} imports Node's '${specifier}'. The site's modules are code for the browser, and the app's tools let none of them use Node's own modules.`,
+      );
+    }
+    return nextResolve(specifier, context);
+  }
   throw new Error(
     `refused: ${parent} imports the package '${specifier}'. The app's tools load the site's own files and Node's built-in modules, and no package.`,
   );
