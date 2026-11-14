@@ -394,7 +394,7 @@ KY_COUNTS: Final[Mapping[str, str]] = {
 }
 """Each counted code and its column. A ``W`` or ``I`` count must equal its dated days. ``D`` is
 counted from its dated days: the file's "Total Number of District Wide Disaster Days" reads 0
-in every row that lists ``D`` days (11 rows of the two files), so it is not their count."""
+in 11 of the 12 rows of the two files that list ``D`` days, so it is not their count."""
 KY_OFF: Final = (
     "Professional Development Days",
     "Holiday Days",

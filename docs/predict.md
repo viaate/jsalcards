@@ -4088,8 +4088,8 @@ learning module to that), and nothing is published.
 day at 18:43 UTC, on its own concurrency group, outside the serving chain (predict.yml is not
 touched). It restores the read labels' record (the predict chain's `predict-reads-` cache) read
 only and saves no cache of any kind (setup-uv's own cache is off, since the repository's cache
-room is shared with the predict chain's); a run whose restore missed writes nothing and says
-so. It reads the deployed directory as the serving pass does and each day's timeline and the
+room is shared with the predict chain's); a run whose restore missed writes no live morning
+and says so (the past records' step, below, runs either way). It reads the deployed directory as the serving pass does and each day's timeline and the
 day index from the live host's public files, then runs `snowlight predict each-school record`
 (`snowlight/predict/record.py`): every labeled day the evidence store does not hold yet (the
 newest 10 a run; the older ones are counted and wait) whose map is known for good becomes one
@@ -4171,6 +4171,75 @@ code (`m` and 12 hex digits of the sha256 of the registry's market text), never 
 byte changes (the live score's sha256, the golden files, the storm drill's lines and the alerts
 digest are unchanged). Its weather fields (observed snow, `snow_seen`) come with P2a2; what a
 page shows comes with P2e.
+
+## Past records (each-school P2d, R1 Kentucky: a record, nothing served)
+
+Public state records of past school days give a district's record the winters the live map
+never saw. They are written into the same record as their own coarse kind, `past_records` (a
+page may say a day was seen live by us or comes from past records, never which agency's file:
+LR8). **They change no number:** no pass, refit or published file reads them (the same test
+holds every serving and learning module to that, `state_records` included).
+
+**The files** (`pipeline/config/state-records.yaml`): each by URL, the page that links it, fetch
+date, size, SHA-256 and parser version. Kentucky's Department of Education school calendar page
+gives, by plain GET:
+- the **Amended Calendar Summary** of 2024-25 and of 2025-26 (one row per district): its
+  dated weather days (code `W`: days missed for the weather and made up), dated illness (`I`)
+  and district-wide emergency (`D`) days, its count of at-home NTI days used (`N`, not dated),
+  and its own calendar (first and last student days, every dated day off);
+- the **Five Year Weather Trend**: each district's weather make-up days per school year,
+  2020-21 to 2024-25.
+
+**The step.** `snowlight predict each-school past` (`snowlight/predict/state_records.py`), the
+last step of the `each-school record` job, whether or not that run had read labels. A state
+whose record keys the store holds already is not fetched again. Otherwise each file is fetched,
+refused unless its size and SHA-256 are the pinned ones (a changed file needs a reviewed pin),
+read (the summaries by column header, never position; the trend by a small reader of the PDF's
+text runs, a page's content streams joined in order), checked, and its keys offered once:
+`past/<file id>/days` and `past/<file id>/counts` in the `record` kind. A state that fails any
+check writes nothing and is warned of. The record job's `record.parquet` then holds the past
+rows beside the live ones (the columns a past row lacks left empty, plus its `code`), and
+`record-counts.parquet` the yearly counts, both in the runner only.
+
+**The written map.** `W` (Weather Day) becomes a dated row: call `closed`, cause `weather`,
+`weather_day` true, scope `whole` (the district's own calendar), `closings_only` true and
+`source_complete` false, since a day not listed is not known open (an NTI day at home is not
+dated, and a weather day not made up is removed from the amended calendar), so it is never
+fit-usable (spec rule 6; rule 9's statewide slope is a serving piece's own filter). Its class is
+`unknown` until a backfill or P2a2 fills it (LR14): counted in the step's lines as unknown, and
+never fit-usable. Its day-after flag comes from the district's own calendar in the same file:
+`true` when its previous scheduled student day is a listed `W` (`after_weather` true), `I`
+(`after_weather` false) or `D` day (`after_weather` not known); otherwise not known (that day
+may have been an NTI day). `N`, `I` and `D` are kept as yearly counts only. Every count stays a
+count, never spread into dates: `W` for 2020-21 to 2023-24 from the trend and for 2024-25 and
+2025-26 from each summary; `N`, `I` and `D` for 2024-25 and 2025-26. COVID years (2020-21 here)
+are kept and flagged `covid`; a district-year with a `D` day is flagged `disaster` (spec rule 8).
+`D` is counted from its dated days: the file's own `D` total reads 0 in 11 of the 12
+district-years that list `D` days (the twelfth, 8 days, agrees).
+
+**Ids, never guessed.** The state's three-digit district number is digits 7-9 of the NCES
+`ST_LEAID` (`KY-CCCddd000`), written once into the config as a number-to-LEAID table from the
+CCD LEA directory 2024-25. 171 of the files' 172 numbers map to a district of the directory; 606
+(the Model Laboratory School, whose CCD LEA is an education agency of another type and not a
+district of the directory) is listed and not matched. A number in neither list refuses the
+state.
+
+**Checks** (each refuses the state): every summary row's `W` and `I` counts equal its dated
+days; the trend's 2024-25 counts equal the 2024-25 summary's in every row (172 of 172); every
+date reads and lies in its file's school year; no district number comes twice. A `W` day that
+is not a student day on the district's own calendar is listed and not written (4 of 1,603
+mapped: three of Green County's, in May 2026 after its last student day, and one of Hardin
+County's); its yearly count stays the state's.
+
+**What it holds** (fetched Nov 14 2026): 817 dated `W` rows over 143 districts in 2024-25 and
+782 over 148 in 2025-26 (1,599 rows; 643 the day after a day off school), and 2,052 yearly
+counts (`W` 817 and 786 days in the summaries' years and 1,072 over 2020-21 to 2023-24 in the
+trend's; `N` 1,351 and 1,328; `I` 14 and 11; `D` 21 and 9).
+
+**Gate.** None serves. No learned value, served chance or published byte changes (the live
+score's sha256, the golden files, the storm drill's whole lines and the alerts digest are
+unchanged). What a page shows of them comes with P2e; whether they may move Kentucky's numbers
+is a serving piece's own gate (SPEC r5).
 
 ## The forecast history (S7-F, piece F1: data only)
 
