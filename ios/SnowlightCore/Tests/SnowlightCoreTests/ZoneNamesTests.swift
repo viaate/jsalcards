@@ -49,34 +49,35 @@ final class ZoneNamesTests: XCTestCase {
 
     func testTheListIsTheGeneratorsList() throws {
         let differences = Differences()
-        var listed = 0
+        // The odd names are cases too, and some of them are on the list: count each name once.
+        var listed: Set<String> = []
         for zone in try zoneCases() {
             differences.compared()
             if zone.onList {
-                listed += 1
+                listed.insert(zone.name)
             }
             if ZoneNames.all.contains(zone.name) != zone.onList {
                 differences.note("\(zone.name.debugDescription): on the list \(ZoneNames.all.contains(zone.name)), the generator says \(zone.onList)")
             }
         }
         differences.report("zones, the list")
-        XCTAssertEqual(listed, ZoneNames.all.count, "zones.json does not name every name on the list.")
+        XCTAssertEqual(listed, ZoneNames.all, "zones.json does not name every name on the list.")
     }
 
     func testEveryUSZoneIsKnownHereAndOthersArePrinted() throws {
-        var unknownHere: [String] = []
-        var regioned = 0
+        var unknownHere: Set<String> = []
+        var regioned: Set<String> = []
         for zone in try zoneCases() where zone.onList {
             if zone.region != "other" {
-                regioned += 1
+                regioned.insert(zone.name)
                 XCTAssertTrue(isTimeZone(zone.name), "\(zone.name): a US zone this machine does not accept.")
             } else if !isTimeZone(zone.name) {
                 XCTAssertTrue(isListedButUnknownHere(zone.name))
-                unknownHere.append(zone.name)
+                unknownHere.insert(zone.name)
             }
         }
-        XCTAssertEqual(regioned, 28, "the list should hold the site's 28 US zones.")
-        let named = unknownHere.joined(separator: ", ")
+        XCTAssertEqual(regioned.count, 28, "the list should hold the site's 28 US zones.")
+        let named = unknownHere.sorted().joined(separator: ", ")
         print("zones on the app's list this machine does not know: \(unknownHere.count) [\(named)]")
     }
 
