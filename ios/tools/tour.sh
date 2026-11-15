@@ -96,9 +96,13 @@ echo "[$SECONDS s] the app is installed"
 # The status bar as approved draft 3 draws it on My School (M1 5.3): 6:55, four signal
 # bars, full Wi-Fi and the battery 85% full (myschool-closed-light.html:153; app.js:117-121,
 # :127-130; duo.js:18). The flags this simctl takes are printed first, to check them by.
+# status_bar_at <time>: the same override at another time (tour-tomorrow's own 4:15, M1 5.3).
 xcrun simctl help status_bar 2>&1 | head -40 || true
-xcrun simctl status_bar "$UDID" override --time "6:55" --batteryState discharging --batteryLevel 85 \
-  --wifiBars 3 --cellularBars 4 || echo "::warning::The status bar override was refused."
+status_bar_at() {
+  xcrun simctl status_bar "$UDID" override --time "$1" --batteryState discharging --batteryLevel 85 \
+    --wifiBars 3 --cellularBars 4 || echo "::warning::The status bar override at $1 was refused."
+}
+status_bar_at "6:55"
 
 FAILED=0
 FIRST=1
@@ -204,11 +208,22 @@ for mode in light dark; do
     shoot "$mode" "$mode-$screen" "$screen" diff
   done
 done
-# My School drawn from the tour's fixtures (M1 5.4), light and dark: closed, status only
-# (approved draft 3's "My School, closed"), at the fixture's own time and in its own zone.
+# My School drawn from the tour's fixtures (M1 5.4), light and dark, each at the fixture's
+# own time and in its own zone: closed, status only (approved draft 3's "My School,
+# closed"); closed with details known (its "closed with details"); and closed for tomorrow
+# after 3:30 PM (S3: the closed screen's drawing with tomorrow's words, M1 2.4), with the
+# status bar at that fixture's 4:15, then back at 6:55 for the pictures after it.
 for mode in light dark; do
   shoot "$mode" "$mode-myschool-closed" myschool diff -tour.fixture tour-closed
 done
+for mode in light dark; do
+  shoot "$mode" "$mode-myschool-details" myschool diff -tour.fixture tour-details
+done
+status_bar_at "4:15"
+for mode in light dark; do
+  shoot "$mode" "$mode-myschool-tomorrow" myschool diff -tour.fixture tour-tomorrow
+done
+status_bar_at "6:55"
 # The stored choice beats the phone: forced Dark on a light simulator, forced Light on a
 # dark one. Only keys that begin with tour. are passed, never the app's own key: a launch
 # argument would shadow the stored value for the whole run.

@@ -49,6 +49,12 @@
 //     edge the line is aligned by within 1 pt, the other within 1 pt or 1% of the line's
 //     width, whichever is larger. Posted is aligned by its right edge, the others by their
 //     left. Judged on the device the places were measured on.
+//     The same on <look>-myschool-details (details known: the panel at 240, the dot at 140)
+//     and <look>-myschool-tomorrow (the closed screen with tomorrow's words), but: on
+//     -details the marker's point is 43%, 16% (172.9, 139.8 pt), there is no grabber point
+//     (no whole percent lands on its 5 pt, 247 to 252), the ink lines' boxes move with the
+//     panel, and the details line's ink is printed only; on -tomorrow the day line and
+//     Posted are held to the draft's ink with tomorrow's words.
 //   - the iPhone Duo's closed pictures (duo-closed-<look>-<screen>[-<variant>]): their own
 //     points, measured on the Duo, with the Outside screen row and the two layouts (see
 //     duoPoints below).
@@ -180,9 +186,14 @@ let tabBarY = 94
 /// The points of a My School picture drawn from a tour fixture, <look>-myschool-<variant>
 /// (M1 5.4), in its look; empty for a variant whose places are not written here.
 func mySchoolPoints(look dark: Bool, variant: String) -> [NamedPoint] {
-    guard variant == "closed" else {
+    guard ["closed", "details", "tomorrow"].contains(variant) else {
         return []
     }
+    // With details known the panel rests at 240 and the dot sits at 140, not 260 and 151
+    // (myschool-closed-details-light.html:15, :108): the marker's point moves to 43%, 16%
+    // (172.9, 139.8 pt), and no whole percent lands on the grabber's 5 pt (247 to 252).
+    // For tomorrow the drawing is the closed screen's (M1 2.4).
+    let details = variant == "details"
     let pick = { (light: Shade, darkShade: Shade) -> Shade in dark ? darkShade : light }
     let sheet = pick(Wanted.sheetLight, Wanted.sheetDark)
     let mapBg = pick(Wanted.mapBgLight, Wanted.mapBgDark)
@@ -203,10 +214,12 @@ func mySchoolPoints(look dark: Bool, variant: String) -> [NamedPoint] {
     }
     points += [
         NamedPoint(x: 5, y: 23, expect: .near(mapBg, 8), what: "the map's ground, mapBg " + mapBg.hex, judged: placesMeasuredHere),
-        NamedPoint(x: 43, y: 17, expect: .near(marker, 12), what: "the closed marker's core " + marker.hex, judged: placesMeasuredHere),
+        NamedPoint(x: 43, y: details ? 16 : 17, expect: .near(marker, 12), what: "the closed marker's core " + marker.hex, judged: placesMeasuredHere),
         NamedPoint(x: 8, y: 56, expect: .near(fill, 8), what: "the season card, fill " + fill.hex, judged: placesMeasuredHere),
-        NamedPoint(x: 50, y: 31, expect: .near(grab, 16), what: "the grabber, grab " + grab.hex, judged: placesMeasuredHere),
     ]
+    if !details {
+        points.append(NamedPoint(x: 50, y: 31, expect: .near(grab, 16), what: "the grabber, grab " + grab.hex, judged: placesMeasuredHere))
+    }
     return points
 }
 
@@ -223,6 +236,8 @@ struct InkLine {
     let firstWithin: Double
     let last: Double
     let lastWithin: Double
+    /// False: printed as yes or no, never a failure (a line measured for the report only).
+    var judged: Bool = true
 }
 
 /// The window the My School places were measured in, in points across (iPhone 17 Pro).
@@ -232,19 +247,46 @@ let windowPointsAcross = 402.0
 /// whose lines are not written here. The draft's ink: the probe of the draft's own HTML
 /// with the fixture's words, at 3x, in either look (the same to 0.01 pt).
 func mySchoolInkLines(variant: String) -> [InkLine] {
-    guard variant == "closed" else {
+    switch variant {
+    case "closed":
+        return [
+            // "Synthetic District One · Grades 6–8", 242.53 wide: left aligned.
+            InkLine(what: "the district line", top: 290, bottom: 310, left: 15, right: 330, first: 20.74, firstWithin: 1, last: 263.27, lastWithin: 2.43),
+            // "Tuesday, January 12", 171.89 wide (the approved picture's own line): left aligned; the clock is right of 240.
+            InkLine(what: "the day line", top: 435, bottom: 457, left: 15, right: 240, first: 20.29, firstWithin: 1, last: 192.18, lastWithin: 1.72),
+            // "Posted 5:42 AM", 107.68 wide: right aligned; the clock's ink ends left of 268.5.
+            InkLine(what: "Posted's words", top: 435, bottom: 457, left: 268.5, right: 392, first: 273.02, firstWithin: 1.08, last: 380.70, lastWithin: 1),
+            // "2 closed · 1 delayed since Oct 27", 253.27 wide (the approved picture's own line): left aligned, inside the card.
+            InkLine(what: "the season card's line", top: 512, bottom: 534, left: 30, right: 345, first: 37.00, firstWithin: 1, last: 290.27, lastWithin: 2.53),
+        ]
+    case "details":
+        // The draft's details form (myschool-closed-details-light.html) with the fixture's
+        // words, through the same renderer: the same words at the same x as on the closed
+        // screen; the panel 20 higher (rest 240, :15) and the season card 3 lower (the
+        // details line's 6 + 20, then 14 to the card, :33, :38).
+        return [
+            InkLine(what: "the district line", top: 270, bottom: 290, left: 15, right: 330, first: 20.74, firstWithin: 1, last: 263.27, lastWithin: 2.43),
+            InkLine(what: "the day line", top: 415, bottom: 437, left: 15, right: 240, first: 20.29, firstWithin: 1, last: 192.18, lastWithin: 1.72),
+            InkLine(what: "Posted's words", top: 415, bottom: 437, left: 268.5, right: 392, first: 273.02, firstWithin: 1.08, last: 380.70, lastWithin: 1),
+            InkLine(what: "the season card's line", top: 515, bottom: 537, left: 30, right: 345, first: 37.00, firstWithin: 1, last: 290.27, lastWithin: 2.53),
+            // "No buses. After-school activities cancelled.", 295.97 wide in the draft's
+            // renderer: printed for the report, not judged (not one of R21's four lines).
+            InkLine(what: "the details line", top: 444, bottom: 464, left: 15, right: 392, first: 21.17, firstWithin: 1, last: 317.14, lastWithin: 2.96, judged: false),
+        ]
+    case "tomorrow":
+        // The closed screen's drawing with tomorrow's words (M1 2.4), the draft's HTML with
+        // them through the same renderer: the day and Posted change, the rest is closed's.
+        return [
+            InkLine(what: "the district line", top: 290, bottom: 310, left: 15, right: 330, first: 20.74, firstWithin: 1, last: 263.27, lastWithin: 2.43),
+            // "Wednesday, January 13", 201.81 wide: left aligned; the clock is right of 250.
+            InkLine(what: "the day line", top: 435, bottom: 457, left: 15, right: 250, first: 20.32, firstWithin: 1, last: 222.13, lastWithin: 2.02),
+            // "Posted 4:10 PM", 105.34 wide: right aligned; the clock's ink ends left of 271.
+            InkLine(what: "Posted's words", top: 435, bottom: 457, left: 271, right: 392, first: 275.35, firstWithin: 1.05, last: 380.70, lastWithin: 1),
+            InkLine(what: "the season card's line", top: 512, bottom: 534, left: 30, right: 345, first: 37.00, firstWithin: 1, last: 290.27, lastWithin: 2.53),
+        ]
+    default:
         return []
     }
-    return [
-        // "Synthetic District One · Grades 6–8", 242.53 wide: left aligned.
-        InkLine(what: "the district line", top: 290, bottom: 310, left: 15, right: 330, first: 20.74, firstWithin: 1, last: 263.27, lastWithin: 2.43),
-        // "Tuesday, January 12", 171.89 wide (the approved picture's own line): left aligned; the clock is right of 240.
-        InkLine(what: "the day line", top: 435, bottom: 457, left: 15, right: 240, first: 20.29, firstWithin: 1, last: 192.18, lastWithin: 1.72),
-        // "Posted 5:42 AM", 107.68 wide: right aligned; the clock's ink ends left of 268.5.
-        InkLine(what: "Posted's words", top: 435, bottom: 457, left: 268.5, right: 392, first: 273.02, firstWithin: 1.08, last: 380.70, lastWithin: 1),
-        // "2 closed · 1 delayed since Oct 27", 253.27 wide (the approved picture's own line): left aligned, inside the card.
-        InkLine(what: "the season card's line", top: 512, bottom: 534, left: 30, right: 345, first: 37.00, firstWithin: 1, last: 290.27, lastWithin: 2.53),
-    ]
 }
 
 /// The ink lines of a picture: My School's drawn from a tour fixture only.
@@ -666,16 +708,17 @@ func readPictures(under folder: String) -> Int32 {
         }
         for line in inkLines(for: name) {
             let box = "ink x " + twoDecimals(line.left) + "-" + twoDecimals(line.right) + " y " + twoDecimals(line.top) + "-" + twoDecimals(line.bottom) + " pt"
+            let judgedHere = placesMeasuredHere && line.judged
             guard let found = bitmap.inkExtent(line) else {
-                print([name, box, "no ink found", line.what, placesMeasuredHere ? "WRONG" : "no"].joined(separator: " "))
-                if placesMeasuredHere {
+                print([name, box, "no ink found", line.what, judgedHere ? "WRONG" : "no"].joined(separator: " "))
+                if judgedHere {
                     wrong += 1
                 }
                 continue
             }
             let holds = abs(found.first - line.first) <= line.firstWithin && abs(found.last - line.last) <= line.lastWithin
             var verdict = holds ? "ok" : "WRONG"
-            if !placesMeasuredHere {
+            if !judgedHere {
                 verdict = holds ? "yes" : "no"
             } else if !holds {
                 wrong += 1
