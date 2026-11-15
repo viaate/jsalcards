@@ -232,10 +232,11 @@ Once a day, at 08:23 UTC, the API runs a clean-up on Cloudflare's schedule
 which runs `sweep()` in api/src/auth.ts). It deletes every session past its 30
 days, the push subscriptions of the browsers those sessions signed in, and every
 held username past its 30 days; names held for good and holds still running
-stay. So nothing the privacy page says is kept for 30 days stays much past a
-day beyond that. A login runs the same clean-up now and then too. A run that
-fails logs one line without any data, and the next day's run catches up.
-Scheduled runs are part of Cloudflare's free Workers plan.
+stay. So a login or a held name is gone within about a day after its 30 days,
+as the privacy page says. A login runs the same clean-up now and then too. A
+run that fails logs one line without any data, and the next day's run catches
+up. Scheduled runs are part of Cloudflare's free Workers plan (5 per account;
+the status prober uses one, this is the second).
 
 Sign up and log in are rate limited: 10 logins per 15 minutes per address, 10
 per account by email and another 10 by username (a right one is not counted),
