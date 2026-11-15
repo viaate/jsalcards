@@ -13,6 +13,19 @@
 // the draft's page sets them (CSS:117, font-variant-numeric: tabular-nums). The system font
 // turns to its display cut at 20 points and up by itself, as the draft's two families do
 // (CSS:59-60). Each style grows with the system style the build spec anchors it to (M1 6.2).
+//
+// The tracking of My School's styles is measured, not the CSS's number (lead ruling R21, B1).
+// The draft was drawn in the static SF Pro Text and Display files through Chromium, which adds
+// no tracking of its own, so there the CSS letter-spacing is the whole of it. iOS's system
+// font adds its own tracking and optical size for each size, and .tracking() goes on top. So
+// each style's tracking is the one value that makes its lines' ink as wide as the draft's: the
+// draft's width from its own HTML rendered with the same words through the same renderer
+// (premium/render.cjs, 402 x 874 at 3x), the app's from the simulator (iOS app run
+// 43660180030, iPhone 17 Pro), measured on the fixture's words and on two more strings each,
+// and the value that makes the worst width error smallest taken. The CSS value stays beside
+// each one. At 20 and 22 points the letters, spaces and figures of the system font still
+// differ one by one from the static Display cut once the whole line matches: the system's
+// font, a ruled difference (R21).
 
 import SwiftUI
 import UIKit
@@ -33,23 +46,23 @@ enum TypeStyle {
 
     // My School (M1): approved draft 3's styles, each with its line.
 
-    /// The big status word: 68 points, bold, tracking -2.6, line box 66 (H:22).
+    /// The big status word: 68 points, bold, CSS tracking -2.6, line box 66 (H:22).
     case statusWord
-    /// The school's name in the panel: 22 points, bold, tracking -0.3, line box 27 (CSS:276).
+    /// The school's name in the panel: 22 points, bold, CSS tracking -0.3, line box 27 (CSS:276).
     case schoolName
-    /// The status day: 20 points, semibold, tracking -0.25, line box 25 (H:28).
+    /// The status day: 20 points, semibold, CSS tracking -0.25, line box 25 (H:28).
     case day
     /// A grey line of the panel: the district line (CSS:277), Posted (H:29) and the details
-    /// line (H:33), each 15 points, regular, tracking -0.2, line box 20.
+    /// line (H:33), each 15 points, regular, CSS tracking -0.2, line box 20.
     case panelLine
-    /// A card's key, shown in capitals: 12 points, semibold, tracking 0.6, line box 15 (H:39).
+    /// A card's key, shown in capitals: 12 points, semibold, CSS tracking 0.6, line box 15 (H:39).
     case cardKey
-    /// The season card's line: 17 points, semibold, tracking -0.41, line box 22 (H:58).
+    /// The season card's line: 17 points, semibold, CSS tracking -0.41, line box 22 (H:58).
     case counts
-    /// The school's name in the callout over the map: 15 points, semibold, tracking -0.24
+    /// The school's name in the callout over the map: 15 points, semibold, CSS tracking -0.24
     /// (CSS:240); its line box is the capsule's.
     case calloutName
-    /// The callout's status chip: 13.5 points, bold, tracking -0.1 (CSS:244); its line box
+    /// The callout's status chip: 13.5 points, bold, CSS tracking -0.1 (CSS:244); its line box
     /// is the chip's.
     case chip
 
@@ -99,7 +112,8 @@ enum TypeStyle {
         }
     }
 
-    /// Tracking set by hand, or zero to leave it to the system.
+    /// Tracking set by hand, or zero to leave it to the system. My School's are measured
+    /// (R21, B1): the CSS's value is written beside each.
     var tracking: CGFloat {
         switch self {
         case .titlePage:
@@ -111,21 +125,21 @@ enum TypeStyle {
         case .sub, .subStrong:
             return 0
         case .statusWord:
-            return -2.6 // H:22 letter-spacing: -2.6px
+            return -2.83 // R21 measured; CSS -2.6 (H:22 letter-spacing: -2.6px)
         case .schoolName:
-            return -0.3 // CSS:276
+            return -0.59 // R21 measured; CSS -0.3 (CSS:276)
         case .day:
-            return -0.25 // H:28
+            return -0.78 // R21 measured; CSS -0.25 (H:28)
         case .panelLine:
-            return -0.2 // CSS:277, H:29, H:33
+            return 0.04 // R21 measured; CSS -0.2 (CSS:277, H:29, H:33)
         case .cardKey:
-            return 0.6 // H:39
+            return 0.55 // R21 measured; CSS 0.6 (H:39)
         case .counts:
-            return -0.41 // H:58
+            return 0.02 // R21 measured; CSS -0.41 (H:58)
         case .calloutName:
-            return -0.24 // CSS:240
+            return 0.04 // R21 measured; CSS -0.24 (CSS:240)
         case .chip:
-            return -0.1 // CSS:244
+            return -0.07 // R21 measured; CSS -0.1 (CSS:244)
         }
     }
 

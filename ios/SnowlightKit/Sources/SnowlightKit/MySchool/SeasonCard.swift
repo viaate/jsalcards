@@ -14,6 +14,10 @@
 // counts only (RD-10), so the card is 54 points shorter. The card sits 17 below the day row,
 // or 14 below the details line (H:36, :38): MySchoolScreen gives the gap.
 //
+// In the dark look a thin light line runs inside the card's top edge (H:12, lead ruling R21,
+// B3): Shadows.card, drawn as the panel draws its own inset lines, the card's shape less
+// itself moved down by the line's offset.
+//
 // VoiceOver reads the card as one element: its key, then its line (M1 6.1).
 
 import SnowlightCore
@@ -21,6 +25,8 @@ import SwiftUI
 
 struct SeasonCard: View {
     let season: MySchoolModel.Season
+
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -39,8 +45,7 @@ struct SeasonCard: View {
         .padding(.bottom, CGFloat(Bands.length(Band.cardBottom)))
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
-            RoundedRectangle(cornerRadius: CGFloat(Bands.length(Band.cardRadius)), style: RoundedCornerStyle.circular)
-                .fill(Color.token(.fill))
+            CardGround(look: colorScheme == .dark ? ResolvedAppearance.dark : ResolvedAppearance.light)
         }
         .accessibilityElement(children: .combine)
     }
@@ -62,5 +67,24 @@ struct SeasonCard: View {
         case .site(_, let rest):
             return rest.text
         }
+    }
+}
+
+/// The card's ground, `fill`, and the shadow drawn inside its top edge in the look given.
+private struct CardGround: View {
+    let look: ResolvedAppearance
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: CGFloat(Bands.length(Band.cardRadius)), style: RoundedCornerStyle.circular)
+        let inner: [DrawnShadow] = DrawnShadow.layers(Shadows.card(in: look)).filter { layer in layer.inset }
+        ZStack {
+            shape.fill(Color.token(.fill))
+            ForEach(inner.indices, id: \.self) { index in
+                shape
+                    .subtracting(shape.offset(x: inner[index].x, y: inner[index].y))
+                    .fill(inner[index].color)
+            }
+        }
+        .accessibilityHidden(true)
     }
 }

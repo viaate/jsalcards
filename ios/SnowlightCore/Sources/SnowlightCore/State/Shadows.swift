@@ -4,7 +4,8 @@
 // rather than as named colors: the sheet's shadow (:19 light, :73 dark), the dark sheet's
 // top (:222), the closed school marker's core, ring, halos and glows (:230 dark, :234
 // light), the marker's stem (:232 dark, :238 light) and the crest's tile (:288 light, :290
-// dark). Each value is written here once, with its line beside it, and nowhere else.
+// dark); and My School's own page (myschool-closed-dark.html, H) writes the dark card's thin
+// top line (H:12). Each value is written here once, with its line beside it, and nowhere else.
 //
 // A shadow is kept as the CSS writes it, `[inset] x y blur spread color`, in points; the
 // views decide how to draw it (a layer with a spread is drawn as a shape of its own). An
@@ -63,6 +64,20 @@ public enum Shadows {
                 ShadowLayer(x: 0, y: -14, blur: 40, spread: 0, color: TokenColor(0x000000, alpha: 158)),
                 ShadowLayer(x: 0, y: 0.5, blur: 0, spread: 0, color: TokenColor(0xFFFFFF, alpha: 43), inset: true),
                 ShadowLayer(x: 0, y: 1.5, blur: 0, spread: 0, color: TokenColor(0xFFFFFF, alpha: 10), inset: true),
+            ]
+        }
+    }
+
+    /// The shadow of a card on the panel (`.mod`): none in the light look; in the dark look a
+    /// thin light line inside its top edge (lead ruling R21, B3).
+    public static func card(in look: ResolvedAppearance) -> [ShadowLayer] {
+        switch look {
+        case .light:
+            return []
+        case .dark:
+            // H:12: html[data-theme="dark"] .mod { box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.07); }
+            return [
+                ShadowLayer(x: 0, y: 0.5, blur: 0, spread: 0, color: TokenColor(0xFFFFFF, alpha: 18), inset: true),
             ]
         }
     }

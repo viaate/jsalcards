@@ -14,6 +14,11 @@
 // rests where the draft draws it and runs on to the window's bottom edge under the tab
 // bar. The content never fills the room at the standard text size, so the scroll view does
 // not move (`.scrollBounceBehavior(.basedOnSize)`); at larger sizes it scrolls (RD-22).
+// Between the map and the scroll view lies the panel's ground once more, `sheet` in the
+// panel's own outline from its top edge to the window's bottom edge (lead ruling R21, B2):
+// the system's scroll edge effect under the tab bar (RD-16) dissolves the panel onto what
+// lies behind the scroll view, and so onto the sheet's color, as the draft draws it (rows 8
+// and 16d), never onto the map's ground.
 //
 // The places are from the window's top leading corner, so the screen lays itself out over
 // the whole window and sets the safe area's insets itself: the content keeps inside the
@@ -111,6 +116,9 @@ struct MySchoolScreen: View {
         let trailing = width - (size.width - insets.trailing) + CGFloat(place.trailing)
         return ZStack(alignment: .topLeading) {
             MapWindow(place: place, callout: model.callout, marked: closing != nil)
+            MySchoolScreen.panelBacking()
+                .frame(width: width, height: max(0, size.height - rest))
+                .padding(.top, rest)
             ScrollView(.vertical) {
                 VStack(spacing: 0) {
                     Color.clear
@@ -129,6 +137,21 @@ struct MySchoolScreen: View {
             .scrollBounceBehavior(.basedOnSize)
             .ignoresSafeArea()
         }
+    }
+
+    /// The panel's ground behind the scroll view (R21, B2): `sheet` in the panel's outline,
+    /// its two top corners rounded (CSS:220, border-radius: 38px 38px 0 0). A drawing only.
+    private static func panelBacking() -> some View {
+        let corner = CGFloat(Bands.length(Band.panelCorner))
+        return UnevenRoundedRectangle(
+            topLeadingRadius: corner,
+            bottomLeadingRadius: 0,
+            bottomTrailingRadius: 0,
+            topTrailingRadius: corner,
+            style: RoundedCornerStyle.circular
+        )
+        .fill(Color.token(.sheet))
+        .accessibilityHidden(true)
     }
 
     /// The panel's content, top to bottom (M1 2.6).

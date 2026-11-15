@@ -39,6 +39,15 @@
 //     left of its text, inside its corner), `fill` within 8; and the grabber at 50%, 31%
 //     (201.0, 270.9 pt; it is 183 to 219 by 267 to 272), `grab` within 16. Each is judged
 //     only on the device the places were measured on (the build spec's geometry-r2.out).
+//     And four ink lines (lead ruling R21, B1), so the letter spacing cannot drift: the
+//     district line, the day line, Posted's words and the season card's line. Each is read
+//     in a box of the picture, in points, as the first and the last column whose ink covers
+//     at least half (between the box's middle shade, its ground, and its farthest shade,
+//     its ink), to a fraction of a pixel. Each is held to the draft's own ink, drawn from
+//     its HTML with the fixture's words through its renderer (premium/render.cjs, 3x): the
+//     edge the line is aligned by within 1 pt, the other within 1 pt or 1% of the line's
+//     width, whichever is larger. Posted is aligned by its right edge, the others by their
+//     left. Judged on the device the places were measured on.
 //   - the iPhone Duo's closed pictures (duo-closed-<look>-<screen>[-<variant>]): their own
 //     points, measured on the Duo, with the Outside screen row and the two layouts (see
 //     duoPoints below).
@@ -198,6 +207,57 @@ func mySchoolPoints(look dark: Bool, variant: String) -> [NamedPoint] {
         NamedPoint(x: 50, y: 31, expect: .near(grab, 16), what: "the grabber, grab " + grab.hex, judged: placesMeasuredHere),
     ]
     return points
+}
+
+/// A line of text whose ink is read across a box of the picture (lead ruling R21, B1).
+struct InkLine {
+    let what: String
+    /// The box, in points from the window's top leading corner.
+    let top: Double
+    let bottom: Double
+    let left: Double
+    let right: Double
+    /// The draft's first and last ink, in points, and how far each may be from it.
+    let first: Double
+    let firstWithin: Double
+    let last: Double
+    let lastWithin: Double
+}
+
+/// The window the My School places were measured in, in points across (iPhone 17 Pro).
+let windowPointsAcross = 402.0
+
+/// The ink lines of a My School picture, <look>-myschool-<variant>; empty for a variant
+/// whose lines are not written here. The draft's ink: the probe of the draft's own HTML
+/// with the fixture's words, at 3x, in either look (the same to 0.01 pt).
+func mySchoolInkLines(variant: String) -> [InkLine] {
+    guard variant == "closed" else {
+        return []
+    }
+    return [
+        // "Synthetic District One · Grades 6–8", 243.07 wide: left aligned.
+        InkLine(what: "the district line", top: 290, bottom: 310, left: 15, right: 330, first: 20.74, firstWithin: 1, last: 263.81, lastWithin: 2.43),
+        // "Tuesday, January 12", 173.17 wide: left aligned; the clock is right of 240.
+        InkLine(what: "the day line", top: 435, bottom: 457, left: 15, right: 240, first: 20.29, firstWithin: 1, last: 193.46, lastWithin: 1.73),
+        // "Posted 5:42 AM", 108.07 wide: right aligned; the clock's ink ends left of 268.5.
+        InkLine(what: "Posted's words", top: 435, bottom: 457, left: 268.5, right: 392, first: 272.84, firstWithin: 1.08, last: 380.90, lastWithin: 1),
+        // "2 closed · 1 delayed since Oct 27", 258.43 wide: left aligned, inside the card.
+        InkLine(what: "the season card's line", top: 512, bottom: 534, left: 30, right: 345, first: 37.00, firstWithin: 1, last: 295.43, lastWithin: 2.58),
+    ]
+}
+
+/// The ink lines of a picture: My School's drawn from a tour fixture only.
+func inkLines(for picture: String) -> [InkLine] {
+    let parts = picture.split(separator: "-").map { String($0) }
+    guard parts.count > 2, parts[0] == "light" || parts[0] == "dark", parts[1] == "myschool" else {
+        return []
+    }
+    return mySchoolInkLines(variant: parts[2...].joined(separator: "-"))
+}
+
+/// Two decimals, for the log.
+func twoDecimals(_ value: Double) -> String {
+    String(format: "%.2f", value)
 }
 
 /// The page color a picture's screen is in: the forced pictures are in the look opposite
@@ -466,6 +526,78 @@ struct Bitmap {
     }
 }
 
+extension Bitmap {
+    /// The lightness of one pixel, as the eye weighs red, green and blue.
+    func lightness(column: Int, row: Int) -> Double? {
+        guard let memory = context.data, column >= 0, column < width, row >= 0, row < height else {
+            return nil
+        }
+        let bytes = memory.assumingMemoryBound(to: UInt8.self)
+        let offset = row * context.bytesPerRow + column * 4
+        return 0.2126 * Double(bytes[offset]) + 0.7152 * Double(bytes[offset + 1]) + 0.0722 * Double(bytes[offset + 2])
+    }
+
+    /// The first and the last ink of a line of text in a box, in points: the columns whose
+    /// ink covers at least half, between the box's ground (its middle shade) and its ink
+    /// (its farthest shade from the ground), each edge found to a fraction of a pixel where
+    /// the cover crosses one half. Nil when the box holds no ink or leaves the picture.
+    func inkExtent(_ line: InkLine) -> (first: Double, last: Double)? {
+        let scale = Double(width) / windowPointsAcross
+        let top = Int((line.top * scale).rounded())
+        let bottom = Int((line.bottom * scale).rounded())
+        let left = Int((line.left * scale).rounded())
+        let right = Int((line.right * scale).rounded())
+        guard top >= 0, bottom <= height, top < bottom, left >= 1, right < width - 1, left < right else {
+            return nil
+        }
+        var shades: [Double] = []
+        for row in top..<bottom {
+            for column in left..<right {
+                if let seen = lightness(column: column, row: row) {
+                    shades.append(seen)
+                }
+            }
+        }
+        shades.sort()
+        guard !shades.isEmpty else {
+            return nil
+        }
+        let ground = shades[shades.count / 2]
+        let ink = ground > 128 ? shades[0] : shades[shades.count - 1]
+        if abs(ground - ink) < 1 {
+            return nil
+        }
+        // How much of a column the ink covers at its most, 0 to 1.
+        func cover(_ column: Int) -> Double {
+            var most = 0.0
+            for row in top..<bottom {
+                if let seen = lightness(column: column, row: row) {
+                    most = max(most, (ground - seen) / (ground - ink))
+                }
+            }
+            return most
+        }
+        var firstColumn: Int?
+        var lastColumn: Int?
+        for column in left..<right where cover(column) >= 0.5 {
+            if firstColumn == nil {
+                firstColumn = column
+            }
+            lastColumn = column
+        }
+        guard let firstInk = firstColumn, let lastInk = lastColumn else {
+            return nil
+        }
+        let inside = cover(firstInk)
+        let before = cover(firstInk - 1)
+        let firstEdge = Double(firstInk) - (inside - 0.5) / max(0.000001, inside - before)
+        let lastInside = cover(lastInk)
+        let after = cover(lastInk + 1)
+        let lastEdge = Double(lastInk + 1) - (0.5 - after) / max(0.000001, lastInside - after)
+        return (firstEdge / scale, lastEdge / scale)
+    }
+}
+
 /// Reads every picture under the folder. Returns the status to end with.
 func readPictures(under folder: String) -> Int32 {
     let found = (try? FileManager.default.subpathsOfDirectory(atPath: folder)) ?? []
@@ -530,6 +662,26 @@ func readPictures(under folder: String) -> Int32 {
                 wrong += 1
             }
             print([name, place, seen.hex, point.what, verdict].joined(separator: " "))
+        }
+        for line in inkLines(for: name) {
+            let box = "ink x " + twoDecimals(line.left) + "-" + twoDecimals(line.right) + " y " + twoDecimals(line.top) + "-" + twoDecimals(line.bottom) + " pt"
+            guard let found = bitmap.inkExtent(line) else {
+                print([name, box, "no ink found", line.what, placesMeasuredHere ? "WRONG" : "no"].joined(separator: " "))
+                if placesMeasuredHere {
+                    wrong += 1
+                }
+                continue
+            }
+            let holds = abs(found.first - line.first) <= line.firstWithin && abs(found.last - line.last) <= line.lastWithin
+            var verdict = holds ? "ok" : "WRONG"
+            if !placesMeasuredHere {
+                verdict = holds ? "yes" : "no"
+            } else if !holds {
+                wrong += 1
+            }
+            let seen = twoDecimals(found.first) + " to " + twoDecimals(found.last) + " (" + twoDecimals(found.last - found.first) + " wide)"
+            let want = "draft " + twoDecimals(line.first) + " to " + twoDecimals(line.last) + " within " + twoDecimals(line.firstWithin) + " and " + twoDecimals(line.lastWithin)
+            print([name, box, seen, line.what + ",", want, verdict].joined(separator: " "))
         }
     }
     return wrong == 0 ? 0 : 1

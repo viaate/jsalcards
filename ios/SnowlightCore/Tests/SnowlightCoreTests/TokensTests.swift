@@ -172,6 +172,14 @@ final class TokensTests: XCTestCase {
         XCTAssertNil(Shadows.sheetTop(in: .light))
     }
 
+    func testTheCardIsTheDrafts() throws {
+        // H:12 (myschool-closed-dark.html): html[data-theme="dark"] .mod { box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.07); }
+        try assertShadow(Shadows.card(in: .dark), "inset 0 0.5px 0 rgba(255,255,255,0.07)")
+        XCTAssertEqual(Shadows.card(in: .dark).first?.color.alpha, 18) // 17.85, so up
+        // The rule is the dark look's only: the light card has no shadow.
+        XCTAssertEqual(Shadows.card(in: .light), [])
+    }
+
     func testTheClosedMarkerIsTheDrafts() throws {
         // CSS:234: html[data-theme="light"] .mk.closed .core
         XCTAssertEqual(Shadows.closedMarkerCore(in: .light), Tokens.color(.closed, in: .light))
