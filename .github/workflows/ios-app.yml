@@ -5,15 +5,16 @@ name: iOS app
 # XcodeGen makes from ios/project.yml, then pictures of the app taken from the real
 # simulator screen. The pictures come back as one small artifact, ios-shots; the color
 # at a named point of each picture is printed in the log, so the log alone tells a light
-# screen from a dark one. No signing identity, no account and no secret is involved.
+# screen from a dark one. On the first job only, a UI test then reads the words on the
+# screen. No signing identity, no account and no secret is involved.
 # Logic lives in the ios/tools scripts so this file changes rarely: every change to it
 # also runs the normal CI.
 #
-# There are two jobs, with the same steps. The first is the one that counts: the Xcode
-# pinned by its path, on the settled image. The second does the same on the newer image
-# with whatever Xcode is its default, on an iOS 27 simulator; that image is still marked
-# a preview, so the second job may fail without failing the run, and what it did is read
-# from its log.
+# There are two jobs, with the same steps but the UI test, which runs on the first only.
+# The first is the one that counts: the Xcode pinned by its path, on the settled image.
+# The second does the same on the newer image with whatever Xcode is its default, on an
+# iOS 27 simulator; that image is still marked a preview, so the second job may fail
+# without failing the run, and what it did is read from its log.
 on:
   push:
     paths:
@@ -103,6 +104,12 @@ jobs:
           path: ios/out/full/
           if-no-files-found: ignore
           retention-days: 7
+      # The on-screen words of My School, read by a UI test on this job only (M1 6.3),
+      # after the pictures are safe: its own simulator, built for testing unsigned, and
+      # the number of tests run held to ios/tools/ui-test-count.txt.
+      - name: The on-screen words, read by a UI test
+        timeout-minutes: 15
+        run: bash ios/tools/ui-test.sh
 
   app-27:
     name: app (xcode-27, may fail)
@@ -110,8 +117,9 @@ jobs:
     # newest iOS 27 simulator it has. Also a standard runner, free for this public
     # repository. The image is still marked a preview, so this job is allowed to fail:
     # the run stays green on the first job alone, and this job's result is recorded.
-    # A workflow has no include, so the steps are written out again; the one step left
-    # out is the test that the pinned Xcode exists, because nothing is pinned here.
+    # A workflow has no include, so the steps are written out again; the steps left out
+    # are the test that the pinned Xcode exists, because nothing is pinned here, and the
+    # UI test, which runs on the first job only (M1 6.3).
     runs-on: xcode-27
     continue-on-error: true
     timeout-minutes: 30

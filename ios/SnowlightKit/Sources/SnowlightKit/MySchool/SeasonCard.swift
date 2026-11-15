@@ -18,7 +18,9 @@
 // B3): Shadows.card, drawn as the panel draws its own inset lines, the card's shape less
 // itself moved down by the line's offset.
 //
-// VoiceOver reads the card as one element: its key, then its line (M1 6.1).
+// VoiceOver reads the card as one element: its key, then its line (M1 6.1). The key is
+// drawn in capitals, so its label is set to the model's own word as written, whatever the
+// system would make of the capitals the card draws.
 
 import SnowlightCore
 import SwiftUI
@@ -34,6 +36,7 @@ struct SeasonCard: View {
                 .typeStyle(.cardKey)
                 .textCase(.uppercase)
                 .foregroundStyle(Color.token(.ink3))
+                .accessibilityLabel(key.text)
             line
                 .typeStyle(.counts)
                 .foregroundStyle(Color.token(.ink))

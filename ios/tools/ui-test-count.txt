@@ -1,0 +1,7 @@
+# The number of UI tests in ios/UITests (M1 6.3).
+#
+# They run on the macos-26 job only (tools/ui-test.sh), so they are not in test-count.txt,
+# whose rule is the same count on every machine. ios/tools/check-ios.mjs counts them from
+# the source (every `func test...()`) and fails when the count differs from the number
+# below; tools/ui-test.sh fails the app job when the number of UI tests run differs from it.
+6

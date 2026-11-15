@@ -37,8 +37,32 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         TARGETED_DEVICE_FAMILY: "1"
+  # The on-screen words, read by a UI test (M1 6.3): run on the macos-26 job only, by
+  # tools/ui-test.sh. tools/tour-words is one folder reference, copied whole into the test
+  # bundle with its paths kept, so files of the same name in its folders stay apart.
+  SnowlightUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: UITests
+      - path: tools/tour-words
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - target: Snowlight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.snowlightmap.app.uitests
+        GENERATE_INFOPLIST_FILE: "YES"
+        TEST_TARGET_NAME: Snowlight
 schemes:
   Snowlight:
+    # The build action builds the app alone (tools/build.sh); the UI test target is built
+    # for testing only.
     build:
       targets:
         Snowlight: all
+        SnowlightUITests: [test]
+    test:
+      targets:
+        - SnowlightUITests

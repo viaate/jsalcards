@@ -15,7 +15,8 @@
 //       Foundation; and in the tests: the clock, the zone, the environment or the network
 //       (but in ThisMachineTests.swift), a skipped test, a test kept from one platform, a
 //       count of tests that is not the committed one, a Swift test run in CI whose zone is
-//       UTC or not stated;
+//       UTC or not stated; the same in the UI tests (ios/UITests/), which have their own
+//       committed count;
 //   (d) golden families that no test reads, and tests that name a family that is not there;
 //   (e) debug code that a release build would hold: the picture tour's folder is outside
 //       the words rules, so every line of code in it must sit inside `#if DEBUG`;
@@ -53,6 +54,9 @@ const CORE_WORDS = 'ios/SnowlightCore/Sources/SnowlightCore/Words/';
 const CORE_SCREENS = 'ios/SnowlightCore/Sources/SnowlightCore/Screens/';
 const CORE_TESTS = 'ios/SnowlightCore/Tests/';
 const TEST_FILES = 'ios/SnowlightCore/Tests/SnowlightCoreTests/';
+/** The UI tests (M1 6.3): run on the macos-26 job only, so counted on their own. */
+const UI_TESTS = 'ios/UITests/';
+const UI_TEST_COUNT = 'ios/tools/ui-test-count.txt';
 const GOLDEN = 'ios/SnowlightCore/Tests/SnowlightCoreTests/Fixtures/golden/';
 const SHOWN = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/Shown.swift';
 const NAMES = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/Names.swift';
@@ -786,9 +790,13 @@ function checkTree(files, banned) {
       }
     }
 
-    if (path.startsWith(CORE_TESTS)) {
+    const coreTest = path.startsWith(CORE_TESTS);
+    const uiTest = path.startsWith(UI_TESTS);
+    if (coreTest || uiTest) {
       // (c) In the tests, one file may read this machine's clock, zone and environment.
-      if (!path.endsWith(`/${THIS_MACHINE}`)) {
+      // The UI tests have no such file: they read the screen, their own bundle and the
+      // app they start (XCUIApplication), and nothing else of the machine.
+      if (uiTest || !path.endsWith(`/${THIS_MACHINE}`)) {
         for (const [pattern, what] of [...CLOCK_ZONE, ...ENVIRONMENT]) {
           for (const found of matches(swift.code, pattern)) hit('tests.device', path, found.line, `${what} outside ${THIS_MACHINE}`);
         }
@@ -801,9 +809,11 @@ function checkTree(files, banned) {
       checkMachinePaths(path, swift, 'tests.device', hit);
       // No test reads the network, ThisMachineTests.swift included.
       checkNetwork(path, swift, 'tests.network', hit);
-      for (const found of matches(swift.code, /^[ \t]*(?:@[A-Za-z_]+[ \t]+)*import[ \t]+([^\n]*)$/m)) {
-        const module = found.match[1].trim();
-        if (!TEST_IMPORTS.includes(module)) hit('tests.import', path, found.line, `import ${module}: a test imports only ${TEST_IMPORTS.join(', ')}`);
+      if (coreTest) {
+        for (const found of matches(swift.code, /^[ \t]*(?:@[A-Za-z_]+[ \t]+)*import[ \t]+([^\n]*)$/m)) {
+          const module = found.match[1].trim();
+          if (!TEST_IMPORTS.includes(module)) hit('tests.import', path, found.line, `import ${module}: a test imports only ${TEST_IMPORTS.join(', ')}`);
+        }
       }
       // Every test runs on every machine: none is skipped, none is kept from a platform.
       for (const found of matches(swift.code, /(?<![A-Za-z0-9_])XCTSkip[A-Za-z]*/)) {
@@ -817,7 +827,8 @@ function checkTree(files, banned) {
 
   checkAppWords(files, banned, hit);
   checkFamilies(files, hit);
-  checkTestCount(files, hit);
+  checkTestCount(files, hit, TEST_FILES, TEST_COUNT);
+  checkTestCount(files, hit, UI_TESTS, UI_TEST_COUNT);
   return hits;
 }
 
@@ -915,13 +926,14 @@ function checkPublicSurface(path, code, hit) {
 /**
  * (c) The tests counted from their source equal the committed count, so a test that goes
  * missing is seen. Every XCTest test is an instance method `func test...()`; one marked
- * private or static is never run, so it is refused.
+ * private or static is never run, so it is refused. Twice: the core tests, counted in
+ * test-count.txt, and the UI tests, which run on one machine only, in ui-test-count.txt.
  */
-function checkTestCount(files, hit) {
+function checkTestCount(files, hit, folder, countFile) {
   let count = 0;
   let any = false;
   for (const [path, text] of files) {
-    if (!path.startsWith(TEST_FILES) || !path.endsWith('.swift') || typeof text !== 'string') continue;
+    if (!path.startsWith(folder) || !path.endsWith('.swift') || typeof text !== 'string') continue;
     any = true;
     const code = readSwift(text).code;
     count += matches(code, /(?<![A-Za-z0-9_])func\s+test[A-Za-z0-9_]*\s*\(\s*\)/).length;
@@ -930,16 +942,16 @@ function checkTestCount(files, hit) {
     }
   }
   if (!any) return;
-  const committed = files.get(TEST_COUNT);
+  const committed = files.get(countFile);
   if (typeof committed !== 'string') {
-    hit('tests.count', TEST_COUNT, 0, `the committed count of tests is missing; the source holds ${count}`);
+    hit('tests.count', countFile, 0, `the committed count of tests is missing; the source holds ${count}`);
     return;
   }
   const numbers = committed.split('\n').map((line) => line.trim()).filter((line) => line !== '' && !line.startsWith('#'));
   if (numbers.length !== 1 || !/^[0-9]+$/.test(numbers[0])) {
-    hit('tests.count', TEST_COUNT, 0, 'the count file must hold one whole number (lines that start with # are notes)');
+    hit('tests.count', countFile, 0, 'the count file must hold one whole number (lines that start with # are notes)');
   } else if (Number(numbers[0]) !== count) {
-    hit('tests.count', TEST_COUNT, 0, `the committed count is ${numbers[0]} and the source holds ${count} tests`);
+    hit('tests.count', countFile, 0, `the committed count is ${numbers[0]} and the source holds ${count} tests`);
   }
 }
 
@@ -1205,6 +1217,7 @@ const TOUR = 'ios/SnowlightKit/Sources/SnowlightKit/Tour/Sample.swift';
 const CORE_FILE = 'ios/SnowlightCore/Sources/SnowlightCore/Days/Sample.swift';
 const SCREEN_FILE = 'ios/SnowlightCore/Sources/SnowlightCore/Screens/Sample.swift';
 const TEST_FILE = 'ios/SnowlightCore/Tests/SnowlightCoreTests/SampleTests.swift';
+const UI_TEST_FILE = 'ios/UITests/Sample.swift';
 const CORE_STATE = 'ios/SnowlightCore/Sources/SnowlightCore/State/Sample.swift';
 const SEARCH_VIEW = 'ios/SnowlightKit/Sources/SnowlightKit/Shell/SampleSearch.swift';
 const LAYOUT_VIEW = 'ios/SnowlightKit/Sources/SnowlightKit/Layout/Sample.swift';
@@ -1220,6 +1233,8 @@ const TEAM_SHAPE = 'X'.repeat(10);
 const view = (body) => `import SwiftUI\nstruct Sample: View {\n    var body: some View {\n        ${body}\n    }\n}\n`;
 const core = (body) => `import Foundation\nfunc sample() {\n    ${body}\n}\n`;
 const test = (body) => `import XCTest\n@testable import SnowlightCore\n\nfinal class SampleTests: XCTestCase {\n    func testIt() throws {\n        _ = try GoldenFile.family("sample")\n        ${body}\n    }\n}\n`;
+/** A UI test as ios/UITests writes one: it starts the app and reads its own bundle. */
+const uiTest = (body) => `import XCTest\n\nfinal class Sample: XCTestCase {\n    @MainActor\n    func testIt() throws {\n        let app = XCUIApplication()\n        app.launchArguments = ["-tour.screen", "myschool"]\n        app.launch()\n        ${body}\n    }\n}\n`;
 /** A Swift test step as the workflows write it: its own zone, stated twice, not UTC. */
 const zonedTests = (tz = 'America/St_Johns', expected = tz) =>
   `      - name: Core tests\n        env:\n          TZ: ${tz}\n          SNOWLIGHT_EXPECT_ZONE: ${expected}\n        run: swift test --package-path ios/SnowlightCore`;
@@ -1282,6 +1297,9 @@ const CLEAN = new Map([
   [TEST_FILE, test('let fixed = Date(timeIntervalSince1970: 1_800_000_000)\n        let zone = TimeZone(identifier: "America/St_Johns")\n        let folder = Bundle.module.resourceURL\n        _ = (fixed, zone, folder)')],
   [`ios/SnowlightCore/Tests/SnowlightCoreTests/${THIS_MACHINE}`, 'import Foundation\nimport XCTest\nlet zone = TimeZone.current\nlet env = ProcessInfo.processInfo.environment\n'],
   [TEST_COUNT, '# the tests\n1\n'],
+  // A UI test may start the app, read the screen and read a file of its own bundle by path.
+  [UI_TEST_FILE, uiTest('let url = Bundle(for: Sample.self).url(forResource: "light", withExtension: "txt", subdirectory: "tour-words/ui")\n        let words = try url.map { found in try String(contentsOf: found, encoding: .utf8) }\n        _ = (try app.snapshot().label, words)')],
+  [UI_TEST_COUNT, '# the UI tests\n1\n'],
   [`${GOLDEN}sample.json`, '{}\n'],
   [WORKFLOW, workflow()],
   [PROJECT, 'settings:\n  # CODE_SIGN_IDENTITY: Apple Development\n  CODE_SIGN_IDENTITY: "-"\n  DEVELOPMENT_TEAM: $(SNOWLIGHT_TEAM)\n'],
@@ -1458,6 +1476,10 @@ const SAMPLES = [
   { name: 'a test that imports the network', rules: ['tests.import'], files: [[TEST_FILE, `import FoundationNetworking\n${test('_ = 1')}`]] },
   { name: "a test that imports Apple's Network framework", rules: ['tests.import'], files: [[TEST_FILE, `import Network\n${test('_ = 1')}`]] },
   { name: 'a test that may be skipped', rules: ['tests.skip'], files: [[TEST_FILE, test('throw XCTSkip("later")')]] },
+  // (c) The same three in a UI test (M1 6.3).
+  { name: 'Date() in a UI test', rules: ['tests.device'], files: [[UI_TEST_FILE, uiTest('let now = Date()')]] },
+  { name: 'a UI test that reads a web address', rules: ['tests.network'], files: [[UI_TEST_FILE, uiTest('let page = try Data(contentsOf: URL(string: "https://example.invalid/x")!)')]] },
+  { name: 'a UI test that may be skipped', rules: ['tests.skip'], files: [[UI_TEST_FILE, uiTest('throw XCTSkip("later")')]] },
   { name: 'a test skipped on a condition', rules: ['tests.skip'], files: [[TEST_FILE, test('try XCTSkipIf(true)')]] },
   { name: 'a test kept from one platform', rules: ['tests.skip'], files: [[TEST_FILE, `#if os(Linux)\n${test('_ = 1')}#endif\n`]] },
   { name: 'a count of tests that is not the source', rules: ['tests.count'], files: [[TEST_COUNT, '# the tests\n2\n']] },
@@ -1745,6 +1767,7 @@ async function main() {
     `${paths.filter(isViewCode).length} view files`,
     `${paths.filter((path) => path.startsWith(CORE) && path.endsWith('.swift')).length} core source files`,
     `${paths.filter((path) => path.startsWith(CORE_TESTS) && path.endsWith('.swift')).length} test files`,
+    `${paths.filter((path) => path.startsWith(UI_TESTS) && path.endsWith('.swift')).length} UI test files`,
     `${paths.filter(isIosWorkflow).length} workflows`,
     `${paths.filter((path) => path.startsWith(GOLDEN) && path.endsWith('.json')).length} golden families`,
     `${banned.length} banned words from the site`,
