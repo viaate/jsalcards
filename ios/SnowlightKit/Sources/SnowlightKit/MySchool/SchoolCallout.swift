@@ -11,6 +11,15 @@
 // VoiceOver reads it as one element: the name, then the chip's word (M1 6.1). It is not a
 // button in M1.
 //
+// At the largest text sizes, which the draft does not draw (lead ruling R24 X2): its text
+// stops growing at the largest size that is not an accessibility size (xxxLarge), the cap
+// the system puts on its own map and bar controls (the whole name is in the panel below, at
+// full size); the capsule's 38 is its least height, so it grows with its text up to that
+// cap; and when the callout is wider than the room it is kept in, the name stays one line
+// and ends in an ellipsis, so the chip is always whole and on screen. VoiceOver still reads
+// the whole name and the chip's word. At the standard size nothing of this shows: the
+// callout is drawn at its own width, in the draft's own form.
+//
 // Its place (JS:181-185): centred over the dot, its bottom 30 above the dot, and kept
 // inside the map's area, 16 from its edges (SnowlightCore's PanelPlace: calloutFrom and
 // calloutTo), which needs its width: CalloutPlacement below measures it and places it.
@@ -22,13 +31,37 @@ struct SchoolCallout: View {
     let callout: MySchoolModel.Callout
 
     var body: some View {
+        // At its own width the first form is drawn, the draft's: neither word wraps
+        // (`white-space: nowrap`). Only when the callout is given less than its own width
+        // (CalloutPlacement, at the largest text sizes) is the second drawn, whose name ends
+        // in an ellipsis and which takes exactly the width it is given (R24 X2).
+        ViewThatFits(in: Axis.Set.horizontal) {
+            capsule(narrowed: false)
+            capsule(narrowed: true)
+        }
+        .accessibilityElement(children: .combine)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
+
+    /// The name and the chip in the capsule of glass.
+    private func capsule(narrowed: Bool) -> some View {
         HStack(spacing: CGFloat(Bands.length(Band.calloutGap))) {
-            ShownLabel(callout.name)
-                .typeStyle(.calloutName)
-                .foregroundStyle(Color.token(.mapInk))
-                .lineLimit(1)
-                .fixedSize()
-                .padding(.trailing, CGFloat(Bands.length(Band.calloutNameTrailing)))
+            if narrowed {
+                ShownLabel(callout.name)
+                    .typeStyle(.calloutName)
+                    .foregroundStyle(Color.token(.mapInk))
+                    .lineLimit(1)
+                    .truncationMode(Text.TruncationMode.tail)
+                    .padding(.trailing, CGFloat(Bands.length(Band.calloutNameTrailing)))
+                    .frame(maxWidth: CGFloat.infinity, alignment: Alignment.leading)
+            } else {
+                ShownLabel(callout.name)
+                    .typeStyle(.calloutName)
+                    .foregroundStyle(Color.token(.mapInk))
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.trailing, CGFloat(Bands.length(Band.calloutNameTrailing)))
+            }
             ShownLabel(callout.chip)
                 .typeStyle(.chip)
                 .foregroundStyle(Color.token(.closedOn))
@@ -43,19 +76,20 @@ struct SchoolCallout: View {
         }
         .padding(.leading, CGFloat(Bands.length(Band.calloutLeading)))
         .padding(.trailing, CGFloat(Bands.length(Band.calloutTrailing)))
-        .frame(height: CGFloat(Bands.length(Band.calloutHeight)))
+        .frame(minHeight: CGFloat(Bands.length(Band.calloutHeight)))
         .glassEffect(
             Glass.regular,
             in: RoundedRectangle(cornerRadius: CGFloat(Bands.length(Band.calloutRadius)), style: RoundedCornerStyle.circular)
         )
-        .accessibilityElement(children: .combine)
     }
 }
 
 /// Places one view, the callout, at its own size: centred on `centreX`, its bottom at
 /// `bottomY`, and moved in so that it stays between `from` and `to` (all from the leading
 /// and top edges of the room it is given), as the draft's script places it (JS:181-185).
-/// It takes the whole room it is offered and draws nothing of its own.
+/// When its own width is more than `to - from` (the largest text sizes, R24 X2), it is
+/// given exactly that width and placed at `from`. It takes the whole room it is offered and
+/// draws nothing of its own.
 struct CalloutPlacement: Layout {
     let centreX: CGFloat
     let bottomY: CGFloat
@@ -68,7 +102,10 @@ struct CalloutPlacement: Layout {
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         for subview in subviews {
-            let size = subview.sizeThatFits(ProposedViewSize.unspecified)
+            var size = subview.sizeThatFits(ProposedViewSize.unspecified)
+            if size.width > to - from {
+                size = subview.sizeThatFits(ProposedViewSize(width: to - from, height: nil))
+            }
             let left = max(from, min(to - size.width, centreX - size.width / 2))
             subview.place(
                 at: CGPoint(x: bounds.minX + left, y: bounds.minY + bottomY - size.height),

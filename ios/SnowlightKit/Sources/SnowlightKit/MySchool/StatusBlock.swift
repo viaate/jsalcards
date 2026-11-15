@@ -14,6 +14,16 @@
 // - The details line, when there is one, sits 6 below the day row, the content's full
 //   width, in `ink2`, wrapping if it must (H:33).
 //
+// At the largest text sizes, which the draft does not draw (lead ruling R24, Apple's own
+// Dynamic Type rule: side by side becomes stacked, no word is broken, nothing is cut):
+// - X1: the day row is side by side whenever it fits on one line, exactly as above; when it
+//   does not, Posted (the clock and its time) goes on its own line under the day, left
+//   aligned, its line box straight under the day's, the line-box rule (M1 2.2) every
+//   wrapped line of the row already uses (about 2 points between the lines at the standard
+//   size). The day wraps only at its spaces, so no word is broken.
+// - X3: the clock grows with Posted's text (the same system style, subheadline), and stays
+//   14 at the standard size; its centre stays half the clock above the day's baseline.
+//
 // VoiceOver reads the whole block as one element: the site's own line for the status
 // ("Closed today", the model's `spoken`) in place of the word, then the day, Posted and
 // the details (M1 6.1).
@@ -23,6 +33,13 @@ import SwiftUI
 
 struct StatusBlock: View {
     let posted: MySchoolModel.Posted
+    /// The clock's side: 14 at the standard size (H:30), growing with Posted's text (R24 X3).
+    @ScaledMetric private var clockSide: CGFloat
+
+    init(posted: MySchoolModel.Posted) {
+        self.posted = posted
+        _clockSide = ScaledMetric(wrappedValue: CGFloat(Bands.length(Band.clock)), relativeTo: TypeStyle.panelLine.growsWith)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -31,23 +48,25 @@ struct StatusBlock: View {
                 .foregroundStyle(Color.token(.closedHero))
                 .accessibilityLabel(posted.spoken.text)
                 .padding(.leading, CGFloat(Bands.length(Band.statusLeading)))
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
-                ShownLabel(posted.day)
-                    .typeStyle(.day)
-                    .foregroundStyle(Color.token(.ink))
-                Spacer(minLength: 0)
-                if let time = posted.posted {
-                    HStack(alignment: .center, spacing: CGFloat(Bands.length(Band.postedGap))) {
-                        GlyphName.clock.decorative
-                            .resizable()
-                            .frame(width: CGFloat(Bands.length(Band.clock)), height: CGFloat(Bands.length(Band.clock)))
-                            .accessibilityHidden(true)
-                        ShownLabel(time)
-                            .typeStyle(.panelLine)
+            ViewThatFits(in: Axis.Set.horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    day
+                    Spacer(minLength: 0)
+                    if let time = posted.posted {
+                        postedPair(time)
+                            .alignmentGuide(.firstTextBaseline) { pair in
+                                // Half the clock: 7 at the standard size (M1 2.6).
+                                pair[VerticalAlignment.center]
+                                    + CGFloat(Bands.length(Band.postedBaseline)) * clockSide / CGFloat(Bands.length(Band.clock))
+                            }
                     }
-                    .foregroundStyle(Color.token(.ink2))
-                    .alignmentGuide(.firstTextBaseline) { pair in
-                        pair[VerticalAlignment.center] + CGFloat(Bands.length(Band.postedBaseline))
+                }
+                VStack(alignment: .leading, spacing: 0) {
+                    day
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let time = posted.posted {
+                        postedPair(time)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
@@ -62,5 +81,25 @@ struct StatusBlock: View {
         }
         .padding(.top, CGFloat(Bands.length(Band.heroGap)))
         .accessibilityElement(children: .combine)
+    }
+
+    /// The day, in its own type style.
+    private var day: some View {
+        ShownLabel(posted.day)
+            .typeStyle(.day)
+            .foregroundStyle(Color.token(.ink))
+    }
+
+    /// The clock and Posted, centred on each other, 5 apart (H:29-30).
+    private func postedPair(_ time: ShownText) -> some View {
+        HStack(alignment: .center, spacing: CGFloat(Bands.length(Band.postedGap))) {
+            GlyphName.clock.decorative
+                .resizable()
+                .frame(width: clockSide, height: clockSide)
+                .accessibilityHidden(true)
+            ShownLabel(time)
+                .typeStyle(.panelLine)
+        }
+        .foregroundStyle(Color.token(.ink2))
     }
 }

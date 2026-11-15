@@ -60,6 +60,14 @@
 //     and the marker's core (43%, 17%) are judged, since the panel sits where it does at
 //     every text size; the panel's ground and the tab bar's points are printed only, and
 //     there is no season card point, no grabber point and no ink line (the text has grown).
+//     One more line holds lead ruling R24 X2 there: the callout's chip whole on screen.
+//     At this size the callout is wider than its room, so it is drawn exactly 16 to 386
+//     (calloutFrom to calloutTo), its name ending in an ellipsis, and its chip ends 5 in
+//     from 386, at 381. 94%, 12% (377.7, 104.7 pt) lies in the chip's last 10 (its
+//     padding, right of its word), inside its rounded end and inside its 26 pt (89 to 115:
+//     the capsule keeps its 38 pt, 83 to 121, since its text stops growing at xxxLarge):
+//     `closedChip` within 12, judged where measured. Before R24 the chip ran off the
+//     screen and no point of the picture was the chip's colour.
 //   - the iPhone Duo's closed pictures (duo-closed-<look>-<screen>[-<variant>]): their own
 //     points, measured on the Duo, with the Outside screen row and the two layouts, and My
 //     School drawn from a tour fixture in both layouts (see duoPoints below).
@@ -176,6 +184,8 @@ enum Wanted {
     /// `grab`, the grabber: CSS:20, :74.
     static let grabLight = Shade(red: 0xd4, green: 0xd5, blue: 0xda)
     static let grabDark = Shade(red: 0x55, green: 0x57, blue: 0x5f)
+    /// `closedChip`, the callout's chip, light: CSS:33 (the -ax5 picture is light only).
+    static let chipLight = Shade(red: 0x17, green: 0x91, blue: 0xdc)
 }
 
 /// The device the tab and tile places were measured on.
@@ -227,6 +237,9 @@ func mySchoolPoints(look dark: Bool, variant: String) -> [NamedPoint] {
         NamedPoint(x: 43, y: details ? 16 : 17, expect: .near(marker, 12), what: "the closed marker's core " + marker.hex, judged: placesMeasuredHere),
     ]
     if largest {
+        // Lead ruling R24 X2: the chip whole and on screen, in its padding at the callout's
+        // trailing end (16 to 386 at this size, the chip 5 in from it).
+        points.append(NamedPoint(x: 94, y: 12, expect: .near(Wanted.chipLight, 12), what: "the callout's chip, whole on screen, closedChip " + Wanted.chipLight.hex, judged: placesMeasuredHere))
         return points
     }
     points.append(NamedPoint(x: 8, y: 56, expect: .near(fill, 8), what: "the season card, fill " + fill.hex, judged: placesMeasuredHere))
