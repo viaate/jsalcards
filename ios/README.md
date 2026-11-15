@@ -240,7 +240,7 @@ left and the top:
 | `<look>-myschool-{closed,details,tomorrow}` (M1) | 50%, 75%; the four tab points at 94% | `sheet` (`#ffffff` / `#1b1c21`) within 8, the panel's ground below the season card; the tab points as above, held to `sheet` (the bar floats over the panel) |
 | the same | 5%, 23%; 43%, 17% (43%, 16% on `-details`); 8%, 56%; 50%, 31% (not on `-details`) | the map's ground `mapBg` (`#e6ebf2` / `#000000`) within 8; the closed marker's core (`#1d9be6` / `#7fd4ff`) within 12; the season card `fill` (`#f2f3f5` / `#2a2b31`) within 8; the grabber `grab` (`#d4d5da` / `#55575f`) within 16 |
 | the same | four ink lines: the district line, the day line, Posted's words, the season card's line (and the details line on `-details`, printed only) | each line's first and last ink, in points, against the draft's own ink drawn from its HTML with the fixture's words: the edge the line is aligned by within 1 pt, the other within 1 pt or 1% of the line's width, whichever is larger (LEAD-RULINGS R21 B1, R22 F1) |
-| `light-myschool-closed-ax5` (M1, the largest text size) | 5%, 23% and 43%, 17% | the map's ground and the marker's core, as on `-closed`, judged; the panel's ground and the tab points printed only; no card, grabber or ink line. The picture itself is judged by eye: nothing cut, nothing overlapping |
+| `light-myschool-closed-ax5` (M1, the largest text size) | 5%, 23% and 43%, 17%; 87%, 12% | the map's ground and the marker's core, as on `-closed`, judged; `closedChip` (`#1791dc`) within 12 in the chip's trailing padding, so the callout's chip is whole on screen (LEAD-RULINGS R24 X2); the panel's ground and the tab points printed only; no card, grabber or ink line. The rest of the picture is judged by eye: "Tuesday," whole, Posted under the day, nothing cut, nothing overlapping |
 | `duo-closed-<look>-myschool-{closed,details,closed-under}` (M1) | 40%, 75% and 25%, 94%; 90%, 40% | `sheet` within 8: the panel's ground, and no tab bar along the bottom; in the side column, the map's ground within 16 Beside the map (A), `sheet` within 16 Under the controls (B) |
 | the same | 38%, 13% (38%, 12% with details); 6%, 54%; 41%, 22% / 18% / 21%; 50%, 21% on B only | the marker's core within 12 (with details in dark, `#6fbae1`, the approved picture's own colour under the draft's panel shadow, R23 M1); the season card's `fill` within 8; the grabber's `grab` within 16, centred on the content left of the column; on B, `sheet` within 8 where a grabber centred on the whole panel would be. No page title line (My School draws none) |
 | every `duo-closed-*` | x 90%, some point from 58% to 96% | at least 60 from the ground: the system's side controls drawn (tab icons, search glyph) |
@@ -535,7 +535,17 @@ The macos-26 job's tour takes 7 pictures of My School on the iPhone 17 Pro:
 `<look>-myschool-closed`, `-details` and `-tomorrow`, light and dark, and
 `light-myschool-closed-ax5`, the closed screen with the reader's text at its largest
 (`-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL`), judged by
-eye for one thing only: nothing cut, nothing overlapping, the panel scrolls. The xcode-27
+eye for one thing only: nothing cut, nothing overlapping, the panel scrolls. The draft draws
+no large-text layout, so it follows LEAD-RULINGS R24 and Apple's Dynamic Type guidance, and
+nothing changes at the standard size: the day row keeps the day, the clock and Posted side
+by side when they fit and otherwise puts Posted (clock and time) on its own line under the
+day, which wraps only at spaces (`ViewThatFits`, `MySchool/StatusBlock.swift`); the clock
+grows with Posted's text (`@ScaledMetric`, 14 pt at the standard size); the callout's text
+stops growing at `xxxLarge`, the system's own cap for its map and bar controls, its capsule's
+38 pt is a minimum height, and a name too long for its room ends in an ellipsis so the chip
+stays whole on screen (`MySchool/SchoolCallout.swift`); VoiceOver still reads the whole name.
+On the iPhone 17 Pro the capped callout fits its room whole, and Posted's line lies under
+the tab bar's glass, where the panel scrolls. The xcode-27
 job's Duo tour takes 6 (`duo-closed-<look>-myschool-closed`, `-details` and
 `-closed-under`), still 18 Duo pictures in all. Each picture's words file
 (`tools/tour-words/<picture>.txt`, `tools/tour-words/duo/`) holds the model's words; a line
@@ -835,6 +845,29 @@ and both iOS app jobs before the next (Nov 14 and 15, 2026; all runs on `viaate/
 | 8 | the closed Duo | 43690185304, 43690185353 |
 | 9a | VoiceOver labels and the UI test | 43699970414, 43699970415 |
 | 9b | the system's words on My School, the strict read on | 43703814258, 43703814241 |
+| 10 | the largest-text picture, this README | 43708366993, 43708366968 |
+| 10, fix | the largest-text layout (LEAD-RULINGS R24) and its chip line | 43716281497, 43716281495 (its second fix) |
+
+Minutes, job start to end, macos-26 / xcode-27, on each step's first run and its last green
+run (iOS core took about a minute on every step):
+
+| Step | First run | Last green run |
+|---|---|---|
+| 1 | 8.9 / 17.3 | the same |
+| 2 | 9.0 / 21.8 | the same |
+| 3 | 10.5 / 24.1 | the same |
+| 4 | 10.2 / 24.9 | the same |
+| 5 | 7.6 / 22.9 | the same |
+| 6a | 11.4 / 21.5 | the same |
+| 6b | 8.6 (a pixel line red) / 25.3 | 7.4 / 21.1 |
+| 7 | 12.3 (an ink line red) / 24.2 | 10.6 / 24.8 |
+| 8 | 8.1 / 24.5 (a pixel line red) | 12.1 / 20.0 |
+| 9a | 22.7 (the UI step red) / 21.0 | 21.3 / 22.1 (red, allowed: a simulator screenshot hung) |
+| 9b | 24.7 / 26.1 | the same |
+| 10 | 21.9 / 19.5 | 20.5 / 21.0 (R24's fix) |
+
+The UI test added about 9 minutes to the macos-26 job from step 9a on. No run was ever
+started again by hand; each red run was read, fixed and pushed again.
 
 - **The UI test runner launches unsigned** (`CODE_SIGNING_ALLOWED=NO`) on the macos-26
   job's arm64 simulator, so the ad-hoc form was never needed; its step takes 8.5 to 9
@@ -849,3 +882,22 @@ and both iOS app jobs before the next (Nov 14 and 15, 2026; all runs on `viaate/
 - **The bottom inset** the content reports on the iPhone 17 Pro is 83 pt (the tab bar's top
   at 791), as the panel's rule assumes; a view laid out over the whole window sees no safe
   area, so the screen measures it with a view that keeps to the safe area.
+- **The draft's letter spacing** was drawn by Playwright 1.63.0's Chromium from the static
+  SF Pro files, which add no tracking of their own; iOS's system font adds its own tracking
+  for each size, and `.tracking()` goes on top of it. So each type style's added tracking is
+  the measured value that makes the line's ink as wide as the draft's (LEAD-RULINGS R21 B1),
+  with the proportional figures the draft draws (R22 F1). Every measured line is within 1 pt
+  of the draft's width; the ink lines of the pixel table hold them.
+- **Beside the map on the closed Duo** the panel is narrower than the window, so the scroll
+  view's stack is aligned to the leading edge (a centred stack put the panel over the side
+  column). The iPhone and Under the controls are unchanged by it.
+- **The dark marker with details on the closed Duo** reads `#6fbae1` in the approved picture,
+  not the bare token `#7fd4ff`: the draft's dark panel shadow lies over the dot there. Its
+  pixel line holds the approved picture's colour (R23 M1); every other new Duo point matches
+  its approved picture within its allowance.
+- **At the largest text size** (R24) the callout capped at `xxxLarge` fits the iPhone 17 Pro's
+  370 pt room whole, and the standard-size pictures did not change: 0 pixels differ on four of
+  the six, and at most 2 levels inside the callout's glass on the two others.
+- **The xcode-27 job's Duo screenshots** now and then hang (`simctl io screenshot` on the outer
+  display, steps 6b and 9a): that job is allowed to fail, and the tour then says which
+  picture it skipped. No run was started again for it.
