@@ -9,8 +9,10 @@
 // lays it out: the line is that high at the standard text size, and the font's own height
 // (its ascender to its descender) sits in its middle, so the baseline falls where the
 // draft's does. The box grows with the text, in proportion. Text that wraps keeps the box
-// between its lines. Every number in these styles is drawn with figures of one width, as
-// the draft's page sets them (CSS:117, font-variant-numeric: tabular-nums). The system font
+// between its lines. The figures are the draft's own: every My School line sets the CSS
+// `font` shorthand, which resets the page's tabular-nums (CSS:117), so the draft's renderer
+// computes font-variant-numeric `normal` for each of them and draws proportional figures
+// (lead ruling R22, F1), and so does the app. The system font
 // turns to its display cut at 20 points and up by itself, as the draft's two families do
 // (CSS:59-60). Each style grows with the system style the build spec anchors it to (M1 6.2).
 //
@@ -24,7 +26,12 @@
 // draft 3's pictures pixel for pixel), the app's from the simulator (iOS app run 43666798391,
 // iPhone 17 Pro), measured on the fixture's words and on two more strings each, and the
 // value that makes the worst width error smallest taken. The CSS value stays beside
-// each one. At 20 and 22 points the letters, spaces and figures of the system font still
+// each one. The three styles whose lines carry figures (day, panelLine, counts) were fitted
+// again with proportional figures (R22, F1): the simulator's lines of iOS app runs
+// 43671333560 and 43675526799, the R21 strings and R22's own ("Posted 5:42 AM", "Posted
+// 4:10 PM", "Tuesday, January 12", "Wednesday, January 13", "2 closed · 1 delayed ",
+// "since Oct 27", and two-digit counts); the other five carry no figure and keep R21's
+// values. At 20 and 22 points the letters, spaces and figures of the system font still
 // differ one by one from the static Display cut once the whole line matches: the system's
 // font, a ruled difference (R21).
 
@@ -114,7 +121,7 @@ enum TypeStyle {
     }
 
     /// Tracking set by hand, or zero to leave it to the system. My School's are measured
-    /// (R21, B1): the CSS's value is written beside each.
+    /// (R21, B1; R22, F1 for the three with figures): the CSS's value is written beside each.
     var tracking: CGFloat {
         switch self {
         case .titlePage:
@@ -130,13 +137,13 @@ enum TypeStyle {
         case .schoolName:
             return -0.56 // R21 measured; CSS -0.3 (CSS:276)
         case .day:
-            return -0.85 // R21 measured; CSS -0.25 (H:28)
+            return -0.69 // R22 measured, proportional figures (R21: -0.85); CSS -0.25 (H:28)
         case .panelLine:
-            return 0.04 // R21 measured; CSS -0.2 (CSS:277, H:29, H:33)
+            return 0.05 // R22 measured, proportional figures (R21: 0.04); CSS -0.2 (CSS:277, H:29, H:33)
         case .cardKey:
             return 0.61 // R21 measured; CSS 0.6 (H:39)
         case .counts:
-            return -0.12 // R21 measured; CSS -0.41 (H:58)
+            return 0.04 // R22 measured, proportional figures (R21: -0.12); CSS -0.41 (H:58)
         case .calloutName:
             return 0.00 // R21 measured; CSS -0.24 (CSS:240)
         case .chip:
@@ -193,16 +200,6 @@ enum TypeStyle {
         }
     }
 
-    /// True for My School's styles, whose figures are all one width (CSS:117).
-    var evenFigures: Bool {
-        switch self {
-        case .titlePage, .titleSection, .meta, .sub, .subStrong:
-            return false
-        case .statusWord, .schoolName, .day, .panelLine, .cardKey, .counts, .calloutName, .chip:
-            return true
-        }
-    }
-
     /// The same weight, as UIKit names it, to read the font's height.
     var fontWeight: UIFont.Weight {
         switch weight {
@@ -235,14 +232,8 @@ struct TypeStyleModifier: ViewModifier {
             content
                 .font(.system(size: size, weight: style.weight))
                 .tracking(style.tracking)
-                .monospacedDigit()
                 .lineSpacing(max(0, extra))
                 .padding(.vertical, extra / 2)
-        } else if style.evenFigures {
-            content
-                .font(.system(size: size, weight: style.weight))
-                .tracking(style.tracking)
-                .monospacedDigit()
         } else if style.tracking == 0 {
             content.font(.system(size: size, weight: style.weight))
         } else {
