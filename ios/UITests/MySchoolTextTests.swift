@@ -34,6 +34,13 @@
 // The hero's word ("Closed") is never read: VoiceOver reads the site's own line, the
 // model's spoken "Closed today", in its place (M1 6.1). The application's own element, the
 // root of what is read, is left out: its label is the app's name from its settings file.
+//
+// What one element is: the system's tree of the screen still holds, under an element made
+// of its children's words (`.accessibilityElement(children: .combine)`, M1 6.1), each child
+// text as it was (iOS app run 43696054459: under "Synthetic Middle School B, Closed" the two
+// texts "Synthetic Middle School B" and "Closed"). VoiceOver reads such an element once and
+// never its children, so nothing under a text or a button that has a label is read again.
+// Every line printed gives the element's depth in the tree.
 
 import XCTest
 
@@ -74,6 +81,7 @@ private struct Read {
     let label: String
     let value: String
     let type: UInt
+    let depth: Int
 }
 
 /// The words iOS itself draws on the screen, and the joiner once it is recorded.
@@ -126,7 +134,7 @@ extension MySchoolTextTests {
         app.terminate()
 
         for read in reads {
-            print("ui-read\t\(picture)\ttype \(read.type)\tlabel \(quoted(read.label))\tvalue \(quoted(read.value))")
+            print("ui-read\t\(picture)\tdepth \(read.depth)\ttype \(read.type)\tlabel \(quoted(read.label))\tvalue \(quoted(read.value))")
         }
         if system.joiner == nil {
             joiner = readJoiner(groups, in: reads, picture: picture, settled: true)
@@ -194,13 +202,15 @@ extension MySchoolTextTests {
         var reads: [Read] = []
         let root = try app.snapshot()
         for child in root.children {
-            collect(child, into: &reads)
+            collect(child, depth: 1, into: &reads)
         }
         return reads
     }
 
+    /// One element and, unless it is a text or a button with a label (one element as
+    /// VoiceOver reads it, its children's words already in its label), what lies under it.
     @MainActor
-    private func collect(_ node: any XCUIElementSnapshot, into reads: inout [Read]) {
+    private func collect(_ node: any XCUIElementSnapshot, depth: Int, into reads: inout [Read]) {
         let value: String
         if let text = node.value as? String {
             value = text
@@ -210,10 +220,14 @@ extension MySchoolTextTests {
             value = ""
         }
         if !node.label.isEmpty || !value.isEmpty {
-            reads.append(Read(label: node.label, value: value, type: node.elementType.rawValue))
+            reads.append(Read(label: node.label, value: value, type: node.elementType.rawValue, depth: depth))
+        }
+        let whole = node.elementType == XCUIElement.ElementType.staticText || node.elementType == XCUIElement.ElementType.button
+        if whole && !node.label.isEmpty {
+            return
         }
         for child in node.children {
-            collect(child, into: &reads)
+            collect(child, depth: depth + 1, into: &reads)
         }
     }
 
