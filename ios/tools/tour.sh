@@ -224,6 +224,12 @@ for mode in light dark; do
   shoot "$mode" "$mode-myschool-tomorrow" myschool diff -tour.fixture tour-tomorrow
 done
 status_bar_at "6:55"
+# The largest text size (M1 6.4): the closed screen of tour-closed, light, with the reader's
+# text at Accessibility XXXL, the largest. Judged by eye for one thing: nothing cut, nothing
+# overlapping, the panel scrolls; its words are the closed screen's. The launch argument is
+# the system's own key for the text size, not one of the tour's, and lasts for this launch.
+shoot light light-myschool-closed-ax5 myschool diff -tour.fixture tour-closed \
+  -UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL
 # The stored choice beats the phone: forced Dark on a light simulator, forced Light on a
 # dark one. Only keys that begin with tour. are passed, never the app's own key: a launch
 # argument would shadow the stored value for the whole run.

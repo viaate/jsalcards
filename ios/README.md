@@ -66,7 +66,8 @@ Each rule is held by a script, a test or the compiler, named beside it.
    the device's zone by mistake gives right answers. Each `swift test` step sets `TZ` and
    `SNOWLIGHT_EXPECT_ZONE` to the same odd zone (`workflow.zone`); no test may be skipped
    or kept from a platform (`tests.skip`); the count of tests in the source is the number
-   in `tools/test-count.txt` (`tests.count`, 131 today).
+   in `tools/test-count.txt` (`tests.count`, 163 today; the UI tests have a count of their
+   own, `tools/ui-test-count.txt`, 6 today, since they run on the macos-26 job only).
 7. **Made-up schools only.** Fixtures are the pipeline's synthetic ones; no school crest or
    logo is ever committed.
 8. **The picture tour is debug code.** Everything under `Tour/` is inside one `#if DEBUG`
@@ -116,8 +117,12 @@ are the compiler's (the word tables, `ShownText`'s initializer and every text fo
 SnowlightCore are not public, and `view.import` keeps the kit from seeing past that) and
 the public-surface rule. A lock the compiler would hold for the system's own plain-string
 controls is still to come (for example, the kit declaring their `StringProtocol` forms
-unavailable, proven on the Mac). The screen itself is read from M1 on, by a UI test with
-the first real screen.
+unavailable, proven on the Mac). The screen itself is read on My School by M1's UI test
+(`UITests/MySchoolTextTests.swift`, "My School (M1)" below): every label and value it reads
+must be one of the model's words, grouped as `tools/tour-words/ui/` says, or one of the
+words iOS itself draws there (`tools/tour-words/system/myschool.txt`). `check-ios` holds the
+UI tests to the test rules too (`tests.device`, `tests.network`, `tests.skip`, and their
+own count).
 
 ## The workflows
 
@@ -129,7 +134,8 @@ change rarely.
   (`tools/sync-fixtures.mjs --check`), the golden check under two odd zones
   (`America/St_Johns`, `Pacific/Kiritimati`), a syntax-only parse of the kit and the app
   (`swiftc -frontend -parse`), and the core tests under each of the two zones.
-- **`ios-app.yml`, iOS app** (macOS: about 10 minutes on macos-26, up to 26 on xcode-27,
+- **`ios-app.yml`, iOS app** (macOS: about 21 to 25 minutes on macos-26 since M1's UI test,
+  up to 26 on xcode-27,
   which also tours the iPhone Duo; the two run side by side). On the same changes. Two jobs:
   `app (macos-26, Xcode 26.6)`, the one that counts, with Xcode pinned by its path; and
   `app (xcode-27, may fail)`, the same steps on the newer image with its default Xcode and
@@ -137,7 +143,9 @@ change rarely.
   core tests on Apple's Foundation, fetches XcodeGen (pinned by version and checksum),
   generates the project, builds Debug and Release unsigned for the simulator, takes the
   picture tour, prints the colors at named points, and uploads the small pictures:
-  `ios-shots` (and `ios-shots-27`), 14 days.
+  `ios-shots` (and `ios-shots-27`), 14 days. The macos-26 job then runs the UI test
+  (`tools/ui-test.sh`, on a simulator of its own, at most 15 minutes): the only step the two
+  jobs do not share.
 - **`ios-words-watch.yml`, iOS words watch** (Linux, under a minute). On a push that
   changes the site's code (`web/src/**`, `web/scripts/check-copy.mjs`), the pipeline's
   shared fixtures or the file itself: `sync-fixtures.mjs --check` and `gen-golden.mjs
@@ -168,10 +176,12 @@ FIRST, with 1000 s of its own; the iPhone 18 Pro's tour then has what is left of
 the tour's clock, and a picture it has no time for is said and skipped: the iPhone tour
 that counts is the macos-26 job's): the five screens closed,
 light and dark (10 pictures, `duo-closed-<look>-<screen>`, from the outer screen,
-`--display=1`), with the Outside screen setting on Beside the map; then Settings with Under
-the controls chosen (`duo-closed-<look>-settings-under`) and My School with its ground in
-the chance teal under each layout (`duo-closed-<look>-myschool-proof-beside` and
-`-proof-under`); then Under the controls chosen in code through the tiles' own call
+`--display=1`), with the Outside screen setting on Beside the map and My School drawn from
+the tour fixture `tour-closed` (`duo-closed-<look>-myschool-closed`); then Settings with
+Under the controls chosen (`duo-closed-<look>-settings-under`), My School with details
+known Beside the map (`duo-closed-<look>-myschool-details`, `tour-details`) and My School
+closed Under the controls (`duo-closed-<look>-myschool-closed-under`); then Under the
+controls chosen in code through the tiles' own call
 (`duo-closed-light-settings-chose-under`) and, after the app is stopped and started again
 without the tour touching the kept layout, Settings once more (`duo-closed-light-settings-kept`,
 which must show Under the controls chosen): 18 pictures. Their words are compared with `tools/tour-words/duo/` where
@@ -204,28 +214,37 @@ What the Mac job checks: the pinned Xcode exists; the core tests; XcodeGen's che
 two unsigned builds for the simulator and, on the macos-26 job, one unsigned Release build
 for a generic iPhone (`generic/platform=iOS`, `CODE_SIGNING_ALLOWED=NO`, no team), so the
 code only a real phone runs (`ThisPhone`'s `hw.machine`) is compiled; every tour screen says
-it is ready; the words of 15 pictures equal
-`tools/tour-words/`; the pixel lines. The words file of a picture is **the words its
+it is ready; the words of 22 iPhone pictures equal
+`tools/tour-words/` (23 pictures with the probe, whose file is printed only); the pixel
+lines; and, on the macos-26 job, the UI test. The words file of a picture is **the words its
 screen model offers the view**, read off the model in the app; it is not a reading of the
-screen. `tools/tour-words/system/` lists by hand the words iOS itself draws on each screen
-(none yet); M1's on-screen read compares both.
+screen. `tools/tour-words/system/` lists by hand the words iOS itself draws on each screen.
+Only `myschool.txt` lists any yet: the joiner iOS puts between the words of one element
+(", ") and the four words it draws on My School (Search, Tab Bar, and the scroll bar's
+"Vertical scroll bar, 1 page" with its value "0%"), read by the UI test in iOS app run
+43699970415. The UI test compares both on My School.
 
 The pixel lines (`tools/pixels.swift`), one per named point, x and y in percent from the
 left and the top:
 
 | Pictures | Point | Must be |
 |---|---|---|
-| all but the probe | 50%, 60% | the `page` color of the look the screen is in: `#ffffff` light, `#131418` dark (the two forced pictures are in the opposite look; Dark-then-System is light) |
+| all but the probe and My School drawn from a fixture | 50%, 60% | the `page` color of the look the screen is in: `#ffffff` light, `#131418` dark (the two forced pictures are in the opposite look; Dark-then-System is light) |
 | the four tab screens | 94% from the top, at x 10%, 28%, 45%, 61% (My School, Map, Call it, Settings), inside each tab's capsule and clear of its symbol and name | the chosen tab's point at least 12 away from the page color (the system's capsule); the other three within 10 of it (the bar's glass) |
 | settings | 40%, 22% and 72%, 22% | the Light tile `#ffffff` and the Dark tile `#131418`, in either look |
 | settings | x 10%, every point from 33% to 47% | the `page` color: no Outside screen row on an iPhone |
 | `light-settings-forced-row` | the same run | must FAIL: the tour shows the row on this iPhone for this one picture (`-tour.row shown`), the negative sample that shows the run can find a row |
 | `dark-probe` | 10%, 25% | `#12a594`, printed yes or no and never a failure |
-| `duo-closed-*` (the Duo, closed) | 40%, 60%; on the four tab screens also 25%, 94% | the `page` color: the content left of the system's side controls, and no tab bar along the bottom; 90%, 66% (the side tab platter's glass) printed yes or no |
+| `duo-closed-*` (the Duo, closed; My School drawn from a fixture below) | 40%, 60%; on the four tab screens also 25%, 94% | the `page` color: the content left of the system's side controls, and no tab bar along the bottom; 90%, 66% (the side tab platter's glass) printed yes or no |
 | `duo-closed-*-settings*` | x 10%, some point from 31% to 50% | at least 60 from the `page` color: the Outside screen row (its heading and its first tile's bold bar) under Appearance |
-| `duo-closed-*-myschool-proof-*` | 40%, 60% and 25%, 94%; 90%, 40% | the `chance` teal (`#12a594` light, `#36c9b3` dark); at 90%, 40%, in the side column under the status cluster and above the tab platter: the teal with Under the controls, at least 40 from it with Beside the map |
-| every `duo-closed-*` | x 90%, some point from 58% to 96% | at least 60 from the ground (the page, or the teal): the system's side controls drawn (tab icons, search glyph) |
-| every `duo-closed-*` but search | across y 4%, some point from x 4% to 40% | at least 60 from the ground: the page title drawn |
+| `<look>-myschool-{closed,details,tomorrow}` (M1) | 50%, 75%; the four tab points at 94% | `sheet` (`#ffffff` / `#1b1c21`) within 8, the panel's ground below the season card; the tab points as above, held to `sheet` (the bar floats over the panel) |
+| the same | 5%, 23%; 43%, 17% (43%, 16% on `-details`); 8%, 56%; 50%, 31% (not on `-details`) | the map's ground `mapBg` (`#e6ebf2` / `#000000`) within 8; the closed marker's core (`#1d9be6` / `#7fd4ff`) within 12; the season card `fill` (`#f2f3f5` / `#2a2b31`) within 8; the grabber `grab` (`#d4d5da` / `#55575f`) within 16 |
+| the same | four ink lines: the district line, the day line, Posted's words, the season card's line (and the details line on `-details`, printed only) | each line's first and last ink, in points, against the draft's own ink drawn from its HTML with the fixture's words: the edge the line is aligned by within 1 pt, the other within 1 pt or 1% of the line's width, whichever is larger (LEAD-RULINGS R21 B1, R22 F1) |
+| `light-myschool-closed-ax5` (M1, the largest text size) | 5%, 23% and 43%, 17% | the map's ground and the marker's core, as on `-closed`, judged; the panel's ground and the tab points printed only; no card, grabber or ink line. The picture itself is judged by eye: nothing cut, nothing overlapping |
+| `duo-closed-<look>-myschool-{closed,details,closed-under}` (M1) | 40%, 75% and 25%, 94%; 90%, 40% | `sheet` within 8: the panel's ground, and no tab bar along the bottom; in the side column, the map's ground within 16 Beside the map (A), `sheet` within 16 Under the controls (B) |
+| the same | 38%, 13% (38%, 12% with details); 6%, 54%; 41%, 22% / 18% / 21%; 50%, 21% on B only | the marker's core within 12 (with details in dark, `#6fbae1`, the approved picture's own colour under the draft's panel shadow, R23 M1); the season card's `fill` within 8; the grabber's `grab` within 16, centred on the content left of the column; on B, `sheet` within 8 where a grabber centred on the whole panel would be. No page title line (My School draws none) |
+| every `duo-closed-*` | x 90%, some point from 58% to 96% | at least 60 from the ground: the system's side controls drawn (tab icons, search glyph) |
+| every `duo-closed-*` but search and My School | across y 4%, some point from x 4% to 40% | at least 60 from the ground: the page title drawn |
 | `duo-closed-*-settings*` | across y 42%: x 2% to 4%, and x 41% to 42% | the chosen tile's ring (at least 60 from the page) at the first place with Beside the map, at the second with Under the controls (`-under`, `-chose-under`, `-kept`); the other place the page (within 12) |
 
 The tab and tile places were measured on the small iPhone 17 Pro pictures of iOS app run
@@ -308,9 +327,11 @@ wording") and live in the words file like every other word.
 - Its effect is one layout value, `SideControls` (`SnowlightCore/State/OutsideScreen.swift`):
   on a Duo, in compact width, with A, the content stops beside the controls; in every other
   case it runs under them, as on M0a. The kit reads it through `Layout/SideControls.swift`
-  (`PageGround`). In this piece only the placeholder tabs use it, proven by the tour's
-  teal ground stopping at x 382 pt with A and running to the edge with B
-  (`duo-closed-*-myschool-proof-*`).
+  (`PageGround`). The placeholder tabs use it, and My School uses its own form of it,
+  `PanelShape` ("My School (M1)" below). The DUO LEG's proof pictures (the placeholder
+  ground in the chance teal under each layout) left in M1's step 8, when My School's own
+  pictures took their place: at 90%, 40%, in the side column, the map's ground with A and
+  the panel's with B.
 - How the app knows it is on a Duo: rule 11.
 
 ### Approved Duo rulings for later pieces
@@ -340,6 +361,199 @@ and the DUO LEG spec), with the piece that builds each:
   runner); whether `ThisPhone` moves from the model name to the hinge; the width a real
   closed Duo gives (466 or 457 pt); and the ruled differences between the Duo pictures and
   the mock-ups (in the DUO LEG report).
+
+## My School (M1)
+
+M1 turns approved draft 3's "My School, closed" into the app's first real screen, copied
+band for band (LEAD-RULINGS R17): the same order, sizes, gaps, type, colours in light and
+dark, and words. Every value is the build spec's (`design/app/build/m1-my-school.md`, SPEC
+r5, in the lead's notes, not in this repository), each traced to a line of the draft or
+written as a difference the lead ruled. Until M5 the app has no data, so the screen is shown
+only when the debug tour hands it a model (`Shell/RootView.swift`, inside `#if DEBUG`); a
+Release build, and every ordinary launch, shows M0a's plain My School tab.
+
+### The screen
+
+Back to front, as the draft stacks it: the map's window (the map's plain ground, its top
+fade, the school's marker and stem, and over the marker the callout, in the system's glass,
+with the school's name and its status chip); the panel's ground; and the system's own scroll
+view holding the panel (top corners 38, a grabber that is drawing only), whose content is the
+district line in a row of 36 pt, the school's name, the status word, the day row (the day,
+the draft's clock glyph and Posted), the details line when the school posted any, and the
+season card. Three states are built, on the iPhone and on the closed Duo:
+
+| State | Approved picture | Shapes | Tour fixture |
+|---|---|---|---|
+| S1, closed, the status only | `d3t/out/myschool-closed-{light,dark}-screen.png`; `duo/out/closed-myschool-{light,dark}.png`, `closed-myschool-under-{light,dark}.png` | iPhone; Duo closed Beside the map (A) and Under the controls (B) | `tour-closed` |
+| S2, closed, details known | `d3t/out/myschool-closed-details-{light,dark}-screen.png`; `duo/out/closed-details-{light,dark}.png` | iPhone; Duo closed A | `tour-details` |
+| S3, closed for tomorrow, after 3:30 PM | none of its own: S1's drawing with tomorrow's words | iPhone | `tour-tomorrow` |
+
+Where the panel rests and where the dot sits come from the room alone, through
+`SnowlightCore/State/PanelPlace.swift`:
+
+- **`PanelShape`**: `.bottomBar` (the tab bar along the bottom: every iPhone, and the open
+  Duo, not drawn yet), `.outsideBeside` (the closed Duo, Beside the map: the panel stops
+  where the system's side column begins) and `.outsideUnder` (the closed Duo, Under the
+  controls: the panel's ground runs on under the column, its content stays in the safe
+  area). `panelShape(outsideScreen:widthClass:)` takes the same two inputs as
+  `SideControls`.
+- **`panelPlace(shape:details:windowHeight:bottomInset:safeWidth:)`** gives the panel's rest,
+  the marker's place, the margins, the grabber's centre and the callout's limits. The panel
+  rests the draft's full content and its drawn gap above the room's bottom (the tab bar's top
+  on the iPhone, the window's bottom on the closed Duo), so it rests where the draft draws it:
+  260 (240 with details) on the iPhone 17 Pro, 140 (114) Beside the map and 134 Under the
+  controls on the closed Duo, with the dot at 151, 140, 87, 84 and 85. Under the controls
+  with details has no drawn place (nil: the plain tab). It reads no text size: at the
+  largest text the panel rests where it does at the standard size and its content scrolls.
+- Every length is a band of `State/Bands.swift` (65), every colour a token of
+  `State/Tokens.swift` (56, light and dark) or a line of `State/Shadows.swift`, each with
+  its line in the draft beside it (`BandsTests`, `PanelPlaceTests`, `TokensTests` hold the
+  written tables). The type styles (`SnowlightKit/Tokens/TypeStyles.swift`) are the draft's
+  at the standard size and grow with the reader's text size, each anchored to a system
+  style; their letter spacing was measured against the draft's own ink (LEAD-RULINGS R21
+  B1), and their figures are the proportional ones the draft draws (R22 F1).
+
+### The model and its families
+
+`mySchoolModel(_:)` (`Screens/MySchoolModel.swift`) makes, from one `MySchoolInput` (the
+school, its zone and the viewer's, its record, the closings and season files, and the time),
+everything the screen may show: the tabs, the callout, the header, the big status, the
+season card and the panel's rest. A screen model arranges words and types none: the site's
+lines come from `Words/SchoolLines.swift` (the site's `statusLine`, `statusLines`, `kindOf`,
+`seasonLine` and `splitName`, ported, and the two ruled lines `districtLine` and
+`seasonCard`), and the app's 19 words of M1 (the 12 month names, "Grades", "closed",
+"delayed", "since" and three separators) are typed in `Words/AppWords.swift` and listed in
+`tools/app-words.txt`. Two golden families hold the model to the site:
+
+- **`school-view.json`**: 4,008 cases in four blocks (the six closings fixtures at every
+  school, six school zones and twelve times; 30 one-change mutations; five season files;
+  four kinds of school by five grade forms), each the site's own `schoolView` answer.
+  `SchoolViewTests` gives the same answer for every case, string for string;
+  `MySchoolModelTests` proves over every case that each shown word is one of the allowed
+  kinds, that the big status is the site's map light, and that the drawn lines and `held`
+  together are exactly the site's lines; `MySchoolClockTests` sweeps the clock in five
+  zones with the viewer in another.
+- **`school-names.json`**: 56 made-up name forms, the site's `shownName`, `districtShown`
+  and `schoolView`'s name and campus. The names come in the form the site shows them (server
+  piece S3); the app ports only the site's cut of the campus off the name
+  (`SchoolNameTests`).
+
+The three tour fixtures (`Fixtures/tour/{tour-closed,tour-details,tour-tomorrow}.json`, made
+once from the pipeline's synthetic files and the source from then on) show "Synthetic Middle
+School B" in "Synthetic District One". `tools/sync-fixtures.mjs` writes them into
+`Tour/TourFixtures.swift`, each as one base64 string inside `#if DEBUG`, and `--check` fails
+on any difference; `tools/build.sh` fails when the Release app holds any fixture's whole
+base64 text or its name. `-tour.fixture <name>` (and `-tour.zone <IANA name>`, the viewer's
+zone) read one through `MySchoolInput.decode(_:viewerZone:)`, as the app will read its input.
+
+### What is held, and what M5 may not do
+
+The draft draws one state of the site's My School; every other part of what the site says is
+kept in the model and drawn nowhere, so nothing is lost without a trace. Each is unreachable
+on a phone in M1, since no real data reaches the screen.
+
+- **`MySchoolModel.HeldLead`**, why the big status is not drawn: `status(StatusKey)` (a
+  status M1 has no drawing for: delayed, remote, early dismissal), `otherDayOnly` (only the
+  other posted day has a line), `quiet` (the site's panel has no line for either day, and the
+  file is accepted) and `loading` (no closings file the site accepts is had).
+- **`MySchoolModel.HeldPart`**, the parts of what the site says that the screen does not
+  draw: `otherDay(StatusKey)` (the line of the other posted day), `laterDay(StatusKey)` (a
+  day after tomorrow), `reason` (the reason in the status's note), `confirmed` ("Confirmed by
+  our team" in the note), `campus` (the campus cut off the school's name) and `name` (the
+  record has no shown name).
+- **The season card's site form** (`Season.site`, the site's own line under "This school
+  year", for counts with remote or early dismissal days or with no start day) is drawn in an
+  interim look that no fixture, picture or real data reaches.
+
+**M5 may not land** while any `HeldLead` or `HeldPart` can be reached with real data, nor
+before server piece S3 gives the shown names, nor before the site-form season card's
+mock-up is approved by the owner and built (the build spec's RD-10 and A12). Each held state
+first needs an owner-approved mock-up drawn from draft 3 (R17.3, R17.5).
+
+### The ruled differences
+
+What a person sees differ from the approved pictures, each ruled by the lead (the build
+spec's section 3; LEAD-RULINGS R17 to R23), and nothing else:
+
+- **Data the app does not have:** no map picture until M3 (a plain map-coloured ground with
+  the marker and the callout); no snowfall and no weather; no crests (the callout's own
+  no-crest form, and the header's tile left out, so the district line starts at the content
+  edge); no chance card until M2 (the season card moves up as the draft's CSS places a first
+  card); no strip of school days (the card is 54 pt shorter); made-up names, the callout
+  showing the same whole name as the header.
+- **Words that are the site's:** the details line is the site's sentence ("No buses.
+  After-school activities cancelled."); the district line is "<district> · Grades <grades>"
+  when the school has a district and grades, the district alone when it has no grades the
+  site reads, and the site's own kind line for a private, charter or virtual school; the day
+  line is "Tuesday, January 12" (the site's weekday, the app's month table, approved through
+  the draft).
+- **What the system draws:** the callout's glass (Liquid Glass), the tab bar with only the
+  draft's four icons, the search button with the system's magnifier, the status bar (the
+  tour's override: 6:55, or 4:15 for tomorrow), the scroll edge effect above the tab bar
+  (a faint neutral grey over the panel near the bar), the home indicator (never in a
+  simulator picture); on the closed Duo the system's side column, icons only. The panel is
+  our own scroll view, not a system sheet, and does not snap in M1. Share waits for M7 on
+  both shapes.
+- **The system's font:** with the whole line's width held to the draft's, the letters of the
+  system's font still sit a little apart from the draft's own (R21 B1, R22 R3-S1).
+- **The closed Duo's width:** the simulator's closed Duo is 466 pt wide (382 pt of content),
+  the mock-up 457 (373); the margins are 16 as drawn and the extra 9 pt widen the content
+  only, so the grabber, centred on the content, sits 4.5 pt right of the mock-up's.
+
+### Our drawings: the glyphs and the app icon
+
+The draft's own glyphs, never system symbols, for the four tabs (filled when chosen, line
+when not) and the clock beside Posted: 9 files in `SnowlightKit/Glyphs.xcassets`, each the
+draft's SVG flattened to one filled path, template images that keep their vectors. Share is
+left out until M7, and search keeps the system's magnifier.
+
+| Asset | File | `viewBox` | sha256 starts |
+|---|---|---|---|
+| `glyph.school.fill`, `glyph.school.line` | `schoolFill.svg`, `schoolLine.svg` | 0 0 24 24 | `d618746cbafad13c`, `bab156c5d9e16a40` |
+| `glyph.map.fill`, `glyph.map.line` | `mapFill.svg`, `mapLine.svg` | 0 0 24 24 | `c25af3e6a90231d1`, `f7530d9f9b1f4fcf` |
+| `glyph.pick.fill`, `glyph.pick.line` | `pickFill.svg`, `pickLine.svg` | 0 0 24 24 | `8c33a32f77f7033b`, `c300c9392e36aa0c` |
+| `glyph.gear.fill`, `glyph.gear.line` | `gearFill.svg`, `gearLine.svg` | 0 0 24 24 | `22ae04d623a3274b`, `1a71f01a36040100` |
+| `glyph.clock` | `clock.svg` | 0 0 20 20 | `c91060d4fe959d78` |
+
+Their names live only in `Shell/Names.swift` (`GlyphName`), which hands out two images: the
+tab icon (`Image(_:bundle:)` inside the tab's `Label`, whose title is the model's word) and
+the decorative clock (`Image(decorative:bundle:)`, which VoiceOver never names). `check-ios`
+rule `glyph.flat` keeps every `.svg` under `ios/` one plain filled path: one `<path`, one
+`fill="#000"`, and no mask, variable, `currentColor`, stroke, transform, style or opacity.
+The tab icons are drawn at 24 pt, the draft's size (step 5's pictures).
+
+The app icon (`App/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png`) is the site's logo 8,
+the snow crystal over the hill (the owner's pick): the site's own `web/scripts/logo/icon.svg`
+drawn at 1024 px by the site's own `draw()` at commit `cfcfaf91`, 1024 x 1024, no alpha,
+23,365 bytes, its pixels' sha256 starting `e4ac5472c0c66626`. Shrunk to 180 px the site's
+way it equals the site's `apple-touch-icon.v2.png` byte for byte. `project.yml` names it
+(`ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon`); both builds compile it.
+
+### The pictures, the words and the UI test
+
+The macos-26 job's tour takes 7 pictures of My School on the iPhone 17 Pro:
+`<look>-myschool-closed`, `-details` and `-tomorrow`, light and dark, and
+`light-myschool-closed-ax5`, the closed screen with the reader's text at its largest
+(`-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXXL`), judged by
+eye for one thing only: nothing cut, nothing overlapping, the panel scrolls. The xcode-27
+job's Duo tour takes 6 (`duo-closed-<look>-myschool-closed`, `-details` and
+`-closed-under`), still 18 Duo pictures in all. Each picture's words file
+(`tools/tour-words/<picture>.txt`, `tools/tour-words/duo/`) holds the model's words; a line
+may end in a space the draft draws, which `tools/.editorconfig` keeps editors from trimming.
+The pixel lines are in the table under "The workflows".
+
+The UI test (`UITests/MySchoolTextTests.swift`, target `SnowlightUITests`; run by
+`tools/ui-test.sh` on the macos-26 job only, unsigned, on a simulator of its own) launches
+the six pictures of S1 to S3 with the tour's arguments and reads every element's label and
+value, as VoiceOver groups them. Every grouping line of `tools/tour-words/ui/<picture>.txt`
+(one element per line, its model words separated by a tab, joined by the system's joiner)
+must be read once, and nothing else may be read but the words of
+`tools/tour-words/system/myschool.txt`; an asset name never. VoiceOver reads the callout as
+one element (the name, then the chip), the district line, the school's name as a heading,
+the status block as one element (the site's "Closed today" in place of the word, then the
+day, Posted and the details) and the season card as one; the map's ground, the marker, the
+stem, the grabber and the clock are decoration. The number of UI tests run must equal
+`tools/ui-test-count.txt` (6).
 
 ## Making the golden files again
 
@@ -375,6 +589,8 @@ shape.
 | `predictions` | `parsePredictions`, `zonesOf` and `zoneOf`, `schoolOutlook`, `headlineDay`, `underWay` | 3,781 |
 | `freshness` | `updateState` | 532 |
 | `ids` | `isSchoolId`, `parseSchoolId` | 60 |
+| `school-view` (M1) | `schoolStatus`, `schoolView`, `mapDay`, `litStatus`, with the two name tables empty | 4,008 |
+| `school-names` (M1) | `shownName`, `districtShown`, `schoolView`'s `name` and `campus`, with the name tables empty | 56 |
 
 The generator also writes `SnowlightCore/Sources/SnowlightCore/Files/ZoneNames.swift`, the
 app's list of time zone names (421 today): Node's own names, `UTC` and the long US
@@ -406,8 +622,16 @@ note and fails nothing; the zone list is compared whole. Exit codes: 0 all match
 answer differs (it prints the family, the first differing case and the changed site files);
 2 the site's code could not be loaded; 3 Node too old or wrong usage; 4 a site file outside
 what the words watch covers. Then update the Swift port until its tests pass, and commit
-both together. The golden folder is about 2.5 MB (at most 3 MB, no file over 700 KB), and
-making it takes about 4 seconds.
+both together. The golden folder is 3,274,460 bytes in 22 files since M1 (at most 3,600,000
+bytes for the whole of M1, LEAD-RULINGS R20; no file over 700 KB), and making it takes about
+4 seconds.
+
+The generator also writes `Fixtures/rules-version.json`, beside `golden/` and never in it:
+the app's rules version (1 today) and the sha256 over every family's cases. `--check` fails
+when the sha256 differs; writing keeps the number while the sha256 holds and raises it by one
+when not, and `State/RulesVersion.swift` must say the same number (`RulesVersionTests`).
+`school-view` reads the three tour fixtures (`Fixtures/tour/`), so a changed fixture changes
+its answers.
 
 ## The port
 
@@ -592,3 +816,36 @@ Also measured, in the last runs: 36 XCTest tests pass in each of the three requi
 guard's self-test refused 349 samples across 43 rules. On the `app` job all 68 judged
 pixel lines are ok and none is WRONG. `ios-shots` is 482,467 bytes with 15 pictures and
 15 words files, kept 14 days, against a budget of 4 MB; `ios-shots-27` is 509,295 bytes.
+
+### What M1's runs proved
+
+M1 was built in the small steps of its build spec, each pushed alone and green on iOS core
+and both iOS app jobs before the next (Nov 14 and 15, 2026; all runs on `viaate/jsalcards`):
+
+| Step | What it added | Green runs (iOS core, iOS app) |
+|---|---|---|
+| 1 | the full token set, the shadows | 43564615967, 43564615946 |
+| 2 | the bands and the panel's places | 43630326150, 43630326097 |
+| 3 | the two families, the tour fixtures, the rules version | 43636424385, 43636424370 |
+| 4 | the model and the app words | 43642302406, 43642302422 |
+| 5 | the glyphs, the tab icons, the app icon | 43647001439, 43647001266 |
+| 6a | the fixtures in the tour, the Release check | 43651474512, 43651474509 |
+| 6b | S1 on the iPhone | 43671333544, 43671333560 (its second fix) |
+| 7 | S2 and S3 on the iPhone | 43679475004, 43679474737 |
+| 8 | the closed Duo | 43690185304, 43690185353 |
+| 9a | VoiceOver labels and the UI test | 43699970414, 43699970415 |
+| 9b | the system's words on My School, the strict read on | 43703814258, 43703814241 |
+
+- **The UI test runner launches unsigned** (`CODE_SIGNING_ALLOWED=NO`) on the macos-26
+  job's arm64 simulator, so the ad-hoc form was never needed; its step takes 8.5 to 9
+  minutes, about 6 of them the build for testing.
+- **XCUITest keeps, under an element made with `.accessibilityElement(children: .combine)`,
+  each child's text as its own element**, which VoiceOver never reads; the test reads the
+  tree as VoiceOver does and stops under a labelled text or button.
+- **The status bar override** holds the draft's 6:55 (and 4:15 for tomorrow), four bars,
+  three Wi-Fi arcs and the battery at 85% on the iOS 26.5 simulator.
+- **The tab icons** are drawn at 24 pt, the draft's size, and no tab pixel point lands on
+  their ink (step 5's pictures).
+- **The bottom inset** the content reports on the iPhone 17 Pro is 83 pt (the tab bar's top
+  at 791), as the panel's rule assumes; a view laid out over the whole window sees no safe
+  area, so the screen measures it with a view that keeps to the safe area.

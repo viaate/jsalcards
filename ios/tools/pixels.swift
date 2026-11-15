@@ -55,6 +55,11 @@
 //     (no whole percent lands on its 5 pt, 247 to 252), the ink lines' boxes move with the
 //     panel, and the details line's ink is printed only; on -tomorrow the day line and
 //     Posted are held to the draft's ink with tomorrow's words.
+//     And on light-myschool-closed-ax5 (the closed screen at the largest text size, M1
+//     6.4), judged by eye for nothing cut and nothing overlapping: only the map's ground
+//     and the marker's core (43%, 17%) are judged, since the panel sits where it does at
+//     every text size; the panel's ground and the tab bar's points are printed only, and
+//     there is no season card point, no grabber point and no ink line (the text has grown).
 //   - the iPhone Duo's closed pictures (duo-closed-<look>-<screen>[-<variant>]): their own
 //     points, measured on the Duo, with the Outside screen row and the two layouts, and My
 //     School drawn from a tour fixture in both layouts (see duoPoints below).
@@ -185,9 +190,15 @@ let tabBarY = 94
 /// The points of a My School picture drawn from a tour fixture, <look>-myschool-<variant>
 /// (M1 5.4), in its look; empty for a variant whose places are not written here.
 func mySchoolPoints(look dark: Bool, variant: String) -> [NamedPoint] {
-    guard ["closed", "details", "tomorrow"].contains(variant) else {
+    guard ["closed", "details", "tomorrow", "closed-ax5"].contains(variant) else {
         return []
     }
+    // At the largest text size (closed-ax5, M1 6.4) the panel rests and the marker sits where
+    // they do at the standard size (PanelPlace reads no text size), so the map's ground and
+    // the marker are judged; the panel's ground and the tab bar are printed only, and the
+    // grown text leaves no place for the season card's or the grabber's point.
+    let largest = variant == "closed-ax5"
+    let judgedHere = placesMeasuredHere && !largest
     // With details known the panel rests at 240 and the dot sits at 140, not 260 and 151
     // (myschool-closed-details-light.html:15, :108): the marker's point moves to 43%, 16%
     // (172.9, 139.8 pt), and no whole percent lands on the grabber's 5 pt (247 to 252).
@@ -200,22 +211,25 @@ func mySchoolPoints(look dark: Bool, variant: String) -> [NamedPoint] {
     let fill = pick(Wanted.fillLight, Wanted.fillDark)
     let grab = pick(Wanted.grabLight, Wanted.grabDark)
     var points = [
-        NamedPoint(x: 50, y: 75, expect: .near(sheet, 8), what: "the panel's ground, sheet " + sheet.hex, judged: placesMeasuredHere),
+        NamedPoint(x: 50, y: 75, expect: .near(sheet, 8), what: "the panel's ground, sheet " + sheet.hex, judged: judgedHere),
     ]
     for tab in tabs {
         if tab.screen == "myschool" {
             let what = "the chosen tab's capsule (" + tab.screen + "), at least 12 from the panel's sheet"
-            points.append(NamedPoint(x: tab.x, y: tabBarY, expect: .awayFrom(sheet, 12), what: what, judged: placesMeasuredHere))
+            points.append(NamedPoint(x: tab.x, y: tabBarY, expect: .awayFrom(sheet, 12), what: what, judged: judgedHere))
         } else {
             let what = "the bar's glass over " + tab.screen + ", within 10 of the panel's sheet"
-            points.append(NamedPoint(x: tab.x, y: tabBarY, expect: .near(sheet, 10), what: what, judged: placesMeasuredHere))
+            points.append(NamedPoint(x: tab.x, y: tabBarY, expect: .near(sheet, 10), what: what, judged: judgedHere))
         }
     }
     points += [
         NamedPoint(x: 5, y: 23, expect: .near(mapBg, 8), what: "the map's ground, mapBg " + mapBg.hex, judged: placesMeasuredHere),
         NamedPoint(x: 43, y: details ? 16 : 17, expect: .near(marker, 12), what: "the closed marker's core " + marker.hex, judged: placesMeasuredHere),
-        NamedPoint(x: 8, y: 56, expect: .near(fill, 8), what: "the season card, fill " + fill.hex, judged: placesMeasuredHere),
     ]
+    if largest {
+        return points
+    }
+    points.append(NamedPoint(x: 8, y: 56, expect: .near(fill, 8), what: "the season card, fill " + fill.hex, judged: placesMeasuredHere))
     if !details {
         points.append(NamedPoint(x: 50, y: 31, expect: .near(grab, 16), what: "the grabber, grab " + grab.hex, judged: placesMeasuredHere))
     }
