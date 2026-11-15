@@ -7,6 +7,10 @@ compatibility_date = "2026-08-01"
 workers_dev = true
 preview_urls = false
 
+# Once a day (08:23 UTC): deletes expired sessions and expired username holds.
+[triggers]
+crons = ["23 8 * * *"]
+
 [vars]
 ADMIN_USERNAME = "Olivia"
 ALLOWED_ORIGINS = "https://snowlightmap.com,https://www.snowlightmap.com"

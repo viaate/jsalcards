@@ -1117,3 +1117,229 @@ describe('manual statuses', () => {
     assert.ok(!r.body.overrides.some((o: { id: string }) => o.id === '170000100001'));
   });
 });
+
+describe('the daily clean-up', () => {
+  const DAY = 24 * 3600 * 1000;
+  const CRON = '23 8 * * *';
+
+  /** Runs the Worker's scheduled handler as Cloudflare's daily trigger would, at `now`. */
+  async function daily(target: Api, now: number): Promise<{ outcome: string }> {
+    const worker: any = await target.mf.getWorker();
+    return worker.scheduled({ scheduledTime: new Date(now), cron: CRON });
+  }
+
+  /** A browser's push subscription, made in the session `sessionHash`. */
+  async function addPush(userId: string, sessionHash: string, endpoint: string, now: number) {
+    await api.sql(
+      `INSERT INTO push_subscriptions (endpoint, user_id, session_hash, p256dh, auth, created_at)
+       VALUES (?1, ?2, ?3, 'p256dh', 'auth', ?4)`,
+      `https://push.test/${endpoint}`,
+      userId,
+      sessionHash,
+      now,
+    );
+  }
+
+  /** Sessions ending just before, at, and after `now`, each with a push subscription. */
+  async function rows(prefix: string, now: number) {
+    const ended = await signup(`${prefix}-ended@example.com`);
+    const edge = await signup(`${prefix}-edge@example.com`);
+    const live = await signup(`${prefix}-live@example.com`);
+    const set = (id: string, at: number) =>
+      api.sql('UPDATE sessions SET expires_at = ?2 WHERE user_id = ?1', id, at);
+    await set(ended.body.user.id, now - DAY);
+    await set(edge.body.user.id, now);
+    await set(live.body.user.id, now + 1000);
+    for (const [name, r] of [
+      ['ended', ended],
+      ['edge', edge],
+      ['live', live],
+    ] as const) {
+      const [session] = await api.sql(
+        'SELECT token_hash FROM sessions WHERE user_id = ?1',
+        r.body.user.id,
+      );
+      await addPush(r.body.user.id, session.token_hash, `${prefix}-${name}`, now);
+    }
+    // Username holds: ended, ending now, still running, and for good.
+    await api.sql(
+      `INSERT INTO held_usernames (skeleton_hash, until) VALUES
+         (?1, ?5), (?2, ?6), (?3, ?7), (?4, NULL)`,
+      `${prefix}-hold-ended`,
+      `${prefix}-hold-edge`,
+      `${prefix}-hold-live`,
+      `${prefix}-hold-good`,
+      now - DAY,
+      now,
+      now + 1000,
+    );
+    return { ended, edge, live };
+  }
+
+  const sessionsOf = async (id: string) =>
+    (await api.sql('SELECT * FROM sessions WHERE user_id = ?1', id)).length;
+  const pushOf = async (prefix: string, sql: Api['sql'] = api.sql) =>
+    (
+      await sql(
+        "SELECT endpoint FROM push_subscriptions WHERE endpoint LIKE ?1 || '%' ORDER BY endpoint",
+        `https://push.test/${prefix}-`,
+      )
+    ).map((r) => String(r.endpoint).slice(`https://push.test/${prefix}-`.length));
+  const holdsOf = async (prefix: string, sql: Api['sql'] = api.sql) =>
+    (
+      await sql(
+        "SELECT skeleton_hash FROM held_usernames WHERE skeleton_hash LIKE ?1 || '%' ORDER BY skeleton_hash",
+        `${prefix}-hold-`,
+      )
+    ).map((r) => String(r.skeleton_hash).slice(`${prefix}-hold-`.length));
+
+  it('runs once a day off the hour, from the Worker module', () => {
+    const toml = readFileSync(new URL('../wrangler.toml', import.meta.url), 'utf8');
+    assert.match(toml, /^\[triggers\]\ncrons = \["23 8 \* \* \*"\]$/m);
+    const source = readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8');
+    assert.match(source, /export default \{\n {2}fetch\(.*\n(?:.*\n)*? {2}scheduled\(/);
+  });
+
+  it('drops ended sessions with their push subscriptions and ended holds, and keeps the rest', async () => {
+    const now = Date.now();
+    const { ended, edge, live } = await rows('daily', now);
+    const token = await adminToken();
+    const [{ users }] = await api.sql('SELECT COUNT(*) AS users FROM users');
+    const override = await api.call('PUT', '/v1/admin/overrides', {
+      token,
+      body: {
+        scope: 'school',
+        id: '170000100002',
+        status: 'closed',
+        days: [today()],
+        time_zone: ZONE,
+      },
+    });
+    assert.equal(override.status, 200);
+    const recent = 'daily-recent-bucket';
+    await api.sql(
+      'INSERT INTO rate_limits (bucket, count, window_start) VALUES (?1, 1, ?2)',
+      recent,
+      now - 1000,
+    );
+
+    assert.equal((await daily(api, now)).outcome, 'ok');
+
+    assert.equal(await sessionsOf(ended.body.user.id), 0);
+    assert.equal(await sessionsOf(edge.body.user.id), 0);
+    assert.equal(await sessionsOf(live.body.user.id), 1);
+    assert.deepEqual(await pushOf('daily'), ['live']);
+    assert.deepEqual(await holdsOf('daily'), ['good', 'live']);
+    // Accounts, a current status and a fresh rate limit window all stay.
+    assert.deepEqual(await api.sql('SELECT COUNT(*) AS users FROM users'), [{ users }]);
+    const served = await api.call('GET', '/v1/overrides');
+    assert.ok(served.body.overrides.some((o: { id: string }) => o.id === '170000100002'));
+    assert.equal((await api.sql('SELECT * FROM rate_limits WHERE bucket = ?1', recent)).length, 1);
+    // The session that is still running still signs its browser in.
+    assert.equal((await api.call('GET', '/v1/me', { token: live.body.token })).status, 200);
+    await api.call('DELETE', '/v1/admin/overrides/school:170000100002', { token });
+  });
+
+  it('changes nothing when it runs twice', async () => {
+    const now = Date.now();
+    const { live } = await rows('twice', now);
+    assert.equal((await daily(api, now)).outcome, 'ok');
+    const first = {
+      sessions: await sessionsOf(live.body.user.id),
+      push: await pushOf('twice'),
+      holds: await holdsOf('twice'),
+    };
+    assert.equal((await daily(api, now)).outcome, 'ok');
+    assert.deepEqual(
+      {
+        sessions: await sessionsOf(live.body.user.id),
+        push: await pushOf('twice'),
+        holds: await holdsOf('twice'),
+      },
+      first,
+    );
+    assert.deepEqual(first, { sessions: 1, push: ['live'], holds: ['good', 'live'] });
+  });
+
+  it('logs one line and throws nothing when the database refuses, so the next day tries again', async () => {
+    const old = await startApi({}, { skipMigrations: (file) => file >= '0003' });
+    try {
+      const now = Date.now();
+      await old.sql(
+        `INSERT INTO users (id, login, name, created_at) VALUES ('u-old', 'old', 'Old', ?1)`,
+        now,
+      );
+      await old.sql(
+        `INSERT INTO sessions (token_hash, user_id, created_at, expires_at, refreshed_at)
+         VALUES ('t-old', 'u-old', ?1, ?2, ?1)`,
+        now - 2 * DAY,
+        now - DAY,
+      );
+      assert.equal((await daily(old, now)).outcome, 'ok');
+      // The clean-up is one batch: nothing went half done.
+      assert.equal((await old.sql('SELECT * FROM sessions')).length, 1);
+    } finally {
+      await old.close();
+    }
+  });
+
+  it('runs on a login now and then too, and drops ended holds there as well', async () => {
+    const own = await startApi();
+    try {
+      // The same Worker with the login's 1 in 20 draw always coming up.
+      const { convertV4MiniflareOptions } = await import('miniflare');
+      await own.mf.setOptions(
+        convertV4MiniflareOptions({
+          modules: true,
+          script: `Math.random = () => 0;\n${own.script}`,
+          compatibilityDate: '2026-08-01',
+          d1Databases: ['DB'],
+          bindings: { ADMIN_USERNAME: 'Olivia', ADMIN_KEY, ALLOWED_ORIGINS: ORIGIN },
+        }),
+      );
+      // A restart leaves the database as it was but needs a new handle to it.
+      const db = await own.mf.getD1Database('DB');
+      const sql: Api['sql'] = async (query, ...params) =>
+        (
+          await db
+            .prepare(query)
+            .bind(...params)
+            .all()
+        ).results;
+      const now = Date.now();
+      const email = 'login-sweeper@example.com';
+      const signed = await own.call('POST', '/v1/signup', {
+        body: { name: 'Sam Rivera', email, ...keys(email, fakeKey(email)), over13: true },
+        ip: ip(),
+      });
+      assert.equal(signed.status, 201);
+      const id = signed.body.user.id;
+      await sql('UPDATE sessions SET expires_at = ?2 WHERE user_id = ?1', id, now - DAY);
+      const [session] = await sql('SELECT token_hash FROM sessions WHERE user_id = ?1', id);
+      await sql(
+        `INSERT INTO push_subscriptions (endpoint, user_id, session_hash, p256dh, auth, created_at)
+         VALUES ('https://push.test/login-ended', ?1, ?2, 'p256dh', 'auth', ?3)`,
+        id,
+        session.token_hash,
+        now,
+      );
+      await sql(
+        `INSERT INTO held_usernames (skeleton_hash, until) VALUES
+           ('login-hold-ended', ?1), ('login-hold-live', ?2), ('login-hold-good', NULL)`,
+        now - DAY,
+        now + DAY,
+      );
+      const r = await own.call('POST', '/v1/login', {
+        body: { login: email, key: fakeKey(email) },
+        ip: ip(),
+      });
+      assert.equal(r.status, 200);
+      // Only the new session is left, and the ended one's browser is gone with it.
+      assert.equal((await sql('SELECT * FROM sessions WHERE user_id = ?1', id)).length, 1);
+      assert.deepEqual(await pushOf('login', sql), []);
+      assert.deepEqual(await holdsOf('login', sql), ['good', 'live']);
+    } finally {
+      await own.close();
+    }
+  });
+});

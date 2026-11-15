@@ -290,11 +290,19 @@ export async function refund(env: Env, names: string[]): Promise<void> {
 /** How long a network the admin logged in from keeps getting past an account lockout. */
 export const KNOWN_NETWORK_MS = 30 * DAY_MS;
 
-/** Occasional cleanup of expired sessions, old rate limit windows and long-expired overrides. */
+/**
+ * Cleanup of expired sessions (with the push subscriptions of their browsers),
+ * expired username holds, old rate limit windows and long-expired overrides.
+ * It runs every day on the Worker's schedule (wrangler.toml, index.ts) and now
+ * and then on a login, so a session is gone within a day of its 30 days and a
+ * deleted account's held username within a day of its 30 days. Holds for good
+ * (until null) and holds not yet ended stay. Running it twice changes nothing.
+ */
 export async function sweep(env: Env, now: number): Promise<void> {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM sessions WHERE expires_at <= ?1').bind(now),
     sweepPush(env),
+    env.DB.prepare('DELETE FROM held_usernames WHERE until IS NOT NULL AND until <= ?1').bind(now),
     env.DB.prepare(
       "DELETE FROM rate_limits WHERE window_start <= ?1 AND bucket NOT LIKE 'admin-net:%'",
     ).bind(now - DAY_MS),

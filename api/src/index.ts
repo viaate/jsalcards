@@ -12,6 +12,7 @@ import * as account from './account';
 import * as admin from './admin';
 import * as names from './names';
 import * as notify from './notify';
+import { sweep } from './auth';
 import { HttpError, allowedOrigin, corsHeaders, json, type Env } from './http';
 import { prepareBlocklist } from './usernames/check';
 
@@ -106,8 +107,24 @@ export async function handle(request: Request, env: Env, now = Date.now()): Prom
   }
 }
 
+/**
+ * The daily run (wrangler.toml [triggers]): drops expired sessions with their
+ * push subscriptions and expired username holds (auth.ts sweep). A failed run
+ * logs one line without any data and the next day's run tries again.
+ */
+export async function daily(env: Env, now: number): Promise<void> {
+  try {
+    await sweep(env, now);
+  } catch {
+    console.error('daily sweep failed');
+  }
+}
+
 export default {
   fetch(request: Request, env: Env): Promise<Response> {
     return handle(request, env);
+  },
+  scheduled(controller: ScheduledController, env: Env): Promise<void> {
+    return daily(env, controller.scheduledTime);
   },
 } satisfies ExportedHandler<Env>;

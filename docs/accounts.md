@@ -227,6 +227,16 @@ nothing, and drops it after the 30 days. Cloudflare's own
 restore points of the database (Time Travel) hold earlier states for 7 days on
 the free plan, then those are gone too.
 
+Once a day, at 08:23 UTC, the API runs a clean-up on Cloudflare's schedule
+(`[triggers]` in api/wrangler.toml, the `scheduled` handler in api/src/index.ts,
+which runs `sweep()` in api/src/auth.ts). It deletes every session past its 30
+days, the push subscriptions of the browsers those sessions signed in, and every
+held username past its 30 days; names held for good and holds still running
+stay. So nothing the privacy page says is kept for 30 days stays much past a
+day beyond that. A login runs the same clean-up now and then too. A run that
+fails logs one line without any data, and the next day's run catches up.
+Scheduled runs are part of Cloudflare's free Workers plan.
+
 Sign up and log in are rate limited: 10 logins per 15 minutes per address, 10
 per account by email and another 10 by username (a right one is not counted),
 and 5 sign ups per hour per address. A username is public, so anyone can use
