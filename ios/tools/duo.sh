@@ -31,16 +31,21 @@
 #   3. takes the tour CLOSED: My School, Map, Call it, Settings and the search tab, with
 #      the simulator light and then dark, the app on System and the Outside screen setting
 #      on its first choice, Beside the map (A), each picture from the outer screen into
-#      ios/out/full/duo/duo-closed-<look>-<screen>.png. The words of each picture are
-#      compared with tools/tour-words/duo/<look>-<screen>.txt where there is one (Settings,
-#      which has the Outside screen row only on the Duo), else with the iPhone's
+#      ios/out/full/duo/duo-closed-<look>-<screen>[-<variant>].png. My School is drawn from
+#      the tour fixture tour-closed (M1 5.4: duo-closed-<look>-myschool-closed, S1 in A).
+#      The words of each picture are compared with
+#      tools/tour-words/duo/<look>-<screen>-<variant>.txt where there is one (My School's
+#      three pictures), else tools/tour-words/duo/<look>-<screen>.txt where there is one
+#      (Settings, which has the Outside screen row only on the Duo), else with the iPhone's
 #      tools/tour-words/<look>-<screen>.txt. The app must say this phone has an outside
 #      screen, and its own last geometry line is read: on the four tab screens the
 #      system's tab bar must stand upright on the right;
 #   4. then the Outside screen setting, light and dark: Settings with Under the controls
-#      (B) chosen (duo-closed-<look>-settings-under), and My School with its ground drawn in
-#      the chance teal, with A and with B (duo-closed-<look>-myschool-proof-beside and
-#      -proof-under), so the pictures show where the ground stops;
+#      (B) chosen (duo-closed-<look>-settings-under), My School with details known in A
+#      (duo-closed-<look>-myschool-details, the fixture tour-details: S2 in A) and My
+#      School closed in B (duo-closed-<look>-myschool-closed-under, tour-closed with Under
+#      the controls: S1 in B). The pixel step holds the column's ground in each: the map's
+#      in A, the panel's in B (M1 5.4);
 #   5. that a choice made in Settings is kept across a launch: Under the controls chosen in
 #      code through the tiles' own call (duo-closed-light-settings-chose-under), then the
 #      app stopped and started again without the tour touching the kept layout
@@ -54,7 +59,12 @@
 # pictures taken one after another (a system drawing that came and went: the dark ones of
 # the same launches 4 seconds later had none). If one is there, the picture is kept aside
 # (ios/out/duo/<name>-island.png, printed as a grid too) and taken again, up to twice, 4
-# seconds apart.
+# seconds apart. Not on dark My School Beside the map (myschool-closed, myschool-details):
+# there the map's own ground runs under the column (M1 2.5, D2) and is black in the dark
+# look (mapBg #000000, d3t/app.css:102), so the count could not tell a disc from it.
+# The status bar is set as approved draft 3 and its Duo mock-ups draw it (M1 5.3): 6:55,
+# four signal bars, full Wi-Fi and the battery 85% full, discharging
+# (myschool-closed-light.html:153; app.js:117-121; duo.js:18, :54).
 # The pixel step (tools/pixels.swift) reads the closed pictures with the others.
 #
 # It ends with status 1 when a check fails: a screen that never says it is ready or cannot
@@ -181,8 +191,8 @@ if ! limit 280 xcrun simctl boot "$UDID" || ! limit 280 xcrun simctl bootstatus 
   give_up "The '$DUO' did not boot within 280 s on $RUNTIME."
 fi
 say "the Duo is up"
-xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 \
-  --wifiBars 3 --cellularBars 4 || echo "the status bar override was refused"
+xcrun simctl status_bar "$UDID" override --time "6:55" --batteryState discharging --batteryLevel 85 \
+  --wifiBars 3 --cellularBars 4 || echo "::warning::The Duo's status bar override at 6:55 was refused."
 room 200 "the install" || give_up "The Duo's tour had no time left to install the app."
 if ! limit 180 xcrun simctl install "$UDID" "$APP"; then
   give_up "The app could not be installed on the '$DUO' within 180 s."
@@ -304,19 +314,22 @@ shot() {
   limit 60 xcrun simctl io "$UDID" screenshot --type=png --display="$OUTER" "$SHOTS/$1.png" >"$LOGS/duo-shot.txt" 2>&1
 }
 # closed <light|dark> <screen> [variant]: one picture of the tour, the phone closed. The
-# variant names what the Outside screen setting is for the picture: none (a fresh
-# install's, Beside the map), under (Under the controls), proof-beside or proof-under (the
-# same two, with the placeholder ground in the chance teal). 1 when the tour must stop:
-# no time left (said, not a failure), or two screens in a row that never came up or could
-# not be pictured (a failure, as on the iPhone's tour).
+# variant names what the Outside screen setting is for the picture, and on My School the
+# tour fixture it is drawn from: none (a fresh install's, Beside the map), under (Under the
+# controls), chose-under and kept (Settings: chosen in code, then kept across a launch);
+# My School's closed (tour-closed, Beside the map), details (tour-details, Beside the
+# map) and closed-under (tour-closed, Under the controls), M1 5.4. 1 when the tour must
+# stop: no time left (said, not a failure), or two screens in a row that never came up or
+# could not be pictured (a failure, as on the iPhone's tour).
 closed() {
   local mode=$1 screen=$2 variant=${3:-} need=40 judged=yes started=0 name expected
   name="duo-closed-$mode-$screen${variant:+-$variant}"
   set --
   case "$variant" in
     under) set -- -tour.outside under ;;
-    proof-beside) set -- -tour.outside beside -tour.proof ground ;;
-    proof-under) set -- -tour.outside under -tour.proof ground ;;
+    closed) set -- -tour.outside beside -tour.fixture tour-closed ;;
+    details) set -- -tour.outside beside -tour.fixture tour-details ;;
+    closed-under) set -- -tour.outside under -tour.fixture tour-closed ;;
     chose-under) set -- -tour.outsideThen under ;;
     kept) set -- -tour.outside kept ;;
   esac
@@ -344,7 +357,10 @@ closed() {
   fi
   MISSES=0
   # Something black where the Dynamic Island is: kept aside, and the picture taken again.
-  if ! grid_built; then
+  # Not where the map's black ground runs under the column (dark My School Beside the map).
+  if [ "$mode" = dark ] && [ "$screen" = myschool ] && { [ "$variant" = closed ] || [ "$variant" = details ]; }; then
+    say "$name: no Dynamic Island count: the map's ground under the column is black in the dark look (mapBg #000000)"
+  elif ! grid_built; then
     say "$name: the grid tool is still being built; no Dynamic Island count for this picture"
   else
     local tries=0 black
@@ -367,13 +383,17 @@ closed() {
   TAKEN=$((TAKEN + 1))
   say "$name: $(sips -g pixelWidth -g pixelHeight "$SHOTS/$name.png" | tail -2 | tr -s ' \n' ' ')"
   cp "$READY" "$OUT/words/$name.txt"
-  expected="ios/tools/tour-words/duo/$mode-$screen.txt"
+  expected="ios/tools/tour-words/duo/$mode-$screen${variant:+-$variant}.txt"
+  [ -f "$expected" ] || expected="ios/tools/tour-words/duo/$mode-$screen.txt"
   [ -f "$expected" ] || expected="ios/tools/tour-words/$mode-$screen.txt"
   if ! diff -u "$expected" "$OUT/words/$name.txt"; then
     CHANGED=$((CHANGED + 1))
     fail "The model's words for '$name' are not those of $expected."
   fi
   say "$name: $(grep -o 'hinge: .*' "$LOGS/$name.err" 2>/dev/null | head -4 | tr '\n' ';' | cut -c1-300)"
+  if [ "$screen" = myschool ]; then
+    say "$name: $(grep -o 'my school: .*' "$LOGS/$name.err" 2>/dev/null | tail -1 | cut -c1-400)"
+  fi
   if grep -q 'this phone has an outside screen: yes' "$LOGS/$name.err" 2>/dev/null; then
     say "$name: the app knows it is on a phone with an outside screen"
   else
@@ -386,17 +406,18 @@ closed() {
 echo "=== The tour on the Duo, closed (the outer screen)"
 STOPPED=no
 for mode in light dark; do
-  for screen in myschool map callit settings search; do
-    if ! closed "$mode" "$screen"; then STOPPED=yes; break; fi
+  for pair in "myschool closed" map callit settings search; do
+    # shellcheck disable=SC2086
+    if ! closed "$mode" $pair; then STOPPED=yes; break; fi
   done
   [ "$STOPPED" = no ] || break
 done
 say "closed: $TAKEN of 10 pictures"
 
-echo "=== The Outside screen setting on the Duo, closed: B chosen, and where the ground stops"
+echo "=== The Outside screen setting on the Duo, closed: B chosen, My School with details in A and closed in B"
 if [ "$STOPPED" = no ]; then
   for mode in light dark; do
-    for pair in "settings under" "myschool proof-beside" "myschool proof-under"; do
+    for pair in "settings under" "myschool details" "myschool closed-under"; do
       # shellcheck disable=SC2086
       if ! closed "$mode" $pair; then STOPPED=yes; break; fi
     done

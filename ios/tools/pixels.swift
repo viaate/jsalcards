@@ -56,8 +56,8 @@
 //     panel, and the details line's ink is printed only; on -tomorrow the day line and
 //     Posted are held to the draft's ink with tomorrow's words.
 //   - the iPhone Duo's closed pictures (duo-closed-<look>-<screen>[-<variant>]): their own
-//     points, measured on the Duo, with the Outside screen row and the two layouts (see
-//     duoPoints below).
+//     points, measured on the Duo, with the Outside screen row and the two layouts, and My
+//     School drawn from a tour fixture in both layouts (see duoPoints below).
 //
 // A run is a line of points down one column, printed as one line with the shade that
 // tells (the farthest from the color it is held to).
@@ -146,14 +146,6 @@ enum Wanted {
     static let pageLight = Shade(red: 0xff, green: 0xff, blue: 0xff)
     static let pageDark = Shade(red: 0x13, green: 0x14, blue: 0x18)
     static let probeTeal = Shade(red: 0x12, green: 0xa5, blue: 0x94)
-    /// The `chance` token, light and dark: the placeholder ground of the Duo's proof pictures.
-    static let chanceLight = Shade(red: 0x12, green: 0xa5, blue: 0x94)
-    static let chanceDark = Shade(red: 0x36, green: 0xc9, blue: 0xb3)
-
-    /// The chance teal of the look a Duo picture's name begins with.
-    static func chanceTeal(for rest: String) -> Shade {
-        rest.hasPrefix("dark-") ? chanceDark : chanceLight
-    }
 
     // My School's colors, the tokens of SnowlightCore's State/Tokens.swift (approved draft 3,
     // d3t/app.css), light and dark.
@@ -335,23 +327,16 @@ func pageShade(for picture: String) -> (shade: Shade, name: String)? {
 ///     differently);
 ///   - 90%, 66% is in the side platter, between two of its tabs: its glass, printed and
 ///     not judged until its color is measured.
-/// The Outside screen setting (the Duo only):
-///   - settings, with either layout chosen: down x 10% from 31% to 50% of the height, at
-///     least one point drawn in ink (at least 60 from the page): the Outside screen row,
-///     its heading and the first tile's bold bar, below the Appearance row, which ends at
-///     about 30% (judged);
-///   - myschool-proof-beside and -proof-under: the placeholder ground drawn in the chance
-///     teal. 40%, 60% is that teal (judged); 90%, 40% is in the side column, under the
-///     status cluster and above the tab platter: the teal with Under the controls (B), the
-///     ground running under the column, and not the teal with Beside the map (A), the
-///     ground stopping where the column begins (judged).
+/// The Outside screen setting (the Duo only): settings, with either layout chosen: down x
+/// 10% from 31% to 50% of the height, at least one point drawn in ink (at least 60 from the
+/// page): the Outside screen row, its heading and the first tile's bold bar, below the
+/// Appearance row, which ends at about 30% (judged).
 /// Something drawn, so that a blank picture fails (judged on every Duo picture):
 ///   - the system's side controls: down x 90% (419 pt, the middle of the platter at x 394
-///     to 442) from 58% to 96% (393 to 651 pt), some point at least 60 from the ground
-///     (the page, or the teal on the proof pictures): the tab icons and the search glyph,
-///     which only the system draws there;
-///   - the page title, on every screen but search: across y 4% (27 pt) from x 4% to 40%,
-///     some point at least 60 from the ground.
+///     to 442) from 58% to 96% (393 to 651 pt), some point at least 60 from the page: the
+///     tab icons and the search glyph, which only the system draws there;
+///   - the page title, on every screen but search and My School (which draws none): across
+///     y 4% (27 pt) from x 4% to 40%, some point at least 60 from the page.
 /// Which Outside screen tile is ringed, on the Duo's Settings pictures (judged): across y
 /// 42% (285 pt, the middle of the tiles), from x 2% to 4% (9 to 18.6 pt) the first tile's
 /// ring when Beside the map is chosen, and from x 41% to 42% (191 to 195.7 pt), between the
@@ -359,7 +344,62 @@ func pageShade(for picture: String) -> (shade: Shade, name: String)? {
 /// settings-chose-under and settings-kept, where it was chosen in code and then kept across
 /// a launch); the other place the page all along. Measured on run 43204344211's grids: the
 /// first ring's left side near 15.5 to 18 pt, the second's near 192.5 to 197 pt.
+/// My School drawn from a tour fixture (M1 5.4; places in points from the build spec's
+/// geometry-r2.out): see duoMySchoolPoints.
 let duoClosed = "duo-closed-"
+
+/// The points of the Duo's My School pictures drawn from a tour fixture (M1 5.4):
+/// duo-closed-<look>-myschool-closed (S1 Beside the map, A: the panel at 140, the dot at
+/// 175, 87), -myschool-details (S2 in A: the panel at 114, the dot at 175, 84) and
+/// -myschool-closed-under (S1 Under the controls, B: the panel at 134, the dot at 175, 85);
+/// empty for a variant whose places are not written here. Besides the side controls' run:
+///   - 40%, 75% (186.4, 508.5 pt: the empty panel below the season card, which ends at 427,
+///     424 or 421, and left of the column at 382): `sheet` within 8;
+///   - 25%, 94% (116.5, 637.3 pt): no tab bar along the bottom, `sheet` within 8;
+///   - 90%, 66%: the side platter's glass, printed, as on the other screens;
+///   - 90%, 40% (419.4, 271.2 pt, in the column between the status cluster and the tabs):
+///     the column's ground, `mapBg` within 16 in A (the map runs under the column,
+///     duo.css:16), `sheet` within 16 in B (the panel runs under it,
+///     closed-myschool-under-light.html:80);
+///   - the marker's core at 38%, 13% (177.1, 88.1 pt) in A and B, 38%, 12% (177.1, 81.4 pt)
+///     with details: `closed` within 12;
+///   - the season card at 6%, 54% (28.0, 366.1 pt: left of its text at 32, inside its
+///     corner): `fill` within 8;
+///   - the grabber (36 x 5, 7 below the panel's top, 173 to 209 across) at 41%, 22% in A
+///     (191.1, 149.2 pt; 147 to 152), 41%, 18% with details (122.0 pt; 121 to 126) and
+///     41%, 21% in B (142.4 pt; 141 to 146): `grab` within 16;
+///   - in B only, 50%, 21% (233.0, 142.4 pt), where a grabber centred on the whole 466 pt
+///     panel would be (215 to 251): `sheet` within 8 (in dark the panel's top gradient
+///     there is within 6 of `sheet`).
+/// Every line is judged: the places were measured on the Duo.
+func duoMySchoolPoints(look dark: Bool, variant: String, page: Shade) -> [NamedPoint] {
+    guard ["closed", "details", "closed-under"].contains(variant) else {
+        return []
+    }
+    let details = variant == "details"
+    let under = variant == "closed-under"
+    let pick = { (light: Shade, darkShade: Shade) -> Shade in dark ? darkShade : light }
+    let sheet = pick(Wanted.sheetLight, Wanted.sheetDark)
+    let mapBg = pick(Wanted.mapBgLight, Wanted.mapBgDark)
+    let marker = pick(Wanted.markerLight, Wanted.markerDark)
+    let fill = pick(Wanted.fillLight, Wanted.fillDark)
+    let grab = pick(Wanted.grabLight, Wanted.grabDark)
+    var points = [
+        NamedPoint(x: 40, y: 75, expect: .near(sheet, 8), what: "the panel's ground, sheet " + sheet.hex + ", left of the side controls", judged: true),
+        NamedPoint(x: 25, y: 94, expect: .near(sheet, 8), what: "no tab bar along the bottom: the panel's sheet " + sheet.hex, judged: true),
+        NamedPoint(x: 90, y: 66, expect: .awayFrom(page, 3), what: "the side tab platter's glass, at least 3 from the page", judged: false),
+        under
+            ? NamedPoint(x: 90, y: 40, expect: .near(sheet, 16), what: "Under the controls: the panel's sheet " + sheet.hex + " runs on under the side column", judged: true)
+            : NamedPoint(x: 90, y: 40, expect: .near(mapBg, 16), what: "Beside the map: the map's ground, mapBg " + mapBg.hex + ", runs on under the side column", judged: true),
+        NamedPoint(x: 38, y: details ? 12 : 13, expect: .near(marker, 12), what: "the closed marker's core " + marker.hex, judged: true),
+        NamedPoint(x: 6, y: 54, expect: .near(fill, 8), what: "the season card, fill " + fill.hex, judged: true),
+        NamedPoint(x: 41, y: details ? 18 : (under ? 21 : 22), expect: .near(grab, 16), what: "the grabber, grab " + grab.hex, judged: true),
+    ]
+    if under {
+        points.append(NamedPoint(x: 50, y: 21, expect: .near(sheet, 8), what: "no grabber centred on the whole panel: the sheet " + sheet.hex, judged: true))
+    }
+    return points
+}
 
 func duoPoints(for rest: String) -> [NamedPoint] {
     guard let page = pageShade(for: rest) else {
@@ -369,29 +409,21 @@ func duoPoints(for rest: String) -> [NamedPoint] {
     let screen = parts.count > 1 ? parts[1] : ""
     let variant = parts.count > 2 ? parts[2...].joined(separator: "-") : ""
     let tabScreen = tabs.contains(where: { $0.screen == screen })
-    let teal = Wanted.chanceTeal(for: rest)
-    let ground = variant.hasPrefix("proof-") ? teal : page.shade
     var drawn = [NamedPoint(
-        x: 90, y: 58, expect: .awayFrom(ground, 60),
+        x: 90, y: 58, expect: .awayFrom(page.shade, 60),
         what: "the system's side controls drawn: an icon or the search glyph somewhere down to 96%", judged: true,
-        runTo: 96, run: .someAwayFrom(ground, 60)
+        runTo: 96, run: .someAwayFrom(page.shade, 60)
     )]
+    if screen == "myschool" {
+        let points = duoMySchoolPoints(look: page.shade.hex == Wanted.pageDark.hex, variant: variant, page: page.shade)
+        return points.isEmpty ? [] : drawn + points
+    }
     if screen != "search" {
         drawn.append(NamedPoint(
-            x: 4, y: 4, expect: .awayFrom(ground, 60),
+            x: 4, y: 4, expect: .awayFrom(page.shade, 60),
             what: "the page title drawn: ink somewhere across to x 40%", judged: true,
-            runTo: 4, run: .someAwayFrom(ground, 60), runAcrossTo: 40
+            runTo: 4, run: .someAwayFrom(page.shade, 60), runAcrossTo: 40
         ))
-    }
-    if variant == "proof-beside" || variant == "proof-under" {
-        let under = variant == "proof-under"
-        return drawn + [
-            NamedPoint(x: 40, y: 60, expect: .near(teal, 8), what: "the placeholder ground in the chance teal " + teal.hex, judged: true),
-            NamedPoint(x: 25, y: 94, expect: .near(teal, 8), what: "no tab bar along the bottom: the teal", judged: true),
-            under
-                ? NamedPoint(x: 90, y: 40, expect: .near(teal, 16), what: "Under the controls: the teal runs on under the side column", judged: true)
-                : NamedPoint(x: 90, y: 40, expect: .awayFrom(teal, 40), what: "Beside the map: the teal stops where the side column begins, at least 40 from it", judged: true),
-        ]
     }
     var points = [
         NamedPoint(x: 40, y: 60, expect: .near(page.shade, 8), what: page.name + ", the content left of the side controls", judged: true),
