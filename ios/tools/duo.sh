@@ -59,9 +59,10 @@
 # pictures taken one after another (a system drawing that came and went: the dark ones of
 # the same launches 4 seconds later had none). If one is there, the picture is kept aside
 # (ios/out/duo/<name>-island.png, printed as a grid too) and taken again, up to twice, 4
-# seconds apart. Not on dark My School Beside the map (myschool-closed, myschool-details):
-# there the map's own ground runs under the column (M1 2.5, D2) and is black in the dark
-# look (mapBg #000000, d3t/app.css:102), so the count could not tell a disc from it.
+# seconds apart. Not on My School's dark pictures: there the map's own ground lies under
+# the time (the map runs under the column, M1 2.5 D2, and the panel's top is lower, at 114
+# to 140), and it is black in the dark look (mapBg #000000, d3t/app.css:102), so the count
+# could not tell a disc from it (run 43683309760 counted all 25,650 pixels black there).
 # The status bar is set as approved draft 3 and its Duo mock-ups draw it (M1 5.3): 6:55,
 # four signal bars, full Wi-Fi and the battery 85% full, discharging
 # (myschool-closed-light.html:153; app.js:117-121; duo.js:18, :54).
@@ -357,9 +358,9 @@ closed() {
   fi
   MISSES=0
   # Something black where the Dynamic Island is: kept aside, and the picture taken again.
-  # Not where the map's black ground runs under the column (dark My School Beside the map).
-  if [ "$mode" = dark ] && [ "$screen" = myschool ] && { [ "$variant" = closed ] || [ "$variant" = details ]; }; then
-    say "$name: no Dynamic Island count: the map's ground under the column is black in the dark look (mapBg #000000)"
+  # Not where the map's black ground lies under the time (dark My School).
+  if [ "$mode" = dark ] && [ "$screen" = myschool ]; then
+    say "$name: no Dynamic Island count: the map's ground under the time is black in the dark look (mapBg #000000)"
   elif ! grid_built; then
     say "$name: the grid tool is still being built; no Dynamic Island count for this picture"
   else

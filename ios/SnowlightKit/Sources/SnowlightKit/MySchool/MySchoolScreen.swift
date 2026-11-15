@@ -120,7 +120,9 @@ struct MySchoolScreen: View {
                 .frame(width: width, height: max(0, size.height - rest))
                 .padding(.top, rest)
             ScrollView(.vertical) {
-                VStack(spacing: 0) {
+                // Leading: the panel starts at the window's leading edge on every shape. Beside
+                // the map it is narrower than the window and would sit centred otherwise.
+                VStack(alignment: .leading, spacing: 0) {
                     Color.clear
                         .frame(height: rest)
                         .accessibilityHidden(true)
