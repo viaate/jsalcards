@@ -1,10 +1,22 @@
 # The words iOS itself draws on the My School screen, kept by hand: one per line.
-# A line that starts with # is a note, not a word. Nothing compares this file yet: the
-# on-screen read that comes with the first real screen will, and it must find the model's
-# words (ios/tools/tour-words/<picture>.txt) plus the words listed here, no more and no fewer.
+# A line that starts with # is a note, not a word. The on-screen read (the UI test,
+# ios/UITests/MySchoolTextTests.swift, M1 6.3) compares this file: every label and value it
+# reads must be a line of the picture's grouping file (ios/tools/tour-words/ui/<picture>.txt)
+# or a word listed here, and every grouping line must be read once.
 #
-# Looked at: light-myschool and dark-myschool of iOS app run 42898061415
-# (iPhone 17 Pro on iOS 26.5, Xcode 26.6), on Nov 10, 2026.
+# The line `joiner<TAB>"<joiner>"` gives, in quotes so its spaces show, what the system puts
+# between the words of one element: the UI test joins each grouping line's words with it.
+# With it here the strict check is on.
 #
-# None. The four names in the bar are the model's. The round search button beside the bar
-# is a magnifier with no word. The status bar above is the phone's, not the app's.
+# Read by the UI test on the six iPhone pictures light and dark myschool-closed,
+# myschool-details and myschool-tomorrow, in iOS app run 43699970415 (macos-26 job
+# 132768739412; iPhone 17 Pro on iOS 26.5, Xcode 26.6), on Nov 15, 2026. The same words on
+# all six: the joiner ", " on every grouped element; the search tab's button "Search"; the
+# bar's own element "Tab Bar"; the panel's scroll view's two scroll bars, each "Vertical
+# scroll bar, 1 page" with the value "0%". The four names in the bar are the model's. The
+# status bar above is the phone's, not the app's, and is not read.
+joiner	", "
+Search
+Tab Bar
+Vertical scroll bar, 1 page
+0%
