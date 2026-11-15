@@ -90,6 +90,8 @@ export const accountCopy = /* @__PURE__ */ deepFreeze({
     privacy:
       'Your account keeps your name, your email, your username and number, your saved schools, and when you signed up and last logged in. Your password never leaves this device: Snowlight keeps only scrambled keys made from it. You can delete your account at any time here, and its name and email go with it.',
     adminNote: 'The admin’s password is set in the repository’s secrets.',
+    /** The two small links at the foot of Settings, to ?privacy and ?terms (app/legal.ts). */
+    legal: { privacy: 'Privacy', terms: 'Terms' },
   },
   errors: {
     bad_login: 'That username or email and password don’t match an account.',

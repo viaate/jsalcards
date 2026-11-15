@@ -20,6 +20,7 @@ import { themesCopy } from './copy-themes';
 import { shareCopy } from './copy-share';
 import { getCopy } from './copy-get';
 import { laterCopy, laterFormat } from './copy-later';
+import { legalCopy } from './copy-legal';
 import { waitlistCopy } from './copy-waitlist';
 
 // The house-style rules and the lint live in scripts/check-copy.mjs, a plain
@@ -395,6 +396,66 @@ describe('house style rules', () => {
       expect(problems('A prediction model, powered by data', waitlist)).toEqual([
         'banned phrase "powered by"',
       ]);
+    });
+  });
+
+  describe('the approved privacy policy and terms of use, in src/copy-legal.ts alone (owner, Nov 9, 2026)', () => {
+    const legal = 'src/copy-legal.ts';
+    const texts = copyLeaves(legalCopy).map(([, text]) => text);
+
+    it('passes every approved string there', () => {
+      expect(allProblems(texts, legal)).toEqual([]);
+    });
+
+    it.each([
+      ['We may suspend or close an account that breaks these terms.', 'banned phrase "may"'],
+      ['The chance is an estimate.', 'banned phrase "estimate"'],
+      ['Disclaimers and limits', 'banned phrase "disclaimer"'],
+      ['Turn alerts off at any time in Settings.', 'Title Case "Settings"'],
+      ['The odds in Call it come from the forecast.', 'Title Case "Call"'],
+      ['pretend to be a school, a district or another person.', 'starts with a lowercase letter'],
+    ])('bans %j in any other copy module', (text, problem) => {
+      expect(problems(text)).toContain(problem);
+      expect(problems(text, 'src/copy.ts')).toContain(problem);
+      expect(problems(text, 'src/copy-waitlist.ts')).toContain(problem);
+    });
+
+    it('lifts only those phrases there, and no other rule', () => {
+      expect(problems('Schools may close', legal)).toEqual(['banned phrase "may"']);
+      expect(problems('We estimate the chance', legal)).toEqual(['banned phrase "estimate"']);
+      expect(problems('A disclaimer', legal)).toEqual(['banned phrase "disclaimer"']);
+      expect(problems('We may close!', legal)).toEqual(['exclamation mark']);
+      expect(problems('We may close it — soon', legal)).toEqual(['em dash']);
+      expect(problems("We don't", legal)).toEqual(['straight quote: use ’ or “ ”']);
+      expect(problems('Ask Snowball', legal)).toEqual(['Title Case "Snowball"']);
+    });
+
+    it('lets only the approved list items start in lowercase there', () => {
+      expect(problems('serves the zoomed-in street map.', legal)).toEqual([]);
+      expect(problems('pretend to be a school, a district or another person.', legal)).toEqual([]);
+      for (const text of [
+        'we keep your email.',
+        'serves the zoomed-in street map',
+        'serves the street map.',
+        'you can delete your account in Settings.',
+      ]) {
+        expect(problems(text, legal)).toContain('starts with a lowercase letter');
+      }
+    });
+
+    it('passes its names with a capital only in their approved words there', () => {
+      expect(problems('Turn alerts off at any time in Settings.', legal)).toEqual([]);
+      expect(problems('The odds in Call it come from the forecast.', legal)).toEqual([]);
+      expect(problems('Governed by the laws of the United States.', legal)).toEqual([]);
+      expect(problems('Open Settings to turn alerts off.', legal)).toEqual([
+        'Title Case "Settings"',
+      ]);
+      expect(problems('Make the Call today.', legal)).toEqual(['Title Case "Call"']);
+      expect(problems('Schools in the United Kingdom', legal)).toEqual([
+        'Title Case "United"',
+        'Title Case "Kingdom"',
+      ]);
+      expect(problems('The States of the map', legal)).toEqual(['Title Case "States"']);
     });
   });
 });
@@ -4460,8 +4521,8 @@ ${aliases}
     // (src/copy-waitlist.ts), the account controls' and admin view's (src/copy-account.ts) and
     // the notifications' (src/copy-notify.ts), the plain details' (src/copy-details.ts), the
     // screen check's (src/copy-diag.ts), the themes' (src/copy-themes.ts), the share cards'
-    // (src/copy-share.ts), the getsnowlight landing's (src/copy-get.ts) and the later days'
-    // key line's (src/copy-later.ts).
+    // (src/copy-share.ts), the getsnowlight landing's (src/copy-get.ts), the later days'
+    // key line's (src/copy-later.ts) and the privacy policy's and terms' (src/copy-legal.ts).
     expect(scanned.strings).toBe(
       strings.length +
         copyLeaves(chanceCopy).length +
@@ -4474,7 +4535,8 @@ ${aliases}
         copyLeaves(themesCopy).length +
         copyLeaves(shareCopy).length +
         copyLeaves(getCopy).length +
-        copyLeaves(laterCopy).length,
+        copyLeaves(laterCopy).length +
+        copyLeaves(legalCopy).length,
     );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s

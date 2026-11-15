@@ -98,10 +98,21 @@ export const COPY_MODULES = [
   'src/copy-share.ts',
   'src/copy-get.ts',
   'src/copy-later.ts',
+  'src/copy-legal.ts',
 ];
 
 /** The waitlist page's words (src/copy-waitlist.ts), filled into pages under copy.waitlist. */
 const WAITLIST_MODULE = 'src/copy-waitlist.ts';
+
+/**
+ * The privacy policy and the terms of use (src/copy-legal.ts): the owner's approved text, word
+ * for word (rev 14, Nov 9, 2026). It is held to the house style but for the few places its
+ * approved words step outside it, each listed below for this file alone: BANNED_EXCEPTIONS
+ * (its "We may", its two lines on the chance as an estimate, and its "Disclaimers and limits"),
+ * LEGAL_NAMES (the names it gives with a capital, each in its own words) and LEGAL_LOWERCASE
+ * (its list items that go on from a bold lead or from "Don’t:" in lowercase).
+ */
+const LEGAL_MODULE = 'src/copy-legal.ts';
 
 // House style --------------------------------------------------------------------------
 
@@ -166,7 +177,62 @@ export const BANNED = [
  */
 export const BANNED_EXCEPTIONS = [
   { label: 'model', phrase: 'prediction model', file: WAITLIST_MODULE },
+  // The approved privacy policy and terms of use (LEGAL_MODULE), by the owner's approval of the
+  // text on Nov 9, 2026: exactly these phrases, in that file alone.
+  { label: 'may', phrase: 'We may', file: LEGAL_MODULE },
+  { label: 'estimate', phrase: 'estimates the chance of a snow day', file: LEGAL_MODULE },
+  { label: 'estimate', phrase: 'The chance is an estimate', file: LEGAL_MODULE },
+  { label: 'disclaimer', phrase: 'Disclaimers and limits', file: LEGAL_MODULE },
 ];
+
+/**
+ * The names that keep their capitals in the approved privacy policy and terms of use
+ * (LEGAL_MODULE) alone, each only in the words it is approved in: the companies it names,
+ * Snowlight’s, the app's own Settings (as "in Settings"), its game (as "Call it") and "the
+ * United States". Anywhere else, in that file too, the house style holds.
+ */
+export const LEGAL_NAMES = [
+  'Snowlight’s',
+  'OpenFreeMap',
+  'Google',
+  'Microsoft',
+  'Mozilla',
+  'in Settings',
+  'Call it',
+  'the United States',
+];
+
+/**
+ * The approved legal text's list items that go on in lowercase from a bold lead ("Cloudflare
+ * runs …") or from "Don’t:" (LEGAL_MODULE alone): exactly these strings start with a lowercase
+ * letter there; any other string there that does is still a problem.
+ */
+export const LEGAL_LOWERCASE = new Set([
+  'runs our accounts service and its database.',
+  'hosts the website and runs the jobs that send alerts.',
+  'serves the zoomed-in street map.',
+  'break the law or other people’s rights using Snowlight;',
+  'try to get into accounts or systems that aren’t yours;',
+  'overload, attack or disrupt the site or its services, including with automated sign-ups or calls;',
+  'pretend to be a school, a district or another person.',
+]);
+
+/**
+ * `text` with each LEGAL_NAMES name lowercased where `file` is LEGAL_MODULE, so the capital
+ * checks pass it there in its approved words alone; `text` itself anywhere else.
+ * @param {string} text
+ * @param {string | undefined} file
+ * @returns {string}
+ */
+function withLegalNames(text, file) {
+  if (file !== LEGAL_MODULE) return text;
+  let checked = text;
+  for (const name of LEGAL_NAMES) {
+    const phrase = new RegExp(`${BEFORE}${name}${AFTER}`, 'gu');
+    checked = checked.replace(phrase, (found) => found.toLowerCase());
+  }
+  return checked;
+}
 
 /**
  * Words that keep a capital letter anywhere in a sentence. Anything else
@@ -300,8 +366,9 @@ export function problems(text, file) {
   if (CONTROL_SPACE.test(text)) found.push('tab or line break');
   else if (DOUBLE_SPACE.test(text)) found.push('double space');
 
-  if (/^\p{Ll}/u.test(text)) found.push('starts with a lowercase letter');
-  for (const segment of text.split(SEGMENT_BREAK)) {
+  const lowercaseItem = file === LEGAL_MODULE && LEGAL_LOWERCASE.has(text);
+  if (/^\p{Ll}/u.test(text) && !lowercaseItem) found.push('starts with a lowercase letter');
+  for (const segment of withLegalNames(text, file).split(SEGMENT_BREAK)) {
     // An en dash joins a range ("PK–12", "2025–26"): each end is a word of its own.
     const words = segment
       .replace(IOS_NAME, ' ')

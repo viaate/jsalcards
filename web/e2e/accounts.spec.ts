@@ -553,6 +553,72 @@ test.describe('accounts', () => {
     }
   });
 
+  test('settings end with the Privacy and Terms links, each opening its page over the app', async ({
+    browser,
+  }) => {
+    const api = new StubApi();
+    const jo = await stubUser({
+      id: 'u8',
+      name: 'Jo',
+      email: 'jo@example.com',
+      username: 'jo_snow',
+    });
+    api.users.push(jo);
+    const token = jo.id.padEnd(43, 'x');
+    api.sessions.set(token, jo.id);
+    const context = await browser.newContext({ baseURL: ACCOUNTS_URL, serviceWorkers: 'block' });
+    await context.addInitScript((held) => {
+      localStorage.setItem('snowlight:session', held);
+    }, token);
+    const page = await context.newPage();
+    await openPage(page, api, '/?ref=e2e');
+    await page.getByRole('button', { name: 'Account menu for Jo' }).click();
+    await page.getByRole('menuitem', { name: 'Settings' }).click();
+    const sheet = page.getByRole('dialog', { name: 'Settings' });
+    const privacy = sheet.getByRole('link', { name: 'Privacy', exact: true });
+    const terms = sheet.getByRole('link', { name: 'Terms', exact: true });
+    // Each a link to the page's own address, every other part of the address kept.
+    await expect(privacy).toHaveAttribute('href', /\/\?ref=e2e&privacy$/u);
+    await expect(terms).toHaveAttribute('href', /\/\?ref=e2e&terms$/u);
+    // The links come last in Settings, after the delete row.
+    expect(
+      await sheet.evaluate((node) => {
+        const links = node.querySelector('p.legal');
+        return links !== null && links === node.lastElementChild;
+      }),
+    ).toBe(true);
+
+    // Privacy opens over the app with an entry of its own; Back closes it, Settings still open.
+    await privacy.click();
+    const policy = page.getByRole('dialog', { name: 'Privacy policy' });
+    await expect(policy.getByRole('heading', { level: 1 })).toBeFocused();
+    await expect(page).toHaveURL(/\?ref=e2e&privacy$/u);
+    await page.goBack();
+    await expect(policy).toHaveCount(0);
+    await expect(page).toHaveURL(/\?ref=e2e$/u);
+    await expect(terms).toBeVisible();
+
+    // Terms, closed with its own button: the keyboard goes back to the link.
+    await terms.click();
+    const termsPage = page.getByRole('dialog', { name: 'Terms of use' });
+    await expect(termsPage.getByText('hello@snowlightmap.com').first()).toBeVisible();
+    await termsPage.getByRole('button', { name: 'Close' }).click();
+    await expect(termsPage).toHaveCount(0);
+    await expect(page).toHaveURL(/\?ref=e2e$/u);
+    await expect(terms).toBeFocused();
+
+    // With a modifier key it is a link like any other: a new tab at its address, nothing here.
+    const [tab] = await Promise.all([
+      context.waitForEvent('page'),
+      terms.click({ modifiers: ['ControlOrMeta'] }),
+    ]);
+    await expect(tab).toHaveURL(/\/\?ref=e2e&terms$/u);
+    await tab.close();
+    await expect(termsPage).toHaveCount(0);
+    await expect(page).toHaveURL(/\?ref=e2e$/u);
+    await context.close();
+  });
+
   test('check a username as it is typed, here and then with the API', async ({ page }) => {
     const api = new StubApi();
     api.users.push(

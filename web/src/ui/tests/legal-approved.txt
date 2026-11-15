@@ -1,0 +1,117 @@
+# Privacy policy
+
+You can use Snowlight's map and snow-day chances without an account, and we collect nothing about you to do that. We collect personal information only when you make an account, turn on alerts or join the waitlist, and only what each of those needs.
+
+## What we collect, and why
+
+| When | What we keep | Why |
+|---|---|---|
+| You use the map | Nothing. There are no ads, no analytics and no tracking cookies. | |
+| You make an account | Your name, email, username, a join number, up to 5 saved schools, when you signed up and last logged in, and scrambled keys made from your password (never the password itself) | To log you in and keep your schools |
+| You stay logged in | A scrambled copy of a random login token, for 30 days after your last visit | So you don't log in every time |
+| You turn on alerts | Your browser's push address, your alert settings (which kinds, your chance threshold, your evening check time, quiet hours) and a log of alerts sent | To send the alerts you chose, and never the same one twice |
+| You play Call it | Your calls, your flakes and your streak, shown with your username | To run the game and its leaderboards |
+| You join the waitlist | Your email address only | To send you one email when Snowlight opens |
+
+Your username and join number are public. Your name and email are not.
+
+## Your location
+
+Snowlight asks for your location only when you tap to find schools near you, and only with your permission. Your phone or browser uses it to move the map; Snowlight never receives or stores it. You can type a school, city or ZIP code instead.
+
+When you zoom in, the street map comes from OpenFreeMap, which sees which map area your device asks for, as any map service does.
+
+## What stays on your device
+
+Your browser keeps a few things on your device so the site remembers them: the school you pinned, your theme, and your login token. Clearing your site data removes them.
+
+## Who handles your information
+
+- **Cloudflare** runs our accounts service and its database.
+- **GitHub** hosts the website and runs the jobs that send alerts.
+- **Apple, Google, Microsoft or Mozilla**, through your browser's or phone's push service, deliver alerts to your device.
+- **Kit** (kit.com) keeps the waitlist and sends its email.
+- **OpenFreeMap** serves the zoomed-in street map.
+
+Like any website, each of them sees the internet address your device connects from. We use that address only briefly, to stop repeated sign-in or sign-up attempts. We never sell your information or share it for anyone else's advertising.
+
+## How long we keep it
+
+We keep your account until you delete it. Deleting it, in Settings, removes your name, email, username, saved schools, keys, sessions, push addresses, alert settings and alert log at once. Two traces remain for a short time:
+
+- For 30 days a scrambled form of your old username stays reserved, linked to nothing, so nobody can take it and pretend to be you.
+- Our database provider keeps restore points for 7 days, after which those copies are gone too.
+
+Your join number is never given to anyone else.
+
+## Children
+
+Accounts, alerts and the waitlist are for people 13 or older, and the sign-up form asks. If we learn that someone under 13 has given us personal information, we delete it.
+
+## Your choices
+
+- Turn alerts off at any time in Settings, or in your phone's or browser's settings.
+- Change your account details in Settings.
+- Delete your account in Settings, or ask us to.
+- Leave the waitlist with the unsubscribe link in any of its emails.
+
+## Changes
+
+If we change this policy in a way that matters, we will say so on the site before the change takes effect.
+
+## Contact
+
+Questions or requests: hello@snowlightmap.com.
+
+# Terms of use
+
+Snowlight shows school closings and estimates the chance of a snow day. It is not your school's announcement, and your school's own word always wins. By using Snowlight you agree to these terms.
+
+## What Snowlight is, and is not
+
+- **Closings come from public lists.** We read local closing lists every 5 minutes on school mornings and evenings, less often at other times, and match them to schools. A list can be wrong, late or read wrong, so a closing can show late, show wrong, or be missed.
+- **The chance is an estimate.** It comes from the forecast and from how districts have decided before. It is never a promise that school will or won't open.
+- **Alerts can be late or missed.** They depend on your phone, your browser, your connection and push services we don't run.
+- **Not for emergencies or safety decisions.** Check your school or district before you act, especially on travel, child care or work.
+
+## Your account
+
+- You must be 13 or older to make an account.
+- Keep your password to yourself. You are responsible for what happens under your account.
+- Usernames are public. We may change or remove a username that is offensive, impersonates someone, or breaks these terms.
+- We may suspend or close an account that breaks these terms.
+
+## Call it and flakes
+
+- Flakes are points for fun. They have no cash value and can't be bought, sold, traded or exchanged for money, prizes or anything else.
+- The odds in Call it come from the forecast, not from other players. Calls never change a school's chance or status.
+- We may reset, adjust or remove flakes, calls or streaks to fix mistakes or stop cheating.
+
+## Acceptable use
+
+Don't:
+
+- break the law or other people's rights using Snowlight;
+- try to get into accounts or systems that aren't yours;
+- overload, attack or disrupt the site or its services, including with automated sign-ups or calls;
+- pretend to be a school, a district or another person.
+
+## School names and logos
+
+School and district names and logos belong to their owners. We show them only to identify each school. A school or district that wants its logo removed can ask us at hello@snowlightmap.com.
+
+## Availability and changes
+
+We may change, pause or end any part of Snowlight at any time. We will try to keep it running on storm mornings, but we can't promise it will always be available or error-free.
+
+## Disclaimers and limits
+
+Snowlight is provided as is, without warranties of any kind. To the extent the law allows, we are not liable for any loss from using it or relying on it, including a missed, late or wrong closing, chance or alert.
+
+## Changes to these terms
+
+If we change these terms in a way that matters, we will say so on the site before the change takes effect. Using Snowlight after that means you accept the new terms.
+
+## Law and contact
+
+These terms are governed by the laws of the United States. Questions: hello@snowlightmap.com.

@@ -60,6 +60,7 @@ import type { AreaHint, AreaView, WatchAreaOptions } from './area';
 import type { AreaRecord } from '../data/areas';
 import type { Active, Controller, ReplayBar } from './replay';
 import { startDiagnostics } from './diagnostics';
+import { startLegal } from './legal';
 import { startServiceWorker } from './service-worker';
 import { ZOOM, selectionForHit, startupSelection, viewForHit, zipHit } from './startup';
 import { THEME_RETRY, THEME_STORAGE_KEY } from '../theme/event';
@@ -532,6 +533,8 @@ export function boot(options: BootOptions): Services {
   void startServiceWorker(options.map);
   // The screen check, where the address asks for it (?diag=1).
   startDiagnostics();
+  // The privacy policy or the terms of use, where the address asks for one (?privacy, ?terms).
+  signal.addEventListener('abort', startLegal(), { once: true });
   // The theme engine (theme/engine.ts), where index.html put on a theme the device keeps, or
   // could not load its style sheet and showed Midnight (THEME_RETRY: the engine tries again), or
   // once another tab keeps one: from then on it follows every change. With Midnight, the page's
