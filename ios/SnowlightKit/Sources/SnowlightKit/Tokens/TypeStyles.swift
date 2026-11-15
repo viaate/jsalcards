@@ -20,9 +20,10 @@
 // font adds its own tracking and optical size for each size, and .tracking() goes on top. So
 // each style's tracking is the one value that makes its lines' ink as wide as the draft's: the
 // draft's width from its own HTML rendered with the same words through the same renderer
-// (premium/render.cjs, 402 x 874 at 3x), the app's from the simulator (iOS app run
-// 43660180030, iPhone 17 Pro), measured on the fixture's words and on two more strings each,
-// and the value that makes the worst width error smallest taken. The CSS value stays beside
+// (premium/render.cjs, 402 x 874 at 3x, in Playwright 1.63.0's Chromium, the build that draws
+// draft 3's pictures pixel for pixel), the app's from the simulator (iOS app run 43666798391,
+// iPhone 17 Pro), measured on the fixture's words and on two more strings each, and the
+// value that makes the worst width error smallest taken. The CSS value stays beside
 // each one. At 20 and 22 points the letters, spaces and figures of the system font still
 // differ one by one from the static Display cut once the whole line matches: the system's
 // font, a ruled difference (R21).
@@ -125,21 +126,21 @@ enum TypeStyle {
         case .sub, .subStrong:
             return 0
         case .statusWord:
-            return -2.83 // R21 measured; CSS -2.6 (H:22 letter-spacing: -2.6px)
+            return -2.72 // R21 measured; CSS -2.6 (H:22 letter-spacing: -2.6px)
         case .schoolName:
-            return -0.59 // R21 measured; CSS -0.3 (CSS:276)
+            return -0.56 // R21 measured; CSS -0.3 (CSS:276)
         case .day:
-            return -0.78 // R21 measured; CSS -0.25 (H:28)
+            return -0.85 // R21 measured; CSS -0.25 (H:28)
         case .panelLine:
             return 0.04 // R21 measured; CSS -0.2 (CSS:277, H:29, H:33)
         case .cardKey:
-            return 0.55 // R21 measured; CSS 0.6 (H:39)
+            return 0.61 // R21 measured; CSS 0.6 (H:39)
         case .counts:
-            return 0.02 // R21 measured; CSS -0.41 (H:58)
+            return -0.12 // R21 measured; CSS -0.41 (H:58)
         case .calloutName:
-            return 0.04 // R21 measured; CSS -0.24 (CSS:240)
+            return 0.00 // R21 measured; CSS -0.24 (CSS:240)
         case .chip:
-            return -0.07 // R21 measured; CSS -0.1 (CSS:244)
+            return -0.04 // R21 measured; CSS -0.1 (CSS:244)
         }
     }
 

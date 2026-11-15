@@ -44,7 +44,8 @@
 //     in a box of the picture, in points, as the first and the last column whose ink covers
 //     at least half (between the box's middle shade, its ground, and its farthest shade,
 //     its ink), to a fraction of a pixel. Each is held to the draft's own ink, drawn from
-//     its HTML with the fixture's words through its renderer (premium/render.cjs, 3x): the
+//     its HTML with the fixture's words through its renderer (premium/render.cjs, 3x, in
+//     Playwright 1.63.0's Chromium, which draws draft 3's pictures pixel for pixel): the
 //     edge the line is aligned by within 1 pt, the other within 1 pt or 1% of the line's
 //     width, whichever is larger. Posted is aligned by its right edge, the others by their
 //     left. Judged on the device the places were measured on.
@@ -235,14 +236,14 @@ func mySchoolInkLines(variant: String) -> [InkLine] {
         return []
     }
     return [
-        // "Synthetic District One · Grades 6–8", 243.07 wide: left aligned.
-        InkLine(what: "the district line", top: 290, bottom: 310, left: 15, right: 330, first: 20.74, firstWithin: 1, last: 263.81, lastWithin: 2.43),
-        // "Tuesday, January 12", 173.17 wide: left aligned; the clock is right of 240.
-        InkLine(what: "the day line", top: 435, bottom: 457, left: 15, right: 240, first: 20.29, firstWithin: 1, last: 193.46, lastWithin: 1.73),
-        // "Posted 5:42 AM", 108.07 wide: right aligned; the clock's ink ends left of 268.5.
-        InkLine(what: "Posted's words", top: 435, bottom: 457, left: 268.5, right: 392, first: 272.84, firstWithin: 1.08, last: 380.90, lastWithin: 1),
-        // "2 closed · 1 delayed since Oct 27", 258.43 wide: left aligned, inside the card.
-        InkLine(what: "the season card's line", top: 512, bottom: 534, left: 30, right: 345, first: 37.00, firstWithin: 1, last: 295.43, lastWithin: 2.58),
+        // "Synthetic District One · Grades 6–8", 242.53 wide: left aligned.
+        InkLine(what: "the district line", top: 290, bottom: 310, left: 15, right: 330, first: 20.74, firstWithin: 1, last: 263.27, lastWithin: 2.43),
+        // "Tuesday, January 12", 171.89 wide (the approved picture's own line): left aligned; the clock is right of 240.
+        InkLine(what: "the day line", top: 435, bottom: 457, left: 15, right: 240, first: 20.29, firstWithin: 1, last: 192.18, lastWithin: 1.72),
+        // "Posted 5:42 AM", 107.68 wide: right aligned; the clock's ink ends left of 268.5.
+        InkLine(what: "Posted's words", top: 435, bottom: 457, left: 268.5, right: 392, first: 273.02, firstWithin: 1.08, last: 380.70, lastWithin: 1),
+        // "2 closed · 1 delayed since Oct 27", 253.27 wide (the approved picture's own line): left aligned, inside the card.
+        InkLine(what: "the season card's line", top: 512, bottom: 534, left: 30, right: 345, first: 37.00, firstWithin: 1, last: 290.27, lastWithin: 2.53),
     ]
 }
 
