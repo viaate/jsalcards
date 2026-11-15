@@ -158,6 +158,13 @@ enum Wanted {
     /// The closed marker's core: `closed` by day (CSS:234), #7fd4ff at night (CSS:230).
     static let markerLight = Shade(red: 0x1d, green: 0x9b, blue: 0xe6)
     static let markerDark = Shade(red: 0x7f, green: 0xd4, blue: 0xff)
+    /// The closed marker's core on the Duo's dark details picture (AD), at 38%, 12% (177.1,
+    /// 81.4 pt): the approved picture's own colour there, read off
+    /// design/app/duo/out/closed-details-dark.png (lead ruling R23 M1). The draft's dark panel
+    /// top shadow (CSS:73, 0 -14 40 rgba(0,0,0,0.62)) lies over the dot, which sits 30 pt above
+    /// the panel's top at 114 (DUOD:77, :131), so the picture reads #6fbae1 there, not the bare
+    /// token #7fd4ff.
+    static let markerDarkDuoDetails = Shade(red: 0x6f, green: 0xba, blue: 0xe1)
     /// `fill`, the season card: CSS:15, :69.
     static let fillLight = Shade(red: 0xf2, green: 0xf3, blue: 0xf5)
     static let fillDark = Shade(red: 0x2a, green: 0x2b, blue: 0x31)
@@ -362,7 +369,8 @@ let duoClosed = "duo-closed-"
 ///     duo.css:16), `sheet` within 16 in B (the panel runs under it,
 ///     closed-myschool-under-light.html:80);
 ///   - the marker's core at 38%, 13% (177.1, 88.1 pt) in A and B, 38%, 12% (177.1, 81.4 pt)
-///     with details: `closed` within 12;
+///     with details: `closed` within 12; in dark with details the approved picture's own
+///     colour there, #6fbae1, within 12 (R23 M1: the draft's panel top shadow lies over the dot);
 ///   - the season card at 6%, 54% (28.0, 366.1 pt: left of its text at 32, inside its
 ///     corner): `fill` within 8;
 ///   - the grabber (36 x 5, 7 below the panel's top, 173 to 209 across) at 41%, 22% in A
@@ -381,7 +389,9 @@ func duoMySchoolPoints(look dark: Bool, variant: String, page: Shade) -> [NamedP
     let pick = { (light: Shade, darkShade: Shade) -> Shade in dark ? darkShade : light }
     let sheet = pick(Wanted.sheetLight, Wanted.sheetDark)
     let mapBg = pick(Wanted.mapBgLight, Wanted.mapBgDark)
-    let marker = pick(Wanted.markerLight, Wanted.markerDark)
+    // R23 M1: in dark with details, the approved picture's own colour under the panel's top
+    // shadow (see Wanted.markerDarkDuoDetails), within the same 12.
+    let marker = pick(Wanted.markerLight, details ? Wanted.markerDarkDuoDetails : Wanted.markerDark)
     let fill = pick(Wanted.fillLight, Wanted.fillDark)
     let grab = pick(Wanted.grabLight, Wanted.grabDark)
     var points = [
