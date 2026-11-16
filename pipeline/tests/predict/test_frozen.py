@@ -1146,3 +1146,32 @@ def test_a_frozen_day_is_kept_at_the_frozen_kind_s_xz_preset_and_reads_back(
     assert packed == compress(data, PRESETS[FROZEN])
     assert PRESETS[FROZEN] == 9
     assert unpack(item, parts) == data
+
+
+def test_a_day_over_its_size_budget_is_written_whole_and_only_the_drill_judges_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    """Lead ruling LR-FE2 (Q-L9): the day budgets are judged by ``predict drill --frozen-day``
+    and its CI step only; the live freeze never refuses, cuts, skips or delays a day for its
+    size."""
+    whole = _finished_day(tmp_path / "budget-off")
+    capsys.readouterr()
+    monkeypatch.setattr(frozen, "DAY_BUDGET_XZ", 1)
+    monkeypatch.setattr(frozen, "WEATHER_DAY_BUDGET_XZ", 1)
+    planted = _finished_day(tmp_path / "budget-1")
+    said = capsys.readouterr()
+    assert len(compress(planted, PRESETS[FROZEN])) > frozen.DAY_BUDGET_XZ
+    assert planted == whole
+    assert frozen.parse_day(planted).rows
+    assert "budget" not in said.out + said.err
+    assert frozen.offers(tmp_path / "budget-1") == [(DAY.isoformat(), planted)]
+    # Nothing but the drill reads the budgets: the names appear in the package only where
+    # frozen.py sets them and where drill.py judges them.
+    package = Path(frozen.__file__).parents[1]
+    readers = sorted(
+        str(path.relative_to(package))
+        for path in package.rglob("*.py")
+        if "DAY_BUDGET_XZ" in path.read_text()
+    )
+    assert readers == ["predict/drill.py", "predict/frozen.py"]
+    assert Path(frozen.__file__).read_text().count("DAY_BUDGET_XZ") == 2  # the two settings

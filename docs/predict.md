@@ -3345,9 +3345,35 @@ The frozen day, as the real pass wrote it (nine passes that take every zone's fo
 Tuesday, each at most 60 minutes late; 72,928 lines), at the store's xz preset 9: 37% 17.9 MB raw
 and 220,844 bytes (worst), 17.1 MB and 196,640 (typical); 70% 27.2 MB and 330,972 (worst), 25.6
 MB and 289,000 (typical); 100% 29.3 MB and 456,952 (worst, whose evening freezes hold no lines),
-33.4 MB and 369,428 in 4.7 s, 492,584 stored, 7 D1 rows a database (typical). Each is under the
-1 MB a day, but the drill's forecasts repeat every 13 schools, so its rows compress better than
-a real night's: the 804 KB of "The frozen record" for every district in a class stays the bound.
+33.4 MB and 369,428 in 4.7 s, 492,584 stored, 7 D1 rows a database (typical). The drill's
+forecasts repeat every 13 schools, so its rows compress better than a real night's: a check on
+this world alone passes a day that is over its budget. The bound is the real-sized day below.
+
+**The real-sized frozen day** (`--frozen-day`). `frozen_day_world` in `drill.py` builds the
+non-repeating every-district day of "The frozen record"'s Budgets: every district of the
+committed model (its private schools cleared) on a made-up point, its class drawn by `--mix`
+(`quiet`, `37`, `70` or `all`, the default: the shares of advisory, warning and cold of the
+four Budgets rows), every storm district a forecast of its own (snow gamma(1.5, 2.0) in
+tenths, its three shares, ice, feel, commute and bus-hour snow; `default_rng(7)` draws the
+points, the classes and the forecasts in that order), two files made at 00:30Z and 06:30Z (the
+later read from 05:00Z), and the real recorder at 30-minute passes from 23:07Z to 17:37Z taking
+every zone's four freezes, with the live switch's shadows and heads at the committed defaults.
+`--runs 2` and `3` make the morning freezes read newer runs (half the storm districts' snow
+moved, `default_rng(23)`). It prints the day's sha256 and, for each frozen kind, raw, xz at
+preset 9, the margin to that kind's budget ("at the edge" under 5% left), stored (the parts'
+base64) and D1 rows, and exits 4 when any kind's xz is over its budget, 0 when every kind
+fits, 1 on an error; with `--size` too it runs after the story and the night, and a call that
+fails both prints both and exits 4. At `c8b85976` the default day is the Budgets' last row
+byte for byte (sha256 `11bcb00d0ac7e0ab9ba8484bced3ef2bad8db625a9e60a941d25e2572e78b472`:
+1,086,888 xz, 1,449,228 stored, 18 D1 rows), built in 35 s and judged in 57 s on a builder's
+machine. The fake snow-seen read of predict-next FORECAST-ERROR P3 draws each district's pair
+at each morning freeze, by `default_rng(11)` indexes, from the committed table
+`data/predict/drill-snow-seen.json.gz`: 16,726 joint pairs of the snow seen overnight (the 50%
+value and the 90th percentile, in hundredths of an inch, from NOHRSC's public snowfall analysis
+on three class nights; 14 null), shuffled with seed 19, numbers only, no id, date or place
+(46,646 B; its sha256 is held in `test_drill.py`). No frozen kind holds those pairs until P3.
+A piece that adds frozen bytes runs `--frozen-day` at its base and head and reports each
+kind's growth; one that makes a freeze record a newer forecast run also runs `--runs 3`.
 
 **The CI job.** `storm-drill` in `ci.yml` runs `uv run snowlight predict drill --size --json
 drill.json` on every push and pull request (20-minute limit, no secret, its output in the job's
@@ -3356,7 +3382,10 @@ class" at its heaviest. It is red only when the command fails: exit 3 when a pas
 went dark or its file is not whole, so a later piece whose lines or bytes would cost such a storm
 its chart, its "Up from" lines or its forecast lines fails there. The story's verdicts never
 fail it. The 70% and 100% worlds and the typical mix run by hand with `--size --full` (about an
-hour on a builder's machine), never in CI: what may be dropped there is a serving decision.
+hour on a builder's machine), never in CI: what may be dropped there is a serving decision. Its
+next step runs `uv run snowlight predict drill --frozen-day --json frozen-day.json`, also when
+the size night failed, so one push shows both: red when a frozen kind's day is over its budget
+(exit 4). Both outputs go to the job's summary.
 
 ## Retraining
 
@@ -3649,20 +3678,36 @@ frozen this pass`) while the pass publishes as before. It is never a reason for 
   taken first. A day can be kept in two versions when a run's push went out but its cache was
   not saved: the next run, on the older folder, closes the day without the freezes taken
   since, and writes them missed; the merge reads them taken. The restore merges the same way.
-- **Budgets.** Measured on full synthetic days over the committed model's 18,227 districts
-  (synthetic points, alerts and forecasts; the forecasts at their own precision: snow in
-  tenths of an inch, ice in hundredths, whole-degree feel), four freezes in every zone, 72,908
-  rows a day. A finished day is kept at xz preset 9 (its 64 MiB window finds each district's
-  earlier freezes, which preset 6's 8 MiB misses; any preset reads back the same):
+- **Budgets.** Measured by `snowlight predict drill --frozen-day --mix quiet|37|70|all` (see
+  "The storm drill") on the non-repeating synthetic day over the committed model's 18,227
+  districts (synthetic points, alerts and forecasts, a forecast of its own for every storm
+  district; the forecasts at their own precision: snow in tenths of an inch, ice in
+  hundredths, whole-degree feel; the bus-hour snow `f.bb` and the live switch's shadow `v.bt`
+  as the head writes them), four freezes in every zone, 72,908 rows a day, at `c8b85976`. A
+  finished day is kept at xz preset 9 (its 64 MiB window finds each district's earlier
+  freezes, which preset 6's 8 MiB misses; any preset reads back the same). Stored is what the
+  evidence store counts: each 64 KiB part's base64, summed (87,384 characters a whole part);
+  D1 rows are the parts and the item's row:
 
-  | Day | Rows with terms | Raw | xz | Stored (base64) | D1 rows a database |
+  | Day (`--mix`) | Rows with terms | Raw | xz | Stored | D1 rows a database |
   | --- | --- | --- | --- | --- | --- |
-  | Quiet (no storm class) | 0 | 7.6 MB | 43 KB | 58 KB | 2 |
-  | Storm, 37% of districts in a class | 19,311 | 15.8 MB | 390 KB | 520 KB | 7 |
-  | Heavy storm, 70% in a class | 36,459 | 23.2 MB | 628 KB | 838 KB | 11 |
-  | Every district in a class | 52,008 | 29.8 MB | 804 KB | 1.07 MB | 14 |
+  | Quiet, no storm class (`quiet`) | 0 | 7,573,428 | 43,564 | 58,088 | 2 |
+  | Storm, 37% of districts in a class (`37`) | 19,311 | 16,081,655 | 493,192 | 657,608 | 9 |
+  | Heavy storm, 70% in a class (`70`) | 36,459 | 23,733,443 | 824,272 | 1,099,064 | 14 |
+  | Every district in a class (`all`) | 52,008 | 30,643,676 | 1,086,888 | 1,449,228 | 18 |
 
-  So every day is under the 1 MB a day compressed (at preset 6 the last would be 1.17 MB).
+  Every budget is in xz bytes at preset 9 on this day. The district day's is
+  `frozen.DAY_BUDGET_XZ`, 1,310,720 (1.25 MiB; lead ruling LR-FE2: the "1 MB check" of the
+  earlier rulings is this constant), so the worst day above has 223,832 left (17.1%); the
+  weather kind's (`frozen_weather`, not written yet) is `frozen.WEATHER_DAY_BUDGET_XZ`,
+  262,144. The command and its CI step judge them; the recorder never reads them and never
+  refuses, cuts, skips or delays a day for its size. The Nov 2 measure (804 KB xz for every
+  district in a class) was made before the rows held `f.bb` and `v.bt`, which make most of the
+  growth since; the 70% day is now over 1 MB stored. No new key joins the district day while
+  its worst day is over 950,000 B xz (predict-next FORECAST-ERROR 5(d)). If the morning freezes read newer
+  forecast runs (today every pass from 9 PM on reads the one 9 PM run), the worst day grows:
+  `--runs 2` (a 09:00Z run read from 05:00Z, half the storm districts' snow moved) 1,172,592,
+  and `--runs 3` (a third run at the 06:30 freezes) 1,342,944, over the budget (exit 4).
   Compressing the largest takes about 12 s in the evidence step, as at preset 6. The folder
   holds a day raw until both databases have it, so a few days of it. The recorder takes at
   most 1.60 s on a pass that freezes a whole zone on the day with every district in a class

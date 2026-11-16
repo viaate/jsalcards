@@ -711,9 +711,23 @@ only once the evidence store holds it; the evidence store keeps every day.
   databases an account (accounts, state and the two evidence databases make 4). The push's
   size line gives the real growth; past the 300 MB warning, the next winters go to a new pair
   of databases (or the paid plan's 10 GB) before the limit, by a reviewed change. The frozen
-  record adds about 25 to 28 MB a database a winter (58 KB a quiet day, 0.5 to 1.07 MB a storm
-  day as stored: docs/predict.md "The frozen record"), so with it the warning comes in about
-  4 to 6 winters rather than 7 or more.
+  record (docs/predict.md "The frozen record", from `snowlight predict drill --frozen-day` at
+  `c8b85976`, stored as the store counts it, each 64 KiB part's base64) stores 58,088 B a
+  quiet day and 657,608 a storm day at 37% of districts in a class, 1,099,064 at 70% and
+  1,449,228 with every district in one. A winter of 150 quiet and 30 storm school days is
+  28.4 MB a database at 37% (32.9 MB with 10 of the 30 at 70%, 52.2 MB with all 30 at every
+  district), so with today's kinds the warning comes in about 4.2 to 6.4 winters. Counted
+  with every planned frozen kind at its budget on every storm day (the weather kind
+  `frozen_weather` 262,144 B xz, 349,536 stored; EACH-SCHOOL's `frozen_private` and `es` kinds
+  524,288 xz, 699,072 stored, each), a winter is 80.9 MB a database, and 108.0 MB at the worst
+  (every storm day with every district in a class and the 4 AM update serving, 1,612,928 B
+  with EACH-SCHOOL's `v.ky` counted on it, and the weather kind at its worst measured,
+  299,892: 1,912,820 B a storm day). With the other kinds' 21 to 46 MB a year the 300 MB
+  warning then comes after about 2.5 to 3.1 winters (2.0 to 2.4 at the worst) and D1's 500 MB
+  after about 3.9 to 4.9 (3.2 to 3.9). These are upper bounds, each new kind at its budget;
+  each kind's own piece swaps its budget line here for its measured worst. The rule above
+  stands: past the warning, the next winters go to a new pair of databases by a reviewed
+  change.
 - **Not here.** The public day timelines are on the live host, whose git history keeps every
   version.
 

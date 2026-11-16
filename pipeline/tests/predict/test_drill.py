@@ -7,6 +7,8 @@ import builtins
 import copy
 import dataclasses
 import fcntl
+import gzip
+import hashlib
 import io
 import json
 import math
@@ -31,6 +33,7 @@ import pytest
 import shapely
 
 from snowlight.cli import main
+from snowlight.live import evidence
 from snowlight.predict import (
     artifact,
     cli,
@@ -39,6 +42,7 @@ from snowlight.predict import (
     forecast_adjust,
     forecast_history,
     forecast_live,
+    frozen,
     inputs,
     ndfd,
     outlook_live,
@@ -55,7 +59,7 @@ from snowlight.sources.nws.alerts import parse_active
 PIPELINE: Path = PIPELINE_ROOT
 WEB: Path = PIPELINE_ROOT.parent / "web" / "src"
 TIMING: frozenset[str] = frozenset({"seconds", "cpu", "xz_seconds", "rss_mb"})
-SIZE_KEYS: frozenset[str] = frozenset({"size", "frozen_size", "rss_mb"})
+SIZE_KEYS: frozenset[str] = frozenset({"size", "frozen_size", "rss_mb", "frozen_day"})
 
 
 @dataclasses.dataclass
@@ -168,7 +172,7 @@ def _snapshot(folder: Path) -> dict[str, tuple[int, int]]:
 
 
 _WRITE_FLAGS = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND
-GUARDED_ARGS: tuple[str, ...] = ("predict", "drill", "--size", "--scale", "0.01")
+GUARDED_ARGS: tuple[str, ...] = ("predict", "drill", "--size", "--frozen-day", "--scale", "0.01")
 
 
 def _at(path: Any, dir_fd: int | None) -> str:
@@ -1067,6 +1071,18 @@ def test_the_command_prints_the_table_and_the_verdicts(guarded: Guarded) -> None
     assert frozen["taken"] == 4 * frozen["zones"]
     assert frozen["missed"] == 0
     assert frozen["late_s"] <= 3600
+    assert frozen["kind"] == "frozen"
+    assert frozen["budget_xz"] == 1_310_720
+    # The real-sized frozen day after the night (--frozen-day, here at the guarded scale).
+    day = document["frozen_day"]
+    assert (day["mix"], day["runs"], day["districts"]) == ("all", 1, 183)
+    assert day["rows"] == 4 * day["districts"]
+    (kind,) = day["kinds"]
+    assert kind["kind"] == "frozen"
+    assert 0 < kind["xz"] < kind["budget_xz"]
+    assert sum(1 for line in printed if line.startswith("frozen day world (--mix all")) == 1
+    assert sum(1 for line in printed if line.startswith("  frozen day 2027-01-12 (frozen)")) == 2
+    assert not any(line.startswith("frozen gate: ") for line in printed)
     assert not any(name.startswith("snowlight-drill-") for name in guarded.left)
 
 
@@ -1075,3 +1091,192 @@ def test_the_drill_is_the_same_every_run(story: Spied, guarded: Guarded) -> None
     assert plain["schema"] == 1
     story_part = {k: v for k, v in guarded.document.items() if k not in SIZE_KEYS}
     assert _without_timing(plain) == _without_timing(story_part)
+
+
+# --- the real-sized frozen day (predict-next FORECAST-ERROR G-SIZE r4) ------------------------
+
+SNOW_SEEN_SHA256 = "435225ab9c5337540d981854b93364d269df9821b3bc4908d6714e9799a02b5e"
+"""The committed snow-seen table's (``data/predict/drill-snow-seen.json.gz``): 16,726 joint
+(50%, 90%) pairs, 14 null, shuffled with seed 19 (46,646 B gzipped)."""
+
+
+def _day(world_inputs: Inputs, folder: Path, mix: str = "all", runs: int = 1) -> drill.FrozenDay:
+    labels = folder / "labels"
+    labels.mkdir(parents=True, exist_ok=True)
+    return drill.frozen_day_world(
+        world_inputs.config,
+        world_inputs.committed,
+        labels,
+        folder / "frozen",
+        mix=mix,
+        runs=runs,
+        scale=0.01,
+    )
+
+
+def test_the_frozen_day_world_at_a_small_scale(world_inputs: Inputs, tmp_path: Path) -> None:
+    day = _day(world_inputs, tmp_path / "a")
+    assert (day.mix, day.runs, day.districts, day.storm) == ("all", 1, 183, 183)
+    assert day.rows == 4 * day.districts
+    assert 0 < day.rows_with_terms < day.rows  # the evening freeze before 9 PM holds no terms
+    assert day.snow_seen == day.districts
+    (item,) = day.kinds
+    data = (tmp_path / "a" / "frozen" / f"{drill.DAY.isoformat()}.jsonl").read_bytes()
+    assert hashlib.sha256(data).hexdigest() == day.sha256
+    # Stored is the store's own count (each 64 KiB part's base64, summed), D1 rows its parts
+    # and the item's row; xz is the frozen kind's preset 9.
+    entry, parts = evidence.item_of(
+        evidence.Offer(evidence.FROZEN, drill.DAY.isoformat(), data), "2027-01-13T00:00:00Z"
+    )
+    assert item.kind == evidence.FROZEN
+    assert item.raw == len(data)
+    assert item.xz == entry.packed == len(evidence.compress(data, 9))
+    assert item.stored == sum(len(p) for p in parts)
+    assert item.d1_rows == len(parts) + 1
+    assert item.taken == 4 * item.zones
+    assert item.missed == 0
+    line = drill.frozen_line(item)
+    assert f"xz9 {item.xz:,} in " in line
+    left = drill.budget_xz("frozen") - item.xz
+    assert f"({left:,} under its budget of 1,310,720, {left / 1_310_720:.1%})" in line
+    assert f"stored {item.stored:,} (the parts' base64), {item.d1_rows} D1 rows" in line
+    # Seeded: the same flags give the same day byte for byte.
+    assert _day(world_inputs, tmp_path / "b").sha256 == day.sha256
+    # --mix changes the classes drawn; a quiet day holds no terms and a smaller file.
+    quiet = _day(world_inputs, tmp_path / "quiet", mix="quiet")
+    assert (quiet.storm, quiet.rows_with_terms, quiet.rows) == (0, 0, day.rows)
+    assert quiet.kinds[0].xz < item.xz
+    some = _day(world_inputs, tmp_path / "37", mix="37")
+    assert 0 < some.storm < day.storm
+    assert quiet.rows_with_terms < some.rows_with_terms < day.rows_with_terms
+    # --runs: the morning freezes read newer runs, every row still there and the day grows.
+    two = _day(world_inputs, tmp_path / "two", runs=2)
+    three = _day(world_inputs, tmp_path / "three", runs=3)
+    assert len({day.sha256, two.sha256, three.sha256}) == 3
+    assert day.rows == two.rows == three.rows
+    assert item.xz < two.kinds[0].xz < three.kinds[0].xz
+    for mix, runs in (("most", 1), ("all", 4)):
+        with pytest.raises(ValueError, match=r"--mix most|--runs 4"):
+            _day(world_inputs, tmp_path / "bad", mix=mix, runs=runs)
+
+
+def test_a_frozen_day_over_its_kind_s_budget_exits_4_and_one_under_it_0(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = tmp_path / "day.json"
+    args = ["predict", "drill", "--frozen-day", "--scale", "0.01", "--json", str(path)]
+    assert main(args) == 0
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[0].startswith("frozen day world (--mix all, --runs 1): 183 districts")
+    assert not any(line.startswith("frozen gate: ") for line in printed)
+    assert not any(line.startswith(("drill: ", "anchor: ")) for line in printed)  # no story
+    document = json.loads(path.read_text())
+    assert set(document) == {"schema", "day", "frozen_day"}
+    (kind,) = document["frozen_day"]["kinds"]
+    xz = kind["xz"]
+    # At the budget it fits, at the edge (under 5% left); one byte under it, it fails.
+    monkeypatch.setattr(frozen, "DAY_BUDGET_XZ", xz)
+    assert main(args) == 0
+    assert "0 under its budget of" in capsys.readouterr().out
+    monkeypatch.setattr(frozen, "DAY_BUDGET_XZ", xz + 100)
+    assert main(args) == 0
+    assert "(at the edge)" in capsys.readouterr().out
+    monkeypatch.setattr(frozen, "DAY_BUDGET_XZ", xz - 1)
+    assert main(args) == drill.FROZEN_EXIT == 4
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[2].startswith("  frozen day 2027-01-12 (frozen): ")
+    assert f"1 over its budget of {xz - 1:,})" in printed[2]
+    assert (
+        printed[-1]
+        == f"frozen gate: 2027-01-12 frozen xz9 {xz:,} is 1 over its budget of {xz - 1:,}"
+    )
+    # The weather kind's budget is its own (P3's kind, not written yet).
+    assert drill.budget_xz("frozen_weather") == frozen.WEATHER_DAY_BUDGET_XZ == 262_144
+    assert drill.budget_xz("frozen") == frozen.DAY_BUDGET_XZ
+
+
+def test_a_call_failing_the_size_gate_and_the_frozen_day_says_both_and_exits_4(
+    story: Spied, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def ran(*_args: Any) -> drill.Result:
+        return dataclasses.replace(story.result)
+
+    night = drill.SizeNight(passes=_night(_pass(dark=True)))
+    monkeypatch.setattr(drill, "run_story", ran)
+    monkeypatch.setattr(drill, "size_night", lambda *_args, **_kwargs: night)
+    args = ["predict", "drill", "--size", "--frozen-day", "--scale", "0.01"]
+    assert main(args) == drill.SIZE_EXIT == 3
+    printed = capsys.readouterr().out.splitlines()
+    assert "size gate: 02:30Z dark" in printed
+    assert not any(line.startswith("frozen gate: ") for line in printed)
+    monkeypatch.setattr(frozen, "DAY_BUDGET_XZ", 1)
+    assert main(args) == drill.FROZEN_EXIT
+    printed = capsys.readouterr().out.splitlines()
+    assert "size gate: 02:30Z dark" in printed
+    assert any(line.startswith("frozen gate: 2027-01-12 frozen xz9 ") for line in printed)
+    assert printed.index("size gate: 02:30Z dark") < len(printed) - 1
+    # frozen_code alone: each kind over its budget named in one line.
+    said: list[str] = []
+    item = drill.FrozenSize(
+        share=1.0, mix="all", raw=10, lines=1, xz=5, xz_seconds=0.0, stored=8, d1_rows=2,
+        taken=4, missed=0, zones=1, late_s=0,
+    )  # fmt: skip
+    monkeypatch.setattr(frozen, "DAY_BUDGET_XZ", 5)
+    assert drill.frozen_code([item], said.append) == 0
+    assert said == []
+    monkeypatch.setattr(frozen, "DAY_BUDGET_XZ", 4)
+    assert drill.frozen_code([item, item], said.append) == 4
+    assert said == ["frozen gate: 2027-01-12 frozen xz9 5 is 1 over its budget of 4"] * 2
+
+
+def test_the_frozen_day_flags_say_their_own_errors(capsys: pytest.CaptureFixture[str]) -> None:
+    for args in (["--mix", "70"], ["--runs", "2"], ["--size", "--mix", "quiet"]):
+        assert main(["predict", "drill", *args]) == 1
+        assert capsys.readouterr().out == "predict drill: --mix and --runs need --frozen-day\n"
+    assert main(["predict", "drill", "--frozen-day", "--against", "x.json"]) == 1
+    assert capsys.readouterr().out == (
+        "predict drill: --against needs the story (--frozen-day alone runs none)\n"
+    )
+    for args in (["--mix", "50"], ["--runs", "4"]):
+        with pytest.raises(SystemExit):
+            main(["predict", "drill", "--frozen-day", *args])
+        capsys.readouterr()
+
+
+def test_the_snow_seen_table_holds_two_numbers_or_null_a_row_and_nothing_else(
+    tmp_path: Path,
+) -> None:
+    data = drill.SNOW_SEEN_PATH.read_bytes()
+    assert hashlib.sha256(data).hexdigest() == SNOW_SEEN_SHA256
+    assert len(data) == 46_646
+    rows = json.loads(gzip.decompress(data))
+    # Numbers only: a list of [50%, 90%] pairs in hundredths of an inch, or null; no field
+    # name, id, date or place anywhere in it.
+    assert isinstance(rows, list)
+    assert len(rows) == 16_726
+    assert sum(1 for row in rows if row is None) == 14
+    for row in rows:
+        assert row is None or (
+            isinstance(row, list)
+            and len(row) == 2
+            and all(type(value) is int and 0 <= value < 10_000 for value in row)
+        ), row
+    table = drill.snow_seen_table()
+    assert table == tuple(None if row is None else (row[0], row[1]) for row in rows)
+    bads: tuple[object, ...] = (
+        [[1, 2, 3]], [{"l": "0100005", "w": [1, 2]}], [["1", 2]], [[1.5, 2]], [[-1, 2]],
+        {"rows": []}, [],
+    )  # fmt: skip
+    for bad in bads:
+        path = tmp_path / "bad.json.gz"
+        path.write_bytes(gzip.compress(json.dumps(bad).encode()))
+        with pytest.raises(ValueError, match=r"bad\.json\.gz"):
+            drill.snow_seen_table(path)
+    # The fake read: each district's pair at each morning freeze, by seeded index, the same
+    # draws every run.
+    seen = drill.snow_seen_reader(table, 500)
+    assert set(seen) == {"d0_0507", "d0_0630"}
+    assert all(len(pairs) == 500 for pairs in seen.values())
+    assert seen == drill.snow_seen_reader(table, 500)
+    assert seen["d0_0507"] != seen["d0_0630"]
+    assert all(pair in set(table) for pairs in seen.values() for pair in pairs)

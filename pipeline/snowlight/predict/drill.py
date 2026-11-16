@@ -19,6 +19,10 @@ of them upgraded to a winter storm warning at 8 PM Eastern, and nine passes thro
 each pass's compute time, its file's sizes against the budget, and whether the file is whole;
 then the frozen day's size.
 
+**The real-sized frozen day** (``--frozen-day``, predict-next FORECAST-ERROR G-SIZE r4). The
+non-repeating every-district day (:func:`frozen_day_world`) through the real recorder, each
+frozen kind's xz against its budget (:func:`budget_xz`): exit 4 when one is over.
+
 The one copy of live code is :func:`drill_read` (the body of
 :func:`~snowlight.predict.outlook_live.forecast_reader` with its two network parts scripted)
 and :data:`ADJUST_COMPOSITION` (the reader :func:`~snowlight.predict.cli._adjust_reader`
@@ -27,6 +31,7 @@ builds); the drill's tests fail until a change to either is followed here.
 
 import argparse
 import contextlib
+import dataclasses
 import gzip
 import hashlib
 import io
@@ -51,17 +56,25 @@ import shapely
 
 from snowlight.directory.points import NO_DISTRICT, decode, encode
 from snowlight.live import evidence
-from snowlight.predict import anchor_labels, forecast_history, forecast_live, ndfd, serve
-from snowlight.predict.alerts_live import UgcIndex
+from snowlight.predict import (
+    anchor_labels,
+    forecast_history,
+    forecast_live,
+    live_switch,
+    ndfd,
+    serve,
+)
+from snowlight.predict import frozen as frozen_record
+from snowlight.predict.alerts_live import LiveEvent, UgcIndex
 from snowlight.predict.artifact import ModelArtifact
 from snowlight.predict.calendar import is_school_day
-from snowlight.predict.config import PredictConfig
+from snowlight.predict.config import PIPELINE_ROOT, PredictConfig, live_score_sha256
 from snowlight.predict.exposure import Exposure
-from snowlight.predict.forecast_values import Forecasts
+from snowlight.predict.forecast_values import DistrictForecast, Forecasts, SnowPart
 from snowlight.predict.outlook_live import ADJUST_SECONDS, Budget, ReadForecast, settled_reader
 from snowlight.predict.publish import Mode, State
 from snowlight.predict.serve import PRIVATE, DeployedDirectory, ServeModel
-from snowlight.predict.situations import Situation, WeatherClass
+from snowlight.predict.situations import Event, Situation, WeatherClass, Window
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.live import DayTimeline
 from snowlight.schemas.predictions import Forecast, PredictionsFile
@@ -109,6 +122,36 @@ ADJUST_COMPOSITION: Final = (
 :func:`drill_read` the same way (its tests compare the two)."""
 EDGE: Final = 0.03
 """A size under this share from its limit is said to be at the edge."""
+FROZEN_EDGE: Final = 0.05
+"""A frozen day under this share from its kind's budget is said to be at the edge."""
+SIZE_EXIT: Final = 3
+"""``--size``'s code when a pass of the gate's world went dark or is not whole."""
+FROZEN_EXIT: Final = 4
+"""``--frozen-day``'s code when a kind's day is over its budget (wins over :data:`SIZE_EXIT`:
+one call failing both prints both and exits this)."""
+DAY_MIXES: Final[Mapping[str, tuple[float, float, float]]] = {
+    "quiet": (0.0, 0.0, 0.0),
+    "37": (0.25, 0.10, 0.02),
+    "70": (0.42, 0.245, 0.035),
+    "all": (0.60, 0.35, 0.05),
+}
+"""``--frozen-day --mix``: the shares of districts drawn advisory, winter storm warning and
+cold on D (the rest none): docs/predict.md's four Budgets rows."""
+RUNS: Final = (1, 2, 3)
+"""``--frozen-day --runs``: the forecast runs the freezes read (today's nights read one)."""
+TWO_RUNS: Final = 2
+THREE_RUNS: Final = 3
+RUN_CHANGE: Final = 0.5
+"""The share of storm districts whose snow a newer run moves."""
+MORNING_RUN: Final = datetime(2027, 1, 12, 5, 0, tzinfo=UTC)
+"""From this pass on the frozen day's freezes read the second file (and run)."""
+THIRD_RUN: Final = datetime(2027, 1, 12, 11, 0, tzinfo=UTC)
+"""With ``--runs 3``, the :37 passes from here on (the 06:30 freezes) read the third run."""
+THIRD_RUN_MINUTE: Final = 37
+"""The passes that take the 06:30 freezes (at :37)."""
+MORNING_FREEZES: Final = ("d0_0507", "d0_0630")
+SNOW_SEEN_PATH: Final = PIPELINE_ROOT / "data" / "predict" / "drill-snow-seen.json.gz"
+"""The committed snow-seen table the fake snow-seen read draws from (:func:`snow_seen_table`)."""
 
 
 @dataclass(frozen=True)
@@ -1521,12 +1564,16 @@ class FrozenSize:
     zones: int
     late_s: int
     """The latest freeze, in seconds."""
+    kind: str = evidence.FROZEN
+    """The frozen kind the day is kept as (its budget: :func:`budget_xz`)."""
 
     def as_json(self) -> dict[str, object]:
         """The world's JSON row."""
         return {
             "share": self.share,
             "mix": self.mix,
+            "kind": self.kind,
+            "budget_xz": budget_xz(self.kind),
             "raw": self.raw,
             "lines": self.lines,
             "xz": self.xz,
@@ -1733,15 +1780,20 @@ def _base(day: Mapping[str, object]) -> str:
 
 
 def frozen_size(folder: Path, share: float, mix: str | None) -> FrozenSize:
-    """The world's frozen day D: raw bytes, lines, xz bytes at the store's preset and the
-    seconds it took, the base64 bytes and the D1 rows a database; the freezes taken."""
-    raw = (folder / f"{DAY.isoformat()}.jsonl").read_bytes()
+    """The world's frozen day D (see :func:`day_size`)."""
+    return day_size((folder / f"{DAY.isoformat()}.jsonl").read_bytes(), share, mix)
+
+
+def day_size(raw: bytes, share: float, mix: str | None, kind: str = evidence.FROZEN) -> FrozenSize:
+    """A frozen day D kept as ``kind``: raw bytes, lines, xz bytes at the kind's preset and the
+    seconds the store's packing took, stored as the store counts it (each 64 KiB part's base64,
+    summed: :func:`snowlight.live.evidence.item_of`) and the D1 rows a database; the freezes
+    taken."""
     started = time.monotonic()
-    packed = evidence.compress(raw, evidence.PRESETS[evidence.FROZEN])
-    took = time.monotonic() - started
-    _item, parts = evidence.item_of(
-        evidence.Offer(evidence.FROZEN, DAY.isoformat(), raw), "2027-01-13T00:00:00Z"
+    item, parts = evidence.item_of(
+        evidence.Offer(kind, DAY.isoformat(), raw), "2027-01-13T00:00:00Z"
     )
+    took = time.monotonic() - started
     taken: set[tuple[str, str]] = set()
     missed: set[tuple[str, str]] = set()
     zones: set[str] = set()
@@ -1761,7 +1813,7 @@ def frozen_size(folder: Path, share: float, mix: str | None) -> FrozenSize:
         mix=mix,
         raw=len(raw),
         lines=raw.count(b"\n"),
-        xz=len(packed),
+        xz=item.packed,
         xz_seconds=took,
         stored=sum(len(p) for p in parts),
         d1_rows=1 + len(parts),
@@ -1769,6 +1821,7 @@ def frozen_size(folder: Path, share: float, mix: str | None) -> FrozenSize:
         missed=len(missed),
         zones=len(zones),
         late_s=late,
+        kind=kind,
     )
 
 
@@ -1801,15 +1854,48 @@ def pass_lines(item: SizePass, config: PredictConfig) -> list[str]:
     return [head, body, *(f"    ladder: {line}" for line in item.ladder)]
 
 
+def budget_xz(kind: str) -> int:
+    """A frozen kind's day budget, xz bytes at preset 9 (read when judged, so a test can plant a
+    small one)."""
+    budgets = {
+        evidence.FROZEN: frozen_record.DAY_BUDGET_XZ,
+        "frozen_weather": frozen_record.WEATHER_DAY_BUDGET_XZ,
+    }
+    return budgets[kind]
+
+
+def _budget_margin(size: int, budget: int) -> str:
+    left = budget - size
+    if left < 0:
+        return f"{-left:,} over its budget of {budget:,}"
+    edge = " (at the edge)" if left < FROZEN_EDGE * budget else ""
+    return f"{left:,} under its budget of {budget:,}, {left / budget:.1%}{edge}"
+
+
 def frozen_line(item: FrozenSize) -> str:
-    """A world's frozen day line."""
+    """A frozen day's line: its xz against its kind's budget, stored and D1 rows beside it."""
     return (
-        f"  frozen day {DAY.isoformat()}: {item.raw:,} raw, {item.lines:,} lines, xz9 "
-        f"{item.xz:,} in {item.xz_seconds:.1f} s, stored {item.stored:,} base64, {item.d1_rows} D1 "
-        f"rows a database ({_margin(item.stored, 1_000_000, '1 MB a day')}); freezes "
-        f"{item.taken} taken in {item.zones} zones, {item.missed} missed, up to {item.late_s} s "
-        "late"
+        f"  frozen day {DAY.isoformat()} ({item.kind}): {item.raw:,} raw, {item.lines:,} lines, "
+        f"xz9 {item.xz:,} in {item.xz_seconds:.1f} s "
+        f"({_budget_margin(item.xz, budget_xz(item.kind))}), stored {item.stored:,} (the "
+        f"parts' base64), {item.d1_rows} D1 rows a database; freezes {item.taken} taken in "
+        f"{item.zones} zones, {item.missed} missed, up to {item.late_s} s late"
     )
+
+
+def frozen_code(items: Sequence[FrozenSize], say: Callable[[str], None] | None = None) -> int:
+    """4 when a frozen day's xz is over its kind's budget, each named in one line; else 0."""
+    out = say or _out
+    code = 0
+    for item in items:
+        budget = budget_xz(item.kind)
+        if item.xz > budget:
+            out(
+                f"frozen gate: {DAY.isoformat()} {item.kind} xz9 {item.xz:,} is "
+                f"{item.xz - budget:,} over its budget of {budget:,}"
+            )
+            code = FROZEN_EXIT
+    return code
 
 
 def size_code(results: Sequence[SizePass], say: Callable[[str], None] | None = None) -> int:
@@ -1820,17 +1906,352 @@ def size_code(results: Sequence[SizePass], say: Callable[[str], None] | None = N
     gate = sum(1 for item in results if (item.share, item.mix) == GATE)
     if gate != len(PASSES):
         out(f"size gate: {gate} of {len(PASSES)} passes of the 37% worst world")
-        code = 3
+        code = SIZE_EXIT
     for item in results:
         if (item.share, item.mix) != GATE:
             continue
         for missing in item.missing():
-            code = 3
+            code = SIZE_EXIT
             if missing.startswith("records: "):
                 out(missing)
             else:
                 out(f"size gate: {item.at} {missing}")
     return code
+
+
+# --- The real-sized frozen day (--frozen-day) -------------------------------------------------
+
+
+@dataclass(frozen=True)
+class FrozenDay:
+    """The non-repeating every-district day of :func:`frozen_day_world` and each kind's size."""
+
+    mix: str
+    runs: int
+    districts: int
+    storm: int
+    """Districts in a class on D."""
+    rows: int
+    rows_with_terms: int
+    sha256: str
+    """The district day file's."""
+    seconds: float
+    """The build: the model, the files and the passes."""
+    snow_seen: int
+    """Pairs the fake snow-seen read draws at each morning freeze."""
+    kinds: tuple[FrozenSize, ...]
+
+    def as_json(self) -> dict[str, object]:
+        """The day's JSON row."""
+        return {
+            "mix": self.mix,
+            "runs": self.runs,
+            "districts": self.districts,
+            "storm": self.storm,
+            "rows": self.rows,
+            "rows_with_terms": self.rows_with_terms,
+            "sha256": self.sha256,
+            "seconds": round(self.seconds, 3),
+            "snow_seen": self.snow_seen,
+            "kinds": [item.as_json() for item in self.kinds],
+        }
+
+
+type Pair = tuple[int, int] | None
+
+
+def snow_seen_table(path: Path = SNOW_SEEN_PATH) -> tuple[Pair, ...]:
+    """The drill's snow-seen table: joint (50%, 90%) pairs of the snow seen overnight, hundredths
+    of an inch, null where none was read; numbers only, shuffled, no id, date or place.
+
+    Raises:
+        ValueError: a row is not two whole numbers or null.
+    """
+    rows = json.loads(gzip.decompress(path.read_bytes()))
+    if not isinstance(rows, list) or not rows:
+        raise ValueError(f"{path.name}: not a list of pairs")
+    table: list[Pair] = []
+    for row in rows:
+        if row is None:
+            table.append(None)
+        elif (
+            isinstance(row, list)
+            and len(row) == 2  # noqa: PLR2004 - a pair
+            and all(type(value) is int and value >= 0 for value in row)
+        ):
+            table.append((row[0], row[1]))
+        else:
+            raise ValueError(f"{path.name}: {row!r} is not two whole numbers or null")
+    return tuple(table)
+
+
+def snow_seen_reader(table: Sequence[Pair], districts: int) -> dict[str, tuple[Pair, ...]]:
+    """The fake snow-seen read (predict-next FORECAST-ERROR P3's, which the drill serves from
+    the committed table): each district's pair at each morning freeze, drawn from the whole
+    table by ``default_rng(11)`` indexes, freeze by freeze."""
+    rng = np.random.default_rng(11)
+    return {
+        name: tuple(table[int(j)] for j in rng.integers(0, len(table), districts))
+        for name in MORNING_FREEZES
+    }
+
+
+def _newer_run(prev: Forecasts, at: datetime, rng: np.random.Generator) -> Forecasts:
+    """A newer forecast run: :data:`RUN_CHANGE` of the storm districts' snow moved (x
+    lognormal(0, 0.25), the rest of the forecast drawn as the first run's), every run time
+    ``at``."""
+    out: dict[int, DistrictForecast] = {}
+    for i, old in prev.by_day[DAY].items():
+        if rng.uniform() < RUN_CHANGE:
+            snow = round(float(old.snow or 0.0) * float(rng.lognormal(0.0, 0.25)), 1)
+            shares = rng.dirichlet([1, 1, 1])
+            parts = tuple(
+                SnowPart(e - ndfd.PERIOD, e, round(snow * float(s), 1))
+                for e, s in zip(ndfd.window_ends(DAY), shares, strict=True)
+            )
+            code = int(ndfd.snow_bucket(np.array([snow]))[0])
+            out[i] = dataclasses.replace(
+                old,
+                code=max(code, 0),
+                snow_low=snow * 0.8,
+                snow_high=snow * 1.2,
+                snow_night=snow * 0.6,
+                snow_night_low=snow * 0.5,
+                snow_night_high=snow * 0.7,
+                snow=snow,
+                snow_parts=parts,
+                run_time=at,
+                snow_commute=round(snow * float(rng.uniform(0.3, 1.0)), 1),
+                snow_bus=round(snow * float(rng.uniform(0.2, 0.9)), 1),
+            )
+        else:
+            out[i] = dataclasses.replace(old, run_time=at)
+    return Forecasts({DAY: out})
+
+
+def frozen_day_world(  # noqa: PLR0913, PLR0915 - the inputs and the steps of one day, in order
+    config: PredictConfig,
+    committed: ModelArtifact,
+    labels: Path,
+    folder: Path,
+    *,
+    mix: str = "all",
+    runs: int = 1,
+    scale: float = 1.0,
+) -> FrozenDay:
+    """The real-sized frozen day (predict-next FORECAST-ERROR G-SIZE r4, 5(b)): every district
+    of the committed model (its private schools cleared; with ``scale`` the first ``ceil(scale
+    n)`` in LEAID order) on a made-up point, each drawn a class by ``mix`` (:data:`DAY_MIXES`),
+    each storm district its own forecast (snow gamma(1.5, 2.0) in tenths, its three shares,
+    ice, feel, commute and bus-hour snow), so no row repeats another district's; two files
+    (made 00:30Z and 06:30Z, the later read from 05:00Z), and the real recorder
+    (:func:`snowlight.predict.frozen.record`) at 30-minute passes from 23:07Z to 17:37Z taking
+    every zone's four freezes into ``folder``, with the live switch's shadows and heads at the
+    committed defaults. ``runs`` 2: passes from 05:00Z read a 09:00Z run in which half the
+    storm districts' snow moved; 3: the :37 passes from 11:00Z (the 06:30 freezes) also read
+    an 11:00Z run moved the same way from it. Seeded: ``default_rng(7)`` draws the points, the
+    classes and the forecasts in that order, ``default_rng(23)`` the newer runs. The day is
+    measured as each kind it is kept as (today the district day, kind ``frozen``)."""
+    from snowlight.predict import cli  # noqa: PLC0415 - cli imports this module at its top
+
+    if mix not in DAY_MIXES:
+        raise ValueError(f"--mix {mix}: give one of {', '.join(DAY_MIXES)}")
+    if runs not in RUNS:
+        raise ValueError(f"--runs {runs}: give 1, 2 or 3")
+    started = time.monotonic()
+    advisory, warning, cold = DAY_MIXES[mix]
+    rng = np.random.default_rng(7)
+    committed = committed.model_copy(
+        update={"private": {}, "private_strengths": {}, "private_labeled_days": 0}
+    )
+    leaids = tuple(sorted(committed.districts))
+    leaids = leaids[: math.ceil(scale * len(leaids))]
+    n = len(leaids)
+    lon = rng.uniform(-120, -70, n)
+    lat = rng.uniform(30, 48, n)
+    points = decode(
+        encode(
+            [round(float(x) * 1e6) for x in lon],
+            [round(float(y) * 1e6) for y in lat],
+            list(range(n)),
+            [0] * n,
+            n,
+        )
+    )
+    stamp = DirectoryStamp(generated_on=date(2026, 10, 14), schools=n, districts=n)
+    directory = DeployedDirectory(
+        stamp, leaids, points, school_ids=tuple(f"{i:012d}" for i in range(n))
+    )
+    anchor = anchor_labels.serving_anchor(config, committed, folder=labels)
+    model = serve.build_model(
+        directory, committed, config, lambda _x, _y: "America/Chicago", anchor=anchor
+    )
+    days = (DAY, DAY + timedelta(days=1))
+    draw = rng.uniform(size=n)
+    weather = np.where(
+        draw < advisory,
+        int(WeatherClass.ADVISORY),
+        np.where(
+            draw < advisory + warning,
+            int(WeatherClass.SNOW_WARNING),
+            np.where(
+                draw < advisory + warning + cold + 1e-9,
+                int(WeatherClass.COLD),
+                int(WeatherClass.NONE),
+            ),
+        ),
+    )
+    classes = np.zeros((n, 2), dtype=np.int64)
+    classes[:, 0] = weather
+    storm = np.flatnonzero(weather > 0)
+    run_time = datetime(2027, 1, 12, 0, tzinfo=UTC)
+
+    def forecast_of() -> DistrictForecast:
+        snow = round(float(rng.gamma(1.5, 2.0)), 1)
+        shares = rng.dirichlet([1, 1, 1])
+        parts = tuple(
+            SnowPart(e - ndfd.PERIOD, e, round(snow * float(s), 1))
+            for e, s in zip(ndfd.window_ends(DAY), shares, strict=True)
+        )
+        code = int(ndfd.snow_bucket(np.array([snow]))[0])
+        ice = float(rng.choice([0, 0, 0, 0.05, 0.12]))
+        feels = int(rng.integers(-15, 30))
+        commute = round(snow * float(rng.uniform(0.3, 1.0)), 1)
+        return DistrictForecast(
+            code=max(code, 0),
+            snow_low=snow * 0.8,
+            snow_high=snow * 1.2,
+            snow_night=snow * 0.6,
+            snow_night_low=snow * 0.5,
+            snow_night_high=snow * 0.7,
+            ice=ice,
+            feels=feels,
+            run_time=run_time,
+            snow=snow,
+            snow_parts=parts,
+            snow_commute=commute,
+            snow_bus=round(snow * float(rng.uniform(0.2, 0.9)), 1),
+        )
+
+    first = Forecasts({DAY: {int(i): forecast_of() for i in storm}})
+    newer = np.random.default_rng(23)
+    morning = (
+        _newer_run(first, datetime(2027, 1, 12, 9, tzinfo=UTC), newer)
+        if runs >= TWO_RUNS
+        else first
+    )
+    third = (
+        _newer_run(morning, datetime(2027, 1, 12, 11, tzinfo=UTC), newer)
+        if runs >= THREE_RUNS
+        else morning
+    )
+    events: list[LiveEvent] = []
+    reached: dict[str, npt.NDArray[np.int64]] = {}
+    for code, kind in (
+        ("WW.Y", WeatherClass.ADVISORY),
+        ("WS.W", WeatherClass.SNOW_WARNING),
+        ("EC.W", WeatherClass.COLD),
+    ):
+        reached[code] = np.flatnonzero(weather == int(kind)).astype(np.int64)
+        events.append(
+            LiveEvent(
+                key=f"KXXX.{code}.0001",
+                ugcs=frozenset(),
+                action="NEW",
+                event=Event(
+                    code=code,
+                    issued=datetime(2027, 1, 11, 12, tzinfo=UTC),
+                    start=datetime(2027, 1, 12, 3, tzinfo=UTC),
+                    end=datetime(2027, 1, 13, 0, tzinfo=UTC),
+                ),
+            )
+        )
+    window = Window(
+        config.weather.window_from, config.weather.window_until, config.weather.snapshot_hour
+    )
+    noted: dict[tuple[int, date], serve.Noted] = {}
+
+    def made_at(at: datetime, forecasts: Forecasts) -> PredictionsFile:
+        return serve.forecast_file(
+            model,
+            classes,
+            days,
+            at,
+            closed_on=lambda _d: None,
+            last=None,
+            forecasts=forecasts,
+            adjust=True,
+            noted=noted,
+        )
+
+    early = made_at(datetime(2027, 1, 12, 0, 30, tzinfo=UTC), first)
+    late = made_at(datetime(2027, 1, 12, 6, 30, tzinfo=UTC), morning)
+    latest = (
+        made_at(datetime(2027, 1, 12, 6, 30, tzinfo=UTC), third) if runs >= THREE_RUNS else late
+    )
+    switch = live_switch.served_arms(config, None, "m" * 64, today=DAY)
+    shadows = cli.frozen_shadows(config, switch)
+    heads = cli.frozen_heads(config, switch)
+    after = {DAY: frozenset[int](), DAY + timedelta(days=1): frozenset[int]()}
+    no_zones = np.zeros(0, dtype=np.int64)
+    at = datetime(2027, 1, 11, 23, 7, tzinfo=UTC)
+    while at <= datetime(2027, 1, 12, 17, 37, tzinfo=UTC):
+        base, read = (early, first) if at < MORNING_RUN else (late, morning)
+        if runs >= THREE_RUNS and at >= THIRD_RUN and at.minute == THIRD_RUN_MINUTE:
+            base, read = latest, third
+        frozen_record.record(
+            frozen_record.PassInputs(
+                made=base.model_copy(update={"generated_at": at}),
+                model=model,
+                classes=classes,
+                after=after,
+                forecasts=read,
+                events=events,
+                watches=(),
+                reach=lambda e: reached[e.event.code],
+                reach_all=lambda _e: no_zones,
+                window=window,
+                shown=lambda: None,
+                run_id="1",
+                code_sha="0" * 40,
+                live_score_sha256=live_score_sha256(config),
+                noted=noted,
+                adjusted=True,
+                shadows=shadows,
+                heads=heads,
+            ),
+            folder,
+        )
+        at += timedelta(minutes=30)
+    [data] = [d for key, d in frozen_record.offers(folder) if key == DAY.isoformat()]
+    seconds = time.monotonic() - started
+    seen = snow_seen_reader(snow_seen_table(), n)
+    share = len(storm) / n
+    day = frozen_record.parse_day(data)
+    return FrozenDay(
+        mix=mix,
+        runs=runs,
+        districts=n,
+        storm=len(storm),
+        rows=len(day.rows),
+        rows_with_terms=sum(1 for row in day.rows if row.terms is not None),
+        sha256=hashlib.sha256(data).hexdigest(),
+        seconds=seconds,
+        snow_seen=len(seen[MORNING_FREEZES[0]]),
+        kinds=(day_size(data, share, mix),),
+    )
+
+
+def frozen_day_lines(day: FrozenDay) -> list[str]:
+    """The frozen day's lines: the world, then each kind's :func:`frozen_line`."""
+    return [
+        f"frozen day world (--mix {day.mix}, --runs {day.runs}): {day.districts:,} districts, "
+        f"{day.storm:,} in a class, {day.rows:,} rows ({day.rows_with_terms:,} with terms), "
+        f"built in {day.seconds:.1f} s; sha256 {day.sha256}",
+        f"  snow seen: {day.snow_seen:,} pairs drawn at each morning freeze from the committed "
+        "table; no frozen kind holds them yet",
+        *(frozen_line(item) for item in day.kinds),
+    ]
 
 
 # --- Output -----------------------------------------------------------------------------------
@@ -1852,6 +2273,7 @@ class Result:
     cells: dict[tuple[int, str], CellValue]
     verdicts: list[Verdict]
     size: SizeNight | None = None
+    frozen_day: FrozenDay | None = None
 
 
 def render(result: Result) -> list[str]:
@@ -1923,6 +2345,14 @@ def as_json(result: Result) -> str:
         document["size"] = [item.as_json() for item in result.size.passes]
         document["frozen_size"] = [item.as_json() for item in result.size.frozen]
         document["rss_mb"] = round(result.size.rss_mb, 1)
+    if result.frozen_day is not None:
+        document["frozen_day"] = result.frozen_day.as_json()
+    return json.dumps(document, sort_keys=True, indent=1) + "\n"
+
+
+def frozen_day_json(day: FrozenDay) -> str:
+    """``--frozen-day`` alone's result as JSON (schema 1), key-sorted."""
+    document = {"schema": SCHEMA, "day": DAY.isoformat(), "frozen_day": day.as_json()}
     return json.dumps(document, sort_keys=True, indent=1) + "\n"
 
 
@@ -2010,12 +2440,25 @@ def register(actions: "argparse._SubParsersAction[argparse.ArgumentParser]") -> 
         help="one scripted storm through the real pass, hour by hour (serves nothing)",
         description=(
             "The storm drill: one scripted storm through the real loop and pass on a faked "
-            "clock, publishing to a host in memory; --size adds the storm-size night."
+            "clock, publishing to a host in memory; --size adds the storm-size night; "
+            "--frozen-day builds the real-sized frozen day and judges each kind's budget (alone, "
+            "without the story)."
         ),
     )
     parser.add_argument("--size", action="store_true", help="add the 37%% worst-case world")
     parser.add_argument(
         "--full", action="store_true", help="with --size: the calibration and all six worlds"
+    )
+    parser.add_argument(
+        "--frozen-day",
+        action="store_true",
+        help="the non-repeating every-district frozen day against each kind's budget",
+    )
+    parser.add_argument(
+        "--mix", choices=tuple(DAY_MIXES), default=None, help="with --frozen-day (default all)"
+    )
+    parser.add_argument(
+        "--runs", type=int, choices=RUNS, default=None, help="with --frozen-day (default 1)"
     )
     parser.add_argument("--scale", type=_scale, default=1.0, help="0 < F <= 1 (tests)")
     parser.add_argument("--labels", type=Path, default=None, help="a record folder (read only)")
@@ -2026,10 +2469,17 @@ def register(actions: "argparse._SubParsersAction[argparse.ArgumentParser]") -> 
 
 
 def run_drill(args: argparse.Namespace) -> int:
-    """Run ``predict drill``: 0 when the story ran, 3 when the gate's world failed (with
-    ``--size``), 1 on an error."""
+    """Run ``predict drill``: 0 when the story ran and every frozen kind fits, 3 when the gate's
+    world failed (with ``--size``), 4 when a frozen day is over its kind's budget (with
+    ``--frozen-day``; also when the gate's world failed too, both said), 1 on an error."""
     if args.full and not args.size:
         _out("predict drill: --full needs --size")
+        return 1
+    if (args.mix is not None or args.runs is not None) and not args.frozen_day:
+        _out("predict drill: --mix and --runs need --frozen-day")
+        return 1
+    if args.frozen_day and not args.size and args.against is not None:
+        _out("predict drill: --against needs the story (--frozen-day alone runs none)")
         return 1
     try:
         return _run(args)
@@ -2056,18 +2506,48 @@ def run_story(
     return Result(story, found, verdicts(story, found, config))
 
 
+def run_frozen_day(  # noqa: PLR0913 - the config, the model, the folders and the day's flags
+    config: PredictConfig,
+    committed: ModelArtifact,
+    labels: Path,
+    temp: Path,
+    *,
+    mix: str,
+    runs: int,
+    scale: float,
+) -> tuple[FrozenDay, int]:
+    """The frozen day (its folder under ``temp``, removed once measured), its lines said, and
+    its code (:func:`frozen_code`)."""
+    folder = temp / "frozen-day"
+    try:
+        day = frozen_day_world(config, committed, labels, folder, mix=mix, runs=runs, scale=scale)
+    finally:
+        _remove(folder)
+    for line in frozen_day_lines(day):
+        _out(line)
+    return day, frozen_code(day.kinds)
+
+
 def _run(args: argparse.Namespace) -> int:
     from snowlight.predict import artifact, exposure  # noqa: PLC0415 - read at run time only
 
     config = PredictConfig.load(args.config)
     committed = artifact.load()
     against = None if args.against is None else json.loads(args.against.read_text())
+    mix, runs = args.mix or "all", args.runs or 1
     with tempfile.TemporaryDirectory(prefix="snowlight-drill-") as name:
         temp = Path(name)
         labels = args.labels
         if labels is None:
             labels = temp / "labels"
             labels.mkdir()
+        if args.frozen_day and not args.size:
+            day, code = run_frozen_day(
+                config, committed, labels, temp, mix=mix, runs=runs, scale=args.scale
+            )
+            if args.json is not None:
+                args.json.write_text(frozen_day_json(day))
+            return code
         result = run_story(config, committed, exposure.load(), labels, temp)
         if args.verbose:
             for line in [*result.story.out, *result.story.err]:
@@ -2081,6 +2561,11 @@ def _run(args: argparse.Namespace) -> int:
             )
             _out(f"drill size: peak RSS {result.size.rss_mb:,.0f} MB")
             code = size_code(result.size.passes)
+        if args.frozen_day:
+            result.frozen_day, over = run_frozen_day(
+                config, committed, labels, temp, mix=mix, runs=runs, scale=args.scale
+            )
+            code = over or code
     text = as_json(result)
     if args.json is not None:
         args.json.write_text(text)

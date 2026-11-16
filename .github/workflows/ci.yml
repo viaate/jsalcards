@@ -238,14 +238,21 @@ jobs:
         run: |
           set -o pipefail
           uv run snowlight predict drill --size --json drill.json | tee drill.txt
+      - name: frozen day (the every-district day against each frozen kind's budget)
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          uv run snowlight predict drill --frozen-day --json frozen-day.json | tee frozen-day.txt
       - name: summary
         if: always()
         run: |
-          if [ -f drill.txt ]; then
-            {
-              echo '### Storm drill'
-              echo '```'
-              cat drill.txt
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+          for found in drill.txt frozen-day.txt; do
+            if [ -f "$found" ]; then
+              {
+                echo "### Storm drill ($found)"
+                echo '```'
+                cat "$found"
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done

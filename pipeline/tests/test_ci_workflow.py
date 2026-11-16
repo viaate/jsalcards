@@ -207,3 +207,26 @@ def test_setup_uv_python_matches_the_project(jobs: dict[str, Mapping]) -> None:
         pinned = REPO_ROOT / str(inputs.get("working-directory", ".")) / ".python-version"
         expected = pinned.read_text(encoding="utf-8").strip()
         assert inputs.get("python-version") == expected, f"job {name!r}"
+
+
+def test_storm_drill_job_judges_the_frozen_day_after_the_size_night(
+    jobs: dict[str, Mapping],
+) -> None:
+    """predict-next FORECAST-ERROR G-SIZE r4: the every-district frozen day is built and judged
+    against each frozen kind's budget on every push, as its own step after ``--size``, and the
+    job keeps its 20-minute limit."""
+    job = jobs["storm-drill"]
+    assert job.get("timeout-minutes") == 20
+    assert _run_directory(job) == "pipeline"
+    commands = _commands(job, "storm-drill")
+    size = [i for i, run in enumerate(commands) if "uv run snowlight predict drill --size" in run]
+    day = [
+        i for i, run in enumerate(commands) if "uv run snowlight predict drill --frozen-day" in run
+    ]
+    assert len(size) == 1
+    assert len(day) == 1
+    assert day[0] > size[0]
+    assert "set -o pipefail" in commands[day[0]]
+    # It runs even when the size night failed, so one push shows both.
+    (step,) = [s for s in _steps(job, "storm-drill") if "--frozen-day" in str(s.get("run", ""))]
+    assert step.get("if") == "${{ !cancelled() }}"

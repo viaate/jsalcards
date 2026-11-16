@@ -142,6 +142,15 @@ are still held when the switch passes it as absent (a test holds them so)."""
 MARKER: Final = "switch.json"
 """The live switch's marker in the folder: ``through``, the last labeled date every term
 counted, rewritten from the host's state after each read-back."""
+DAY_BUDGET_XZ: Final = 1_310_720
+"""The district day's budget (kind ``frozen``): 1.25 MiB of xz at the store's preset 9, on the
+non-repeating every-district day ``snowlight predict drill --frozen-day`` builds (predict-next
+FORECAST-ERROR G-SIZE r4; lead ruling LR-FE2 Q-L8 (a): the "1 MB check" of the earlier rulings
+is this constant). Judged by that command and its CI step only: :func:`record` never reads it,
+and never refuses, cuts, skips or delays a day for its size."""
+WEATHER_DAY_BUDGET_XZ: Final = 262_144
+"""The budget of the weather kind ``frozen_weather`` (predict-next FORECAST-ERROR P3, not written
+yet): xz at preset 9 on the same day, judged the same way."""
 
 
 def freeze_at(day: date, zone: str, name: str) -> datetime:
