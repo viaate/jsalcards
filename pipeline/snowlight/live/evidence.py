@@ -48,6 +48,7 @@ import logging
 import lzma
 import math
 import re
+import sys
 import tarfile
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -86,6 +87,13 @@ AUDIT: Final = "audit"
 FROZEN: Final = "frozen"
 """The frozen record (predict-next P1, :mod:`snowlight.predict.frozen`): every chance served
 and its inputs at four freezes a night, one finished day a key."""
+FROZEN_ES: Final = "frozen_es"
+"""The frozen record's shadow arms (each-school P6a, :mod:`snowlight.predict.lines`): each
+served advisory or warning row's chance under each registered shadow arm (``es``) at each
+freeze, one finished day a key, from the folder ``frozen/es/``
+(:data:`snowlight.predict.frozen.ES_FOLDER`). Codes and numbers only. Nothing served reads
+it; its day budget (524,288 B xz, in :mod:`snowlight.predict.frozen`) is judged by the drill
+only."""
 RECORD: Final = "record"
 """Each district's and private school's own record (each-school P2a1,
 :mod:`snowlight.predict.record`): the parsed record rows of a day, one key a day. Codes, ids,
@@ -93,10 +101,21 @@ counts and times only, as every kind here: never a URL (a source's address stays
 and never list text; the writer refuses a version whose bytes hold an address
 (:func:`_checked_records`, a backstop only), and any write over :data:`RECORD_DAY_BYTES` or
 :data:`RECORD_TOTAL_BYTES`."""
-KINDS: Final = (MORNING, CHANGES, SNAPSHOT, DISTRICTS, LABELS, TRIALS, AUDIT, FROZEN, RECORD)
+KINDS: Final = (
+    MORNING,
+    CHANGES,
+    SNAPSHOT,
+    DISTRICTS,
+    LABELS,
+    TRIALS,
+    AUDIT,
+    FROZEN,
+    FROZEN_ES,
+    RECORD,
+)
 WRITERS: Final[Mapping[str, frozenset[str]]] = {
     "live-read": frozenset({MORNING, CHANGES}),
-    "predict": frozenset({SNAPSHOT, DISTRICTS, LABELS, TRIALS, AUDIT, FROZEN}),
+    "predict": frozenset({SNAPSHOT, DISTRICTS, LABELS, TRIALS, AUDIT, FROZEN, FROZEN_ES}),
     "each-school record": frozenset({RECORD}),
 }
 """The kinds each workflow (``GITHUB_WORKFLOW``) may write: only the live reader's evidence job
@@ -158,6 +177,55 @@ class EvidenceError(D1Error):
     """The evidence store could not be read or written (codes and HTTP status only)."""
 
 
+READER: Final = "snowlight.predict.lines"
+"""The one module that reads the record kind for a model (each-school 10.5, lead ruling
+LR-P6A-1): through its capability, ``lines._READ``, made once there at import, passed as
+``capability=`` by a call made in that module. Every store read below refuses the record kind
+without it, and refuses it to the capability passed from anywhere else."""
+RECORD_OWNERS: Final = frozenset(
+    {__name__, "snowlight.predict.record", "snowlight.predict.state_records"}
+)
+"""The record's own modules, which need no capability: this store (a push reads back what it
+keeps, and a read reads its databases) and the record's two writing steps (``each-school
+record`` and ``past``, which ask which days are kept and read the kept days back into their
+table). The caller's module is read at run time, from the calling frame."""
+_STORE_READS: Final = frozenset({_ITEMS, _HELD, _PARTS})
+
+
+class RecordRefusedError(EvidenceError):
+    """A read of the record kind made without lines.py's capability from outside the record's
+    own modules (lead ruling LR-P6A-1): nothing was read."""
+
+
+def _admit(kinds: Iterable[str], capability: object) -> None:
+    """Refuse a read of the record kind unless it was called from one of
+    :data:`RECORD_OWNERS`, or from :data:`READER` itself carrying ``capability`` that is
+    lines.py's (identity, not a copy or a look-alike), read from the frame that called the
+    store method calling this: the capability taken out of lines.py reads nothing elsewhere.
+
+    Raises:
+        RecordRefusedError: the read asks for the record kind and is neither, or asks for a
+            kind that is not exactly a str (a subclass may deny being the record).
+    """
+    kinds = tuple(kinds)
+    if any(type(kind) is not str for kind in kinds):  # a look-alike may deny being the record
+        raise RecordRefusedError(f"{RECORD}: refused, a kind is read only as a plain str")
+    if RECORD not in kinds:
+        return
+    caller = sys._getframe(2).f_globals.get("__name__")
+    if caller in RECORD_OWNERS:
+        return
+    reader = sys.modules.get(READER)
+    if (
+        caller == READER
+        and reader is not None
+        and capability is not None
+        and capability is vars(reader).get("_READ")
+    ):
+        return
+    raise RecordRefusedError(f"{RECORD}: refused, only {READER}'s capability reads it")
+
+
 @dataclass(frozen=True, slots=True)
 class Item:
     """One kept version of a file."""
@@ -186,11 +254,13 @@ class Offer:
 
 
 PRESET: Final = 6
-PRESETS: Final[Mapping[str, int]] = {FROZEN: 9}
+PRESETS: Final[Mapping[str, int]] = {FROZEN: 9, FROZEN_ES: 9}
 """The xz preset of a kind kept at another than :data:`PRESET`: a frozen record day is tens of
 MB raw, the same districts at four freezes some 7 MB apart, and only preset 9's 64 MiB window
 finds each district's earlier freeze (a day with every district under a storm class: 1.17 MB
-at 6, 0.80 MB at 9, in the same 11 s). Any preset reads back the same (``unpack``)."""
+at 6, 0.80 MB at 9, in the same 11 s). The shadow arms' day (:data:`FROZEN_ES`) is the same
+districts at the same freezes, so it is kept at 9 too. Any preset reads back the same
+(``unpack``)."""
 
 
 def compress(data: bytes, preset: int = PRESET) -> bytes:
@@ -366,6 +436,10 @@ class EvidenceDatabase:
     name: str
     _id: str | None = None
     rows_written: int = 0
+    _listed: dict[str, str] = field(default_factory=dict)
+    """Each version's sha256 to the kind :meth:`items` listed it under: an item read from
+    outside the record's own modules is read as that kind, and as the record when it was never
+    listed (an :class:`Item` made by hand names any kind)."""
 
     def lookup(self) -> str | None:
         """Its id, found by its exact name; ``None`` when the list answered and names none
@@ -389,9 +463,19 @@ class EvidenceDatabase:
         return self._id
 
     def run(self, statements: Sequence[Statement]) -> list[Answer]:
+        """Send ``statements`` (each one of :data:`STATEMENTS`).
+
+        Raises:
+            RecordRefusedError: a read statement sent from outside this module (the store's reads
+                are its methods, which check the record kind).
+        """
         for sql, _ in statements:
             if sql not in STATEMENTS:  # pragma: no cover - a programming error
                 raise EvidenceError("refused a statement the store does not own")
+        if sys._getframe(1).f_globals.get("__name__") != __name__ and any(
+            sql in _STORE_READS for sql, _ in statements
+        ):
+            raise RecordRefusedError("refused a read sent past the store's own reads")
         database = self._id if self._id is not None else self.database()
         answers = self.api.run(database, statements)
         if len(answers) != len(statements):
@@ -399,8 +483,15 @@ class EvidenceDatabase:
         self.rows_written += sum(answer.rows_written for answer in answers)
         return answers
 
-    def items(self, kinds: Iterable[str]) -> list[Item]:
-        """Every kept version of ``kinds``."""
+    def items(self, kinds: Iterable[str], *, capability: object = None) -> list[Item]:
+        """Every kept version of ``kinds``.
+
+        Raises:
+            RecordRefusedError: ``kinds`` holds the record kind without its capability
+                (:func:`_admit`).
+        """
+        kinds = tuple(kinds)
+        _admit(kinds, capability)
         self.database()
         found: list[Item] = []
         for kind in kinds:
@@ -417,10 +508,22 @@ class EvidenceDatabase:
                         kept_at=str(row["kept_at"]),
                     )
                 )
+                self._listed[found[-1].sha256] = found[-1].kind
         return found
 
-    def parts(self, item: Item) -> list[str]:
-        """The item's parts, in order."""
+    def _kind_of(self, item: Item) -> str:
+        """The kind ``item`` is read as: the one it was listed under, the record otherwise."""
+        listed = self._listed.get(item.sha256)
+        return item.kind if listed == item.kind else RECORD
+
+    def parts(self, item: Item, *, capability: object = None) -> list[str]:
+        """The item's parts, in order.
+
+        Raises:
+            RecordRefusedError: the item is the record kind's, or was never listed, and the read
+                has no capability (:func:`_admit`).
+        """
+        _admit((self._kind_of(item),), capability)
         self.database()
         found: dict[int, str] = {}
         for start in range(0, item.parts, READ_BATCH):
@@ -429,14 +532,27 @@ class EvidenceDatabase:
                 found[int(row["n"])] = str(row["data"])
         return [found[n] for n in range(item.parts) if n in found]
 
-    def read(self, item: Item) -> bytes:
-        """The item's bytes, checked (:func:`unpack`)."""
+    def read(self, item: Item, *, capability: object = None) -> bytes:
+        """The item's bytes, checked (:func:`unpack`).
+
+        Raises:
+            RecordRefusedError: as :meth:`parts`.
+        """
+        _admit((self._kind_of(item),), capability)
         return unpack(item, self.parts(item))
 
-    def held(self, kinds: Iterable[str], since: str = "") -> list[tuple[str, str, str]]:
+    def held(
+        self, kinds: Iterable[str], since: str = "", *, capability: object = None
+    ) -> list[tuple[str, str, str]]:
         """``(kind, key, sha256)`` of every version of ``kinds`` with a key from ``since``,
         read only: a database the account does not list holds nothing (it is not created).
-        An item row means its parts were read back whole (:meth:`write_item`)."""
+        An item row means its parts were read back whole (:meth:`write_item`).
+
+        Raises:
+            RecordRefusedError: as :meth:`items`.
+        """
+        kinds = tuple(kinds)
+        _admit(kinds, capability)
         if self.lookup() is None:
             return []
         found: list[tuple[str, str, str]] = []
@@ -733,7 +849,12 @@ class EvidenceStore:
             count.bytes += item.bytes
 
     def held(
-        self, kinds: Iterable[str], since: str = "", *, seconds: float | None = None
+        self,
+        kinds: Iterable[str],
+        since: str = "",
+        *,
+        seconds: float | None = None,
+        capability: object = None,
     ) -> dict[str, dict[tuple[str, str], frozenset[str]]]:
         """Per database that answered, the ``(kind, key)`` versions (sha256s) it holds whole
         (read only; nothing is created). A database that fails is left out (logged).
@@ -742,11 +863,14 @@ class EvidenceStore:
         silent first database never starves the second of its answer.
 
         Raises:
+            RecordRefusedError: ``kinds`` holds the record kind without its capability
+                (:func:`_admit`).
             EvidenceError: no database answered.
         """
         found: dict[str, dict[tuple[str, str], frozenset[str]]] = {}
         errors: list[str] = []
         wanted = tuple(kinds)
+        _admit(wanted, capability)
         databases = self.databases()
         api: object = self.api
         timed = seconds is not None and hasattr(api, "deadline") and hasattr(api, "monotonic")
@@ -771,14 +895,16 @@ class EvidenceStore:
         return found
 
     def versions(
-        self, kind: str, since: date | None = None
+        self, kind: str, since: date | None = None, *, capability: object = None
     ) -> dict[str, list[tuple[EvidenceDatabase, Item]]]:
         """Every kept version of every key of ``kind`` (from ``since``), newest first, in
         every database that answered.
 
         Raises:
+            RecordRefusedError: ``kind`` is the record's, without its capability (:func:`_admit`).
             EvidenceError: no database could be read.
         """
+        _admit((kind,), capability)
         found: dict[str, list[tuple[EvidenceDatabase, Item]]] = {}
         errors: list[str] = []
         for database in self.databases():
@@ -797,15 +923,19 @@ class EvidenceStore:
             choices.sort(key=lambda choice: choice[1].kept_at, reverse=True)
         return found
 
-    def pull(self, kind: str, since: date | None = None) -> dict[str, bytes]:
+    def pull(
+        self, kind: str, since: date | None = None, *, capability: object = None
+    ) -> dict[str, bytes]:
         """The newest kept version of every key of ``kind`` (from ``since``) that reads back
         whole from some database; when none of the newest does, the next older one, with a
         warning naming the version used. A key kept in more than one version is named in a
         warning too (:meth:`pull_all` reads them all).
 
         Raises:
+            RecordRefusedError: ``kind`` is the record's, without its capability (:func:`_admit`).
             EvidenceError: no database could be read.
         """
+        _admit((kind,), capability)
         found: dict[str, bytes] = {}
         for key, choices in sorted(self.versions(kind, since).items()):
             digests = {item.sha256 for _, item in choices}
@@ -829,13 +959,17 @@ class EvidenceStore:
                 break
         return found
 
-    def pull_all(self, kind: str, since: date | None = None) -> dict[tuple[str, str], bytes]:
+    def pull_all(
+        self, kind: str, since: date | None = None, *, capability: object = None
+    ) -> dict[tuple[str, str], bytes]:
         """Every kept version of every key of ``kind``, as ``(key, sha256)``, each from the
         first database it reads back whole from.
 
         Raises:
+            RecordRefusedError: ``kind`` is the record's, without its capability (:func:`_admit`).
             EvidenceError: no database could be read.
         """
+        _admit((kind,), capability)
         found: dict[tuple[str, str], bytes] = {}
         for key, choices in sorted(self.versions(kind, since).items()):
             for database, item in choices:
@@ -878,6 +1012,7 @@ EXTENSIONS: Final[Mapping[str, str]] = {
     TRIALS: ".jsonl",
     AUDIT: ".json",
     FROZEN: ".jsonl",
+    FROZEN_ES: ".jsonl",
     RECORD: ".jsonl",
 }
 

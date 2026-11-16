@@ -119,6 +119,7 @@ from snowlight.predict.config import (
     live_score_sha256,
 )
 from snowlight.predict.forecast_values import NO_FORECASTS, Forecasts
+from snowlight.predict.frozen import EsArms
 from snowlight.predict.heights import (
     Loaded,
     PinnedTable,
@@ -1113,6 +1114,9 @@ class Pass:
     """The frozen record's folder (:mod:`snowlight.predict.frozen`): each pass that publishes
     (or finds its file unchanged) freezes what it served there at the night's four freezes;
     ``None``: nothing is frozen. Nothing served reads it."""
+    es: EsArms | None = None
+    """The shadow arms each freeze also writes, to the frozen folder's ``es/`` (kind
+    ``frozen_es``, each-school P6a); ``None``: none. Nothing served reads them."""
     switch: live_switch.Served | None = None
     """The live switch's arms this run serves (read once a run, :func:`live_switch.
     served_arms`; the anchor is built with them), their keys for the frozen record's headers
@@ -1684,6 +1688,7 @@ def _record_frozen(  # noqa: PLR0913, PLR0917 - the pass, what it served and mad
             maker=built.maker,
             shadows=frozen_shadows(run.config, run.switch),
             heads=frozen_heads(run.config, run.switch),
+            es=run.es,
         )
         started = time.monotonic()
         taken = frozen.record(inputs, run.frozen)
@@ -4404,8 +4409,20 @@ def keep_evidence(  # noqa: PLR0913 - the store, what it keeps and when
         offers.extend(
             evidence.Offer(evidence.FROZEN, key, data) for key, data in frozen.offers(frozen_folder)
         )
+        es_folder = frozen_folder / frozen.ES_FOLDER.name
+        offers.extend(
+            evidence.Offer(evidence.FROZEN_ES, key, data) for key, data in frozen.offers(es_folder)
+        )
     code = _push_evidence(
-        store, offers, (evidence.SNAPSHOT, evidence.DISTRICTS, evidence.LABELS, evidence.FROZEN)
+        store,
+        offers,
+        (
+            evidence.SNAPSHOT,
+            evidence.DISTRICTS,
+            evidence.LABELS,
+            evidence.FROZEN,
+            evidence.FROZEN_ES,
+        ),
     )
     if code is None:
         return 1
@@ -4519,15 +4536,19 @@ def read_offers(folder: Path, days: int | None = None) -> list[Any]:
 
 def restore_frozen(store: Any, folder: Path, now: datetime) -> None:
     """After the frozen record's folder was lost (its index began afresh), the finished days
-    the store holds back into it (:func:`snowlight.predict.frozen.restore`). It never
-    raises."""
-    try:
-        restored = frozen.restore(folder, store, now)
-    except Exception as error:
-        _err(f"predict evidence: the frozen record's restore: {type(error).__name__}")
-        return
-    if restored:
-        _out(f"predict evidence: the frozen record restored {len(restored)} days from the store")
+    the store holds back into it (:func:`snowlight.predict.frozen.restore`), and the same for
+    its shadow arms' folder ``es/`` (kind ``frozen_es``, each-school P6a). It never raises."""
+    for where, es, what in (
+        (folder, False, "the frozen record"),
+        (folder / frozen.ES_FOLDER.name, True, "the frozen shadow arms"),
+    ):
+        try:
+            restored = frozen.restore(where, store, now, es=es)
+        except Exception as error:
+            _err(f"predict evidence: {what}'s restore: {type(error).__name__}")
+            continue
+        if restored:
+            _out(f"predict evidence: {what} restored {len(restored)} days from the store")
 
 
 def note_frozen(store: Any, folder: Path, now: datetime, seconds: float | None = None) -> None:
@@ -4537,12 +4558,20 @@ def note_frozen(store: Any, folder: Path, now: datetime, seconds: float | None =
     from snowlight.live import evidence  # noqa: PLC0415
 
     try:
-        held = store.held((evidence.FROZEN,), seconds=seconds)
+        held = store.held((evidence.FROZEN, evidence.FROZEN_ES), seconds=seconds)
         released = frozen.note_held(folder, held, now)
     except Exception as error:
         _err(f"predict evidence: the frozen days held: {type(error).__name__}")
         return
     _out(f"predict evidence: {len(released)} finished frozen days in both databases released")
+    if not (folder / frozen.ES_FOLDER.name).is_dir():
+        return
+    try:
+        es = frozen.note_held(folder / frozen.ES_FOLDER.name, held, now, evidence.FROZEN_ES)
+    except Exception as error:
+        _err(f"predict evidence: the frozen shadow arms days held: {type(error).__name__}")
+        return
+    _out(f"predict evidence: {len(es)} finished frozen shadow arms days in both databases released")
 
 
 def _warn_untabled(
@@ -4613,15 +4642,20 @@ def check_kept(state: Path, now: datetime, frozen_folder: Path = frozen.FOLDER) 
 def check_frozen(folder: Path, now: datetime) -> int:
     """The frozen record's part of ``predict evidence --check`` (no network): 1 and an
     ``::error::`` line when a finished frozen day has waited over 2 days for both databases."""
-    line, late = frozen.check(folder, now)
-    _out(line)
-    if not late:
-        return 0
-    _out(
-        f"::error::predict evidence: {late} finished frozen days are not in both evidence"
-        " databases after 2 days (docs/predict.md, The frozen record)."
-    )
-    return 1
+    code = 0
+    for where, what in (
+        (folder, "frozen"),
+        (folder / frozen.ES_FOLDER.name, "frozen shadow arms"),
+    ):
+        line, late = frozen.check(where, now, what)
+        _out(line)
+        if late:
+            _out(
+                f"::error::predict evidence: {late} finished {what} days are not in both"
+                " evidence databases after 2 days (docs/predict.md, The frozen record)."
+            )
+            code = 1
+    return code
 
 
 def _finished_snapshot(key: str, now: datetime) -> bool:

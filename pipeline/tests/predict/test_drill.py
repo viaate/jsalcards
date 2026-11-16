@@ -1077,9 +1077,11 @@ def test_the_command_prints_the_table_and_the_verdicts(guarded: Guarded) -> None
     day = document["frozen_day"]
     assert (day["mix"], day["runs"], day["districts"]) == ("all", 1, 183)
     assert day["rows"] == 4 * day["districts"]
-    (kind,) = day["kinds"]
+    kind, es = day["kinds"]
     assert kind["kind"] == "frozen"
     assert 0 < kind["xz"] < kind["budget_xz"]
+    assert es["kind"] == "frozen_es"
+    assert 0 < es["xz"] < es["budget_xz"] == 524_288
     assert sum(1 for line in printed if line.startswith("frozen day world (--mix all")) == 1
     assert sum(1 for line in printed if line.startswith("  frozen day 2027-01-12 (frozen)")) == 2
     assert not any(line.startswith("frozen gate: ") for line in printed)
@@ -1120,7 +1122,7 @@ def test_the_frozen_day_world_at_a_small_scale(world_inputs: Inputs, tmp_path: P
     assert day.rows == 4 * day.districts
     assert 0 < day.rows_with_terms < day.rows  # the evening freeze before 9 PM holds no terms
     assert day.snow_seen == day.districts
-    (item,) = day.kinds
+    item, _es_item = day.kinds
     data = (tmp_path / "a" / "frozen" / f"{drill.DAY.isoformat()}.jsonl").read_bytes()
     assert hashlib.sha256(data).hexdigest() == day.sha256
     # Stored is the store's own count (each 64 KiB part's base64, summed), D1 rows its parts
@@ -1146,6 +1148,7 @@ def test_the_frozen_day_world_at_a_small_scale(world_inputs: Inputs, tmp_path: P
     quiet = _day(world_inputs, tmp_path / "quiet", mix="quiet")
     assert (quiet.storm, quiet.rows_with_terms, quiet.rows) == (0, 0, day.rows)
     assert quiet.kinds[0].xz < item.xz
+    assert quiet.kinds[1].lines == 4 * quiet.kinds[1].zones  # no class row: headers only
     some = _day(world_inputs, tmp_path / "37", mix="37")
     assert 0 < some.storm < day.storm
     assert quiet.rows_with_terms < some.rows_with_terms < day.rows_with_terms
@@ -1172,7 +1175,7 @@ def test_a_frozen_day_over_its_kind_s_budget_exits_4_and_one_under_it_0(
     assert not any(line.startswith(("drill: ", "anchor: ")) for line in printed)  # no story
     document = json.loads(path.read_text())
     assert set(document) == {"schema", "day", "frozen_day"}
-    (kind,) = document["frozen_day"]["kinds"]
+    kind, _es = document["frozen_day"]["kinds"]
     xz = kind["xz"]
     # At the budget it fits, at the edge (under 5% left); one byte under it, it fails.
     monkeypatch.setattr(frozen, "DAY_BUDGET_XZ", xz)
@@ -1193,6 +1196,88 @@ def test_a_frozen_day_over_its_kind_s_budget_exits_4_and_one_under_it_0(
     # The weather kind's budget is its own (P3's kind, not written yet).
     assert drill.budget_xz("frozen_weather") == frozen.WEATHER_DAY_BUDGET_XZ == 262_144
     assert drill.budget_xz("frozen") == frozen.DAY_BUDGET_XZ
+
+
+def test_the_shadow_arms_day_is_written_beside_the_district_day_with_every_arm_moving(
+    world_inputs: Inputs, tmp_path: Path
+) -> None:
+    """Each-school P6a (lead rulings LR25, LR26): the shadow arms' day (kind ``frozen_es``) the
+    same passes write beside the district day, every served class line every arm at each
+    freeze, each Kentucky line P7y's later ``ky`` pair too; give-up step (a) shown."""
+    day = _day(world_inputs, tmp_path / "a")
+    item, es_item = day.kinds
+    assert (item.kind, es_item.kind) == (evidence.FROZEN, evidence.FROZEN_ES)
+    es = (tmp_path / "a" / "frozen" / "es" / f"{drill.DAY.isoformat()}.jsonl").read_bytes()
+    assert es_item.raw == len(es)
+    assert es_item.xz == len(evidence.compress(es, 9))
+    assert es_item.taken == item.taken
+    taken = frozen.parse_es(es)
+    lines = sum(len(found.chances) for found in taken)
+    district = frozen.parse_day(
+        (tmp_path / "a" / "frozen" / f"{drill.DAY.isoformat()}.jsonl").read_bytes()
+    )
+    served = [
+        row
+        for row in district.rows
+        if row.served and row.klass in {"advisory", "warning"} and row.p_raw is not None
+    ]
+    assert lines == len(served) > 0  # every served advisory or warning row at every freeze
+    seen: dict[str, set[tuple[float | None, ...]]] = {}
+    for found in taken:
+        assert found.arms == drill.ES_ARMS
+        for leaid, values in found.chances.items():
+            assert all(v is not None for v in values)
+            seen.setdefault(leaid, set()).add(values)
+    assert all(len(values) == 4 for values in seen.values())  # moved at each freeze
+    # a Kentucky line carries P7y's later ky pair too (the guarded scale holds none)
+    worst = drill.es_worst()
+    rows = [
+        {"l": "2100001", "s": 1, "c": "warning", "pr": 0.4},
+        {"l": "2900001", "s": 1, "c": "advisory", "pr": 0.1},
+        {"l": "2900002", "s": 1, "c": "cold", "pr": 0.1},
+        {"l": "2900003", "s": 1, "c": "warning", "pr": 0.4, "sa": 1},
+        {"l": "2900004", "s": 0, "c": "warning", "pr": 0.4},
+    ]
+    ky, other = worst.lines(rows)
+    assert (ky["l"], other["l"]) == ("2100001", "2900001")
+    assert ky["ky"] == [0.4, ky["es"][-1]]  # type: ignore[index]
+    assert "ky" not in other
+    # the district day is the same byte for byte as with no shadow arms written
+    assert (
+        day.sha256
+        == hashlib.sha256(
+            (tmp_path / "a" / "frozen" / f"{drill.DAY.isoformat()}.jsonl").read_bytes()
+        ).hexdigest()
+    )
+    # step (a) shown: under the G1 per-unit limits, and the 6-decimal day is the larger
+    assert drill.ES_GIVE_UP == "a"
+    assert 0 < day.es_log_loss < drill.ES_LIMITS[0]
+    assert 0 < day.es_brier < drill.ES_LIMITS[1]
+    assert day.es_fine_xz > es_item.xz
+    line = drill.frozen_line(es_item)
+    assert line.startswith("  frozen day 2027-01-12 (frozen_es): ")
+    assert "under its budget of 524,288" in line
+    assert drill.budget_xz(evidence.FROZEN_ES) == frozen.ES_DAY_BUDGET_XZ == 524_288
+
+
+def test_a_shadow_arms_day_over_its_budget_exits_4(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    path = tmp_path / "day.json"
+    args = ["predict", "drill", "--frozen-day", "--scale", "0.01", "--json", str(path)]
+    assert main(args) == 0
+    printed = capsys.readouterr().out.splitlines()
+    assert any(line.startswith("  shadow arms (frozen_es): give-up step (a)") for line in printed)
+    _kind, es = json.loads(path.read_text())["frozen_day"]["kinds"]
+    assert es["kind"] == "frozen_es"
+    monkeypatch.setattr(frozen, "ES_DAY_BUDGET_XZ", es["xz"] - 1)
+    assert main(args) == drill.FROZEN_EXIT == 4
+    printed = capsys.readouterr().out.splitlines()
+    assert printed[-1] == (
+        f"frozen gate: 2027-01-12 frozen_es xz9 {es['xz']:,} is 1 over its budget of "
+        f"{es['xz'] - 1:,}"
+    )
+    assert not any("frozen gate: 2027-01-12 frozen xz9" in line for line in printed)
 
 
 def test_a_call_failing_the_size_gate_and_the_frozen_day_says_both_and_exits_4(

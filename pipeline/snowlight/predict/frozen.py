@@ -151,6 +151,47 @@ and never refuses, cuts, skips or delays a day for its size."""
 WEATHER_DAY_BUDGET_XZ: Final = 262_144
 """The budget of the weather kind ``frozen_weather`` (predict-next FORECAST-ERROR P3, not written
 yet): xz at preset 9 on the same day, judged the same way."""
+ES_FOLDER: Final = FOLDER / "es"
+"""The shadow arms' folder (each-school P6a, kind ``frozen_es``): inside the frozen record's
+folder, so the same Actions cache keeps it; its own ``index.json`` and day files, released the
+same way (:func:`note_held` with ``kind``)."""
+ES_DAY_BUDGET_XZ: Final = 524_288
+"""The shadow arms' day budget (kind ``frozen_es``; each-school lead rulings LR25 and LR26):
+xz at preset 9 on the non-repeating every-district day with every arm moving at each freeze
+(``snowlight predict drill --frozen-day``), P7y's later ``ky`` pair in (LR-FE2 Q-L8 (c)).
+Judged by that command and its CI step only, as the district day's: :func:`record` never
+reads it, and never refuses, cuts, skips or delays a day for its size."""
+ES_DECIMALS: Final = 4
+"""Decimals of a shadow arm's chance between :data:`ES_COARSE` (give-up step (a) of lead
+ruling LR25, the step the drill's worst case needs: 554,996 B xz at 6 decimals everywhere,
+over the budget). A rounding there moves a row's log loss by under 5e-5 / 0.01 = 0.005 nats,
+the G1 per-unit no-harm limit, and its Brier by under 1e-4 (the limit 0.002); the drill shows
+the most it moved on the worst-case day."""
+ES_COARSE: Final = (0.01, 0.99)
+"""The chances (exclusive) a shadow arm keeps at :data:`ES_DECIMALS`; outside them, 6."""
+
+
+def es_round(p: float) -> float:
+    """A shadow arm's chance as its line keeps it (:data:`ES_DECIMALS` between
+    :data:`ES_COARSE`, else :data:`ROUND`)."""
+    low, high = ES_COARSE
+    return round(p, ES_DECIMALS if low < p < high else ROUND)
+
+
+ES_ROW_KEYS: Final[Mapping[str, str]] = {
+    "l": "LEAID",
+    "es": "each shadow arm's chance before publishing rounds it (:func:`es_round`: 4 decimals "
+    "between 1% and 99%, else 6), in the order of its freeze "
+    "header's ``arms``; null where the arm has no part for the district (M5y outside "
+    "Kentucky's districts with a count)",
+    "ky": "reserved for P7y (each-school 7.1): [the chance with P7y off, the served chance]; "
+    "not written while P7y does not serve",
+}
+"""A shadow arms' line (kind ``frozen_es``). Its freeze header (``"k": "freeze"``) holds the
+day, freeze, zone, its time, when it was taken, how late, the arms in order (``arms``), the
+nightly fit they were worked out from (``fit``, its UTC time) and its line count (``rows``).
+A line is written only for a district served an advisory or warning chance from the model at
+the freeze, not said open; nothing else."""
 
 
 def freeze_at(day: date, zone: str, name: str) -> datetime:
@@ -403,6 +444,28 @@ class PassInputs:
     (predict-next TIMING-AUTO)."""
     heads: Sequence["Head"] = ()
     """Every live switch term: the arm it serves and its key (every header's ``switch``)."""
+    es: "EsArms | None" = None
+    """The shadow arms (each-school P6a, :mod:`snowlight.predict.lines`), written to the folder
+    ``es/`` beside the day (kind ``frozen_es``); ``None``: none written. Nothing served reads
+    them, and the district day is written the same with or without them."""
+
+
+class EsArms(Protocol):
+    """The shadow arms a pass scores (:class:`snowlight.predict.lines.Shadow`)."""
+
+    @property
+    def arms(self) -> tuple[str, ...]:
+        """The arms, in the order each line's ``es`` holds them."""
+        ...
+
+    @property
+    def fit(self) -> str | None:
+        """When the nightly fit the arms come from was made (UTC, ISO), or ``None``."""
+        ...
+
+    def lines(self, rows: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
+        """The shadow lines (:data:`ES_ROW_KEYS`) of a freeze's district rows."""
+        ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -445,6 +508,9 @@ class Taken:
     shadow: tuple[tuple[str, int | str], ...] = ()
     """Each shadow variant written at the freeze: its key and the rows holding one, or why
     every row's is ``None``."""
+    es: int | str | None = None
+    """The shadow arms' lines written at the freeze (kind ``frozen_es``), why none were (an
+    error's kind: the district day was written all the same), or ``None``: no arms."""
 
 
 def _r(value: float | None, digits: int = ROUND) -> float | None:
@@ -876,6 +942,8 @@ def record(inputs: PassInputs, folder: Path = FOLDER) -> list[Taken]:  # noqa: P
     written: dict[tuple[str, str], list[int]] = {}
     variants: dict[tuple[str, str], dict[str, int | str]] = {}
     shown: list[str | None] = []
+    es_out: dict[str, list[bytes]] = {}
+    es_said: dict[tuple[str, str], int | str] = {}
 
     def hidden() -> str | None:
         if not shown:
@@ -901,6 +969,8 @@ def record(inputs: PassInputs, folder: Path = FOLDER) -> list[Taken]:  # noqa: P
                     continue
                 if now - at > LATE_MAX or day not in made.days or zone not in by_zone:
                     out.append(_missed(day, zone, name, at, len(by_zone.get(zone, ())), now))
+                    if inputs.es is not None:
+                        es_out.setdefault(key, []).append(out[-1])
                     entry.groups[group] = "missed"
                     count = written.setdefault((key, name), [0, 0, 0, 0, 0])
                     count[3] += 1
@@ -916,6 +986,8 @@ def record(inputs: PassInputs, folder: Path = FOLDER) -> list[Taken]:  # noqa: P
                 head = _header(inputs, day, zone, name, at, late, len(rows), why)
                 out.append(_dumps(head))
                 out.extend(_dumps(row) for row in rows)
+                if inputs.es is not None:
+                    _es_block(inputs.es, head, rows, es_out.setdefault(key, []), es_said, key)
                 entry.groups[f"{zone}|{name}"] = "taken"
                 count[0] += 1
                 count[1] += len(rows)
@@ -938,6 +1010,8 @@ def record(inputs: PassInputs, folder: Path = FOLDER) -> list[Taken]:  # noqa: P
                     if group not in entry.groups:
                         at = freeze_at(day, zone, name)
                         out.append(_missed(day, zone, name, at, len(by_zone.get(zone, ())), now))
+                        if inputs.es is not None:
+                            es_out.setdefault(key, []).append(out[-1])
                         entry.groups[group] = "missed"
                         written.setdefault((key, name), [0, 0, 0, 0, 0])[3] += 1
             entry.closed = finished_at(day, entry.zones).isoformat()
@@ -947,13 +1021,78 @@ def record(inputs: PassInputs, folder: Path = FOLDER) -> list[Taken]:  # noqa: P
                 handle.write(data)
             entry.bytes += len(data)
     save_index(folder, index)
+    if inputs.es is not None:
+        try:
+            _write_es(folder / ES_FOLDER.name, index, es_out)
+        except (OSError, ValueError) as error:
+            es_said = {group: type(error).__name__ for group in written}
     return [
         Taken(
             day, name, c[0], c[1], c[2], c[3], c[4],
             tuple(sorted(variants.get((day, name), {}).items())),
+            None if inputs.es is None else es_said.get((day, name), 0),
         )
         for (day, name), c in sorted(written.items())
     ]  # fmt: skip
+
+
+def _es_block(  # noqa: PLR0913, PLR0917 - the arms, the freeze and where its lines go
+    es: EsArms,
+    head: Mapping[str, object],
+    rows: Sequence[Mapping[str, object]],
+    out: list[bytes],
+    said: dict[tuple[str, str], int | str],
+    key: str,
+) -> None:
+    """One freeze's shadow arms block (its header and :data:`ES_ROW_KEYS` lines) into ``out``,
+    counted in ``said``; an arm that raises writes the freeze's header with no line and says
+    the error's kind (the district day is written all the same)."""
+    group = (key, str(head["freeze"]))
+    try:
+        lines = es.lines(rows)
+    except (ArithmeticError, ValueError, KeyError, TypeError) as error:
+        lines, said[group] = [], type(error).__name__
+    else:
+        had = said.get(group, 0)
+        said[group] = (had if isinstance(had, int) else 0) + len(lines)
+    found: dict[str, object] = {
+        "k": "freeze",
+        "day": head["day"],
+        "freeze": head["freeze"],
+        "zone": head["zone"],
+        "at": head["at"],
+        "late_by_s": head["late_by_s"],
+        "generated_at": head.get("generated_at"),
+        "arms": list(es.arms),
+        "fit": es.fit,
+        "rows": len(lines),
+    }
+    out.append(_dumps({k: v for k, v in found.items() if v is not None}))
+    out.extend(_dumps(line) for line in lines)
+
+
+def _write_es(folder: Path, index: Index, out: Mapping[str, list[bytes]]) -> None:
+    """Append each day's shadow arms blocks to the folder ``es/`` and keep its index in step
+    with the district day's: the same zones and freezes, closed when it closes, never cut or
+    refused for its size."""
+    folder.mkdir(parents=True, exist_ok=True)
+    mine = load_index(folder)
+    for key, entry in sorted(index.days.items()):
+        had = mine.days.get(key)
+        if had is None and key not in out:
+            continue
+        found = mine.days.setdefault(key, DayEntry())
+        _repair(folder, key, found)
+        data = b"".join(out.get(key, ()))
+        if data:
+            with day_path(folder, key).open("ab") as handle:
+                handle.write(data)
+            found.bytes += len(data)
+            found.groups.update(_scan(data)[1])
+        found.zones = sorted(set(found.zones) | set(entry.zones))
+        if entry.closed is not None and found.closed is None:
+            found.closed = entry.closed
+    save_index(folder, mine)
 
 
 def _header(  # noqa: PLR0913, PLR0917 - the pass, the freeze and its counts
@@ -1021,7 +1160,14 @@ def said(taken: Sequence[Taken]) -> list[str]:
             f", {key} none ({count})" if isinstance(count, str) else f", {key} on {count:,} rows"
             for key, count in item.shadow
         )
-        found.append(f"predict frozen: {item.day} {item.freeze}: {rows}{missed}{shadow}")
+        es = (
+            ""
+            if item.es is None or not item.zones
+            else f", es none ({item.es})"
+            if isinstance(item.es, str)
+            else f", es on {item.es:,} rows"
+        )
+        found.append(f"predict frozen: {item.day} {item.freeze}: {rows}{missed}{shadow}{es}")
     return found
 
 
@@ -1093,15 +1239,18 @@ def note_held(
     folder: Path,
     held: Mapping[str, Mapping[tuple[str, str], frozenset[str]]],
     now: datetime,
+    kind: str | None = None,
 ) -> list[str]:
     """Note which databases hold each finished day byte for byte (``held``: per database that
     answered, ``(kind, key)`` to the sha256s it holds, :meth:`snowlight.live.evidence.
     EvidenceStore.held`); a day both of ``databases`` hold leaves the folder (it is remembered
     :data:`DONE_DAYS` days) once the live switch counted it (on or before the marker's
     ``through``, :data:`MARKER`) or once it finished over :data:`KEEP_DAYS` days ago. The days
-    released."""
+    released. ``kind``: the folder's evidence kind (default ``frozen``; the shadow arms' folder
+    is ``frozen_es``, which has no marker, so its days leave once old)."""
     from snowlight.live.evidence import DATABASES, FROZEN  # noqa: PLC0415
 
+    kind = FROZEN if kind is None else kind
     index = load_index(folder)
     through = read_marker(folder)
     released: list[str] = []
@@ -1114,7 +1263,7 @@ def note_held(
             continue
         digest = hashlib.sha256(data).hexdigest()
         for database, versions in held.items():
-            if digest in versions.get((FROZEN, key), frozenset()):
+            if digest in versions.get((kind, key), frozenset()):
                 entry.held[database] = digest
         counted = through is not None and key <= through.isoformat()
         old = now - datetime.fromisoformat(entry.closed) > timedelta(days=KEEP_DAYS)
@@ -1130,9 +1279,10 @@ def note_held(
     return released
 
 
-def check(folder: Path, now: datetime) -> tuple[str, int]:
-    """``predict evidence --check``'s line for the frozen record, and how many finished days
-    have waited over :data:`WAIT` for both databases."""
+def check(folder: Path, now: datetime, what: str = "frozen") -> tuple[str, int]:
+    """``predict evidence --check``'s line for the frozen record (``what``: ``frozen``, or
+    ``frozen shadow arms`` for the folder ``es/``), and how many finished days have waited over
+    :data:`WAIT` for both databases."""
     from snowlight.live.evidence import DATABASES  # noqa: PLC0415
 
     index = load_index(folder)
@@ -1145,7 +1295,7 @@ def check(folder: Path, now: datetime) -> tuple[str, int]:
         and not all(name in entry.held for name in DATABASES)
     )
     line = (
-        f"predict evidence check: {len(closed)} finished frozen days wait for both databases,"
+        f"predict evidence check: {len(closed)} finished {what} days wait for both databases,"
         f" {len(index.done)} released"
     )
     if late:
@@ -1175,37 +1325,46 @@ def merge(versions: Iterable[bytes]) -> bytes:
     return b"".join(block.data for block in chosen.values())
 
 
-def _store_days(store: Store, since: date) -> dict[str, list[bytes]]:
-    from snowlight.live.evidence import FROZEN  # noqa: PLC0415
+def _store_days(store: Store, since: date, *, es: bool = False) -> dict[str, list[bytes]]:
+    """The store's versions of each frozen day from ``since``: of the district day's kind, or
+    with ``es`` of the shadow arms' kind. It takes no kind: it reads these two alone."""
+    from snowlight.live.evidence import FROZEN, FROZEN_ES  # noqa: PLC0415
 
     found: dict[str, list[bytes]] = {}
-    for (key, _sha), data in sorted(store.pull_all(FROZEN, since).items()):
+    for (key, _sha), data in sorted(store.pull_all(FROZEN_ES if es else FROZEN, since).items()):
         found.setdefault(key, []).append(data)
     return found
 
 
-def restore(folder: Path, store: Store, now: datetime) -> list[str]:
+def restore(folder: Path, store: Store, now: datetime, *, es: bool = False) -> list[str]:
     """After the folder was lost (its index began afresh): the finished days of the last
     :data:`RESTORE_DAYS` days the store holds and the folder lacks, back into the folder as
     finished days (every version kept merged, :func:`merge`; so they are kept until both
     databases hold them, and none is taken up again). The days restored; none when the index
-    is not fresh."""
+    is not fresh. ``es``: the folder is the shadow arms' (kind ``frozen_es``; else ``frozen``).
+    It takes no kind: it reads these two alone."""
     index = load_index(folder)
     if not index.fresh:
         return []
     since = now.astimezone(UTC).date() - timedelta(days=RESTORE_DAYS)
     restored: list[str] = []
-    for key, versions in sorted(_store_days(store, since).items()):
+    for key, versions in sorted(_store_days(store, since, es=es).items()):
         if key in index.days or key in index.done:
             continue
         data = merge(versions)
-        day = parse_day(data)
+        groups = (
+            dict(parse_day(data).groups)
+            if not es
+            else {block.group: block.how for block in _blocks(data)}
+        )
+        if not groups:
+            raise ValueError("an empty frozen day")
         write_bytes_atomic(day_path(folder, key), data)
         index.days[key] = DayEntry(
-            zones=sorted({z for z, _ in day.groups}),
-            groups={f"{zone}|{name}": how for (zone, name), how in day.groups.items()},
+            zones=sorted({z for z, _ in groups}),
+            groups={f"{zone}|{name}": how for (zone, name), how in groups.items()},
             bytes=len(data),
-            closed=finished_at(date.fromisoformat(key), {z for z, _ in day.groups}).isoformat(),
+            closed=finished_at(date.fromisoformat(key), {z for z, _ in groups}).isoformat(),
         )
         restored.append(key)
     index.fresh = False
@@ -1408,3 +1567,81 @@ def rows(
                 copies.setdefault(key, []).extend(versions)
     found = {date.fromisoformat(key): parse_day(merge(data)) for key, data in copies.items()}
     return dict(sorted(found.items()))
+
+
+# --- the shadow arms' read path (each-school P6a) ---------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class EsFreeze:
+    """One taken freeze of a shadow arms day: its zone, freeze, arms, fit and each district's
+    arm chances (``None`` where the arm has no part for it)."""
+
+    day: date
+    freeze: str
+    zone: str
+    arms: tuple[str, ...]
+    fit: str | None
+    chances: Mapping[str, tuple[float | None, ...]]
+
+
+def parse_es(data: bytes) -> list[EsFreeze]:
+    """A shadow arms day's taken freezes (each (zone, freeze) once, missed ones left out), in
+    file order.
+
+    Raises:
+        ValueError: a line does not read, or an arm list is not its header's length.
+    """
+    found: list[EsFreeze] = []
+    for block in _blocks(data):
+        if block.how != "taken":
+            continue
+        lines = [json.loads(line) for line in block.data.splitlines() if line.strip()]
+        head, rows = lines[0], lines[1:]
+        arms = tuple(str(arm) for arm in head.get("arms") or ())
+        chances: dict[str, tuple[float | None, ...]] = {}
+        for row in rows:
+            values = row.get("es")
+            if not isinstance(values, list) or len(values) != len(arms):
+                raise ValueError("a shadow line's arms are not its header's")
+            chances[str(row["l"])] = tuple(None if v is None else float(v) for v in values)
+        found.append(
+            EsFreeze(
+                day=date.fromisoformat(str(head["day"])),
+                freeze=str(head["freeze"]),
+                zone=str(head["zone"]),
+                arms=arms,
+                fit=None if head.get("fit") is None else str(head["fit"]),
+                chances=chances,
+            )
+        )
+    return found
+
+
+def es_days(
+    first: date,
+    last: date,
+    folder: Path = ES_FOLDER,
+    store: Store | None = None,
+) -> dict[date, list[EsFreeze]]:
+    """The shadow arms days from ``first`` to ``last``, from the folder and, where a store is
+    given, every version of kind ``frozen_es`` it keeps, merged (:func:`merge`). The scoring
+    reader (:func:`snowlight.predict.backtest_lines.score_es`) reads them.
+
+    Raises:
+        ValueError: a day does not read.
+        snowlight.live.evidence.EvidenceError: the store does not read.
+    """
+    index = load_index(folder)
+    copies: dict[str, list[bytes]] = {}
+    for key, entry in index.days.items():
+        if first.isoformat() <= key <= last.isoformat() and entry.bytes:
+            try:
+                copies[key] = [day_path(folder, key).read_bytes()[: entry.bytes]]
+            except OSError:
+                continue
+    if store is not None:
+        for key, versions in _store_days(store, first, es=True).items():
+            if key <= last.isoformat():
+                copies.setdefault(key, []).extend(versions)
+    return {date.fromisoformat(k): parse_es(merge(v)) for k, v in sorted(copies.items())}

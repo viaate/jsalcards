@@ -1859,6 +1859,7 @@ def budget_xz(kind: str) -> int:
     small one)."""
     budgets = {
         evidence.FROZEN: frozen_record.DAY_BUDGET_XZ,
+        evidence.FROZEN_ES: frozen_record.ES_DAY_BUDGET_XZ,
         "frozen_weather": frozen_record.WEATHER_DAY_BUDGET_XZ,
     }
     return budgets[kind]
@@ -1940,6 +1941,12 @@ class FrozenDay:
     snow_seen: int
     """Pairs the fake snow-seen read draws at each morning freeze."""
     kinds: tuple[FrozenSize, ...]
+    es_fine_xz: int = 0
+    """The shadow arms' lines at 6 decimals everywhere (give-up step 0), xz at preset 9."""
+    es_log_loss: float = 0.0
+    """The most :func:`snowlight.predict.frozen.es_round` moved a row's log loss (nats)."""
+    es_brier: float = 0.0
+    """The most it moved a row's Brier score."""
 
     def as_json(self) -> dict[str, object]:
         """The day's JSON row."""
@@ -1954,6 +1961,12 @@ class FrozenDay:
             "seconds": round(self.seconds, 3),
             "snow_seen": self.snow_seen,
             "kinds": [item.as_json() for item in self.kinds],
+            "es": {
+                "give_up": ES_GIVE_UP,
+                "fine_xz": self.es_fine_xz,
+                "log_loss": round(self.es_log_loss, 6),
+                "brier": round(self.es_brier, 6),
+            },
         }
 
 
@@ -2051,7 +2064,9 @@ def frozen_day_world(  # noqa: PLR0913, PLR0915 - the inputs and the steps of on
     storm districts' snow moved; 3: the :37 passes from 11:00Z (the 06:30 freezes) also read
     an 11:00Z run moved the same way from it. Seeded: ``default_rng(7)`` draws the points, the
     classes and the forecasts in that order, ``default_rng(23)`` the newer runs. The day is
-    measured as each kind it is kept as (today the district day, kind ``frozen``)."""
+    measured as each kind it is kept as: the district day (kind ``frozen``) and the shadow
+    arms' day (kind ``frozen_es``, each-school P6a) the same passes write beside it with
+    :func:`es_worst` moving every arm at each freeze."""
     from snowlight.predict import cli  # noqa: PLC0415 - cli imports this module at its top
 
     if mix not in DAY_MIXES:
@@ -2192,6 +2207,7 @@ def frozen_day_world(  # noqa: PLR0913, PLR0915 - the inputs and the steps of on
     switch = live_switch.served_arms(config, None, "m" * 64, today=DAY)
     shadows = cli.frozen_shadows(config, switch)
     heads = cli.frozen_heads(config, switch)
+    es = es_worst()
     after = {DAY: frozenset[int](), DAY + timedelta(days=1): frozenset[int]()}
     no_zones = np.zeros(0, dtype=np.int64)
     at = datetime(2027, 1, 11, 23, 7, tzinfo=UTC)
@@ -2219,11 +2235,14 @@ def frozen_day_world(  # noqa: PLR0913, PLR0915 - the inputs and the steps of on
                 adjusted=True,
                 shadows=shadows,
                 heads=heads,
+                es=es,
             ),
             folder,
         )
         at += timedelta(minutes=30)
     [data] = [d for key, d in frozen_record.offers(folder) if key == DAY.isoformat()]
+    es_folder = folder / frozen_record.ES_FOLDER.name
+    [es_data] = [d for key, d in frozen_record.offers(es_folder) if key == DAY.isoformat()]
     seconds = time.monotonic() - started
     seen = snow_seen_reader(snow_seen_table(), n)
     share = len(storm) / n
@@ -2238,8 +2257,75 @@ def frozen_day_world(  # noqa: PLR0913, PLR0915 - the inputs and the steps of on
         sha256=hashlib.sha256(data).hexdigest(),
         seconds=seconds,
         snow_seen=len(seen[MORNING_FREEZES[0]]),
-        kinds=(day_size(data, share, mix),),
+        kinds=(day_size(data, share, mix), day_size(es_data, share, mix, evidence.FROZEN_ES)),
+        es_fine_xz=len(evidence.compress(b"".join(es.fine), 9)),
+        es_log_loss=es.log_loss,
+        es_brier=es.brier,
     )
+
+
+ES_GIVE_UP: Final = "a"
+"""The give-up step of lead ruling LR25 the shadow arms' day needs to fit its budget: (a), 4
+decimals between 1% and 99% (:func:`snowlight.predict.frozen.es_round`). Steps (b), the
+scoring freezes only, and (c), M5y on Kentucky's lines only, are not needed."""
+ES_LIMITS: Final = (0.005, 0.002)
+"""The G1 per-unit no-harm limits the rounding is shown against (log loss, Brier; each a row)."""
+ES_ARMS: Final = ("m5o", "m5y")
+"""The shadow arms the worst case writes (each-school P6a's registered arms that write; MP and
+M5g are registered off, :data:`snowlight.predict.lines.ARMS`)."""
+KENTUCKY: Final = "21"
+"""Kentucky's state code, the first two digits of its LEAIDs."""
+
+
+@dataclass
+class EsWorst:
+    """The shadow arms' worst case (each-school P6a, lead rulings LR25 and LR26): every served
+    advisory or warning line gets every arm, each a fresh 6-decimal draw at each freeze (so no
+    freeze repeats another's), and each Kentucky line also P7y's later ``ky`` pair (LR-FE2
+    Q-L8 (c)): more than the arms write (M5y is null outside Kentucky's districts with a
+    count), so the day measured is the most it can be."""
+
+    rng: np.random.Generator
+    arms: tuple[str, ...] = ES_ARMS
+    fit: str | None = "2027-01-11T19:30:00+00:00"
+    fine: list[bytes] = field(default_factory=list)
+    """Every line again at 6 decimals everywhere (give-up step 0), to measure beside."""
+    log_loss: float = 0.0
+    """The most a line's rounding moved a row's log loss (either outcome), nats."""
+    brier: float = 0.0
+    """The most it moved a row's Brier score."""
+
+    def lines(self, rows: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
+        found: list[dict[str, object]] = []
+        for row in rows:
+            p = row.get("pr")
+            if row.get("s") != 1 or row.get("c") not in {"advisory", "warning"}:
+                continue
+            if row.get("sa") or not isinstance(p, float):
+                continue
+            moved = np.clip(p + self.rng.normal(0.0, 0.05, len(self.arms)), 1e-6, 1 - 1e-6)
+            fine = [round(float(v), 6) for v in moved]
+            kept = [frozen_record.es_round(v) for v in fine]
+            line: dict[str, object] = {"l": row["l"], "es": kept}
+            whole: dict[str, object] = {"l": row["l"], "es": fine}
+            if str(row["l"]).startswith(KENTUCKY):
+                line["ky"] = [frozen_record.es_round(p), kept[-1]]
+                whole["ky"] = [round(p, 6), fine[-1]]
+            for a, b in zip(fine, kept, strict=True):
+                self.log_loss = max(
+                    self.log_loss,
+                    abs(math.log(a) - math.log(b)),
+                    abs(math.log1p(-a) - math.log1p(-b)),
+                )
+                self.brier = max(self.brier, abs((a - 1) ** 2 - (b - 1) ** 2), abs(a * a - b * b))
+            self.fine.append(json.dumps(whole, separators=(",", ":")).encode() + b"\n")
+            found.append(line)
+        return found
+
+
+def es_worst(seed: int = 29) -> EsWorst:
+    """The worst-case shadow arms of :func:`frozen_day_world` (seeded ``default_rng(seed)``)."""
+    return EsWorst(np.random.default_rng(seed))
 
 
 def frozen_day_lines(day: FrozenDay) -> list[str]:
@@ -2251,6 +2337,10 @@ def frozen_day_lines(day: FrozenDay) -> list[str]:
         f"  snow seen: {day.snow_seen:,} pairs drawn at each morning freeze from the committed "
         "table; no frozen kind holds them yet",
         *(frozen_line(item) for item in day.kinds),
+        f"  shadow arms (frozen_es): give-up step ({ES_GIVE_UP}) of LR25, 4 decimals between 1% "
+        f"and 99%; at 6 decimals everywhere (step 0) xz9 {day.es_fine_xz:,}; the rounding moved a "
+        f"row's log loss by at most {day.es_log_loss:.6f} nats (limit {ES_LIMITS[0]}) and its "
+        f"Brier by at most {day.es_brier:.6f} (limit {ES_LIMITS[1]})",
     ]
 
 

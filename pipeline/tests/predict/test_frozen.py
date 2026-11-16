@@ -24,6 +24,7 @@ from snowlight.live.d1 import Answer, D1Error, Statement
 from snowlight.live.evidence import (
     BACKUP,
     FROZEN,
+    FROZEN_ES,
     PRESETS,
     PRIMARY,
     EvidenceStore,
@@ -1174,4 +1175,185 @@ def test_a_day_over_its_size_budget_is_written_whole_and_only_the_drill_judges_i
         if "DAY_BUDGET_XZ" in path.read_text()
     )
     assert readers == ["predict/drill.py", "predict/frozen.py"]
-    assert Path(frozen.__file__).read_text().count("DAY_BUDGET_XZ") == 2  # the two settings
+    assert Path(frozen.__file__).read_text().count("DAY_BUDGET_XZ") == 3  # the three settings
+
+
+# --- the shadow arms' kind (each-school P6a, frozen_es) ----------------------------------------
+
+
+@dataclass
+class Arms:
+    """SYNTHETIC shadow arms: the served chance moved by a fixed step, and M5y null."""
+
+    arms: tuple[str, ...] = ("m5o", "m5y")
+    fit: str | None = "2026-01-06T19:30:00+00:00"
+    raises: bool = False
+    pad: int = 0
+
+    def lines(self, rows: Sequence[dict[str, Any]]) -> list[dict[str, object]]:
+        if self.raises:
+            raise ValueError("planted")
+        found: list[dict[str, object]] = []
+        for k, row in enumerate(rows):
+            p = row.get("pr")
+            if row.get("s") == 1 and row.get("c") in {"advisory", "warning"} and p is not None:
+                found.append({"l": row["l"], "es": [frozen.es_round(p * 0.9), None]})
+                # pad ids unique to the served row, so a freeze's lines are all distinct
+                found.extend(
+                    {"l": f"p{k:05d}{n:06d}", "es": [n / 1e6, None]} for n in range(self.pad)
+                )
+        return found
+
+
+@dataclass
+class _Counted(Arms):
+    """:class:`Arms` that counts the lines and the districts each of its calls gave (a
+    freeze's lines)."""
+
+    given: list[int] = field(default_factory=list)
+    distinct: list[int] = field(default_factory=list)
+
+    def lines(self, rows: Sequence[dict[str, Any]]) -> list[dict[str, object]]:
+        found = super().lines(rows)
+        self.given.append(len(found))
+        self.distinct.append(len({line["l"] for line in found}))
+        return found
+
+
+def _finished_with(folder: Path, es: Any, capsys: Any | None = None) -> tuple[bytes, list[str]]:
+    clock = Clock("2026-01-07T02:10:00")
+    run = frozen_pass(folder, clock, MemoryHost(), es=es)
+    said: list[str] = []
+    for at in ("2026-01-07T02:10:00", "2026-01-07T03:40:00", "2026-01-07T13:00:00",
+               "2026-01-07T18:00:00"):  # fmt: skip
+        clock.to(at)
+        assert cli.one_pass(run) == 0
+        if capsys is not None:
+            said.extend(capsys.readouterr().out.splitlines())
+    [(key, data)] = frozen.offers(folder)
+    assert key == DAY.isoformat()
+    return data, said
+
+
+def test_the_shadow_arms_are_written_beside_a_district_day_that_is_the_same_byte_for_byte(
+    tmp_path: Path, capsys: Any
+) -> None:
+    plain = _finished_day(tmp_path / "plain")
+    capsys.readouterr()
+    data, said = _finished_with(tmp_path / "es", Arms(), capsys)
+    assert data == plain
+    assert not (tmp_path / "plain" / "es").exists()
+    [(key, es)] = frozen.offers(tmp_path / "es" / "es")
+    assert key == DAY.isoformat()
+    district = frozen.parse_day(data)
+    taken = list(frozen.parse_es(es))
+    # the same freezes taken (and missed) as the district day, each once
+    assert {(f.zone, f.freeze) for f in taken} == {
+        group for group, how in district.groups.items() if how == "taken"
+    }
+    for found in taken:
+        assert found.arms == ("m5o", "m5y")
+        assert found.fit == "2026-01-06T19:30:00+00:00"
+        served = {
+            row.leaid: row.p_raw
+            for row in district.rows
+            if (row.zone, row.freeze) == (found.zone, found.freeze)
+            and row.served
+            and row.klass in {"advisory", "warning"}
+            and row.p_raw is not None
+        }
+        assert set(found.chances) == set(served)
+        for leaid, values in found.chances.items():
+            assert values == (frozen.es_round(served[leaid] * 0.9), None)
+    assert any(f.chances for f in taken)
+    es_index = frozen.load_index(tmp_path / "es" / "es")
+    district_index = frozen.load_index(tmp_path / "es")
+    assert es_index.days[key].closed == district_index.days[key].closed is not None
+    assert es_index.days[key].groups == district_index.days[key].groups
+    # one line a freeze says the arms' count beside the rest
+    assert any(line.startswith("predict frozen: ") and ", es on " in line for line in said)
+    assert frozen.es_days(DAY, DAY, tmp_path / "es" / "es") == {DAY: taken}
+
+
+def test_an_arm_that_raises_leaves_the_district_day_the_same_and_says_why(
+    tmp_path: Path, capsys: Any
+) -> None:
+    plain = _finished_day(tmp_path / "plain")
+    capsys.readouterr()
+    data, said = _finished_with(tmp_path / "es", Arms(raises=True), capsys)
+    assert data == plain
+    assert any(", es none (ValueError)" in line for line in said)
+    [(_key, es)] = frozen.offers(tmp_path / "es" / "es")
+    assert all(not found.chances for found in frozen.parse_es(es))
+    assert not any("::warning::" in line for line in said)
+
+
+def test_a_shadow_arms_day_over_its_budget_is_written_whole_and_only_the_drill_judges_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    """Lead rulings LR25 and LR-FE2 (Q-L9): the live freeze never refuses, cuts, skips or
+    delays the shadow arms' day for its size; at most one counts-only line a freeze."""
+    capsys.readouterr()
+    _plain, usual = _finished_with(tmp_path / "usual", Arms(), capsys)
+    monkeypatch.setattr(frozen, "ES_DAY_BUDGET_XZ", 1)
+    arms = _Counted(pad=3_000)
+    _data, said = _finished_with(tmp_path / "es", arms, capsys)
+    [(_key, es)] = frozen.offers(tmp_path / "es" / "es")
+    assert len(compress(es, PRESETS[FROZEN_ES])) > frozen.ES_DAY_BUDGET_XZ
+    taken = frozen.parse_es(es)
+    assert all(len(found.chances) > 3_000 for found in taken if found.chances)
+    # R5-S5: each freeze's line holds every line the arms gave it, none cut; each line is its
+    # own district, so a cut of any line (not only a whole district) shows
+    assert arms.distinct == arms.given
+    assert sorted(len(found.chances) for found in taken if found.chances) == sorted(
+        n for n in arms.given if n
+    )
+    assert not any("budget" in line for line in said)
+    # the same lines as a small day's, each freeze's one line with its count only
+    big = [line.split(", es on ")[0] for line in said if line.startswith("predict frozen: 20")]
+    small = [line.split(", es on ")[0] for line in usual if line.startswith("predict frozen: 20")]
+    assert big == small
+    assert len(said) == len(usual)
+
+
+def test_the_shadow_arms_days_are_kept_released_checked_and_restored_by_their_kind(
+    tmp_path: Path, capsys: Any
+) -> None:
+    folder = tmp_path / "frozen"
+    _finished_with(folder, Arms())
+    [(key, es)] = frozen.offers(folder / "es")
+    now = world.utc("2026-01-07T19:00:00")
+    store = EvidenceStore(FakeD1(), PREDICT, lambda: now)
+    state = tmp_path / "state.json"
+    capsys.readouterr()
+    assert cli.check_kept(state, world.utc("2026-01-09T18:00:00"), folder) == 1
+    out = capsys.readouterr().out
+    assert "1 finished frozen shadow arms days wait for both databases" in out
+    assert "::error::predict evidence: 1 finished frozen shadow arms days" in out
+    assert cli.keep_evidence(store, {}, {}, now, frozen_folder=folder) == 0
+    assert store.pull(FROZEN_ES) == {key: es}
+    item, _parts = item_of(Offer(FROZEN_ES, key, es), "2026-01-07T19:00:00+00:00")
+    assert item.packed == len(compress(es, 9))
+    cli.note_frozen(store, folder, now)
+    assert frozen.offers(folder / "es") == []
+    assert cli.check_kept(state, world.utc("2026-01-09T18:00:00"), folder) == 0
+    # no marker: the arms' day leaves once it finished over KEEP_DAYS ago, whatever the switch
+    closed = datetime.fromisoformat(str(frozen.load_index(folder / "es").days[key].closed))
+    cli.note_frozen(store, folder, closed + timedelta(days=frozen.KEEP_DAYS, seconds=1))
+    assert not frozen.day_path(folder / "es", key).exists()
+    assert key in frozen.load_index(folder / "es").done
+    # a lost folder: the evidence step restores the arms' day as its own kind
+    shutil.rmtree(folder)
+    cli.restore_frozen(store, folder, now)
+    assert frozen.day_path(folder / "es", key).read_bytes() == es
+    assert frozen.es_days(DAY, DAY, folder / "es") == {DAY: frozen.parse_es(es)}
+    assert frozen.restore(folder / "es", store, now, es=True) == []
+
+
+def test_a_shadow_arm_keeps_4_decimals_only_between_1_and_99_percent() -> None:
+    assert frozen.es_round(0.1234567) == 0.1235
+    assert frozen.es_round(0.0123456) == 0.0123
+    assert frozen.es_round(0.00123456) == 0.001235
+    assert frozen.es_round(0.01) == 0.01
+    assert frozen.es_round(0.9912345) == 0.991235
+    assert frozen.ES_DAY_BUDGET_XZ == 524_288

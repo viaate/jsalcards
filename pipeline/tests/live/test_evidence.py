@@ -762,3 +762,21 @@ def test_with_no_store_to_ask_a_dropped_day_still_opens_the_evidence_alert(
     clock["now"] = NOW + kept.DROPPED_FOR + live_cli.EVIDENCE_EVERY
     runner.idle(clock["now"])
     assert opened == [Kind.EVIDENCE.value, f"closed {Kind.EVIDENCE.value}"]
+
+
+def test_the_shadow_arms_kind_is_the_predict_chain_s_kept_at_preset_9() -> None:
+    """Each-school P6a (lead ruling LR25): ``frozen_es`` is a kind of its own, written only by
+    the predict chain, at the frozen kind's preset, read back as ``.jsonl``."""
+    assert evidence.FROZEN_ES == "frozen_es"
+    assert evidence.FROZEN_ES in evidence.KINDS
+    assert [name for name, kinds in evidence.WRITERS.items() if evidence.FROZEN_ES in kinds] == [
+        "predict"
+    ]
+    assert evidence.PRESETS[evidence.FROZEN_ES] == 9 == evidence.PRESETS[evidence.FROZEN]
+    assert evidence.EXTENSIONS[evidence.FROZEN_ES] == ".jsonl"
+    data = b'{"k":"freeze","rows":1}\n{"l":"2900001","es":[0.1,null]}\n'
+    item, parts = evidence.item_of(
+        evidence.Offer(evidence.FROZEN_ES, "2026-01-07", data), "2026-01-08T00:00:00Z"
+    )
+    assert item.packed == len(evidence.compress(data, 9))
+    assert evidence.unpack(item, parts) == data

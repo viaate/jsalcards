@@ -65,6 +65,15 @@ def _store(api: FakeD1, env: dict[str, str]) -> EvidenceStore:
     return EvidenceStore(api, env, lambda: NOW)
 
 
+def _pulled(api: FakeD1, monkeypatch: pytest.MonkeyPatch) -> dict[str, bytes]:
+    """The record kind as kept, read as one of the record's own modules (the store refuses it
+    to this test module otherwise, lead ruling LR-P6A-1)."""
+    monkeypatch.setattr(evidence, "RECORD_OWNERS", evidence.RECORD_OWNERS | {__name__})
+    found = _store(api, RECORD_JOB).pull(evidence.RECORD)
+    monkeypatch.undo()
+    return found
+
+
 def _items(api: FakeD1) -> dict[str, int]:
     """The item rows each database holds."""
     return {
@@ -86,7 +95,7 @@ def _stored(*offers: Offer) -> int:
     return sum(math.ceil(item_of(o, "t")[0].packed * 4 / 3) for o in offers)
 
 
-def test_only_the_record_job_keeps_the_record() -> None:
+def test_only_the_record_job_keeps_the_record(monkeypatch: pytest.MonkeyPatch) -> None:
     api = FakeD1()
     day = _record_day("2026-12-01", 3)
     for env in (LIVE, PREDICT, {}):
@@ -103,7 +112,12 @@ def test_only_the_record_job_keeps_the_record() -> None:
     )
     reports = _store(api, RECORD_JOB).push([day], (evidence.RECORD,))
     assert [(r.database, r.kept) for r in reports] == [(PRIMARY, 1), (BACKUP, 1)]
-    assert _store(api, RECORD_JOB).pull(evidence.RECORD) == {"2026-12-01": day.data}
+    # the record is read only by its own modules and by its one reader with its capability
+    # (LR-P6A-1): a capability that is not that reader's reads nothing here
+    for capability in (None, object()):
+        with pytest.raises(evidence.RecordRefusedError):
+            _store(api, RECORD_JOB).pull(evidence.RECORD, capability=capability)
+    assert _pulled(api, monkeypatch) == {"2026-12-01": day.data}
 
 
 @pytest.mark.parametrize(
@@ -858,7 +872,7 @@ def test_eligible_schools_follow_the_serving_rule() -> None:
     assert [f.tolist() for f in found] == [[0], [3]]
 
 
-def test_a_day_s_bytes_are_codes_only_and_read_back() -> None:
+def test_a_day_s_bytes_are_codes_only_and_read_back(monkeypatch: pytest.MonkeyPatch) -> None:
     read = _read(rows=[_row("9900001", "no_school")])
     rows = list(_rows(read, [(s, AT, Status.CLOSED, None) for s in (0, 1, 7, 8)]).values())
     data = record.day_bytes(rows)
@@ -876,7 +890,7 @@ def test_a_day_s_bytes_are_codes_only_and_read_back() -> None:
     api = FakeD1()
     offer = Offer(evidence.RECORD, THU.isoformat(), data)
     assert [r.kept for r in _store(api, RECORD_JOB).push([offer], (evidence.RECORD,))] == [1, 1]
-    assert _store(api, RECORD_JOB).pull(evidence.RECORD) == {THU.isoformat(): data}
+    assert _pulled(api, monkeypatch) == {THU.isoformat(): data}
     # a morning with no row is kept too, and is held from then on
     _store(api, RECORD_JOB).push([Offer(evidence.RECORD, WED.isoformat(), b"")], (evidence.RECORD,))
     assert record.held_days(_store(api, RECORD_JOB)) == {THU.isoformat(), WED.isoformat()}
