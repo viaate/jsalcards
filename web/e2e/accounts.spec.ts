@@ -10,6 +10,7 @@ import { devices, expect, test, type Browser, type Page, type Route } from '@pla
 import { build, preview, type PreviewServer } from 'vite';
 
 import { format } from '../src/copy-format';
+import { legalCopy } from '../src/copy-legal';
 
 import { ACCOUNTS_API, ACCOUNTS_URL } from './accounts-server';
 import { smallFields } from './fields';
@@ -553,7 +554,7 @@ test.describe('accounts', () => {
     }
   });
 
-  test('settings end with the Privacy and Terms links, each opening its page over the app', async ({
+  test('settings end with the Privacy policy and Terms of use links, each opening its page over the app', async ({
     browser,
   }) => {
     const api = new StubApi();
@@ -575,11 +576,22 @@ test.describe('accounts', () => {
     await page.getByRole('button', { name: 'Account menu for Jo' }).click();
     await page.getByRole('menuitem', { name: 'Settings' }).click();
     const sheet = page.getByRole('dialog', { name: 'Settings' });
-    const privacy = sheet.getByRole('link', { name: 'Privacy', exact: true });
-    const terms = sheet.getByRole('link', { name: 'Terms', exact: true });
+    const privacy = sheet.getByRole('link', { name: 'Privacy policy', exact: true });
+    const terms = sheet.getByRole('link', { name: 'Terms of use', exact: true });
+    // Named as the pages are, apart from the Privacy row: nothing in Settings is named
+    // "Privacy" but that row.
+    await expect(privacy).toHaveText(legalCopy.pages.privacy.title);
+    await expect(terms).toHaveText(legalCopy.pages.terms.title);
+    await expect(sheet.getByRole('button', { name: 'Privacy', exact: true })).toHaveCount(1);
+    expect((await sheet.ariaSnapshot()).match(/"Privacy"(?=[:\s]|$)/gmu)).toHaveLength(1);
     // Each a link to the page's own address, every other part of the address kept.
     await expect(privacy).toHaveAttribute('href', /\/\?ref=e2e&privacy$/u);
     await expect(terms).toHaveAttribute('href', /\/\?ref=e2e&terms$/u);
+    // Each a target at least 24px tall, as a finger needs, on a line that stays 18px.
+    for (const link of [privacy, terms]) {
+      expect((await link.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(24);
+    }
+    expect((await sheet.locator('p.legal').boundingBox())?.height).toBe(18);
     // The links come last in Settings, after the delete row.
     expect(
       await sheet.evaluate((node) => {

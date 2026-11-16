@@ -1,11 +1,13 @@
 /**
  * The privacy policy and the terms of use (src/app/legal.ts, ?privacy and ?terms): behind the
  * lock, word for word as the owner approved them, in the theme's colors at phone and desktop
- * widths, and never on the public waitlist. The links at the foot of Settings are in
- * e2e/accounts.spec.ts, with the accounts build's stand-in API.
+ * widths, and never on the public waitlist. The links at the foot of the menu's About page are
+ * here; those at the foot of Settings are in e2e/accounts.spec.ts, with the accounts build's
+ * stand-in API.
  */
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
+import { copy } from '../src/copy';
 import { legalCopy, type LegalPageName } from '../src/copy-legal';
 import { THEME_STORAGE_KEY } from '../src/theme/event';
 import { THEMES } from '../src/theme/themes';
@@ -138,6 +140,65 @@ test.describe('behind the lock', () => {
       await context.close();
     });
   }
+
+  test('the menu’s About links to both pages for a visitor not logged in, each opening over the app', async ({
+    browser,
+    baseURL,
+  }) => {
+    // A device with the code and no account: the menu is all it has for the site's own pages.
+    const context = await browser.newContext({ serviceWorkers: 'block' });
+    await serveSite(context, baseURL ?? '');
+    await context.addInitScript(([key, value]) => {
+      localStorage.setItem(key, value);
+    }, CODE);
+    const page = await context.newPage();
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.goto(`${SITE}?ref=e2e`);
+    await expect(page.locator('#lock')).toBeHidden();
+    const button = page.getByRole('button', { name: copy.menu.label, exact: true });
+    const menu = page.locator('aside.menu');
+    const about = async (): Promise<void> => {
+      await button.click();
+      await menu.getByRole('button', { name: copy.nav.about }).click();
+    };
+    await about();
+    const privacy = menu.getByRole('link', { name: legalCopy.pages.privacy.title, exact: true });
+    const terms = menu.getByRole('link', { name: legalCopy.pages.terms.title, exact: true });
+    // Each a link to the page's own address, every other part of the address kept.
+    await expect(privacy).toHaveAttribute('href', /\/\?ref=e2e&privacy$/u);
+    await expect(terms).toHaveAttribute('href', /\/\?ref=e2e&terms$/u);
+    // Each a target at least 24px tall, as a finger needs, on a line that stays 18px.
+    for (const link of [privacy, terms]) {
+      expect((await link.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(24);
+    }
+    expect((await menu.locator('p.legal').boundingBox())?.height).toBe(18);
+
+    // The privacy policy opens over the app and the menu closes; Back closes the page, the
+    // keyboard on the menu's button.
+    await privacy.click();
+    const policy = page.getByRole('dialog', { name: legalCopy.pages.privacy.title });
+    await expect(policy.getByRole('heading', { level: 1 })).toBeFocused();
+    await expect(page).toHaveURL(/\?ref=e2e&privacy$/u);
+    await expect(menu).toHaveCount(0);
+    expect(await onTop(page, '.legal')).toBe(true);
+    await page.goBack();
+    await expect(policy).toHaveCount(0);
+    await expect(page).toHaveURL(/\?ref=e2e$/u);
+    await expect(button).toBeFocused();
+
+    // The terms of use, closed with its own button: the keyboard goes back to the menu's button.
+    await about();
+    await terms.click();
+    const termsPage = page.getByRole('dialog', { name: legalCopy.pages.terms.title });
+    await expect(termsPage.getByText('hello@snowlightmap.com').first()).toBeVisible();
+    await termsPage.getByRole('button', { name: copy.detail.close }).click();
+    await expect(termsPage).toHaveCount(0);
+    await expect(page).toHaveURL(/\?ref=e2e$/u);
+    await expect(button).toBeFocused();
+    expect(errors).toEqual([]);
+    await context.close();
+  });
 
   test('takes the theme’s colors: Midnight and Daylight', async ({ browser, baseURL }) => {
     for (const id of ['midnight', 'daylight'] as const) {

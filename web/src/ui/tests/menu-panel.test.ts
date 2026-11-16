@@ -1,9 +1,11 @@
 import { flushSync, mount, unmount } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { startLegal } from '../../app/legal';
 import type { MenuView } from '../../app/menu';
 import { STATUS_KEYS, copy } from '../../copy';
 import { format } from '../../copy-format';
+import { legalCopy } from '../../copy-legal';
 import type { StatusCounts } from '../../data/closings';
 import { SHOW_ALL, withKind, withStatus } from '../../state/filter';
 import type { MapFilter } from '../../state/filter';
@@ -394,6 +396,68 @@ describe('MenuPanel', () => {
     flushSync();
     expect(panel.querySelector('.lead')?.textContent).toBe(copy.about.what);
     expect(panel.querySelector('dl, table')).toBeNull();
+  });
+
+  it('ends About with the privacy policy and terms of use links, for a visitor not logged in', async () => {
+    // The menu knows nothing of an account: what it shows here, every visitor sees.
+    const app = document.createElement('div');
+    app.id = 'app';
+    document.body.append(app);
+    history.replaceState(null, '', '/?ref=x');
+    const stop = startLegal(app);
+    try {
+      const target = document.createElement('div');
+      document.body.append(target);
+      const onclose = vi.fn<(refocus: boolean) => void>();
+      component = mount(MenuPanel, {
+        target,
+        props: { view: NOTHING, id: 'menu', filter: SHOW_ALL, onclose },
+      });
+      flushSync();
+      const panel = target.querySelector('aside.menu');
+      if (!(panel instanceof HTMLElement)) throw new Error('no panel');
+      // Not in the list: on About's page, at its foot.
+      expect(panel.querySelector('a')).toBeNull();
+      panel.querySelector<HTMLButtonElement>('button[data-page="about"]')?.click();
+      flushSync();
+      const links = [...panel.querySelectorAll<HTMLAnchorElement>('section.page .legal-foot a')];
+      expect(links.map((link) => link.textContent)).toEqual([
+        legalCopy.pages.privacy.title,
+        legalCopy.pages.terms.title,
+      ]);
+      expect(links.map((link) => link.href)).toEqual([
+        `${location.origin}/?ref=x&privacy`,
+        `${location.origin}/?ref=x&terms`,
+      ]);
+      expect(
+        panel.querySelector('section.page')?.lastElementChild?.classList.contains('legal-foot'),
+      ).toBe(true);
+
+      // A press opens the page over the app, the menu closing with the keyboard back on its button.
+      links[0]?.click();
+      expect(onclose).toHaveBeenCalledExactlyOnceWith(true);
+      expect(location.search).toBe('?ref=x&privacy');
+      await vi.waitFor(() => {
+        expect(app.querySelector('[role="dialog"] h1')?.textContent).toBe(
+          legalCopy.pages.privacy.title,
+        );
+      });
+      history.back();
+      await vi.waitFor(() => {
+        expect(app.querySelector('[role="dialog"]')).toBeNull();
+      });
+      links[1]?.click();
+      expect(onclose).toHaveBeenLastCalledWith(true);
+      expect(location.search).toBe('?ref=x&terms');
+      await vi.waitFor(() => {
+        expect(app.querySelector('[role="dialog"] h1')?.textContent).toBe(
+          legalCopy.pages.terms.title,
+        );
+      });
+    } finally {
+      stop();
+      history.replaceState(null, '', '/');
+    }
   });
 
   it('can take focus when it opens, without being a stop in the tab order', () => {

@@ -21,6 +21,7 @@ import { shareCopy } from './copy-share';
 import { getCopy } from './copy-get';
 import { laterCopy, laterFormat } from './copy-later';
 import { legalCopy } from './copy-legal';
+import { legalLinksCopy } from './copy-legal-links';
 import { waitlistCopy } from './copy-waitlist';
 
 // The house-style rules and the lint live in scripts/check-copy.mjs, a plain
@@ -4522,7 +4523,8 @@ ${aliases}
     // the notifications' (src/copy-notify.ts), the plain details' (src/copy-details.ts), the
     // screen check's (src/copy-diag.ts), the themes' (src/copy-themes.ts), the share cards'
     // (src/copy-share.ts), the getsnowlight landing's (src/copy-get.ts), the later days'
-    // key line's (src/copy-later.ts) and the privacy policy's and terms' (src/copy-legal.ts).
+    // key line's (src/copy-later.ts), the privacy policy's and terms' (src/copy-legal.ts) and
+    // the links to them (src/copy-legal-links.ts).
     expect(scanned.strings).toBe(
       strings.length +
         copyLeaves(chanceCopy).length +
@@ -4536,7 +4538,8 @@ ${aliases}
         copyLeaves(shareCopy).length +
         copyLeaves(getCopy).length +
         copyLeaves(laterCopy).length +
-        copyLeaves(legalCopy).length,
+        copyLeaves(legalCopy).length +
+        copyLeaves(legalLinksCopy).length,
     );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s

@@ -168,18 +168,64 @@ describe('startLegal', () => {
     expect(ask({ page: 'terms', href: '?terms' })).toEqual({ page: 'terms', href: '?terms' });
   });
 
-  it('is the events the Settings links send, with none of the page code', () => {
-    const sheet = readFileSync(
-      path.join(
-        path.dirname(fileURLToPath(import.meta.url)),
-        '../../ui/account/AccountSheet.svelte',
-      ),
-      'utf8',
-    );
-    expect(sheet).toContain(`new CustomEvent('${LEGAL_EVENT}', { detail: page })`);
-    expect(sheet).toContain(`new CustomEvent('${LEGAL_HREF_EVENT}', { detail: ask })`);
+  /**
+   * Any way a file could take in the pages' code: an import of app/legal (any depth, any
+   * extension, legal.ts or a module beside it such as legal-page.ts, static or dynamic), the
+   * page's component, or the pages' words (copy-legal.ts; the links' own two labels,
+   * copy-legal-links.ts, are not the pages').
+   */
+  const PAGE_CODE =
+    /(?:from|import\s*\()\s*['"`](?:\.{1,2}\/)+app\/legal|LegalPage\.svelte|copy-legal(?!-links\b)/u;
+
+  it('knows every way the pages’ code could come in, and lets the links’ own imports through', () => {
+    for (const line of [
+      "import { startLegal } from '../../app/legal';",
+      "import { startLegal } from '../../app/legal.ts';",
+      "import { startLegal } from '../../app/legal.js';",
+      "import x from '../../app/legal-page.ts';",
+      "import { startLegal } from '../app/legal';",
+      'import { startLegal } from "../app/legal";',
+      "const legal = await import('../app/legal');",
+      "import LegalPage from './LegalPage.svelte';",
+      "import { legalCopy } from '../copy-legal';",
+      "import { legalCopy } from '../../copy-legal.ts';",
+    ]) {
+      expect(line, line).toMatch(PAGE_CODE);
+    }
+    for (const line of [
+      "import LegalLinks from '../LegalLinks.svelte';",
+      "import LegalLinks from './LegalLinks.svelte';",
+      "import { legalLinksCopy } from '../copy-legal-links';",
+      "import { legalLinksCopy } from '../copy-legal-links.ts';",
+    ]) {
+      expect(line, line).not.toMatch(PAGE_CODE);
+    }
+  });
+
+  it('is the events the links send, in Settings and in the menu, with none of the page code', () => {
+    const read = (file: string): string =>
+      readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), file), 'utf8');
+    const links = read('../../ui/LegalLinks.svelte');
+    expect(links).toContain(`new CustomEvent('${LEGAL_EVENT}', { detail: page })`);
+    expect(links).toContain(`new CustomEvent('${LEGAL_HREF_EVENT}', { detail: ask })`);
+    expect(links).not.toMatch(/from '\.\.\/app\/legal/u);
+    expect(links).not.toMatch(PAGE_CODE);
+    // Settings and the menu show the links, and neither carries the pages' code.
+    const sheet = read('../../ui/account/AccountSheet.svelte');
     expect(sheet).not.toMatch(/from '\.\.\/\.\.\/app\/legal/u);
     expect(sheet).not.toMatch(/LegalPage\.svelte/u);
+    const menu = read('../../ui/MenuPanel.svelte');
+    expect(menu).not.toMatch(/from '\.\.\/app\/legal/u);
+    for (const [file, source] of [
+      ['ui/account/AccountSheet.svelte', sheet],
+      ['ui/MenuPanel.svelte', menu],
+    ] as const) {
+      expect(source, file).toMatch(
+        /import LegalLinks from '\.\.?\/(?:\.\.\/)?LegalLinks\.svelte'/u,
+      );
+      expect(source, file).toMatch(/<LegalLinks\b/u);
+      expect(source, file).not.toMatch(PAGE_CODE);
+    }
   });
 
   it('stops: the page goes and the address is no longer followed', async () => {

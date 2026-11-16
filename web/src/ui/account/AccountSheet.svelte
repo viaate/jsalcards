@@ -6,6 +6,7 @@
   import { withoutSchool } from '../../account/pins';
   import type { AccountState, AccountStore, SheetView } from '../../account/session';
   import { accountCopy, accountFormat, type AccountErrorCode } from '../../copy-account';
+  import LegalLinks from '../LegalLinks.svelte';
   import { followKeyboard } from './keyboard';
   import NotifySettings from './NotifySettings.svelte';
   import UsernameField from './UsernameField.svelte';
@@ -23,42 +24,6 @@
   }
 
   let { store, view, pinnedId, onview, onclose, onschool }: Props = $props();
-
-  /** The pages linked at the foot of Settings, in the order they show. */
-  const LEGAL_PAGES = ['privacy', 'terms'] as const;
-  type LegalLink = (typeof LEGAL_PAGES)[number];
-
-  // The events app/legal.ts hears (LEGAL_EVENT, LEGAL_HREF_EVENT there): events, not an import,
-  // so the sheet's code and the page's first script carry none of the pages' code.
-
-  /**
-   * A link's address: the page's own, every other part of the address kept, as app/legal.ts
-   * writes it; the page's name alone until that module has started.
-   */
-  function legalLinkHref(page: LegalLink): string {
-    const ask: { page: LegalLink; href: string } = { page, href: `?${page}` };
-    window.dispatchEvent(new CustomEvent('snowlight:legal-href', { detail: ask }));
-    return ask.href;
-  }
-
-  /**
-   * A link pressed: the page opens in place, over the app. A press with a modifier key, or with
-   * any button but the main one, is left to the browser, as on any link: a new tab or window at
-   * the link's own address.
-   */
-  function openLegalPage(event: MouseEvent, page: LegalLink): void {
-    if (event.defaultPrevented || event.button !== 0) return;
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    event.preventDefault();
-    window.dispatchEvent(new CustomEvent('snowlight:legal', { detail: page }));
-  }
-
-  /** Keeps a link's address current as the pointer or the keyboard comes to it. */
-  function freshHref(event: Event, page: LegalLink): void {
-    if (event.currentTarget instanceof HTMLAnchorElement) {
-      event.currentTarget.href = legalLinkHref(page);
-    }
-  }
 
   let account = $state<AccountState>({ available: false, ready: false, user: null });
   let busy = $state(false);
@@ -598,24 +563,8 @@
         {/if}
       </div>
     {/if}
-    <!-- The privacy policy and the terms of use, each a page of its own over the app (app/legal.ts). -->
-    <p class="legal">
-      {#each LEGAL_PAGES as page, index (page)}
-        {#if index > 0}<span aria-hidden="true">·</span>{/if}
-        <a
-          href={legalLinkHref(page)}
-          onpointerenter={(event) => {
-            freshHref(event, page);
-          }}
-          onfocus={(event) => {
-            freshHref(event, page);
-          }}
-          onclick={(event) => {
-            openLegalPage(event, page);
-          }}>{accountCopy.settings.legal[page]}</a
-        >
-      {/each}
-    </p>
+    <!-- The privacy policy and the terms of use, each a page of its own over the app (ui/LegalLinks.svelte). -->
+    <LegalLinks />
   {/if}
 </div>
 
@@ -1042,31 +991,6 @@
 
   .confirm {
     font-weight: 600;
-  }
-
-  /* Two small links at the foot of Settings, quieter than its rows. */
-  .legal {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    margin: 0;
-    font-size: 13px;
-    line-height: 18px;
-    color: var(--text-3);
-  }
-
-  .legal a {
-    color: var(--text-2);
-    text-decoration: none;
-    border-radius: 4px;
-  }
-
-  .legal a:hover,
-  .legal a:focus-visible {
-    color: var(--text-1);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    outline: none;
   }
 
   .prose {

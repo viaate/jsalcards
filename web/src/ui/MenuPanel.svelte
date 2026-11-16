@@ -9,6 +9,7 @@
   import { SCHOOL_KINDS, withKind, withStatus } from '../state/filter';
   import type { MapFilter, SchoolKind } from '../state/filter';
   import type { LocalDate, Status } from '../types/generated';
+  import LegalLinks from './LegalLinks.svelte';
 
   interface Props {
     /** What the published files give: the season, the track record, what the map holds. */
@@ -195,7 +196,9 @@
     file has something to count, and About: each opens a page of its own in
     the panel, its name beside the way back to the list. The season's page
     gives the season it counts under its name; About gives what the site is,
-    how to read its lights, and what the map holds.
+    how to read its lights, what the map holds, and at its foot the links to
+    the privacy policy and the terms of use (ui/LegalLinks.svelte), there for
+    every visitor, logged in or not.
 
   Nothing here is made up, and nothing says it has nothing to show.
 -->
@@ -398,6 +401,17 @@
               {/each}
             </tbody>
           </table>
+        {/if}
+
+        {#if page === 'about'}
+          <!-- The privacy policy and the terms of use, for every visitor: opening one closes the menu. -->
+          <div class="legal-foot">
+            <LegalLinks
+              onopen={() => {
+                onclose(true);
+              }}
+            />
+          </div>
         {/if}
       </section>
     {/if}
@@ -728,6 +742,12 @@
   /* What the map holds, under About's two lines: a part of its own, a line's height below them. */
   .line.note.is-apart {
     margin-top: 20px;
+  }
+
+  /* The links to the privacy policy and the terms of use, at About's foot, a line's height below. */
+  .legal-foot {
+    margin-top: 20px;
+    padding: 0 var(--pad);
   }
 
   /*

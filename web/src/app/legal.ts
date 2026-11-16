@@ -8,8 +8,9 @@
  *
  * - The address the page opens with shows one; closing it takes it out of the address, every
  *   other part kept.
- * - The links at the foot of Settings (ui/account/AccountSheet.svelte, by LEGAL_EVENT) open one
- *   in place with a history entry of its own: Back closes it, and so does closing it.
+ * - The links at the foot of Settings and of the menu's About page (ui/LegalLinks.svelte, by
+ *   LEGAL_EVENT) open one in place with a history entry of its own: Back closes it, and so does
+ *   closing it.
  * - Back and Forward show what the address then asks for.
  * - While the code screen is up (index.html's #lock), nothing of a page is put in the page: it
  *   would take the keyboard from the code's field and be read out under the lock. The page asked
@@ -22,9 +23,9 @@ import type { LegalPageName } from '../copy-legal';
 const PAGES: readonly LegalPageName[] = ['privacy', 'terms'];
 
 /**
- * The events the links at the foot of Settings (ui/account/AccountSheet.svelte, which writes the
- * same names) send on the window: events rather than an import, so the sheet's code never needs
- * this module's and the page's first script stays as it was.
+ * The events the links at the foot of Settings and of the menu's About page (ui/LegalLinks.svelte,
+ * which writes the same names) send on the window: events rather than an import, so the code that
+ * shows the links never needs this module's and the page's first script stays as it was.
  *
  * - LEGAL_EVENT, its detail the page's name: opens that page in place.
  * - LEGAL_HREF_EVENT, its detail `{ page, href }`: asks for the page's address, every other part

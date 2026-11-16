@@ -99,6 +99,7 @@ export const COPY_MODULES = [
   'src/copy-get.ts',
   'src/copy-later.ts',
   'src/copy-legal.ts',
+  'src/copy-legal-links.ts',
 ];
 
 /** The waitlist page's words (src/copy-waitlist.ts), filled into pages under copy.waitlist. */
