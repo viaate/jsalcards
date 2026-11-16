@@ -22,7 +22,7 @@ those of a record that never held them, so the fit is too.
 """
 
 import json
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from datetime import date
 from pathlib import Path
@@ -222,6 +222,24 @@ def read_labels(
     )
 
 
+def row_parts(
+    labels: LiveLabels, serving: Mapping[str, Mapping[str, float]] | None = None
+) -> tuple[float, ...]:
+    """Each labeled row's each-school parts in its fitting offset (each-school 2.3 and r4 9
+    step 1: from P7 on, a serving part's value is added to each live row's offset in the class
+    level's fit, so one storm's surprise is not taken twice). ``serving``: each part that
+    serves, by class, to its value per district. While no part serves (P6a: every part is in
+    shadow) every row's is 0.0 and :func:`snowlight.predict.anchor.fit` is given nothing new,
+    so every learned value is the same byte for byte (a test holds it so)."""
+    found: list[float] = []
+    for row in labels.rows:
+        total = 0.0
+        for by_class in (serving or {}).values():
+            total += by_class.get(f"{row.weather.removesuffix('_after')}|{row.district}", 0.0)
+        found.append(total)
+    return tuple(found)
+
+
 ANCHOR_REPORT: Final = PIPELINE_ROOT / "out" / "internal" / "predict" / "anchor.json"
 """The private report of the class levels a process serves (never published)."""
 
@@ -366,3 +384,50 @@ def write_report(
         body["plausibility"] = plausible.summary()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(body, sort_keys=True, indent=1) + "\n", encoding="utf-8")
+
+
+def labeled_days(folder: Path = READS_DIR, since: date | None = None) -> list[date]:
+    """The labeled days of the record, by their file names only (none read), from ``since``."""
+    root = folder / "rows"
+    if not root.is_dir():
+        return []
+    found = (_day_of(path) for path in root.glob("*.json"))
+    return sorted(day for day in found if day is not None and (since is None or day >= since))
+
+
+def day_lists(
+    folder: Path, day: date, excluded: LearnSettings | None = None
+) -> tuple[list[LiveRow], dict[str, tuple[str, ...]], dict[str, tuple[str, int, int]]] | None:
+    """One labeled day as :func:`read_labels` reads it (each take-back pair's row and its
+    district's trial lines dropped), with the lists that read each row whole (its
+    ``sources``) and each list's closed co-listing trials that day, ``(tier, hits, trials)``
+    (each-school honesty rule 2: per-list sensitivity). ``None``: a take-back day.
+
+    Raises:
+        OSError, ValueError, KeyError, TypeError: the day's files do not read.
+    """
+    if excluded is not None and excluded.excludes_day(day):
+        return None
+    gone = excluded.districts_left_out(day) if excluded is not None else frozenset()
+    body = json.loads((folder / "rows" / f"{day.isoformat()}.json").read_text(encoding="utf-8"))
+    rows = [row for row in _rows(day, body) if row.district not in gone]
+    sources: dict[str, tuple[str, ...]] = {}
+    for item in body["rows"]:
+        district, found = item.get("district"), item.get("sources")
+        if isinstance(district, str) and isinstance(found, list) and district not in gone:
+            sources[district] = tuple(sorted({s for s in found if isinstance(s, str)}))
+    trials: dict[str, tuple[str, int, int]] = {}
+    path = folder / "trials" / f"{day.isoformat()}.jsonl"
+    lines = path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
+    for line in lines:
+        if not line.strip():
+            continue
+        trial = json.loads(line)
+        if not isinstance(trial, dict) or trial.get("district") in gone:
+            continue
+        tier, named, source = trial.get("tier"), trial.get("named"), trial.get("source")
+        if tier not in TIERS or not isinstance(named, bool) or not isinstance(source, str):
+            raise ValueError("a trial has no tier, naming or source")
+        had = trials.get(source, (str(tier), 0, 0))
+        trials[source] = (had[0], had[1] + int(named), had[2] + 1)
+    return rows, sources, trials

@@ -167,6 +167,59 @@ learn:
 # (config.LIVE_SCORE_SHA256, logged by predict learn on every run) covers this block, the
 # labels: and weather: blocks above (the outcome and class rules the labels are made by) and
 # learn.snapshot_slack_minutes, so none of those changes without it.
+each_school:                    # each-school 10.4, pre-registered and public: hashed (all but go) into config.EACH_SCHOOL_SHA256
+  shadow: "on"                  # P6a: each district's own part fit nightly and scored in shadow (kind frozen_es); nothing serves from it
+  arms: {m5o: "on", m5y: "on", mp: "off", m5g: "off"}  # mp: P2f's private live labels not built; m5g: the grown record (P2b, P2c) not built
+  own_prior_scale: 0.5          # s_own's half-normal hyperprior (the measured within-storm spread)
+  own_bound: 1.5                # |own| and s_own at most this (r4 2.5)
+  own_spread_step: 0.02         # the grid of s_own the fit searches
+  quadrature_points: 20         # the prior-neutral base's rule (live_score.anchor.quadrature_points)
+  fit_hour_utc: "19:30"         # the nightly fit: the first pass at or after this, after the record job
+  fit_max_age_hours: 36         # an older fit is made again by the next pass
+  fit_budget_seconds: 10        # the seconds of a pass the nightly fit may take (over: one warning line; it is in shadow)
+  take_up_days: 2               # labeled days a pass takes up into the own part's ledger at most (each reads one freeze)
+  own_excluded: [               # honesty rule 4, listed by id: state-agency LEAs, units whose public schools span 3+ counties, CT Technical
+    "0400083", "0400112", "0400131", "0400190", "0400197", "0400273", "0400463", "0400612", "0400640",
+    "0400752", "0400944", "0500035", "0500036", "0500074", "0500076", "0500078", "0500390", "0500408",
+    "0508240", "0600002", "0600003", "0600007", "0633110", "0691024", "0691043", "0800020", "0800023",
+    "0800282", "0800286", "0802340", "0804260", "0900002", "0900027", "0900222", "1200084", "1300025",
+    "1300026", "1300027", "1300254", "1600016", "1600017", "1700006", "1700098", "1700162", "1700165",
+    "1700169", "1700175", "1700177", "1700182", "1700186", "1700190", "1704260", "1705050", "1713710",
+    "1726310", "1729890", "1800024", "2000024", "2100094", "2100095", "2100289", "2200047", "2280100",
+    "2312100", "2314780", "2600001", "2600004", "2600280", "2600949", "2600960", "2605430", "2621150",
+    "2632250", "2700014", "2700055", "2700086", "2700224", "2700272", "2700327", "2700420", "2702264",
+    "2711370", "2712270", "2733510", "2801191", "2900009", "2900020", "2900021", "2900022", "2900030",
+    "2931110", "3000091", "3100154", "3100160", "3200001", "3305220", "3400005", "3400007", "3400069",
+    "3400085", "3400088", "3400089", "3400778", "3416400", "3480180", "3480240", "3480260", "3480280",
+    "3480300", "3480320", "3480360", "3480364", "3500011", "3500012", "3500013", "3501890", "3600127",
+    "3600131", "3600133", "3600135", "3600154", "3700320", "3705072", "3705073", "3800006", "3900237",
+    "3904359", "3904702", "3905106", "4000075", "4000076", "4100009", "4100043", "4500001", "4503420",
+    "4503901", "4503909", "4503919", "4672450", "4700143", "4700156", "4700157", "4800016", "4800053",
+    "4800065", "4800071", "4800075", "4800163", "4800179", "4800202", "4800207", "4800211", "4800235",
+    "4800236", "4800258", "4800259", "4800264", "4800266", "4800272", "4800292", "4801400", "4801409",
+    "4801414", "4801416", "4801427", "4801432", "4801438", "4801440", "4801441", "4801447", "4801448",
+    "4801451", "4801457", "4801461", "4811550", "4814730", "4825170", "4833180", "4833980", "4838220",
+    "4899136", "4900069", "4900174", "5000417", "5000438", "5100058", "5100070", "5300008", "5401621",
+    "5500035", "5500036", "5500037", "5680180", "5680250", "5680251"
+  ]
+  es_decimals: 4                # LR25 give-up step (a): a shadow arm's chance between es_coarse at 4 decimals, else 6
+  es_coarse: [0.01, 0.99]
+  es_budget_xz: 524288          # the frozen_es day's budget, judged by predict drill --frozen-day only
+  g1_log_loss: 0.005            # G1 per-unit no-harm limits (nats and Brier a row)
+  g1_brier: 0.002
+  sign_p: 0.05                  # G1(b): the one-sided sign test with sign_units or more units, else (b')
+  sign_units: 100
+  named_nats: 0.05              # G1(c): units worse by more than this are named
+  group_min: 30                 # G1(d): groups of this many units or more are judged
+  shuffle_times: 1000           # 11(a): the shuffle null, off the pass
+  shuffle_floor: 0.05
+  shuffle_seed: 17
+  ky_gate_fold: "2025-26"       # G-OWN-YEAR's gate fold (walk-forward)
+  ky_cross_fit: "2024-25"       # reported only: never in a gate, a switch or a served number (LR24)
+  ky_gap_points: 1.0            # the mean-chance gap bound
+  starts: {}                    # each piece's live start date
+  go: {p7y_unarmed: false}      # the lead's go values: outside the hash
+
 live_score:
   read:                           # a district is read on a school morning when one of its sources...
     window: ["06:30", "09:30"]    # ...had a whole read in a 30-minute slot of this local window

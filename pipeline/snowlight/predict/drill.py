@@ -84,6 +84,7 @@ from snowlight.sources.nws.alerts import NwsAlert, parse_active, parse_alert
 if TYPE_CHECKING:
     from snowlight.predict.anchor import Anchor
     from snowlight.predict.cli import Pass
+    from snowlight.predict.frozen import EsArms
 
 type Floats = npt.NDArray[np.float64]
 type ReadRun = Callable[[ndfd.Run, date], forecast_history.RunValues]
@@ -1667,17 +1668,21 @@ def _remove(folder: Path) -> None:
     folder.rmdir()
 
 
-def _world(  # noqa: PLR0913, PLR0917 - one world of the night
+def size_pass(  # noqa: PLR0913, PLR0917 - one world's pass and its parts
     config: PredictConfig,
     committed: ModelArtifact,
     anchor: "Anchor | None",
     frozen: Path,
     grid: Lattice,
-    share: float,
+    areas: Mapping[str, shapely.Geometry],
+    *,
     mix: str | None,
     covered: int,
-    areas: Mapping[str, shapely.Geometry],
-) -> Iterator[SizePass | FrozenSize]:
+    es: "EsArms | None" = None,
+) -> tuple["Pass", FakeClock, DrillHost]:
+    """One storm-size world's ``Pass`` (its clock at the night's first pass and its host),
+    with the shadow arms ``es`` (``None``: off, as the night runs; each-school P6a's no-change
+    test runs the same world with them on)."""
     from snowlight.predict import cli  # noqa: PLC0415 - cli imports this module at its top
 
     storm = areas.get(STORM_ZONE)
@@ -1703,6 +1708,26 @@ def _world(  # noqa: PLR0913, PLR0917 - one world of the night
         night=cli.night_reader(
             size_blend(storm), timedelta(minutes=config.serve.chart_nbm_max_age_minutes)
         ),
+        es=es,
+    )
+    return run, clock, host
+
+
+def _world(  # noqa: PLR0913, PLR0917 - one world of the night
+    config: PredictConfig,
+    committed: ModelArtifact,
+    anchor: "Anchor | None",
+    frozen: Path,
+    grid: Lattice,
+    share: float,
+    mix: str | None,
+    covered: int,
+    areas: Mapping[str, shapely.Geometry],
+) -> Iterator[SizePass | FrozenSize]:
+    from snowlight.predict import cli  # noqa: PLC0415 - cli imports this module at its top
+
+    run, clock, host = size_pass(
+        config, committed, anchor, frozen, grid, areas, mix=mix, covered=covered
     )
     for at in PASSES if covered else (PASSES[1],):
         clock.at = datetime.combine(DAY, at, UTC)

@@ -489,6 +489,41 @@ def _finished_day(folder: Path) -> bytes:
     return data
 
 
+def test_a_failing_shadow_arms_query_leaves_the_district_days_release(
+    tmp_path: Path, capsys: Any
+) -> None:
+    """The shadow arms' kind is asked for apart from the district kind: an answer for
+    ``frozen_es`` that fails (or is slow) is said in one line and the finished district day is
+    released all the same, as with no shadow arms at all."""
+    folder = tmp_path / "frozen"
+    _finished_day(folder)
+    (folder / frozen.ES_FOLDER.name).mkdir()
+    api = FakeD1()
+    store = EvidenceStore(api, PREDICT, lambda: world.utc("2026-01-07T19:00:00"))
+    now = world.utc("2026-01-07T19:00:00")
+    assert cli.keep_evidence(store, {}, {}, now, frozen_folder=folder) == 0
+    frozen.write_marker(folder, DAY)
+    asked: list[tuple[str, ...]] = []
+
+    class Failing:
+        """The store, whose answer for the shadow arms' kind fails."""
+
+        def held(self, kinds: Sequence[str], *args: Any, **kwargs: Any) -> Any:
+            asked.append(tuple(kinds))
+            if FROZEN_ES in kinds:
+                raise D1Error("planted: the shadow arms' query fails")
+            return store.held(kinds, *args, **kwargs)
+
+    capsys.readouterr()
+    cli.note_frozen(Failing(), folder, now)
+    out = capsys.readouterr()
+    assert asked == [(FROZEN,), (FROZEN_ES,)]
+    assert not frozen.day_path(folder, DAY.isoformat()).exists()
+    assert DAY.isoformat() in frozen.load_index(folder).done
+    assert "1 finished frozen days in both databases released" in out.out
+    assert "the frozen shadow arms days held: D1Error" in out.out + out.err
+
+
 def test_a_finished_day_is_kept_in_both_databases_then_leaves_the_folder(
     tmp_path: Path, capsys: Any
 ) -> None:
@@ -1187,12 +1222,12 @@ class Arms:
 
     arms: tuple[str, ...] = ("m5o", "m5y")
     fit: str | None = "2026-01-06T19:30:00+00:00"
-    raises: bool = False
+    raises: type[Exception] | None = None
     pad: int = 0
 
     def lines(self, rows: Sequence[dict[str, Any]]) -> list[dict[str, object]]:
-        if self.raises:
-            raise ValueError("planted")
+        if self.raises is not None:
+            raise self.raises("planted")
         found: list[dict[str, object]] = []
         for k, row in enumerate(rows):
             p = row.get("pr")
@@ -1275,17 +1310,64 @@ def test_the_shadow_arms_are_written_beside_a_district_day_that_is_the_same_byte
     assert frozen.es_days(DAY, DAY, tmp_path / "es" / "es") == {DAY: taken}
 
 
+@dataclass
+class Watching(Arms):
+    """SYNTHETIC arms that count, at each call, the freezes the district day on disk holds."""
+
+    folder: Path = Path()
+    calls: int = 0
+    behind: list[tuple[int, int]] = field(default_factory=list)
+
+    def lines(self, rows: Sequence[dict[str, Any]]) -> list[dict[str, object]]:
+        self.calls += 1
+        path = frozen.day_path(self.folder, DAY.isoformat())
+        held = path.read_bytes().count(b'"k":"freeze"') if path.is_file() else 0
+        if held < self.calls:
+            self.behind.append((self.calls, held))
+        return super().lines(rows)
+
+
+def test_the_arms_are_computed_only_after_the_district_day_is_written(tmp_path: Path) -> None:
+    """The live freeze never waits on the shadow arms: every freeze's arms are computed once
+    the district day holds that freeze, so a slow fit or arm delays no byte of it."""
+    plain = _finished_day(tmp_path / "plain")
+    arms = Watching(folder=tmp_path / "es")
+    data, _ = _finished_with(tmp_path / "es", arms)
+    assert data == plain
+    assert arms.calls > 0
+    assert arms.behind == []
+
+
+@pytest.mark.parametrize("kind", [ValueError, IndexError, AttributeError, RuntimeError, OSError])
 def test_an_arm_that_raises_leaves_the_district_day_the_same_and_says_why(
-    tmp_path: Path, capsys: Any
+    tmp_path: Path, capsys: Any, kind: type[Exception]
 ) -> None:
+    """Any exception an arm raises, of any kind: the district day is the same byte for byte,
+    every pass exits 0 (:func:`_finished_with`), and the freeze's line names the kind."""
     plain = _finished_day(tmp_path / "plain")
     capsys.readouterr()
-    data, said = _finished_with(tmp_path / "es", Arms(raises=True), capsys)
+    data, said = _finished_with(tmp_path / "es", Arms(raises=kind), capsys)
     assert data == plain
-    assert any(", es none (ValueError)" in line for line in said)
+    assert any(f", es none ({kind.__name__})" in line for line in said)
     [(_key, es)] = frozen.offers(tmp_path / "es" / "es")
     assert all(not found.chances for found in frozen.parse_es(es))
     assert not any("::warning::" in line for line in said)
+
+
+def test_a_shadow_arms_kind_that_does_not_write_leaves_the_district_day_and_says_why(
+    tmp_path: Path, capsys: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plain = _finished_day(tmp_path / "plain")
+    capsys.readouterr()
+
+    def broken(*_args: object) -> None:
+        raise RuntimeError("planted")
+
+    monkeypatch.setattr(frozen, "_write_es", broken)
+    data, said = _finished_with(tmp_path / "es", Arms(), capsys)
+    assert data == plain
+    assert any(", es none (RuntimeError)" in line for line in said)
+    assert not any("nothing frozen this pass" in line for line in said)
 
 
 def test_a_shadow_arms_day_over_its_budget_is_written_whole_and_only_the_drill_judges_it(
@@ -1348,6 +1430,13 @@ def test_the_shadow_arms_days_are_kept_released_checked_and_restored_by_their_ki
     assert frozen.day_path(folder / "es", key).read_bytes() == es
     assert frozen.es_days(DAY, DAY, folder / "es") == {DAY: frozen.parse_es(es)}
     assert frozen.restore(folder / "es", store, now, es=True) == []
+    # a held arms' day with no whole freeze is passed over, and every later day restored
+    torn = b'{"day":"2026-01-06","freeze":"d1_2007","k":"freeze","rows":2,"zone":"z"}\n'
+    store.push([Offer(FROZEN_ES, "2026-01-06", torn)], (FROZEN_ES,))
+    shutil.rmtree(folder)
+    cli.restore_frozen(store, folder, now)
+    assert frozen.day_path(folder / "es", key).read_bytes() == es
+    assert not frozen.day_path(folder / "es", "2026-01-06").exists()
 
 
 def test_a_shadow_arm_keeps_4_decimals_only_between_1_and_99_percent() -> None:

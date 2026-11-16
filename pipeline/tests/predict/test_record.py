@@ -33,7 +33,7 @@ from snowlight.live.evidence import (
     PartialPushError,
     item_of,
 )
-from snowlight.predict import record
+from snowlight.predict import lines, record
 from snowlight.predict.config import PIPELINE_ROOT, PredictConfig
 from snowlight.predict.labels import WEATHER_REASONS
 from snowlight.predict.live_read import ReadDay, ReadRow
@@ -112,9 +112,9 @@ def test_only_the_record_job_keeps_the_record(monkeypatch: pytest.MonkeyPatch) -
     )
     reports = _store(api, RECORD_JOB).push([day], (evidence.RECORD,))
     assert [(r.database, r.kept) for r in reports] == [(PRIMARY, 1), (BACKUP, 1)]
-    # the record is read only by its own modules and by its one reader with its capability
-    # (LR-P6A-1): a capability that is not that reader's reads nothing here
-    for capability in (None, object()):
+    # the record is read only by its own modules and by lines.py with its capability
+    # (LR-P6A-1): the capability taken out of lines.py reads nothing here
+    for capability in (None, lines._READ):
         with pytest.raises(evidence.RecordRefusedError):
             _store(api, RECORD_JOB).pull(evidence.RECORD, capability=capability)
     assert _pulled(api, monkeypatch) == {"2026-12-01": day.data}
@@ -1345,6 +1345,13 @@ def test_no_pass_and_no_learning_step_reads_the_record() -> None:
         assert "predict.record" not in text, name
         assert "import record" not in text, name
         assert "state_records" not in text, name
+        assert "store_past" not in text, name  # lines.py's reads
+        assert "read_kyy" not in text, name
+        assert not re.search(r"\bRECORD\b", text), name  # the store's kind by its name
+        kind = re.escape(evidence.RECORD)
+        assert not re.search(  # the store's kind pulled by its string
+            rf"\.(pull|pull_all|held|versions)\(\s*[(\[]?\s*['\"]{kind}['\"]", text
+        ), name
 
 
 # --- past records (each-school P2d) -------------------------------------------------------------

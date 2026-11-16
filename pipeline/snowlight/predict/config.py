@@ -240,6 +240,84 @@ class LearnSettings(_Settings):
         return None
 
 
+_ARMS: Final[dict[str, Literal["on", "off"]]] = {
+    "m5o": "on",
+    "m5y": "on",
+    "mp": "off",
+    "m5g": "off",
+}
+
+
+class EachSchoolGo(_Settings):
+    """The lead's go values (each-school 10.4): outside :data:`EACH_SCHOOL_SHA256` by design;
+    they change no rule, they only let the lead keep a piece serving past a registered stop."""
+
+    p7y_unarmed: bool = False
+
+
+class EachSchoolSettings(_Settings):
+    """The ``each_school:`` block (each-school 10.4, pre-registered, public): the arms, priors,
+    bounds, the shadow arms' kind and the gates P6a scores by. Hashed, all but ``go``, into
+    :data:`EACH_SCHOOL_SHA256`; changing it restarts a piece's live evidence."""
+
+    shadow: Literal["on", "off"] = "on"
+    """Each district's own part fit nightly and scored in shadow (P6a; nothing serves)."""
+    arms: dict[str, Literal["on", "off"]] = Field(default_factory=lambda: dict(_ARMS))
+    own_prior_scale: float = 0.5
+    own_bound: float = 1.5
+    own_spread_step: float = 0.02
+    quadrature_points: int = 20
+    fit_hour_utc: str = "19:30"
+    fit_max_age_hours: int = 36
+    fit_budget_seconds: float = 10.0
+    take_up_days: int = 2
+    own_excluded: tuple[str, ...] = ("0900002",)
+    """Honesty rule 4's units, listed by id: never in an own part's fit or gate."""
+    es_decimals: int = 4
+    es_coarse: tuple[float, float] = (0.01, 0.99)
+    es_budget_xz: int = 524_288
+    g1_log_loss: float = 0.005
+    g1_brier: float = 0.002
+    sign_p: float = 0.05
+    sign_units: int = 100
+    named_nats: float = 0.05
+    group_min: int = 30
+    shuffle_times: int = 1000
+    shuffle_floor: float = 0.05
+    shuffle_seed: int = 17
+    ky_gate_fold: str = "2025-26"
+    ky_cross_fit: str = "2024-25"
+    ky_gap_points: float = 1.0
+    starts: dict[str, date] = Field(default_factory=dict)
+    go: EachSchoolGo = EachSchoolGo()
+
+    @model_validator(mode="after")
+    def _registered(self) -> "EachSchoolSettings":
+        # each-school P6a: the four registered arms only; MP and M5g stay off while their
+        # inputs (P2f's private live labels; the grown record, P2b and P2c) are not built.
+        if set(self.arms) != set(_ARMS):
+            raise ValueError(f"each_school.arms are {sorted(_ARMS)}, not {sorted(self.arms)}")
+        if "0900002" not in self.own_excluded:
+            raise ValueError("each_school.own_excluded lists CT Technical (0900002), rule 4's case")
+        for arm in ("mp", "m5g"):
+            if self.arms[arm] != "off":
+                raise ValueError(f"each_school.arms.{arm} is off only: its inputs are not built")
+        return self
+
+
+EACH_SCHOOL_SHA256: Final = "1682b7872b696aeb84589b97d11942c2cdd0d473919f7f94dd2bebb692e24f0a"
+"""The sha256 of the ``each_school:`` block but ``go`` (:func:`each_school_sha256`), pinned
+beside :data:`LIVE_SCORE_SHA256` so neither moves the other. A test holds the two equal."""
+
+
+def each_school_sha256(config: "PredictConfig") -> str:
+    """The sha256 of the ``each_school`` block less ``go``, as key-sorted compact JSON."""
+    body = config.each_school.model_dump(mode="json", exclude={"go"})
+    return hashlib.sha256(
+        json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
 LIVE_SCORE_SHA256: Final = "7707b6ecb032e780e893cc48e40a7f985f17d71104c623ea47eba2a347b062a1"
 """The sha256 of the pre-registered scoring rules (:func:`live_score_sha256`: the
 ``live_score`` block, the ``labels`` and ``weather`` blocks and ``learn.snapshot_slack_minutes``),
@@ -271,6 +349,8 @@ class PredictConfig(_Settings):
     backtest: BacktestSettings
     serve: ServeSettings
     learn: LearnSettings
+    each_school: EachSchoolSettings = EachSchoolSettings()
+    """Each school's own record (``each_school:``, each-school 10.4)."""
     live_score: dict[str, dict[str, ScoreValue]]
     """The live scoring rules, pre-registered (advisory-sane L0): the class anchor
     (:mod:`snowlight.predict.anchor`) serves by them with ``serve.anchor`` on, and the live

@@ -674,6 +674,11 @@ ADDRESS_MARKS: Final = (b"://", b"www.")
 """Byte strings no record version may hold (looked for in lower case)."""
 
 
+def _last_shadow(entry: tuple[tuple[str, str, str], object]) -> tuple[bool, tuple[str, str, str]]:
+    """A push's order: by version, with :data:`FROZEN_ES` after every other kind."""
+    return entry[0][0] == FROZEN_ES, entry[0]
+
+
 def _checked_records(
     run: _Run, offered: Mapping[tuple[str, str, str], Offer], kept_at: str
 ) -> dict[tuple[str, str, str], tuple[Item, list[str]]]:
@@ -782,13 +787,15 @@ class EvidenceStore:
         records = _checked_records(run, offered, kept_at)
         if self.seconds is not None:
             run.stop = self.monotonic() + self.seconds
-        # offers first, then each version only another database holds
-        for version, offer in sorted(offered.items()):
+        # offers first, then each version only another database holds; the frozen shadow
+        # arms (each-school P6a) after every other kind, so a storm night's row or seconds
+        # budget keeps the labels, snapshots and district days before them
+        for version, offer in sorted(offered.items(), key=_last_shadow):
             if self._lacking(run, databases, version):
                 item, parts = records.get(version) or item_of(offer, kept_at)
                 self._keep(run, databases, item, parts, copied=False)
         for name in sorted(run.held):
-            for version, item in sorted(run.held[name].items()):
+            for version, item in sorted(run.held[name].items(), key=_last_shadow):
                 if version in offered or not self._lacking(run, databases, version):
                     continue
                 if self._late(run):

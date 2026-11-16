@@ -25,7 +25,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from datetime import time as dtime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Final, cast
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -35,6 +35,7 @@ import shapely
 from snowlight.cli import main
 from snowlight.live import evidence
 from snowlight.predict import (
+    anchor_labels,
     artifact,
     cli,
     drill,
@@ -1365,3 +1366,166 @@ def test_the_snow_seen_table_holds_two_numbers_or_null_a_row_and_nothing_else(
     assert seen == drill.snow_seen_reader(table, 500)
     assert seen["d0_0507"] != seen["d0_0630"]
     assert all(pair in set(table) for pairs in seen.values() for pair in pairs)
+
+
+# --- each-school P6a: the no-change proof on the drill's world --------------------------------
+
+
+P6A_SCALE: Final = 0.02
+"""The no-change proof's scale: 2% of the districts, so the storm's 37% holds over 100 whose
+own part moves (lead ruling LR-P6A-2)."""
+
+
+def _size_files(
+    world_inputs: Inputs, folder: Path, es: Callable[[Path], Any] | None
+) -> tuple[list[tuple[datetime, str, bytes]], bytes, Path]:
+    """The gate's storm-size world (37% of districts in the storm, the worst mix) at
+    :data:`P6A_SCALE` through every pass of the night, with the shadow arms
+    ``es(frozen folder)`` or off: every write the host took (its time, key and bytes), the
+    frozen district day and the folder."""
+    labels = folder / "labels"
+    labels.mkdir(parents=True)
+    grid = drill.lattice(world_inputs.committed, P6A_SCALE)
+    share, mix = drill.GATE
+    covered, areas = drill.storm_zones(grid, share)
+    anchor = anchor_labels.serving_anchor(
+        world_inputs.config, world_inputs.committed, folder=labels
+    )
+    frozen_folder = folder / "frozen"
+    run, clock, host = drill.size_pass(
+        world_inputs.config, world_inputs.committed, anchor, frozen_folder, grid, areas,
+        mix=mix, covered=covered, es=None if es is None else es(frozen_folder),
+    )  # fmt: skip
+    for at in drill.PASSES:
+        clock.at = datetime.combine(drill.DAY, at, UTC)
+        assert cli.one_pass(run) == 0
+    return host.log, (frozen_folder / f"{drill.DAY.isoformat()}.jsonl").read_bytes(), frozen_folder
+
+
+LABELED_DAYS: Final = 4
+"""The labeled days the due case's nightly fit reads, a week apart before the drill's night."""
+
+
+def _plant_labeled_days(off_folder: Path, frozen_folder: Path, reads: Path) -> list[str]:
+    """SYNTHETIC: :data:`LABELED_DAYS` finished frozen days before the drill's night (the
+    night's own frozen district day, as the off run froze it, under each earlier date), and
+    each a labeled day where the districts of one class at its 20:07 freeze, in one market,
+    are closed or open by halves, the same half each day: a contrast inside one
+    market-morning-class group for the fit, read by one list with trials (nine of ten
+    closings named). The districts labeled."""
+    from predict.test_lines import write_reads  # noqa: PLC0415
+    from snowlight.predict import lines  # noqa: PLC0415
+
+    key = drill.DAY.isoformat()
+    data = frozen.day_path(off_folder, key).read_bytes()
+    entry = frozen.load_index(off_folder).days[key]
+    served = [
+        row
+        for row in frozen.parse_day(data).rows
+        if row.freeze == lines.FIT_FREEZE and row.served and row.klass in lines.CLASSES
+    ]
+    klass = Counter(str(row.klass) for row in served).most_common(1)[0][0]
+    units = sorted({row.leaid for row in served if row.klass == klass})
+    weather = "advisory" if klass == "advisory" else "snow_warning"
+    frozen_folder.mkdir(parents=True, exist_ok=True)
+    index = frozen.load_index(frozen_folder)
+    for back in range(LABELED_DAYS, 0, -1):
+        day = drill.DAY - timedelta(weeks=back)  # a week apart: each day its own storm
+        frozen.day_path(frozen_folder, day.isoformat()).write_bytes(data)
+        index.days[day.isoformat()] = entry
+        write_reads(
+            reads, day, [(u, "no_school" if k % 2 else "unnamed") for k, u in enumerate(units)],
+            weather=weather, trials=[("list-a", True)] * 9 + [("list-a", False)],
+        )  # fmt: skip
+    index.fresh = False
+    frozen.save_index(frozen_folder, index)
+    return units
+
+
+def test_every_served_byte_is_the_same_with_p6a_on_in_the_drills_world(
+    world_inputs: Inputs, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each-school 8.1 on the storm drill's world (the gate's 37% worst-mix night through the
+    real pass, its alerts, forecasts and freezes, at :data:`P6A_SCALE`): with the shadow arms
+    on, every write of every pass is the same, at the same time, byte for byte, as with them
+    off, and so is the frozen district day; only the shadow arms' folder is new. Lead ruling
+    LR-P6A-2, each case with the own part moving:
+
+    - fitted: a planted fit dated on the drill's clock (in force all night) moves the es line
+      of at least 100 distinct districts by more than 0.01;
+    - due: the nightly fit runs in the night's first pass from a ledger of labeled days whose
+      frozen days are in the folder, closed and open districts in one class and group, so
+      the fit takes rows, finds a spread above 0 and moves es lines (its R-KYY store fails)."""
+    from predict.test_lines import districts_moved, lines_rows_k  # noqa: PLC0415
+    from snowlight.predict import anchor as anchor_module  # noqa: PLC0415
+    from snowlight.predict import lines  # noqa: PLC0415
+
+    monkeypatch.setattr(lines, "_rows_k", lines_rows_k([]))  # R-KYY tried (its store fails)
+    leaids = sorted(world_inputs.committed.districts)
+    own = lines.OwnFit(1.0, {u: (0.8 if k % 2 else -0.8, 0.05) for k, u in enumerate(leaids)})
+
+    fitted_at = datetime.combine(drill.DAY - timedelta(days=1), dtime(19, 31), UTC)
+    night = [datetime.combine(drill.DAY, t, UTC) for t in drill.PASSES]
+    assert all(at < lines.next_window(fitted_at) for at in night)
+
+    def fitted(frozen_folder: Path) -> lines.Shadow:
+        return lines.with_fit(
+            lines.Shadow(folder=frozen_folder / "es", frozen_folder=frozen_folder),
+            own,
+            at=fitted_at,  # the world's clock: the fit is not due in any of the night's passes
+        )
+
+    def failing() -> Any:
+        raise OSError("planted: the store is down")
+
+    off_log, off_day, off_folder = _size_files(world_inputs, tmp_path / "off", None)
+    assert off_log
+    assert off_day
+    assert not (off_folder / "es").exists()
+    labeled: list[str] = []
+    earlier = datetime.combine(drill.DAY - timedelta(days=2), dtime(19, 31), UTC)
+
+    def due(frozen_folder: Path) -> lines.Shadow:
+        reads = frozen_folder.parent / "reads"
+        labeled.extend(_plant_labeled_days(off_folder, frozen_folder, reads))
+        shadow = lines.Shadow(
+            folder=frozen_folder / "es", reads=reads, frozen_folder=frozen_folder,
+            kyy_store=failing,
+            class_of=anchor_module.AnchorSettings.of(world_inputs.config).class_of,
+        )  # fmt: skip
+        # the ledger from earlier nights: every labeled day taken up, a fit made then, so the
+        # night's first pass (after the next 19:30 UTC) makes the fit again, due
+        anchor = anchor_labels.serving_anchor(
+            world_inputs.config, world_inputs.committed, folder=frozen_folder.parent / "labels"
+        )
+        for _ in range(LABELED_DAYS):
+            shadow.refresh(earlier, anchor)
+        assert sorted(shadow.entered.values()) == ["taken"] * LABELED_DAYS
+        assert all(shadow.due(at) for at in night[:1])
+        return shadow
+
+    day_of: dict[str, bytes] = {}
+    for name, make in (("fitted", fitted), ("due", due)):
+        log, day, folder = _size_files(world_inputs, tmp_path / name, make)
+        day_of[name] = day
+        assert len(log) == len(off_log), name
+        assert log == off_log, name
+        assert day == off_day, name
+        assert (folder / "es").is_dir(), name
+    key = drill.DAY.isoformat()
+    es = frozen.day_path(tmp_path / "fitted" / "frozen" / "es", key).read_bytes()
+    freezes = frozen.parse_es(es)
+    assert {f.fit for f in freezes} == {fitted_at.isoformat()}  # kept all night, never refit
+    moved = districts_moved(es, day_of["fitted"])
+    assert len(moved) >= 100, len(moved)  # distinct districts, not lines
+    # the due case: the fit made in the night's first pass, from the labeled days' rows
+    kept = json.loads((tmp_path / "due" / "frozen" / "es" / lines.FIT_NAME).read_bytes())
+    assert kept["computed"] == night[0].isoformat()
+    assert kept["m5y"]["why"] == "R-KYY's pull failed (OSError)"
+    assert kept["rows"] > 0, kept["rows"]
+    assert kept["spread"] > 0, kept["spread"]
+    assert len(kept["ledger"]) >= len(labeled) * LABELED_DAYS // 2
+    assert set(kept["units"]) & set(labeled)
+    due_es = frozen.day_path(tmp_path / "due" / "frozen" / "es", key).read_bytes()
+    assert {f.fit for f in frozen.parse_es(due_es)} == {night[0].isoformat()}
+    assert districts_moved(due_es, day_of["due"]), "the due fit moves es lines"

@@ -780,3 +780,23 @@ def test_the_shadow_arms_kind_is_the_predict_chain_s_kept_at_preset_9() -> None:
     )
     assert item.packed == len(evidence.compress(data, 9))
     assert evidence.unpack(item, parts) == data
+
+
+def test_a_storm_night_s_budget_keeps_labels_and_snapshots_before_the_shadow_arms() -> None:
+    """Each-school P6a: ``frozen_es`` sorts after every other kind in a push, so a row budget
+    that runs out keeps the labels and the snapshot first and leaves the shadow arms' day for
+    the next push."""
+    offers = [
+        evidence.Offer(evidence.FROZEN_ES, "2026-01-07", b'{"k":"freeze","rows":0}\n'),
+        evidence.Offer(evidence.LABELS, "2026-01-07", b'{"day":"2026-01-07"}'),
+        evidence.Offer(evidence.SNAPSHOT, "2026-01-07T13-00", b"snapshot"),
+    ]
+    kinds = (evidence.FROZEN_ES, evidence.LABELS, evidence.SNAPSHOT)
+    api = FakeD1()
+    unlimited = _store(FakeD1(), PREDICT).push(offers, kinds)
+    per_version = unlimited[0].rows_written // 3
+    first = _store(api, PREDICT, max_rows=2 * per_version).push(offers, kinds)
+    assert all(r.left == 1 for r in first)
+    held = _store(api, PREDICT).held(kinds)
+    for versions in held.values():
+        assert {kind for kind, _key in versions} == {evidence.LABELS, evidence.SNAPSHOT}

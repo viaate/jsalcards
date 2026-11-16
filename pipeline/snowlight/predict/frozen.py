@@ -163,7 +163,7 @@ Judged by that command and its CI step only, as the district day's: :func:`recor
 reads it, and never refuses, cuts, skips or delays a day for its size."""
 ES_DECIMALS: Final = 4
 """Decimals of a shadow arm's chance between :data:`ES_COARSE` (give-up step (a) of lead
-ruling LR25, the step the drill's worst case needs: 554,996 B xz at 6 decimals everywhere,
+ruling LR25, the step the drill's worst case needs: 556,784 B xz at 6 decimals everywhere,
 over the budget). A rounding there moves a row's log loss by under 5e-5 / 0.01 = 0.005 nats,
 the G1 per-unit no-harm limit, and its Brier by under 1e-4 (the limit 0.002); the drill shows
 the most it moved on the worst-case day."""
@@ -942,7 +942,9 @@ def record(inputs: PassInputs, folder: Path = FOLDER) -> list[Taken]:  # noqa: P
     written: dict[tuple[str, str], list[int]] = {}
     variants: dict[tuple[str, str], dict[str, int | str]] = {}
     shown: list[str | None] = []
-    es_out: dict[str, list[bytes]] = {}
+    # each day's shadow arms work in order: a missed freeze's line, or a taken freeze's header
+    # and rows, whose arms are computed only once the district day is written
+    es_out: dict[str, list[bytes | tuple[dict[str, object], list[dict[str, object]]]]] = {}
     es_said: dict[tuple[str, str], int | str] = {}
 
     def hidden() -> str | None:
@@ -987,7 +989,7 @@ def record(inputs: PassInputs, folder: Path = FOLDER) -> list[Taken]:  # noqa: P
                 out.append(_dumps(head))
                 out.extend(_dumps(row) for row in rows)
                 if inputs.es is not None:
-                    _es_block(inputs.es, head, rows, es_out.setdefault(key, []), es_said, key)
+                    es_out.setdefault(key, []).append((head, rows))
                 entry.groups[f"{zone}|{name}"] = "taken"
                 count[0] += 1
                 count[1] += len(rows)
@@ -1021,10 +1023,18 @@ def record(inputs: PassInputs, folder: Path = FOLDER) -> list[Taken]:  # noqa: P
                 handle.write(data)
             entry.bytes += len(data)
     save_index(folder, index)
-    if inputs.es is not None:
+    if inputs.es is not None:  # after the district day is written: it never waits on the arms
         try:
-            _write_es(folder / ES_FOLDER.name, index, es_out)
-        except (OSError, ValueError) as error:
+            blocks: dict[str, list[bytes]] = {}
+            for key, work in es_out.items():
+                found = blocks.setdefault(key, [])
+                for item in work:
+                    if isinstance(item, bytes):
+                        found.append(item)
+                    else:
+                        _es_block(inputs.es, item[0], item[1], found, es_said, key)
+            _write_es(folder / ES_FOLDER.name, index, blocks)
+        except Exception as error:  # the district day is saved: the arms' kind never undoes it
             es_said = {group: type(error).__name__ for group in written}
     return [
         Taken(
@@ -1050,7 +1060,7 @@ def _es_block(  # noqa: PLR0913, PLR0917 - the arms, the freeze and where its li
     group = (key, str(head["freeze"]))
     try:
         lines = es.lines(rows)
-    except (ArithmeticError, ValueError, KeyError, TypeError) as error:
+    except Exception as error:  # an arm never touches the district day
         lines, said[group] = [], type(error).__name__
     else:
         had = said.get(group, 0)
@@ -1235,6 +1245,48 @@ def switch_day(folder: Path, day: date, freeze: str) -> tuple[str, "FrozenDay | 
     return "ready", parse_day(data)
 
 
+def freeze_lines(
+    folder: Path, day: date, freeze: str, index: Index | None = None
+) -> tuple[str, list[dict[str, Any]] | None]:
+    """:func:`switch_day` for one freeze, and only its rows' lines (each the first block of its
+    zone, as :func:`parse_day` counts it): every other freeze's lines are passed over unread,
+    so a full day costs one freeze's parse.
+
+    Raises:
+        ValueError: a line of the freeze does not read.
+    """
+    index = load_index(folder) if index is None else index
+    key = day.isoformat()
+    entry = index.days.get(key)
+    if entry is None:
+        return ("released" if key in index.done else "missing"), None
+    if entry.closed is None and not all(f"{zone}|{freeze}" in entry.groups for zone in entry.zones):
+        return "wait", None
+    try:
+        data = day_path(folder, key).read_bytes()[: entry.bytes]
+    except OSError:
+        return "missing", None
+    found: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    inside = False
+    for line in data.split(b"\n"):
+        if not line.strip():
+            continue
+        if b'"k":"' in line:
+            value = json.loads(line)
+            if isinstance(value, dict) and value.get("k") in {"freeze", "missed"}:
+                group = (str(value.get("zone")), str(value.get("freeze")))
+                inside = value.get("k") == "freeze" and group[1] == freeze and group not in seen
+                seen.add(group)
+                continue
+        if inside:
+            row = json.loads(line)
+            if not isinstance(row, dict):
+                raise ValueError("a frozen row is not an object")
+            found.append(row)
+    return "ready", found
+
+
 def note_held(
     folder: Path,
     held: Mapping[str, Mapping[tuple[str, str], frozenset[str]]],
@@ -1358,7 +1410,7 @@ def restore(folder: Path, store: Store, now: datetime, *, es: bool = False) -> l
             else {block.group: block.how for block in _blocks(data)}
         )
         if not groups:
-            raise ValueError("an empty frozen day")
+            continue  # a shadow arms' day with no whole freeze: nothing to restore
         write_bytes_atomic(day_path(folder, key), data)
         index.days[key] = DayEntry(
             zones=sorted({z for z, _ in groups}),
@@ -1583,6 +1635,8 @@ class EsFreeze:
     arms: tuple[str, ...]
     fit: str | None
     chances: Mapping[str, tuple[float | None, ...]]
+    at: datetime | None = None
+    """The freeze's time (its header's ``at``)."""
 
 
 def parse_es(data: bytes) -> list[EsFreeze]:
@@ -1613,6 +1667,7 @@ def parse_es(data: bytes) -> list[EsFreeze]:
                 arms=arms,
                 fit=None if head.get("fit") is None else str(head["fit"]),
                 chances=chances,
+                at=_time(head.get("at")),
             )
         )
     return found

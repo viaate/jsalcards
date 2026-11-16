@@ -76,6 +76,7 @@ from snowlight.predict import (
     host_files,
     inputs,
     learn,
+    lines,
     live_switch,
     nbm,
     ndfd,
@@ -1661,7 +1662,9 @@ def _record_frozen(  # noqa: PLR0913, PLR0917 - the pass, what it served and mad
     window: Window,
 ) -> None:
     """Freeze what the pass served (:mod:`snowlight.predict.frozen`), one line per freeze
-    written. It never touches the pass or its file: any failure is one warning."""
+    written, then refresh the shadow arms (:meth:`lines.Shadow.refresh`: take-up and the
+    nightly fit), so no freeze waits on them. It never touches the pass or its file: any
+    failure is one warning."""
     if run.frozen is None:
         return
     try:
@@ -1698,6 +1701,11 @@ def _record_frozen(  # noqa: PLR0913, PLR0917 - the pass, what it served and mad
             _out(f"predict frozen: recorded in {time.monotonic() - started:.2f} s")
     except Exception as error:  # the record never touches the pass
         _warn(f"predict: frozen record: {type(error).__name__}: nothing frozen this pass")
+    if isinstance(run.es, lines.Shadow):
+        try:  # after the freeze: no frozen day waits on it (this pass's lines: the last fit)
+            run.es.refresh(built.made.generated_at, run.anchor)
+        except Exception as error:  # refresh never raises; this is its last guard
+            _warn(f"predict lines: the nightly step: {type(error).__name__}: the last fit kept")
 
 
 _SHADOWS: list[tuple[PredictConfig, live_switch.Served, tuple[frozen.Shadow, ...]]] = []
@@ -2910,6 +2918,7 @@ def make_pass(  # pragma: no cover
         else None,
         night=_live_night(config) if config.serve.chart != "off" else None,
         frozen=frozen.FOLDER,
+        es=shadow_or_none(lambda: _make_shadow(config, env)) if serving else None,
         switch=switch,
         **outlook,
     )
@@ -2918,6 +2927,58 @@ def make_pass(  # pragma: no cover
     if serving and config.serve.live_reads and getattr(args, "live_view", False):
         run.live_reads = _make_live_reads(args, env, run, committed)
     return run
+
+
+def shadow_or_none(make: Callable[[], "lines.Shadow | None"]) -> "lines.Shadow | None":
+    """The shadow arms of the run, or ``None`` with one warning when making them fails: the
+    run serves the same without them (each-school P6a)."""
+    try:
+        return make()
+    except Exception as error:
+        _warn(f"predict lines: the shadow arms: {type(error).__name__}: none this run")
+        return None
+
+
+def _make_shadow(
+    config: PredictConfig, env: Mapping[str, str]
+) -> lines.Shadow | None:  # pragma: no cover - the real world
+    """Each district's own part in shadow (each-school P6a, :mod:`snowlight.predict.lines`):
+    the nightly fit from the live labels and the frozen folder, R-KYY from the evidence store
+    when its secrets are set; ``None`` with ``each_school.shadow`` off."""
+    from contextlib import AbstractContextManager, contextmanager  # noqa: PLC0415
+
+    from snowlight.live import evidence  # noqa: PLC0415
+    from snowlight.predict import anchor, exposure, live_read  # noqa: PLC0415
+
+    if config.each_school.shadow != "on":
+        return None
+    settings = anchor.AnchorSettings.of(config)
+    kyy_store: Callable[[], AbstractContextManager[evidence.EvidenceStore]] | None = None
+    if env.get("CLOUDFLARE_API_TOKEN") and env.get("CLOUDFLARE_ACCOUNT_ID"):
+
+        @contextmanager
+        def kyy_store() -> Iterator[evidence.EvidenceStore]:
+            with inputs.client() as http:
+                yield evidence.make_store(env, http)
+
+    try:
+        found = exposure.load()
+        days = {leaid: tuple(row) for leaid, row in found.districts.items()}
+    except (OSError, ValueError, KeyError):
+        days = {}
+    return lines.Shadow(
+        folder=frozen.ES_FOLDER,
+        reads=live_read.READS_DIR,
+        since=settings.fit_from,
+        learn=config.learn,
+        class_of=settings.class_of,
+        frozen_folder=frozen.FOLDER,
+        kyy_store=kyy_store,
+        exposure=lines.exposure_of(days, exposure.CLASSES),
+        excluded=frozenset(config.each_school.own_excluded),
+        take_up=config.each_school.take_up_days,
+        say=_out,
+    )
 
 
 def _make_live_reads(
@@ -4553,12 +4614,13 @@ def restore_frozen(store: Any, folder: Path, now: datetime) -> None:
 
 def note_frozen(store: Any, folder: Path, now: datetime, seconds: float | None = None) -> None:
     """Note which databases hold each finished frozen day; a day both hold leaves the folder
-    (:func:`snowlight.predict.frozen.note_held`). A database that does not answer changes
-    nothing known of it. It never raises."""
+    (:func:`snowlight.predict.frozen.note_held`), the district days first and then, asked
+    apart, the shadow arms' (``frozen_es``). A database that does not answer changes nothing
+    known of it. It never raises."""
     from snowlight.live import evidence  # noqa: PLC0415
 
     try:
-        held = store.held((evidence.FROZEN, evidence.FROZEN_ES), seconds=seconds)
+        held = store.held((evidence.FROZEN,), seconds=seconds)
         released = frozen.note_held(folder, held, now)
     except Exception as error:
         _err(f"predict evidence: the frozen days held: {type(error).__name__}")
@@ -4566,7 +4628,10 @@ def note_frozen(store: Any, folder: Path, now: datetime, seconds: float | None =
     _out(f"predict evidence: {len(released)} finished frozen days in both databases released")
     if not (folder / frozen.ES_FOLDER.name).is_dir():
         return
+    # The shadow arms' kind is asked apart, after the district days are released: a slow or
+    # failing answer for it never drops a database's answer for theirs.
     try:
+        held = store.held((evidence.FROZEN_ES,), seconds=seconds)
         es = frozen.note_held(folder / frozen.ES_FOLDER.name, held, now, evidence.FROZEN_ES)
     except Exception as error:
         _err(f"predict evidence: the frozen shadow arms days held: {type(error).__name__}")
