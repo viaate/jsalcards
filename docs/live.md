@@ -672,7 +672,10 @@ only once the evidence store holds it; the evidence store keeps every day.
   <private folder>` writes the newest version of each kept day, checked, from whichever
   database holds it whole, an older version when no copy of the newest reads (a warning names
   it), and a warning for a day kept in more than one version; `--all` writes every version as
-  `<day>.<sha256 prefix>.<ext>`. It needs the two secrets, as a workflow step has them.
+  `<day>.<sha256 prefix>.<ext>`. It needs the two secrets, as a workflow step has them. The
+  record kind (`record`, each-school's) is refused to this command, as to every store read
+  outside the record's own modules and lines.py's one capability (each-school LR-P6A-1):
+  `--kind record` fails with the refusal and writes nothing.
   `snowlight live evidence size` prints each database's versions and bytes per kind. Every
   push logs what each database holds in all, and warns (an annotation) past 300 MB.
 - **Size, 10 winters.** Measured on the real formats (`live/morning.py`, `live/history.py`)
@@ -718,13 +721,16 @@ only once the evidence store holds it; the evidence store keeps every day.
   28.4 MB a database at 37% (32.9 MB with 10 of the 30 at 70%, 52.2 MB with all 30 at every
   district), so with today's kinds the warning comes in about 4.2 to 6.4 winters. Counted
   with every planned frozen kind at its budget on every storm day (the weather kind
-  `frozen_weather` 262,144 B xz, 349,536 stored; EACH-SCHOOL's `frozen_private` and `es` kinds
-  524,288 xz, 699,072 stored, each), a winter is 80.9 MB a database, and 108.0 MB at the worst
+  `frozen_weather` 262,144 B xz, 349,536 stored; EACH-SCHOOL's `frozen_private` 524,288 xz,
+  699,072 stored; the shadow arms' `frozen_es`, each-school P6a, at its measured worst, every
+  district in a class with every arm moving and P7y's `v.ky` in, 409,808 xz, 546,428 stored,
+  against its budget of 524,288), a winter is 76.3 MB a database, and 103.5 MB at the worst
   (every storm day with every district in a class and the 4 AM update serving, 1,612,928 B
   with EACH-SCHOOL's `v.ky` counted on it, and the weather kind at its worst measured,
   299,892: 1,912,820 B a storm day). With the other kinds' 21 to 46 MB a year the 300 MB
-  warning then comes after about 2.5 to 3.1 winters (2.0 to 2.4 at the worst) and D1's 500 MB
-  after about 3.9 to 4.9 (3.2 to 3.9). These are upper bounds, each new kind at its budget;
+  warning (`WARN_BYTES`, 300 MiB) then comes after about 2.6 to 3.2 winters (2.1 to 2.5 at the
+  worst) and D1's 500 MB after about 4.1 to 5.1 (3.3 to 4.0). These are upper bounds, with
+  `frozen_es` at its measured worst and the other new kinds at their budgets;
   each kind's own piece swaps its budget line here for its measured worst. The rule above
   stands: past the warning, the next winters go to a new pair of databases by a reviewed
   change.
@@ -1308,7 +1314,7 @@ All from `pipeline/` (`uv run snowlight live ...`).
 | `live release --prefix every\|v1\|v1-shadow` | Clears the hold under the prefix named (required). The next pass there publishes again. |
 | `live check --url URL --max-age 15m` | The watchdog. Checks that the public file is fresh, is not stamped ahead of the clock, and carries the deployed directory's stamp. |
 | `live state pull [--retry]` / `live state push` / `live state export` | Restore or keep the private state; write the export predict learn reads. |
-| `live evidence push [--export ARCHIVE]` / `live evidence pull --kind K [--since DAY] [--all] --out DIR` / `live evidence size` | Keep the finished morning-record and change-log days (of the state folder, or of a live-state export) for good in both evidence databases; read kept files back into a private folder; print what each holds ([The evidence](#the-evidence)). |
+| `live evidence push [--export ARCHIVE]` / `live evidence pull --kind K [--since DAY] [--all] --out DIR` / `live evidence size` | Keep the finished morning-record and change-log days (of the state folder, or of a live-state export) for good in both evidence databases; read kept files back into a private folder (not the record kind: refused, each-school LR-P6A-1); print what each holds ([The evidence](#the-evidence)). |
 | `live rehearse` | The switch rehearsal on `v1-rehearse` ([Drills](#drills)); live-drill.yml's `switch`. |
 | `live alert --kind K --open\|--close` | A workflow step's alert (in shadow an annotation and `alerts.json`, else an issue). |
 | `live finish --exit N` | live-read.yml's closing step: the exit, the summary notice, the `chain` alert. |

@@ -3700,7 +3700,9 @@ frozen this pass`) while the pass publishes as before. It is never a reason for 
   `frozen.DAY_BUDGET_XZ`, 1,310,720 (1.25 MiB; lead ruling LR-FE2: the "1 MB check" of the
   earlier rulings is this constant), so the worst day above has 223,832 left (17.1%); the
   weather kind's (`frozen_weather`, not written yet) is `frozen.WEATHER_DAY_BUDGET_XZ`,
-  262,144. The command and its CI step judge them; the recorder never reads them and never
+  262,144; the shadow arms' (`frozen_es`, each-school P6a, "Each district's own part in
+  shadow" below) is `frozen.ES_DAY_BUDGET_XZ`, 524,288, its worst day 409,808. The command and
+  its CI step judge them; the recorder never reads them and never
   refuses, cuts, skips or delays a day for its size. The Nov 2 measure (804 KB xz for every
   district in a class) was made before the rows held `f.bb` and `v.bt`, which make most of the
   growth since; the 70% day is now over 1 MB stored. No new key joins the district day while
@@ -3735,6 +3737,140 @@ frozen this pass`) while the pass publishes as before. It is never a reason for 
   (docs/live.md "The evidence") a database passes the push's 300 MB warning in about 4 to 6
   winters, and the next pair of databases comes then, before the free plan's 500 MB, by a
   reviewed change (the rule docs/live.md states).
+
+## Each district's own part in shadow (each-school P6a: nothing served)
+
+Whether a district tends to close early or hold out, given the same forecast, is fit every
+night and scored beside today's chance. **Nothing serves from it**: every chance and every
+byte the pass publishes is the same with it on or off (`tests/predict/test_drill.py`, the
+no-change test on the storm drill's world at 2% of the districts: the gate's 37% worst-mix night
+through every pass, once with a fit that moves every district, dated by the night's own clock so
+no pass refits it (the es lines of 136 distinct districts move by more than 0.01 over 20
+freezes; the test asks at least 100), and once with the nightly fit due and run in the night's
+first pass from four labeled days a week apart whose frozen days are held, closed and open
+districts in one market-morning-class group (544 rows, `s_own` above 0, the es lines of 131
+districts moving); and the
+drill's district day, byte for byte the Budgets' sha256 above), and the frozen district day is
+unchanged. It is in shadow until a later piece passes its gates
+(each-school P7y, P7) and the lead says go.
+
+**The part** (`snowlight/predict/lines.py`, arm M5o). One tendency per district, prior
+N(0, `s_own`^2) with a half-normal(0.5) hyperprior, `s_own` and every `|own|` at most 1.5,
+fit by penalized likelihood (Laplace) on the live labeled rows of advisory and warning days,
+with the anchor's own row likelihood: each row sits at the prior-neutral log odds of its frozen
+chance at the 20:07 scoring freeze plus its part plus its market-day's effect (N(0, `tau`^2),
+integrated on the 20-point rule); `no_school` is a closing, `delayed` an open, and `unnamed`
+counts only as `1 - s (p + (1 - p) q)`, never as a certain open: `s` is the sensitivity of the
+row's best list (each list's Beta posterior from its tier's prior and its own co-listing
+trials), `q` the class's delay share, taken only where that list posts delays (a list that
+never names a delay says nothing about one, so its unnamed rows take none). Tier B rows enter
+only under the anchor's tier B rule of their own class.
+Each storm's market-mornings carry the anchor's storm weights, so no storm holds more than its
+class's `max_date_share`. A list with no co-listing trials sits at its tier's prior mean, so a
+list that names few of its closings would read its districts as holding out: the fit line and
+`fit.json` count the rows read on such a list and the districts on no other (open to that bias
+until a trial reads their list), and 11(g) runs the part against each district's list
+sensitivity and its share of such rows. The archive form (the backtest) is the exact conditional likelihood
+within market-morning and class instead, where a storm's level drops out exactly. Left out of
+every own fit and gate (honesty rule 4, `each_school.own_excluded`, by id): state-agency LEAs,
+units whose public schools span 3 or more counties, and CT Technical (0900002). Rule 4 leaves
+out such a unit only where a list also lit it through the 10% open rule; the list leaves out all
+137 of them until live lit data exists, which keeps them out of the own part, never wrong. A row enters
+the fit's ledger once, the first pass its frozen day is held (at most
+`each_school.take_up_days`, 2, labeled days a pass, and one on the pass that makes the fit; a
+day the frozen folder lacks waits for the
+evidence step's restore); a row of the served day or later never does, nor a day-after row, nor
+one whose labeled class is not its served class. The part reaches a chance only through the
+prior-neutral base (each-school 3.2): a district whose record says nothing gets today's chance
+exactly, and one with evidence moves by what it says, as an average. Each-school 3.2 puts that
+base before the class order's cap and the cap after the part; the frozen record keeps only the
+chance after the cap, so the shadow arm's base is after it and no cap acts on the arm. The
+scoring reader counts, per freeze, the scored rows held at the cap.
+
+**Kentucky's years** (arm M5y) read the record kind only through R-KYY: the shadow holds a
+store opener, never a pull of the record, and only its nightly fit opens it
+(`read_kyy(store_past(store, _READ), ...)`). The rule holds at run time (lead ruling
+LR-P6A-1): every read of the evidence store (`pull`, `pull_all`, `versions`, `held`, and a
+database's `items`, `parts`, `read` and `held`) refuses the record kind with
+`RecordRefusedError` unless it is called from the record's own modules (the store, `predict
+each-school record` and `past`) or from `lines.py` carrying `lines._READ`, a capability made
+once at import, checked by identity, never copied or pickled, and refused when passed from
+anywhere else; an item never listed is read as the record, a read statement sent past the
+store's methods is refused, and `store_past` refuses a caller outside `lines.py`. So a store
+the opener yields gives no record row to any other caller, and frozen.py's store reads, which
+take no kind (a flag picks the district day's or the shadow arms'), raise if pointed at it.
+`tests/predict/test_lines.py` plants the record in both databases and holds that each of 18
+routes (a bound or partial pull, the past keys, `pull_all`, `versions`, `held`, `items` and
+`read` of a listed or hand-made item, the capability taken out of `lines.py`, a raw read
+statement, the shadow's opener and `store_past`) raises from either job's store, and that the
+serve passes, the predict job's evidence steps, a learn run and the anchor read no record row
+(the nightly fit's R-KYY pull of the past keys is the one read). The static scan stays as a
+second check: it counts every way of naming the record in the package, pins each use where it
+is, and fails on each of 40 planted extra reads. Each Kentucky
+district's weather closing day counts of school years before the served one give its count
+tendency (from 2021-22, the years the gate's fold reads), and one slope on dated weather days
+of a known class turns it into a part. The
+record holds every dated day's class as `unknown` until the class backfill, so **M5y writes
+nothing yet** and the pass's line says why. MP (private schools' own part) and M5g (the grown
+record) are registered off: their inputs (private live labels; the grown record) are not built,
+and the config refuses them on.
+
+**When.** The first pass at or after 19:30 UTC (after the record job), or any pass whose fit is
+older than 36 hours, makes the fit and says one line (`predict lines: fit ...`: rows,
+market-mornings, `s_own`, districts read, the units rule 4 leaves out, the rows on a list with
+no trials, 11(g)'s flags, the days taken up, and M5y's state). The ledger keeps the served
+school year and the one before, at most 80,000 rows (about a winter's advisory and warning
+district-days nationally); past that its oldest days go whole, and each list's co-listing
+trials go with their days, so a list's sensitivity reads the same days as the fit. A run's
+first pass loads the kept ledger before it takes up a day. The step runs after the pass's
+freezes, and each freeze's shadow lines are computed only once the district day and its index
+are written, so no frozen day waits on the arms or the fit; that pass's shadow lines are the
+last fit's. A fit that fails says one line and is not tried again before the next 19:30 UTC
+(`frozen/es/fit-failed.json` keeps that across runs); a kept fit that does not read is no fit.
+None of it can stop a pass or touch the district day: every step is caught and said, and the
+shadow arms' kind is asked for apart from the district kind, so it cannot hold back a district
+day's release. Measured from start to finish under the heavy lock on the worst case a run
+meets (SYNTHETIC: a fresh process reading the kept `fit.json` at the ledger's cap, 10.1 MB after
+a fit; two of the drill's full-scale days waiting, the fit's pass taking up one; a fit that reads
+`s_own` 0.64 on 29,084 districts of 79,314 rows), over four measured rounds: 7.06 to 9.34 s
+(round 5: 8.22, 8.68 and 8.93 s), and the next pass taking up the second day 1.62 to 2.32 s;
+two winters stay at the 80,000-row cap, so the same. That is 0.7 to 2.9 s under its 10 s of a
+pass (`each_school.fit_budget_seconds`; over it, one warning line, and the pass goes on); a
+slower runner can cross it, so a lower ledger cap is a follow-up. R-KYY pulls nothing from the store while rows K are not built. The shadow lines
+of a freeze take 0.24 s for 17,336 lines.
+
+**Where.** Each freeze writes the shadow arms' lines (`es`) beside the district day, in the
+folder `frozen/es/` (its own `index.json`; the predict-frozen Actions cache keeps it, so
+`predict.yml` does not change), kept as its own evidence kind `frozen_es` at xz preset 9 and
+released, checked and restored by kind as the district day is. A line holds the LEAID and each
+arm's chance (M5o, M5y; `null` where an arm has no part), 4 decimals between 1% and 99% and 6
+outside. Only districts served an advisory or warning chance from the model at the freeze, not
+said open, have a line. The scoring reader is `backtest_lines.score_es`; each row it scores
+carries its district's record length (rule 11's storms before the row, from its labeled days and
+any earlier record given), its mornings and its locale, as the archive's folds do, so G1's
+record-length group 0 holds only districts with no earlier record.
+
+**Its budget** is `frozen.ES_DAY_BUDGET_XZ`, 524,288 B xz a day, judged by `predict drill
+--frozen-day` and its CI step only: the recorder never refuses, cuts, skips or delays a day for
+its size. The worst case is the non-repeating every-district day of the Budgets above with every
+arm moving at each freeze, every arm on every line and P7y's later `ky` pair on each Kentucky
+line: 556,784 B xz at 6 decimals everywhere, over the budget, so the lines take give-up step (a)
+of lead ruling LR25, 4 decimals between 1% and 99%: **409,808 B xz** (114,480 under, 21.8%),
+2,569,416 raw, 546,428 stored, 8 D1 rows a database. The rounding moved a row's log loss by at
+most 0.004662 nats and its Brier by at most 0.000099 on that day, under G1's per-unit no-harm
+limits (0.005 and 0.002). Steps (b), the scoring freezes only, and (c), M5y on Kentucky's lines
+only, are not needed.
+
+**Registered.** The `each_school:` block of `config/predict.yaml` (arms, priors, bounds, the
+shadow arms' kind, the gates) is hashed, all but `each_school.go`, into
+`config.EACH_SCHOOL_SHA256`, beside `LIVE_SCORE_SHA256`; neither moves the other.
+`each_school.go.p7y_unarmed` (false) is the lead's go value, outside the hash. The live
+walk-forward is by the anchor's storms (mornings at most `live_update.ramp_storm_gap`, 1,
+weekday apart); honesty rule 11's storms (dates under 5 days apart) count records. G1(d)'s
+record-length groups judge each district on its rows in the group alone. The first archive
+numbers, the shuffle null, the misattribution report and the groups are in the piece's report;
+on the archive's rows the part reads no district yet (15 market-mornings with both outcomes, under
+2 rows a district), so it moves no number there.
 
 ## The read labels (advisory-sane L1: a record, nothing served)
 
