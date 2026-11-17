@@ -1,5 +1,5 @@
 """FLICKER-23Z: a list read under the quiet cadence keeps its statuses into a window or an
-alert that opens after the read (``guards.hold_end``, ``Ingest.note_boost``).
+alert that opens after the read (``ingest.hold_end``, ``Ingest.note_boost``).
 
 On Nov 9 at 23:00Z (18:00 in New York, the evening window's opening) one list's five statuses
 went dark for one pass and came back with the same announcement at 23:05Z: its last good read,
@@ -12,6 +12,7 @@ pass is every 5 minutes, its reads at the pass start and its clock 50 seconds on
 23:00:56Z shape).
 """
 
+import inspect
 import json
 from collections.abc import Callable, Mapping
 from datetime import datetime, timedelta
@@ -24,11 +25,12 @@ from live.world import NEW_YORK, World, _school, accepted, at, row, station
 from snowlight.live.cadence import Cadence
 from snowlight.live.carry import Carried
 from snowlight.live.edition import EditionWatch
-from snowlight.live.guards import Rules, held
+from snowlight.live.guards import FUTURE_LEEWAY, Rules, held
 from snowlight.live.ingest import Ingest, SourceRead
 from snowlight.live.ledger import Outcome
 from snowlight.live.publish import LivePublisher
 from snowlight.live.publishers import DirPublisher
+from snowlight.live.versions import PUBLISHING_FILES, live_files
 from snowlight.schemas.directory import DirectoryEdition
 from snowlight.schemas.live import ClosingsFile
 from snowlight.schemas.vocab import Status
@@ -218,20 +220,45 @@ def test_a_read_at_a_quiet_pass_counts_from_the_next_boosted_pass(tmp_path: Path
 
 
 def test_hold_end_bounds() -> None:
-    from snowlight.live.guards import hold_end  # noqa: PLC0415 - absent on HEAD
+    from snowlight.live.ingest import hold_end  # noqa: PLC0415 - absent on HEAD
 
     rules = Rules()
     good = at("2026-11-09 22:00")
+    quiet, short = rules.hold_quiet, rules.hold_boosted
+    # second offsets: the read and the spell start need not fall on a pass's minute
+    starts = (None, *(good + timedelta(seconds=s) for s in range(-7200, 7201, 290)))
     for boosted in (False, True):
-        for since in (None, *(good + timedelta(minutes=m) for m in range(-120, 121, 5))):
-            for m in range(-2, 121):
-                now = good + timedelta(minutes=m)
+        for since in starts:
+            for s in range(-125, 7300, 37):
+                now = good + timedelta(seconds=s)
                 end = hold_end(good, now, boosted=boosted, boosted_from=since, rules=rules)
                 old = held(good, now, boosted=boosted, rules=rules)
-                assert end is None or (now <= end <= good + rules.hold_quiet)
+                head = good + (short if boosted else quiet)  # HEAD's end where it holds
+                assert end is None or (now <= end <= good + quiet)  # never past the 90
                 assert old <= (end is not None)  # never darker than HEAD
-                if not boosted or since is None or since <= good:
-                    assert (end is not None) is old  # HEAD exactly
+                if old:
+                    assert end is not None
+                    assert end >= head  # never ends before HEAD's end
+                spell = since if boosted and since is not None and since > good else None
+                if spell is None:  # no spell credit
+                    assert (end is not None) is old  # HEAD exactly, flag and end
+                    assert end is None or end == head
+                elif now - good >= -FUTURE_LEEWAY and now <= min(good + quiet, spell + short):
+                    assert end == min(good + quiet, spell + short)  # section 8's end
+                else:
+                    assert end is None
+
+
+def test_the_hold_rule_keeps_the_carry_key() -> None:
+    # FLICKER-23Z changes when a list is held, never a derivation: its code is in modules
+    # live_version() does not digest, so derived_version and the carry key stay as before
+    # and the first handover after it lands still carries (critic r1-1: guards.py is digested)
+    from snowlight.live import ingest  # noqa: PLC0415
+
+    digested = {path.resolve() for path in live_files()}
+    for code in (ingest.hold_end, Ingest.note_boost, Ingest.hold_until):
+        assert Path(inspect.getfile(code)).name in PUBLISHING_FILES
+        assert Path(inspect.getfile(code)).resolve() not in digested
 
 
 def test_matches_the_old_rule_where_no_spell_starts(tmp_path: Path) -> None:
@@ -317,3 +344,51 @@ def test_the_later_word_keeps_showing_at_the_window_start(tmp_path: Path) -> Non
     # changes whether S is held at a pass, never what the merge does with a held list's rows.
     seq = _two_lists(tmp_path, POSTED - timedelta(hours=1))
     assert all(lit == 5 and statuses == {Status.CLOSED} for _, lit, statuses in seq)
+
+
+# LR9 by behaviour: S's row is read, then a good read without it (the row vanishes), then
+# errors. Each plan runs twice, with the fix and with HEAD's rule (no spell credit: test 8
+# shows hold_end is then HEAD's end exactly).
+VANISH = {"21:35": "row", "22:05": "gone", "22:35": "err", "23:00": "err", "23:05": "gone"}
+
+
+def _vanish(tmp: Path, boosted: Boosted | None, *, credit: bool) -> list[tuple[str, int, bool]]:
+    ing = _ingest(_world(), tmp, boosted)
+    out = []
+    with pytest.MonkeyPatch.context() as patch:
+        if not credit:
+            patch.setattr(Ingest, "note_boost", lambda *_args: None)
+        for t in _passes("2026-11-09 21:35", "2026-11-10 00:00"):
+            hm = f"{t:%H:%M}"
+            reads = [SourceRead(sid, Outcome.EMPTY, t) for sid in HEALTHY]
+            kind = VANISH.get(hm)
+            if kind == "row":
+                reads.append(SourceRead(S, OK, t, CLOSED))
+            elif kind == "gone":
+                reads.append(SourceRead(S, Outcome.EMPTY, t, ()))
+            elif kind == "err":
+                reads.append(SourceRead(S, ERR, t, ()))
+            ing.run_pass(reads, t + CLOCK, started=t, always=True)
+            out.append((hm, _published(tmp)[0], ing.held(t + CLOCK).get(S, False)))
+    return out
+
+
+def test_vanished_rows_behave_as_at_head_when_every_pass_is_boosted(tmp_path: Path) -> None:
+    always: Boosted = lambda _s, _n: True  # noqa: E731
+    fix = _vanish(tmp_path / "fix", always, credit=True)
+    head = _vanish(tmp_path / "head", always, credit=False)
+    assert fix == head  # pass by pass: lit count and held flag
+    lit = [n for _, n, _ in fix]
+    assert 5 in lit  # the planted row lights
+    assert 0 in lit  # and the vanish darkens it
+
+
+def test_vanished_rows_differ_from_head_only_where_the_hold_does(tmp_path: Path) -> None:
+    # the real cadence: the vanish read is made at a quiet pass, the window opens at 23:00
+    fix = _vanish(tmp_path / "fix", None, credit=True)
+    head = _vanish(tmp_path / "head", None, credit=False)
+    moved = [hm for (hm, _, a), (_, _, b) in zip(fix, head, strict=True) if a != b]
+    assert moved == ["23:00"]  # the spell credit, nothing else
+    for (hm, a, held_a), (_, b, held_b) in zip(fix, head, strict=True):
+        if held_a == held_b:
+            assert a == b, hm

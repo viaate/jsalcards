@@ -48,17 +48,25 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   a half-hourly source's statuses were dark for up to 25 minutes after a handoff, and its
   first pass at G+2 read nothing and was refused for health.)
 - **The handover carry.** A handover never changes what the file shows; only reads and the
-  ordinary aging rules do. Every pass writes `carry.json` to the state: the sources whose
-  statuses it held, each with the time of the good read holding them and the end of the hold
-  it applied (that read's time plus 90 minutes, or, in a window or an alert, 45 minutes from
-  that read's time or, for a read this run first saw at a quiet pass, from the start of its
-  first boosted pass after it, never past the 90; as the pass saw the source), and a key of the resolver's `derived_version` (without the station
-  part) and the merge rules. The successor reads it at its start (one line, `carry: <n>
-  sources` or `carry: none (<code>)`) and, for each listed source it has not read itself,
-  takes the rows the ledger holds present for the rows of that read: their statuses stand
-  while both its own G13 bound, measured from that read's own time (never from the
-  handover), and the listed end allow, so a carried status never stands longer than in the
-  run before, even when the successor counts the source quiet because its first alerts read
+  ordinary aging rules do, with one exception: a carried source loses the spell credit (below),
+  so inside the first 45 minutes of a window or an alert that opened after its quiet read it
+  can go dark at the handover until the successor's own good read (FLICKER-23Z; never a false
+  or stale status, only the dark the run before would have shown without the credit). Every
+  pass writes `carry.json` to the state: the sources whose statuses it held, each with the
+  time of the good read holding them and the end of the hold it applied (that read's time
+  plus 90 minutes, or, in a window or an alert, 45 minutes from that read's time or, for a
+  read this run first saw at a quiet pass, from the start of its first boosted pass after it,
+  never past the 90; as the pass saw the source; `hold_end` in `snowlight/live/ingest.py`, a
+  module the `derived_version` does not digest, so the carry key is as before), and a key of
+  the resolver's `derived_version` (without the station part) and the merge rules. The
+  successor reads it at its start (one line, `carry: <n> sources` or `carry: none (<code>)`)
+  and, for each listed source it has not read itself, takes the rows the ledger holds present
+  for the rows of that read: their statuses stand while both its own G13 bound, measured from
+  that read's own time (never from the handover, and with no spell credit: the record does
+  not say when the run before's spell began, so a successor that starts between a quiet read
+  and a window's opening can still darken that list at the opening), and the listed end
+  allow, so a carried status never stands longer than in the run before,
+  even when the successor counts the source quiet because its first alerts read
   failed (a new process has no alert set to keep yet); and only derivations stored under its
   own version light (another version only darkens). Its own record keeps the earlier end for
   the run after it. A successor whose clock runs behind the run before's, by up to the minute

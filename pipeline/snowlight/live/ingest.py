@@ -71,7 +71,7 @@ from snowlight.live.carry import (
     write_carry,
 )
 from snowlight.live.edition import EditionState, EditionVerdict, EditionWatch
-from snowlight.live.guards import Refusal, Rules, hold_end
+from snowlight.live.guards import FUTURE_LEEWAY, Refusal, Rules
 from snowlight.live.ledger import GOOD, LONGEST, Ledger, SeenRow, SourceState
 from snowlight.live.ledger import Outcome as ReadOutcome
 from snowlight.live.merge import AdminStatus, Merged, merge, with_overrides
@@ -207,6 +207,37 @@ def withhold_states(
         ),
         gone,
     )
+
+
+def hold_end(
+    last_good_at: datetime | None,
+    now: datetime,
+    *,
+    boosted: bool,
+    boosted_from: datetime | None,
+    rules: Rules,
+) -> datetime | None:
+    """G13: the end of the hold that stands at ``now``, or ``None`` (FLICKER-23Z).
+
+    Quiet: the last good read's time plus ``hold_quiet``, as :func:`~snowlight.live.guards.held`.
+    Boosted: the shorter ``hold_boosted`` counts from ``boosted_from`` when that is later than
+    the read (for a read first seen at a pass that judged the source quiet, the start of the
+    first pass after it that judged the source boosted), else from the read's own time, as
+    ``held``; never past the quiet end. So a window or an alert that opens after a read made
+    while quiet does not darken at once what the quiet bound held a pass before. A read more
+    than :data:`~snowlight.live.guards.FUTURE_LEEWAY` ahead of ``now`` is not held, as
+    ``held``. The end is never earlier than ``held``'s and never later than the quiet end.
+
+    It lives here, in a module :func:`~snowlight.live.versions.live_version` does not digest,
+    so the resolver's ``derived_version`` and the carry key stay as they were: the first
+    handover after it lands still carries, and no stored derivation goes stale."""
+    if last_good_at is None or now - last_good_at < -FUTURE_LEEWAY:
+        return None
+    end = last_good_at + rules.hold_quiet
+    if boosted:
+        start = last_good_at if boosted_from is None else max(last_good_at, boosted_from)
+        end = min(end, start + rules.hold_boosted)
+    return end if now <= end else None
 
 
 @dataclass(slots=True)
@@ -556,7 +587,7 @@ class Ingest:
         """G13 per source, for the sources read in this process and those carried: the end of
         the hold that stands at ``now`` (its last good read's time plus the bound for the
         source now, the boosted one counted from the spell :meth:`note_boost` dated; a read up
-        to a minute ahead of ``now`` counts as made now: :func:`~snowlight.live.guards.hold_end`),
+        to a minute ahead of ``now`` counts as made now: :func:`hold_end`),
         or ``None``. A carried source is held only while the end the run before
         applied allows too, so its statuses never stand longer than they would have there
         (this process's bound alone could be the longer quiet one: an alert set it has not
