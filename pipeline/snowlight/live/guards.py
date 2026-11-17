@@ -105,8 +105,9 @@ class Rules:
     big_expansion_reasons: frozenset[str] = frozenset({"alias", "name"})
     big_expansion_confidence: float = 0.95
     hold_boosted: timedelta = timedelta(minutes=45)
-    """G13: a source's statuses stand while its last good read is this recent in a window or
-    an alert."""
+    """G13: in a window or an alert, a source's statuses stand this long after its last good
+    read, or, for a read first seen at a quiet pass, after the start of the first boosted pass
+    since it; never past :attr:`hold_quiet` (:func:`hold_end`, FLICKER-23Z)."""
     hold_quiet: timedelta = timedelta(minutes=90)
     """G13, outside windows and alerts."""
     ufn_school_days: int = 3
@@ -569,6 +570,33 @@ def held(last_good_at: datetime | None, now: datetime, *, boosted: bool, rules: 
         return False
     limit = rules.hold_boosted if boosted else rules.hold_quiet
     return -FUTURE_LEEWAY <= now - last_good_at <= limit
+
+
+def hold_end(
+    last_good_at: datetime | None,
+    now: datetime,
+    *,
+    boosted: bool,
+    boosted_from: datetime | None,
+    rules: Rules,
+) -> datetime | None:
+    """G13: the end of the hold that stands at ``now``, or ``None`` (FLICKER-23Z).
+
+    Quiet: the last good read's time plus ``hold_quiet``, as :func:`held`. Boosted: the
+    shorter ``hold_boosted`` counts from ``boosted_from`` when that is later than the read
+    (for a read first seen at a pass that judged the source quiet, the start of the first
+    pass after it that judged the source boosted), else from the read's own time, as
+    :func:`held`; never past the quiet end. So a window or an alert that opens after a read
+    made while quiet does not darken at once what the quiet bound held a pass before. A read
+    more than :data:`FUTURE_LEEWAY` ahead of ``now`` is not held, as :func:`held`. The end is
+    never earlier than :func:`held`'s and never later than the quiet end."""
+    if last_good_at is None or now - last_good_at < -FUTURE_LEEWAY:
+        return None
+    end = last_good_at + rules.hold_quiet
+    if boosted:
+        start = last_good_at if boosted_from is None else max(last_good_at, boosted_from)
+        end = min(end, start + rules.hold_boosted)
+    return end if now <= end else None
 
 
 def breaker_limit(source_id: str, rules: Rules) -> int:

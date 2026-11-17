@@ -71,7 +71,7 @@ from snowlight.live.carry import (
     write_carry,
 )
 from snowlight.live.edition import EditionState, EditionVerdict, EditionWatch
-from snowlight.live.guards import Refusal, Rules, held
+from snowlight.live.guards import Refusal, Rules, hold_end
 from snowlight.live.ledger import GOOD, LONGEST, Ledger, SeenRow, SourceState
 from snowlight.live.ledger import Outcome as ReadOutcome
 from snowlight.live.merge import AdminStatus, Merged, merge, with_overrides
@@ -231,6 +231,11 @@ class Ingest:
     """The sources due each pass (G12b counts over them); ``None``: the active stations.
     S8-B's cadence replaces it."""
     present: dict[str, tuple[SeenRow, ...]] = field(default_factory=dict)
+    boost_from: dict[str, tuple[datetime, datetime | None]] = field(default_factory=dict)
+    """For each source read in this process (:attr:`present`): its last good read's time and
+    the start of the first pass that judged it boosted since that read (that read's own time
+    when the pass that first saw it was boosted; ``None`` while every pass was quiet). Set
+    once a pass (:meth:`note_boost`); G13's shorter bound counts from it (FLICKER-23Z)."""
     recent: deque[tuple[datetime, str, bool]] = field(default_factory=deque)
     failed: set[str] = field(default_factory=set)
     """Sources whose read could not be taken in, or whose resolve failed, this pass."""
@@ -523,12 +528,35 @@ class Ingest:
             and carried.good == state.last_good_at
         )
 
+    def note_boost(self, now: datetime, began: datetime, states: Sequence[SourceState]) -> None:
+        """Once a pass, before :meth:`hold_until`: date the boosted spell each source's last
+        good read is held under (:attr:`boost_from`). A read first seen at a boosted pass
+        counts from its own time; one first seen at a quiet pass, from the start (``began``)
+        of the first boosted pass after it. Kept per read, so a pass judged quiet later in a
+        window or an alert moves nothing. A carried source gets none: its bound counts from
+        its read's own time, as in the run before."""
+        found: dict[str, tuple[datetime, datetime | None]] = {}
+        for state in states:
+            sid, good = state.source_id, state.last_good_at
+            station = self.stations.get(sid)
+            if station is None or good is None or sid not in self.present:
+                continue
+            boosted = self.boosted(station, now)
+            known = self.boost_from.get(sid)
+            if known is None or known[0] != good:
+                known = (good, good if boosted else None)
+            elif known[1] is None and boosted:
+                known = (good, max(good, began))
+            found[sid] = known
+        self.boost_from = found
+
     def hold_until(
         self, now: datetime, states: Sequence[SourceState] | None = None
     ) -> dict[str, datetime | None]:
         """G13 per source, for the sources read in this process and those carried: the end of
         the hold that stands at ``now`` (its last good read's time plus the bound for the
-        source now; a read up to a minute ahead of ``now`` counts as made now, :func:`held`),
+        source now, the boosted one counted from the spell :meth:`note_boost` dated; a read up
+        to a minute ahead of ``now`` counts as made now: :func:`~snowlight.live.guards.hold_end`),
         or ``None``. A carried source is held only while the end the run before
         applied allows too, so its statuses never stand longer than they would have there
         (this process's bound alone could be the longer quiet one: an alert set it has not
@@ -546,16 +574,21 @@ class Ingest:
                 and good is not None
                 and (sid in self.present or sid in carrying)
             ):
-                boosted = self.boosted(station, now)
-                if held(good, now, boosted=boosted, rules=self.rules):
-                    until = good + (self.rules.hold_boosted if boosted else self.rules.hold_quiet)
-                    if sid in carrying:
-                        until = min(until, self.carried[sid].until)
-                        if sid in self.inherited:
-                            # never past the withholding the run before listed for its
-                            # failing resolve: no resolve confirmed these derivations since
-                            until = min(until, self.inherited[sid])
-                        until = until if now <= until else None
+                known = self.boost_from.get(sid)
+                until = hold_end(
+                    good,
+                    now,
+                    boosted=self.boosted(station, now),
+                    boosted_from=None if known is None or known[0] != good else known[1],
+                    rules=self.rules,
+                )
+                if until is not None and sid in carrying:
+                    until = min(until, self.carried[sid].until)
+                    if sid in self.inherited:
+                        # never past the withholding the run before listed for its
+                        # failing resolve: no resolve confirmed these derivations since
+                        until = min(until, self.inherited[sid])
+                    until = until if now <= until else None
             found[sid] = until
         return found
 
@@ -773,6 +806,7 @@ class Ingest:
         outcomes = self.observe(reads, at=started)
         self.last_outcomes = self.source_outcomes(reads, now)
         states = self.ledger.sources()  # once a pass: the reads are in, nothing below moves them
+        self.note_boost(now, now if started is None else started, states)
         resolved = self.resolve(states)
         directory = self.resolver.directory
         until = self.hold_until(now, states)

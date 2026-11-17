@@ -50,8 +50,9 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
 - **The handover carry.** A handover never changes what the file shows; only reads and the
   ordinary aging rules do. Every pass writes `carry.json` to the state: the sources whose
   statuses it held, each with the time of the good read holding them and the end of the hold
-  it applied (that read's time plus 45 minutes in a window or an alert, 90 otherwise, as the
-  pass saw the source), and a key of the resolver's `derived_version` (without the station
+  it applied (that read's time plus 90 minutes, or, in a window or an alert, 45 minutes from
+  that read's time or, for a read this run first saw at a quiet pass, from the start of its
+  first boosted pass after it, never past the 90; as the pass saw the source), and a key of the resolver's `derived_version` (without the station
   part) and the merge rules. The successor reads it at its start (one line, `carry: <n>
   sources` or `carry: none (<code>)`) and, for each listed source it has not read itself,
   takes the rows the ledger holds present for the rows of that read: their statuses stand
