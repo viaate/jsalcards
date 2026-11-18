@@ -1563,29 +1563,59 @@ while it lets `snowlightmap.com` through, so a visitor there saw the copy the wo
 empty map. The site build names a second live root for that, `VITE_SNOWLIGHT_LIVE_FALLBACK`
 (`.github/workflows/preview.yml`: `https://status.snowlightmap.com/api/live/v1/`, set only while the
 first root is the owner's own, as it serves that one alone). It is a read-only proxy in the status
-project (`status/shared/live-proxy.ts`, `status/page/functions/live/v1/[[path]].ts`): GET or HEAD
-of `live/closings.json`, `predictions/latest.json`, `live/season.json` or
-`live/days/<YYYY-MM-DD>.json` answers with the live host's file, its status, type, ETag and
-Last-Modified, kept at the edge and in the browser for a minute at most; any other path is a 404
-that never reaches the live host, and a live host that fails, moves the file or takes over 5 s is
-a 502 that nothing keeps.
+project (`status/shared/live-proxy.ts`, `status/page/functions/api/live/v1/[[path]].ts`, under
+`/api/` so the page's Function routes are as they were): GET or HEAD of `live/closings.json`,
+`predictions/latest.json`, `live/season.json` or `live/days/<YYYY-MM-DD>.json` (allowed, though
+nothing on the page reads a day file through it yet) answers with the live host's file, its
+status, type, ETag and Last-Modified, kept at the edge and in the browser for a minute at most.
+Any other path is a 404 that never reaches the live host; a browser page on any other origin
+than the site's is a 403 that never reaches it either; a live host that fails, moves the file or
+takes over 5 s is a 502 that nothing keeps; any other answer that is not the file (a 404 for a
+file not published yet) is its status alone, with no body, kept by nothing.
 
 The page (`web/src/data/live-roots.ts`) reads the live host first, and the second root only when
-the live host does not answer with the file: the read fails, it answers with an error or a web
-page, the worker gives its kept copy in place of an answer (the worker marks that copy,
-`pwa/config.ts markKept`), or no answer has come in 4 s (`LIVE_TIMEOUT_SECONDS`). Whichever root
-answers first is read; the visit keeps it (sessionStorage `snowlight-live-root`) and tries the
-live host first again every 10 minutes. When neither answers, the page gets what the live host
-gave it, as with one root. The worker's network-first route for the closings file covers both
-roots, with the same wait and the same cache, each copy under its own address. A visitor on an
-open network never asks the second root. The admin's pages read the live host alone.
+the live host's read fails the way a filter makes it fail: the read itself fails (the connection
+closed or refused), the worker gives its kept copy in place of an answer (it marks that copy,
+`pwa/config.ts markKept`, and gives it only when its own read failed or took too long), a web
+page comes in the file's place, or no answer has come in 4 s (`LIVE_TIMEOUT_SECONDS`). An HTTP
+error from the live host (a 404, a 5xx) is given to the page as it came, and the second root is
+not asked: the live host was reached, and the proxy reads that same host. (A filter's own page
+for a blocked host carries no leave for the site to read it, so the browser fails the read; the
+page never sees it as an HTTP error.) Whichever root answers first is read; the visit keeps it
+(sessionStorage `snowlight-live-root`) and tries the live host first again every 10 minutes.
+Once a root has failed, the other has at most 4 s from when it is asked; then the page gets what
+the live host gave it (the kept copy, its error), as with one root. When neither answers, the
+second root is left alone for 10 minutes (sessionStorage `snowlight-live-root-off`): the page
+reads as it does with one root. The worker's network-first route for the closings file covers
+both roots, with the same wait and the same cache, each copy under its own address. The admin's
+pages read the closings and the chances through the same two roots. A visitor on an open network
+never asks the second root while the live host answers within 4 s, whatever it answers. The CI
+perf and e2e builds name no live root, so Lighthouse measures the page without the second root;
+the site build with it has the same first script (74,727 characters with and without it), and
+the code is in the live, keep and worker chunks only.
 
-Cost: the status project is on Cloudflare's free plan, 100,000 Function requests a day, nothing
-billed. Only a page that cannot reach the live host asks it: about 60 requests an hour while it
-is open and in view (the closings file each minute), and a few more for an open panel's chances
-and season counts, so about 1,400 visitor-hours on blocked networks a day before the limit. Past
-the limit the proxy's requests fail until the day turns; the page then keeps the copy it has
-and says how old it is.
+Cost: the proxy runs on the Cloudflare account's free Workers plan, whose 100,000 requests a day
+are shared by the whole account, refused requests included: the status page's own Function and
+checker (about 3,600 a day for 1,000 status visitors), `snowlight-timer` (288, one every 5
+minutes) and the accounts API (`snowlight-api`) count against the same limit (docs/status.md, What it costs). With this proxy added:
+- A page on a network that blocks the live host: about 60 requests an hour while it is open and
+  in view (the closings file each minute), and a few more for an open panel's chances and season
+  counts.
+- A page on an open network: none while the live host answers. When the live host cannot be
+  reached from anywhere (connections failing for everyone), the proxy's read fails too (a 502),
+  so each open page asks it once and then leaves it alone for 10 minutes: at most about 6 an hour
+  per open page, about 11,400 for 1,900 pages through a 53-minute outage like Nov 11's. When the
+  live host answers with errors (the usual outage), none.
+- The costly case: a live host that answers everyone, but slower than 4 s. The proxy's read then
+  works, so each open page reads it for as long as that lasts, about 60 an hour.
+So the account's limit holds about 1,500 page-hours of the last two cases in one day, after its
+other uses. Past the limit, until midnight UTC: the proxy's requests fail, so a blocked page gets
+the copy its worker kept, with its time, or nothing (as before this proxy); the status page says
+it cannot load; the accounts stop answering; and if the timer is refused too, live-ingest and
+predict.yml stop being started (notify, watch, the restarter and the chances with them), while
+live-read keeps the closings going through its successor and schedule, and the `timer` alert
+opens within 15 minutes. Nothing is ever billed. The proxy refuses another site's pages, but
+anyone can still send it requests from a script; each counts against the same limit.
 
 The chance job reads `closings.json`, `opens.json`, the day timelines and their index, and the
 deployed site's `edition.json`, `meta.json` and `points.bin`. Before changing the shape of any

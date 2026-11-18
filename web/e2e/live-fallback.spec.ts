@@ -30,6 +30,7 @@ import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
 
 import { format } from '../src/copy-format';
+import { seasonFormat } from '../src/copy-season';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const GLOW_LAYER = 'snowlight-glow';
@@ -147,12 +148,74 @@ const PREDICTIONS = JSON.stringify({
   districts: [],
 });
 
+/** SYNTHETIC: live/season.json, counting from Oct 27 through Jan 11: Alpha closed 2 days, delayed 1. */
+const SEASON = JSON.stringify({
+  schema_version: 1,
+  season: '2025-2026',
+  since: '2025-10-27',
+  through: '2026-01-11',
+  directory: STAMP,
+  content_sha256: '5'.repeat(64),
+  gaps: [0],
+  closed: [2],
+  delayed: [1],
+  remote: [0],
+  early_dismissal: [0],
+});
+const SEASON_LINE = seasonFormat.line(
+  { closed: 2, delayed: 1, remote: 0, earlyDismissal: 0 },
+  '2025-10-27',
+);
+
+/** The school records' index: one shard, from the first school. */
+function detailsIndex(): string {
+  return JSON.stringify({
+    schema_version: 1,
+    directory: STAMP,
+    shards: 1,
+    first_ids: [SCHOOLS[0].id],
+    files: ['0.json'],
+  });
+}
+
+/** SYNTHETIC: the four made-up schools' records, at one made-up address. */
+function detailsShard(): string {
+  const rows = SCHOOLS.map((school) => [
+    school.id,
+    school.name,
+    0,
+    0,
+    '2900000',
+    'Made-up District',
+    '1 Main St',
+    'Kansas City',
+    'MO',
+    '64113',
+    'Jackson County',
+    'KG',
+    '05',
+    300,
+    '8165550100',
+    [],
+  ]);
+  return JSON.stringify({ schema_version: 1, directory: STAMP, first: 0, rows });
+}
+
+/** The live files by their path under a root. */
+const LIVE_FILES = (closingsFile: string): Record<string, string> => ({
+  'live/closings.json': closingsFile,
+  'predictions/latest.json': PREDICTIONS,
+  'live/season.json': SEASON,
+});
+
 /** The second root: the same files as the live host, on a server of this machine. */
 interface SecondRoot {
   readonly root: string;
   /** The closings file it serves, or a status it answers every read with. */
   closings: string;
   status: number;
+  /** Whether it takes each read and never answers (a hung edge, a filter that drops it). */
+  hang: boolean;
   /** Each path asked for, in order. */
   readonly asked: string[];
   close(): Promise<void>;
@@ -160,15 +223,17 @@ interface SecondRoot {
 
 async function secondRoot(port: number, siteOrigin: string): Promise<SecondRoot> {
   const second: SecondRoot = {
-    root: `http://127.0.0.1:${String(port)}/live/v1/`,
+    root: `http://127.0.0.1:${String(port)}/api/live/v1/`,
     closings: FIRST,
     status: 200,
+    hang: false,
     asked: [],
     close: () => Promise.resolve(),
   };
   const server: Server = createServer((request, response) => {
     const url = new URL(request.url ?? '/', second.root);
     second.asked.push(url.pathname);
+    if (second.hang) return;
     const headers = {
       'Access-Control-Allow-Origin': siteOrigin,
       Vary: 'Origin',
@@ -179,11 +244,10 @@ async function secondRoot(port: number, siteOrigin: string): Promise<SecondRoot>
       response.writeHead(second.status, { ...headers, 'Cache-Control': 'no-store' }).end();
       return;
     }
-    const files: Record<string, string> = {
-      '/live/v1/live/closings.json': second.closings,
-      '/live/v1/predictions/latest.json': PREDICTIONS,
-    };
-    const body = files[url.pathname];
+    const prefix = new URL(second.root).pathname;
+    const body = url.pathname.startsWith(prefix)
+      ? LIVE_FILES(second.closings)[url.pathname.slice(prefix.length)]
+      : undefined;
     if (body === undefined) {
       response.writeHead(404, { ...headers, 'Cache-Control': 'no-store' }).end();
       return;
@@ -252,6 +316,10 @@ test.beforeAll(async () => {
   mkdirSync(path.join(data, 'schools'), { recursive: true });
   writeFileSync(path.join(data, 'schools/meta.json'), meta());
   writeFileSync(path.join(data, 'schools/points.bin'), points());
+  // The school records the panel reads (src/data/details.ts), as made up as the schools.
+  mkdirSync(path.join(data, 'schools/details'), { recursive: true });
+  writeFileSync(path.join(data, 'schools/details/index.json'), detailsIndex());
+  writeFileSync(path.join(data, 'schools/details/0.json'), detailsShard());
 
   const sitePort = await freePort();
   const siteUrl = `http://127.0.0.1:${String(sitePort)}/`;
@@ -303,6 +371,7 @@ test.beforeEach(() => {
   if (site === undefined) return;
   site.second.closings = FIRST;
   site.second.status = 200;
+  site.second.hang = false;
   site.second.asked.length = 0;
 });
 
@@ -311,8 +380,11 @@ function theSite(): Site {
   return site;
 }
 
-/** What the live host does with each read: as the school's filter, or as itself. */
-type Host = 'closed' | 'silent' | { readonly closings: string };
+/**
+ * What the live host does with each read: as the school's filter, as itself with its files, or
+ * as itself in an outage of its own (an HTTP error for every read).
+ */
+type Host = 'closed' | 'silent' | { readonly closings: string } | { readonly status: number };
 
 interface LiveHost {
   mode: Host;
@@ -335,9 +407,16 @@ async function interceptLiveHost(context: BrowserContext, mode: Host): Promise<L
       return;
     }
     if (now === 'silent') return;
-    const file = new URL(route.request().url()).pathname.endsWith('/live/closings.json')
-      ? now.closings
-      : PREDICTIONS;
+    const headers = { 'Access-Control-Allow-Origin': origin };
+    if ('status' in now) {
+      await route.fulfill({ status: now.status, headers, body: '' });
+      return;
+    }
+    const file = LIVE_FILES(now.closings)[route.request().url().slice(LIVE_HOST.length)];
+    if (file === undefined) {
+      await route.fulfill({ status: 404, headers, body: '' });
+      return;
+    }
     await route.fulfill({
       status: 200,
       headers: {
@@ -366,7 +445,7 @@ interface Visit {
   readonly problems: string[];
 }
 
-async function visit(browser: Browser, mode: Host, worker = false): Promise<Visit> {
+async function visit(browser: Browser, mode: Host, worker = false, query = ''): Promise<Visit> {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     timezoneId: ZONE,
@@ -389,11 +468,16 @@ async function visit(browser: Browser, mode: Host, worker = false): Promise<Visi
     }
   });
   await page.clock.install({ time: NOW });
-  await page.goto(theSite().url);
+  await page.goto(`${theSite().url}${query}`);
+  await settled(page);
+  return { context, page, host, problems };
+}
+
+/** Waits for the map to take the place of its still picture. */
+async function settled(page: Page): Promise<void> {
   await page.waitForFunction(() => document.querySelector('svg.still') === null, null, {
     timeout: 60_000,
   });
-  return { context, page, host, problems };
 }
 
 /** How many schools the glow lights now. */
@@ -553,4 +637,196 @@ test('a worker that kept a copy, with both roots failing: a reload shows the kep
   await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_42, ZONE), SETTLE);
   expect(closingsAsked(second.asked)).toBeGreaterThanOrEqual(1);
   await context.close();
+});
+
+/** A visit at home first: the live host answers with `file`, and the worker keeps it. */
+async function keptAtHome(browser: Browser, file = FIRST): Promise<Visit> {
+  const home = await visit(browser, { closings: file }, true);
+  await expect.poll(() => lit(home.page), SETTLE).toBe(file === FIRST ? 2 : 3);
+  await home.page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, {
+    timeout: 60_000,
+  });
+  await home.page.waitForFunction(
+    async ([name, url, body]) => {
+      const response = await (await caches.open(name)).match(url);
+      return response !== undefined && (await response.text()) === body;
+    },
+    [DATA_CACHE, `${LIVE_HOST}live/closings.json`, file] as const,
+    { timeout: 30_000 },
+  );
+  return home;
+}
+
+/** The seconds from `since` until the page says it is live as of `at`. */
+async function secondsUntilLiveAt(page: Page, at: Date, since: number): Promise<number> {
+  await expect(page.locator('.updated')).toHaveText(format.liveAt(at, ZONE), SETTLE);
+  return (Date.now() - since) / 1000;
+}
+
+test('a worker that kept a copy, a live host that is blocked or silent and a second root that never answers: a reload shows the kept copy with its own time within the waits, and the second is left alone after', async ({
+  browser,
+}) => {
+  const { second } = theSite();
+  const { context, page, host } = await keptAtHome(browser);
+  expect(second.asked).toEqual([]);
+  second.hang = true;
+  for (const mode of ['closed', 'silent'] as const) {
+    host.mode = mode;
+    // A new visit in the same tab: what the last one remembered is gone.
+    await page.evaluate(() => {
+      sessionStorage.clear();
+    });
+    second.asked.length = 0;
+    const since = Date.now();
+    await page.reload();
+    // The worker's wait (silent), then the second root's: 8 s at most past the page's own start.
+    expect(await secondsUntilLiveAt(page, AT_42, since)).toBeLessThan(25);
+    expect(await lit(page)).toBe(2);
+    expect(closingsAsked(second.asked)).toBe(1);
+    // The second failed: the next polls read the live host alone, and still show the kept copy.
+    await poll(page);
+    await poll(page);
+    await page.waitForTimeout(1000);
+    expect(closingsAsked(second.asked)).toBe(1);
+    await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_42, ZONE));
+    expect(await lit(page)).toBe(2);
+  }
+  await context.close();
+});
+
+test('a reload within the visit reads the second root first, and the live host is tried again only after 10 minutes', async ({
+  browser,
+}) => {
+  const { second } = theSite();
+  const { context, page, host, problems } = await visit(browser, 'closed');
+  await expect.poll(() => lit(page), SETTLE).toBe(2);
+  expect(closingsAsked(host.asked)).toBe(1);
+  // Every live file the page reads goes to the second root from then on.
+  const hostAsked = host.asked.length;
+  const took = Number(
+    await page.evaluate(() => sessionStorage.getItem('snowlight-live-root') ?? 'NaN'),
+  );
+  expect(Number.isFinite(took)).toBe(true);
+
+  // A reload: the visit remembers the second root, and the live host is not asked.
+  second.closings = SECOND;
+  await page.reload();
+  await settled(page);
+  await expect.poll(() => lit(page), SETTLE).toBe(3);
+  await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_47, ZONE), SETTLE);
+  expect(host.asked.length).toBe(hostAsked);
+
+  // A poll a minute: the live host is left alone until 10 minutes after the second took over.
+  const minutes = (): Promise<number> => page.evaluate((at) => (Date.now() - at) / 60_000, took);
+  while ((await minutes()) < 9) {
+    const before = closingsAsked(second.asked);
+    await poll(page);
+    await expect.poll(() => closingsAsked(second.asked), SETTLE).toBeGreaterThan(before);
+  }
+  expect(host.asked.length).toBe(hostAsked);
+  // Past 10 minutes: the live host is tried first once (by whichever file is read first), fails,
+  // and the second takes over again.
+  while ((await minutes()) < 11) await poll(page);
+  await expect.poll(() => host.asked.length, SETTLE).toBe(hostAsked + 1);
+  const again = closingsAsked(second.asked);
+  await poll(page);
+  await expect.poll(() => closingsAsked(second.asked), SETTLE).toBeGreaterThan(again);
+  expect(host.asked.length).toBe(hostAsked + 1);
+  await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_47, ZONE));
+  expect(problems.filter((line) => !blockedRead(line))).toEqual([]);
+  await context.close();
+});
+
+test("a first visit with a worker on the blocking network: its polls and a reload stay on today's file from the second root", async ({
+  browser,
+}) => {
+  const { second } = theSite();
+  const { context, page, host, problems } = await visit(browser, 'closed', true);
+  await expect.poll(() => lit(page), SETTLE).toBe(2);
+  await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_42, ZONE), SETTLE);
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, {
+    timeout: 60_000,
+  });
+  second.closings = SECOND;
+  await poll(page);
+  await expect.poll(() => lit(page), SETTLE).toBe(3);
+  await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_47, ZONE), SETTLE);
+  await page.reload();
+  await settled(page);
+  await expect.poll(() => lit(page), SETTLE).toBe(3);
+  await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_47, ZONE), SETTLE);
+  expect(closingsAsked(host.asked)).toBe(1);
+  expect(problems.filter((line) => !blockedRead(line))).toEqual([]);
+  await context.close();
+});
+
+test("a worker that kept an older copy and a live host that never answers: a reload is given today's file from the second root", async ({
+  browser,
+}) => {
+  const { second } = theSite();
+  const { context, page, host } = await keptAtHome(browser);
+  host.mode = 'silent';
+  second.closings = SECOND;
+  await page.reload();
+  await settled(page);
+  await expect.poll(() => lit(page), SETTLE).toBe(3);
+  await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_47, ZONE), SETTLE);
+  expect(closingsAsked(second.asked)).toBeGreaterThanOrEqual(1);
+  await context.close();
+});
+
+test('a live host that answers with an error of its own: the page never asks the second root, which could do no better', async ({
+  browser,
+}) => {
+  const { second } = theSite();
+  const { context, page, host } = await visit(browser, { status: 503 });
+  await expect.poll(() => closingsAsked(host.asked), SETTLE).toBeGreaterThanOrEqual(1);
+  await poll(page);
+  await expect.poll(() => closingsAsked(host.asked), SETTLE).toBeGreaterThanOrEqual(2);
+  await page.waitForTimeout(5000);
+  expect(second.asked).toEqual([]);
+  expect(await lit(page)).toBe(0);
+  await expect(page.locator('.updated')).toHaveCount(0);
+  await context.close();
+});
+
+test('with the second root failing too, it is asked once and then left alone for 10 minutes', async ({
+  browser,
+}) => {
+  const { second } = theSite();
+  second.status = 502;
+  const { context, page, host } = await visit(browser, 'closed');
+  await expect.poll(() => closingsAsked(second.asked), SETTLE).toBe(1);
+  for (let minute = 0; minute < 3; minute += 1) await poll(page);
+  await expect.poll(() => closingsAsked(host.asked), SETTLE).toBeGreaterThanOrEqual(4);
+  expect(closingsAsked(second.asked)).toBe(1);
+  expect(await lit(page)).toBe(0);
+  await context.close();
+});
+
+test('an open school panel on the blocking network reads the chances and the season counts from the second root; on an open network it asks the second root nothing', async ({
+  browser,
+}) => {
+  const { second } = theSite();
+  const query = `?school=${SCHOOLS[0].id}`;
+  const blocked = await visit(browser, 'closed', false, query);
+  const panel = blocked.page.locator('aside.detail');
+  await expect(panel).toContainText(SCHOOLS[0].name, SETTLE);
+  await expect(panel.locator('.season')).toHaveText(SEASON_LINE, SETTLE);
+  const prefix = new URL(second.root).pathname;
+  expect(second.asked).toContain(`${prefix}predictions/latest.json`);
+  expect(second.asked).toContain(`${prefix}live/season.json`);
+  expect(blocked.problems.filter((line) => !blockedRead(line))).toEqual([]);
+  await blocked.context.close();
+
+  second.asked.length = 0;
+  const open = await visit(browser, { closings: FIRST }, false, query);
+  const openPanel = open.page.locator('aside.detail');
+  await expect(openPanel).toContainText(SCHOOLS[0].name, SETTLE);
+  await expect(openPanel.locator('.season')).toHaveText(SEASON_LINE, SETTLE);
+  expect(open.host.asked).toContain(`${LIVE_HOST}predictions/latest.json`);
+  expect(open.host.asked).toContain(`${LIVE_HOST}live/season.json`);
+  expect(second.asked).toEqual([]);
+  expect(open.problems).toEqual([]);
+  await open.context.close();
 });
