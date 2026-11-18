@@ -197,6 +197,18 @@ describe('rootedFetch', () => {
     expect(copy.headers.get(KEPT_HEADER)).toBe('1');
   });
 
+  it('gives what the first root gave when neither answers, though the second was read first', async () => {
+    const store = memoryStore();
+    store.setItem(LIVE_ROOT_KEY, String(Date.now() - 60_000));
+    const kept = setup({ [FIRST]: ['kept'], [SECOND]: [502] }, store);
+    const response = await kept.read(`${FIRST}${PATH}`);
+    expect(rootsOf(kept.asked)).toEqual(['second', 'first']);
+    expect(response.headers.get(KEPT_HEADER)).toBe('1');
+    store.setItem(LIVE_ROOT_KEY, String(Date.now() - 60_000));
+    const closed = setup({ [FIRST]: ['closed'], [SECOND]: [502] }, store);
+    await expect(closed.read(`${FIRST}${PATH}`)).rejects.toThrow('Failed to fetch');
+  });
+
   it('tries the first again every 10 minutes, and goes back to it once it answers', async () => {
     const { read, asked, store } = setup({
       [FIRST]: ['closed', 'closed', 'file'],

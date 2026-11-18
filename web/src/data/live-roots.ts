@@ -176,15 +176,18 @@ export function rootedFetch(init: LiveRootsInit): Fetch {
         if (outcome !== undefined && 'response' in outcome) return outcome.response;
       }
     }
-    // Neither answered: what the first root gave, as with one root, else the other's copy.
-    const [own, other] = await Promise.all(reads);
+    // Neither answered: what the live host gave (the worker's kept copy, an error), as with one
+    // root, whichever was asked first; else the second root's kept copy.
+    const settled = await Promise.all(reads);
+    const own = settled[order.indexOf(primary)] ?? settled[0];
+    const other = settled.find((outcome) => outcome !== own);
     if (own !== undefined && 'response' in own) {
       discard(other);
       return own.response;
     }
     if (other !== undefined && 'response' in other && other.response.ok) return other.response;
     discard(other);
-    // The first root's own failure (an abort among them), as the read failed with one root.
+    // The live host's own failure (an abort among them), as the read failed with one root.
     throw (own?.error ?? new Error('No live root answered.')) as Error;
   };
 }
