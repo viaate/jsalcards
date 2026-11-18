@@ -1567,7 +1567,8 @@ project (`status/shared/live-proxy.ts`, `status/page/functions/api/live/v1/[[pat
 `/api/` so the page's Function routes are as they were): GET or HEAD of `live/closings.json`,
 `predictions/latest.json`, `live/season.json` or `live/days/<YYYY-MM-DD>.json` (allowed, though
 nothing on the page reads a day file through it yet) answers with the live host's file, its
-status, type, ETag and Last-Modified, kept at the edge and in the browser for a minute at most.
+status, type, ETag and Last-Modified, kept at the edge for a minute at most; the browser is told
+to ask again before each use (`max-age=0`), so its keeping never adds to the edge's minute.
 Any other path is a 404 that never reaches the live host; a browser page on any other origin
 than the site's is a 403 that never reaches it either; a live host that fails, moves the file or
 takes over 5 s is a 502 that nothing keeps; any other answer that is not the file (a 404 for a
@@ -1583,10 +1584,20 @@ not asked: the live host was reached, and the proxy reads that same host. (A fil
 for a blocked host carries no leave for the site to read it, so the browser fails the read; the
 page never sees it as an HTTP error.) Whichever root answers first is read; the visit keeps it
 (sessionStorage `snowlight-live-root`) and tries the live host first again every 10 minutes.
-Once a root has failed, the other has at most 4 s from when it is asked; then the page gets what
-the live host gave it (the kept copy, its error), as with one root. When neither answers, the
-second root is left alone for 10 minutes (sessionStorage `snowlight-live-root-off`): the page
-reads as it does with one root. The worker's network-first route for the closings file covers
+The second root has at most 4 s from when it is asked, whichever root is read first; once it
+has had them, the page gets what the live host gave it (the kept copy, its error) as soon as the
+live host has given it, as with one root, and the live host itself has as long as it takes. A
+4xx from the second root (a file not published yet) is the live host's own answer read through
+it: the page gets it as it came, and the visit stays on the second root. When the second root
+fails, it is left alone for 10 minutes (sessionStorage `snowlight-live-root-off`): the page
+reads as it does with one root. That holds for one that ran past its 4 s, though the page gave
+up on the read later. One that was answering until then and fails at once (a 502) gets one
+more try first: the next read asks the live host first, then it, and a second failure in a row
+leaves it alone. When both roots give a copy the worker kept, the page gets the newer, by the
+`generated_at` each says. While the visit reads the second root first, the page reads each file
+through it at most every 3 minutes (`LIVE_ROOT_SECOND_EVERY_MS`); between those reads it is
+given the file the second root last gave, so the update line shows that file's own time, and a
+newer file shows up to 3 minutes later than on an open network. A reload reads at once. The worker's network-first route for the closings file covers
 both roots, with the same wait and the same cache, each copy under its own address. The admin's
 pages read the closings and the chances through the same two roots. A visitor on an open network
 never asks the second root while the live host answers within 4 s, whatever it answers. The CI
@@ -1598,18 +1609,23 @@ Cost: the proxy runs on the Cloudflare account's free Workers plan, whose 100,00
 are shared by the whole account, refused requests included: the status page's own Function and
 checker (about 3,600 a day for 1,000 status visitors), `snowlight-timer` (288, one every 5
 minutes) and the accounts API (`snowlight-api`) count against the same limit (docs/status.md, What it costs). With this proxy added:
-- A page on a network that blocks the live host: about 60 requests an hour while it is open and
-  in view (the closings file each minute), and a few more for an open panel's chances and season
-  counts.
+- A page on a network that blocks the live host: about 20 requests an hour while it is open and
+  in view (the closings file at most every 3 minutes, though the page polls each minute), and a
+  few more for an open panel's chances and season counts.
+- A page on an open network whose own link is slow (a weak phone signal, a crowded network), so
+  that one of its reads of the live host takes over 4 s: one request for that read, and when the
+  proxy's answer comes first, about 4 more over the next 10 minutes, then the live host again. So
+  at most about 20 an hour for a page whose link stays that slow, as for a blocked page; it is
+  counted with them below, and the POSTLAND request counts measure it.
 - A page on an open network: none while the live host answers. When the live host cannot be
   reached from anywhere (connections failing for everyone), the proxy's read fails too (a 502),
   so each open page asks it once and then leaves it alone for 10 minutes: at most about 6 an hour
   per open page, about 11,400 for 1,900 pages through a 53-minute outage like Nov 11's. When the
   live host answers with errors (the usual outage), none.
 - The costly case: a live host that answers everyone, but slower than 4 s. The proxy's read then
-  works, so each open page reads it for as long as that lasts, about 60 an hour.
-So the account's limit holds about 1,500 page-hours of the last two cases in one day, after its
-other uses. Past the limit, until midnight UTC: the proxy's requests fail, so a blocked page gets
+  works, so each open page reads it for as long as that lasts, about 20 an hour.
+So the account's limit holds about 4,500 page-hours of blocked, slow-link and slow-host pages in
+one day, after its other uses (about 95,000 left of the 100,000, at about 20 an hour each). Past the limit, until midnight UTC: the proxy's requests fail, so a blocked page gets
 the copy its worker kept, with its time, or nothing (as before this proxy); the status page says
 it cannot load; the accounts stop answering; and if the timer is refused too, live-ingest and
 predict.yml stop being started (notify, watch, the restarter and the chances with them), while

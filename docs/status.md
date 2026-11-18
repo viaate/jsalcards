@@ -150,10 +150,11 @@ UTC, and accounts would stop answering until then too. Nothing is ever charged.
 
 The live files' proxy (`/api/live/v1/`, for pages on networks that block the live host) is
 in the same Pages project, so its requests count against the same 100,000, refused ones
-included. A page on an open network asks it nothing while the live host answers; a page on a
-blocked network asks it about 60 times an hour while it is open and in view; a live host that
-answers everyone more slowly than 4 s makes every open page ask it that often too. Those two
-together reach the limit at about 1,500 page-hours in one day; the projection, and what each
+included. A page on an open network asks it nothing while the live host answers within 4 s; a
+page on a blocked network asks it about 20 times an hour while it is open and in view (the
+closings at most every 3 minutes); a page whose own link is that slow, or a live host that
+answers everyone more slowly than 4 s, makes each such page ask it about as often. Together they
+reach the limit at about 4,500 page-hours in one day; the projection, and what each
 part does past the limit (the proxy, this page, the accounts, the timer), are in docs/live.md,
 "When a network blocks the live host". The proxy refuses other sites' pages, but anyone can
 still send it requests from a script, and each counts.
