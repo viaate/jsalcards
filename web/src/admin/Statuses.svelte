@@ -7,6 +7,7 @@
   import { parseClosings } from '../data/closings';
   import type { Directory } from '../data/directory';
   import { fetchJson } from '../data/files';
+  import { liveFetch } from '../data/live-roots';
   import { parsePredictions } from '../data/school-day';
   import { LIVE_CLOSINGS_PATH } from '../pwa/config';
   import { stateOfId } from '../text/school-names';
@@ -113,7 +114,7 @@
       if (!files.has(PUBLISHED_PATHS.predictions)) return null;
       try {
         return parsePredictions(
-          await fetchJson(files, PUBLISHED_PATHS.predictions, { cache: 'no-cache' }),
+          await fetchJson(files, PUBLISHED_PATHS.predictions, { cache: 'no-cache' }, liveFetch),
         );
       } catch {
         return null;
@@ -346,7 +347,9 @@
       return;
     }
     try {
-      published = parseClosings(await fetchJson(files, LIVE_CLOSINGS_PATH, { cache: 'no-cache' }));
+      published = parseClosings(
+        await fetchJson(files, LIVE_CLOSINGS_PATH, { cache: 'no-cache' }, liveFetch),
+      );
     } catch {
       published = null;
     }
