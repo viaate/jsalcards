@@ -253,6 +253,11 @@ jobs:
           # published there yet is a 404, which the page reads as no data (never a stale one). A
           # repository variable SNOWLIGHT_LIVE_ROOT still overrides it.
           VITE_SNOWLIGHT_LIVE_ROOT: ${{ vars.SNOWLIGHT_LIVE_ROOT || 'https://viaate.github.io/snowlight-live/v1/' }}
+          # The same files on the site's own domain, read only when the live host does not answer
+          # (a school network that blocks github.io): the status project's read-only proxy
+          # (status/shared/live-proxy.ts, docs/live.md). It serves the owner's live root alone,
+          # so a build whose root is another gets none unless SNOWLIGHT_LIVE_FALLBACK names one.
+          VITE_SNOWLIGHT_LIVE_FALLBACK: ${{ vars.SNOWLIGHT_LIVE_FALLBACK || ((vars.SNOWLIGHT_LIVE_ROOT == '' || vars.SNOWLIGHT_LIVE_ROOT == 'https://viaate.github.io/snowlight-live/v1/') && 'https://status.snowlightmap.com/live/v1/' || '') }}
           # The waitlist (web/tools/waitlist.ts): the front page is the waitlist once the
           # repository variable WAITLIST_KIT_FORM holds the Kit form's id. Unset, the site builds
           # as before. WAITLIST_CONFIRM must match the Kit form's double opt-in: unset while it is

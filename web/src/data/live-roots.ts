@@ -184,7 +184,8 @@ export function rootedFetch(init: LiveRootsInit): Fetch {
     }
     if (other !== undefined && 'response' in other && other.response.ok) return other.response;
     discard(other);
-    throw own?.error instanceof Error ? own.error : new Error('No live root answered.');
+    // The first root's own failure (an abort among them), as the read failed with one root.
+    throw (own?.error ?? new Error('No live root answered.')) as Error;
   };
 }
 
