@@ -28,8 +28,10 @@
  * is given what the live host gave it (the worker's kept copy, its error) as
  * soon as the live host has given it, as with one root, and the live host
  * itself has as long as it takes: the case is never made worse than it was. A
- * 4xx from the second root (a file not published yet) is the live host's own
- * answer read through it: given as it came, and the second stays the visit's.
+ * 404 or 410 from the second root (a file not published yet) is the live
+ * host's own answer read through it: given as it came, and the second stays
+ * the visit's. Any other 4xx from it (a 403 or a 429 the live host sent the
+ * proxy) is the second root failing, like a 5xx.
  *
  * When the second root fails, it is not asked again for LIVE_ROOT_RETRY_MS
  * (LIVE_ROOT_OFF_KEY): the page reads as it does with one root, and asks the
@@ -92,6 +94,9 @@ export function answered(response: Response): boolean {
   return !/^\s*text\/html/i.test(response.headers.get('content-type') ?? '');
 }
 
+/** The second root's errors that say the live host has no such file (its own answer). */
+const NOT_THERE: ReadonlySet<number> = new Set([404, 410]);
+
 /**
  * Whether a response that is not the file is the live host's own answer (an HTTP error): the
  * host was reached, so the other root, which reads the same host, is not asked.
@@ -148,7 +153,7 @@ export function rootedFetch(init: LiveRootsInit): Fetch {
   const store = init.store ?? null;
   /** The page's own memory of both times, where the visit's storage cannot be had. */
   const memory = new Map<string, number>();
-  /** The last file the second root gave for each path, and when, for LIVE_ROOT_SECOND_EVERY_MS. */
+  /** The last file (or 404 or 410) the second root gave for each path, and when, for LIVE_ROOT_SECOND_EVERY_MS. */
   const held = new Map<string, { readonly at: number; readonly response: Response }>();
   const load = (key: string): number | null => {
     if (store !== null) {
@@ -289,15 +294,13 @@ export function rootedFetch(init: LiveRootsInit): Fetch {
           return;
         }
         const response = outcome.response;
-        // An HTTP error from the live host, or from the second root that read it (a 4xx: the
-        // file is not there), is that host's own answer, given as it came.
+        // An HTTP error from the live host, or from the second root that read it (a 404 or a
+        // 410: the file is not there), is that host's own answer, given as it came. Any other
+        // error from the second root (a 403 or a 429 sent to the proxy) is the second failing.
         if (
           response !== undefined &&
           ((index === own && reached(response)) ||
-            (index === second &&
-              response.status >= 400 &&
-              response.status < 500 &&
-              reached(response)))
+            (index === second && NOT_THERE.has(response.status) && reached(response)))
         ) {
           decide({ kind: 'took', index, response });
           return;
@@ -340,7 +343,13 @@ export function rootedFetch(init: LiveRootsInit): Fetch {
       if (answered(decision.response)) took(decision.index, decision.response);
       else if (decision.index === second) {
         save(LIVE_ROOT_OFF_KEY, null);
-        if (!recent(LIVE_ROOT_KEY, now())) save(LIVE_ROOT_KEY, now());
+        const at = now();
+        if (!recent(LIVE_ROOT_KEY, at)) save(LIVE_ROOT_KEY, at);
+        // A file the live host does not have is not asked for through the second root again
+        // within LIVE_ROOT_SECOND_EVERY_MS either: each ask there counts against its limit.
+        const before = held.get(rest);
+        if (before !== undefined) discard({ response: before.response });
+        held.set(rest, { at, response: decision.response.clone() });
       }
       return decision.response;
     }

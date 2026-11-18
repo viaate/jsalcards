@@ -1587,8 +1587,11 @@ page never sees it as an HTTP error.) Whichever root answers first is read; the 
 The second root has at most 4 s from when it is asked, whichever root is read first; once it
 has had them, the page gets what the live host gave it (the kept copy, its error) as soon as the
 live host has given it, as with one root, and the live host itself has as long as it takes. A
-4xx from the second root (a file not published yet) is the live host's own answer read through
-it: the page gets it as it came, and the visit stays on the second root. When the second root
+404 or 410 from the second root (a file not published yet) is the live host's own answer read
+through it: the page gets it as it came, the visit stays on the second root, and that path is
+asked there again at most every 3 minutes, as a file is. Any other 4xx from it (a 403 or a 429
+the live host sent the proxy) counts as the second root failing, like a 5xx, so the page gets
+the live host's kept copy as with one root. When the second root
 fails, it is left alone for 10 minutes (sessionStorage `snowlight-live-root-off`): the page
 reads as it does with one root. That holds for one that ran past its 4 s, though the page gave
 up on the read later. One that was answering until then and fails at once (a 502) gets one

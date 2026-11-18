@@ -21,7 +21,7 @@ const PATH = 'live/closings.json';
 /** SYNTHETIC: a made-up closings file. */
 const FILE = '{"schema_version":1,"generated_at":"2026-01-12T12:42:00Z","days":[]}';
 
-type Step = 'file' | 'kept' | 'closed' | 'hang' | 'page' | 403 | 404 | 500 | 502 | 503;
+type Step = 'file' | 'kept' | 'closed' | 'hang' | 'page' | 403 | 404 | 410 | 429 | 500 | 502 | 503;
 
 /** A made-up network: each root answers its steps in turn (the last one again after that). */
 function network(plan: Record<string, Step[]>) {
@@ -497,7 +497,7 @@ describe('rootedFetch', () => {
     expect(items.has(LIVE_ROOT_OFF_KEY)).toBe(true);
   });
 
-  for (const status of [403, 404] as const) {
+  for (const status of [404, 410] as const) {
     it(`gives the second root own ${String(status)} as it came, and keeps reading it first`, async () => {
       const { read, asked, store } = setup({
         [FIRST]: ['closed'],
@@ -515,6 +515,30 @@ describe('rootedFetch', () => {
       expect(rootsOf(asked)).toEqual(['first', 'second', 'second', 'second']);
     });
   }
+
+  for (const status of [403, 429] as const) {
+    it(`counts the second root ${String(status)} as the second failing, and gives the live host kept copy`, async () => {
+      const store = memoryStore();
+      store.setItem(LIVE_ROOT_KEY, String(Date.now() - 60_000));
+      const { read, asked } = setup({ [FIRST]: ['kept'], [SECOND]: [status] }, store);
+      const response = await read(`${FIRST}${PATH}`);
+      expect(rootsOf(asked)).toEqual(['second', 'first']);
+      expect(response.status).toBe(200);
+      expect(response.headers.get(KEPT_HEADER)).toBe('1');
+      expect(store.items.has(LIVE_ROOT_KEY)).toBe(false);
+    });
+  }
+
+  it('asks the second root for a file it does not have at most every 3 minutes', async () => {
+    const { read, asked } = setup({ [FIRST]: ['closed'], [SECOND]: ['file', 404] });
+    await read(`${FIRST}${PATH}`);
+    expect((await read(`${FIRST}live/season.json`)).status).toBe(404);
+    expect((await read(`${FIRST}live/season.json`)).status).toBe(404);
+    expect(rootsOf(asked)).toEqual(['first', 'second', 'second']);
+    await vi.advanceTimersByTimeAsync(LIVE_ROOT_SECOND_EVERY_MS);
+    expect((await read(`${FIRST}live/season.json`)).status).toBe(404);
+    expect(rootsOf(asked)).toEqual(['first', 'second', 'second', 'second']);
+  });
 
   it('gives a first-asked second root own 404 at once, before the live host is asked', async () => {
     const { read, asked, store } = setup({ [FIRST]: ['closed'], [SECOND]: [404] });
