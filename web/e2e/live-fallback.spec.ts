@@ -680,7 +680,7 @@ test('a worker that kept a copy, a live host that is blocked or silent and a sec
     const since = Date.now();
     await page.reload();
     // The worker's wait (silent), then the second root's: 8 s at most past the page's own start.
-    expect(await secondsUntilLiveAt(page, AT_42, since)).toBeLessThan(25);
+    expect(await secondsUntilLiveAt(page, AT_42, since)).toBeLessThan(15);
     expect(await lit(page)).toBe(2);
     expect(closingsAsked(second.asked)).toBe(1);
     // The second failed: the next polls read the live host alone, and still show the kept copy.
