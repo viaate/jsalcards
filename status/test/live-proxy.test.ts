@@ -4,10 +4,10 @@ import { join } from 'node:path';
 import { afterEach, test } from 'node:test';
 import { onRequest } from '../page/functions/api/live/v1/[[path]].ts';
 import {
+  BROWSER_CACHE_CONTROL,
   LIVE_EDGE_TTL_SECONDS,
   LIVE_UPSTREAM,
   LIVE_UPSTREAM_TIMEOUT_MS,
-  keptFor,
   serveLive,
 } from '../shared/live-proxy.ts';
 import { root } from './harness.ts';
@@ -177,21 +177,14 @@ test('only the conditional headers are sent on, and a 304 passes with its ETag a
   });
   assert.equal(response.status, 304);
   assert.equal(response.headers.get('etag'), '"6afdc836-384"');
-  assert.equal(response.headers.get('cache-control'), `public, max-age=60`);
+  assert.equal(response.headers.get('cache-control'), BROWSER_CACHE_CONTROL);
   assert.equal(await response.text(), '');
 });
 
-test('the edge and the browser keep a file for at most 60 seconds', async () => {
+test('the edge keeps a file for at most 60 seconds, and the browser asks again each time', async () => {
   assert.equal(LIVE_EDGE_TTL_SECONDS, 60);
-  for (const [own, kept] of [
-    ['max-age=600', 60],
-    ['public, max-age=15, stale-while-revalidate=15', 15],
-    ['max-age=0', 0],
-    [null, 60],
-    ['no-cache', 60],
-    ['max-age=86400000', 60],
-  ] as const) {
-    assert.equal(keptFor(own), kept, String(own));
+  assert.equal(BROWSER_CACHE_CONTROL, 'public, max-age=0, must-revalidate');
+  for (const own of ['max-age=600', 'public, max-age=15', 'max-age=0', null, 'no-store']) {
     const live = host(() => ok(own === null ? {} : { 'cache-control': own }));
     if (own === null) {
       live.fetch = (url, init) => {
@@ -202,7 +195,8 @@ test('the edge and the browser keep a file for at most 60 seconds', async () => 
       };
     }
     const response = await serveLive(ask('live/closings.json'), live.fetch);
-    assert.equal(response.headers.get('cache-control'), `public, max-age=${String(kept)}`);
+    assert.equal(response.headers.get('cache-control'), BROWSER_CACHE_CONTROL, String(own));
+    assert.equal(response.headers.get('age'), null);
   }
   // At the edge: a success for at most a minute, anything else never.
   const live = host(() => ok());

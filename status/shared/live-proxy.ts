@@ -14,8 +14,9 @@
  * is asked. It passes on the live host's status, type, ETag and Last-Modified,
  * and sends a conditional request on as it came, so an unchanged file is a 304
  * with no body. A copy is kept at the edge for at most LIVE_EDGE_TTL_SECONDS,
- * and the browser is told the same: the map must never be given an old file
- * as the current one. A live host that fails, moves the file, or does not
+ * and the browser is told to keep none it has not asked about again
+ * (BROWSER_CACHE_CONTROL), so the two never add up: the map must never be
+ * given an old file as the current one. A live host that fails, moves the file, or does not
  * answer within LIVE_UPSTREAM_TIMEOUT_MS, is a 502 that nothing keeps; any
  * other answer that is not a file (a 404 for one not published yet) is passed
  * on as its status alone, with no body, kept by nothing too. It reads nothing
@@ -40,8 +41,15 @@ export const LIVE_PREFIX = '/api/live/v1/';
 export const LIVE_PATHS =
   /^(?:live\/closings\.json|predictions\/latest\.json|live\/season\.json|live\/days\/\d{4}-\d{2}-\d{2}\.json)$/;
 
-/** The longest an answer is kept, at the edge or in the browser: a minute. */
+/** The longest an answer is kept at the edge: a minute. */
 export const LIVE_EDGE_TTL_SECONDS = 60;
+
+/**
+ * What the browser is told of a file: ask again before each use (with its ETag, so an unchanged
+ * file is a 304). The edge's copy carries no Age to the browser, so a browser that kept it for
+ * a while too could hold a file for longer than the edge's minute.
+ */
+export const BROWSER_CACHE_CONTROL = 'public, max-age=0, must-revalidate';
 
 /** How long the live host may take to answer before the read is a 502. */
 export const LIVE_UPSTREAM_TIMEOUT_MS = 5000;
@@ -59,13 +67,6 @@ const CONDITIONAL = ['if-none-match', 'if-modified-since'] as const;
 const PASSED = ['content-type', 'etag', 'last-modified'] as const;
 
 type Fetcher = (input: string, init: RequestInit & { cf?: unknown }) => Promise<Response>;
-
-/** How long a successful answer may be kept: the live host's own max-age, at most a minute. */
-export function keptFor(cacheControl: string | null): number {
-  const match = /(?:^|,)\s*max-age\s*=\s*"?(\d+)"?/i.exec(cacheControl ?? '');
-  const own = match?.[1] === undefined ? LIVE_EDGE_TTL_SECONDS : Number(match[1]);
-  return Math.max(0, Math.min(own, LIVE_EDGE_TTL_SECONDS));
-}
 
 function originHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get('origin');
@@ -142,7 +143,7 @@ export async function serveLive(request: Request, fetcher: Fetcher = fetch): Pro
     const value = upstream.headers.get(name);
     if (value !== null) headers[name] = value;
   }
-  headers['cache-control'] = `public, max-age=${String(keptFor(upstream.headers.get('cache-control')))}`;
+  headers['cache-control'] = BROWSER_CACHE_CONTROL;
   const empty = request.method === 'HEAD' || upstream.status === 304;
   if (empty) await upstream.body?.cancel();
   return new Response(empty ? null : upstream.body, {
