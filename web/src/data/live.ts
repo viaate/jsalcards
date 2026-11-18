@@ -92,6 +92,9 @@ import { wallClock, watchWake } from '../state/wake';
 import type { WakeHost } from '../state/wake';
 import { fetchJson } from './files';
 import { liveFetch } from './live-roots';
+
+/** How the page reads the live files (live-roots.ts), for the admin's own reads of them too. */
+export { liveFetch };
 import type { DataFiles, Fetch } from './files';
 
 /** The parts of `window` the poller uses, so tests can hand it a fake. */

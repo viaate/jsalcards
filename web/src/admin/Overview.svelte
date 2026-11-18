@@ -4,10 +4,10 @@
   import type { Services } from '../app/boot';
   import { accountFormat, adminCopy } from '../copy-account';
   import { fetchJson } from '../data/files';
-  import { liveFetch } from '../data/live-roots';
   import { parsePredictions } from '../data/school-day';
   import { LIVE_CLOSINGS_PATH } from '../pwa/config';
   import { PUBLISHED_PATHS } from '../types/generated';
+  import { adminLiveFetch } from './live-read';
   import type { AdminCall, Summary } from './call';
   import {
     readIssues,
@@ -39,7 +39,7 @@
     const read = async (path: string): Promise<unknown> => {
       if (!files.has(path)) return null;
       try {
-        return await fetchJson(files, path, { cache: 'no-cache' }, liveFetch);
+        return await fetchJson(files, path, { cache: 'no-cache' }, adminLiveFetch);
       } catch {
         return null;
       }

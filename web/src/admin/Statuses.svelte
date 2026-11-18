@@ -7,7 +7,6 @@
   import { parseClosings } from '../data/closings';
   import type { Directory } from '../data/directory';
   import { fetchJson } from '../data/files';
-  import { liveFetch } from '../data/live-roots';
   import { parsePredictions } from '../data/school-day';
   import { LIVE_CLOSINGS_PATH } from '../pwa/config';
   import { stateOfId } from '../text/school-names';
@@ -17,6 +16,7 @@
     type LocalDate,
     type PredictionsFile,
   } from '../types/generated';
+  import { adminLiveFetch } from './live-read';
   import type { AdminCall, ManualStatus } from './call';
   import {
     dayOptions,
@@ -114,7 +114,12 @@
       if (!files.has(PUBLISHED_PATHS.predictions)) return null;
       try {
         return parsePredictions(
-          await fetchJson(files, PUBLISHED_PATHS.predictions, { cache: 'no-cache' }, liveFetch),
+          await fetchJson(
+            files,
+            PUBLISHED_PATHS.predictions,
+            { cache: 'no-cache' },
+            adminLiveFetch,
+          ),
         );
       } catch {
         return null;
@@ -348,7 +353,7 @@
     }
     try {
       published = parseClosings(
-        await fetchJson(files, LIVE_CLOSINGS_PATH, { cache: 'no-cache' }, liveFetch),
+        await fetchJson(files, LIVE_CLOSINGS_PATH, { cache: 'no-cache' }, adminLiveFetch),
       );
     } catch {
       published = null;
