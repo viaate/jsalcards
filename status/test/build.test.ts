@@ -571,7 +571,7 @@ test('the headers and the routes are the ones the page needs', () => {
   );
   assert.deepEqual(JSON.parse(file('_routes.json')), {
     version: 1,
-    include: ['/api/*'],
+    include: ['/api/*', '/live/v1/*'],
     exclude: [],
   });
 });
