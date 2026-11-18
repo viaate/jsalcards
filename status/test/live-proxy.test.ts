@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, test } from 'node:test';
-import { onRequest } from '../page/functions/live/v1/[[path]].ts';
+import { onRequest } from '../page/functions/api/live/v1/[[path]].ts';
 import {
   LIVE_EDGE_TTL_SECONDS,
   LIVE_UPSTREAM,
@@ -13,7 +13,7 @@ import {
 import { root } from './harness.ts';
 
 const SITE = 'https://snowlightmap.com';
-const HERE = 'https://status.snowlightmap.com/live/v1/';
+const HERE = 'https://status.snowlightmap.com/api/live/v1/';
 /** SYNTHETIC: a made-up closings file. */
 const FILE = '{"schema_version":1,"generated_at":"2026-01-12T12:42:00Z","days":[]}';
 
@@ -122,7 +122,7 @@ test('any other path is a 404 that never reaches the live host', async () => {
   // Under another prefix too.
   const live = host(() => ok());
   const response = await serveLive(
-    new Request('https://status.snowlightmap.com/live/v2/live/closings.json'),
+    new Request('https://status.snowlightmap.com/api/live/v2/live/closings.json'),
     live.fetch,
   );
   assert.equal(response.status, 404);
@@ -245,40 +245,76 @@ test('a live host that fails, moves the file or does not answer is a 502 nothing
   assert.equal(LIVE_UPSTREAM_TIMEOUT_MS, 5000);
 });
 
-test('a file not published yet is passed on as a 404 that nothing keeps', async () => {
-  const live = host(
-    () =>
-      new Response('not found', {
-        status: 404,
-        headers: { 'cache-control': 'max-age=600' },
-      }),
-  );
-  const response = await serveLive(ask('predictions/latest.json'), live.fetch);
-  assert.equal(response.status, 404);
-  assert.equal(response.headers.get('cache-control'), 'no-store');
+test('an answer that is not the file is passed on as its status alone, with no body, that nothing keeps', async () => {
+  for (const status of [400, 403, 404, 410, 429]) {
+    const live = host(
+      () =>
+        new Response('<!DOCTYPE html><html><body>The live host page</body></html>', {
+          status,
+          headers: {
+            'content-type': 'text/html; charset=utf-8',
+            'cache-control': 'max-age=600',
+            etag: '"page"',
+          },
+        }),
+    );
+    const response = await serveLive(ask('live/days/2026-11-20.json'), live.fetch);
+    assert.equal(response.status, status);
+    assert.equal(response.headers.get('cache-control'), 'no-store', String(status));
+    assert.equal(response.headers.get('content-type'), null, String(status));
+    assert.equal(response.headers.get('etag'), null, String(status));
+    assert.equal(response.headers.get('access-control-allow-origin'), SITE);
+    assert.equal(await response.text(), '', String(status));
+  }
 });
 
-test('only the site lets a browser read the answers', async () => {
-  for (const [origin, allowed] of [
-    [SITE, SITE],
-    ['https://www.snowlightmap.com', 'https://www.snowlightmap.com'],
-    ['https://evil.example', null],
-    ['https://snowlightmap.com.evil.example', null],
-    ['http://snowlightmap.com', null],
-  ] as const) {
+test('only the site lets a browser read the answers, and another site is refused before the live host is asked', async () => {
+  for (const origin of [SITE, 'https://www.snowlightmap.com']) {
+    const live = host(() => ok());
     const response = await serveLive(
       new Request(`${HERE}live/closings.json`, { headers: { origin } }),
-      host(() => ok()).fetch,
+      live.fetch,
     );
-    assert.equal(response.headers.get('access-control-allow-origin'), allowed, origin);
+    assert.equal(response.status, 200, origin);
+    assert.equal(response.headers.get('access-control-allow-origin'), origin);
+    assert.equal(live.asked.length, 1, origin);
   }
-  const bare = await serveLive(new Request(`${HERE}live/closings.json`), host(() => ok()).fetch);
+  for (const origin of [
+    'https://evil.example',
+    'https://snowlightmap.com.evil.example',
+    'http://snowlightmap.com',
+    'null',
+  ]) {
+    const live = host(() => ok());
+    const response = await serveLive(
+      new Request(`${HERE}live/closings.json`, { headers: { origin } }),
+      live.fetch,
+    );
+    assert.equal(response.status, 403, origin);
+    assert.equal(response.headers.get('access-control-allow-origin'), null, origin);
+    assert.equal(response.headers.get('cache-control'), 'no-store', origin);
+    assert.equal(await response.text(), '', origin);
+    assert.equal(live.asked.length, 0, origin);
+  }
+  // A read with no origin (a curl, the address bar) is answered, and no browser page may read it.
+  const live = host(() => ok());
+  const bare = await serveLive(new Request(`${HERE}live/closings.json`), live.fetch);
+  assert.equal(bare.status, 200);
   assert.equal(bare.headers.get('access-control-allow-origin'), null);
 });
 
-test('the Function runs only for /api/* and /live/v1/*', () => {
+test('the Function is under /api/, the one route the page runs Functions for', async () => {
   const routes = JSON.parse(readFileSync(join(root, 'page/public/_routes.json'), 'utf8')) as {
     include: string[];
   };
-  assert.deepEqual(routes.include, ['/api/*', '/live/v1/*']);
+  assert.deepEqual(routes.include, ['/api/*']);
+  assert.equal(new URL(HERE).pathname.startsWith('/api/'), true);
+  // The old place, outside /api/, is never served.
+  const live = host(() => ok());
+  const response = await serveLive(
+    new Request('https://status.snowlightmap.com/live/v1/live/closings.json'),
+    live.fetch,
+  );
+  assert.equal(response.status, 404);
+  assert.equal(live.asked.length, 0);
 });

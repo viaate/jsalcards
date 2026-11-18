@@ -1,34 +1,37 @@
 /**
- * The live files, read through this site: GET or HEAD /live/v1/<path> answers
- * with the file the live host publishes at LIVE_UPSTREAM<path>, fetched here,
- * for a page on a network that blocks the live host by name (a school's web
- * filter that closes every connection to github.io) but lets snowlightmap.com
- * and its subdomains through. The map asks here only when the live host itself
- * does not answer (web/src/data/live-roots.ts), so a visitor on an open
- * network costs this nothing.
+ * The live files, read through this site: GET or HEAD /api/live/v1/<path>
+ * answers with the file the live host publishes at LIVE_UPSTREAM<path>,
+ * fetched here, for a page on a network that blocks the live host by name (a
+ * school's web filter that closes every connection to github.io) but lets
+ * snowlightmap.com and its subdomains through. The map asks here only when its
+ * read of the live host itself fails the way a filter makes it fail
+ * (web/src/data/live-roots.ts), so a visitor on an open network costs this
+ * nothing.
  *
  * It is read-only and serves only the files the map reads from the live root
- * (LIVE_PATHS); any other path is a 404 that never reaches the live host. It
- * passes on the live host's status, type, ETag and Last-Modified, and sends a
- * conditional request on as it came, so an unchanged file is a 304 with no
- * body. A copy is kept at the edge for at most LIVE_EDGE_TTL_SECONDS, and the
- * browser is told the same: the map must never be given an old file as the
- * current one. A live host that fails, moves the file, or does not answer
- * within LIVE_UPSTREAM_TIMEOUT_MS, is a 502 that nothing keeps; any other
- * answer that is not a file (a 404 for one not published yet) is passed on,
- * kept by nothing too. It reads nothing else
- * of the request, logs nothing and sets no cookie.
+ * (LIVE_PATHS); any other path is a 404 that never reaches the live host. A
+ * browser on any origin but the site's is refused (403) before the live host
+ * is asked. It passes on the live host's status, type, ETag and Last-Modified,
+ * and sends a conditional request on as it came, so an unchanged file is a 304
+ * with no body. A copy is kept at the edge for at most LIVE_EDGE_TTL_SECONDS,
+ * and the browser is told the same: the map must never be given an old file
+ * as the current one. A live host that fails, moves the file, or does not
+ * answer within LIVE_UPSTREAM_TIMEOUT_MS, is a 502 that nothing keeps; any
+ * other answer that is not a file (a 404 for one not published yet) is passed
+ * on as its status alone, with no body, kept by nothing too. It reads nothing
+ * else of the request, logs nothing and sets no cookie.
  *
- * The page is on Cloudflare's free plan: 100,000 Function requests a day,
- * nothing billed. Past that, requests fail until the day turns, and the map
- * keeps the copy it has, with its own time.
+ * Every request here, refused or not, counts against the Cloudflare account's
+ * Workers limit on the free plan: 100,000 a day, shared with the status page's
+ * own Function, the accounts API and the timer. Nothing is billed; what stops
+ * at the limit, and the projected count, are in docs/status.md (What it costs).
  */
 
 /** Where the live host publishes the files (.github/workflows/preview.yml VITE_SNOWLIGHT_LIVE_ROOT). */
 export const LIVE_UPSTREAM = 'https://viaate.github.io/snowlight-live/v1/';
 
 /** The prefix this site serves them under. */
-export const LIVE_PREFIX = '/live/v1/';
+export const LIVE_PREFIX = '/api/live/v1/';
 
 /**
  * The files the map reads from the live root (web/src/data/files.ts withLiveRoot): the
@@ -91,6 +94,9 @@ export async function serveLive(request: Request, fetcher: Fetcher = fetch): Pro
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     return refusal(request, 405, { allow: 'GET, HEAD' });
   }
+  const origin = request.headers.get('origin');
+  // Another site's page: it is not this site's to read.
+  if (origin !== null && !SITE_ORIGINS.has(origin)) return refusal(request, 403);
   const { pathname } = new URL(request.url);
   const path = pathname.startsWith(LIVE_PREFIX) ? pathname.slice(LIVE_PREFIX.length) : '';
   if (!LIVE_PATHS.test(path)) return refusal(request, 404);
@@ -122,6 +128,12 @@ export async function serveLive(request: Request, fetcher: Fetcher = fetch): Pro
     await upstream.body?.cancel();
     return refusal(request, 502);
   }
+  // Any other answer that is not the file (a 404 for one not published yet): its status alone.
+  // The live host's own page is never served from this origin.
+  if (upstream.status !== 200 && upstream.status !== 304) {
+    await upstream.body?.cancel();
+    return refusal(request, upstream.status);
+  }
   const headers: Record<string, string> = {
     ...originHeaders(request),
     'x-content-type-options': 'nosniff',
@@ -130,10 +142,7 @@ export async function serveLive(request: Request, fetcher: Fetcher = fetch): Pro
     const value = upstream.headers.get(name);
     if (value !== null) headers[name] = value;
   }
-  const good = upstream.status === 200 || upstream.status === 304;
-  headers['cache-control'] = good
-    ? `public, max-age=${String(keptFor(upstream.headers.get('cache-control')))}`
-    : 'no-store';
+  headers['cache-control'] = `public, max-age=${String(keptFor(upstream.headers.get('cache-control')))}`;
   const empty = request.method === 'HEAD' || upstream.status === 304;
   if (empty) await upstream.body?.cancel();
   return new Response(empty ? null : upstream.body, {
