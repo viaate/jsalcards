@@ -4471,6 +4471,78 @@ score's sha256, the golden files, the storm drill's whole lines and the alerts d
 unchanged). What a page shows of them comes with P2e; whether they may move Kentucky's numbers
 is a serving piece's own gate (SPEC r5).
 
+### New York's Schedule A-8 (records-ny, edition 1: shadow only, nothing served)
+
+**What it is.** New York's state education department sent, on request, the yearly exports of
+its Schedule A-8 state-aid form for claim years 2011-12 to 2026-27 (16 files). By the state's
+own directions a district fills in the form only when its schools fell short of the 180 days
+the state requires because of an extraordinary condition (bad weather is one), or when an
+emergency was declared. It lists those closing days and a reason for each. So its rows are the
+**emergency closing days the district reported to the state**. Whether a district that files
+lists every closing of that year, or only the days it claims, is not measured.
+
+**What it cannot say.** It never lists an open day, so its rows are closings only and never
+complete, and none is fit-usable. It cannot say who holds out: a district that never filed may
+have held out, or may have had spare days in its calendar. Read as a tendency it would mark
+every filer a closer, so it never enters the district's own fit (closings-only, residual
+sources never do), no New York arm is registered, and its yearly counts never feed `tau`. A
+page line may give, for a school year, the emergency closing days the district reported to the
+state; it never says "closes early".
+
+**The rows.** Each dated slot is a `PastDay` (call `closed`, class `unknown`) with the form's
+reason as its code: `WX` (the weather, the only weather day), `SOE` (a declared emergency,
+cause `any`: it names no cause), `ELEC`, `WATER`, `HEAT`, `BLDG`, `THREAT` and `CHEM` (named
+causes), and `NONE` (no reason given). Its scope is `whole` (the whole district), `share` (named
+buildings; the building's text is never kept) or `unknown`, read from the building cell as a
+class of generic words, never by a name. A whole-district head (the words before any ` - ` or
+`(` note) is a reviewed phrase (`WHOLE DISTRICT`, `DISTRICT`, `DISTRICT WIDE` in any spelling of
+the join, `ENTIRE DISTRICT`, `WHOLE SCHOOL DISTRICT`, `ALL`, `ALL SCHOOLS`, `ALL BUILDINGS`;
+`DISTRICT` misspelled by one letter reads as `DISTRICT`), a cell led by `WHOLE` or `ENTIRE` and
+`DISTRICT`, or a cell ending in a district-kind word (`CSD`, `UFSD`, `SD`, `CCSD`, `SCHOOL
+DISTRICT`) with no building word before it (`SCHOOL`, `ELEMENTARY`, `MIDDLE`, `HIGH`,
+`BUILDING`, `PS` and the like). It is `whole` when every word after it is a reason (a declared
+emergency, an election, the weather, a lost utility; the last word may be cut by the cell's
+width), and `unknown` when not: a note such as `EXCEPT`, `ONLY`, `BUT`, `NOT`, `PARTIAL` or a
+building may say a part. A blank cell, the form's own label words only (`SCHOOL/BUILDING`), or a
+reason written in the cell with no building before a note is `unknown`; any other text is
+`share`. A `share` of a district the pinned directory lists with at most one open school (the
+config's `one_school`, 102 LEAIDs) is `unknown`: its cell names the district's one school, never
+a part, and the directory is one year's, so it never says `whole` either. A date its row lists
+twice with another reason or building class refuses the file. Its day-after flag comes from the
+same file's written days only (New York sends no calendar). A `YearCount` is written only for a
+district, school year and code with a day: not filing is not zero closings. Each file holds the
+school year before its claim year. Held and counted, never written: a date outside that school
+year (the 21 early entries of the 2011-12 and 2012-13 files and one district's repeated date in
+the 2025-26 file, 24 entries), a weekend (5), a day that is not a school day by the default
+calendar (13 late-June days, after June 15), the one New York City entry (its code is never
+spread over the city's 33 LEAs), and a date its own row already lists (6).
+
+**Ids.** The form's six-digit code is the first six digits of the 12-digit BEDS code NCES
+writes as `NY-<BEDS>` in `ST_LEAID` (a district's ends `0000`; digits 7-8 `86` are charter
+schools), written once into the config as a code-to-LEAID table from the pinned CCD 2024-25
+school directory: 686 of the files' 701 codes map, 203 of the 204 with a date. Codes are never
+matched by name.
+
+**What it holds.** 524 dated rows over 194 districts (271 weather days; scope `whole` 439,
+`share` 55, `unknown` 30) and 299 yearly counts, over 32 keys (both keys of each file; the
+2012-13 and 2013-14 files write none, so their four keys are empty bytes, pinned to the SHA-256
+of empty bytes).
+
+**The route.** The files have no URL. The config pins each one's size and SHA-256 (`received`,
+the date they came, never a person or a request number) and the SHA-256 of every key it builds;
+the files and the built keys stay outside the repository. A received file is read only with
+`--files` (a local dry run), never fetched, so the workflow's past step says in one line that
+New York's keys are not written, and writes none of them, until a reviewed route into the store
+exists (no new secret: lead ruling RN1). `dated_public` is false for New York: a later published
+shard shows it only as yearly counts or plain lines, never as dated rows. Lines that may reach
+a public log hold counts, codes and file ids only, never a district code next to a date.
+
+**Gate.** None serves, and nothing reads them yet. The shadow's two arms read no New York row
+(M5o learns from archive and live rows; M5y reads only Kentucky's `W` rows), so every shadow
+line, every public file and the frozen day are the same with them as without
+(`test_new_york_past_rows_change_no_shadow_line`,
+`test_ny_past_rows_in_the_kept_record_change_no_served_or_published_byte`).
+
 ## The forecast history (S7-F, piece F1: data only)
 
 Nothing on the site changes with this piece, and `predict.yml` serves exactly as before. It

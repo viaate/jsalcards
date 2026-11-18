@@ -70,8 +70,37 @@ SHA-256 of each key's bytes is pinned (``written``): a build whose bytes differ 
 (a parser, model, map or exception drift) is refused and warned of, never written. A reviewed
 change bumps the edition and its pins; the record reads only each file's newest edition.
 
+**New York** (records-ny, edition 1) sent its Schedule A-8 state-aid forms of claim years
+2011-12 to 2026-27 on request: 16 received files with no URL, pinned by size and SHA-256 and
+read only from ``--files`` (never fetched, never stored: only their pins and the derived keys
+leave the records folder). By the state's directions a district fills in the form only when its
+schools fell short of the 180 days the state requires because of an extraordinary condition, or
+an emergency was declared, so a row is the emergency closing days the district reported to the
+state: never an open day, never known to be every closing of its year (that is not measured),
+and never a sign that a district that did not file held out. Each dated slot is a
+:class:`~snowlight.predict.record.PastDay` (call ``closed``, closings only, class ``unknown``,
+never fit-usable) with the form's reason as its code (``WX`` the weather and the only weather
+day, ``SOE`` a declared emergency of cause ``any``, six named causes, ``NONE`` a blank reason),
+scope ``whole``, ``share`` (a building, its text never kept) or ``unknown`` read from the
+building cell as a class of generic words (:func:`a8_scope`; a ``share`` of a district the
+pinned directory lists with at most one open school reads ``unknown``), and a day-after flag
+from the
+same file's written days only. Each district, school year and code with a day is a
+:class:`~snowlight.predict.record.YearCount`; a zero is never written (not filing is not zero
+closings). Held, counted in the file's line and never written: a date outside the file's school
+year (the claim year's year before), a weekend, a day that is not a school day by the default
+calendar (``calendar.is_school_day``; the late-June days, lead ruling RN6), a code the id rule
+does not map, and the same date twice in one row (one district-day; a repeat with another
+reason or building class refuses the file, said by file id). The id rule: the form's six-digit
+code is the first six digits of the 12-digit BEDS code NCES writes as ``NY-<BEDS>`` in
+``ST_LEAID`` (a district's ends ``0000``, its digits 7-8 are not ``86``), so a code maps only
+by the config's ``ids`` table. ``dated_public`` is false: a later published shard shows New
+York only as yearly counts or plain lines.
+
 Codes, ids, counts and dates only: no name, no URL and no file text leaves this module but in
-the said lines (district numbers, counts and the unmapped row's number).
+the said lines (district numbers, counts and the unmapped row's number; for New York, whose
+lines may reach a public log, counts, codes and file ids only, never a district code next to a
+date).
 """
 
 import argparse
@@ -80,14 +109,15 @@ import re
 import sys
 import zlib
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Final, Literal
+from typing import Final, Literal, Self
 
 import yaml  # type: ignore[import-untyped, unused-ignore]
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
+from snowlight.predict.calendar import is_school_day, previous_school_day
 from snowlight.predict.config import PIPELINE_ROOT
 from snowlight.predict.record import (
     PAST_COUNTS,
@@ -129,11 +159,16 @@ class StateFile(BaseModel):
 
     id: str = Field(pattern=r"^[a-z]{2}-[a-z0-9-]{1,40}$")
     """The file's id: the record's rows name it, never its URL."""
-    form: Literal["ky_summary", "ky_trend"]
-    url: str = Field(pattern=r"^https://")
-    page: str = Field(pattern=r"^https://")
-    """The agency page that links it."""
+    form: Literal["ky_summary", "ky_trend", "ny_a8"]
+    url: str | None = Field(default=None, pattern=r"^https://")
+    """Where it is fetched by plain GET; ``None`` for a received file."""
+    page: str | None = Field(default=None, pattern=r"^https://")
+    """The agency page that links it (only with a ``url``)."""
+    received: str | None = Field(default=None, pattern=r"^[a-z0-9-]{1,64}$")
+    """A file the agency sent, by a plain label (no person, no request number): it has no
+    URL, is read only from ``--files`` and is never fetched."""
     fetched: date
+    """The date it was fetched, or for a received file the date it was received."""
     bytes: int = Field(gt=0)
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     years: tuple[str, ...] = Field(min_length=1)
@@ -146,6 +181,15 @@ class StateFile(BaseModel):
     """The SHA-256 of each record key's bytes this edition writes (reviewed): a build whose
     bytes differ (a parser, model or map drift) is refused, never written."""
 
+    @model_validator(mode="after")
+    def _one_way(self) -> Self:
+        """Exactly one of ``url`` and ``received``; ``page`` only with ``url``."""
+        if (self.url is None) == (self.received is None):
+            raise ValueError(f"{self.id}: exactly one of url and received")
+        if self.page is not None and self.url is None:
+            raise ValueError(f"{self.id}: a page only with a url")
+        return self
+
 
 class StateCode(BaseModel):
     """The written map of one of the state's calendar codes to the record's."""
@@ -153,7 +197,10 @@ class StateCode(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     name: str
-    """The state's own name for the code."""
+    """A short plain label for the code (Kentucky's: the state's own name for it)."""
+    match: tuple[str, ...] = ()
+    """The form's exact pick-list phrases that read as this code (New York's reasons; form
+    words, public in the state's directions, never a district row)."""
     dated: bool
     """Its dated days become :class:`~snowlight.predict.record.PastDay` rows."""
     counted: bool
@@ -177,7 +224,8 @@ class NotWeather(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    number: str = Field(pattern=r"^\d{3}$")
+    number: str = Field(pattern=r"^\d{3,6}$")
+    """The state's district number (``id_digits`` digits)."""
     day: date
     code: str
     why: str
@@ -191,6 +239,12 @@ class StateRecords(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     state: str = Field(pattern=r"^[a-z]{2}$")
+    id_digits: int = Field(default=3, ge=3, le=6)
+    """The digits of the state's district number (Kentucky 3, New York 6)."""
+    dated_public: bool = False
+    """Its dated rows may be published as dated rows (Kentucky's files are public pages). A
+    state with ``False`` (New York's received forms) is published only as yearly counts or
+    plain lines, never as dated day rows; publishing them needs this set on purpose."""
     complete: str
     """What the files can and cannot say (spec section 5), in words."""
     files: tuple[StateFile, ...] = Field(min_length=1)
@@ -198,6 +252,10 @@ class StateRecords(BaseModel):
     ids: dict[str, str]
     """The state's district number to its LEAID (the written id rule)."""
     id_rule: str
+    one_school: tuple[str, ...] = ()
+    """Mapped LEAIDs the id rule's pinned directory lists with at most one open school, sorted:
+    a building cell of such a district names its one school (or none), so it never says part of
+    the district (see :func:`a8_scope`)."""
     unmapped: dict[str, str]
     """District numbers with no LEA, listed (with the state's name for them), never matched."""
     not_weather: tuple[NotWeather, ...] = ()
@@ -241,21 +299,38 @@ def _check_written(key: str, state: StateRecords) -> None:
 
 
 def load(path: Path = STATE_RECORDS_PATH) -> StateRecordsConfig:
-    """The config, checked: ids are 3-digit numbers to 7-digit LEAIDs, no number both mapped
-    and unmapped, no LEAID twice, every file of the parser version."""
+    """The config, checked: ids are numbers of the state's ``id_digits`` to 7-digit LEAIDs (and
+    so are the unmapped and written numbers), no number both mapped and unmapped, no LEAID
+    twice, no pick-list phrase of two codes, every file of the parser version."""
     found = StateRecordsConfig.model_validate(yaml.safe_load(path.read_text()))
     for key, state in found.states.items():
         if key != state.state:
             raise StateRecordError(f"{key}: names state {state.state}")
+        digits = rf"\d{{{state.id_digits}}}"
         if any(
-            not re.fullmatch(r"\d{3}", n) or not re.fullmatch(r"\d{7}", u)
+            not re.fullmatch(digits, n) or not re.fullmatch(r"\d{7}", u)
             for n, u in state.ids.items()
         ):
             raise StateRecordError(f"{key}: an id that is not a number to a LEAID")
+        if any(
+            not re.fullmatch(digits, n)
+            for n in (
+                *state.unmapped,
+                *(e.number for e in (*state.not_weather, *state.unconfirmed)),
+            )
+        ):
+            raise StateRecordError(f"{key}: a number that is not {state.id_digits} digits")
+        phrases = [p for code in state.codes.values() for p in code.match]
+        if len(set(phrases)) != len(phrases):
+            raise StateRecordError(f"{key}: a pick-list phrase of two codes")
         if set(state.ids) & set(state.unmapped):
             raise StateRecordError(f"{key}: a number both mapped and unmapped")
         if len(set(state.ids.values())) != len(state.ids):
             raise StateRecordError(f"{key}: a LEAID mapped twice")
+        if list(state.one_school) != sorted(set(state.one_school)) or not set(
+            state.one_school
+        ) <= set(state.ids.values()):
+            raise StateRecordError(f"{key}: a one-school LEAID not mapped, twice or unsorted")
         for item in state.files:
             if item.parser != PARSER_VERSION:
                 raise StateRecordError(f"{item.id}: pinned for parser {item.parser}")
@@ -952,18 +1027,585 @@ def _say_file(item: StateFile, days: Sequence[PastDay], counts: Sequence[YearCou
     )
 
 
+# --- New York's Schedule A-8 --------------------------------------------------------------------
+
+NY_TITLE: Final = re.compile(r"Claim Year (\d{4})-(\d{4})")
+NY_CODE: Final = "Beds Code"
+"""The second header row's label of the district code column."""
+NY_SEQ: Final = "SEQ:"
+NY_MARKER: Final = "XXXXXX"
+"""The one row allowed after the district rows."""
+NY_HEADER_ROWS: Final = 4
+"""The title, the Refkey row (with the code column's label), the column labels and the SEQ
+row; the sheet's empty fifth row is not a row of the reader."""
+_NY_NUMBER: Final = re.compile(r"\d{6}")
+_NY_SERIAL: Final = re.compile(r"\d{5}")
+_NY_SLOT: Final = re.compile(r"Sch A8:Extra Condition (?:Date(\d*)|(Reason|Building)-(\d+))")
+_NY_TOTAL: Final = re.compile(r".*(?:Total Days-\d+|TotalDays)")
+NY_DISTRICT: Final = "DISTRICT"
+NY_WHOLE: Final = frozenset(
+    {
+        ("DISTRICT",),
+        ("DISTRICTWIDE",),
+        ("DISTRICT", "WIDE"),
+        ("WHOLE", "DISTRICT"),
+        ("ENTIRE", "DISTRICT"),
+        ("WHOLE", "SCHOOL", "DISTRICT"),
+        ("ENTIRE", "SCHOOL", "DISTRICT"),
+        ("ALL",),
+        ("ALL", "SCHOOLS"),
+        ("ALL", "BUILDINGS"),
+    }
+)
+"""The reviewed building-cell phrases that say the whole district (generic words only, never a
+name), as words; a misspelled ``DISTRICT`` (one letter added, dropped, changed or swapped) reads
+as ``DISTRICT``."""
+NY_WHOLE_LEAD: Final = frozenset({"WHOLE", "ENTIRE"})
+"""A cell whose first words are ``WHOLE`` or ``ENTIRE`` and ``DISTRICT`` (or ``SCHOOL
+DISTRICT``) says the whole district when the words after them are a reason
+(:data:`NY_REASON_WORDS`)."""
+NY_DISTRICT_KIND: Final = frozenset({"CSD", "UFSD", "SD", "CCSD"})
+"""A district-kind word: a cell that ends in one (or in ``SCHOOL DISTRICT``) with no building
+word before it (:data:`NY_BUILDING_WORDS`) names the district itself, so the whole district."""
+NY_BUILDING_WORDS: Final = frozenset(
+    {
+        "SCHOOL",
+        "SCHOOLS",
+        "ELEMENTARY",
+        "INTERMEDIATE",
+        "PRIMARY",
+        "MIDDLE",
+        "HIGH",
+        "JR",
+        "SR",
+        "ACADEMY",
+        "BUILDING",
+        "BUILDINGS",
+        "CAMPUS",
+        "GRADE",
+        "GRADES",
+        "OFFICE",
+        "PS",
+    }
+)
+"""Words of a building or a part of the district: one before a district-kind word means the
+cell names a building of the district, not the district."""
+NY_REASON_WORDS: Final = frozenset(
+    {
+        *("STATE", "OF", "EMERGENCY", "DECLARED", "DECLARE", "DECLARATION"),
+        *("GOVERNOR", "GOVERNORS", "GOV", "COUNTY", "LOCAL", "CITY", "TOWN"),
+        *("SPECIAL", "ELECTION", "VOTE", "VOTING", "DAY"),
+        *("WEATHER", "ADVERSE", "CONDITIONS", "SNOW", "ICE", "STORM", "WIND", "FLOOD", "COLD"),
+        *("NO", "POWER", "OUTAGE", "LACK", "ELECTRICITY", "HEAT", "WATER"),
+        *("DUE", "TO", "THE", "A", "AND", "FOR"),
+    }
+)
+"""The generic words of a reason written after a whole-district phrase (a declared emergency,
+an election, the weather, a lost utility). A note of other words, a name or a number may say a
+part (``EXCEPT``, ``ONLY``, a building), so the cell reads ``unknown``."""
+NY_LIMIT_WORDS: Final = frozenset(
+    {"EXCEPT", "EXCLUDING", "WITHOUT", "ONLY", "BUT", "NOT", "PARTIAL", "PARTIALLY", "PART"}
+)
+"""Words that limit a whole-district phrase: a note holding one is never a reason."""
+NY_CUT: Final = 3
+"""The fewest letters of a reason word the cell's last word may be cut to (the form's cell
+width cuts a long note: ``EMER`` for ``EMERGENCY``)."""
+NY_PLACEHOLDER: Final = frozenset({"SCHOOL", "BUILDING", "NAME", "N/A", "NA", "NONE", "UNKNOWN"})
+"""The form's own label words: a cell of these words only names no part of the district."""
+NY_NOTE: Final = re.compile(r"\bSTATE OF EMERGENCY\b|\bDECLARED\b")
+"""A reason written in the building cell (with no building before a note): no part is said."""
+_NY_NOTE_SPLIT: Final = re.compile(r"\s+-\s+|\(")
+_NY_WORDS: Final = re.compile(r"[\s/]+")
+_NY_ALL_WORDS: Final = re.compile(r"[\s/()-]+")
+_NY_NOTE_WORDS: Final = re.compile(r"[A-Z]+|\d+")
+NY_BLANK: Final = "NONE"
+"""The code of a dated slot with a blank reason."""
+EXCEL_EPOCH: Final = date(1899, 12, 30)
+type NyHeld = Literal["outside", "weekend", "not_school_day", "unmapped", "repeat"]
+NY_HELD: Final[Mapping[NyHeld, str]] = {
+    "outside": "outside the school year",
+    "weekend": "on a weekend",
+    "not_school_day": "not a school day by the default calendar",
+    "unmapped": "of a code the id rule does not map",
+    "repeat": "the same date twice in a row",
+}
+"""Each edition-1 rule that holds a dated entry, in the order applied."""
+
+
+@dataclass(frozen=True, slots=True)
+class A8Entry:
+    """One dated slot of an A-8 row: its date, reason code and scope (no building text)."""
+
+    slot: int
+    day: date
+    code: str
+    scope: Scope
+
+
+@dataclass(frozen=True, slots=True)
+class A8Row:
+    """One district's row of a yearly A-8 export (its code, its dated slots, its largest day
+    total; no name, comment, status, URL or building text)."""
+
+    number: str
+    entries: tuple[A8Entry, ...]
+    total: float | None
+    """The largest of its day totals (a parse check, never a count); ``None``: all blank."""
+
+
+def _blank(cell: str | None) -> bool:
+    return cell is None or not cell.strip()
+
+
+def _a8_columns(labels: Sequence[str | None], where: str) -> dict[int, tuple[int, int, int]]:
+    """Each slot's (date, reason, building) columns, found by their row-3 label."""
+    found: dict[tuple[str, int], int] = {}
+    for index, cell in enumerate(labels):
+        label = (cell or "").split("|")[0].strip()
+        match = _NY_SLOT.fullmatch(label)
+        if match is None:
+            continue
+        kind, slot = (
+            ("date", int(match.group(1) or 1))
+            if match.group(2) is None
+            else (match.group(2).lower(), int(match.group(3)))
+        )
+        if (kind, slot) in found:
+            raise StateRecordError(f"{where}: a {kind} column twice")
+        found[kind, slot] = index
+    slots = {slot for kind, slot in found if kind == "date"}
+    if {s for _, s in found} != slots or any(
+        (k, s) not in found for s in slots for k in ("reason", "building")
+    ):
+        raise StateRecordError(f"{where}: a slot without its date, reason or building column")
+    return {s: (found["date", s], found["reason", s], found["building", s]) for s in slots}
+
+
+def _near_district(word: str) -> bool:
+    """``DISTRICT`` or one edit from it (a letter added, dropped, changed, or two swapped)."""
+    target = NY_DISTRICT
+    if word == target:
+        return True
+    if abs(len(word) - len(target)) > 1:
+        return False
+    if len(word) == len(target):
+        diff = [i for i, (a, b) in enumerate(zip(word, target, strict=True)) if a != b]
+        return len(diff) == 1 or (
+            len(diff) == 2  # noqa: PLR2004 - two letters swapped
+            and diff[1] == diff[0] + 1
+            and word[diff[0]] == target[diff[1]]
+            and word[diff[1]] == target[diff[0]]
+        )
+    short, long = sorted((word, target), key=len)
+    return any(long[:i] + long[i + 1 :] == short for i in range(len(long)))
+
+
+def _a8_reason(note: Sequence[str]) -> bool:
+    """The words after a whole-district phrase are none, or a reason only: each a reason word
+    (the last may be cut to :data:`NY_CUT` letters or more of one), none a limiting word."""
+    if not note:
+        return True
+    if any(w in NY_LIMIT_WORDS for w in note):
+        return False
+    *full, last = note
+    return all(w in NY_REASON_WORDS for w in full) and (
+        last in NY_REASON_WORDS
+        or (len(last) >= NY_CUT and any(r.startswith(last) for r in NY_REASON_WORDS))
+    )
+
+
+def _a8_whole_words(read: tuple[str, ...]) -> int | None:
+    """How many of the head's first words say the whole district, or ``None``: a reviewed
+    phrase (all of them), ``WHOLE``/``ENTIRE`` and ``DISTRICT`` or ``SCHOOL DISTRICT`` (two or
+    three), or a cell ending in a district-kind word or ``SCHOOL DISTRICT`` with no building
+    word before it (all of them: the district's own name)."""
+    if read in NY_WHOLE:
+        return len(read)
+    if read[0] in NY_WHOLE_LEAD:
+        if read[1:2] == (NY_DISTRICT,):
+            return 2
+        if read[1:3] == ("SCHOOL", NY_DISTRICT):
+            return 3  # WHOLE SCHOOL DISTRICT
+    kind = 1 if read[-1] in NY_DISTRICT_KIND else 2 if read[-2:] == ("SCHOOL", NY_DISTRICT) else 0
+    if kind and not set(read[:-kind]) & NY_BUILDING_WORDS:
+        return len(read)
+    return None
+
+
+def a8_scope(cell: str | None) -> Scope:
+    """The scope a building cell says, read as a class of generic words, never by a name (its
+    text is never kept). In order: a blank cell, or one of the form's own label words only
+    (:data:`NY_PLACEHOLDER`), is ``unknown``; a whole-district head (:func:`_a8_whole_words`,
+    the words before any `` - `` or ``(`` note) is ``whole`` when every word after it, in the
+    head and the note, is a reason (:func:`_a8_reason`), and ``unknown`` when not (a note may
+    say a part: ``EXCEPT``, ``ONLY``, a building); a reason written in the cell with no
+    building before a note (:data:`NY_NOTE`) is ``unknown``; any other text is ``share`` (a
+    building). The district's own schools are never seen here: :func:`build_ny` reads a
+    ``share`` of a one-school district (:attr:`StateRecords.one_school`) as ``unknown``."""
+    if cell is None or _blank(cell):
+        return Scope.UNKNOWN
+    text = " ".join(cell.upper().split())
+    head, *rest = _NY_NOTE_SPLIT.split(text, maxsplit=1)
+    head = head.strip()
+    if text.replace(" ", "") in NY_PLACEHOLDER or set(_NY_ALL_WORDS.split(text)) - {""} <= (
+        NY_PLACEHOLDER
+    ):
+        return Scope.UNKNOWN
+    words = tuple(w for w in _NY_WORDS.split(head) if w)
+    if not words:
+        return Scope.SHARE  # a note with nothing before it: some text, never the whole
+    plain = tuple(
+        part
+        for word in words
+        for part in (word.split("-") if word.replace("-", "").isalpha() else (word,))
+        if part
+    )
+    read = tuple(NY_DISTRICT if _near_district(w) else w for w in plain)
+    whole = _a8_whole_words(read)
+    if whole is not None:
+        note = (*read[whole:], *_NY_NOTE_WORDS.findall(" ".join(rest)))
+        return Scope.WHOLE if _a8_reason(note) else Scope.UNKNOWN
+    if NY_NOTE.search(head):
+        return Scope.UNKNOWN
+    return Scope.SHARE
+
+
+def _a8_total(row: Sequence[str | None], columns: Sequence[int]) -> float | None:
+    values: list[float] = []
+    for index in columns:
+        cell = row[index] if index < len(row) else None
+        if _blank(cell):
+            continue
+        try:
+            values.append(float((cell or "").strip()))
+        except ValueError:
+            continue  # a parse check only: never a refusal
+    return max(values) if values else None
+
+
+def read_a8(data: bytes, claim: str, codes: Mapping[str, StateCode]) -> list[A8Row]:
+    """A yearly A-8 export's district rows. Every column is read by its label, never by
+    position (the column set changes from year to year): the code by the second header row's
+    ``Beds Code``, each slot's date, reason and building by its row-3 label. Comments, status,
+    URL, grade flags and names are never read; a building's text only as a class. An empty or
+    space-only cell is blank; a dated slot with a blank reason reads as :data:`NY_BLANK`.
+
+    Raises:
+        StateRecordError: the workbook does not read; its title's claim year is not ``claim``;
+            a header row is not where it must be; a row after the header is neither a 6-digit
+            code nor the closing marker (nor empty); a code comes twice; a date cell is not a
+            5-digit serial; or a reason is on no code's ``match`` list.
+    """
+    where = f"ny claim {claim}"
+    try:
+        rows = list(iter_rows(data))
+    except (XlsxFormatError, KeyError, ValueError) as error:
+        raise StateRecordError(f"{where}: the workbook does not read") from error
+    code_at, columns, totals = _a8_header(rows, claim, where)
+    reasons = {phrase: code for code, mapped in codes.items() for phrase in mapped.match}
+    if NY_BLANK not in codes:
+        raise StateRecordError(f"{where}: no code {NY_BLANK} for a blank reason")
+    found: list[A8Row] = []
+    for at, row in enumerate(rows[NY_HEADER_ROWS:], start=NY_HEADER_ROWS + 1):
+        number = (_at(row, code_at) or "").strip()
+        if all(_blank(c) for c in row) or (number == NY_MARKER and at == len(rows)):
+            continue
+        if not _NY_NUMBER.fullmatch(number):
+            raise StateRecordError(f"{where}: a row that is not a district code")
+        entries = tuple(
+            entry
+            for slot, cells in sorted(columns.items())
+            if (entry := _a8_entry(row, slot, cells, reasons, where)) is not None
+        )
+        found.append(A8Row(number=number, entries=entries, total=_a8_total(row, totals)))
+    if len({r.number for r in found}) != len(found):
+        raise StateRecordError(f"{where}: a district code twice")
+    return found
+
+
+def _at(row: Sequence[str | None], index: int) -> str | None:
+    return row[index] if index < len(row) else None
+
+
+def _a8_header(
+    rows: Sequence[Sequence[str | None]], claim: str, where: str
+) -> tuple[int, dict[int, tuple[int, int, int]], list[int]]:
+    """The code column, each slot's columns and the day-total columns, after the header's
+    checks (the title's claim year, the code column's label, the SEQ row)."""
+    if len(rows) <= NY_HEADER_ROWS or not rows[0]:
+        raise StateRecordError(f"{where}: no header")
+    title = NY_TITLE.search(rows[0][0] or "")
+    if title is None or f"{title.group(1)}-{title.group(2)[2:]}" != claim:
+        raise StateRecordError(f"{where}: the title names another claim year")
+    if int(title.group(2)) != int(title.group(1)) + 1:
+        raise StateRecordError(f"{where}: the title's claim year does not read")
+    names = [(c or "").strip() for c in rows[1]]
+    if names.count(NY_CODE) != 1:
+        raise StateRecordError(f"{where}: no single code column")
+    if any(not _blank(c) and not (c or "").strip().startswith(NY_SEQ) for c in rows[3]):
+        raise StateRecordError(f"{where}: the fourth header row is not the SEQ row")
+    totals = [
+        i for i, c in enumerate(rows[2]) if _NY_TOTAL.fullmatch((c or "").split("|")[0].strip())
+    ]
+    return names.index(NY_CODE), _a8_columns(rows[2], where), totals
+
+
+def _a8_entry(
+    row: Sequence[str | None],
+    slot: int,
+    cells: tuple[int, int, int],
+    reasons: Mapping[str, str],
+    where: str,
+) -> A8Entry | None:
+    """A slot's dated entry; ``None`` when its date is blank (nothing else of it is read)."""
+    day_at, reason_at, building_at = cells
+    serial = _at(row, day_at)
+    if serial is None or _blank(serial):
+        return None
+    if not _NY_SERIAL.fullmatch(serial.strip()):
+        raise StateRecordError(f"{where} slot {slot}: a date that is not a serial")
+    reason = _at(row, reason_at)
+    code = NY_BLANK if reason is None or _blank(reason) else reasons.get(reason.strip())
+    if code is None:
+        raise StateRecordError(f"{where} slot {slot}: a reason on no list")
+    return A8Entry(
+        slot=slot,
+        day=EXCEL_EPOCH + timedelta(days=int(serial.strip())),
+        code=code,
+        scope=a8_scope(_at(row, building_at)),
+    )
+
+
+def _claim_of(year: str) -> str:
+    """The claim year whose form holds ``year``'s days (the year after: 2025-26 in 2026-27)."""
+    start = int(year[:4]) + 1
+    return f"{start}-{(start + 1) % 100:02d}"
+
+
+@dataclass(slots=True)
+class _NyFile:
+    """One file's written days and what was held (counts only)."""
+
+    days: list[PastDay] = field(default_factory=list)
+    counts: list[YearCount] = field(default_factory=list)
+    held: dict[NyHeld, int] = field(default_factory=lambda: dict.fromkeys(NY_HELD, 0))
+    totals: dict[str, int] = field(
+        default_factory=lambda: dict.fromkeys(("equal", "more", "fewer", "no date", "no total"), 0)
+    )
+
+
+def _ny_written(  # noqa: PLR0913, PLR0917 - one file's rows and where they are said
+    state: StateRecords,
+    year: str,
+    rows: Sequence[A8Row],
+    built: Built,
+    out: _NyFile,
+    where: str,
+) -> dict[str, dict[date, A8Entry]]:
+    """Each mapped district's written entries by day, after the edition-1 rules in order (a
+    repeat of a date is held only when its reason and building class are the kept slot's: a
+    repeat that differs would lose one silently, so it refuses the file, said by file id). A
+    ``share`` of a district :attr:`StateRecords.one_school` lists reads ``unknown`` first: its
+    cell names the district's one school, never a part, and the directory is one year's, so it
+    cannot say the district had one school in the row's year either."""
+    written: dict[str, dict[date, A8Entry]] = {}
+    one = frozenset(state.one_school)
+    for row in rows:
+        unit = _map(state, row.number, built)
+        for found in row.entries:
+            entry = (
+                replace(found, scope=Scope.UNKNOWN)
+                if unit in one and found.scope is Scope.SHARE
+                else found
+            )
+            rule: NyHeld | None = (
+                "outside"
+                if _year_of(entry.day) != year
+                else "weekend"
+                if entry.day.weekday() >= SATURDAY
+                else "not_school_day"
+                if not is_school_day(entry.day)
+                else "unmapped"
+                if unit is None
+                else "repeat"
+                if entry.day in written.get(unit, {})
+                else None
+            )
+            if rule == "repeat":
+                assert unit is not None  # noqa: S101 - "unmapped" comes first
+                kept = written[unit][entry.day]
+                if (kept.code, kept.scope) != (entry.code, entry.scope):
+                    raise StateRecordError(
+                        f"{where}: a date twice in a row with another reason or building"
+                    )
+            if rule is not None:
+                out.held[rule] += 1
+                continue
+            assert unit is not None  # noqa: S101 - "unmapped" above
+            written.setdefault(unit, {})[entry.day] = entry
+        dated = len({e.day for e in row.entries})
+        total = row.total or 0.0
+        if dated or total:
+            out.totals[
+                "no date"
+                if not dated
+                else "no total"
+                if not total
+                else "equal"
+                if total == dated
+                else "more"
+                if total > dated
+                else "fewer"
+            ] += 1
+    return written
+
+
+def _ny_file(state: StateRecords, item: StateFile, rows: Sequence[A8Row], built: Built) -> _NyFile:
+    """One file's written days and counts. A row the record's own models refuse is said by the
+    file id only: a model's message names the day and the district, so it never leaves here
+    (raised ``from None``, its message and chain dropped)."""
+    try:
+        return _ny_rows(state, item, rows, built)
+    except ValidationError:
+        raise StateRecordError(f"{item.id}: a row the record refuses") from None
+
+
+def _ny_rows(state: StateRecords, item: StateFile, rows: Sequence[A8Row], built: Built) -> _NyFile:
+    (year,) = item.years
+    out = _NyFile()
+    written = _ny_written(state, year, rows, built, out, item.id)
+    tally: dict[tuple[str, str], int] = {}
+    for unit, by_day in written.items():
+        for day, entry in by_day.items():
+            mapped = state.codes[entry.code]
+            prior = by_day.get(previous_school_day(day))
+            off = None if prior is None else state.codes[prior.code].day_off
+            if mapped.call is None or mapped.cause is None:
+                raise StateRecordError(
+                    f"{item.id}: code {entry.code} is dated with no call or cause"
+                )
+            out.days.append(
+                PastDay(
+                    version=PAST_VERSION,
+                    day=day,
+                    unit=unit,
+                    weather=None,
+                    klass="unknown",
+                    after=None if prior is None else True,
+                    after_weather=None if off is None or off == "unknown" else off == "weather",
+                    situation=None,
+                    call=mapped.call,
+                    source_kind=SourceKind.PAST_RECORDS,
+                    source_complete=False,
+                    closings_only=True,
+                    scope=entry.scope,
+                    cause=mapped.cause,
+                    weather_day=mapped.weather_day,
+                    fit_usable=False,
+                    reasons=(),
+                    tropical=None,
+                    sources=(item.id,),
+                    code=entry.code,
+                )
+            )
+            tally[unit, entry.code] = tally.get((unit, entry.code), 0) + 1
+    out.days.sort(key=lambda d: (d.day, d.unit))
+    out.counts = [
+        YearCount(
+            version=PAST_VERSION,
+            unit=unit,
+            year=year,
+            code=code,
+            days=days,
+            not_weather=0,
+            unconfirmed=0,
+            source_kind=SourceKind.PAST_RECORDS,
+            sources=(item.id,),
+            covid=year in COVID_YEARS,
+            disaster=None,
+        )
+        for (unit, code), days in sorted(tally.items())
+    ]
+    return out
+
+
+def build_ny(state: StateRecords, files: Mapping[str, bytes]) -> Built:
+    """New York's rows from its pinned A-8 files' bytes (by file id; see the module). Every
+    file writes both of its keys, empty bytes when no row is written. Its lines hold counts,
+    codes and file ids only (a public log): the held entries by rule, the totals check, and the
+    codes mapped; ``dropped`` stays empty (a day that is not a school day is held and counted).
+
+    Raises:
+        StateRecordError: a file is missing, is not a yearly A-8 file of its pinned claim year,
+            does not read, or holds a code in neither ``ids`` nor ``unmapped``.
+    """
+    built = Built()
+    codes: set[str] = set()
+    filers: set[str] = set()
+    held: dict[NyHeld, int] = dict.fromkeys(NY_HELD, 0)
+    empty = 0
+    for item in state.files:
+        if item.id not in files:
+            raise StateRecordError(f"{item.id}: not read")
+        if item.form != "ny_a8" or len(item.years) != 1:
+            raise StateRecordError(f"{item.id}: not a yearly A-8 file")
+        claim = _claim_of(item.years[0])
+        if item.id != f"ny-a8-{claim}":
+            raise StateRecordError(f"{item.id}: not the id of claim year {claim}")
+        rows = read_a8(files[item.id], claim, state.codes)
+        codes.update(r.number for r in rows)
+        filers.update(r.number for r in rows if r.entries)
+        out = _ny_file(state, item, rows, built)
+        for kind, rows_of in ((PAST_DAYS, out.days), (PAST_COUNTS, out.counts)):
+            data = lines_bytes(rows_of, item.id)
+            built.keys[past_key(item.id, item.edition, kind)] = data
+            empty += not data
+        built.days.extend(out.days)
+        built.counts.extend(out.counts)
+        for rule, n in out.held.items():
+            held[rule] += n
+        built.lines.append(
+            _say_file(item, out.days, out.counts)
+            + "; held "
+            + ", ".join(f"{n} {NY_HELD[rule]}" for rule, n in out.held.items())
+            + "; totals (a parse check, never a count): the largest equals the dated days in"
+            f" {out.totals['equal']} district-years, is more in {out.totals['more']}, fewer in"
+            f" {out.totals['fewer']}, a total and no date in {out.totals['no date']}, dates and"
+            f" no total in {out.totals['no total']}"
+        )
+    built.lines.append(
+        f"predict each-school past: {state.state}: {len(built.days)} dated rows over"
+        f" {len({d.unit for d in built.days})} districts"
+        f" ({sum(d.weather_day for d in built.days)} weather days), {len(built.counts)} yearly"
+        " counts; held "
+        + ", ".join(f"{n} {NY_HELD[rule]}" for rule, n in held.items())
+        + f"; {len(codes & set(state.ids))} of {len(codes)} codes mapped,"
+        f" {len(filers & set(state.ids))} of {len(filers)} with a date; {len(built.keys)} keys,"
+        f" {empty} empty"
+    )
+    if built.unmapped:
+        built.lines.append(
+            f"predict each-school past: {state.state}: district codes with no LEA, listed and"
+            f" not matched: {', '.join(sorted(built.unmapped))}"
+        )
+    return built
+
+
 type Kind = Literal["days", "counts"]
 KINDS: Final[Mapping[str, tuple[Kind, ...]]] = {
     "ky_summary": (PAST_DAYS, PAST_COUNTS),
     "ky_trend": (PAST_COUNTS,),
+    "ny_a8": (PAST_DAYS, PAST_COUNTS),
 }
 """The record keys each file form writes."""
 
 
 BUILDERS: Final[Mapping[str, Callable[[StateRecords, Mapping[str, bytes]], Built]]] = {
     "ky": build_ky,
+    "ny": build_ny,
 }
-"""Each state's builder (R1 Kentucky; the record plan's order adds the next)."""
+"""Each state's builder (R1 Kentucky, then New York's A-8; the record plan's order adds the
+next)."""
 
 
 def checked(item: StateFile, data: bytes) -> bytes:
@@ -1010,14 +1652,21 @@ def _say(line: str) -> None:
 def read_files(
     state: StateRecords, folder: Path | None, fetch: Callable[[str], bytes]
 ) -> dict[str, bytes]:
-    """Each pinned file's checked bytes, from ``folder`` (``<file id>``) or its URL.
+    """Each pinned file's checked bytes, from ``folder`` (``<file id>``) or its URL (a received
+    file has none: it is read only from ``folder``, never fetched).
 
     Raises:
-        StateRecordError: a file is not the pinned one, or did not read.
+        StateRecordError: a file is not the pinned one, did not read, or is a received file
+            with no ``folder``.
     """
     found: dict[str, bytes] = {}
     for item in state.files:
-        data = (folder / item.id).read_bytes() if folder is not None else fetch(item.url)
+        if folder is not None:
+            data = (folder / item.id).read_bytes()
+        elif item.url is None:
+            raise StateRecordError(f"{item.id}: a received file is read only from --files")
+        else:
+            data = fetch(item.url)
         found[item.id] = checked(item, data)
     return found
 
@@ -1066,8 +1715,10 @@ def past_keys(
     say: Callable[[str], None],
 ) -> dict[str, bytes]:
     """Each state's record keys the store does not hold, with their bytes: a state with any
-    key missing is read, checked and built whole; one that fails a check gives none and is
-    warned of (its keys already kept stay as they are)."""
+    key missing is read, checked and built whole; one that fails a check, or whose builder
+    leaves a wanted key unbuilt, gives none and is warned of (its keys already kept stay as
+    they are), and the next state runs. A state with a received file is built only from
+    ``folder`` (``--files``): with none it says so in one plain line and gives nothing."""
     held = frozenset(held)
     found: dict[str, bytes] = {}
     for state in states:
@@ -1075,9 +1726,18 @@ def past_keys(
         if not keys:
             say(f"predict each-school past: {state.state}: every key is kept already")
             continue
+        received = sum(item.received is not None for item in state.files)
+        if folder is None and received:
+            say(
+                f"predict each-school past: {state.state}: {received} of its files were"
+                f" received, never fetched: they are built only with --files, so"
+                f" {len(keys)} keys are not written"
+            )
+            continue
         try:
             built = BUILDERS[state.state](state, read_files(state, folder, fetch))
-        except (StateRecordError, RecordError, OSError) as error:
+        except (StateRecordError, RecordError, OSError, ValidationError) as error:
+            # a model's own message names a day and a district: only its type is said
             said = error if isinstance(error, StateRecordError) else type(error).__name__
             say(f"::warning::predict each-school past: {state.state}: {said}: nothing written")
             continue
@@ -1089,6 +1749,13 @@ def past_keys(
                 f" not school days on the district's own calendar, not written: "
                 + ", ".join(f"{n} {d.isoformat()}" for n, d in built.dropped)
             )
+        unbuilt = [key for key in keys if key not in built.keys]
+        if unbuilt:
+            say(
+                f"::warning::predict each-school past: {state.state}: built no key"
+                f" {', '.join(unbuilt)}: nothing written"
+            )
+            continue
         drift = unpinned(state, built)
         if drift:
             say(

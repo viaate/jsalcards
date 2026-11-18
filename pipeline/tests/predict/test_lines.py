@@ -2413,3 +2413,165 @@ def test_a_kept_fit_of_the_wrong_shape_leaves_every_pass_and_the_district_day(
     assert not any("nothing frozen this pass" in line for line in out)
     assert len(said) == 1
     assert said[0].startswith("predict lines: the nightly fit: ")
+
+
+# --- New York's A-8 rows in the record (records-ny, edition 1) -----------------------------------
+
+NY = [f"36{n:05d}" for n in range(30)]
+
+
+def _ny_keys() -> dict[str, bytes]:
+    """New York past rows as the records-ny build writes them (synthetic): its LEAIDs, the
+    form's codes (weather WX, a declared emergency SOE), dated days and yearly counts inside
+    R-KYY's window, so only the state and the code keep them out."""
+    days = [
+        record.PastDay(
+            version=1, day=date(2024, 12, 2) + timedelta(days=k % 5), unit=u, weather=None,
+            klass="unknown", after=None, after_weather=None, situation=None, call=Call.CLOSED,
+            source_kind=SourceKind.PAST_RECORDS, source_complete=False, closings_only=True,
+            scope=Scope.WHOLE if k % 3 else Scope.SHARE,
+            cause=Cause.WEATHER if k % 2 else Cause.ANY, weather_day=bool(k % 2),
+            fit_usable=False, reasons=(), tropical=None, sources=("ny-a8-2025-26",),
+            code="WX" if k % 2 else "SOE",
+        )
+        for k, u in enumerate(NY)
+    ]  # fmt: skip
+    counts = [
+        record.YearCount(
+            version=1, unit=u, year=year, code=code, days=1 + k % 4, not_weather=0,
+            unconfirmed=0, source_kind=SourceKind.PAST_RECORDS, sources=("ny-a8-2025-26",),
+            covid=False, disaster=None,
+        )
+        for k, u in enumerate(NY)
+        for year in ("2021-22", "2022-23", "2023-24", "2024-25")
+        for code in ("WX", "SOE")
+    ]  # fmt: skip
+    return {
+        "past/ny-a8-2025-26/v1/days": record.lines_bytes(days, "t"),
+        "past/ny-a8-2025-26/v1/counts": record.lines_bytes(counts, "t"),
+        "past/ny-a8-2013-14/v1/days": b"",  # a file with no written row: an empty key
+        "past/ny-a8-2013-14/v1/counts": b"",
+    }
+
+
+def test_new_york_past_rows_change_no_shadow_line(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """records-ny test 18: New York's rows planted in the record move no part of either
+    shadow arm: R-KYY reads the same, and M5o's and M5y's fits, every line and the kept fit
+    are the same byte for byte (no A-8 row reaches either arm)."""
+    now = datetime(2026, 11, 16, 20, tzinfo=UTC)
+    exposure = dict.fromkeys([*KY, *NY], 10.0)
+    plain_kept, ny_kept = _kept(), {**_kept(), **_ny_keys()}
+    assert lines.read_kyy(ny_kept, SERVED) == lines.read_kyy(plain_kept, SERVED)
+    tendency = lines.fit_tendency(dict(lines.read_kyy(plain_kept, SERVED).counts), exposure)
+    monkeypatch.setattr(lines, "_rows_k", lines_rows_k(_rows_k(tendency)))
+    ledger = live_world(0.3, units=60, groups=200)
+
+    def fitted(name: str, kept: Mapping[str, bytes]) -> Shadow:
+        saved = _shadow(tmp_path / name, ledger=list(ledger), loaded=True)
+        saved.save()
+        shadow = _shadow(tmp_path / name, kyy_store=_store_of(lambda: kept), exposure=exposure)
+        shadow.load()
+        assert shadow.refresh(now, an_anchor())
+        return shadow
+
+    plain, planted = fitted("plain", plain_kept), fitted("planted", ny_kept)
+    assert plain.own is not None
+    assert plain.ky is not None
+    assert plain.ky.units  # M5y moves Kentucky's units, so a New York row would show
+    assert _untimed(planted.own) == _untimed(plain.own)
+    assert _untimed(planted.ky) == _untimed(plain.ky)
+    assert not any(u in plain.ky.units for u in NY)
+    rows = [_row(u, 0.3) for u in (*KY[:5], *NY[:5])]
+    assert json.dumps(planted.lines(rows)) == json.dumps(plain.lines(rows))
+    assert _untimed(json.loads((tmp_path / "planted" / "es" / lines.FIT_NAME).read_bytes())) == (
+        _untimed(json.loads((tmp_path / "plain" / "es" / lines.FIT_NAME).read_bytes()))
+    )
+
+
+def _w_keys(units: Sequence[str]) -> dict[str, bytes]:
+    """Past rows of Kentucky's own weather code ``W`` (weather days, inside R-KYY's window) for
+    ``units``, in a New York file's keys: only the unit's state can keep them out."""
+    days = [
+        record.PastDay(
+            version=1, day=date(2024, 12, 2) + timedelta(days=k % 5), unit=u, weather=None,
+            klass="unknown", after=None, after_weather=None, situation=None, call=Call.CLOSED,
+            source_kind=SourceKind.PAST_RECORDS, source_complete=False, closings_only=True,
+            scope=Scope.WHOLE, cause=Cause.WEATHER, weather_day=True, fit_usable=False,
+            reasons=(), tropical=None, sources=("ny-a8-2025-26",), code="W",
+        )
+        for k, u in enumerate(units)
+    ]  # fmt: skip
+    counts = [
+        record.YearCount(
+            version=1, unit=u, year=year, code="W", days=1 + k % 4, not_weather=0,
+            unconfirmed=0, source_kind=SourceKind.PAST_RECORDS, sources=("ny-a8-2025-26",),
+            covid=False, disaster=None,
+        )
+        for k, u in enumerate(units)
+        for year in ("2021-22", "2022-23", "2023-24", "2024-25")
+    ]  # fmt: skip
+    return {
+        "past/ny-a8-2025-26/v1/days": record.lines_bytes(days, "t"),
+        "past/ny-a8-2025-26/v1/counts": record.lines_bytes(counts, "t"),
+    }
+
+
+def test_new_york_rows_of_code_w_are_kept_out_of_r_kyy_by_their_state_alone() -> None:
+    """records-ny fix r1 (S5): a New York row of Kentucky's own code ``W`` that is a weather
+    day leaves R-KYY the same, while the same rows under Kentucky units would move it, so the
+    state filter alone keeps New York out (test 18's rows differ in both state and code)."""
+    plain = _kept()
+    assert lines.read_kyy({**plain, **_w_keys(NY)}, SERVED) == lines.read_kyy(plain, SERVED)
+    control = lines.read_kyy({**plain, **_w_keys([f"21{n:05d}" for n in range(90, 95)])}, SERVED)
+    base = lines.read_kyy(plain, SERVED)
+    assert control.counts != base.counts
+    assert control.dated != base.dated
+
+
+def _untimed(value: Any) -> Any:
+    """``value`` with each fit's wall time (``seconds``) left out: the one field that is not a
+    function of the rows."""
+    if isinstance(value, dict):
+        return {k: _untimed(v) for k, v in value.items() if k != "seconds"}
+    if isinstance(value, list):
+        return [_untimed(v) for v in value]
+    if hasattr(value, "seconds") and hasattr(value, "__dataclass_fields__"):
+        return replace(value, seconds=0.0)
+    return value
+
+
+def _with_ny_record(folder: Path | None, clock: Clock, host: MemoryHost) -> cli.Pass:
+    """The shadow arms with the nightly fit due, reading a record that holds New York's
+    rows beside Kentucky's."""
+    run = _with_due_shadow(folder, clock, host)
+    if isinstance(run.es, Shadow):
+        run.es = replace(run.es, kyy_store=_store_of(lambda: {**_kept(), **_ny_keys()}))
+    return run
+
+
+def test_ny_past_rows_in_the_kept_record_change_no_served_or_published_byte(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """records-ny test 21: New York's rows in a kept record are kept (``kept_rows`` and
+    ``kept_counts`` hold them), and every public file of every pass and the frozen district
+    day are the same byte for byte with the shadow's nightly fit reading them as with the
+    shadow off."""
+    from predict.test_frozen import _passes  # noqa: PLC0415
+
+    kept = {**_kept(), **_ny_keys()}
+    learn = PredictConfig.load(PIPELINE_ROOT / "config" / "predict.yaml").learn
+    assert {r.unit for r in record.kept_rows(kept, learn)} >= set(NY)
+    assert {c.unit for c in record.kept_counts(kept)} >= set(NY)
+    monkeypatch.setattr(lines, "_rows_k", lines_rows_k([]))
+    on = _passes(_with_ny_record, tmp_path / "on")
+    off = _passes(adjusting_pass, tmp_path / "off")
+    assert on == off
+    key = fa_test.DAY.isoformat()
+    assert (
+        frozen.day_path(tmp_path / "on", key).read_bytes()
+        == frozen.day_path(tmp_path / "off", key).read_bytes()
+    )
+    fit = json.loads((tmp_path / "on" / "es" / lines.FIT_NAME).read_bytes())
+    assert "m5y" in fit  # the nightly fit ran and read the record

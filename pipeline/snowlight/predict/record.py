@@ -203,7 +203,8 @@ class Scope(StrEnum):
     WHOLE = "whole"
     """The label rule's shares give the call for the district."""
     SHARE = "share"
-    """Fewer of its eligible schools than that (``lit`` of ``eligible``)."""
+    """Fewer of its eligible schools than that (``lit`` of ``eligible``). For a past record
+    row (:class:`PastDay`): part of the district (named buildings), counts not known."""
     UNKNOWN = "unknown"
 
 
@@ -405,7 +406,11 @@ class PastDay(BaseModel):
     """The state file it was read from (its id in ``config/state-records.yaml``, never a URL
     or an agency's name)."""
     code: str = Field(min_length=1, max_length=16)
-    """The state's calendar code for the day (``W``)."""
+    """The state's calendar code for the day (Kentucky's ``W``), or New York's A-8 reason
+    code: ``WX`` the weather (its only weather day), ``SOE`` a declared emergency (cause
+    ``any``), ``ELEC``, ``WATER``, ``HEAT``, ``BLDG``, ``THREAT`` or ``CHEM`` (named causes),
+    ``NONE`` no reason given. A New York day is an emergency closing day the district reported
+    to the state."""
 
     @model_validator(mode="after")
     def _honest(self) -> Self:
@@ -473,7 +478,11 @@ class YearCount(BaseModel):
     """The school year, ``2024-25``."""
     code: str = Field(min_length=1, max_length=16)
     """The state's calendar code counted (Kentucky: ``W`` weather days, ``N`` at-home NTI
-    days, ``I`` days closed for illness, ``D`` district-wide emergency days)."""
+    days, ``I`` days closed for illness, ``D`` district-wide emergency days; New York: its A-8
+    reason codes, see :attr:`PastDay.code`). A New York count is the emergency closing days the
+    district reported to the state that school year (whether a filer lists every closing of
+    the year is not measured), written only for a year with a day: not filing is not zero
+    closings."""
     days: int = Field(ge=0)
     """The state's own count."""
     not_weather: int | None = Field(ge=0)

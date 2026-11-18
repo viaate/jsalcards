@@ -9,13 +9,14 @@ import zlib
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 from xml.sax.saxutils import escape
 
 import pytest
 import yaml  # type: ignore[import-untyped, unused-ignore]
 
 from snowlight.predict import record, state_records
+from snowlight.predict.config import PIPELINE_ROOT
 from snowlight.predict.record import (
     Call,
     Cause,
@@ -604,7 +605,7 @@ def test_the_committed_config_pins_kentuckys_three_files_and_maps_171_of_172() -
         "69e00e92b95d66d8ef2920c39e3d7d1c016536806aedc4e17c1975a3d5c7dbae",
         "ea219f5b8574f28386ab7284b9d9f9b843a4ecb4b0bd1b46b207ce01e0207a14",
     }
-    assert all(f.url.startswith("https://www.education.ky.gov/") for f in ky.files)
+    assert all((f.url or "").startswith("https://www.education.ky.gov/") for f in ky.files)
     assert len(ky.ids) == 171
     assert set(ky.unmapped) == {"606"}
     assert all(u.startswith("21") for u in ky.ids.values())
@@ -864,3 +865,767 @@ def test_a_new_edition_writes_new_keys_beside_the_kept_ones() -> None:
     ]  # fmt: skip
     keys = past_keys([two], held, None, lambda u: served[u], lambda _: None)
     assert sorted(keys) == wanted(two, held)
+
+
+# --- New York's Schedule A-8 (records-ny, edition 1; synthetic workbooks only) ------------------
+
+NY_CODES: dict[str, Any] = yaml.safe_load(
+    (state_records.STATE_RECORDS_PATH).read_text(encoding="utf-8")
+)["states"]["ny"]["codes"]
+PHRASES: dict[str, str] = {m: code for code, v in NY_CODES.items() for m in v["match"]}
+"""The form's pick-list phrases, read from the config (they are written nowhere else)."""
+WX, SOE, ELEC = (NY_CODES[code]["match"][0] for code in ("WX", "SOE", "ELEC"))
+NY_IDS = {"010100": "3600001", "020200": "3600002", "030300": "3600003", "040400": "3600004"}
+NYC = "300000"
+EMPTY_SHA256 = hashlib.sha256(b"").hexdigest()
+SLOTS = 3
+
+
+def _a8_columns(slots: int) -> list[tuple[str, str]]:
+    """Each column's key and its row-3 label, in the export's own order (the code and name
+    columns are labeled in the second header row instead)."""
+    cols = [
+        ("code", ""),
+        ("name", ""),
+        ("comment", "SED Use Form - sch A5 item 4b disapproved comment"),
+        ("status", "SED Use Only Form: Extraordinary Condition status"),
+    ]
+    for k in range(1, slots + 1):
+        cols += [
+            (f"date{k}", f"Sch A8:Extra Condition Date{'' if k == 1 else k}"),
+            (f"reason{k}", f"Sch A8:Extra Condition Reason-{k}"),
+            (f"building{k}", f"Sch A8:Extra Condition Building-{k}"),
+            (f"grade{k}", f"Sch A8:Extra Condition k-3-{k}"),
+        ]
+    return [*cols, ("total", "Sch A8:Extra Condition Total Days-1"), ("url", "Sch A8:URL")]
+
+
+def a8_book(
+    claim: str,
+    rows: Sequence[Mapping[str, str]],
+    *,
+    order: Sequence[int] | None = None,
+    title: str | None = None,
+) -> bytes:
+    """A synthetic yearly A-8 export: the title, the Refkey row (with the code and name
+    columns' labels), the row-3 labels, the SEQ row, one row per district, the marker."""
+    cols = _a8_columns(SLOTS)
+    if order is not None:
+        cols = [cols[i] for i in order]
+    start, end = claim.split("-")
+    head = title or f"Extract of data from Claim Year {start}-20{end} Data as of: synthetic"
+    refkey = [
+        {"code": "Beds Code", "name": "Institution Name"}.get(key, f"Refkey: {9000 + i}")
+        for i, (key, _) in enumerate(cols)
+    ]
+    labels = [f"{label} | Field size 10 | CY:{claim}" if label else "" for _, label in cols]
+    seq = ["" if key in {"code", "name"} else f"SEQ: {i}" for i, (key, _) in enumerate(cols)]
+    body = [[row.get(key, "") for key, _ in cols] for row in rows]
+    marker = ["XXXXXX" if key == "code" else "" for key, _ in cols]
+    return workbook([[head], refkey, labels, seq, *body, marker])
+
+
+def serial(day: date) -> str:
+    return str((day - date(1899, 12, 30)).days)
+
+
+def a8_row(code: str, *slots: tuple[date | str, str, str], **cells: str) -> dict[str, str]:
+    """One district's row: each slot's (date or raw cell, reason, building)."""
+    row = {"code": code, "name": f"Synthetic {code}", **cells}
+    for k, (day, reason, building) in enumerate(slots, start=1):
+        row |= {
+            f"date{k}": serial(day) if isinstance(day, date) else day,
+            f"reason{k}": reason,
+            f"building{k}": building,
+            f"grade{k}": "1",
+        }
+    return row
+
+
+def _school_year(claim: str) -> str:
+    start = int(claim[:4]) - 1
+    return f"{start}-{(start + 1) % 100:02d}"
+
+
+def ny_state(books: Mapping[str, bytes], **extra: Any) -> StateRecords:
+    """A New York state of received files (claim year to bytes), with synthetic ids."""
+    return StateRecords.model_validate(
+        {
+            "state": "ny",
+            "id_digits": 6,
+            "complete": "synthetic",
+            "files": [
+                StateFile(
+                    id=f"ny-a8-{claim}",
+                    form="ny_a8",
+                    received="synthetic-request",
+                    fetched=date(2026, 11, 18),
+                    bytes=len(data),
+                    sha256=hashlib.sha256(data).hexdigest(),
+                    years=(_school_year(claim),),
+                    parser=state_records.PARSER_VERSION,
+                    edition=1,
+                ).model_dump()
+                for claim, data in books.items()
+            ],
+            "codes": NY_CODES,
+            "ids": extra.get("ids", NY_IDS),
+            "id_rule": "synthetic",
+            "one_school": extra.get("one_school", ()),
+            "unmapped": extra.get("unmapped", {NYC: "New York City: never spread"}),
+        }
+    )
+
+
+def ny_built(*rows: Mapping[str, str], claim: str = "2026-27", **extra: Any) -> state_records.Built:
+    book = a8_book(claim, rows)
+    return state_records.build_ny(ny_state({claim: book}, **extra), {f"ny-a8-{claim}": book})
+
+
+def ny_pinned(ny: StateRecords, files: Mapping[str, bytes]) -> StateRecords:
+    keys = state_records.build_ny(ny, files).keys
+    return ny.model_copy(
+        update={
+            "files": tuple(
+                item.model_copy(
+                    update={
+                        "written": {
+                            kind: hashlib.sha256(
+                                keys[record.past_key(item.id, item.edition, kind)]
+                            ).hexdigest()
+                            for kind in state_records.KINDS[item.form]
+                        }
+                    }
+                )
+                for item in ny.files
+            )
+        }
+    )
+
+
+MON, TUE, WED, FRI = date(2025, 12, 8), date(2025, 12, 9), date(2025, 12, 10), date(2025, 12, 12)
+"""School days of school year 2025-26 (claim year 2026-27)."""
+
+
+def test_a8_is_read_by_label_never_by_position() -> None:
+    rows = [
+        a8_row("010100", (MON, WX, "WHOLE DISTRICT"), (TUE, SOE, "Synthetic Building")),
+        a8_row("020200", (WED, ELEC, "")),
+        a8_row("030300"),
+    ]
+    codes = {k: state_records.StateCode.model_validate(v) for k, v in NY_CODES.items()}
+    plain = state_records.read_a8(a8_book("2026-27", rows), "2026-27", codes)
+    width = len(_a8_columns(SLOTS))
+    shuffled = list(range(width))
+    shuffled.reverse()  # every column moves, the code column too
+    moved = state_records.read_a8(a8_book("2026-27", rows, order=shuffled), "2026-27", codes)
+    assert moved == plain
+    assert [(r.number, [(e.day, e.code, e.scope) for e in r.entries]) for r in plain] == [
+        ("010100", [(MON, "WX", Scope.WHOLE), (TUE, "SOE", Scope.SHARE)]),
+        ("020200", [(WED, "ELEC", Scope.UNKNOWN)]),
+        ("030300", []),
+    ]
+    # a slot with no reason column refuses the file
+    cut = [i for i, (key, _) in enumerate(_a8_columns(SLOTS)) if key != "reason2"]
+    with pytest.raises(StateRecordError, match="without its date, reason or building"):
+        state_records.read_a8(a8_book("2026-27", rows, order=cut), "2026-27", codes)
+
+
+def test_a8_title_claim_year_must_equal_the_pin() -> None:
+    book = a8_book("2026-27", [a8_row("010100", (MON, WX, "WHOLE DISTRICT"))])
+    ny = ny_state({"2026-27": book})
+    other = ny.model_copy(
+        update={"files": (ny.files[0].model_copy(update={"years": ("2024-25",)}),)}
+    )
+    # the pin's school year 2024-25 is claim year 2025-26: its id and title must say so
+    with pytest.raises(StateRecordError, match="not the id of claim year 2025-26"):
+        state_records.build_ny(other, {"ny-a8-2026-27": book})
+    renamed = other.model_copy(
+        update={"files": (other.files[0].model_copy(update={"id": "ny-a8-2025-26"}),)}
+    )
+    with pytest.raises(StateRecordError, match="title names another claim year"):
+        state_records.build_ny(renamed, {"ny-a8-2025-26": book})
+    titled = a8_book("2026-27", [], title="Extract of data from Claim Year 2025-2026")
+    codes = {k: state_records.StateCode.model_validate(v) for k, v in NY_CODES.items()}
+    with pytest.raises(StateRecordError, match="title names another claim year"):
+        state_records.read_a8(titled, "2026-27", codes)
+
+
+def test_a8_a_date_outside_the_base_school_year_is_held_not_written() -> None:
+    found = ny_built(
+        a8_row(
+            "010100",
+            (MON, WX, "WHOLE DISTRICT"),
+            (date(2026, 12, 9), WX, "WHOLE DISTRICT"),  # the claim year itself
+            (date(2025, 6, 10), WX, "WHOLE DISTRICT"),  # the year before
+        )
+    )
+    assert [d.day for d in found.days] == [MON]
+    assert "held 2 outside the school year" in found.lines[0]
+
+
+def test_a8_a_weekend_date_is_held_not_written() -> None:
+    found = ny_built(a8_row("010100", (date(2025, 12, 13), WX, "WHOLE DISTRICT"), (FRI, WX, "")))
+    assert [d.day for d in found.days] == [FRI]
+    assert "1 on a weekend" in found.lines[0]
+    # a weekday our default calendar has no school (after June 15: lead ruling RN6) is held too
+    june = ny_built(a8_row("010100", (date(2026, 6, 22), ELEC, "")))
+    assert june.days == []
+    assert "1 not a school day by the default calendar" in june.lines[0]
+    assert june.dropped == []  # held and counted, never listed by district and date
+
+
+def test_a8_a_date_twice_in_a_row_is_one_day() -> None:
+    found = ny_built(
+        a8_row("010100", (MON, WX, "WHOLE DISTRICT"), (MON, WX, "WHOLE DISTRICT"), (TUE, WX, ""))
+    )
+    assert [d.day for d in found.days] == [MON, TUE]
+    assert "1 the same date twice in a row" in found.lines[0]
+    assert [(c.code, c.days) for c in found.counts] == [("WX", 2)]
+
+
+def test_a8_reasons_map_to_codes_and_causes() -> None:
+    days = [date(2025, 12, d) for d in (1, 2, 3, 4, 5, 8, 9, 10, 11)]
+    phrases = list(PHRASES.items())
+    assert len(phrases) == len(days)
+    rows = [
+        a8_row(f"{50 + i:02d}0000", (day, phrase, "WHOLE DISTRICT"))
+        for i, (day, (phrase, _)) in enumerate(zip(days, phrases, strict=True))
+    ]
+    blank = a8_row("600000", (date(2025, 12, 15), "   ", "WHOLE DISTRICT"))
+    ids = {r["code"]: f"36{70 + i:05d}" for i, r in enumerate([*rows, blank])}
+    book = a8_book("2026-27", [*rows, blank])
+    found = state_records.build_ny(ny_state({"2026-27": book}, ids=ids), {"ny-a8-2026-27": book})
+    by_unit = {d.unit: d for d in found.days}
+    got = [(by_unit[ids[r["code"]]].code, by_unit[ids[r["code"]]].cause) for r in rows]
+    assert [c for c, _ in got] == [c for _, c in phrases]
+    named = {"ELEC", "WATER", "HEAT", "BLDG", "THREAT", "CHEM"}
+    for code, cause in got:
+        assert cause is (
+            Cause.WEATHER if code == "WX" else Cause.NAMED if code in named else Cause.ANY
+        )
+    assert {d.code for d in found.days if d.weather_day} == {"WX"}  # SOE is never a weather day
+    none = by_unit[ids["600000"]]
+    assert (none.code, none.cause, none.weather_day) == ("NONE", Cause.ANY, False)
+
+
+def test_a8_building_is_whole_share_or_unknown_and_its_text_is_never_kept() -> None:
+    found = ny_built(
+        a8_row(
+            "010100",
+            (MON, WX, "WHOLE DISTRICT"),
+            (TUE, WX, " District "),
+            (WED, WX, "Plantedbuildingname Elementary"),
+        ),
+        a8_row("020200", (MON, WX, "")),
+    )
+    assert [(d.unit, d.day, d.scope) for d in found.days] == [
+        ("3600001", MON, Scope.WHOLE), ("3600002", MON, Scope.UNKNOWN),
+        ("3600001", TUE, Scope.WHOLE), ("3600001", WED, Scope.SHARE),
+    ]  # fmt: skip
+    assert all(b"lanted" not in data for data in found.keys.values())
+    assert not any("lanted" in line for line in found.lines)
+
+
+def test_a8_rows_are_closings_only_class_unknown_never_fit_usable() -> None:
+    found = ny_built(a8_row("010100", (MON, WX, "WHOLE DISTRICT"), (TUE, SOE, "")))
+    assert found.days
+    for day in found.days:
+        assert (day.call, day.source_kind) == (Call.CLOSED, SourceKind.PAST_RECORDS)
+        assert (day.closings_only, day.source_complete) == (True, False)
+        assert (day.klass, day.weather, day.situation, day.tropical) == (
+            "unknown",
+            None,
+            None,
+            None,
+        )
+        assert day.fit_usable is False
+        assert day.reasons == ()
+        assert day.sources == ("ny-a8-2026-27",)
+
+
+def test_a8_counts_only_for_a_district_year_with_a_day_never_zero() -> None:
+    found = ny_built(
+        a8_row("010100", (MON, WX, ""), (TUE, WX, ""), (WED, SOE, "")),
+        a8_row("020200"),  # files a row, lists no date: no count, never a zero
+        a8_row("030300", (date(2025, 12, 13), WX, "")),  # its only date is held
+    )
+    assert [(c.unit, c.year, c.code, c.days) for c in found.counts] == [
+        ("3600001", "2025-26", "SOE", 1), ("3600001", "2025-26", "WX", 2),
+    ]  # fmt: skip
+    assert all(c.days > 0 for c in found.counts)
+    assert all((c.not_weather, c.unconfirmed, c.disaster) == (0, 0, None) for c in found.counts)
+    covid = ny_built(a8_row("010100", (date(2020, 12, 17), WX, "")), claim="2021-22")
+    assert [c.covid for c in covid.counts] == [True]
+
+
+def test_a8_the_id_rule_maps_six_digit_codes_and_lists_the_unmapped() -> None:
+    found = ny_built(
+        a8_row("010100", (MON, WX, "")), a8_row(NYC, (MON, WX, "WHOLE DISTRICT")), a8_row("020200")
+    )
+    assert [d.unit for d in found.days] == ["3600001"]
+    assert found.unmapped == [NYC]
+    assert "1 of a code the id rule does not map" in found.lines[0]
+    assert "2 of 3 codes mapped, 1 of 2 with a date" in found.lines[1]
+    assert found.lines[-1].endswith(f"listed and not matched: {NYC}")
+    with pytest.raises(StateRecordError, match="in neither ids nor unmapped"):
+        ny_built(a8_row("990000"))
+    # a row that is not a 6-digit code (nor the closing marker) refuses the file
+    with pytest.raises(StateRecordError, match="not a district code"):
+        ny_built(a8_row("01010"))
+
+
+DATED: Final = re.compile(r"\d{4}-\d{2}-\d{2}|\d{2}/\d{2}/\d{2}")
+
+
+def test_a8_key_bytes_and_lines_carry_no_name_url_comment_or_building_text(
+    tmp_path: Path,
+) -> None:
+    planted = {
+        "name": "Plantedname Central School District",
+        "comment": "Plantedcomment about the claim",
+        "url": "https://plantedurl.invalid/a8",
+        "status": "PLANTEDSTATUS",
+    }
+    rows = [
+        a8_row("010100", (MON, WX, "Plantedbuilding Hall"), (TUE, SOE, ""), **planted),
+        a8_row(NYC, (WED, WX, "WHOLE DISTRICT"), name="Plantedname City"),
+        a8_row("020200", (date(2025, 12, 13), WX, ""), (date(2026, 6, 22), WX, "")),
+    ]
+    book = a8_book("2026-27", rows)
+    ny = ny_pinned(ny_state({"2026-27": book}), {"ny-a8-2026-27": book})
+    (tmp_path / "ny-a8-2026-27").write_bytes(book)
+    said: list[str] = []
+    keys = past_keys([ny], (), tmp_path, lambda _: b"", said.append)
+    assert keys
+    # a refused file and a drifted pin: their warning lines too
+    bad = a8_book("2026-27", [a8_row("010100", ("4566x", WX, ""))])
+    (tmp_path / "bad").mkdir()
+    (tmp_path / "bad" / "ny-a8-2026-27").write_bytes(bad)
+    past_keys([ny_state({"2026-27": bad})], (), tmp_path / "bad", lambda _: b"", said.append)
+    drifted = ny_state({"2026-27": book})  # pinned with no written keys
+    past_keys([drifted], (), tmp_path, lambda _: b"", said.append)
+    assert any("not a serial" in line for line in said)
+    assert any("reviewed pin" in line for line in said)
+    for text in (*keys.values(), *(line.encode() for line in said)):
+        assert b"lanted" not in text.lower()
+        assert b"PLANTEDSTATUS" not in text
+    for line in said:
+        # counts, codes, file ids and SHA-256 prefixes only: no mapped district code at all,
+        # and never a date
+        assert not any(code in line for code in ("010100", "020200"))
+        assert not DATED.search(line), line
+
+
+def test_a8_a_date_that_is_not_a_serial_or_a_reason_not_on_the_list_refuses_the_file() -> None:
+    for cell in ("12/09/2025", "4566", "45999.5", "x"):
+        with pytest.raises(StateRecordError, match="not a serial"):
+            ny_built(a8_row("010100", (cell, WX, "")))
+    with pytest.raises(StateRecordError, match="a reason on no list"):
+        ny_built(a8_row("010100", (MON, "PLANTED REASON", "")))
+    # an empty or space-only date cell is blank (its slot is not read); a blank reason on a
+    # dated slot reads as NONE
+    found = ny_built(a8_row("010100", ("   ", WX, "WHOLE DISTRICT"), (MON, "  ", "")))
+    assert [(d.day, d.code) for d in found.days] == [(MON, "NONE")]
+
+
+def test_a8_the_day_after_comes_from_the_previous_school_day_written() -> None:
+    found = ny_built(
+        a8_row(
+            "010100",
+            (MON, WX, ""),
+            (TUE, ELEC, ""),
+            (WED, SOE, ""),
+        ),
+        a8_row("020200", (FRI, WX, ""), (date(2025, 12, 15), "   ", "")),  # Friday, then Monday
+        a8_row("030300", (date(2025, 12, 13), WX, ""), (date(2025, 12, 15), WX, "")),
+    )
+    after = {(d.unit, d.day): (d.after, d.after_weather) for d in found.days}
+    assert after == {
+        ("3600001", MON): (None, None),  # its school day before is not a written day
+        ("3600001", TUE): (True, True),  # after a weather day
+        ("3600001", WED): (True, False),  # after a named cause
+        ("3600002", FRI): (None, None),
+        ("3600002", date(2025, 12, 15)): (True, True),  # across the weekend
+        ("3600003", date(2025, 12, 15)): (None, None),  # a held Saturday is never a day before
+    }
+    soe = ny_built(a8_row("010100", (MON, SOE, ""), (TUE, WX, "")))
+    assert {d.day: (d.after, d.after_weather) for d in soe.days}[TUE] == (True, None)
+
+
+def test_received_files_are_never_fetched_and_write_nothing_without_files_or_keys() -> None:
+    book = a8_book("2026-27", [a8_row("010100", (MON, WX, ""))])
+    ny = ny_pinned(ny_state({"2026-27": book}), {"ny-a8-2026-27": book})
+
+    def no_fetch(url: str) -> bytes:
+        raise AssertionError(url)
+
+    said: list[str] = []
+    assert past_keys([ny], (), None, no_fetch, said.append) == {}
+    assert said == [
+        "predict each-school past: ny: 1 of its files were received, never fetched: they are"
+        " built only with --files, so 2 keys are not written"
+    ]
+    with pytest.raises(StateRecordError, match="read only from --files"):
+        state_records.read_files(ny, None, no_fetch)
+    # a received file has no URL and no page; a file has exactly one of a URL and a label
+    item = ny.files[0].model_dump()
+    for change in (
+        {"url": "https://example.invalid/a8"},
+        {"received": None},
+        {"page": "https://example.invalid/page"},
+    ):
+        with pytest.raises(ValueError, match=r"exactly one of url and received|a page only"):
+            StateFile.model_validate({**item, **change})
+
+
+def test_the_committed_config_pins_sixteen_ny_files_and_maps_686_of_701() -> None:
+    ny = state_records.load().states["ny"]
+    claims = [f"{y}-{(y + 1) % 100:02d}" for y in range(2011, 2027)]
+    assert [f.id for f in ny.files] == [f"ny-a8-{c}" for c in claims]
+    assert [f.years for f in ny.files] == [(_school_year(c),) for c in claims]
+    assert all(f.form == "ny_a8" and f.received and f.url is None for f in ny.files)
+    assert all(f.page is None and f.fetched == date(2026, 11, 18) for f in ny.files)
+    assert len({f.sha256 for f in ny.files}) == 16
+    assert (ny.id_digits, ny.dated_public) == (6, False)
+    assert len(ny.ids) == 686
+    assert len(ny.unmapped) == 15
+    assert len(ny.ids) + len(ny.unmapped) == 701
+    assert NYC in ny.unmapped  # never spread over the city's LEAs (lead ruling RN3)
+    assert all(re.fullmatch(r"36\d{5}", u) for u in ny.ids.values())
+    assert len(ny.one_school) == 102  # fix r2 (B1): at most one open school in the directory
+    assert set(ny.one_school) <= set(ny.ids.values())
+    assert set(ny.codes) == {"WX", "SOE", "ELEC", "WATER", "HEAT", "BLDG", "THREAT", "CHEM", "NONE"}
+    assert {c for c, m in ny.codes.items() if m.weather_day} == {"WX"}
+    assert ny.codes["SOE"].cause is Cause.ANY  # lead ruling RN4
+    assert ny.codes["NONE"].match == ()
+    # every file writes both keys; the 2012-13 and 2013-14 files (no row written) pin empty bytes
+    assert all(sorted(f.written) == ["counts", "days"] for f in ny.files)
+    empty = {f.id for f in ny.files if set(f.written.values()) == {EMPTY_SHA256}}
+    assert empty == {"ny-a8-2012-13", "ny-a8-2013-14"}
+    assert not any(EMPTY_SHA256 in f.written.values() for f in ny.files if f.id not in empty)
+    # Kentucky's files are public pages: its dated rows may be published
+    ky = state_records.load().states["ky"]
+    assert (ky.id_digits, ky.dated_public) == (3, True)
+    assert StateRecords.model_fields["dated_public"].default is False  # publishing is chosen
+
+
+def _tracked() -> list[Path]:
+    import subprocess  # noqa: PLC0415
+
+    root = PIPELINE_ROOT.parent
+    if not (root / ".git").exists():
+        pytest.skip("not a git checkout: no committed files to read")
+    names = subprocess.run(
+        ["git", "ls-files", "-z"],  # noqa: S607
+        cwd=root,
+        capture_output=True,
+        check=True,
+    ).stdout.split(b"\0")
+    return [root / n.decode() for n in names if n]
+
+
+KEY_BYTES_MAX: Final = 256 * 1024
+"""Above every New York key's bytes (the largest is under 32 KB)."""
+
+
+def test_no_committed_file_has_the_bytes_of_a_pinned_ny_file() -> None:
+    ny = state_records.load().states["ny"]
+    sizes = {f.bytes: f.sha256 for f in ny.files}
+    pins = {f.sha256 for f in ny.files}
+    written = {p for f in ny.files for p in f.written.values()} - {EMPTY_SHA256}
+    assert len(written) == 28
+    checked_files = 0
+    for path in _tracked():
+        if not path.is_file() or path.is_symlink():
+            continue
+        size = path.stat().st_size
+        if size not in sizes and not 0 < size <= KEY_BYTES_MAX:
+            continue
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        assert digest not in pins, path  # a received A-8 file
+        assert digest not in written, path  # a built key's bytes (dated rows, never public)
+        checked_files += 1
+    assert checked_files > 100
+
+
+def test_a_file_with_no_written_row_writes_two_empty_pinned_keys_and_never_stops_the_step(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    book = a8_book("2013-14", [a8_row("010100"), a8_row("020200")])
+    ny = ny_pinned(ny_state({"2013-14": book}), {"ny-a8-2013-14": book})
+    assert ny.files[0].written == {"days": EMPTY_SHA256, "counts": EMPTY_SHA256}
+    (tmp_path / "ny-a8-2013-14").write_bytes(book)
+    keys = past_keys([ny], (), tmp_path, lambda _: b"", lambda _: None)
+    assert keys == {"past/ny-a8-2013-14/v1/days": b"", "past/ny-a8-2013-14/v1/counts": b""}
+    assert wanted(ny, keys) == []
+    # a builder that leaves a wanted key unbuilt: one warning for its state, and Kentucky's
+    # keys in the same call are still given
+    ky, served = _sources([district("001", weather=["01/07/25"])])
+    (tmp_path / "ky-summary-2024-25").write_bytes(
+        served["https://example.invalid/ky-summary-2024-25"]
+    )
+    real = state_records.BUILDERS["ny"]
+
+    def half(state: StateRecords, files: Mapping[str, bytes]) -> state_records.Built:
+        out = real(state, files)
+        out.keys.pop("past/ny-a8-2013-14/v1/counts")
+        return out
+
+    monkeypatch.setitem(state_records.BUILDERS, "ny", half)
+    said: list[str] = []
+    keys = past_keys([ny, ky], (), tmp_path, lambda _: b"", said.append)
+    assert sorted(keys) == ["past/ky-summary-2024-25/v1/counts", "past/ky-summary-2024-25/v1/days"]
+    assert (
+        said.count(
+            "::warning::predict each-school past: ny: built no key"
+            " past/ny-a8-2013-14/v1/counts: nothing written"
+        )
+        == 1
+    )
+
+
+@pytest.mark.parametrize(
+    ("cell", "scope"),
+    [
+        # the reviewed whole-district phrases, as generic words in any case and spacing
+        ("WHOLE DISTRICT", Scope.WHOLE),
+        (" district ", Scope.WHOLE),
+        ("DISTRICT WIDE", Scope.WHOLE),
+        ("District-Wide", Scope.WHOLE),
+        ("DISTRICTWIDE", Scope.WHOLE),
+        ("ENTIRE DISTRICT", Scope.WHOLE),
+        ("WHOLE SCHOOL DISTRICT", Scope.WHOLE),
+        ("ALL", Scope.WHOLE),
+        ("all schools", Scope.WHOLE),
+        ("ALL BUILDINGS", Scope.WHOLE),
+        # a reason after the phrase, or after WHOLE/ENTIRE DISTRICT, says nothing of the part
+        ("WHOLE DISTRICT - LOCAL STATE OF EMERGENCY", Scope.WHOLE),
+        ("WHOLE DISTRICT (COUNTY STATE OF EMERGENCY)", Scope.WHOLE),
+        ("WHOLE DISTRICT GOVERNOR DECLARED STATE OF EMERGENCY", Scope.WHOLE),
+        ("ENTIRE DISTRICT TOWN DECLARED STATE OF EMERG", Scope.WHOLE),  # cut by the cell's width
+        ("ENTIRE DISTRICT (SPECIAL ELECTION)", Scope.WHOLE),
+        ("DISTRICT WIDE (NO POWER)", Scope.WHOLE),
+        ("Plantedtown CSD - state of emergency", Scope.WHOLE),
+        # a note that is not a reason may say a part: never whole (fix r2, S1)
+        ("WHOLE DISTRICT EXCEPT HIGH SCHOOL", Scope.UNKNOWN),
+        ("ALL (EXCEPT HIGH SCHOOL)", Scope.UNKNOWN),
+        ("DISTRICT (HIGH SCHOOL ONLY)", Scope.UNKNOWN),
+        ("ALL SCHOOLS - ELEMENTARY ONLY", Scope.UNKNOWN),
+        ("ENTIRE DISTRICT BUT THE MIDDLE SCHOOL", Scope.UNKNOWN),
+        ("WHOLE DISTRICT NOT THE EMERGENCY", Scope.UNKNOWN),
+        ("WHOLE DISTRICT - PARTIAL", Scope.UNKNOWN),
+        ("WHOLE DISTRICT - PLANTED NOTE", Scope.UNKNOWN),
+        ("WHOLE DISTRICT (PLANTED NOTE)", Scope.UNKNOWN),
+        ("WHOLE DISTRICT PLANTED NOTE WORDS", Scope.UNKNOWN),
+        ("WHOLE DISTRICT 2", Scope.UNKNOWN),
+        ("Plantedtown CSD (Plantedname Elementary)", Scope.UNKNOWN),
+        # DISTRICT misspelled by one letter
+        ("WHOLE DISTRIICT", Scope.WHOLE),
+        ("WHOLE DISTRIC", Scope.WHOLE),
+        ("ENTIRE DISTRUCT", Scope.WHOLE),
+        ("WHOLE DITSRICT", Scope.WHOLE),
+        ("WHOLE DISTRIKT", Scope.WHOLE),
+        # a cell naming the district itself by its kind word
+        ("Plantedtown CSD", Scope.WHOLE),
+        ("Plantedtown UFSD", Scope.WHOLE),
+        ("Plantedtown Central School District", Scope.WHOLE),
+        # blank, the form's own label words, or a reason with no building: no part is said
+        (None, Scope.UNKNOWN),
+        ("", Scope.UNKNOWN),
+        ("   ", Scope.UNKNOWN),
+        ("SCHOOL/BUILDING", Scope.UNKNOWN),
+        ("School / Building", Scope.UNKNOWN),
+        ("BUILDING", Scope.UNKNOWN),
+        ("N/A", Scope.UNKNOWN),
+        ("GOVERNOR DECLARED STATE OF EMERGENCY", Scope.UNKNOWN),
+        # a building, or part of the district, is a share
+        ("Plantedname Elementary", Scope.SHARE),
+        ("Plantedname Elementary - county state of emergency", Scope.SHARE),
+        ("Plantedname Elementary School(360000000000)", Scope.SHARE),
+        ("SCHOOL BUILDING - PLANTEDNAME ELEMENTARY", Scope.SHARE),
+        ("ALL PLANTED BUILDINGS", Scope.SHARE),
+        ("ALL PRIMARY AND PLANTED SCHOOLS", Scope.SHARE),
+        ("PLANTED HIGH SCHOOL", Scope.SHARE),
+        ("PLANTED MIDDLE SCHOOL ONLY", Scope.SHARE),
+        ("DISTRICT OFFICE", Scope.SHARE),
+        ("WHOLE PLANTED ACADEMY", Scope.SHARE),
+        ("DISTRICT 7 SCHOOL", Scope.SHARE),
+        ("PS 999", Scope.SHARE),
+        # a building word before a district-kind word names a building (fix r2, S2)
+        ("HIGH SCHOOL, PLANTEDTOWN CSD", Scope.SHARE),
+        ("PLANTEDNAME ELEMENTARY SD", Scope.SHARE),
+        ("Plantedname Middle School UFSD", Scope.SHARE),
+        ("Plantedname High School District", Scope.SHARE),
+        ("PS 9 CCSD", Scope.SHARE),
+    ],
+)
+def test_a8_building_cell_is_read_as_a_class_of_generic_words(
+    cell: str | None, scope: Scope
+) -> None:
+    """records-ny test 7 (fix r1, B1): every reviewed way the form's building cell says the
+    whole district is ``whole``, its placeholder and a reason-only cell are ``unknown``, and
+    only a building or part is ``share``."""
+    assert state_records.a8_scope(cell) is scope
+
+
+def test_a8_a_building_of_a_one_school_district_is_never_a_part() -> None:
+    """records-ny fix r2 (B1): a building cell of a district the pinned directory lists with at
+    most one open school names its one school, so a ``share`` there reads ``unknown`` (the
+    directory is one year's, so never ``whole`` either); a whole or unknown cell is kept, and a
+    district with more schools keeps its ``share``."""
+    rows = (
+        a8_row("010100", (MON, WX, "Plantedname Central School"), (TUE, WX, "WHOLE DISTRICT")),
+        a8_row("020200", (MON, WX, "Plantedname Elementary"), (TUE, WX, "")),
+    )
+    found = ny_built(*rows, one_school=("3600001",))
+    assert [(d.unit, d.day, d.scope) for d in found.days] == [
+        ("3600001", MON, Scope.UNKNOWN), ("3600002", MON, Scope.SHARE),
+        ("3600001", TUE, Scope.WHOLE), ("3600002", TUE, Scope.UNKNOWN),
+    ]  # fmt: skip
+    assert [d.scope for d in ny_built(*rows).days][:1] == [Scope.SHARE]
+    # a repeat is compared after the one-school reading: a building and a blank are one class
+    same = ny_built(
+        a8_row("010100", (MON, WX, "Plantedname Central School"), (MON, WX, "")),
+        one_school=("3600001",),
+    )
+    assert [(d.day, d.scope) for d in same.days] == [(MON, Scope.UNKNOWN)]
+
+
+def test_a_config_one_school_list_must_be_mapped_once_and_sorted(tmp_path: Path) -> None:
+    raw = yaml.safe_load(state_records.STATE_RECORDS_PATH.read_text("utf-8"))
+    path = tmp_path / "s.yaml"
+    listed = raw["states"]["ny"]["one_school"]
+    for bad in (
+        [*listed, "3699999"],  # a LEAID the id rule does not map
+        [listed[0], *listed],  # twice
+        listed[::-1],  # unsorted
+    ):
+        raw["states"]["ny"]["one_school"] = bad
+        path.write_text(yaml.safe_dump(raw))
+        with pytest.raises(StateRecordError, match="ny: a one-school LEAID"):
+            state_records.load(path)
+
+
+def test_a8_whole_district_words_and_the_placeholder_reach_the_written_row() -> None:
+    found = ny_built(
+        a8_row(
+            "010100",
+            (MON, WX, "DISTRICT WIDE"),
+            (TUE, WX, "SCHOOL/BUILDING"),
+            (WED, WX, "WHOLE SCHOOL DISTRICT"),
+        ),
+        a8_row("020200", (MON, SOE, "ENTIRE DISTRICT"), (TUE, SOE, "Plantedname Elementary")),
+    )
+    assert [(d.unit, d.day, d.scope) for d in found.days] == [
+        ("3600001", MON, Scope.WHOLE), ("3600002", MON, Scope.WHOLE),
+        ("3600001", TUE, Scope.UNKNOWN), ("3600002", TUE, Scope.SHARE),
+        ("3600001", WED, Scope.WHOLE),
+    ]  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    ("first", "second"),
+    [
+        ((MON, WX, "WHOLE DISTRICT"), (MON, SOE, "WHOLE DISTRICT")),  # another reason
+        ((MON, WX, "WHOLE DISTRICT"), (MON, WX, "Plantedname Elementary")),  # another part
+        ((MON, WX, ""), (MON, WX, "WHOLE DISTRICT")),
+    ],
+)
+def test_a8_a_repeat_with_another_reason_or_building_refuses_the_file(
+    first: tuple[date, str, str], second: tuple[date, str, str]
+) -> None:
+    """records-ny fix r1 (S4): a date a row lists twice with another reason or building class
+    would lose one silently, so it refuses the file, said by file id with no date or code."""
+    with pytest.raises(StateRecordError) as refused:
+        ny_built(a8_row("010100", first, second))
+    said = str(refused.value)
+    assert said == "ny-a8-2026-27: a date twice in a row with another reason or building"
+    # the same reason and building class is one day, held and counted (test 5)
+    same = ny_built(a8_row("010100", first, (first[0], first[1], first[2].lower())))
+    assert len(same.days) == 1
+
+
+def test_a8_a_row_the_record_refuses_is_said_by_file_id_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """records-ny fix r1 (safety S1): a row the record's own models refuse (their message names
+    the day and the district) is said by the file id only, through the builder and the step,
+    never as a traceback or a line with a district code or a date."""
+    book = a8_book("2026-27", [a8_row("010100", (MON, WX, "WHOLE DISTRICT"))])
+    ny = ny_state({"2026-27": book})
+    monkeypatch.setattr(record, "past_fit_rule", lambda _row: True)  # every row is refused
+    with pytest.raises(StateRecordError) as refused:
+        state_records.build_ny(ny, {"ny-a8-2026-27": book})
+    assert str(refused.value) == "ny-a8-2026-27: a row the record refuses"
+    assert refused.value.__cause__ is None
+    assert refused.value.__suppress_context__
+    (tmp_path / "ny-a8-2026-27").write_bytes(book)
+    said: list[str] = []
+    assert past_keys([ny], (), tmp_path, lambda _: b"", said.append) == {}
+    assert said == [
+        "::warning::predict each-school past: ny: ny-a8-2026-27: a row the record refuses:"
+        " nothing written"
+    ]
+
+    # a model refusal from any builder is said by its type only
+    def refusing(_state: StateRecords, _files: Mapping[str, bytes]) -> state_records.Built:
+        record.YearCount.model_validate({"unit": "3600001", "year": MON.isoformat()})
+        raise AssertionError  # pragma: no cover - the model refuses first
+
+    monkeypatch.setitem(state_records.BUILDERS, "ny", refusing)
+    said.clear()
+    assert past_keys([ny], (), tmp_path, lambda _: b"", said.append) == {}
+    assert said == ["::warning::predict each-school past: ny: ValidationError: nothing written"]
+    for line in said:
+        assert "3600001" not in line
+        assert "010100" not in line
+        assert not DATED.search(line)
+
+
+KY_PINNED: Final = {
+    "ky-summary-2024-25": (
+        91389,
+        "3732d6556382bca7f42d112d0b5e6ff999e112133710f98b1d2bafb649c74acf",
+        {
+            "days": "8d5571b02b07455094cf34f526d20ab6a359ade0fa7b4cf7d1ce923101a27490",
+            "counts": "32afa88ced7da63b9018f21e097a6491e82d09d2ea02624b2f7361df7ef6b27b",
+        },
+    ),
+    "ky-summary-2025-26": (
+        79304,
+        "69e00e92b95d66d8ef2920c39e3d7d1c016536806aedc4e17c1975a3d5c7dbae",
+        {
+            "days": "94b55e5e3d1dddb08d4baaef9c3088e7b1a29f21218a1976925067bf7514d9fd",
+            "counts": "d562d29f679cba79ec3ce3e62162efaa27db700fc89bd1b76c2c3d3b092da6e6",
+        },
+    ),
+    "ky-trend-2025-26": (
+        145246,
+        "ea219f5b8574f28386ab7284b9d9f9b843a4ecb4b0bd1b46b207ce01e0207a14",
+        {"counts": "6015073a17235b3d34a1b96911709c36cdebf20bdc1cd6f77dacd3949ca77162"},
+    ),
+}
+"""Kentucky's committed files and written pins before records-ny (base 7a4ae59e), literal."""
+
+
+def test_kentucky_files_and_written_pins_are_the_ones_before_new_york() -> None:
+    """records-ny test 21, Kentucky half (fix r1, S3): Kentucky's committed files, their
+    editions and parsers, its codes and its written pins are the literal values from before New
+    York entered the config, so no change to StateFile, StateCode or id_digits moves them
+    silently (a build whose bytes differ from these pins is refused at run time)."""
+    ky = state_records.load().states["ky"]
+    assert {f.id: (f.bytes, f.sha256, f.written) for f in ky.files} == KY_PINNED
+    assert all(
+        (f.edition, f.parser, f.received, f.url is not None) == (1, 1, None, True) for f in ky.files
+    )
+    assert [f.years for f in ky.files] == [
+        ("2024-25",), ("2025-26",), ("2020-21", "2021-22", "2022-23", "2023-24", "2024-25"),
+    ]  # fmt: skip
+    assert (ky.id_digits, ky.dated_public) == (3, True)
+    assert {code: (c.call, c.cause, c.weather_day, c.day_off) for code, c in ky.codes.items()} == {
+        "W": (Call.CLOSED, Cause.WEATHER, True, "weather"),
+        "N": (None, None, False, None),
+        "I": (None, None, False, "named"),
+        "D": (None, None, False, "unknown"),
+    }

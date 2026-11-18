@@ -22,7 +22,9 @@
 # past school days (`snowlight predict each-school past`, config/state-records.yaml). Each state
 # file is fetched by plain GET only while the store does not yet hold its rows, refused unless
 # its size and SHA-256 are the pinned ones, and its day rows and yearly counts are kept once in
-# the same record kind, as their own coarse kind (`past_records`). This step does not need the
+# the same record kind, as their own coarse kind (`past_records`). A received state file (New
+# York's A-8 forms) has no URL: it is read only with --files, never fetched, so this step writes
+# none of its keys and says so in one line. This step does not need the
 # read labels' record, so it runs whether or not the cache matched, and after the live step
 # whatever that step did. It changes no number either.
 #
