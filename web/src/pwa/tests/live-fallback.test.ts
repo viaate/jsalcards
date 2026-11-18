@@ -185,7 +185,7 @@ describe('the site build', () => {
       'utf8',
     );
     expect(preview.match(/VITE_SNOWLIGHT_LIVE_FALLBACK:.*$/gm)).toEqual([
-      "VITE_SNOWLIGHT_LIVE_FALLBACK: ${{ vars.SNOWLIGHT_LIVE_FALLBACK || ((vars.SNOWLIGHT_LIVE_ROOT == '' || vars.SNOWLIGHT_LIVE_ROOT == 'https://viaate.github.io/snowlight-live/v1/') && 'https://status.snowlightmap.com/live/v1/' || '') }}",
+      "VITE_SNOWLIGHT_LIVE_FALLBACK: ${{ vars.SNOWLIGHT_LIVE_FALLBACK || ((vars.SNOWLIGHT_LIVE_ROOT == '' || vars.SNOWLIGHT_LIVE_ROOT == 'https://viaate.github.io/snowlight-live/v1/') && 'https://status.snowlightmap.com/api/live/v1/' || '') }}",
     ]);
   });
 });

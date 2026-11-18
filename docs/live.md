@@ -1561,7 +1561,7 @@ The files go up in this order: closings, opens, day timelines, season file, inde
 A school's web filter can block `viaate.github.io` by name (it closes every connection to it)
 while it lets `snowlightmap.com` through, so a visitor there saw the copy the worker kept, or an
 empty map. The site build names a second live root for that, `VITE_SNOWLIGHT_LIVE_FALLBACK`
-(`.github/workflows/preview.yml`: `https://status.snowlightmap.com/live/v1/`, set only while the
+(`.github/workflows/preview.yml`: `https://status.snowlightmap.com/api/live/v1/`, set only while the
 first root is the owner's own, as it serves that one alone). It is a read-only proxy in the status
 project (`status/shared/live-proxy.ts`, `status/page/functions/live/v1/[[path]].ts`): GET or HEAD
 of `live/closings.json`, `predictions/latest.json`, `live/season.json` or

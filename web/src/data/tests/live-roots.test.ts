@@ -5,6 +5,7 @@ import { fetchFile } from '../files';
 import type { Fetch } from '../files';
 import {
   LIVE_ROOT_KEY,
+  LIVE_ROOT_OFF_KEY,
   LIVE_ROOT_RETRY_MS,
   LIVE_ROOT_WAIT_MS,
   answered,
@@ -19,7 +20,7 @@ const PATH = 'live/closings.json';
 /** SYNTHETIC: a made-up closings file. */
 const FILE = '{"schema_version":1,"generated_at":"2026-01-12T12:42:00Z","days":[]}';
 
-type Step = 'file' | 'kept' | 'closed' | 'hang' | 'page' | 404 | 502;
+type Step = 'file' | 'kept' | 'closed' | 'hang' | 'page' | 403 | 404 | 500 | 502 | 503;
 
 /** A made-up network: each root answers its steps in turn (the last one again after that). */
 function network(plan: Record<string, Step[]>) {
@@ -129,13 +130,26 @@ describe('rootedFetch', () => {
     expect(asked.at(-1)).toBe(`${SECOND}predictions/latest.json`);
   });
 
-  for (const step of ['kept', 'page', 404, 502] as const) {
-    it(`asks the second when the first gives ${String(step)} in place of the file`, async () => {
+  for (const step of ['kept', 'page'] as const) {
+    it(`asks the second when the first gives ${step} in place of the file`, async () => {
       const { read, asked } = setup({ [FIRST]: [step], [SECOND]: ['file'] });
       const response = await read(`${FIRST}${PATH}`);
       expect(answered(response)).toBe(true);
       expect(await response.text()).toBe(FILE);
       expect(rootsOf(asked)).toEqual(['first', 'second']);
+    });
+  }
+
+  for (const status of [403, 404, 500, 502, 503] as const) {
+    it(`gives the first root own ${String(status)} as it came, and never asks the second`, async () => {
+      const { read, asked, store } = setup({ [FIRST]: [status], [SECOND]: ['file'] });
+      for (let i = 0; i < 3; i += 1) {
+        const response = await read(`${FIRST}${PATH}`);
+        expect(response.status).toBe(status);
+      }
+      await vi.advanceTimersByTimeAsync(LIVE_ROOT_WAIT_MS * 3);
+      expect(rootsOf(asked)).toEqual(['first', 'first', 'first']);
+      expect((store as ReturnType<typeof memoryStore>).items.size).toBe(0);
     });
   }
 
@@ -184,10 +198,10 @@ describe('rootedFetch', () => {
     const response = await kept.read(`${FIRST}${PATH}`);
     expect(response.headers.get(KEPT_HEADER)).toBe('1');
     expect(await response.text()).toBe(FILE);
-    expect((kept.store as ReturnType<typeof memoryStore>).items.size).toBe(0);
-    // An error from the first, though the second fails too.
-    const missing = setup({ [FIRST]: [404], [SECOND]: [502] });
-    expect((await missing.read(`${FIRST}${PATH}`)).status).toBe(404);
+    // The second is left alone for a while; nothing took over.
+    expect([...(kept.store as ReturnType<typeof memoryStore>).items.keys()]).toEqual([
+      LIVE_ROOT_OFF_KEY,
+    ]);
     // The first's failure, as the read failed with one root.
     const closed = setup({ [FIRST]: ['closed'], [SECOND]: [502] });
     await expect(closed.read(`${FIRST}${PATH}`)).rejects.toThrow('Failed to fetch');
@@ -204,9 +218,126 @@ describe('rootedFetch', () => {
     const response = await kept.read(`${FIRST}${PATH}`);
     expect(rootsOf(kept.asked)).toEqual(['second', 'first']);
     expect(response.headers.get(KEPT_HEADER)).toBe('1');
+    store.removeItem(LIVE_ROOT_OFF_KEY);
     store.setItem(LIVE_ROOT_KEY, String(Date.now() - 60_000));
     const closed = setup({ [FIRST]: ['closed'], [SECOND]: [502] }, store);
     await expect(closed.read(`${FIRST}${PATH}`)).rejects.toThrow('Failed to fetch');
+  });
+
+  it('gives the worker kept copy within the wait when the second never answers', async () => {
+    const { read, asked, aborted, store } = setup({ [FIRST]: ['kept'], [SECOND]: ['hang'] });
+    let response: Response | undefined;
+    void read(`${FIRST}${PATH}`).then((answer) => {
+      response = answer;
+    });
+    await vi.advanceTimersByTimeAsync(LIVE_ROOT_WAIT_MS - 1);
+    expect(response).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(response?.headers.get(KEPT_HEADER)).toBe('1');
+    expect(await response?.text()).toBe(FILE);
+    expect(rootsOf(asked)).toEqual(['first', 'second']);
+    // The second's read is given up, and the second is left alone for a while.
+    expect(rootsOf(aborted)).toEqual(['second']);
+    const items = (store as ReturnType<typeof memoryStore>).items;
+    expect(items.get(LIVE_ROOT_OFF_KEY)).toBe(String(Date.now()));
+    expect(items.has(LIVE_ROOT_KEY)).toBe(false);
+  });
+
+  it('gives the kept copy the worker hands over at its own wait when the live host is silent and the second never answers', async () => {
+    const asked: string[] = [];
+    const slow: Fetch = (input) => {
+      asked.push(input);
+      if (input.startsWith(SECOND)) return new Promise<Response>(() => undefined);
+      return new Promise<Response>((resolve) => {
+        setTimeout(() => {
+          resolve(new Response(FILE, { headers: { [KEPT_HEADER]: '1' } }));
+        }, LIVE_ROOT_WAIT_MS);
+      });
+    };
+    const read = rootedFetch({ primary: FIRST, fallback: SECOND, fetch: slow, store: null });
+    let response: Response | undefined;
+    void read(`${FIRST}${PATH}`).then((answer) => {
+      response = answer;
+    });
+    await vi.advanceTimersByTimeAsync(2 * LIVE_ROOT_WAIT_MS);
+    expect(rootsOf(asked)).toEqual(['first', 'second']);
+    expect(response?.headers.get(KEPT_HEADER)).toBe('1');
+  });
+
+  it('waits for the first as long as it takes, as with one root, once the second has failed', async () => {
+    let late: (() => void) | undefined;
+    const second = network({ [SECOND]: [502] });
+    const slow: Fetch = (input, init) => {
+      if (!input.startsWith(FIRST)) return second.fetch(input, init);
+      return new Promise<Response>((resolve) => {
+        late = () => {
+          resolve(new Response(FILE));
+        };
+      });
+    };
+    const read = rootedFetch({ primary: FIRST, fallback: SECOND, fetch: slow, store: null });
+    let response: Response | undefined;
+    void read(`${FIRST}${PATH}`).then((answer) => {
+      response = answer;
+    });
+    await vi.advanceTimersByTimeAsync(LIVE_ROOT_WAIT_MS * 4);
+    expect(response).toBeUndefined();
+    late?.();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await response?.text()).toBe(FILE);
+  });
+
+  it('gives the first root kept copy at once when the caller gives up while the second is asked', async () => {
+    const { read, store } = setup({ [FIRST]: ['kept'], [SECOND]: ['hang'] });
+    const controller = new AbortController();
+    const reading = read(`${FIRST}${PATH}`, { signal: controller.signal });
+    await vi.advanceTimersByTimeAsync(1);
+    controller.abort();
+    const response = await reading;
+    expect(response.headers.get(KEPT_HEADER)).toBe('1');
+    // Not a failure of the second: it is asked again next time.
+    expect((store as ReturnType<typeof memoryStore>).items.size).toBe(0);
+  });
+
+  it('leaves the second alone for 10 minutes once both failed, reading as with one root', async () => {
+    const { read, asked, store } = setup({ [FIRST]: ['closed'], [SECOND]: [502, 'hang', 'file'] });
+    const items = (store as ReturnType<typeof memoryStore>).items;
+    await expect(read(`${FIRST}${PATH}`)).rejects.toThrow('Failed to fetch');
+    expect(rootsOf(asked)).toEqual(['first', 'second']);
+    const off = Date.now();
+    expect(items.get(LIVE_ROOT_OFF_KEY)).toBe(String(off));
+    // Nine minutes, a read a minute: the first alone, its failure as it came.
+    for (let minute = 1; minute < 10; minute += 1) {
+      await vi.advanceTimersByTimeAsync(60_000);
+      await expect(read(`${FIRST}${PATH}`)).rejects.toThrow('Failed to fetch');
+    }
+    expect(rootsOf(asked)).toEqual(['first', 'second', ...Array<string>(9).fill('first')]);
+    expect(items.get(LIVE_ROOT_OFF_KEY)).toBe(String(off));
+    // Ten minutes on: the second again; it hangs, so the wait runs out and it is left alone again.
+    await vi.advanceTimersByTimeAsync(60_000);
+    const reading = expect(read(`${FIRST}${PATH}`)).rejects.toThrow('Failed to fetch');
+    await vi.advanceTimersByTimeAsync(LIVE_ROOT_WAIT_MS);
+    await reading;
+    expect(rootsOf(asked).slice(-2)).toEqual(['first', 'second']);
+    expect(items.get(LIVE_ROOT_OFF_KEY)).toBe(String(Date.now()));
+    // Ten more minutes: the second answers, takes over, and the pause is over.
+    await vi.advanceTimersByTimeAsync(LIVE_ROOT_RETRY_MS);
+    expect(await (await read(`${FIRST}${PATH}`)).text()).toBe(FILE);
+    expect(items.has(LIVE_ROOT_OFF_KEY)).toBe(false);
+    expect(items.get(LIVE_ROOT_KEY)).toBe(String(Date.now()));
+  });
+
+  it('leaves the second alone once both failed though it was read first, and remembers that through the storage', async () => {
+    const store = memoryStore();
+    store.setItem(LIVE_ROOT_KEY, String(Date.now() - 60_000));
+    const one = setup({ [FIRST]: ['kept'], [SECOND]: ['closed'] }, store);
+    expect((await one.read(`${FIRST}${PATH}`)).headers.get(KEPT_HEADER)).toBe('1');
+    expect(rootsOf(one.asked)).toEqual(['second', 'first']);
+    expect(store.items.has(LIVE_ROOT_KEY)).toBe(false);
+    // Another page of the visit reads the first alone.
+    const two = setup({ [FIRST]: ['kept'], [SECOND]: ['file'] }, store);
+    await two.read(`${FIRST}${PATH}`);
+    expect(rootsOf(two.asked)).toEqual(['first']);
   });
 
   it('tries the first again every 10 minutes, and goes back to it once it answers', async () => {

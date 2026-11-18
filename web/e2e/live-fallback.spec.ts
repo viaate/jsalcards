@@ -3,7 +3,7 @@
  * web filter that closes every connection to viaate.github.io and lets the
  * site's own domain through. The page then reads the same files from the
  * build's second live root (VITE_SNOWLIGHT_LIVE_FALLBACK, src/data/live-roots.ts),
- * which the site serves through status.snowlightmap.com/live/v1/.
+ * which the site serves through status.snowlightmap.com/api/live/v1/.
  *
  * One build, with data staged in a temporary folder as live-origin.spec.ts
  * makes its own: its first live root is the real live host, which every check

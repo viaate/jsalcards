@@ -222,7 +222,7 @@ it. A change under `status/` starts that workflow and neither CI nor the Preview
 
 | Part | On Cloudflare | Code |
 |---|---|---|
-| The page | Pages project `snowlight-status`: static files and two Functions, `GET /api/status` and the live files' read-only proxy `GET /live/v1/*` ([docs/live.md](live.md#when-a-network-blocks-the-live-host)) | `status/page/` |
+| The page | Pages project `snowlight-status`: static files and two Functions, `GET /api/status` and the live files' read-only proxy `GET /api/live/v1/*` ([docs/live.md](live.md#when-a-network-blocks-the-live-host)) | `status/page/` |
 | The checker | Worker `snowlight-status-prober`: cron `*/5 * * * *`, no URL | `status/prober/` |
 | The store | D1 database `snowlight-status`, bound as `DB` in both | `status/prober/migrations/` |
 | | Pure code both use | `status/shared/` |
