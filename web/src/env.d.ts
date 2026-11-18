@@ -6,6 +6,13 @@ interface ImportMetaEnv {
    */
   readonly VITE_SNOWLIGHT_LIVE_ROOT?: string;
   /**
+   * A second live root serving the same files, on the site's own domain, such
+   * as "https://status.example.org/live/v1/": read only when the first does
+   * not answer (data/live-roots.ts). Unset or empty, the page reads the first
+   * alone.
+   */
+  readonly VITE_SNOWLIGHT_LIVE_FALLBACK?: string;
+  /**
    * "1" lets the live root be plain http on this machine (localhost,
    * 127.0.0.1, [::1]): set by the e2e's build alone, never the site's.
    */

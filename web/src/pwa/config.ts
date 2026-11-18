@@ -11,7 +11,11 @@
  * - A build that reads live/closings.json from a live root of its own
  *   (liveRootOf, VITE_SNOWLIGHT_LIVE_ROOT) serves that one file network-first:
  *   the network's copy while it answers within LIVE_TIMEOUT_SECONDS, the last
- *   copy only when it does not, in the same cache as the data files.
+ *   copy only when it does not, in the same cache as the data files. A build
+ *   that names a second root as well (VITE_SNOWLIGHT_LIVE_FALLBACK, read only
+ *   when the first does not answer: data/live-roots.ts) serves that root's
+ *   closings file the same way, and marks the copy it gives in place of an
+ *   answer from either (markKept), so the page can tell it is not one.
  * - The school directory, the search index and finished storm replays change
  *   rarely; they are cache-first and expire after a week.
  * - A data file the page or its search worker reads before the first worker
@@ -94,6 +98,12 @@ export const LIVE_ROOT_ENV = 'VITE_SNOWLIGHT_LIVE_ROOT';
 export const LIVE_LOOPBACK_ENV = 'VITE_SNOWLIGHT_LIVE_LOOPBACK';
 
 /**
+ * The build's variable naming a second live root, on the site's own domain, that serves the
+ * same files: read only when the first does not answer (data/live-roots.ts).
+ */
+export const LIVE_FALLBACK_ENV = 'VITE_SNOWLIGHT_LIVE_FALLBACK';
+
+/**
  * The live root a build's variables name, checked (liveRootOf): null when
  * VITE_SNOWLIGHT_LIVE_ROOT is unset or empty. One set to anything liveRootOf
  * refuses throws, so a mistyped root fails the build rather than turning live
@@ -111,6 +121,35 @@ export function checkedLiveRoot(env: Readonly<Record<string, unknown>> | undefin
   }
   return root;
 }
+
+/**
+ * The second live root a build's variables name, checked as the first is
+ * (liveRootOf): null when VITE_SNOWLIGHT_LIVE_FALLBACK is unset or empty, or
+ * when the build names no first root (it is only a second one). One set to
+ * anything liveRootOf refuses, or to the first root itself, throws.
+ */
+export function checkedLiveFallback(
+  env: Readonly<Record<string, unknown>> | undefined,
+): string | null {
+  const root = checkedLiveRoot(env);
+  const value = env?.[LIVE_FALLBACK_ENV];
+  if (root === null || value === undefined || value === null || value === '') return null;
+  const fallback =
+    typeof value === 'string' ? liveRootOf(value, env?.[LIVE_LOOPBACK_ENV] === '1') : null;
+  if (fallback === null || fallback === root) {
+    throw new Error(
+      `${LIVE_FALLBACK_ENV} must be an https URL of a folder, ending in "/", with no query, fragment or credentials, other than ${LIVE_ROOT_ENV}; got ${JSON.stringify(value)}`,
+    );
+  }
+  return fallback;
+}
+
+/**
+ * The header the worker adds to a live closings file it gives from its cache
+ * in place of the network's answer (markKept), which the page reads as no
+ * answer from that root (data/live-roots.ts).
+ */
+export const KEPT_HEADER = 'x-snowlight-kept';
 
 /** Runtime cache names. The precache is Workbox's own. */
 export const CACHE_NAMES = Object.freeze({
@@ -254,7 +293,10 @@ export function normalizeBase(base: string): string {
 }
 
 export interface RoutePatterns {
-  /** The closings file at the build's live root, served network-first; null without a root. */
+  /**
+   * The closings file at the build's live root, and at its second root when it names one,
+   * served network-first; null without a root.
+   */
   readonly live: RegExp | null;
   /** Files under data/ served cache-first. */
   readonly staticData: RegExp;
@@ -275,19 +317,29 @@ export interface RoutePatterns {
  * open because the site's domain is not known at build time, and the page
  * requests nothing under data/ or assets/ from any other host. The live route
  * names its file in full at `liveRoot`, a root liveRootOf gave (checked where
- * the build or the page reads its variable), and is tried before the others.
+ * the build or the page reads its variable), and at `liveFallback`, the second
+ * root, when there is one, and is tried before the others.
  */
-export function routePatterns(base: string, liveRoot: string | null = null): RoutePatterns {
+export function routePatterns(
+  base: string,
+  liveRoot: string | null = null,
+  liveFallback: string | null = null,
+): RoutePatterns {
   const root = escapeRegExp(normalizeBase(base));
   const site = String.raw`^https?://[^/?#]+${root}`;
   // Under data/, but never a range-served or network-only file: those go to the network untouched.
   const data = `${site}${escapeRegExp(DATA_DIR)}(?!${RANGE_SERVED_PATH}|${NETWORK_ONLY_DATA})`;
   const tiles = escapeRegExp(TILE_ORIGIN);
+  const roots = liveRoot === null || liveRoot === '' ? [] : [liveRoot];
+  if (roots.length > 0 && liveFallback !== null && liveFallback !== '') roots.push(liveFallback);
+  const files = roots.map((root) => escapeRegExp(`${root}${LIVE_CLOSINGS_PATH}`));
   return {
     live:
-      liveRoot === null || liveRoot === ''
+      files.length === 0
         ? null
-        : new RegExp(`^${escapeRegExp(`${liveRoot}${LIVE_CLOSINGS_PATH}`)}(?:[?#]|$)`),
+        : new RegExp(
+            `^${files.length === 1 ? files.join('') : `(?:${files.join('|')})`}(?:[?#]|$)`,
+          ),
     staticData: new RegExp(`${data}${STATIC_DATA}`),
     data: new RegExp(data),
     assets: new RegExp(`${site}assets/[^?#]+\\.(?:woff2|js|css)(?:[?#]|$)`),
@@ -332,6 +384,34 @@ export const onlyTiles = {
     cachedResponse?: Response;
   }): Promise<Response | null> =>
     Promise.resolve(request.cache === 'reload' ? null : (cachedResponse ?? null)),
+};
+
+/**
+ * Marks the live closings file the worker gives from its cache in place of
+ * the network's answer (a network that closes the connection, or one that
+ * does not answer within LIVE_TIMEOUT_SECONDS) with KEPT_HEADER, so the page
+ * can tell the root did not answer and ask the other (data/live-roots.ts),
+ * and still has this copy if neither does. Only a build with a second live
+ * root has it. Workbox writes this plugin into sw.js as source text, so it
+ * must stay self-contained, the header written out (a test holds it equal).
+ */
+export const markKept = {
+  cachedResponseWillBeUsed: ({
+    cachedResponse,
+  }: {
+    cachedResponse?: Response;
+  }): Promise<Response | null> => {
+    if (cachedResponse === undefined) return Promise.resolve(null);
+    const headers = new Headers(cachedResponse.headers);
+    headers.set('x-snowlight-kept', '1');
+    return Promise.resolve(
+      new Response(cachedResponse.body, {
+        status: cachedResponse.status,
+        statusText: cachedResponse.statusText,
+        headers,
+      }),
+    );
+  },
 };
 
 /** Finds the copy of a file a cache keeps; in the worker, whichever of its caches holds it. */
@@ -435,17 +515,17 @@ export type RouteName = 'range' | Exclude<keyof RoutePatterns, 'navigation'>;
 /**
  * Which route serves a GET for `url` on a site at `base` whose build reads
  * live/closings.json from `liveRoot` (a root liveRootOf gave; null for its
- * own data/), in the order
+ * own data/), or from `liveFallback`, its second root, in the order
  * the worker tries them; `range` when the request carries a Range header.
  * Null means no route: the browser fetches it as if there were no worker.
  */
 export function routeFor(
   url: string,
   base: string,
-  init: { range?: boolean; liveRoot?: string | null } = {},
+  init: { range?: boolean; liveRoot?: string | null; liveFallback?: string | null } = {},
 ): RouteName | null {
   if (init.range === true) return 'range';
-  const patterns = routePatterns(base, init.liveRoot ?? null);
+  const patterns = routePatterns(base, init.liveRoot ?? null, init.liveFallback ?? null);
   const order = ['live', 'staticData', 'data', 'assets', 'tileJson', 'tiles'] as const;
   return order.find((name) => patterns[name]?.test(url) === true) ?? null;
 }
@@ -476,10 +556,18 @@ type WorkboxOptions = NonNullable<VitePWAOptions['workbox']>;
 
 /**
  * The generated worker's options for a site at `base`, whose build reads
- * live/closings.json from `liveRoot` when it names one (checkedLiveRoot).
+ * live/closings.json from `liveRoot` when it names one (checkedLiveRoot), and
+ * from `liveFallback` when the first does not answer (checkedLiveFallback).
  */
-export function workboxOptions(base: string, liveRoot: string | null = null): WorkboxOptions {
-  const patterns = routePatterns(base, liveRoot);
+export function workboxOptions(
+  base: string,
+  liveRoot: string | null = null,
+  liveFallback: string | null = null,
+): WorkboxOptions {
+  const patterns = routePatterns(base, liveRoot, liveFallback);
+  // With a second root, a copy given in place of an answer is marked, so the page asks the other.
+  const second =
+    liveRoot !== null && liveRoot !== '' && liveFallback !== null && liveFallback !== '';
   // Network-first: the newest file whenever the network answers, never a broadcast. Only a
   // build with a live root has the route; one without builds the same worker as before.
   const live: NonNullable<WorkboxOptions['runtimeCaching']> =
@@ -494,7 +582,7 @@ export function workboxOptions(base: string, liveRoot: string | null = null): Wo
               networkTimeoutSeconds: LIVE_TIMEOUT_SECONDS,
               expiration: { ...CACHE_LIMITS.data, purgeOnQuotaError: true },
               cacheableResponse: { statuses: [200] },
-              plugins: [keepNewerClosings],
+              plugins: second ? [keepNewerClosings, markKept] : [keepNewerClosings],
             },
           },
         ];
@@ -628,7 +716,11 @@ export function pwaOptions(): Partial<VitePWAOptions> {
       configureOptions(viteConfig, options) {
         const env = viteConfig.env as Readonly<Record<string, unknown>> | undefined;
         // A root set but refused fails the build here.
-        options.workbox = workboxOptions(viteConfig.base, checkedLiveRoot(env));
+        options.workbox = workboxOptions(
+          viteConfig.base,
+          checkedLiveRoot(env),
+          checkedLiveFallback(env),
+        );
       },
     },
   };

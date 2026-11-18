@@ -59,6 +59,16 @@ function builtLiveRoot(): string | null {
   return liveRootOf(root, import.meta.env.VITE_SNOWLIGHT_LIVE_LOOPBACK === '1');
 }
 
+/**
+ * The second live root this build names (VITE_SNOWLIGHT_LIVE_FALLBACK), read only when the
+ * first does not answer (data/live-roots.ts), or null. A build without one drops the check.
+ */
+function builtLiveFallback(): string | null {
+  const root = import.meta.env.VITE_SNOWLIGHT_LIVE_FALLBACK;
+  if (root === undefined || root === '' || builtLiveRoot() === null) return null;
+  return liveRootOf(root, import.meta.env.VITE_SNOWLIGHT_LIVE_LOOPBACK === '1');
+}
+
 /** When a response was sent, from its Date header: NaN without one. */
 function sentAt(response: Response): number {
   return Date.parse(response.headers.get('date') ?? '');
@@ -131,7 +141,8 @@ async function put(
  * earlier (for the live root's closings file, one whose generated_at is no
  * earlier). Only a 200 is kept, and only for a file under the data folder of
  * the site at `base` that the worker caches whole, or the closings file at
- * the build's live root (`liveRoot`): never a school tile file, read in
+ * the build's live root (`liveRoot`) or its second one (`liveFallback`),
+ * each under its own URL: never a school tile file, read in
  * ranges. Resolves to whether it was put, once it is written; never rejects.
  * Keeps of one URL are written in the order they were asked for.
  */
@@ -141,10 +152,11 @@ export function keepData(
   base: string = import.meta.env.BASE_URL,
   host: KeepHost = globalThis,
   liveRoot: string | null = builtLiveRoot(),
+  liveFallback: string | null = builtLiveFallback(),
 ): Promise<boolean> {
   const storage = host.caches;
   const href = absolute(url);
-  const route = href === null ? null : routeFor(href, base, { liveRoot });
+  const route = href === null ? null : routeFor(href, base, { liveRoot, liveFallback });
   const name = route === null ? undefined : DATA_CACHES[route];
   if (
     href === null ||

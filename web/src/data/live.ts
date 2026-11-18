@@ -91,6 +91,7 @@ import type { MapZones, ShownDay, ToldZones } from './map-day';
 import { wallClock, watchWake } from '../state/wake';
 import type { WakeHost } from '../state/wake';
 import { fetchJson } from './files';
+import { liveFetch } from './live-roots';
 import type { DataFiles, Fetch } from './files';
 
 /** The parts of `window` the poller uses, so tests can hand it a fake. */
@@ -489,7 +490,8 @@ export function closingsReader(files: DataFiles, init: ClosingsReaderInit = {}):
         files,
         PUBLISHED_PATHS.closings,
         { cache: 'no-cache', signal: controller.signal },
-        fetch,
+        // From the live host, else the same files on the site's own domain (live-roots.ts).
+        fetch ?? liveFetch,
       ).then(parseClosings),
       new Promise<null>((resolve) => {
         giveUp = () => {
@@ -640,7 +642,7 @@ export function predictionsReader(
         files,
         PUBLISHED_PATHS.predictions,
         { cache: 'no-cache', signal: controller.signal },
-        fetch,
+        fetch ?? liveFetch,
       ).then(parsePredictions),
       new Promise<null>((resolve) => {
         timer = setTimeout(() => {

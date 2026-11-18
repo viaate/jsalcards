@@ -16,6 +16,7 @@ import type { SeasonDays } from '../copy-season';
 import { PUBLISHED_PATHS } from '../types/generated';
 import type { DirectoryStamp, SeasonFile } from '../types/generated';
 import { fetchJson } from './files';
+import { liveFetch } from './live-roots';
 import type { DataFiles } from './files';
 import { sameStamp } from './school-day';
 
@@ -176,7 +177,10 @@ export function readSeason(
   const at = now();
   if (last !== undefined && at - last.at >= 0 && at - last.at < SEASON_READ_MS) return last.file;
   if (!files.has(SEASON_PATH)) return Promise.resolve(null);
-  const file = fetchJson(files, SEASON_PATH, { cache: 'no-cache' }).then(parseSeason, () => null);
+  const file = fetchJson(files, SEASON_PATH, { cache: 'no-cache' }, liveFetch).then(
+    parseSeason,
+    () => null,
+  );
   reads.set(files, { at, file });
   return file;
 }
