@@ -7,6 +7,7 @@ import {
   LIVE_ROOT_KEY,
   LIVE_ROOT_OFF_KEY,
   LIVE_ROOT_RETRY_MS,
+  LIVE_ROOT_SECOND_EVERY_MS,
   LIVE_ROOT_WAIT_MS,
   answered,
   liveFetch,
@@ -124,6 +125,7 @@ describe('rootedFetch', () => {
       String(Date.now()),
     );
     // Read second first from then on: the first is not asked.
+    await vi.advanceTimersByTimeAsync(LIVE_ROOT_SECOND_EVERY_MS);
     await read(`${FIRST}${PATH}`);
     await read(`${FIRST}predictions/latest.json`);
     expect(rootsOf(asked.slice(2))).toEqual(['second', 'second']);
@@ -295,6 +297,7 @@ describe('rootedFetch', () => {
     controller.abort();
     const response = await reading;
     expect(response.headers.get(KEPT_HEADER)).toBe('1');
+    expect(await response.text()).toBe(FILE);
     // Not a failure of the second: it is asked again next time.
     expect((store as ReturnType<typeof memoryStore>).items.size).toBe(0);
   });
@@ -327,17 +330,40 @@ describe('rootedFetch', () => {
     expect(items.get(LIVE_ROOT_KEY)).toBe(String(Date.now()));
   });
 
-  it('leaves the second alone once both failed though it was read first, and remembers that through the storage', async () => {
+  it('gives a second root that was answering one more try, then leaves it alone, and remembers that through the storage', async () => {
     const store = memoryStore();
     store.setItem(LIVE_ROOT_KEY, String(Date.now() - 60_000));
     const one = setup({ [FIRST]: ['kept'], [SECOND]: ['closed'] }, store);
     expect((await one.read(`${FIRST}${PATH}`)).headers.get(KEPT_HEADER)).toBe('1');
     expect(rootsOf(one.asked)).toEqual(['second', 'first']);
-    expect(store.items.has(LIVE_ROOT_KEY)).toBe(false);
-    // Another page of the visit reads the first alone.
-    const two = setup({ [FIRST]: ['kept'], [SECOND]: ['file'] }, store);
-    await two.read(`${FIRST}${PATH}`);
-    expect(rootsOf(two.asked)).toEqual(['first']);
+    // One failure of a root that was answering: no longer read first, but not left alone yet.
+    expect([...store.items.keys()]).toEqual([]);
+    // Another page of the visit reads the live host first, then the second once more.
+    const two = setup({ [FIRST]: ['kept'], [SECOND]: [502] }, store);
+    expect((await two.read(`${FIRST}${PATH}`)).headers.get(KEPT_HEADER)).toBe('1');
+    expect(rootsOf(two.asked)).toEqual(['first', 'second']);
+    // Two in a row: left alone for 10 minutes.
+    expect([...store.items.keys()]).toEqual([LIVE_ROOT_OFF_KEY]);
+    const three = setup({ [FIRST]: ['kept'], [SECOND]: ['file'] }, store);
+    await three.read(`${FIRST}${PATH}`);
+    expect(rootsOf(three.asked)).toEqual(['first']);
+  });
+
+  it('gives a second root that was answering and then once fails a minute later the live host read, and takes it again', async () => {
+    // The blocked network: the live host closes every connection; the second answers, fails once, answers.
+    const { read, asked, store } = setup({
+      [FIRST]: ['closed'],
+      [SECOND]: ['file', 502, 'file'],
+    });
+    const items = (store as ReturnType<typeof memoryStore>).items;
+    expect(answered(await read(`${FIRST}${PATH}`))).toBe(true);
+    await vi.advanceTimersByTimeAsync(LIVE_ROOT_SECOND_EVERY_MS);
+    await expect(read(`${FIRST}${PATH}`)).rejects.toThrow('Failed to fetch');
+    expect(items.has(LIVE_ROOT_OFF_KEY)).toBe(false);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(answered(await read(`${FIRST}${PATH}`))).toBe(true);
+    expect(rootsOf(asked)).toEqual(['first', 'second', 'second', 'first', 'first', 'second']);
+    expect(items.get(LIVE_ROOT_KEY)).toBe(String(Date.now()));
   });
 
   it('tries the first again every 10 minutes, and goes back to it once it answers', async () => {
@@ -372,6 +398,7 @@ describe('rootedFetch', () => {
   it('goes back to the first at once when the second stops answering', async () => {
     const { read, asked, store } = setup({ [FIRST]: ['closed', 'file'], [SECOND]: ['file', 502] });
     await read(`${FIRST}${PATH}`);
+    await vi.advanceTimersByTimeAsync(LIVE_ROOT_SECOND_EVERY_MS);
     const response = await read(`${FIRST}${PATH}`);
     expect(answered(response)).toBe(true);
     expect(rootsOf(asked)).toEqual(['first', 'second', 'second', 'first']);
@@ -411,6 +438,7 @@ describe('rootedFetch', () => {
     for (const store of [null, broken]) {
       const { read, asked } = setup({ [FIRST]: ['closed'], [SECOND]: ['file'] }, store);
       await read(`${FIRST}${PATH}`);
+      await vi.advanceTimersByTimeAsync(LIVE_ROOT_SECOND_EVERY_MS);
       await read(`${FIRST}${PATH}`);
       expect(rootsOf(asked)).toEqual(['first', 'second', 'second']);
     }
@@ -431,6 +459,121 @@ describe('rootedFetch', () => {
       { url: 'https://snow.test/data/schools/meta.json', cache: 'default' },
       { url: `${SECOND}${PATH}`, cache: undefined },
     ]);
+  });
+
+  it('gives the kept copy within the wait when the remembered second root stops answering, and leaves it alone', async () => {
+    const store = memoryStore();
+    store.setItem(LIVE_ROOT_KEY, String(Date.now() - 60_000));
+    const { read, asked, aborted } = setup({ [FIRST]: ['kept'], [SECOND]: ['hang'] }, store);
+    let response: Response | undefined;
+    void read(`${FIRST}${PATH}`).then((answer) => {
+      response = answer;
+    });
+    await vi.advanceTimersByTimeAsync(LIVE_ROOT_WAIT_MS - 1);
+    expect(response).toBeUndefined();
+    // The second has had its wait: the live host is asked, and its kept copy given at once.
+    await vi.advanceTimersByTimeAsync(1);
+    expect(rootsOf(asked)).toEqual(['second', 'first']);
+    expect(response?.headers.get(KEPT_HEADER)).toBe('1');
+    expect(await response?.text()).toBe(FILE);
+    expect(rootsOf(aborted)).toEqual(['second']);
+    expect([...store.items.keys()]).toEqual([LIVE_ROOT_OFF_KEY]);
+    // The next read, a minute on, is the live host alone.
+    await vi.advanceTimersByTimeAsync(60_000);
+    await read(`${FIRST}${PATH}`);
+    expect(rootsOf(asked)).toEqual(['second', 'first', 'first']);
+  });
+
+  it('counts a second root that runs past its wait as failed though the caller gives up later', async () => {
+    const { read, store } = setup({ [FIRST]: ['hang'], [SECOND]: ['hang'] });
+    const controller = new AbortController();
+    const reading = read(`${FIRST}${PATH}`, { signal: controller.signal });
+    const failed = expect(reading).rejects.toThrow('aborted');
+    await vi.advanceTimersByTimeAsync(2 * LIVE_ROOT_WAIT_MS);
+    const items = (store as ReturnType<typeof memoryStore>).items;
+    expect(items.get(LIVE_ROOT_OFF_KEY)).toBe(String(Date.now()));
+    controller.abort();
+    await failed;
+    expect(items.has(LIVE_ROOT_OFF_KEY)).toBe(true);
+  });
+
+  for (const status of [403, 404] as const) {
+    it(`gives the second root own ${String(status)} as it came, and keeps reading it first`, async () => {
+      const { read, asked, store } = setup({
+        [FIRST]: ['closed'],
+        [SECOND]: ['file', status, 'file'],
+      });
+      const items = (store as ReturnType<typeof memoryStore>).items;
+      await read(`${FIRST}${PATH}`);
+      const took = items.get(LIVE_ROOT_KEY);
+      const missing = await read(`${FIRST}live/season.json`);
+      expect(missing.status).toBe(status);
+      expect(items.get(LIVE_ROOT_KEY)).toBe(took);
+      expect(items.has(LIVE_ROOT_OFF_KEY)).toBe(false);
+      await vi.advanceTimersByTimeAsync(LIVE_ROOT_SECOND_EVERY_MS);
+      expect(answered(await read(`${FIRST}${PATH}`))).toBe(true);
+      expect(rootsOf(asked)).toEqual(['first', 'second', 'second', 'second']);
+    });
+  }
+
+  it('gives a first-asked second root own 404 at once, before the live host is asked', async () => {
+    const { read, asked, store } = setup({ [FIRST]: ['closed'], [SECOND]: [404] });
+    const response = await read(`${FIRST}${PATH}`);
+    expect(response.status).toBe(404);
+    expect(rootsOf(asked)).toEqual(['first', 'second']);
+    expect((store as ReturnType<typeof memoryStore>).items.has(LIVE_ROOT_KEY)).toBe(true);
+  });
+
+  it('gives the newer of two kept copies when both roots fail', async () => {
+    const made = (at: string): string => FILE.replace('2026-01-12T12:42:00Z', at);
+    const copies = (first: string, second: string): Fetch => {
+      return (input) =>
+        Promise.resolve(
+          new Response(input.startsWith(SECOND) ? second : first, {
+            headers: { 'content-type': 'application/json', [KEPT_HEADER]: '1' },
+          }),
+        );
+    };
+    for (const [first, second, given] of [
+      [made('2026-01-12T07:00:00Z'), made('2026-01-12T12:40:00Z'), 'second'],
+      [made('2026-01-12T12:40:00Z'), made('2026-01-12T07:00:00Z'), 'first'],
+      [made('2026-01-12T12:40:00Z'), made('2026-01-12T12:40:00Z'), 'first'],
+      [made('2026-01-12T12:40:00Z'), '{"days":[]}', 'first'],
+    ] as const) {
+      const read = rootedFetch({
+        primary: FIRST,
+        fallback: SECOND,
+        fetch: copies(first, second),
+        store: null,
+      });
+      const text = await (await read(`${FIRST}${PATH}`)).text();
+      expect([given, text]).toEqual([given, given === 'second' ? second : first]);
+    }
+  });
+
+  it('reads a file through the second root at most every 3 minutes, and at once on a new page', async () => {
+    expect(LIVE_ROOT_SECOND_EVERY_MS).toBe(180_000);
+    const store = memoryStore();
+    const { read, asked } = setup({ [FIRST]: ['closed'], [SECOND]: ['file'] }, store);
+    await read(`${FIRST}${PATH}`);
+    // A poll a minute: the file the second gave, again, until 3 minutes have gone by.
+    for (let minute = 1; minute < 3; minute += 1) {
+      await vi.advanceTimersByTimeAsync(60_000);
+      const again = await read(`${FIRST}${PATH}`, { cache: 'no-cache' });
+      expect(answered(again)).toBe(true);
+      expect(await again.text()).toBe(FILE);
+    }
+    expect(rootsOf(asked)).toEqual(['first', 'second']);
+    // Another file is read as it comes.
+    await read(`${FIRST}predictions/latest.json`);
+    expect(rootsOf(asked)).toEqual(['first', 'second', 'second']);
+    await vi.advanceTimersByTimeAsync(60_000);
+    await read(`${FIRST}${PATH}`);
+    expect(rootsOf(asked)).toEqual(['first', 'second', 'second', 'second']);
+    // A reload: the new page reads the second at once.
+    const reload = setup({ [SECOND]: ['file'] }, store);
+    await reload.read(`${FIRST}${PATH}`);
+    expect(rootsOf(reload.asked)).toEqual(['second']);
   });
 
   it('stops both reads when the caller gives up, and asks no root after that', async () => {

@@ -23,12 +23,28 @@
  *
  * The root that answered is kept for the visit (sessionStorage, LIVE_ROOT_KEY):
  * once the second has, it is read first, and the first is tried first again
- * every LIVE_ROOT_RETRY_MS. Once a root has failed, the other is given at most
- * LIVE_ROOT_WAIT_MS from when it is asked, before the page is given what the
- * live host gave it (the worker's kept copy, its error), as with one root: the
- * case is never made worse than it was. When neither answers, the second root
- * is not asked again for LIVE_ROOT_RETRY_MS (LIVE_ROOT_OFF_KEY): the page reads
- * as it does with one root, and asks the second nothing it cannot answer.
+ * every LIVE_ROOT_RETRY_MS. The second root has at most LIVE_ROOT_WAIT_MS from
+ * when it is asked, whichever is read first; once it has had them, the page
+ * is given what the live host gave it (the worker's kept copy, its error) as
+ * soon as the live host has given it, as with one root, and the live host
+ * itself has as long as it takes: the case is never made worse than it was. A
+ * 4xx from the second root (a file not published yet) is the live host's own
+ * answer read through it: given as it came, and the second stays the visit's.
+ *
+ * When the second root fails, it is not asked again for LIVE_ROOT_RETRY_MS
+ * (LIVE_ROOT_OFF_KEY): the page reads as it does with one root, and asks the
+ * second nothing it cannot answer. That holds for a second root that ran past
+ * its wait though the caller gave up later. One that was answering until then
+ * and fails at once (a 502) is given one more try first: the next read asks
+ * the live host first, then it, and a second failure in a row leaves it alone.
+ * When both give a copy the worker kept, the page is given the newer, by the
+ * generated_at each says.
+ *
+ * While the visit reads the second root first, a file is read through it at
+ * most every LIVE_ROOT_SECOND_EVERY_MS, as each request there counts against
+ * the account's shared free limit (docs/live.md): in between, the page is
+ * given the file the second root last gave, made when it says, so the page
+ * shows that file's own time. A new page (a reload) reads at once.
  *
  * A build without a second root (either variable unset or empty) reads as it
  * did before: liveFetch is fetchFile itself.
@@ -46,6 +62,9 @@ export const LIVE_ROOT_KEY = 'snowlight-live-root';
 
 /** Where the visit keeps when both roots last failed one read: the time, in ms since the epoch. */
 export const LIVE_ROOT_OFF_KEY = 'snowlight-live-root-off';
+
+/** How often, at most, the page reads a file through the second root while it reads that root first: every 3 minutes. */
+export const LIVE_ROOT_SECOND_EVERY_MS = 3 * 60_000;
 
 /** How long a root may take before the other is asked, and how long the other then has (the worker's own wait). */
 export const LIVE_ROOT_WAIT_MS = LIVE_TIMEOUT_SECONDS * 1000;
@@ -95,10 +114,27 @@ function discard(outcome: Outcome | undefined): void {
 const fileOf = (outcome: Outcome | null): Response | null =>
   outcome?.response !== undefined && answered(outcome.response) ? outcome.response : null;
 
+/** Whether `outcome` is a copy the worker kept, given in place of an answer. */
+const keptOf = (outcome: Outcome | null): Response | null =>
+  outcome?.response?.ok === true && outcome.response.headers.get(KEPT_HEADER) !== null
+    ? outcome.response
+    : null;
+
 /** The outcome as the read gave it: the response, or its failure thrown. */
 function give(outcome: Outcome): Response {
   if (outcome.response !== undefined) return outcome.response;
   throw outcome.error as Error;
+}
+
+/** When a file says it was made (its generated_at), in ms since the epoch; null when it says none. */
+async function madeAt(response: Response): Promise<number | null> {
+  try {
+    const match = /"generated_at"\s*:\s*"([^"]+)"/.exec(await response.clone().text());
+    const at = match?.[1] === undefined ? Number.NaN : Date.parse(match[1]);
+    return Number.isFinite(at) ? at : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -112,6 +148,8 @@ export function rootedFetch(init: LiveRootsInit): Fetch {
   const store = init.store ?? null;
   /** The page's own memory of both times, where the visit's storage cannot be had. */
   const memory = new Map<string, number>();
+  /** The last file the second root gave for each path, and when, for LIVE_ROOT_SECOND_EVERY_MS. */
+  const held = new Map<string, { readonly at: number; readonly response: Response }>();
   const load = (key: string): number | null => {
     if (store !== null) {
       try {
@@ -135,12 +173,12 @@ export function rootedFetch(init: LiveRootsInit): Fetch {
       // Kept for this page alone.
     }
   };
-  /** Whether `key` was set less than LIVE_ROOT_RETRY_MS ago (a clock set back past it counts as that long). */
-  const recent = (key: string, at: number): boolean => {
+  /** Whether `key` was set less than `ms` ago (a clock set back past it counts as that long). */
+  const recent = (key: string, at: number, ms = LIVE_ROOT_RETRY_MS): boolean => {
     const since = load(key);
     if (since === null) return false;
     const age = at - since;
-    return age >= 0 && age < LIVE_ROOT_RETRY_MS;
+    return age >= 0 && age < ms;
   };
   return async (input, options = {}) => {
     if (!input.startsWith(primary)) return fetch(input, options);
@@ -149,137 +187,187 @@ export function rootedFetch(init: LiveRootsInit): Fetch {
     if (recent(LIVE_ROOT_OFF_KEY, started)) return fetch(input, options);
     const rest = input.slice(primary.length);
     const secondFirst = recent(LIVE_ROOT_KEY, started);
+    // On the second root, a path it gave less than LIVE_ROOT_SECOND_EVERY_MS ago is that file
+    // again: the same file, made when it says, that the page holds already.
+    const last = held.get(rest);
+    if (
+      secondFirst &&
+      last !== undefined &&
+      (options.method ?? 'GET') === 'GET' &&
+      started - last.at >= 0 &&
+      started - last.at < LIVE_ROOT_SECOND_EVERY_MS
+    ) {
+      return last.response.clone();
+    }
     const order = secondFirst ? [fallback, primary] : [primary, fallback];
+    const own = order.indexOf(primary);
+    const second = 1 - own;
     const signal = options.signal ?? null;
-    const gaveUp = (): boolean => signal?.aborted === true;
     const controllers: AbortController[] = [];
     const reads: Promise<Outcome>[] = [];
-    const read = (root: string): Promise<Outcome> => {
-      const controller = new AbortController();
-      controllers.push(controller);
-      const stop = (): void => {
-        controller.abort(signal?.reason);
-      };
-      if (signal?.aborted === true) stop();
-      else signal?.addEventListener('abort', stop, { once: true });
-      const reading: Promise<Outcome> = fetch(`${root}${rest}`, {
-        ...options,
-        signal: controller.signal,
-      }).then(
-        (response) => {
-          signal?.removeEventListener('abort', stop);
-          return { response };
-        },
-        (error: unknown) => {
-          signal?.removeEventListener('abort', stop);
-          return { error };
-        },
-      );
-      reads.push(reading);
-      return reading;
-    };
-    /** Gives up the read at `index`, and lets go of its answer when it comes. */
-    const drop = (index: number): void => {
-      controllers[index]?.abort();
-      void reads[index]?.then(discard);
-    };
-    const took = (index: number): void => {
-      save(LIVE_ROOT_OFF_KEY, null);
-      if (order[index] === primary) save(LIVE_ROOT_KEY, null);
-      else if (!secondFirst) save(LIVE_ROOT_KEY, now());
-    };
-
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const first: Outcome | null = await Promise.race([
-      read(order[0] ?? primary),
-      new Promise<null>((resolve) => {
-        timer = setTimeout(() => {
-          resolve(null);
-        }, waitMs);
-      }),
-    ]);
-    clearTimeout(timer);
-    const outcomes: [Outcome | null, Outcome | null] = [first, null];
-    const file = fileOf(first);
-    if (file !== null) {
-      took(0);
-      return file;
-    }
-    if (gaveUp()) {
-      drop(0);
-      if (first !== null) return give(first);
-      throw signal?.reason as Error;
-    }
-    // The live host's own error: given as it came, as with one root.
-    if (order[0] === primary && first?.response !== undefined && reached(first.response)) {
-      return first.response;
-    }
-
-    // The other root, while the first may still answer: whichever answers first is read. The
-    // other has at most waitMs; the first, still on its way, as long as it takes, as with one root.
-    void read(order[1] ?? fallback);
+    const outcomes: [Outcome | null, Outcome | null] = [null, null];
+    /** Whether the second root is no longer waited for: it failed, or ran past its wait. */
+    let secondOut = false;
+    let finished = false;
+    const timers: ReturnType<typeof setTimeout>[] = [];
     let stopWaiting: (() => void) | undefined;
-    const winner = await new Promise<number | null>((resolve) => {
-      const done = [first !== null, false];
-      const settle = (index: number, outcome: Outcome | null): void => {
-        if (outcome !== null) outcomes[index] = outcome;
-        done[index] = true;
-        if (fileOf(outcome) !== null) resolve(index);
-        else if (done[0] === true && done[1] === true) resolve(null);
-      };
-      if (first === null) {
-        void reads[0]?.then((outcome) => {
-          settle(0, outcome);
-        });
+
+    const took = (index: number, file: Response): void => {
+      save(LIVE_ROOT_OFF_KEY, null);
+      if (index === own) {
+        save(LIVE_ROOT_KEY, null);
+        held.clear();
+        return;
       }
-      void reads[1]?.then((outcome) => {
-        settle(1, outcome);
-      });
-      timer = setTimeout(() => {
-        settle(1, null);
-      }, waitMs);
+      const at = now();
+      if (!recent(LIVE_ROOT_KEY, at)) save(LIVE_ROOT_KEY, at);
+      const before = held.get(rest);
+      if (before !== undefined) discard({ response: before.response });
+      held.set(rest, { at, response: file.clone() });
+    };
+    /**
+     * The second root failed (`ranOut`: gave nothing within its wait). It is left alone for a
+     * while, but a second root that was answering until now is given one more try first: the
+     * next read asks the live host first, then it.
+     */
+    const struck = (ranOut: boolean): void => {
+      if (secondOut) return;
+      secondOut = true;
+      save(LIVE_ROOT_KEY, null);
+      held.delete(rest);
+      if (ranOut || !secondFirst) save(LIVE_ROOT_OFF_KEY, now());
+    };
+
+    type Decision =
+      | { readonly kind: 'took'; readonly index: number; readonly response: Response }
+      | { readonly kind: 'neither' }
+      | { readonly kind: 'gaveUp' };
+    const decision = await new Promise<Decision>((resolve) => {
+      const decide = (value: Decision): void => {
+        if (finished) return;
+        finished = true;
+        for (const timer of timers) clearTimeout(timer);
+        if (stopWaiting !== undefined) signal?.removeEventListener('abort', stopWaiting);
+        resolve(value);
+      };
+      /** Done once the live host has given its answer and the second is no longer waited for. */
+      const check = (): void => {
+        if (outcomes[own] !== null && (secondOut || outcomes[second] !== null)) {
+          decide({ kind: 'neither' });
+        }
+      };
+      const ranOut = (): void => {
+        if (finished || outcomes[second] !== null) return;
+        struck(true);
+        check();
+      };
+      const start = (index: number): void => {
+        if (reads[index] !== undefined || finished) return;
+        const root = order[index] ?? primary;
+        const controller = new AbortController();
+        controllers[index] = controller;
+        const reading: Promise<Outcome> = fetch(`${root}${rest}`, {
+          ...options,
+          signal: controller.signal,
+        }).then(
+          (response) => ({ response }),
+          (error: unknown) => ({ error }),
+        );
+        reads[index] = reading;
+        // The second root has the wait from when it is asked, the live host as long as it takes.
+        if (index === second) timers.push(setTimeout(ranOut, waitMs));
+        void reading.then((outcome) => {
+          settle(index, outcome);
+        });
+      };
+      const settle = (index: number, outcome: Outcome): void => {
+        if (finished) return;
+        outcomes[index] = outcome;
+        const file = fileOf(outcome);
+        if (file !== null) {
+          decide({ kind: 'took', index, response: file });
+          return;
+        }
+        const response = outcome.response;
+        // An HTTP error from the live host, or from the second root that read it (a 4xx: the
+        // file is not there), is that host's own answer, given as it came.
+        if (
+          response !== undefined &&
+          ((index === own && reached(response)) ||
+            (index === second &&
+              response.status >= 400 &&
+              response.status < 500 &&
+              reached(response)))
+        ) {
+          decide({ kind: 'took', index, response });
+          return;
+        }
+        if (index === second) struck(false);
+        // The root read first failed: the other is asked at once.
+        if (index === 0) start(1);
+        check();
+      };
+      if (signal?.aborted === true) {
+        decide({ kind: 'gaveUp' });
+        return;
+      }
       stopWaiting = () => {
-        resolve(null);
+        decide({ kind: 'gaveUp' });
       };
       signal?.addEventListener('abort', stopWaiting, { once: true });
+      start(0);
+      // The root read first has not answered within the wait: the other is asked too, and
+      // whichever gives the file first is read.
+      timers.push(
+        setTimeout(() => {
+          start(1);
+        }, waitMs),
+      );
     });
-    clearTimeout(timer);
-    if (stopWaiting !== undefined) signal?.removeEventListener('abort', stopWaiting);
-    if (winner !== null) {
-      const won = fileOf(winner === 0 ? outcomes[0] : outcomes[1]);
-      if (won !== null) {
-        drop(1 - winner);
-        took(winner);
-        return won;
+
+    /** Gives up both reads, and lets go of every answer but `kept` when it comes. */
+    const release = (kept: Response | null): void => {
+      for (const [index, controller] of controllers.entries()) {
+        // A read that already settled has nothing to stop.
+        if (outcomes[index] === null) controller.abort();
+        void reads[index]?.then((outcome) => {
+          if (outcome.response !== kept) discard(outcome);
+        });
+      }
+    };
+    if (decision.kind === 'took') {
+      release(decision.response);
+      if (answered(decision.response)) took(decision.index, decision.response);
+      else if (decision.index === second) {
+        save(LIVE_ROOT_OFF_KEY, null);
+        if (!recent(LIVE_ROOT_KEY, now())) save(LIVE_ROOT_KEY, now());
+      }
+      return decision.response;
+    }
+    const mine = outcomes[own] ?? null;
+    const ownCopy = keptOf(mine);
+    const secondCopy = keptOf(outcomes[second] ?? null);
+    if (decision.kind === 'gaveUp') {
+      const response = mine?.response ?? secondCopy;
+      release(response);
+      if (response !== null) return response;
+      if (mine !== null) return give(mine);
+      throw signal?.reason as Error;
+    }
+    // Neither gave the file. What the live host gave (the worker's kept copy, an error), as with
+    // one root; but a copy the worker kept from the second root that is newer, or the only copy.
+    let chosen: Response | null = mine?.response ?? null;
+    if (secondCopy !== null) {
+      const [ownAt, secondAt] =
+        ownCopy === null ? [null, 0] : await Promise.all([madeAt(ownCopy), madeAt(secondCopy)]);
+      if (ownCopy === null || (secondAt !== null && (ownAt === null || secondAt > ownAt))) {
+        chosen = secondCopy;
       }
     }
-    // Neither answered: the second is left alone for a while, unless the caller gave up.
-    if (!gaveUp()) {
-      save(LIVE_ROOT_KEY, null);
-      save(LIVE_ROOT_OFF_KEY, now());
-    }
-    // What the live host gave (the worker's kept copy, an error), as with one root, whichever
-    // was asked first; else the second root's kept copy.
-    const ownIndex = order.indexOf(primary);
-    const own = ownIndex === 0 ? outcomes[0] : outcomes[1];
-    const other = ownIndex === 0 ? outcomes[1] : outcomes[0];
-    if (own?.response !== undefined) {
-      drop(1 - ownIndex);
-      return own.response;
-    }
-    if (
-      other?.response !== undefined &&
-      other.response.ok &&
-      other.response.headers.get(KEPT_HEADER) !== null
-    ) {
-      drop(ownIndex);
-      return other.response;
-    }
-    drop(0);
-    drop(1);
-    // The live host's own failure (an abort among them), as the read failed with one root.
-    if (own !== null) return give(own);
-    throw (gaveUp() ? signal?.reason : new Error('No live root answered.')) as Error;
+    release(chosen);
+    if (chosen !== null) return chosen;
+    if (mine !== null) return give(mine);
+    throw new Error('No live root answered.');
   };
 }
 
