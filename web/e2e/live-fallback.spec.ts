@@ -238,7 +238,7 @@ async function secondRoot(port: number, siteOrigin: string): Promise<SecondRoot>
       'Access-Control-Allow-Origin': siteOrigin,
       Vary: 'Origin',
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, max-age=60',
+      'Cache-Control': 'public, max-age=0, must-revalidate',
     };
     if (second.status !== 200) {
       response.writeHead(second.status, { ...headers, 'Cache-Control': 'no-store' }).end();
@@ -510,6 +510,18 @@ async function poll(page: Page): Promise<void> {
 const closingsAsked = (asked: readonly string[]): number =>
   asked.filter((item) => item.endsWith('/live/closings.json')).length;
 
+/**
+ * Polls until the glow lights `count` schools: through the second root the page reads the
+ * closings at most every 3 minutes (live-roots.ts LIVE_ROOT_SECOND_EVERY_MS), so within 4 polls.
+ */
+async function pollUntilLit(page: Page, count: number): Promise<void> {
+  for (let minute = 0; minute < 4 && (await lit(page)) !== count; minute += 1) {
+    await poll(page);
+    await page.waitForTimeout(500);
+  }
+  await expect.poll(() => lit(page), SETTLE).toBe(count);
+}
+
 test("a filter that closes every connection to the live host: a fresh page shows today's file from the second root, and stays on it", async ({
   browser,
 }) => {
@@ -522,13 +534,15 @@ test("a filter that closes every connection to the live host: a fresh page shows
   expect(closingsAsked(host.asked)).toBe(1);
   expect(closingsAsked(second.asked)).toBeGreaterThanOrEqual(1);
 
-  // The ingest publishes a newer file: one poll later it shows, read from the second root alone.
+  // The ingest publishes a newer file: within 3 minutes it shows, read from the second root
+  // alone, which is asked for the closings once in that time.
   second.closings = SECOND;
   const asked = host.asked.length;
-  await poll(page);
-  await expect.poll(() => lit(page), SETTLE).toBe(3);
+  const secondAsked = closingsAsked(second.asked);
+  await pollUntilLit(page, 3);
   await expect(updated).toHaveText(format.liveAt(AT_47, ZONE), SETTLE);
   expect(host.asked.length).toBe(asked);
+  expect(closingsAsked(second.asked)).toBe(secondAsked + 1);
   expect(problems.filter((line) => !blockedRead(line))).toEqual([]);
   await context.close();
 });
@@ -694,6 +708,52 @@ test('a worker that kept a copy, a live host that is blocked or silent and a sec
   await context.close();
 });
 
+test('a remembered second root that stops answering, with a worker copy of the live host only: a reload shows that copy with its own time within the wait, and the second is left alone after', async ({
+  browser,
+}) => {
+  const { second } = theSite();
+  const { context, page, host } = await keptAtHome(browser);
+  // The blocking network: the second root takes over, and the visit remembers it.
+  host.mode = 'closed';
+  second.closings = SECOND;
+  await page.reload();
+  await settled(page);
+  await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_47, ZONE), SETTLE);
+  const remembered = (): Promise<[boolean, boolean]> =>
+    page.evaluate(() => [
+      sessionStorage.getItem('snowlight-live-root') !== null,
+      sessionStorage.getItem('snowlight-live-root-off') !== null,
+    ]);
+  expect(await remembered()).toEqual([true, false]);
+  // Then the second root stops answering (a hung edge, a filter that starts dropping it), and the
+  // worker holds no copy of its own of it: only the live host's older one.
+  second.hang = true;
+  await page.evaluate(
+    async ([name, root]) => {
+      const cache = await caches.open(name);
+      for (const request of await cache.keys()) {
+        if (request.url.startsWith(root)) await cache.delete(request);
+      }
+    },
+    [DATA_CACHE, second.root] as const,
+  );
+  second.asked.length = 0;
+  const since = Date.now();
+  await page.reload();
+  // The second root's 4 s, then the worker's copy of the live host's file at once.
+  expect(await secondsUntilLiveAt(page, AT_42, since)).toBeLessThan(10);
+  expect(await lit(page)).toBe(2);
+  expect(closingsAsked(second.asked)).toBe(1);
+  expect(await remembered()).toEqual([false, true]);
+  // Left alone: the next polls read the live host alone, and still show that copy.
+  await poll(page);
+  await poll(page);
+  await page.waitForTimeout(1000);
+  expect(closingsAsked(second.asked)).toBe(1);
+  await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_42, ZONE));
+  await context.close();
+});
+
 test('a reload within the visit reads the second root first, and the live host is tried again only after 10 minutes', async ({
   browser,
 }) => {
@@ -716,21 +776,23 @@ test('a reload within the visit reads the second root first, and the live host i
   await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_47, ZONE), SETTLE);
   expect(host.asked.length).toBe(hostAsked);
 
-  // A poll a minute: the live host is left alone until 10 minutes after the second took over.
+  // A poll a minute: the live host is left alone until 10 minutes after the second took over,
+  // and the second is asked for the closings about every 3 minutes of those.
   const minutes = (): Promise<number> => page.evaluate((at) => (Date.now() - at) / 60_000, took);
-  while ((await minutes()) < 9) {
-    const before = closingsAsked(second.asked);
-    await poll(page);
-    await expect.poll(() => closingsAsked(second.asked), SETTLE).toBeGreaterThan(before);
-  }
+  const before = closingsAsked(second.asked);
+  while ((await minutes()) < 9) await poll(page);
+  await page.waitForTimeout(1000);
+  expect(closingsAsked(second.asked) - before).toBeGreaterThanOrEqual(2);
+  expect(closingsAsked(second.asked) - before).toBeLessThanOrEqual(4);
   expect(host.asked.length).toBe(hostAsked);
   // Past 10 minutes: the live host is tried first once (by whichever file is read first), fails,
   // and the second takes over again.
+  const again = closingsAsked(second.asked);
   while ((await minutes()) < 11) await poll(page);
   await expect.poll(() => host.asked.length, SETTLE).toBe(hostAsked + 1);
-  const again = closingsAsked(second.asked);
-  await poll(page);
   await expect.poll(() => closingsAsked(second.asked), SETTLE).toBeGreaterThan(again);
+  await poll(page);
+  await page.waitForTimeout(1000);
   expect(host.asked.length).toBe(hostAsked + 1);
   await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_47, ZONE));
   expect(problems.filter((line) => !blockedRead(line))).toEqual([]);
@@ -748,8 +810,7 @@ test("a first visit with a worker on the blocking network: its polls and a reloa
     timeout: 60_000,
   });
   second.closings = SECOND;
-  await poll(page);
-  await expect.poll(() => lit(page), SETTLE).toBe(3);
+  await pollUntilLit(page, 3);
   await expect(page.locator('.updated')).toHaveText(format.liveAt(AT_47, ZONE), SETTLE);
   await page.reload();
   await settled(page);
