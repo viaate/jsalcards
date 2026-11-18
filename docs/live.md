@@ -48,12 +48,12 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   a half-hourly source's statuses were dark for up to 25 minutes after a handoff, and its
   first pass at G+2 read nothing and was refused for health.)
 - **The handover carry.** A handover never changes what the file shows; only reads and the
-  ordinary aging rules do, with one exception: a carried source loses the spell credit (below),
-  so inside the first 45 minutes of a window or an alert that opened after its quiet read it
-  can go dark at the handover until the successor's own good read (FLICKER-23Z; never a false
-  or stale status, only the dark the run before would have shown without the credit). Every
-  pass writes `carry.json` to the state: the sources whose statuses it held, each with the
-  time of the good read holding them and the end of the hold it applied (that read's time
+  ordinary aging rules do, with one exception: a carried source loses the spell credit
+  (below), so inside the first 45 minutes of a window or an alert that opened after its quiet
+  read it can go dark at the handover until the successor's own good read (FLICKER-23Z; never
+  a false or stale status, only the dark the run before would have shown without the credit).
+  Every pass writes `carry.json` to the state: the sources whose statuses it held, each with
+  the time of the good read holding them and the end of the hold it applied (that read's time
   plus 90 minutes, or, in a window or an alert, 45 minutes from that read's time or, for a
   read this run first saw at a quiet pass, from the start of its first boosted pass after it,
   never past the 90; as the pass saw the source; `hold_end` in `snowlight/live/ingest.py`, a
@@ -65,91 +65,90 @@ successor, so one run follows the other all day (about 5 a day), like `predict.y
   that read's own time (never from the handover, and with no spell credit: the record does
   not say when the run before's spell began, so a successor that starts between a quiet read
   and a window's opening can still darken that list at the opening), and the listed end
-  allow, so a carried status never stands longer than in the run before,
-  even when the successor counts the source quiet because its first alerts read
-  failed (a new process has no alert set to keep yet); and only derivations stored under its
-  own version light (another version only darkens). Its own record keeps the earlier end for
-  the run after it. A successor whose clock runs behind the run before's, by up to the minute
-  a record may be ahead, finds that run's last good reads stamped ahead of its clock: G13
-  counts such a read as made now (age 0, never younger), so the source stays held and in its
-  own record, and its hold still ends at that read's time plus the bound on the successor's
-  clock, the instant a run in step ends it, or sooner when the source's states are withheld
-  for a failing resolve and that withholding ends first (below; a read further ahead is not
-  held, as before). Its
-  own first good read of the source replaces them, as any later read
-  does; a read that fails (`error`, `partial`, `late`, a wait or a block) leaves them as the
-  run before would have: held until G13 or the listed end stops them. So a source whose last
-  read failed, which is not read early, stays shown exactly as long as the run before would
-  have shown it, and goes dark at the same instant. Nothing is carried, today's rule (a source
-  not read in this process gives only its dissents), when the record is missing (`missing`),
-  does not parse (`unreadable`), has another schema (`version`) or key (`key`: new reader,
-  matcher, guards, directory edition or rules), is stamped more than a minute ahead of the
-  clock (`future`) or is older than the longest hold, 90 minutes (`old`); and a source whose
-  ledger read time is no longer the listed one (a good read the record does not know) is not
-  carried. The record and the ledger travel in the same pushed state, and only the run's
-  end may hand one over: every pass writes the record afresh, unmarked, and `live finish
-  --record` (the step after the reader has ended and before the end push, one line `carry
-  final: <n> sources` or `carry final: none (<code>)`) marks it final. A successor carries
-  nothing from a record without the mark (`not final`): a snapshot pushed while the run went
-  on, which a successor pulls when the run's end push failed (it is tried again only at the
-  next slot), the runner was lost or the job cut off (no end push), the pushes were hourly
-  or refused under the write cap, or the pull fell back to the previous slot. That snapshot's
-  pass may have held a closing the run then retracted and held dark while its uploads after
-  the snapshot failed or were refused (host writes failing, a refusal for health, an owner
-  hold, a rate limit): the host then still serves the snapshot's pass, and nothing on the
-  host tells the two apart, so carrying it would show the retracted closing as current. A
-  pass whose write fails removes the record, so an earlier pass's record is never marked
-  for the run's end. A final record is the run's last completed pass's, uploaded or not. A
-  pass cut off or failed after its reads (a kill, or an error the loop logs as a failed pass)
-  leaves the record of the pass before it beside a ledger that already holds the cut pass's
-  reads: a good read folded in that gap moves the ledger's read time, so its source is not
-  carried (the entry check above); a read the ledger could not take moves nothing, but the
-  reader holds that source dark from that moment, so it takes the source out of the record
-  on disk at once (one line `carry drop: 1 source (observe), <n> left`; a record it cannot
-  rewrite is removed, `carry drop: record removed (<error type>)`). A source whose resolve
-  failed at the pass is carried as any other and also listed `unknown` with an end (the
-  lines read `carry: <n> sources, <m> unknown` and `carry final: <n> sources, <m> unknown`):
-  the run before withheld its states (`source_unknown`) at every pass while its resolve
-  failed. The successor cannot tell a failure that would recur from one that has passed. It
-  resolves a carried source from the derivations the ledger stores, without the read's rows,
-  so a step only a read's rows reach (the unmatched-listing queue, a dated row's successor)
-  never runs there, and a failure in such a step would not recur until it reads the source
-  itself (a row never derived is already withheld, as any undecided row). So it withholds the
-  same states until it holds rows of that source from its own read, whose resolve then judges
-  at each pass as in any run, or until a read of it cannot be taken in (it then holds no rows
-  of it, as the run before would not), and never past the end listed: 90 minutes (the longest
-  G13 bound, the age past which a record carries nothing) from the last pass whose own resolve
-  failed. A run that only inherited the listing hands it on with the same end, or with 90
-  minutes from its own record's time when that is earlier (its clock running behind the run
-  before's, by up to the minute a record may be ahead; the run after would refuse a later end
-  as `unreadable` and carry nothing), so it never outlives that bound, and the withholding can
-  end up to that minute sooner: a pass of the run after inside that minute lights the other
-  sources' statuses in those states, which a run in step still withholds, each under its own
-  G13 bound; the withheld source's own stay dark. A run lists a withheld source as held no
-  later than the end of its withholding, so the run after never lights that source's carried
+  allow, so a carried status never stands longer than in the run before, even when the
+  successor counts the source quiet because its first alerts read failed (a new process has
+  no alert set to keep yet); and only derivations stored under its own version light (another
+  version only darkens). Its own record keeps the earlier end for the run after it. A
+  successor whose clock runs behind the run before's, by up to the minute a record may be
+  ahead, finds that run's last good reads stamped ahead of its clock: G13 counts such a read
+  as made now (age 0, never younger), so the source stays held and in its own record, and its
+  hold still ends at that read's time plus the bound on the successor's clock, the instant a
+  run in step ends it, or sooner when the source's states are withheld for a failing resolve
+  and that withholding ends first (below; a read further ahead is not held, as before). Its
+  own first good read of the source replaces them, as any later read does; a read that fails
+  (`error`, `partial`, `late`, a wait or a block) leaves them as the run before would have:
+  held until G13 or the listed end stops them. So a source whose last read failed, which is
+  not read early, stays shown exactly as long as the run before would have shown it, and goes
+  dark at the same instant. Nothing is carried, today's rule (a source not read in this
+  process gives only its dissents), when the record is missing (`missing`), does not parse
+  (`unreadable`), has another schema (`version`) or key (`key`: new reader, matcher, guards,
+  directory edition or rules), is stamped more than a minute ahead of the clock (`future`) or
+  is older than the longest hold, 90 minutes (`old`); and a source whose ledger read time is
+  no longer the listed one (a good read the record does not know) is not carried. The record
+  and the ledger travel in the same pushed state, and only the run's end may hand one over:
+  every pass writes the record afresh, unmarked, and `live finish --record` (the step after
+  the reader has ended and before the end push, one line `carry final: <n> sources` or `carry
+  final: none (<code>)`) marks it final. A successor carries nothing from a record without
+  the mark (`not final`): a snapshot pushed while the run went on, which a successor pulls
+  when the run's end push failed (it is tried again only at the next slot), the runner was
+  lost or the job cut off (no end push), the pushes were hourly or refused under the write
+  cap, or the pull fell back to the previous slot. That snapshot's pass may have held a
+  closing the run then retracted and held dark while its uploads after the snapshot failed or
+  were refused (host writes failing, a refusal for health, an owner hold, a rate limit): the
+  host then still serves the snapshot's pass, and nothing on the host tells the two apart, so
+  carrying it would show the retracted closing as current. A pass whose write fails removes
+  the record, so an earlier pass's record is never marked for the run's end. A final record
+  is the run's last completed pass's, uploaded or not. A pass cut off or failed after its
+  reads (a kill, or an error the loop logs as a failed pass) leaves the record of the pass
+  before it beside a ledger that already holds the cut pass's reads: a good read folded in
+  that gap moves the ledger's read time, so its source is not carried (the entry check
+  above); a read the ledger could not take moves nothing, but the reader holds that source
+  dark from that moment, so it takes the source out of the record on disk at once (one line
+  `carry drop: 1 source (observe), <n> left`; a record it cannot rewrite is removed, `carry
+  drop: record removed (<error type>)`). A source whose resolve failed at the pass is carried
+  as any other and also listed `unknown` with an end (the lines read `carry: <n> sources, <m>
+  unknown` and `carry final: <n> sources, <m> unknown`): the run before withheld its states
+  (`source_unknown`) at every pass while its resolve failed. The successor cannot tell a
+  failure that would recur from one that has passed. It resolves a carried source from the
+  derivations the ledger stores, without the read's rows, so a step only a read's rows reach
+  (the unmatched-listing queue, a dated row's successor) never runs there, and a failure in
+  such a step would not recur until it reads the source itself (a row never derived is
+  already withheld, as any undecided row). So it withholds the same states until it holds
+  rows of that source from its own read, whose resolve then judges at each pass as in any
+  run, or until a read of it cannot be taken in (it then holds no rows of it, as the run
+  before would not), and never past the end listed: 90 minutes (the longest G13 bound, the
+  age past which a record carries nothing) from the last pass whose own resolve failed. A run
+  that only inherited the listing hands it on with the same end, or with 90 minutes from its
+  own record's time when that is earlier (its clock running behind the run before's, by up to
+  the minute a record may be ahead; the run after would refuse a later end as `unreadable`
+  and carry nothing), so it never outlives that bound, and the withholding can end up to that
+  minute sooner: a pass of the run after inside that minute lights the other sources'
+  statuses in those states, which a run in step still withholds, each under its own G13
+  bound; the withheld source's own stay dark. A run lists a withheld source as held no later
+  than the end of its withholding, so the run after never lights that source's carried
   statuses once the withholding ends (with its clock behind, a last good read up to that
-  minute ahead would otherwise hold it up to that minute longer). A source the run before
-  no longer held is listed the same way. The
-  withholding counts toward the two-pass alert as any unknown source does. The cost falls on a
-  failure that had passed at the run before's last pass: those states stay dark in the
-  successor until its own read of the source (a source whose last good read held rows is
-  read early, 4 minutes on, unless its last read failed or a hold or deferral stops it) and at
-  most until the end. Past the end, a failure the successor has not read again is not withheld, as in a run
-  without the record. A state withheld only for a read the ledger could not take is withheld
-  for that pass alone, in the run before as in any run, and is not carried (the record drops
-  the source from both lists). Then, once the record passes the checks above, the successor
-  reads back the closings file the live host serves (one call to our own host's API per process start,
-  as the publisher's G12c reads it, never a list server; a refusal it meets, a rate limit
-  included, is kept by the host client for the rest of the process) and carries nothing
-  when the record's time is earlier than that file's `generated_at` (`behind`; whole
-  seconds, as published: another writer's later file, an overrides-only run or a blank),
-  when the host cannot be read (`host <error type>`, a timeout or a rate limit's
-  `HostRefusedError` included) or when it holds no file (`unpublished`). Stopping the carry
-  is always the safe side: today's behaviour. Carrying asks nothing of any list server.
-  Nov 5 showed the need: a calm source's 18:25Z read in the run before was not good, so the
-  successor (run 42084876453) did not read it early, held nothing of it, and the lit count
-  fell 3 to 1 from 18:35 to its calm read at 18:55. That run before recorded its exit and
-  then pushed its state at its end, so its record would have been final.
+  minute ahead would otherwise hold it up to that minute longer). A source the run before no
+  longer held is listed the same way. The withholding counts toward the two-pass alert as any
+  unknown source does. The cost falls on a failure that had passed at the run before's last
+  pass: those states stay dark in the successor until its own read of the source (a source
+  whose last good read held rows is read early, 4 minutes on, unless its last read failed or
+  a hold or deferral stops it) and at most until the end. Past the end, a failure the
+  successor has not read again is not withheld, as in a run without the record. A state
+  withheld only for a read the ledger could not take is withheld for that pass alone, in the
+  run before as in any run, and is not carried (the record drops the source from both lists).
+  Then, once the record passes the checks above, the successor reads back the closings file
+  the live host serves (one call to our own host's API per process start, as the publisher's
+  G12c reads it, never a list server; a refusal it meets, a rate limit included, is kept by
+  the host client for the rest of the process) and carries nothing when the record's time is
+  earlier than that file's `generated_at` (`behind`; whole seconds, as published: another
+  writer's later file, an overrides-only run or a blank), when the host cannot be read (`host
+  <error type>`, a timeout or a rate limit's `HostRefusedError` included) or when it holds no
+  file (`unpublished`). Stopping the carry is always the safe side: today's behaviour.
+  Carrying asks nothing of any list server. Nov 5 showed the need: a calm source's 18:25Z
+  read in the run before was not good, so the successor (run 42084876453) did not read it
+  early, held nothing of it, and the lit count fell 3 to 1 from 18:35 to its calm read at
+  18:55. That run before recorded its exit and then pushed its state at its end, so its
+  record would have been final.
 - **The end.** A run ends right after its last grid pass that starts before +320 minutes,
   and before its job's start + 330 minutes (the 345-minute job timeout less 15 for that last
   pass at its 4.5-minute cut and its publish, the successor's dispatch, the end push at its
