@@ -1556,6 +1556,37 @@ Public, on the live host. These hold school indexes, days, codes and times only.
 
 The files go up in this order: closings, opens, day timelines, season file, index.
 
+### When a network blocks the live host
+
+A school's web filter can block `viaate.github.io` by name (it closes every connection to it)
+while it lets `snowlightmap.com` through, so a visitor there saw the copy the worker kept, or an
+empty map. The site build names a second live root for that, `VITE_SNOWLIGHT_LIVE_FALLBACK`
+(`.github/workflows/preview.yml`: `https://status.snowlightmap.com/live/v1/`, set only while the
+first root is the owner's own, as it serves that one alone). It is a read-only proxy in the status
+project (`status/shared/live-proxy.ts`, `status/page/functions/live/v1/[[path]].ts`): GET or HEAD
+of `live/closings.json`, `predictions/latest.json`, `live/season.json` or
+`live/days/<YYYY-MM-DD>.json` answers with the live host's file, its status, type, ETag and
+Last-Modified, kept at the edge and in the browser for a minute at most; any other path is a 404
+that never reaches the live host, and a live host that fails, moves the file or takes over 5 s is
+a 502 that nothing keeps.
+
+The page (`web/src/data/live-roots.ts`) reads the live host first, and the second root only when
+the live host does not answer with the file: the read fails, it answers with an error or a web
+page, the worker gives its kept copy in place of an answer (the worker marks that copy,
+`pwa/config.ts markKept`), or no answer has come in 4 s (`LIVE_TIMEOUT_SECONDS`). Whichever root
+answers first is read; the visit keeps it (sessionStorage `snowlight-live-root`) and tries the
+live host first again every 10 minutes. When neither answers, the page gets what the live host
+gave it, as with one root. The worker's network-first route for the closings file covers both
+roots, with the same wait and the same cache, each copy under its own address. A visitor on an
+open network never asks the second root. The admin's pages read the live host alone.
+
+Cost: the status project is on Cloudflare's free plan, 100,000 Function requests a day, nothing
+billed. Only a page that cannot reach the live host asks it: about 60 requests an hour while it
+is open and in view (the closings file each minute), and a few more for an open panel's chances
+and season counts, so about 1,400 visitor-hours on blocked networks a day before the limit. Past
+the limit the proxy's requests fail until the day turns; the page then keeps the copy it has
+and says how old it is.
+
 The chance job reads `closings.json`, `opens.json`, the day timelines and their index, and the
 deployed site's `edition.json`, `meta.json` and `points.bin`. Before changing the shape of any
 of them, read docs/predict.md, "Staying on air".
