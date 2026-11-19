@@ -328,6 +328,25 @@ def test_usual_snow_and_its_floor_show_inside_the_exact_ones(model: ServeModel) 
         assert not found.flags[i] & FLAG_CLAMP["advisory"]  # snow_amount is off here
 
 
+def test_a_feel_just_under_the_cold_start_reads_as_its_raised_degree(model: ServeModel) -> None:
+    """The cold counts on the feel rounded to whole degrees below chill_from (15 F), and the why
+    raises the read to whole degrees: 14.3 F rounds to 14, so the cold counts, and reads 15,
+    which the file takes (on Nov 19 a 15 here failed the file and every pass went dark)."""
+    noted: dict[tuple[int, date], serve.Noted] = {}
+    forecasts = Forecasts({DAYS[0]: {0: replace(forecast(6.27, feels=14), feels_read=14.3)}})
+    classes = np.full((len(world.DISTRICTS), 2), int(WeatherClass.ADVISORY), dtype=np.int64)
+    made = forecast_file(
+        model, classes, DAYS, AT, closed_on=lambda _d: None, last=None, forecasts=forecasts,
+        adjust=True, noted=noted,
+    )  # fmt: skip
+    read = {entry.district: entry.days[0] for entry in made.districts}[0]
+    assert isinstance(read, Forecast)
+    parts = noted[(0, DAYS[0])].parts
+    assert parts is not None
+    assert parts.raw[3] > 0
+    assert read.why.feels == 15
+
+
 def test_the_forecast_step_says_what_it_read(model: ServeModel) -> None:
     """Read: ``snow`` floored to tenths of the term's snow, the cold where it counts; the day
     whose snapshot has not come: ``fc`` 0; no forecast read: ``fc`` 2; an unknown code:

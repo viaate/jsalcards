@@ -984,11 +984,12 @@ class Why(CompactModel):
             "floored to tenths."
         ),
     )
-    feels: Annotated[int, Field(ge=-99, le=14)] | None = Field(
+    feels: Annotated[int, Field(ge=-99, le=15)] | None = Field(
         default=None,
         description=(
             "Read, where the cold counts: how cold half the deciding schools feel at 7 AM, "
-            "raised to whole degrees F, -99 for -99 or colder."
+            "raised to whole degrees F, -99 for -99 or colder. The cold counts on the feel "
+            "rounded to whole degrees below 15 F, so a read up to 14.5 F counts and reads 15."
         ),
     )
     ice: IceHundredths | None = Field(

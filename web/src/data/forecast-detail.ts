@@ -329,7 +329,7 @@ function readOf(why: Record<string, unknown> | null): ReadDetail | null {
   const found: ReadDetail = {
     fc: number(fc) && Number.isInteger(fc) && fc >= 0 && fc <= 9 ? fc : null,
     snow: number(snow) && snow >= 0 ? snow : null,
-    feels: number(feels) && Number.isInteger(feels) && feels >= -99 && feels <= 14 ? feels : null,
+    feels: number(feels) && Number.isInteger(feels) && feels >= -99 && feels <= 15 ? feels : null,
     ice: number(ice) && ice >= 0 ? ice : null,
     held: typeof held === 'string' && HELD.has(held) ? (held as ReadDetail['held']) : null,
   };

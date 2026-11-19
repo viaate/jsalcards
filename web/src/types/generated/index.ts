@@ -1258,7 +1258,8 @@ export interface Why {
   readonly fc?: ForecastLeftOut | null;
   /**
    * Read, where the cold counts: how cold half the deciding schools feel at 7 AM, raised to whole
-   * degrees F, -99 for -99 or colder.
+   * degrees F, -99 for -99 or colder. The cold counts on the feel rounded to whole degrees below 15
+   * F, so a read up to 14.5 F counts and reads 15.
    */
   readonly feels?: number | null;
   readonly held?: HeldBy | null;
