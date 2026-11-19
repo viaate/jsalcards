@@ -49,6 +49,7 @@ schools, nearest first, at most :data:`MAX_NEIGHBORS`.
 """
 
 from datetime import UTC, date, datetime, time, timedelta
+from enum import StrEnum
 from itertools import pairwise
 from typing import Annotated, Final, Literal, Self
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -921,11 +922,80 @@ type ReasonPoints = Annotated[
 ]
 
 
+def _ice_hundredths(value: float) -> float:
+    if not _hundredths(value):
+        raise ValueError(f"ice is given in hundredths of an inch, not {value!r}")
+    return value
+
+
+type IceHundredths = Annotated[
+    float,
+    Field(ge=0.0, le=9.99, description="Inches of ice, in hundredths (0.25, not 0.253)."),
+    AfterValidator(_ice_hundredths),
+]
+
+type ForecastLeftOut = Annotated[
+    int,
+    Field(
+        ge=0,
+        le=9,
+        description=(
+            "Why the forecast is not in a storm-class day's chance: 0 before its 9 PM snapshot, "
+            "1 every chance left it out to fit the file, 2 no forecast came in, 3 not for every "
+            "deciding school, 4 the district's days would come to more than 6 closings a "
+            "winter, 5 the nation's would break a plausibility clause, 6 the bus hour timing "
+            "served (the lines say the rest), 7 the adjustment is off, 8 no past 9 PM "
+            "forecasts, 9 no usual snow balances its days."
+        ),
+    ),
+]
+
+
+class PlausibilityClause(StrEnum):
+    """A plausibility clause (G6): the national advisory mean and its 99th percentile, the
+    advisory and warning mean, and the most of any district."""
+
+    ADVISORY_MEAN = "advisory_mean"
+    ADVISORY_P99 = "advisory_p99"
+    ADVISORY_WARNING_MEAN = "advisory_warning_mean"
+    DISTRICT_MAX = "district_max"
+
+
+type HeldBy = Literal["low", "high", "cap", "floor"]
+"""What held a read storm-class day's forecast terms: the class's lower bound (low), the bend
+over its upper bound (high), the class order's cap under the same forecast's warning day (cap),
+or the snow alone's floor (floor)."""
+
+
 class Why(CompactModel):
-    """How the chance adds up: the base, then each reason's points, biggest first."""
+    """How the chance adds up: the base, then each reason's points, biggest first.
+
+    On an advisory or warning class day of a district (WHY-TRANSPARENT), what the forecast
+    step read: ``fc`` where the forecast is not in the chance, else (read) ``snow``, with
+    ``feels``, ``ice`` and ``held`` where they apply."""
 
     base: Base
     reasons: Annotated[tuple[ReasonPoints, ...], Field(max_length=8)] = ()
+    fc: ForecastLeftOut | None = None
+    snow: Inches | None = Field(
+        default=None,
+        description=(
+            "Read: the snow still to come by the window's end at half the deciding schools, "
+            "floored to tenths."
+        ),
+    )
+    feels: Annotated[int, Field(ge=-99, le=14)] | None = Field(
+        default=None,
+        description=(
+            "Read, where the cold counts: how cold half the deciding schools feel at 7 AM, "
+            "raised to whole degrees F, -99 for -99 or colder."
+        ),
+    )
+    ice: IceHundredths | None = Field(
+        default=None,
+        description="Read, where ice counts: the ice at half the deciding schools, floored.",
+    )
+    held: HeldBy | None = None
 
     @model_validator(mode="after")
     def _check(self) -> Self:
@@ -934,6 +1004,17 @@ class Why(CompactModel):
             raise ValueError("why: each kind of reason comes once")
         if any(reason.points == 0 for reason in self.reasons):
             raise ValueError("why: a reason adds or takes away at least one point")
+        read = (self.snow, self.feels, self.ice, self.held)
+        if (self.fc is not None or any(v is not None for v in read)) and (
+            not isinstance(self.base, ClassBase) or self.base.of == "private_schools"
+        ):
+            raise ValueError("why: only a district's storm-class day says what its forecast read")
+        if self.fc is not None and any(v is not None for v in read):
+            raise ValueError("why: a forecast left out reads nothing")
+        if self.snow is None and any(v is not None for v in read):
+            raise ValueError("why: a forecast read says its snow")
+        if self.fc is not None and self.fc != 6 and self.reasons:  # noqa: PLR2004
+            raise ValueError("why: a forecast left out moves nothing")
         return self
 
     def total(self) -> int:
@@ -1239,6 +1320,17 @@ class PredictionsFile(CompactModel):
             "night, and at most 150 minutes before generated_at."
         ),
     )
+    standing: Annotated[str, Field(pattern=r"^[0-9a-f]{12}$")] | None = Field(
+        default=None,
+        description=(
+            "The stamp of the standing file (predictions/standing/<stamp>.json) whose numbers "
+            "the storm-class days' steps are made of; absent: none, so no panel shows them."
+        ),
+    )
+    forecast_check: Annotated[
+        tuple[PlausibilityClause, ...],
+        Field(max_length=4, description="With fc 5: the plausibility clauses the forecast broke."),
+    ] = ()
 
     @model_validator(mode="after")
     def _check(self) -> Self:

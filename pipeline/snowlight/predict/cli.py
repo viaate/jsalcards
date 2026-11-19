@@ -103,7 +103,7 @@ from snowlight.predict.alerts_live import (
     memory_digest,
     withdrawn,
 )
-from snowlight.predict.anchor import Anchor
+from snowlight.predict.anchor import Anchor, Grid
 from snowlight.predict.anchor_labels import (
     ANCHOR_REPORT,
     anchor_line,
@@ -213,6 +213,8 @@ from snowlight.predict.serve import (
     with_terms,
 )
 from snowlight.predict.situations import CLASS_BY_CODE, Window
+from snowlight.predict.standing import guard as standing_guard
+from snowlight.predict.standing import path_of as standing_path
 from snowlight.schemas.live import DayTimeline
 from snowlight.schemas.predictions import PredictionsFile
 from snowlight.sources.nws.alerts import NwsAlert
@@ -1079,6 +1081,12 @@ class Pass:
     forecast: Callable[[ServeModel, tuple[date, ...], datetime], Forecasts] | None = None
     """The NDFD forecast at the class snapshot (:mod:`snowlight.predict.forecast_live`)."""
     adjust_reads: dict[datetime, frozenset[tuple[int, date]]] = field(default_factory=dict)
+    standing_sent: str | None = None
+    """The stamp of the standing file this process last put up (WHY-TRANSPARENT): a file
+    names a stamp only once its file is up or goes up with it."""
+    standing_checked: dict[int, tuple[str, bytes] | None] = field(default_factory=dict)
+    """Per model built, its standing file's stamp and bytes once its guard passed, or
+    ``None`` (refused: no file names a stamp)."""
     """The district-days whose forecast this process's last pass read for the adjustment, by
     the time its file was made (:func:`snowlight.predict.serve.forecast_file`'s
     ``read_last``); empty after a restart, when it is not known."""
@@ -1824,7 +1832,8 @@ def _publish_pass(  # noqa: PLR0913, PLR0917 - the pass, its file and what its l
         _after_publish(run, made, directory, now)
         return 0
     try:
-        extra = {**(_shadow_summary(run, key, now) or {}), **_stamp(key, data)}
+        standing = _standing_extra(run, key, made)
+        extra = {**(_shadow_summary(run, key, now) or {}), **_stamp(key, data), **standing}
         upload(run.host, key, data, extra=extra)
     except (DarkError, PublishError) as error:
         _err(f"predict: dark ({error})")
@@ -1832,10 +1841,94 @@ def _publish_pass(  # noqa: PLR0913, PLR0917 - the pass, its file and what its l
     run.state.digest = digest
     run.state.uploaded_at = now
     run.state.alerts_digest = handled
+    _sent_standing(run, made, standing)
     built.uploaded = True
     _out(f"predict: uploaded {key}")
     _after_publish(run, made, directory, now)
     return 0
+
+
+def _standing(run: Pass, model: ServeModel, now: datetime) -> str | None:
+    """The stamp of the model's standing file, its guard passed (checked once per model), or
+    ``None``: no file then names one, and every panel keeps today's why. Any failure here is
+    that, and one warning: the steps never touch the pass or its chances."""
+    key = id(model)
+    if key not in run.standing_checked:
+        run.standing_checked = {key: None}
+        try:
+            run.standing_checked[key] = _checked_standing(run, model, now)
+        except Exception as error:  # the steps only: never the pass
+            _warn(f"predict: standing: none this model ({type(error).__name__})")
+    found = run.standing_checked.get(key)
+    return None if found is None else found[0]
+
+
+def _checked_standing(run: Pass, model: ServeModel, now: datetime) -> tuple[str, bytes] | None:
+    """The model's standing file (stamp and bytes, ``generated_at`` now) if its guard passes;
+    else ``None``, with the pass's log saying why."""
+    built, anchor = model.steps, model.anchor
+    if model.steps_error is not None:
+        _warn(f"predict: standing: not built ({model.steps_error})")
+    if built is None or anchor is None:
+        return None
+    serve_settings = run.config.serve
+    settings = model.artifact.settings
+    problems = standing_guard(
+        built,
+        anchor.settings.beta,
+        anchor.settings.offset,
+        Grid(settings.floor, settings.ceiling),
+        serve_settings.standing_budget_raw_bytes,
+        serve_settings.standing_budget_gzip_bytes,
+    )
+    if problems:
+        _warn(f"predict: standing: refused ({'; '.join(problems[:3])})")
+        return None
+    found = built.file.model_copy(
+        update={"generated_at": now.astimezone(UTC).replace(microsecond=0)}
+    )
+    data = found.to_json_bytes()
+    _out(f"predict: standing {found.stamp}, {len(data):,} bytes")
+    return found.stamp, data
+
+
+def _standing_extra(run: Pass, key: str, made: PredictionsFile) -> dict[str, bytes]:
+    """The standing file the pass's file names, to go up in the same commit where this
+    process has not put it up yet and the host does not hold it (a stamp is its contents, so
+    a file at its path is this one: a process start uploads nothing again). Where the host
+    cannot be read, it goes up."""
+    stamp = made.standing
+    if stamp is None or stamp == run.standing_sent:
+        return {}
+    for found in run.standing_checked.values():
+        if found is not None and found[0] == stamp:
+            path = beside(key, standing_path(stamp).removeprefix("predictions/"))
+            if _held_by_host(run, path):
+                run.standing_sent = stamp
+                _out(f"predict: standing {stamp} already up")
+                return {}
+            return {path: found[1]}
+    return {}
+
+
+def _sent_standing(run: Pass, made: PredictionsFile, standing: Mapping[str, bytes]) -> None:
+    """After an upload: the stamp is this process's sent one only where its file went up with
+    it (``standing``) or before it; a file naming a stamp whose bytes were not in hand says so
+    (its panels keep today's why until a file goes up)."""
+    if standing:
+        run.standing_sent = made.standing
+    elif made.standing is not None and made.standing != run.standing_sent:
+        _warn(f"predict: standing: {made.standing} named but its file is not in hand")
+
+
+def _held_by_host(run: Pass, path: str) -> bool:
+    """Whether the host holds ``path`` (False where it cannot say)."""
+    if run.host is None:
+        return False
+    try:
+        return run.host.read(path) is not None
+    except Exception:
+        return False
 
 
 def _stamp(key: str, data: bytes) -> dict[str, bytes]:
@@ -2227,6 +2320,7 @@ def _pass_file(  # noqa: PLR0913, PLR0917 - the pass, its model, days and classe
             adjust=adjust and not reasons,
             read_last=run.adjust_reads.get(last.generated_at) if last is not None else None,
             noted=noted,
+            standing=_standing(run, model, now),
         )
         fits[id(found)] = fit
         return found

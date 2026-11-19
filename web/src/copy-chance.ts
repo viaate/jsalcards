@@ -56,6 +56,10 @@ export const chanceCopy = /* @__PURE__ */ deepFreeze({
   /** The chart's key: "Usually announces 5:30 AM", "Heaviest snow 2 to 5 AM". */
   usuallyAnnounces: 'Usually announces',
   heaviest: 'Heaviest snow',
+  /** The why's folds (WHY-TRANSPARENT): a step's details, the record note's, the delay's. */
+  foldStep: 'How this step works',
+  foldRecord: 'How we count this record',
+  foldDelay: 'How we set this',
 });
 
 const NBSP = ' ';
@@ -1389,6 +1393,710 @@ function outlookHelp(input: OutlookInput, zones: Zones): string {
   return `A case is one district at one hour ${hours}, ${outlookCasesHad(input)}, and ${forecast}.`;
 }
 
+// The why, step by step (WHY-TRANSPARENT) -------------------------------------------------
+//
+// On a storm-class day (advisory, warning or cold class) the panel shows the district's own
+// record first, then every step the chance took with its points: the start, the standing, the
+// region, each hold and the forecast. Each step is one plain sentence; its details fold under a
+// button (chanceCopy.foldStep). Every number here comes from the predictions file or its
+// standing file (pipeline/snowlight/predict/standing.py): the words never compute one.
+
+/** The classes a storm-class day is in. */
+export type StepClass = 'advisory' | 'warning' | 'cold';
+
+/** The day's alert, as a step names it, by the base's alert or weather. */
+const STEP_ALERTS = {
+  winter_storm_warning: 'winter storm warning',
+  winter_weather_advisory: 'winter advisory',
+  ice_storm_warning: 'ice storm warning',
+  blizzard_warning: 'blizzard warning',
+  extreme_cold_warning: 'cold warning',
+  advisory: 'winter advisory',
+  cold: 'cold warning',
+  lake_snow: 'lake effect snow warning',
+  tropical: 'hurricane or tropical storm warning',
+} as const;
+
+export type StepAlert = keyof typeof STEP_ALERTS;
+
+/** A class's days, as a step counts them: "school days with a storm warning". */
+const STEP_DAYS = {
+  advisory: 'winter advisory',
+  warning: 'storm warning',
+  cold: 'cold warning',
+} as const satisfies Record<StepClass, string>;
+
+/** The plausibility clauses, as a hold or a start that was held back says them. */
+const STEP_CLAUSES = {
+  advisory_mean:
+    'the average district would have no school on more than 1 school day with a winter advisory a winter',
+  advisory_p99:
+    'the 1 in 100 districts with the most would have no school on more than 3 school days with a winter advisory a winter',
+  advisory_warning_mean:
+    'the average district would have no school on more than 2 school days with a winter advisory or storm warning a winter',
+  district_max: 'some district would have no school on more than 6 alert days a winter',
+} as const;
+
+export type StepClause = keyof typeof STEP_CLAUSES;
+
+/** Which of a district's schools decide its chance (the predictions file's `eligible`). */
+export interface SchoolSet {
+  /** It leaves out a charter or virtual school. */
+  readonly mixed: boolean;
+  /** One school decides. */
+  readonly one: boolean;
+}
+
+/** Who a step is about: a district by its short name, or a private school. */
+export interface StepWho {
+  readonly name: string;
+  readonly school: boolean;
+  readonly set: SchoolSet;
+}
+
+function alertOf(alert: string): string {
+  return STEP_ALERTS[checkKey(STEP_ALERTS, alert, 'alert')];
+}
+
+function daysOf(klass: StepClass): string {
+  return STEP_DAYS[checkKey(STEP_DAYS, klass, 'class')];
+}
+
+/** "a winter storm warning", "an ice storm warning". */
+function withArticle(words: string): string {
+  return /^[aeiou]/.test(words) ? `an ${words}` : `a ${words}`;
+}
+
+/** A number to `digits` places, a trailing zero dropped: "5.62", "5.6", "4". */
+function trimmed(value: number, digits: number): string {
+  if (!Number.isFinite(value) || value < 0) throw new RangeError('copy: an amount is 0 or more');
+  return String(Number(value.toFixed(digits)));
+}
+
+/** Inches with their unit: "1 inch", "5.62 inches". */
+function inchesOf(value: number, digits: number): string {
+  const said = trimmed(value, digits);
+  return said === '1' ? '1 inch' : `${said} inches`;
+}
+
+/** A count with thousands commas: "1,071". */
+function counted(n: number): string {
+  if (!Number.isInteger(n) || n < 0) throw new RangeError('copy: a count is whole');
+  return n.toLocaleString('en-US');
+}
+
+/** A step's label: its points with their sign, or "0" for a step that moved nothing. */
+function stepPoints(n: number): string {
+  return n === 0 ? '0' : points(n);
+}
+
+/** The start's label: "30%". */
+function startLabel(now: number): string {
+  if (!Number.isInteger(now) || now < 1 || now > 99)
+    throw new RangeError('copy: a start is 1 to 99');
+  return `${String(now)}%`;
+}
+
+/** The capitalized name at a sentence's start. */
+function capital(text: string): string {
+  return text.length === 0 ? text : `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+}
+
+function possessive(name: string): string {
+  return `${name}’s`;
+}
+
+/** The school set's three slots (WHY-TRANSPARENT 3b): `reach`, `at` and `who`. */
+function schoolSet(set: SchoolSet): { reach: string; at: string; who: string; net: string } {
+  if (set.one) {
+    return set.mixed
+      ? {
+          reach: 'its one school other than charter and virtual ones',
+          at: 'at its one school other than charter and virtual ones',
+          who: 'Its one school other than charter and virtual ones',
+          net: 'it',
+        }
+      : { reach: 'its school', at: 'at its school', who: 'Its school', net: 'it' };
+  }
+  return set.mixed
+    ? {
+        reach: 'at least half of its schools other than charter and virtual ones',
+        at: 'at half its schools other than charter and virtual ones',
+        who: 'Half its schools other than charter and virtual ones',
+        net: 'half',
+      }
+    : {
+        reach: 'at least half of its schools',
+        at: 'at half its schools',
+        who: 'Half its schools',
+        net: 'half',
+      };
+}
+
+/** DIST-whole: the chance is the district's, the same at each school. */
+function wholeLine(name: string): string {
+  return `This chance is for ${name} as a whole, the same at each of its schools.`;
+}
+
+/** A unit's record of a class: no school, a late start, and the days the lists tell us about. */
+export interface RecordCounts {
+  readonly closed: number;
+  readonly delayed: number;
+  readonly of: number;
+}
+
+function recordParts(record: RecordCounts): string {
+  const { closed, delayed, of } = record;
+  const school = of - closed - delayed;
+  if (closed < 0 || delayed < 0 || school < 0 || of < 1)
+    throw new RangeError('copy: a record adds up');
+  const parts: string[] = [];
+  if (closed > 0) parts.push(`no school on ${String(closed)}`);
+  if (delayed > 0) parts.push(`a late start on ${String(delayed)}`);
+  if (school > 0) parts.push(`school on ${String(school)}`);
+  if (parts.length === 1) {
+    const what = closed > 0 ? 'no school' : delayed > 0 ? 'a late start' : 'school';
+    return of === 1 ? `${what} that day` : `${what} on each of them`;
+  }
+  if (parts.length === 2) return `${parts[0] ?? ''} and ${parts[1] ?? ''}`;
+  return `${parts[0] ?? ''}, ${parts[1] ?? ''} and ${parts[2] ?? ''}`;
+}
+
+/** The record note's input: its unit, its class, its years and its counts. */
+export interface RecordNoteInput {
+  readonly who: StepWho;
+  readonly klass: StepClass;
+  /** The fall the record's first winter starts, and the fall its last does. */
+  readonly first: number;
+  readonly last: number;
+  readonly record: RecordCounts | null;
+  /** The sums of every unit's record of the class (districts' or private schools'). */
+  readonly sum: { readonly closed: number; readonly of: number } | null;
+  /** The why has a region step. */
+  readonly region: boolean;
+}
+
+/** OWN-none or OWN-rec, then its fold: OWN-winter, OWN-lean, OWN-rule and OWN-use. */
+function recordNote(input: RecordNoteInput): {
+  readonly main: string;
+  readonly help: readonly string[];
+} {
+  const { who, klass, first, last, record } = input;
+  const cls = daysOf(klass);
+  const spring = String(last + 1);
+  const fall = String(first);
+  const name = who.school ? 'this school' : who.name;
+  const days = who.school
+    ? `days with ${withArticle(cls)}`
+    : `school days with ${withArticle(cls)}`;
+  const help: string[] = ['This winter’s days are not in that record.'];
+  let main: string;
+  if (record === null) {
+    main = `This chance does not weigh ${possessive(name)} own record by itself yet, and from fall ${fall} to spring ${spring} no past closings list we count tells us what ${name} did on a ${who.school ? 'day' : 'school day'} with ${withArticle(cls)}.`;
+  } else {
+    const its = who.school
+      ? `${String(record.of)} of its days with ${withArticle(cls)}`
+      : `${String(record.of)} of its school days with ${withArticle(cls)}`;
+    main = `From fall ${fall} to spring ${spring}, the past closings lists we count tell us what ${name} did on ${its}: ${recordParts(record)}. This chance does not weigh that record by itself yet.`;
+    const sum = input.sum;
+    if (sum === null || sum.of < 1 || sum.closed > sum.of)
+      throw new RangeError('copy: no sums for the lean');
+    help.push(
+      who.school
+        ? `Those lists were kept mostly on storm mornings. Across all private schools, ${counted(sum.closed)} of the ${counted(sum.of)} days with ${withArticle(cls)} they tell us about had no school, so this count is not how often this school closes.`
+        : `Those lists were kept mostly on storm mornings. Across all districts, ${counted(sum.closed)} of the ${counted(sum.of)} ${days} they tell us about had no school, so this count is not how often ${name} closes.`,
+    );
+    help.push(recordRule(who));
+  }
+  help.push(
+    input.region
+      ? 'The closings lists of all districts together set the start: past winters’ lists set it, and this winter’s can move it. Past winters’ lists of its region set the region step.'
+      : 'The closings lists of all districts together set the start: past winters’ lists set it, and this winter’s can move it.',
+  );
+  return { main, help };
+}
+
+/** OWN-rule: which days count, and as what. */
+function recordRule(who: StepWho): string {
+  if (who.school || who.set.one) {
+    const reach = who.school ? 'this school' : schoolSet(who.set).reach;
+    return `A day counts as no school when a list showed ${reach} closed or remote, for the weather or with no reason given. Short of that, it counts as a late start when a list showed it starting late, for the weather or with no reason given, and as school only when a full morning list showed it with no closing, late start or early dismissal for any reason. Other days are left out.`;
+  }
+  if (who.set.mixed) {
+    return 'A day counts as no school when a list showed at least half of its schools other than charter and virtual ones closed or remote, for the weather or with no reason given. Short of that, it counts as a late start when a list showed at least half of them starting late, for the weather or with no reason given, and as school only when a full morning list showed at most 1 in 10 of them closed, remote, late or let out early, for any reason. Other days are left out.';
+  }
+  return 'A day counts as no school when a list showed at least half of its schools closed or remote, for the weather or with no reason given. Short of that, it counts as a late start when a list showed at least half of its schools starting late, for the weather or with no reason given, and as school only when a full morning list showed at most 1 in 10 of its schools closed, remote, late or let out early, for any reason. Other days are left out.';
+}
+
+/** The start step's input. */
+export interface StartInput {
+  readonly who: StepWho;
+  readonly alert: string;
+  readonly klass: StepClass;
+  readonly now: number;
+  readonly prior: number;
+  readonly fit: number;
+  readonly storms: number;
+  readonly shrunk: StepClause | null;
+  /** The middle of the class's days a winter, over districts that get any. */
+  readonly ref: number;
+}
+
+/** ST-1, and its fold: ST-h1, ST-h2 or ST-h3, then ST-alert. */
+function startStep(input: StartInput): { readonly main: string; readonly help: readonly string[] } {
+  const { who, now, prior, fit, storms, shrunk } = input;
+  const alert = alertOf(input.alert);
+  const cls = daysOf(input.klass);
+  const ref = trimmed(input.ref, 1);
+  const main = who.school
+    ? `A school day with ${withArticle(alert)} starts at ${String(now)}% for a school in a place that gets ${ref} school days with ${withArticle(cls)} a winter.`
+    : `A school day with ${withArticle(alert)} starts at ${String(now)}% for a district that gets ${ref} school days with ${withArticle(cls)} a winter.`;
+  const set = `We set it at ${String(prior)}% before this winter from past winters’ closings lists, corrected for which mornings those lists were kept on.`;
+  const counts = storms === 1 ? 'one storm' : `${String(storms)} storms`;
+  let history: string;
+  if (shrunk !== null) {
+    const clause = STEP_CLAUSES[checkKey(STEP_CLAUSES, shrunk, 'clause')];
+    history = `${set} This winter’s ${counts} so far would move it to ${String(fit)}%, but then ${clause}. That is more than we allow, so it is held at ${String(now)}%.`;
+  } else if (now === prior) {
+    history = `${set} It is still there.`;
+  } else if (storms > 0) {
+    history = `${set} This winter’s ${counts} so far moved it to ${String(now)}%.`;
+  } else {
+    history = `${set} This winter’s storms so far moved it to ${String(now)}%.`;
+  }
+  const heights =
+    'An alert for some heights counts only at a school within 500 feet of those heights, or at a school whose height we do not know.';
+  const reach = who.school
+    ? `${capital(withArticle(alert))} reaches this school for this day. ${heights}`
+    : `${capital(withArticle(alert))}, or an alert we rank above it, reaches ${schoolSet(who.set).reach} for this day. ${heights}`;
+  return { main, help: [history, reach] };
+}
+
+/** The standing step's input. */
+export interface StandingInput {
+  readonly who: StepWho;
+  readonly klass: StepClass;
+  /** Its days a winter, null where neither it nor its county has a record. */
+  readonly days: number | null;
+  /** Its days are its county's middle. */
+  readonly county: boolean;
+  readonly ref: number;
+  readonly points: number;
+  /** The first fall and the last fall the days a winter count. */
+  readonly first: number;
+  readonly last: number;
+  /** Its warnings counted hurricane or tropical storm warnings too. */
+  readonly tropical: boolean;
+}
+
+/** STD-own, STD-county, STD-private or STD-none, and its fold: help 1, help 2. */
+function standingStep(input: StandingInput): {
+  readonly main: string;
+  readonly help: readonly string[];
+} {
+  const { who, days } = input;
+  const cls = daysOf(input.klass);
+  const ref = trimmed(input.ref, 1);
+  const middle = `Across districts that get any, the middle is ${ref}.`;
+  let main: string;
+  if (days === null) {
+    main = who.school
+      ? 'We have no past weather record for private schools or for this school’s county, so it keeps the start.'
+      : who.set.one
+        ? `We have no past weather record for ${possessive(who.name)} school or its county’s, so it keeps the start.`
+        : `We have no past weather record for ${possessive(who.name)} schools or its county’s, so it keeps the start.`;
+  } else if (who.school) {
+    main = `We have no past weather record for private schools, so this school takes the middle of its county’s districts: ${trimmed(days, 1)} school days with ${withArticle(cls)} a winter. ${middle}`;
+  } else if (input.county) {
+    main = `We have no past weather record for ${possessive(who.name)} own ${who.set.one ? 'school' : 'schools'}, so it takes the middle of its county’s districts: ${trimmed(days, 1)} school days with ${withArticle(cls)} a winter. ${middle}`;
+  } else {
+    main = `${who.name} gets ${trimmed(days, 1)} school days with ${withArticle(cls)} a winter. ${middle}`;
+  }
+  const years = `Counted over the winters from fall ${String(input.first)} to spring ${String(input.last + 1)}.`;
+  const help1 =
+    input.points < 0
+      ? `We start it lower when they come more often than that, by a rule of ours that is the same for every district. ${years}`
+      : input.points > 0
+        ? `We start it higher when they come less often than that, by a rule of ours that is the same for every district. ${years}`
+        : `That moves it less than a point. ${years}`;
+  const help2 =
+    input.klass === 'advisory'
+      ? 'Days with a winter advisory count winter weather, freezing rain and lake effect snow advisories.'
+      : input.klass === 'cold'
+        ? 'Days with a cold warning count extreme cold warnings and wind chill warnings.'
+        : input.tropical
+          ? 'Days with a storm warning count winter storm, ice storm, blizzard, lake effect snow, tropical storm and hurricane warnings.'
+          : 'Days with a storm warning count winter storm, ice storm, blizzard and lake effect snow warnings.';
+  return { main, help: days === null ? [] : [help1, help2] };
+}
+
+/** REG and its fold. */
+function regionStep(input: {
+  readonly who: StepWho;
+  readonly points: number;
+  readonly clipped: boolean;
+}): {
+  readonly main: string;
+  readonly help: readonly string[];
+} {
+  const lower = input.points < 0;
+  const name = input.who.school ? 'this school' : input.who.name;
+  return {
+    main: `In past winters’ closings lists, districts in ${possessive(name)} region had no school on a ${lower ? 'smaller' : 'larger'} share of school days with a winter advisory than districts across the country as a whole, so it starts ${lower ? 'lower' : 'higher'}.`,
+    help: [
+      input.clipped
+        ? 'We count half of that difference, up to a set limit.'
+        : 'We count half of that difference.',
+    ],
+  };
+}
+
+/** A hold's stage. */
+export type HeldStage = 'pull' | 'cap' | 'nation' | 'round';
+
+/** HD-pull, HD-cap, HD-nation or HD-round. */
+function heldStep(input: {
+  readonly who: StepWho;
+  readonly stage: HeldStage;
+  readonly clause: StepClause | null;
+}): string {
+  const name = input.who.school ? 'this school' : input.who.name;
+  const its = possessive(input.who.school ? 'this school' : input.who.name);
+  switch (input.stage) {
+    case 'pull':
+      return `Counting every kind of alert day, ${its} chances would add up to more than 6 days with no school a winter. That is more than we let any district have, so it is moved part of the way back to the start.`;
+    case 'cap':
+      return `Counting every kind of alert day, ${its} chances would add up to more than 6 days with no school a winter, even at the start. That is more than we let any district have, so it is moved back toward the start as far as that helps, then every kind of day is lowered until they add up to 6.`;
+    case 'nation': {
+      if (input.clause === null) throw new RangeError('copy: a national hold names its clause');
+      const clause = STEP_CLAUSES[checkKey(STEP_CLAUSES, input.clause, 'clause')];
+      return `Across the country, ${clause}. That is more than we allow, so the districts with the most days with no school, ${name} among them, are moved part of the way back to the start.`;
+    }
+    case 'round':
+      return `Rounded to whole points, ${its} chances would add up to more than 6 days with no school a winter, so this one is rounded down instead.`;
+  }
+}
+
+/** Why the forecast is not in the chance: by `fc`, or by the day's alert. */
+export type LeftOut =
+  | { readonly kind: 'wait'; readonly at: Date; readonly weekday: string; readonly chart: boolean }
+  | {
+      readonly kind:
+        | 'fit'
+        | 'unread'
+        | 'check'
+        | 'off'
+        | 'noclimate'
+        | 'cold'
+        | 'blizzard'
+        | 'tropical'
+        | 'private';
+    }
+  | { readonly kind: 'school' }
+  | { readonly kind: 'nation'; readonly clause: StepClause | null }
+  | { readonly kind: 'nobalance'; readonly days: string; readonly p0: number };
+
+/** FC-*: the "0" row's sentence and its fold. */
+function forecastLeftOut(
+  input: LeftOut,
+  who: StepWho,
+  zones: Zones,
+): { readonly main: string; readonly help: readonly string[] } {
+  const name = who.name;
+  switch (input.kind) {
+    case 'wait':
+      return {
+        main: `The forecast is not in this chance yet. It counts from ${clock(input.at, zones)} ${input.weekday}, the evening before.`,
+        help: input.chart
+          ? [
+              'The new snow chart above already shows the forecast. This chance waits for the forecast as it stands at 9 PM.',
+            ]
+          : [],
+      };
+    case 'fit':
+      return {
+        main: 'This time the forecast is left out of every chance, so the map stays quick to load.',
+        help: [],
+      };
+    case 'unread':
+      return {
+        main: 'The forecast did not come in this time, so this chance leaves it out.',
+        help: [],
+      };
+    case 'school': {
+      const its = possessive(name);
+      const which = who.set.one
+        ? who.set.mixed
+          ? `${its} one school other than charter and virtual ones`
+          : `${its} school`
+        : who.set.mixed
+          ? `every one of ${its} schools other than charter and virtual ones`
+          : `every one of ${its} schools`;
+      return {
+        main: `The forecast did not come in for ${which} this time, so this chance leaves it out.`,
+        help: [],
+      };
+    }
+    case 'check':
+      return {
+        main: `Counting the forecast the way it usually goes on ${possessive(name)} alert days, its chances would add up to more than 6 days with no school a winter. That is more than we let any district have, so its chances leave the forecast out.`,
+        help: [],
+      };
+    case 'nation': {
+      const clause =
+        input.clause === null
+          ? STEP_CLAUSES.district_max
+          : STEP_CLAUSES[checkKey(STEP_CLAUSES, input.clause, 'clause')];
+      return {
+        main: `Counting the forecast, ${clause}. That is more than we allow, so this time no chance counts the forecast.`,
+        help: [],
+      };
+    }
+    case 'off':
+      return {
+        main: 'The forecast is not in any chance right now, so this chance leaves it out.',
+        help: [],
+      };
+    case 'noclimate':
+      return {
+        main: `We have no past 9 PM forecasts for ${name}, its county or its region to weigh this one against, so this chance leaves it out.`,
+        help: [],
+      };
+    case 'nobalance':
+      return {
+        main: `Over the 9 PM forecasts of ${input.days}, no snow amount we test, up to 30 inches, makes its chance average ${String(input.p0)}%. So this chance leaves the forecast out.`,
+        help: [],
+      };
+    case 'cold':
+      return {
+        main: 'The forecast does not change a cold warning day. The cold is the warning.',
+        help: [],
+      };
+    case 'blizzard':
+      return {
+        main: 'The forecast does not change a blizzard warning day. Its wind matters as much as its snow, and we do not count wind.',
+        help: [],
+      };
+    case 'tropical':
+      return {
+        main: 'The forecast does not change a hurricane or tropical storm warning day. Its danger is not snow.',
+        help: [],
+      };
+    case 'private':
+      return {
+        main: 'The forecast does not move a private school’s chance. We read the forecast at a district’s schools, and a private school has no district.',
+        help: [],
+      };
+  }
+}
+
+/** The usual snow's inputs, as the standing file gives them. */
+export interface UsualInput {
+  readonly who: StepWho;
+  readonly klass: StepClass;
+  /** The usual snow and, where it shows, the snow alone's floor (inches, hundredths). */
+  readonly usual: number;
+  readonly alone: number | null;
+  readonly clamped: boolean;
+  readonly p0: number;
+  /** Its own 9 PM forecasts of the class's school days, and where its 10 more come from. */
+  readonly own: number;
+  readonly pool: 'county' | 'region' | 'none';
+  readonly since: number;
+  readonly whole: boolean;
+}
+
+/** FR-snow's `{days}`: whose 9 PM forecasts the usual snow is set from. */
+function usualDays(input: UsualInput): string {
+  const cls = daysOf(input.klass);
+  const since = String(input.since);
+  const whose = input.pool === 'region' ? 'its region’s' : 'its county’s';
+  const name = input.who.name;
+  if (input.own === 0)
+    return `10 school days with ${withArticle(cls)} mixed like ${whose} since fall ${since}`;
+  const own = `${possessive(name)} ${String(input.own)} school days with ${withArticle(cls)} since fall ${since}`;
+  return input.pool === 'none' ? own : `${own} and 10 more mixed like ${whose}`;
+}
+
+/** FR-snow's help 1 (`low`: the class's lower bound held the day). */
+function usualHelp1(input: UsualInput, low: boolean): string {
+  const u = inchesOf(input.usual, 2);
+  const range = input.alone === null ? u : `${trimmed(input.alone, 2)} to ${u}`;
+  const cls = daysOf(input.klass);
+  const rule = `by a rule of ours that is the same for every district on school days with ${withArticle(cls)}.`;
+  return low
+    ? `With ${range} and no ice or cold, it would stay at ${String(input.p0)}%. Enough more snow raises it, ${rule}`
+    : `With ${range} and no ice or cold, it would stay at ${String(input.p0)}%. More snow raises it and less lowers it, ${rule}`;
+}
+
+/** FR-snow's help 2: how the usual snow was set. */
+function usualHelp2(input: UsualInput): string {
+  const u = inchesOf(input.usual, 2);
+  const days = usualDays(input);
+  let found =
+    input.own === 0
+      ? `We set ${u} so that, over the 9 PM forecasts of ${days}, its chance averages ${String(input.p0)}%. We have no such days of ${possessive(input.who.name)} own.`
+      : `We set ${u} so that, over the 9 PM forecasts of ${days}, its chance averages ${String(input.p0)}%.`;
+  if (input.alone !== null) {
+    found += input.clamped
+      ? ` Snow is never weighed against less than a third of ${u}.`
+      : ` Leaving their ice out, ${inchesOf(input.alone, 2)} does the same.`;
+  }
+  const cut = input.whole ? ', cut to the part still to come after 9 PM' : '';
+  return `${found} Each past forecast counts as one amount for its range of snow or ice, such as 5 inches for 4 to 6 inches of snow${cut}. A morning with snow or ice counts as cold as often as the mornings without them among those days.`;
+}
+
+/** What the forecast read, as the why's fields give it. */
+export interface ReadInput {
+  readonly snow: number;
+  readonly ice: number | null;
+  readonly feels: number | null;
+  readonly held: 'low' | 'high' | 'cap' | 'floor' | null;
+  /** The window's end on the day. */
+  readonly end: Date;
+}
+
+/** FR-snow. */
+function snowLine(read: ReadInput, who: StepWho, zones: Zones): string {
+  const at = schoolSet(who.set).at;
+  const by = clock(read.end, zones);
+  return read.snow === 0
+    ? `The forecast has under 0.1 inches of snow by ${by} ${at}.`
+    : `The forecast has ${inchesOf(read.snow, 1)} or more of snow by ${by} ${at}.`;
+}
+
+/** FR-ice. */
+function iceLine(
+  read: ReadInput,
+  who: StepWho,
+  zones: Zones,
+): { readonly main: string; readonly help: readonly string[] } {
+  const ice = read.ice ?? 0;
+  const at = schoolSet(who.set).at;
+  const by = clock(read.end, zones);
+  return {
+    main:
+      ice === 0
+        ? `The forecast has a trace of ice by ${by} ${at}.`
+        : `The forecast has ${inchesOf(ice, 2)} of ice or more by ${by} ${at}.`,
+    help: ['We count each 0.1 inch of ice like 2.5 inches of snow, on top of the snow.'],
+  };
+}
+
+/** FR-cold (`line`: a cold line is published; else the "0" row). */
+function coldLine(
+  feels: number,
+  who: StepWho,
+  line: boolean,
+): { readonly main: string; readonly help: readonly string[] } {
+  const degrees = feels < 0 ? `${MINUS}${String(-feels)}` : String(feels);
+  return {
+    main: `${schoolSet(who.set).who} will feel ${degrees} F or colder at 7 AM.`,
+    help: [
+      line
+        ? 'Each degree under 15 F adds the same small amount, down to 0 F. Colder than that adds no more.'
+        : 'That adds less than a point.',
+    ],
+  };
+}
+
+/** FR-net (and FR-read0's sentence): the snow with the day's ice and cold clauses. */
+function netLine(read: ReadInput, who: StepWho, zones: Zones): string {
+  const slots = schoolSet(who.set);
+  const by = clock(read.end, zones);
+  const snow = read.snow === 0 ? 'under 0.1 inches' : `${inchesOf(read.snow, 1)} or more`;
+  const ice =
+    read.ice === null
+      ? ''
+      : read.ice === 0
+        ? ' and a trace of ice'
+        : ` and ${inchesOf(read.ice, 2)} of ice or more`;
+  const cold =
+    read.feels === null
+      ? ''
+      : `, and ${slots.net === 'it' ? 'it' : 'half'} will feel ${read.feels < 0 ? `${MINUS}${String(-read.feels)}` : String(read.feels)} F or colder at 7 AM`;
+  return `The forecast has ${snow} of snow${ice} by ${by} ${slots.at}${cold}.`;
+}
+
+/** The forecast rows' folds: FR-snow's (with help 0 at "0"), FR-net's, FR-read0's. */
+function snowHelp(input: UsualInput, read: ReadInput, zero: boolean): string[] {
+  const help: string[] = [];
+  if (zero) help.push('That moves it less than a point.');
+  help.push(usualHelp1(input, false));
+  if (read.held === 'high') help.push('Past this much snow, more adds less and less.');
+  help.push(usualHelp2(input));
+  return help;
+}
+
+function netHelp(input: UsualInput, read: ReadInput, alert: string): string[] {
+  const rest = read.ice !== null || read.feels !== null;
+  const what =
+    read.ice !== null && read.feels !== null
+      ? 'the cold and the ice do'
+      : read.feels !== null
+        ? 'the cold does'
+        : 'the ice does';
+  const tail = rest ? `, so ${what} not change the number` : '';
+  const first =
+    read.held === 'low'
+      ? `A forecast can take ${withArticle(alertOf(alert))} day here only this far down${tail}.`
+      : `Snow under ${inchesOf(input.alone ?? input.usual, 2)} is weighed against ${trimmed(input.alone ?? input.usual, 2)} inches, not ${trimmed(input.usual, 2)}${tail}.`;
+  return [first, usualHelp1(input, read.held === 'low'), usualHelp2(input)];
+}
+
+/** At the class order's cap: the last forecast row's fold ends with this. */
+const CAP_HELP =
+  'A winter advisory day is never put above a storm warning day with the same forecast, so this is as high as it goes here.';
+
+/** DL-h: how the delay chance is set. */
+function delayHelp(input: {
+  readonly alert: string;
+  readonly q: number;
+  readonly p: number;
+  readonly delay: number;
+}): string {
+  const alert = alertOf(input.alert);
+  return `When school is on during ${withArticle(alert)}, we put the chance of a delayed start at ${format.chance(input.q)}. So with a ${format.chance(input.p)} chance of no school, the chance of a delayed start is ${format.chance(input.delay)}.`;
+}
+
+/** The why's steps, as chanceFormat.steps holds them. */
+const steps = /* @__PURE__ */ deepFreeze({
+  alertOf,
+  daysOf,
+  startLabel,
+  stepPoints,
+  schoolSet,
+  wholeLine,
+  recordNote,
+  recordParts,
+  startStep,
+  standingStep,
+  regionStep,
+  heldStep,
+  forecastLeftOut,
+  usualDays,
+  snowLine,
+  snowHelp,
+  iceLine,
+  coldLine,
+  netLine,
+  netHelp,
+  capHelp: CAP_HELP,
+  delayHelp,
+  /** What each step's fold button is for, said to a screen reader after its words, so no two
+   * buttons in a panel share a name. */
+  foldName: {
+    start: 'for the start',
+    standing: 'for how often it gets these alerts',
+    region: 'for its region',
+    held: 'for the limit we set',
+    forecast: 'for the forecast',
+    snow: 'for the snow',
+    ice: 'for the ice',
+    cold: 'for the cold',
+  },
+});
+
 export const chanceFormat = /* @__PURE__ */ deepFreeze({
   weekday,
   chanceOn,
@@ -1424,6 +2132,7 @@ export const chanceFormat = /* @__PURE__ */ deepFreeze({
   outlookHelp,
   outlookSlot,
   outlookWindow,
+  steps,
 });
 
 export type ChanceFormat = typeof chanceFormat;

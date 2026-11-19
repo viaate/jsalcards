@@ -92,6 +92,7 @@ import { wallClock, watchWake } from '../state/wake';
 import type { WakeHost } from '../state/wake';
 import { fetchJson } from './files';
 import { liveFetch } from './live-roots';
+import { prefetchStanding } from './standing';
 
 /** How the page reads the live files (live-roots.ts), for the admin's own reads of them too. */
 export { liveFetch };
@@ -659,6 +660,8 @@ export function predictionsReader(
           if (file !== null && turn > taken) {
             current = file;
             taken = turn;
+            // The why's steps: the standing file it names, before any panel opens.
+            prefetchStanding(files, file);
           }
           return file;
         },

@@ -66,6 +66,7 @@ test('an allowlisted file is read from the live host and passed on with its head
   for (const path of [
     'live/closings.json',
     'predictions/latest.json',
+    'predictions/standing/7c4cc6e710a6.json',
     'live/season.json',
     'live/days/2026-01-12.json',
   ]) {
@@ -110,6 +111,8 @@ test('any other path is a 404 that never reaches the live host', async () => {
     '%2e%2e/secret',
     'live%2fclosings.json',
     'predictions/hold.json',
+    'predictions/standing/7C4CC6E710A6.json',
+    'predictions/standing/7c4cc6e710a.json',
     'v1/live/closings.json',
   ]) {
     const live = host(() => ok());

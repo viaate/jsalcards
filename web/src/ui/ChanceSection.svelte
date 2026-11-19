@@ -4,7 +4,9 @@
   import type { ChanceView } from '../app/chance';
   import { chartFailed, chartShown } from '../app/chart-shown';
   import { copy } from '../copy';
+  import { chanceCopy } from '../copy-chance';
   import ChanceChart from './ChanceChart.svelte';
+  import WhyFold from './WhyFold.svelte';
 
   interface Props {
     chance: ChanceView;
@@ -142,7 +144,14 @@
         </p>
       {/if}
       {#if chance.delay !== null}
-        <p class="delay">{chance.delay}</p>
+        {@const delayHelp = parts.why?.steps?.delayHelp ?? null}
+        {#if delayHelp !== null}
+          <div class="delay">
+            <WhyFold text={chance.delay} label={chanceCopy.foldDelay} help={[delayHelp]} />
+          </div>
+        {:else}
+          <p class="delay">{chance.delay}</p>
+        {/if}
       {/if}
     </div>
 
@@ -179,7 +188,39 @@
     </svelte:boundary>
   {/if}
 
-  {#if parts.why !== null}
+  {#if parts.why !== null && (parts.why.steps ?? null) !== null}
+    {@const steps = parts.why.steps}
+    <div class="block why">
+      <h3 class="why-title">{parts.why.title}</h3>
+      {#if steps}
+        {#if steps.whole !== null}
+          <p class="whole">{steps.whole}</p>
+        {/if}
+        <div class="record">
+          <WhyFold
+            text={steps.record.text}
+            label={chanceCopy.foldRecord}
+            help={steps.record.help}
+          />
+        </div>
+        <ol class="rows sum steps">
+          {#each steps.rows as row (row.key)}
+            <li class="row {row.key === 'start' ? 'is-start' : 'is-reason'}">
+              <span class="label"><span class="num">{row.number}</span></span>
+              <div class="step">
+                <WhyFold
+                  text={row.text}
+                  label={chanceCopy.foldStep}
+                  help={row.help}
+                  name={row.name}
+                />
+              </div>
+            </li>
+          {/each}
+        </ol>
+      {/if}
+    </div>
+  {:else if parts.why !== null}
     <div class="block why">
       <h3 class="why-title">{parts.why.title}</h3>
       <ol class="rows sum">
@@ -425,6 +466,38 @@
     margin-top: 4px;
     font: var(--type-small);
     color: var(--text-2);
+  }
+
+  /* The steps' district line and record note, above the column, in the sentence's type. */
+  .whole,
+  .record {
+    margin-bottom: var(--row);
+    font: var(--type-body);
+    color: var(--text-1);
+    text-wrap: pretty;
+  }
+
+  /* The steps sit closer than other rows: each is one sentence with its fold button after it,
+     so the panel stays within about 900 px at 390 px wide (WHY-TRANSPARENT). */
+  .rows.steps {
+    gap: 10px;
+  }
+
+  /* Who the chance is for: a qualifier over the record note, in the help's type. */
+  .whole {
+    margin-bottom: 8px;
+    font: var(--type-small);
+    color: var(--text-2);
+  }
+
+  .record {
+    margin-bottom: 12px;
+  }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   /* How the chance adds up: open, a short sentence a reason, right under the chart. */

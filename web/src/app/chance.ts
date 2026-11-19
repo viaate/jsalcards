@@ -44,6 +44,8 @@ import type {
 } from '../data/forecast-detail';
 import type { DayOutlook, Outlook } from '../data/school-day';
 import { parseInstant } from '../state/instant';
+import { stepsView } from './steps';
+import type { StepsSource, StepsView } from './steps';
 import { districtName } from '../text/district-names';
 import type { ClosingsFile, DirectoryStamp, LocalDate } from '../types/generated';
 
@@ -218,6 +220,11 @@ export interface WhyView {
   /** Where the sum starts: "30", and the district's own rate in a sentence. */
   readonly base: { readonly number: string; readonly text: string };
   readonly lines: readonly WhyLineView[];
+  /**
+   * On a storm-class day whose standing file is read (WHY-TRANSPARENT): the record note first,
+   * then every step with its points and its folded details, in place of `base` and `lines`.
+   */
+  readonly steps?: StepsView | null;
 }
 
 export interface ChanceView {
@@ -281,6 +288,12 @@ export interface ChanceInput {
   readonly now: Date;
   /** The viewer's time zone: the school's zone is named after a time where they differ. */
   readonly timeZone: string;
+  /**
+   * The standing file the predictions file names, once read, and whose steps (the school's
+   * district, or the private school itself): a storm-class day then shows its steps
+   * (WHY-TRANSPARENT). Null or absent: today's why.
+   */
+  readonly steps?: StepsSource | null;
 }
 
 type Forecast = Extract<DayOutlook, { state: 'forecast' }>;
@@ -1395,6 +1408,12 @@ export function whyView(input: {
   readonly said?: Said;
   /** The district's state ("KS"), for an outlook's share across its districts. */
   readonly state?: string | null;
+  /** The standing file and whose steps, on a storm-class day (WHY-TRANSPARENT). */
+  readonly steps?: StepsSource | null;
+  /** The day's delay chance, for the delay line's fold. */
+  readonly delay?: number;
+  /** The panel shows the night chart (the forecast's fold says so). */
+  readonly nightChart?: boolean;
 }): WhyView | null {
   const { detail, chance, day, district, nameOf, now, zones } = input;
   const state = input.state ?? null;
@@ -1421,10 +1440,26 @@ export function whyView(input: {
         ...(words.kind === 'outlook' ? { help: chanceFormat.outlookHelp(words, zones) } : {}),
       });
     }
+    const source = input.steps ?? null;
+    const stepped =
+      source === null
+        ? null
+        : stepsView({
+            detail,
+            chance,
+            delay: input.delay ?? 0,
+            day,
+            district,
+            zones,
+            source,
+            nightChart: input.nightChart ?? false,
+            lines: lines.map((line) => line.text),
+          });
     return {
       title: chanceFormat.howWeGot(chance),
       base: { number: String(why.base.points), text: chanceFormat.baseReason(base, district) },
       lines,
+      steps: stepped,
     };
   } catch {
     // A number the words refuse: no sum rather than a wrong one.
@@ -1517,7 +1552,20 @@ export function chanceView(input: ChanceInput): ChanceView | null {
     };
     return {
       moments,
-      why: whyView({ detail, chance: noSchool, day, district, nameOf, now, zones, said, state }),
+      why: whyView({
+        detail,
+        chance: noSchool,
+        day,
+        district,
+        nameOf,
+        now,
+        zones,
+        said,
+        state,
+        steps: input.steps ?? null,
+        delay: forecast.delay,
+        nightChart: night !== null,
+      }),
       announces: (clock) => {
         if (announcement?.mark !== 'announces') return null;
         try {

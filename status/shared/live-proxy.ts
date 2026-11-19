@@ -36,10 +36,11 @@ export const LIVE_PREFIX = '/api/live/v1/';
 
 /**
  * The files the map reads from the live root (web/src/data/files.ts withLiveRoot): the
- * closings, the chances and the season counts, and a day's closings by its date.
+ * closings, the chances and the season counts, a day's closings by its date, and the standing
+ * file the chances name by its stamp (web/src/data/standing.ts, beside predictions/latest.json).
  */
 export const LIVE_PATHS =
-  /^(?:live\/closings\.json|predictions\/latest\.json|live\/season\.json|live\/days\/\d{4}-\d{2}-\d{2}\.json)$/;
+  /^(?:live\/closings\.json|predictions\/latest\.json|predictions\/standing\/[0-9a-f]{12}\.json|live\/season\.json|live\/days\/\d{4}-\d{2}-\d{2}\.json)$/;
 
 /** The longest an answer is kept at the edge: a minute. */
 export const LIVE_EDGE_TTL_SECONDS = 60;

@@ -405,6 +405,21 @@
       "title": "Forecast",
       "type": "object"
     },
+    "ForecastLeftOut": {
+      "description": "Why the forecast is not in a storm-class day's chance: 0 before its 9 PM snapshot, 1 every chance left it out to fit the file, 2 no forecast came in, 3 not for every deciding school, 4 the district's days would come to more than 6 closings a winter, 5 the nation's would break a plausibility clause, 6 the bus hour timing served (the lines say the rest), 7 the adjustment is off, 8 no past 9 PM forecasts, 9 no usual snow balances its days.",
+      "maximum": 9,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "HeldBy": {
+      "enum": [
+        "low",
+        "high",
+        "cap",
+        "floor"
+      ],
+      "type": "string"
+    },
     "HourSpan": {
       "additionalProperties": false,
       "description": "Hours of an hourly series, by position: first to last, both included.",
@@ -491,6 +506,12 @@
       ],
       "title": "Hours",
       "type": "object"
+    },
+    "IceHundredths": {
+      "description": "Inches of ice, in hundredths (0.25, not 0.253).",
+      "maximum": 9.99,
+      "minimum": 0.0,
+      "type": "number"
     },
     "IceReason": {
       "additionalProperties": false,
@@ -846,6 +867,23 @@
       "maximum": 100,
       "minimum": 0,
       "type": "integer"
+    },
+    "PlausibilityClause": {
+      "description": "A plausibility clause (G6): the national advisory mean and its 99th percentile, the\nadvisory and warning mean, and the most of any district.",
+      "enum": [
+        "advisory_mean",
+        "advisory_p99",
+        "advisory_warning_mean",
+        "district_max"
+      ],
+      "title": "PlausibilityClause",
+      "type": "string",
+      "x-enum-names": [
+        "advisory_mean",
+        "advisory_p99",
+        "advisory_warning_mean",
+        "district_max"
+      ]
     },
     "Points": {
       "description": "Whole percentage points a reason adds to the chance, or below 0 takes away.",
@@ -1408,10 +1446,54 @@
     },
     "Why": {
       "additionalProperties": false,
-      "description": "How the chance adds up: the base, then each reason's points, biggest first.",
+      "description": "How the chance adds up: the base, then each reason's points, biggest first.\n\nOn an advisory or warning class day of a district (WHY-TRANSPARENT), what the forecast\nstep read: ``fc`` where the forecast is not in the chance, else (read) ``snow``, with\n``feels``, ``ice`` and ``held`` where they apply.",
       "properties": {
         "base": {
           "$ref": "#/$defs/Base"
+        },
+        "fc": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ForecastLeftOut"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "feels": {
+          "anyOf": [
+            {
+              "maximum": 14,
+              "minimum": -99,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Read, where the cold counts: how cold half the deciding schools feel at 7 AM, raised to whole degrees F, -99 for -99 or colder."
+        },
+        "held": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HeldBy"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ice": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/IceHundredths"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Read, where ice counts: the ice at half the deciding schools, floored."
         },
         "reasons": {
           "items": {
@@ -1419,6 +1501,17 @@
           },
           "maxItems": 8,
           "type": "array"
+        },
+        "snow": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Inches"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Read: the snow still to come by the window's end at half the deciding schools, floored to tenths."
         }
       },
       "required": [
@@ -1508,6 +1601,14 @@
       ],
       "description": "When the weather service issued the forecast the outlook reasons read (S7-F); given with any outlook reason, and before generated_at."
     },
+    "forecast_check": {
+      "description": "With fc 5: the plausibility clauses the forecast broke.",
+      "items": {
+        "$ref": "#/$defs/PlausibilityClause"
+      },
+      "maxItems": 4,
+      "type": "array"
+    },
     "generated_at": {
       "$ref": "#/$defs/UtcInstant"
     },
@@ -1539,6 +1640,18 @@
         "$ref": "#/$defs/SchoolForecast"
       },
       "type": "array"
+    },
+    "standing": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{12}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The stamp of the standing file (predictions/standing/<stamp>.json) whose numbers the storm-class days' steps are made of; absent: none, so no panel shows them."
     },
     "zones": {
       "description": "Each distinct time zone the schools name, once; every one is named.",

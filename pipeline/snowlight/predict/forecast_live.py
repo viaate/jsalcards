@@ -187,6 +187,10 @@ def zone_forecasts(
             ice_low=_read(ice_low, k),
             ice_high=_read(ice_high, k),
             feels=feel,
+            feels_read=float(feels_half[k])
+            if feels_half is not None and math.isfinite(float(feels_half[k]))
+            else None,
+            ice_read=None if ice_half is None else float(ice_half[k]),
             feels_low=_read(feels_low, k),
             feels_high=_read(feels_high, k),
             run_time=values.run.time,

@@ -1493,6 +1493,163 @@ function classPredictions(generatedAt: string): string {
   });
 }
 
+/** SYNTHETIC: the standing file's stamp the step-by-step chances name (WHY-TRANSPARENT). */
+const STEPS_STAMP = '0123456789ab';
+
+/**
+ * SYNTHETIC: classPredictions with the forecast step read on Tuesday (no snow to speak of) and
+ * waiting for Tuesday evening's 9 PM on Wednesday, naming the standing file STEPS_STAMP.
+ */
+function stepsPredictions(generatedAt: string): string {
+  const found = JSON.parse(classPredictions(generatedAt)) as {
+    districts: { days: { why: Record<string, unknown> }[] }[];
+  };
+  for (const entry of found.districts) {
+    const [tuesday, wednesday] = entry.days;
+    if (tuesday !== undefined) tuesday.why = { ...tuesday.why, snow: 0 };
+    if (wednesday !== undefined) wednesday.why = { ...wednesday.why, fc: 0 };
+  }
+  return JSON.stringify({ ...found, standing: STEPS_STAMP });
+}
+
+/**
+ * SYNTHETIC: the standing file STEPS_STAMP names: Shawnee Mission (district 1) gets 5.7
+ * advisory days a winter against a middle of 4, so its advisory day starts 3 points under the
+ * usual 10%; its record holds 2 advisory days, one with no school.
+ */
+function stepsStanding(): string {
+  const count = STAMP.districts;
+  const each = <T>(value: T): T[] => Array.from({ length: count }, () => value);
+  const level = { prior: 10, fit: 10, now: 10, storms: 0, q: 0.08, alpha: -2.95, tau: 1.5 };
+  return JSON.stringify({
+    schema_version: 1,
+    generated_at: '2026-01-13T13:25:00Z',
+    directory: STAMP,
+    stamp: STEPS_STAMP,
+    ref: { advisory: 4, warning: 1.4, cold: 0.3 },
+    nodes: 20,
+    winters: [2015, 2024],
+    climate_winters: [2018, 2025],
+    record_winters: [2015, 2025],
+    climate_window: 'whole',
+    levels: { advisory: level, warning: { ...level, prior: 45, fit: 45, now: 45 }, cold: level },
+    region_delta: { advisory: [], warning: [], cold: [] },
+    winter: Array.from({ length: count }, (_, i) => (i === 1 ? [5.7, 1, 0] : [4, 1.4, 0.3])),
+    flags: each(0),
+    usual: { advisory: each(120), warning: each(300) },
+    alone: { advisory: each(null), warning: each(null) },
+    own: { advisory: each(12), warning: each(5) },
+    region: { advisory: [], warning: [], cold: [] },
+    held: { advisory: [], warning: [], cold: [] },
+    record: { advisory: [[1, 1, 0, 2]], warning: [], cold: [] },
+    record_sum: { advisory: [495, 93, 667], warning: [1027, 10, 1071], cold: [24, 6, 32] },
+    private: {
+      rows: [[[4, 1.4, 0.3], 0, 0]],
+      of: [0],
+      record: { advisory: [], warning: [], cold: [] },
+      record_sum: { advisory: [226, 0, 248], warning: [231, 0, 237], cold: [4, 0, 4] },
+      held: { advisory: [], warning: [], cold: [] },
+    },
+  });
+}
+
+/** SYNTHETIC: a snow forecast's hours, so the panel draws its chart above the why. */
+const STEPS_HOURS = {
+  kind: 'snow_total',
+  start: '2026-01-13T03:00:00Z',
+  values: [0.0, 0.0, 0.2, 0.6, 1.1, 1.8, 2.3, 2.8, 3.3, 3.7, 3.9],
+  low: 3.0,
+  high: 5.0,
+  heavy: { first: 6, last: 8 },
+} as const;
+
+/**
+ * SYNTHETIC: the step-by-step days shaped like the Sierra's (WHY-TRANSPARENT 5, the 390 px
+ * fixtures), on the test world's schools: a warning day with a snow row and a cold row held
+ * by the bend over the upper bound (Creekside's shape, Shawnee Mission's Tuesday); an
+ * advisory day with a region row and both lines (Tahoe-Truckee's shape, Olathe's Wednesday,
+ * whose panel heads with today's delay first, as a closed-today panel heads with its status);
+ * and the private school's (Pembroke Hill's Tuesday). Every number is made up and adds up.
+ */
+type StepsShape = 'warning' | 'advisory' | 'private';
+function sierraPredictions(generatedAt: string, shape: StepsShape): string {
+  const found = JSON.parse(classPredictions(generatedAt)) as {
+    districts: { days: Record<string, unknown>[] }[];
+    outlooks: Record<string, unknown>[];
+  };
+  const lined = (
+    base: Record<string, unknown>,
+    snow: number,
+    cold: number,
+    read: Record<string, unknown>,
+  ) => {
+    const points = (base.points as number) + snow + cold;
+    return {
+      state: 'forecast',
+      p_no_school: points / 100,
+      p_delay: Math.round((1 - points / 100) * 11) / 100,
+      reasons: [],
+      hours: STEPS_HOURS,
+      why: {
+        base,
+        reasons: [
+          { kind: 'snow_total', points: snow, low: 3.0, high: 5.0, overnight: true },
+          { kind: 'wind_chill', points: cold, feels_like: 13 },
+        ],
+        ...read,
+      },
+    };
+  };
+  const [olathe, shawnee] = found.districts;
+  if (shape === 'warning' && shawnee !== undefined) {
+    shawnee.days[0] = lined({ kind: 'class', points: 47, alert: 'winter_storm_warning' }, 8, 2, {
+      snow: 3.9,
+      feels: 13,
+      held: 'high',
+    });
+  }
+  if (shape === 'advisory' && olathe !== undefined) {
+    olathe.days[1] = lined({ kind: 'class', points: 12, weather: 'advisory' }, 6, 1, {
+      snow: 2.4,
+      feels: 13,
+    });
+  }
+  return JSON.stringify({ ...found, standing: STEPS_STAMP });
+}
+
+/** SYNTHETIC: the standing file the Sierra-shaped days name: stepsStanding with Olathe's
+ * advisory region row (3 points over) and both districts' records and usual snow. */
+function sierraStanding(): string {
+  const found = JSON.parse(stepsStanding()) as Record<string, unknown>;
+  return JSON.stringify({
+    ...found,
+    region_delta: {
+      advisory: [{ region: 'ohio_valley', delta: 0.21, clipped: false }],
+      warning: [],
+      cold: [],
+    },
+    // Olathe gets more advisories than the middle (so it starts lower), Shawnee Mission fewer
+    // warnings (higher), the private school's county fewer advisories (higher).
+    winter: Array.from({ length: STAMP.districts }, (_, i) =>
+      i === 0 ? [5, 1.4, 0.3] : i === 1 ? [5.7, 1, 0] : [4, 1.4, 0.3],
+    ),
+    private: { ...(found.private as Record<string, unknown>), rows: [[[3, 1.4, 0.3], 0, 0]] },
+    region: { advisory: [[0, 3, 0]], warning: [], cold: [] },
+    usual: {
+      advisory: Array.from({ length: STAMP.districts }, () => 91),
+      warning: Array.from({ length: STAMP.districts }, () => 177),
+    },
+    record: {
+      advisory: [
+        [0, 4, 2, 11],
+        [1, 1, 0, 2],
+      ],
+      warning: [[1, 6, 1, 9]],
+      cold: [],
+    },
+  });
+}
+
 /** SYNTHETIC: the live file that morning at `generatedAt`: Olathe North on a two-hour delay today. */
 function morningClosings(generatedAt: string): string {
   return JSON.stringify({
@@ -4506,6 +4663,197 @@ test.describe('with data staged', () => {
       await context.close();
     }
   });
+
+  test('a storm-class chance step by step at 390 px: the record first, each step with its points, every fold closed and one opened by keyboard', async ({
+    browser,
+  }) => {
+    // WHY-TRANSPARENT: the standing file named by the predictions file, read once.
+    test.setTimeout(240_000);
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      timezoneId: MORNING_VIEWER,
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await fixDate(page, BEFORE_UNDER_WAY);
+    const { problems } = watch(page);
+    let standingReads = 0;
+    await page.route('**/data/predictions/latest.json*', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: stepsPredictions(BEFORE_UNDER_WAY_FILES),
+      }),
+    );
+    await page.route(`**/data/predictions/standing/${STEPS_STAMP}.json*`, (route) => {
+      standingReads += 1;
+      return route.fulfill({ contentType: 'application/json', body: stepsStanding() });
+    });
+    await page.route('**/data/live/closings.json*', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: morningClosings(BEFORE_UNDER_WAY_FILES),
+      }),
+    );
+    await page.route('**/data/live/covered.json*', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: morningCovered(BEFORE_UNDER_WAY_FILES),
+      }),
+    );
+    const panel = page.locator('aside.detail');
+    const section = panel.locator('.chance');
+    await page.goto(`${site}?school=${SHAWNEE_MISSION_EAST}`);
+    await expect(panel.locator('h2')).toHaveText('Shawnee Mission East High', { timeout: 60_000 });
+    await expect(section.locator('.number')).toHaveText('7%', { timeout: 60_000 });
+    // The record note first, under the district line, then the steps adding to the chance.
+    const record = section.locator('.why .record');
+    await expect(record).toContainText(
+      'the past closings lists we count tell us what Shawnee Mission did on 2 of its school days with a winter advisory: no school on 1 and school on 1.',
+      { timeout: 60_000 },
+    );
+    const rows = section.locator('.why .sum > li');
+    await expect(rows).toHaveCount(3);
+    await expect(rows.locator('.num')).toHaveText(['10%', '\u22123', '0']);
+    await expect(rows.nth(0)).toContainText('A school day with a winter advisory starts at 10%');
+    await expect(rows.nth(1)).toContainText(
+      'Shawnee Mission gets 5.7 school days with a winter advisory a winter.',
+    );
+    await expect(rows.nth(2)).toContainText('The forecast has under 0.1 inches of snow by');
+    // Every fold closed; the record note's opens by keyboard, alone, in place.
+    const folds = section.locator('button.fold');
+    expect(await folds.count()).toBeGreaterThanOrEqual(3);
+    for (const fold of await folds.all())
+      await expect(fold).toHaveAttribute('aria-expanded', 'false');
+    // A closed fold's help is not shown at all.
+    for (const help of await section.locator('.fold-help').all()) await expect(help).toBeHidden();
+    const first = record.locator('button.fold');
+    await first.focus();
+    await page.keyboard.press('Enter');
+    await expect(first).toHaveAttribute('aria-expanded', 'true');
+    await expect(record.locator('.fold-help')).toBeVisible();
+    await expect(section.locator('button.fold[aria-expanded="true"]')).toHaveCount(1);
+    await page.keyboard.press('Enter');
+    await expect(first).toHaveAttribute('aria-expanded', 'false');
+    await expect(record.locator('.fold-help')).toBeHidden();
+    // With every fold closed, from the headline to the last step's sentence, everything
+    // between them in, at most 900 px.
+    const hero = await section.locator('.hero').boundingBox();
+    const last = await rows.last().locator('p').first().boundingBox();
+    if (hero === null || last === null) throw new Error('no headline or why');
+    if (process.env.SNOWLIGHT_STEPS_SHOT !== undefined) {
+      await section.screenshot({ path: `${process.env.SNOWLIGHT_STEPS_SHOT}-kansas.png` });
+    }
+    expect(last.y + last.height - hero.y).toBeLessThanOrEqual(900);
+    expect(standingReads).toBe(1);
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
+  for (const shape of ['warning', 'advisory', 'private'] as const) {
+    test(`a Sierra-shaped ${shape} day step by step at 390 px: from the headline to the last step's sentence at most 900 px, its folds open by tap, Enter and Space`, async ({
+      browser,
+    }) => {
+      // WHY-TRANSPARENT acceptance bar 2's height on the day shapes the Sierra's panels have.
+      test.setTimeout(240_000);
+      const context = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+        isMobile: true,
+        hasTouch: true,
+        timezoneId: MORNING_VIEWER,
+        serviceWorkers: 'block',
+      });
+      const page = await context.newPage();
+      await fixDate(page, BEFORE_UNDER_WAY);
+      const { problems } = watch(page);
+      await page.route('**/data/predictions/latest.json*', (route) =>
+        route.fulfill({
+          contentType: 'application/json',
+          body: sierraPredictions(BEFORE_UNDER_WAY_FILES, shape),
+        }),
+      );
+      await page.route(`**/data/predictions/standing/${STEPS_STAMP}.json*`, (route) =>
+        route.fulfill({ contentType: 'application/json', body: sierraStanding() }),
+      );
+      await page.route('**/data/live/closings.json*', (route) =>
+        route.fulfill({
+          contentType: 'application/json',
+          body: morningClosings(BEFORE_UNDER_WAY_FILES),
+        }),
+      );
+      await page.route('**/data/live/covered.json*', (route) =>
+        route.fulfill({
+          contentType: 'application/json',
+          body: morningCovered(BEFORE_UNDER_WAY_FILES),
+        }),
+      );
+      const id = {
+        warning: SHAWNEE_MISSION_EAST,
+        advisory: '201014000137',
+        private: PEMBROKE_HILL,
+      }[shape];
+      const panel = page.locator('aside.detail');
+      const section = panel.locator('.chance');
+      await page.goto(`${site}?school=${id}`);
+      const rows = section.locator('.why .sum > li');
+      const expected = {
+        warning: ['45%', '+2', '+8', '+2'],
+        advisory: ['10%', '\u22121', '+3', '+6', '+1'],
+        private: ['10%', '+2', '0'],
+      }[shape];
+      await expect(rows.locator('.num')).toHaveText(expected, { timeout: 60_000 });
+      await expect(section.locator('.why .record')).toContainText('fall 2015 to spring 2026');
+      if (shape === 'warning') {
+        await expect(rows.nth(2)).toContainText('The forecast has 3.9 inches or more of snow');
+        await expect(rows.nth(3)).toContainText('will feel 13 F or colder at 7 AM');
+      }
+      if (shape === 'advisory') {
+        await expect(rows.nth(2)).toContainText('region had no school on a larger share');
+        await expect(section.locator('.status')).toBeVisible();
+      }
+      // Every fold closed: from the headline (the chance's number and its day; a status the
+      // panel heads with above it is today's, not the chance's) to the last step's sentence,
+      // the chart and the timeline between them in, at most 900 px.
+      const folds = section.locator('button.fold');
+      for (const fold of await folds.all())
+        await expect(fold).toHaveAttribute('aria-expanded', 'false');
+      const top = await section.locator('.hero').boundingBox();
+      const last = await rows.last().locator('p').first().boundingBox();
+      if (top === null || last === null) throw new Error('no headline or why');
+      const height = last.y + last.height - top.y;
+      if (process.env.SNOWLIGHT_STEPS_SHOT !== undefined) {
+        await section.screenshot({ path: `${process.env.SNOWLIGHT_STEPS_SHOT}-${shape}.png` });
+        const status =
+          (await section.locator('.status').count()) > 0
+            ? await section.locator('.status').first().boundingBox()
+            : null;
+        const above = status === null ? 0 : top.y - status.y;
+        console.warn(
+          `steps ${shape}: ${String(Math.round(height))} px (${String(Math.round(height + above))} with the status)`,
+        );
+      }
+      expect(height).toBeLessThanOrEqual(900);
+      // A step's fold opens by a tap, another by Space, each alone and in place.
+      const steps = section.locator('.why .sum button.fold');
+      const tapped = steps.first();
+      await tapped.tap();
+      await expect(tapped).toHaveAttribute('aria-expanded', 'true');
+      await expect(section.locator('.why .sum .fold-help:visible')).toHaveCount(1);
+      await tapped.tap();
+      await expect(tapped).toHaveAttribute('aria-expanded', 'false');
+      const spaced = steps.nth(1);
+      await spaced.focus();
+      await page.keyboard.press('Space');
+      await expect(spaced).toHaveAttribute('aria-expanded', 'true');
+      await expect(section.locator('button.fold[aria-expanded="true"]')).toHaveCount(1);
+      await expect(section.locator('.why .sum .fold-help:visible')).toHaveCount(1);
+      expect(problems).toEqual([]);
+      await context.close();
+    });
+  }
 
   test('the chance section the evening of a closed day: the status first, then tomorrow’s chance and its cold night', async ({
     browser,

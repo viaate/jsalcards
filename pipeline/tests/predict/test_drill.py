@@ -50,11 +50,13 @@ from snowlight.predict import (
     serve,
 )
 from snowlight.predict.alerts_live import live_events, live_heads_ups
+from snowlight.predict.anchor import Grid
 from snowlight.predict.config import PIPELINE_ROOT, PredictConfig
 from snowlight.predict.publish import Mode
 from snowlight.predict.situations import Situation, WeatherClass
 from snowlight.schemas.live import DayTimeline
 from snowlight.schemas.predictions import Forecast, PredictionsFile
+from snowlight.schemas.standing import StandingFile
 from snowlight.sources.nws.alerts import parse_active
 
 PIPELINE: Path = PIPELINE_ROOT
@@ -739,10 +741,44 @@ def test_the_host_is_the_drills_and_only_the_public_keys_move(story: Spied) -> N
     assert isinstance(story.host, drill.DrillHost)
     assert story.mode == Mode.ON
     written = {key for _when, key, _data in run.host.log}
-    # The stamp beside the chances (predict-next, after the spec) goes up in the same commit.
-    assert written == {drill.LATEST, "v1/predictions/stamp.json", drill.TIMELINE}
+    # The stamp beside the chances (predict-next, after the spec) goes up in the same commit,
+    # and so does the standing file the chances name (WHY-TRANSPARENT), once per stamp.
+    standing = {key for key in written if key.startswith("v1/predictions/standing/")}
+    assert written - standing == {drill.LATEST, "v1/predictions/stamp.json", drill.TIMELINE}
+    assert len(standing) == 1  # the drill's real model passes the guard
+    assert all(re.fullmatch(r"v1/predictions/standing/[0-9a-f]{12}\.json", key) for key in standing)
     assert run.host.reads
     assert all(key.startswith("v1/") for key in run.host.reads)
+
+
+def test_every_class_day_the_drill_serves_adds_up_from_its_standing_file(story: Spied) -> None:
+    """Acceptance bar 1 (WHY-TRANSPARENT): over every latest.json the drill's host got and the
+    standing file they name, 100% of the class district-days give steps that add to the chance
+    shown, each step's number from the file alone (:func:`predict.test_why_steps.check_steps`).
+    The drill's world has no private school (the synthetic world's are checked there)."""
+    from predict.test_why_steps import check_steps  # noqa: PLC0415 - a test module's helper
+
+    run = story.result.story
+    built = run.model.steps
+    assert built is not None
+    assert run.anchor is not None
+    log = [(key, data) for _when, key, data in run.host.log]
+    files = [StandingFile.model_validate_json(data) for key, data in log if "/standing/" in key]
+    assert [found.stamp for found in files] == [built.file.stamp]
+    settings = run.model.artifact.settings
+    grid = Grid(settings.floor, settings.ceiling)
+    checked = 0
+    for key, data in log:
+        if key != drill.LATEST:
+            continue
+        made = PredictionsFile.model_validate_json(data)
+        counted = check_steps(
+            made, files[0], built.regions, built.private_regions, run.anchor.settings.beta,
+            run.anchor.settings.offset, grid,
+        )  # fmt: skip
+        assert counted[1] == len(made.schools) == 0
+        checked += counted[0]
+    assert checked > 1_000  # every pass's class days (1,343 on the committed model)
 
 
 def test_the_picks_are_real_districts_by_rule(world_inputs: Inputs, story: Spied) -> None:

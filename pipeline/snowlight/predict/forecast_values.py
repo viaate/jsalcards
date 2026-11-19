@@ -101,6 +101,13 @@ class DistrictForecast:
     :func:`bus_share`; a period's snow taken as even through it): the bus hour timing term's
     input (``timing_bus``). Never more than ``snow``, and it only grows with any school's snow
     in any period. ``None`` where ``snow`` is."""
+    feels_read: float | None = None
+    """How cold half the deciding schools feel at 7 AM, as read (degrees F, never rounded):
+    the why's ``feels`` (WHY-TRANSPARENT), so "half its schools will feel F F or colder" is
+    true of the value it raises; the cold term reads ``feels``. ``None`` where not read."""
+    ice_read: float | None = None
+    """The district's 50% value of the window ice, as read (inches, never rounded): the why's
+    ``ice``, floored; the ice term reads ``ice``."""
 
 
 @dataclass(frozen=True, slots=True)

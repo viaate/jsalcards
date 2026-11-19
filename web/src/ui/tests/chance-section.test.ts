@@ -21,7 +21,7 @@ import {
   nightOutlook,
 } from '../../app/tests/chance-fixtures';
 import { copy } from '../../copy';
-import { chanceCopy } from '../../copy-chance';
+import { chanceCopy, chanceFormat } from '../../copy-chance';
 import { nightOf } from '../../data/night';
 import ChanceSection from '../ChanceSection.svelte';
 import DetailPanel from '../DetailPanel.svelte';
@@ -648,5 +648,104 @@ describe('the lighter number', () => {
       const ratio = (gray + 0.05) / (luminance(token(surface)) + 0.05);
       expect(ratio, surface).toBeGreaterThanOrEqual(4.5);
     }
+  });
+});
+
+describe('the why, step by step (WHY-TRANSPARENT)', () => {
+  /** A section whose why carries steps, each with folded details, made up for these tests. */
+  function stepped(): ChanceView {
+    const base = chance(true);
+    if (base.why === null) throw new Error('no why');
+    return {
+      ...base,
+      delay: '8% chance of a delayed start instead',
+      why: {
+        ...base.why,
+        steps: {
+          whole: 'This chance is for Shawnee Mission as a whole, the same at each of its schools.',
+          record: {
+            text: 'Record sentence.',
+            help: ['This winter’s days are not in that record.'],
+          },
+          rows: [
+            {
+              key: 'start',
+              number: '45%',
+              text: 'Start sentence.',
+              help: ['Start help.'],
+              name: chanceFormat.steps.foldName.start,
+            },
+            {
+              key: 'standing',
+              number: `${MINUS}15`,
+              text: 'Standing sentence.',
+              help: ['Standing help.'],
+              name: chanceFormat.steps.foldName.standing,
+            },
+            {
+              key: 'forecast',
+              number: '0',
+              text: 'Forecast sentence.',
+              help: [],
+              name: chanceFormat.steps.foldName.forecast,
+            },
+          ],
+          delayHelp: 'Delay help.',
+        },
+      },
+    };
+  }
+
+  it('shows every fold closed, opens one alone in place, and stores nothing', () => {
+    const stored = vi.spyOn(Storage.prototype, 'setItem');
+    const target = document.createElement('div');
+    document.body.append(target);
+    const app = mount(ChanceSection, { target, props: { chance: stepped() } });
+    flushSync();
+    const buttons = [...target.querySelectorAll<HTMLButtonElement>('button.fold')];
+    // Each button's name is its own: a step's says which step after its words.
+    const names = buttons.map((button) => button.textContent.trim());
+    expect(names).toEqual([
+      chanceCopy.foldDelay,
+      chanceCopy.foldRecord,
+      `${chanceCopy.foldStep} ${chanceFormat.steps.foldName.start}`,
+      `${chanceCopy.foldStep} ${chanceFormat.steps.foldName.standing}`,
+    ]);
+    expect(new Set(names).size).toBe(names.length);
+    expect(buttons[2]?.querySelector('.sr-only')?.textContent).toBe(
+      ` ${chanceFormat.steps.foldName.start}`,
+    );
+    for (const button of buttons) {
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+      const help = document.getElementById(button.getAttribute('aria-controls') ?? '');
+      expect(help?.hidden).toBe(true);
+      expect(document.getElementById(button.getAttribute('aria-describedby') ?? '')).not.toBeNull();
+    }
+    const record = buttons[1];
+    record?.click();
+    flushSync();
+    expect(record?.getAttribute('aria-expanded')).toBe('true');
+    expect(document.getElementById(record?.getAttribute('aria-controls') ?? '')?.hidden).toBe(
+      false,
+    );
+    expect(
+      buttons.filter((button) => button.getAttribute('aria-expanded') === 'true'),
+    ).toHaveLength(1);
+    // The row with no details shows its sentence and no button.
+    expect(target.textContent).toContain('Forecast sentence.');
+    expect(target.textContent).toContain('This chance is for Shawnee Mission as a whole');
+    void unmount(app);
+    // Opened again, every fold is closed.
+    const again = mount(ChanceSection, { target, props: { chance: stepped() } });
+    flushSync();
+    expect(
+      [...target.querySelectorAll('button.fold')].every(
+        (button) => button.getAttribute('aria-expanded') === 'false',
+      ),
+    ).toBe(true);
+    void unmount(again);
+    target.remove();
+    expect(stored).not.toHaveBeenCalled();
+    stored.mockRestore();
   });
 });

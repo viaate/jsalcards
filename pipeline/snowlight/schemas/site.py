@@ -48,11 +48,13 @@ from snowlight.schemas.registry import (
     PublishedFile,
 )
 from snowlight.schemas.replays import ReplayFile, ReplayIndex, check_summary
+from snowlight.schemas.standing import StandingFile
 
 _REPLAY_DIR = "replays"
 _POINTS_FILE = "schools/points.bin"
 _REPLAY_INDEX = "index.json"
 _LIVE_DAY_DIR = "live/days"
+_STANDING_DIR = "predictions/standing"
 _TEXT_SUFFIXES = (".json", ".jsonl")
 
 
@@ -140,6 +142,19 @@ def _load_live_days(root: Path, report: SiteReport) -> dict[str, DayTimeline]:
             report.problems.append(f"{shown}: holds the day {timeline.day}")
         days[path.stem] = timeline
     return days
+
+
+def _load_standing(root: Path, report: SiteReport) -> None:
+    """Each ``predictions/standing/<stamp>.json`` (the why's steps, on the live host), named by
+    its stamp."""
+    folder = root / _STANDING_DIR
+    if not folder.is_dir():
+        return
+    for path in sorted(folder.glob("*.json")):
+        shown = f"{_STANDING_DIR}/{path.name}"
+        found = _load(StandingFile, path, shown, report)
+        if found is not None and found.stamp != path.stem:
+            report.problems.append(f"{shown}: holds the stamp {found.stamp}")
 
 
 def _check_stamps(
@@ -245,6 +260,11 @@ def _is_replay(path: str) -> bool:
     return folder == _REPLAY_DIR and "/" not in name and name.endswith(".json")
 
 
+def _is_standing(path: str) -> bool:
+    folder, _, name = path.rpartition("/")
+    return folder == _STANDING_DIR and name.endswith(".json")
+
+
 def _is_live_day(path: str) -> bool:
     folder, _, name = path.rpartition("/")
     return folder == _LIVE_DAY_DIR and name.endswith(".json") and name != _REPLAY_INDEX
@@ -255,7 +275,7 @@ def _account_for_others(root: Path, report: SiteReport) -> None:
     modeled = {entry.path for entry in PUBLISHED_FILES if "{id}" not in entry.path}
     for path in sorted(item for item in root.rglob("*") if item.is_file()):
         shown = path.relative_to(root).as_posix()
-        if shown in modeled or _is_replay(shown) or _is_live_day(shown):
+        if shown in modeled or _is_replay(shown) or _is_live_day(shown) or _is_standing(shown):
             continue
         if shown.endswith(INTERNAL_SUFFIX):
             report.skipped.append(shown)
@@ -287,6 +307,7 @@ def validate_site(root: Path) -> SiteReport:
     }
     replays = _load_replays(root, report)
     live_days = _load_live_days(root, report)
+    _load_standing(root, report)
     _check_stamps(root, loaded, replays, report, live_days)
     _check_edition(root, loaded, report)
     _check_live(root, loaded, report)

@@ -97,6 +97,10 @@ class ServeSettings(_Settings):
     collapse_drop: float = Field(gt=0, lt=1)
     budget_raw_bytes: int = Field(ge=1)
     budget_gzip_bytes: int = Field(ge=1)
+    standing_budget_raw_bytes: int = Field(default=4_000_000, ge=1)
+    """The standing file's raw budget (predictions/standing/<stamp>.json, WHY-TRANSPARENT)."""
+    standing_budget_gzip_bytes: int = Field(default=600_000, ge=1)
+    """... and its gzip budget: a file over either is not written and no panel shows steps."""
     heartbeat_minutes: int = Field(ge=1)
     heartbeat_skip_minutes: int = Field(ge=0)
     memory_gap_minutes: int = Field(ge=1)

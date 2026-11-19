@@ -302,6 +302,48 @@ function outlookOf(
 export interface WhyDetail {
   readonly base: BaseDetail;
   readonly reasons: readonly ReasonDetail[];
+  /**
+   * What a district's storm-class day's forecast step read (WHY-TRANSPARENT): `fc` where the
+   * forecast is not in the chance, else the snow it read with the ice, the feel and what held
+   * the total where they count. Null where the file says neither, or says it wrong.
+   */
+  readonly read?: ReadDetail | null;
+}
+
+export interface ReadDetail {
+  readonly fc: number | null;
+  readonly snow: number | null;
+  readonly feels: number | null;
+  readonly ice: number | null;
+  readonly held: 'low' | 'high' | 'cap' | 'floor' | null;
+}
+
+const HELD = new Set(['low', 'high', 'cap', 'floor']);
+
+/** The why's forecast step fields, checked as the contract has them, or null. */
+function readOf(why: Record<string, unknown> | null): ReadDetail | null {
+  if (why === null) return null;
+  const { fc, snow, feels, ice, held } = why;
+  const number = (value: unknown): value is number =>
+    typeof value === 'number' && Number.isFinite(value);
+  const found: ReadDetail = {
+    fc: number(fc) && Number.isInteger(fc) && fc >= 0 && fc <= 9 ? fc : null,
+    snow: number(snow) && snow >= 0 ? snow : null,
+    feels: number(feels) && Number.isInteger(feels) && feels >= -99 && feels <= 14 ? feels : null,
+    ice: number(ice) && ice >= 0 ? ice : null,
+    held: typeof held === 'string' && HELD.has(held) ? (held as ReadDetail['held']) : null,
+  };
+  const given = [fc, snow, feels, ice, held].filter(
+    (value) => value !== undefined && value !== null,
+  );
+  const kept = [found.fc, found.snow, found.feels, found.ice, found.held].filter(
+    (value) => value !== null,
+  );
+  // A field the file gives that does not read is a step the panel cannot say: none of them.
+  if (given.length !== kept.length || kept.length === 0) return null;
+  if (found.fc !== null && found.snow !== null) return null;
+  if (found.fc === null && found.snow === null) return null;
+  return found;
 }
 
 export interface PastDayDetail {
@@ -676,7 +718,8 @@ function whyOf(value: unknown, context: WhyContext): WhyDetail | null {
   if (!reasons.every((item): item is ReasonDetail => item !== null)) return null;
   if (new Set(reasons.map((item) => item.kind)).size !== reasons.length) return null;
   if (!reasons.every((item) => agrees(item, context))) return null;
-  return { base, reasons };
+  const read = readOf(why);
+  return read === null ? { base, reasons } : { base, reasons, read };
 }
 
 /**

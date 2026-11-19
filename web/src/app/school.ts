@@ -71,6 +71,7 @@ import type { Outlook, SchoolStatus, StatusRow } from '../data/school-day';
 import type { Directory } from '../data/directory';
 import type { ReplayOn } from '../data/replay';
 import { readSeason, schoolSeason } from '../data/season';
+import { awaitStanding, heldStanding, readStanding } from '../data/standing';
 import { parseInstant } from '../state/instant';
 import { casedName, displayName } from '../text/names';
 import { stateOfId } from '../text/school-names';
@@ -87,6 +88,7 @@ import type {
 } from '../types/generated';
 import { chanceView, latestZone, nextTurn, shortDistrictName, todayUnderWay } from './chance';
 import type { ChanceView, DistrictNaming, Names } from './chance';
+import type { StepsSource } from './steps';
 
 /** What a search pick already knows about a school: its shown name and its town. */
 export interface SchoolHint {
@@ -661,6 +663,11 @@ export interface ViewInput {
   readonly replay?: ReplayOn | null;
   /** The season file (data/season.ts), checked; null or absent when there is none. */
   readonly season?: SeasonFile | null;
+  /**
+   * The standing file the predictions file names, once read, and whose steps
+   * (WHY-TRANSPARENT): a storm-class day shows its steps. Null or absent: today's why.
+   */
+  readonly steps?: StepsSource | null;
 }
 
 /** The season line for a school, or null where the file says nothing that holds now. */
@@ -763,6 +770,7 @@ export function schoolView(input: ViewInput): SchoolView | null {
           names: input.names ?? null,
           now,
           timeZone,
+          steps: input.steps ?? null,
         });
   return {
     id,
@@ -787,6 +795,14 @@ export function schoolView(input: ViewInput): SchoolView | null {
           }
         : null,
   };
+}
+
+/** Whether a school's outlook shows a storm-class day, whose why the standing file steps. */
+function classDay(outlook: Outlook): boolean {
+  if (outlook === null) return false;
+  return [outlook.today, outlook.tomorrow].some(
+    (day) => day?.state === 'forecast' && day.detail?.why?.base.kind === 'class',
+  );
 }
 
 /** When a live closings file was made, or null without one or a time it can be read by. */
@@ -966,6 +982,7 @@ export function watchSchool(options: WatchOptions): () => void {
             now: at,
             timeZone: zone,
           });
+    const steps = record === null ? null : stepsSource(record, live.predictions);
     const view = schoolView({
       id,
       hint,
@@ -973,6 +990,7 @@ export function watchSchool(options: WatchOptions): () => void {
       settled,
       status,
       outlook,
+      steps,
       zone,
       closings: live.closings,
       nearbyZones: { told, districtOf },
@@ -983,6 +1001,19 @@ export function watchSchool(options: WatchOptions): () => void {
       season,
     });
     onView(view);
+    // A storm-class day's steps: the standing file its predictions file names, read once.
+    const named = live.predictions?.standing ?? null;
+    if (
+      replay === null &&
+      steps === null &&
+      named !== null &&
+      classDay(outlook) &&
+      awaitStanding(files, named)
+    ) {
+      void readStanding(files, named).then((found) => {
+        if (found !== null && !stopped) show();
+      });
+    }
     if (replay === null && record !== null) {
       // The chance's turn (7:30 AM, or the buses), and the map's (3:30 PM, midnight) of each
       // light the panel shows: the earlier of the two.
@@ -1031,6 +1062,32 @@ export function watchSchool(options: WatchOptions): () => void {
         })
         .catch(() => undefined);
     }
+  };
+
+  /** Whose steps the standing file gives: the school's district, or the private school. */
+  const stepsSource = (
+    found: SchoolRecord,
+    predictions: LiveFiles['predictions'],
+  ): StepsSource | null => {
+    const stamp = predictions?.standing ?? null;
+    if (predictions === null || stamp === null) return null;
+    const file = heldStanding(files, stamp);
+    if (file === null) return null;
+    const a = file.directory;
+    const b = predictions.directory;
+    if (
+      a.generated_on !== b.generated_on ||
+      a.schools !== b.schools ||
+      a.districts !== b.districts
+    ) {
+      return null;
+    }
+    const forecastCheck = predictions.forecast_check ?? [];
+    if (found.district !== null) {
+      return { file, unit: { kind: 'district', index: found.district.index }, forecastCheck };
+    }
+    const index = (predictions.schools ?? []).findIndex((item) => item.school === found.index);
+    return index < 0 ? null : { file, unit: { kind: 'school', index }, forecastCheck };
   };
 
   const pollMs = options.pollMs ?? LIVE_POLL_MS;

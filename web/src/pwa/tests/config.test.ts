@@ -206,6 +206,8 @@ describe('routeFor', () => {
       liveSeason: 'data',
       opens: 'data',
       predictions: 'data',
+      // The why's steps, by stamp: a stamp's file never changes.
+      standing: 'data',
       replayIndex: 'data',
       replay: 'staticData',
       schoolDirectory: 'staticData',

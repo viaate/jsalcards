@@ -1,0 +1,767 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Clause": {
+      "description": "A plausibility clause (G6): the national advisory mean and its 99th percentile, the\nadvisory and warning mean, and the most of any district.",
+      "enum": [
+        "advisory_mean",
+        "advisory_p99",
+        "advisory_warning_mean",
+        "district_max"
+      ],
+      "title": "PlausibilityClause",
+      "type": "string",
+      "x-enum-names": [
+        "advisory_mean",
+        "advisory_p99",
+        "advisory_warning_mean",
+        "district_max"
+      ]
+    },
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "DirectoryStamp": {
+      "additionalProperties": false,
+      "description": "The directory a file's school and district indexes point into.\n\nIt must equal generated_on, count and the number of districts of the\nschools/meta.json the reader has loaded; otherwise the file is ignored.",
+      "properties": {
+        "districts": {
+          "$ref": "#/$defs/Count"
+        },
+        "generated_on": {
+          "$ref": "#/$defs/LocalDate"
+        },
+        "schools": {
+          "$ref": "#/$defs/Count"
+        }
+      },
+      "required": [
+        "generated_on",
+        "schools",
+        "districts"
+      ],
+      "title": "DirectoryStamp",
+      "type": "object"
+    },
+    "FallYear": {
+      "maximum": 2100,
+      "minimum": 2000,
+      "type": "integer"
+    },
+    "HeldRow": {
+      "maxItems": 5,
+      "minItems": 5,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/StandingIndex",
+          "title": "unit"
+        },
+        {
+          "$ref": "#/$defs/StandingPoints",
+          "title": "district"
+        },
+        {
+          "$ref": "#/$defs/StandingPoints",
+          "title": "national"
+        },
+        {
+          "$ref": "#/$defs/StandingPoints",
+          "title": "rounding"
+        },
+        {
+          "maximum": 3,
+          "minimum": 0,
+          "title": "acted",
+          "type": "integer"
+        }
+      ],
+      "type": "array"
+    },
+    "Inches100": {
+      "maximum": 3000,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "Percent": {
+      "description": "Whole percentage points.",
+      "maximum": 100,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "PrivateRow": {
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WinterDays"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "winter"
+        },
+        {
+          "$ref": "#/$defs/StandingPoints",
+          "title": "region"
+        },
+        {
+          "maximum": 15,
+          "minimum": 0,
+          "title": "bits",
+          "type": "integer"
+        }
+      ],
+      "type": "array"
+    },
+    "PrivateStanding": {
+      "additionalProperties": false,
+      "description": "The private schools, by row: each distinct county exposure, region, tropical flag and\nhold; ``of`` gives each school's row in ``predictions/latest.json``'s ``schools`` order.",
+      "properties": {
+        "held": {
+          "$ref": "#/$defs/StandingHeld"
+        },
+        "of": {
+          "items": {
+            "minimum": -1,
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "record": {
+          "$ref": "#/$defs/StandingRecord"
+        },
+        "record_sum": {
+          "$ref": "#/$defs/StandingSums"
+        },
+        "rows": {
+          "items": {
+            "$ref": "#/$defs/PrivateRow"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "rows",
+        "of",
+        "record",
+        "record_sum",
+        "held"
+      ],
+      "title": "PrivateStanding",
+      "type": "object"
+    },
+    "RecordRow": {
+      "maxItems": 4,
+      "minItems": 4,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/StandingIndex",
+          "title": "unit"
+        },
+        {
+          "$ref": "#/$defs/StandingCount",
+          "title": "closed"
+        },
+        {
+          "$ref": "#/$defs/StandingCount",
+          "title": "delayed"
+        },
+        {
+          "$ref": "#/$defs/StandingCount",
+          "title": "of"
+        }
+      ],
+      "type": "array"
+    },
+    "RecordSum": {
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/StandingCount",
+          "title": "closed"
+        },
+        {
+          "$ref": "#/$defs/StandingCount",
+          "title": "delayed"
+        },
+        {
+          "$ref": "#/$defs/StandingCount",
+          "title": "of"
+        }
+      ],
+      "type": "array"
+    },
+    "RegionName": {
+      "enum": [
+        "northeast",
+        "upper_midwest",
+        "ohio_valley",
+        "southeast",
+        "northern_rockies",
+        "south",
+        "southwest",
+        "northwest",
+        "west"
+      ],
+      "type": "string"
+    },
+    "RegionRow": {
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/StandingIndex",
+          "title": "unit"
+        },
+        {
+          "$ref": "#/$defs/StandingPoints",
+          "title": "points"
+        },
+        {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "clipped",
+          "type": "integer"
+        }
+      ],
+      "type": "array"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "StandingCount": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "StandingFlags": {
+      "maximum": 4095,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "StandingHeld": {
+      "additionalProperties": false,
+      "properties": {
+        "advisory": {
+          "items": {
+            "$ref": "#/$defs/HeldRow"
+          },
+          "type": "array"
+        },
+        "cold": {
+          "items": {
+            "$ref": "#/$defs/HeldRow"
+          },
+          "type": "array"
+        },
+        "warning": {
+          "items": {
+            "$ref": "#/$defs/HeldRow"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "advisory",
+        "warning",
+        "cold"
+      ],
+      "title": "StandingHeld",
+      "type": "object"
+    },
+    "StandingIndex": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "StandingLevel": {
+      "additionalProperties": false,
+      "description": "A class's start: before this winter, as this winter's storms would move it, and as\nserved (whole percent at a district with the middle exposure).",
+      "properties": {
+        "alpha": {
+          "type": "number"
+        },
+        "fit": {
+          "$ref": "#/$defs/Percent"
+        },
+        "now": {
+          "$ref": "#/$defs/Percent"
+        },
+        "prior": {
+          "$ref": "#/$defs/Percent"
+        },
+        "q": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        "shrunk": {
+          "items": {
+            "$ref": "#/$defs/Clause"
+          },
+          "maxItems": 3,
+          "type": "array"
+        },
+        "storms": {
+          "$ref": "#/$defs/StandingCount"
+        },
+        "tau": {
+          "exclusiveMinimum": 0.0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "prior",
+        "fit",
+        "now",
+        "storms",
+        "q",
+        "alpha",
+        "tau"
+      ],
+      "title": "StandingLevel",
+      "type": "object"
+    },
+    "StandingLevels": {
+      "additionalProperties": false,
+      "properties": {
+        "advisory": {
+          "$ref": "#/$defs/StandingLevel"
+        },
+        "cold": {
+          "$ref": "#/$defs/StandingLevel"
+        },
+        "warning": {
+          "$ref": "#/$defs/StandingLevel"
+        }
+      },
+      "required": [
+        "advisory",
+        "warning",
+        "cold"
+      ],
+      "title": "StandingLevels",
+      "type": "object"
+    },
+    "StandingOwn": {
+      "additionalProperties": false,
+      "description": "Per district, its own 9 PM forecasts of each class's school days.",
+      "properties": {
+        "advisory": {
+          "items": {
+            "$ref": "#/$defs/StandingCount"
+          },
+          "type": "array"
+        },
+        "warning": {
+          "items": {
+            "$ref": "#/$defs/StandingCount"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "advisory",
+        "warning"
+      ],
+      "title": "StandingOwn",
+      "type": "object"
+    },
+    "StandingPoints": {
+      "maximum": 100,
+      "minimum": -100,
+      "type": "integer"
+    },
+    "StandingRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "advisory": {
+          "items": {
+            "$ref": "#/$defs/RecordRow"
+          },
+          "type": "array"
+        },
+        "cold": {
+          "items": {
+            "$ref": "#/$defs/RecordRow"
+          },
+          "type": "array"
+        },
+        "warning": {
+          "items": {
+            "$ref": "#/$defs/RecordRow"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "advisory",
+        "warning",
+        "cold"
+      ],
+      "title": "StandingRecord",
+      "type": "object"
+    },
+    "StandingRefs": {
+      "additionalProperties": false,
+      "description": "Each class's middle of the school days a winter, over districts that get any.",
+      "properties": {
+        "advisory": {
+          "$ref": "#/$defs/WinterTenths"
+        },
+        "cold": {
+          "$ref": "#/$defs/WinterTenths"
+        },
+        "warning": {
+          "$ref": "#/$defs/WinterTenths"
+        }
+      },
+      "required": [
+        "advisory",
+        "warning",
+        "cold"
+      ],
+      "title": "StandingRefs",
+      "type": "object"
+    },
+    "StandingRegion": {
+      "additionalProperties": false,
+      "properties": {
+        "advisory": {
+          "items": {
+            "$ref": "#/$defs/RegionRow"
+          },
+          "type": "array"
+        },
+        "cold": {
+          "items": {
+            "$ref": "#/$defs/RegionRow"
+          },
+          "type": "array"
+        },
+        "warning": {
+          "items": {
+            "$ref": "#/$defs/RegionRow"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "advisory",
+        "warning",
+        "cold"
+      ],
+      "title": "StandingRegion",
+      "type": "object"
+    },
+    "StandingRegionDelta": {
+      "additionalProperties": false,
+      "properties": {
+        "clipped": {
+          "type": "boolean"
+        },
+        "delta": {
+          "type": "number"
+        },
+        "region": {
+          "$ref": "#/$defs/RegionName"
+        }
+      },
+      "required": [
+        "region",
+        "delta"
+      ],
+      "title": "StandingRegionDelta",
+      "type": "object"
+    },
+    "StandingRegionDeltas": {
+      "additionalProperties": false,
+      "properties": {
+        "advisory": {
+          "items": {
+            "$ref": "#/$defs/StandingRegionDelta"
+          },
+          "type": "array"
+        },
+        "cold": {
+          "items": {
+            "$ref": "#/$defs/StandingRegionDelta"
+          },
+          "type": "array"
+        },
+        "warning": {
+          "items": {
+            "$ref": "#/$defs/StandingRegionDelta"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "advisory",
+        "warning",
+        "cold"
+      ],
+      "title": "StandingRegionDeltas",
+      "type": "object"
+    },
+    "StandingSnow": {
+      "additionalProperties": false,
+      "description": "Per district, for the two classes the forecast moves.",
+      "properties": {
+        "advisory": {
+          "$ref": "#/$defs/UsualColumn"
+        },
+        "warning": {
+          "$ref": "#/$defs/UsualColumn"
+        }
+      },
+      "required": [
+        "advisory",
+        "warning"
+      ],
+      "title": "StandingSnow",
+      "type": "object"
+    },
+    "StandingStamp": {
+      "pattern": "^[0-9a-f]{12}$",
+      "type": "string"
+    },
+    "StandingSums": {
+      "additionalProperties": false,
+      "properties": {
+        "advisory": {
+          "$ref": "#/$defs/RecordSum"
+        },
+        "cold": {
+          "$ref": "#/$defs/RecordSum"
+        },
+        "warning": {
+          "$ref": "#/$defs/RecordSum"
+        }
+      },
+      "required": [
+        "advisory",
+        "warning",
+        "cold"
+      ],
+      "title": "StandingSums",
+      "type": "object"
+    },
+    "UsualColumn": {
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Inches100"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    },
+    "WinterDays": {
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/WinterTenths",
+          "title": "advisory"
+        },
+        {
+          "$ref": "#/$defs/WinterTenths",
+          "title": "warning"
+        },
+        {
+          "$ref": "#/$defs/WinterTenths",
+          "title": "cold"
+        }
+      ],
+      "type": "array"
+    },
+    "WinterTenths": {
+      "maximum": 999.9,
+      "minimum": 0.0,
+      "type": "number"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "predictions/standing/<stamp>.json (see the module docstring).",
+  "properties": {
+    "alone": {
+      "$ref": "#/$defs/StandingSnow"
+    },
+    "climate_window": {
+      "enum": [
+        "whole",
+        "still_to_come"
+      ],
+      "type": "string"
+    },
+    "climate_winters": {
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FallYear",
+          "title": "first"
+        },
+        {
+          "$ref": "#/$defs/FallYear",
+          "title": "last"
+        }
+      ],
+      "type": "array"
+    },
+    "directory": {
+      "$ref": "#/$defs/DirectoryStamp"
+    },
+    "flags": {
+      "items": {
+        "$ref": "#/$defs/StandingFlags"
+      },
+      "type": "array"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "held": {
+      "$ref": "#/$defs/StandingHeld"
+    },
+    "held_clauses": {
+      "items": {
+        "$ref": "#/$defs/Clause"
+      },
+      "maxItems": 4,
+      "type": "array"
+    },
+    "levels": {
+      "$ref": "#/$defs/StandingLevels"
+    },
+    "nodes": {
+      "maximum": 999,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "own": {
+      "$ref": "#/$defs/StandingOwn"
+    },
+    "private": {
+      "$ref": "#/$defs/PrivateStanding"
+    },
+    "record": {
+      "$ref": "#/$defs/StandingRecord"
+    },
+    "record_sum": {
+      "$ref": "#/$defs/StandingSums"
+    },
+    "record_winters": {
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FallYear",
+          "title": "first"
+        },
+        {
+          "$ref": "#/$defs/FallYear",
+          "title": "last"
+        }
+      ],
+      "type": "array"
+    },
+    "ref": {
+      "$ref": "#/$defs/StandingRefs"
+    },
+    "region": {
+      "$ref": "#/$defs/StandingRegion"
+    },
+    "region_delta": {
+      "$ref": "#/$defs/StandingRegionDeltas"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    },
+    "stamp": {
+      "$ref": "#/$defs/StandingStamp"
+    },
+    "usual": {
+      "$ref": "#/$defs/StandingSnow"
+    },
+    "winter": {
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/WinterDays"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "type": "array"
+    },
+    "winters": {
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FallYear",
+          "title": "first"
+        },
+        {
+          "$ref": "#/$defs/FallYear",
+          "title": "last"
+        }
+      ],
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "directory",
+    "stamp",
+    "ref",
+    "nodes",
+    "winters",
+    "climate_winters",
+    "record_winters",
+    "climate_window",
+    "levels",
+    "region_delta",
+    "winter",
+    "flags",
+    "usual",
+    "alone",
+    "own",
+    "region",
+    "held",
+    "record",
+    "record_sum",
+    "private"
+  ],
+  "title": "StandingFile",
+  "type": "object",
+  "x-snowlight-path": "predictions/standing/{id}.json"
+}

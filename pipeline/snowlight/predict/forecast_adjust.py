@@ -1055,6 +1055,41 @@ class TermParts:
     high: float
     parts: tuple[SnowPart, ...] = ()
     even: float | None = None
+    lift: float = 0.0
+    """What the snow alone's floor added to the snow term (log-odds, 0 or more:
+    :func:`floor_lift`), already in ``raw``."""
+    held: str | None = None
+    """What held the total (:func:`held_of`): ``low``, ``cap``, ``high``, ``floor`` or
+    ``None``."""
+
+
+HELD_EPS: Final = 1e-9
+"""A bound or the floor holds a total only by more than float rounding."""
+
+
+def held_of(  # noqa: PLR0913, PLR0917 - the raw total, the bounds and the floor
+    total: float,
+    low: float,
+    high: float,
+    settings: AdjustSettings,
+    most: float | None,
+    lift: float,
+) -> str | None:
+    """What held a day's total, the first that holds: ``low`` (the class's lower bound raised
+    it), ``cap`` (the class order's cap lowered it under the same forecast's warning day),
+    ``high`` (the bend over the upper bound lowered it), ``floor`` (the snow alone's floor
+    lifted it, no bound acting); ``None``: nothing did (the why's ``held``, WHY-TRANSPARENT)."""
+    alone = float(saturated(total, low, high, settings))
+    capped = float(saturated(total, low, high, settings, most))
+    if alone > total + HELD_EPS:
+        return "low"
+    if capped < alone - HELD_EPS:
+        return "cap"
+    if alone < total - HELD_EPS:
+        return "high"
+    if lift > HELD_EPS:
+        return "floor"
+    return None
 
 
 def term_parts(  # noqa: PLR0913, PLR0917 - the forecast, the place, the day and the settings
@@ -1091,13 +1126,15 @@ def term_parts(  # noqa: PLR0913, PLR0917 - the forecast, the place, the day and
     )
     cold = 0.0 if forecast.feels is None else chill_value(float(forecast.feels), settings)
     # With ``snow_amount`` on, the snow alone's floor lifts the snow term (:func:`floor_lift`).
-    snow_term += float(
+    lift = float(
         floor_lift(snow_term + timing_term + ice_term + cold, weighted, usual, alone, settings)
     )
+    snow_term += lift
     low, high = settings.bounds[klass]
     raw = (snow_term, timing_term, ice_term, cold)
     # The total held as the solve holds it (:func:`saturated`, :func:`climate_terms`).
     after = tuple(float(term) for term in bounded(list(raw), low, high, settings, most))
+    held = held_of(sum(raw), low, high, settings, most, lift)
     if settings.snow_amount:
         # The upper side bends toward this (:func:`saturated`), never reaching it.
         high = settings.snow_amount_high
@@ -1113,6 +1150,8 @@ def term_parts(  # noqa: PLR0913, PLR0917 - the forecast, the place, the day and
         high=high,
         parts=parts,
         even=even,
+        lift=lift,
+        held=held,
     )
 
 

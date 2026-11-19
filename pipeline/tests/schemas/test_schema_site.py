@@ -18,6 +18,8 @@ from snowlight.schemas.site import SiteReport, _load, validate_site
 
 def _id(name: str) -> str:
     """What ``{id}`` stands for in a published path: a replay's id, or a live day."""
+    if name == "standing":
+        return str(example("standing")["stamp"])
     return str(example("live-day")["day"]) if name == "live-day" else str(example("replay")["id"])
 
 

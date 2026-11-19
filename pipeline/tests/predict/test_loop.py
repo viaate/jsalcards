@@ -8,7 +8,7 @@ import random
 from collections.abc import Mapping
 from datetime import UTC, date, datetime, timedelta
 from itertools import pairwise, product
-from typing import Any, Final
+from typing import Any, Final, cast
 from zoneinfo import available_timezones
 
 import pytest
@@ -484,8 +484,11 @@ def _every_day(at: datetime) -> list[Forecast]:
     run = at - timedelta(hours=2)
     # The forecast adjustment's longest lines (advisory-sane L5): the snow (or, instead, the
     # shorter ice) line with a range, the timing and the cold, at three-character points.
+    # The lines add up to the chance (57 - 34 + 10 - 10 = 23), so the class day is made and
+    # its size counted (WHY-TRANSPARENT: with lines that did not add, serve._forecast refused
+    # every class day with lines and the size tests never saw one).
     longest = Moved(
-        p_no_school=0.57,
+        p_no_school=0.23,
         p_delay=0.13,
         reasons=(
             SnowTotalReason(
@@ -537,11 +540,19 @@ def _every_day(at: datetime) -> list[Forecast]:
                         serve._forecast(
                             cell, situation, day, last, at, said_open=said, adjusted=moved,
                             forecast_read=moved is not None,
+                            read=WIDEST_READ if moved is not None else WIDEST_LEFT_OUT,
                         )
                     )  # fmt: skip
                 except ValueError:
                     break  # a situation with no storm class has no class base
+    assert any(d.why.base.kind == "class" and d.why.reasons and d.why.snow for d in found)
     return found
+
+
+WIDEST_READ: Final = serve.Read(snow=99.9, feels=-99, ice=9.99, held="floor")
+"""The widest fields a read class day carries (WHY-TRANSPARENT)."""
+WIDEST_LEFT_OUT: Final = serve.Read(fc=9)
+"""... and one whose forecast is left out."""
 
 
 def test_no_day_the_pass_can_make_is_longer_than_the_worst_case() -> None:
@@ -555,9 +566,11 @@ def test_no_day_the_pass_can_make_is_longer_than_the_worst_case() -> None:
     assert any(any(r.kind == "said_open" for r in d.why.reasons) for d in days)
     assert any(d.record is not None for d in days)
     own = len(_worst_day(at, own=True).to_json_bytes())
-    plain = len(_worst_day(at, own=False).to_json_bytes())
+    plain = len(_longest_plain(at).to_json_bytes())
     plain_private = len(_worst_day(at, own=False, of="private_schools").to_json_bytes())
     for found in days:
+        if _lined_class(found):
+            continue  # longer than any: bounded by its share (CLASS_LINES_FIT) below
         size = len(found.to_json_bytes())
         assert size <= own, found
         base = found.why.base
@@ -567,15 +580,44 @@ def test_no_day_the_pass_can_make_is_longer_than_the_worst_case() -> None:
                 assert size <= plain, found
 
 
+@functools.cache
+def _longest_plain(at: datetime) -> Forecast:
+    """The longest district day with a previous chance and no record: the pooled worst day, or
+    a storm-class day whose forecast is left out (its ``fc``, WHY-TRANSPARENT), lines aside."""
+    return max(
+        (
+            _worst_day(at, own=False),
+            *(
+                d
+                for d in _every_day(at)
+                if d.why.base.kind == "class"
+                and not _lined_class(d)
+                and d.previous is not None
+                and d.record is None
+            ),
+        ),
+        key=lambda d: len(d.to_json_bytes()),
+    )
+
+
+def _lined_class(day: Forecast) -> bool:
+    """A storm-class day with the forecast's lines: the longest day there is, which a file
+    carries on at most :data:`CLASS_LINES_FIT` of its district-days before it steps down."""
+    return day.why.base.kind == "class" and any(r.kind != "said_open" for r in day.why.reasons)
+
+
 def _longest_bare(at: datetime, of: Of) -> Forecast:
     """The longest day with no previous chance and no record the pass can make over ``of``'s
-    days (a district's base names no ``of``): a day said open (:func:`_every_day`)."""
+    days (a district's base names no ``of``), lines on a storm-class day aside
+    (:func:`_lined_class`): a day said open, or a class day whose forecast is left out
+    (:func:`_every_day`)."""
     return max(
         (
             d
             for d in _every_day(at)
             if d.previous is None
             and d.record is None
+            and not _lined_class(d)
             and getattr(d.why.base, "of", "districts") == of
         ),
         key=lambda d: len(d.to_json_bytes()),
@@ -617,6 +659,7 @@ def worst_case_file(  # noqa: PLR0913 - the file's counts and what it leaves out
     outlooks: int = 0,
     records: bool = True,
     previous: bool = True,
+    pooled: bool = False,
 ) -> bytes:
     """Every district under a warning on both days, with a previous chance, the longest alert
     name, both base flags, the longest zone name and twelve districts next door with the
@@ -629,7 +672,13 @@ def worst_case_file(  # noqa: PLR0913 - the file's counts and what it leaves out
     ``previous=False`` also with no previous chance (:attr:`serve.Fit.NO_PREVIOUS`)."""
     day = date(2026, 1, 7)
     at = datetime(2026, 1, 7, 1, 30, tzinfo=UTC)
-    plain = _worst_day(at, own=False) if previous else _longest_bare(at, "districts")
+    plain = (
+        _worst_day(at, own=False)
+        if previous and pooled
+        else _longest_plain(at)
+        if previous
+        else _longest_bare(at, "districts")
+    )
     own = _worst_day(at, own=True) if records else plain
     top = tuple(range(districts - 13, districts))
     entries = tuple(
@@ -722,13 +771,109 @@ def test_the_worst_case_file_fits_the_size_budget() -> None:
     bare = worst_case_file(
         districts, districts, schools=schools, outlooks=KEEPS_PREVIOUS, records=False
     )
-    committed = worst_case_file(districts, with_record, schools=schools, outlooks=KEEPS_PREVIOUS)
+    committed = worst_case_file(
+        districts, with_record, schools=schools, outlooks=KEEPS_PREVIOUS, pooled=True
+    )
     for worst in (least, bare, committed):
         packed = check_budget(worst, SETTINGS)
         assert len(worst) <= SETTINGS.budget_raw_bytes
         assert packed <= SETTINGS.budget_gzip_bytes
+    # Every district without a record on a storm-class day whose forecast is left out (its
+    # ``fc``, WHY-TRANSPARENT) with a previous chance, on both days: the whole file is over by
+    # under those 7 bytes a day and keeps every chance at NO_RECORDS (``bare``, above).
+    classed = worst_case_file(districts, with_record, schools=schools, outlooks=KEEPS_PREVIOUS)
+    assert len(classed) - len(committed) <= 2 * 7 * (districts - with_record)
+    # The real step-down lands that file within both budgets with every chance kept.
+    ladder = {serve.Fit.WHOLE: classed, serve.Fit.NO_RECORDS: bare}
+    fit, data, packed, _withheld = cli.fitted(
+        lambda fit, _nights: cast(PredictionsFile, _Bytes(ladder.get(fit, bare), fit)), SETTINGS
+    )
+    assert cast(_Bytes, fit).fit in ladder
+    assert len(data) <= SETTINGS.budget_raw_bytes
+    assert packed <= SETTINGS.budget_gzip_bytes
     with pytest.raises(DarkError, match="size"):
         check_budget(bare + b" " * (SETTINGS.budget_raw_bytes - len(bare) + 1), SETTINGS)
+
+
+CLASS_LINES_FIT: Final = 0.0145
+"""With the longest storm-class lines and the widest forecast step fields (WHY-TRANSPARENT)
+on this share of the district-days (both days) of the least worst case (no record days, no
+previous chances, every private outlook distinct: 16,326,296 bytes, 173,704 under the budget),
+the file keeps every line; more steps down to :attr:`serve.Fit.NO_REASONS`, which holds every
+chance. Measured: such a day is 540 bytes against the 234 of the case's own day, so 1.45% fit
+(the spec's 5.5% was measured on a least case of 15,903,296 bytes; the real file's 174 class
+days in 36,454 on Nov 18 are 0.5%)."""
+
+
+def _least_worst() -> tuple[bytes, int]:
+    """The least worst case of :func:`test_the_worst_case_file_fits_the_size_budget`, with
+    the room a day said open has over each outlook counted, and its district count."""
+    model = artifact.load()
+    districts = math.ceil(len(model.districts) * GROWTH)
+    schools = math.ceil(len(model.private) * GROWTH)
+    least = worst_case_file(
+        districts, districts, schools=schools, outlooks=MAX_OUTLOOKS, records=False,
+        previous=False,
+    )  # fmt: skip
+    made = PredictionsFile.from_json_bytes(least)
+    longest = len(_longest_bare(made.generated_at, "private_schools").to_json_bytes())
+    short = min(len(item.to_json_bytes()) for item in made.outlooks)
+    return least + b" " * (MAX_OUTLOOKS * (longest - short)), districts
+
+
+def test_class_days_with_lines_fit_at_their_share() -> None:
+    """The size gate's hole closed (WHY-TRANSPARENT 4a): the longest storm-class day with
+    lines and the widest read fields on :data:`CLASS_LINES_FIT` of the district-days of the
+    least worst case fits both budgets; and with no lines (:attr:`serve.Fit.NO_REASONS`) an
+    ``fc`` on every district-day does too."""
+    least, districts = _least_worst()
+    at = datetime(2026, 1, 7, 1, 30, tzinfo=UTC)
+    lined = max(
+        (
+            d
+            for d in _every_day(at)
+            if d.why.base.kind == "class" and d.why.reasons and d.previous is None
+        ),
+        key=lambda d: len(d.to_json_bytes()),
+    )
+    assert lined.why.snow is not None
+    plain = len(_longest_bare(at, "districts").to_json_bytes())
+    count = math.ceil(districts * CLASS_LINES_FIT)
+    grown = least + b" " * (2 * count * max(0, len(lined.to_json_bytes()) - plain))
+    assert len(grown) <= SETTINGS.budget_raw_bytes
+    made = PredictionsFile.from_json_bytes(least)
+    real = made.model_copy(
+        update={
+            "districts": tuple(
+                entry.model_copy(update={"days": (lined, lined)}) if i < count else entry
+                for i, entry in enumerate(made.districts)
+            )
+        }
+    ).to_json_bytes()
+    assert check_budget(real, SETTINGS) <= SETTINGS.budget_gzip_bytes
+    # NO_REASONS: a class day whose forecast is left out (``fc``, no line, no previous chance)
+    # is never longer than the longest day the file held before the why's steps (a day said
+    # open), so the least worst case, made of those, still bounds that step.
+    left = max(
+        (
+            d
+            for d in _every_day(at)
+            if d.why.fc is not None and not d.why.reasons and d.previous is None
+        ),
+        key=lambda d: len(d.to_json_bytes()),
+    )
+    said = max(
+        (
+            d
+            for d in _every_day(at)
+            if d.previous is None
+            and d.record is None
+            and any(r.kind == "said_open" for r in d.why.reasons)
+        ),
+        key=lambda d: len(d.to_json_bytes()),
+    )
+    assert left.why.fc is not None
+    assert len(left.to_json_bytes()) <= len(said.to_json_bytes())
 
 
 LONGEST_OUTLOOK: Final = OutlookReason(
@@ -755,6 +900,8 @@ def with_outlook_lines(data: bytes, share: float) -> bytes:
         if not isinstance(day, Forecast):
             return day
         base = day.why.base.model_copy(update={"points": 100})
+        if base.kind == "class":  # a class base says its standing only on its side
+            base = base.model_copy(update={"standing": "usual", "usual": None})
         return day.model_copy(
             update={
                 "p_no_school": 0.01,
@@ -810,6 +957,9 @@ LONGEST_NIGHT: Final = NightSnow(least=(99.0,) * 13, low=99.0, high=99.0, heavy=
 ``high``, 99, and none falling, so 99.0 throughout), a 2-digit span."""
 NIGHTS_FIT: Final = 10_787
 """Districts with the longest night that fit the night cap at the worst case's base."""
+NIGHTS_FIT_CLASSED: Final = 8_935
+"""... where every district's day is a storm-class day whose forecast is left out (its
+``fc``, WHY-TRANSPARENT), 6 bytes longer than the pooled worst day."""
 
 
 def test_the_longest_nights_on_every_district_step_down_to_no_nights() -> None:
@@ -823,14 +973,29 @@ def test_the_longest_nights_on_every_district_step_down_to_no_nights() -> None:
     model = artifact.load()
     districts = math.ceil(len(model.districts) * GROWTH)
     schools = math.ceil(len(model.private) * GROWTH)
-    bare = worst_case_file(
+    classed = worst_case_file(
         districts, districts, schools=schools, outlooks=KEEPS_PREVIOUS, records=False
+    )
+    room = SETTINGS.night_max_raw_bytes - len(classed) - len(night_at)
+    assert room // len(field) == NIGHTS_FIT_CLASSED
+    bare = worst_case_file(
+        districts, districts, schools=schools, outlooks=KEEPS_PREVIOUS, records=False, pooled=True
     )
     every = len(bare) + districts * len(field) + len(night_at)
     assert every > SETTINGS.night_max_raw_bytes
     assert len(bare) <= SETTINGS.night_max_raw_bytes
     assert (SETTINGS.night_max_raw_bytes - len(bare) - len(night_at)) // len(field) == NIGHTS_FIT
     assert SETTINGS.night_max_raw_bytes <= SETTINGS.budget_raw_bytes
+
+
+class _Bytes:
+    """A made file of the given bytes (``fitted`` reads only its bytes)."""
+
+    def __init__(self, data: bytes, fit: serve.Fit) -> None:
+        self.data, self.fit = data, fit
+
+    def to_json_bytes(self) -> bytes:
+        return self.data
 
 
 class _Sized:

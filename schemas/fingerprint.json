@@ -1,3 +1,3 @@
 {
-  "0393c4735b3e8a51f137bae45acfeb5fd5686bc69a445ba1555e74c7d9a61f21": "sha256 over the *.schema.json files here; web/src/types/generated/fingerprint.ts must repeat it."
+  "9113746ffa74af5ceec697956f6903db59086bcba58f227ed35d8ab95480f02b": "sha256 over the *.schema.json files here; web/src/types/generated/fingerprint.ts must repeat it."
 }

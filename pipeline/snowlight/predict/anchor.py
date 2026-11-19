@@ -1331,6 +1331,15 @@ class Pull:
     """National clauses still failing after the pull (empty: it passes)."""
     over: int
     """Units still over ``district_max`` (0 after the cap)."""
+    district_stage: Floats | None = None
+    """The chances (unrounded) after the district pull and cap, before the national steps
+    (the why's district hold stage, WHY-TRANSPARENT)."""
+    national_stage: Floats | None = None
+    """... after the national steps, before publishing rounds them (its national stage)."""
+    capped_mask: npt.NDArray[np.bool_] | None = None
+    """The units the cap lowered."""
+    first: tuple[str, ...] = ()
+    """The clauses failing before the first national round (empty: no round)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1409,6 +1418,17 @@ class UnitRates:
     """(units, classes): the index in :data:`STANDINGS`, said only where the served chance is
     on its side of the class level by a published point."""
     plausible: Plausible
+    raw: Floats | None = None
+    """(units, classes): each unit's level at its offset and the served alpha, before any
+    hold (unrounded): the why's ``v0`` (WHY-TRANSPARENT)."""
+    offsets: Floats | None = None
+    """(units, classes): each unit's offset ``delta + beta x``."""
+    deltas: Floats | None = None
+    """(units, classes): the region delta part of it."""
+    alpha: tuple[float, ...] = ()
+    """Each class's served alpha (after any shrink)."""
+    shrunk_clauses: tuple[str, ...] = ()
+    """The clauses that made the shrink act (empty: none)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -1476,12 +1496,14 @@ class Anchor:
         priors pass by construction. Addendum A item 4's fallback is the same move."""
         count = len(units)
         offsets = np.zeros((count, len(CLASSES)))
+        deltas = np.zeros((count, len(CLASSES)))
         claimed = np.zeros((count, len(CLASSES)), dtype=np.int8)
         days = np.zeros((count, len(CLASSES)))
         known = np.zeros(count, dtype=np.bool_)
         for i, unit in enumerate(units):
             found, stands, f = self.offsets(unit)
             offsets[i] = found
+            deltas[i] = [self.deltas.get(k, {}).get(unit.region or "", 0.0) for k in CLASSES]
             claimed[i] = stands
             if f is not None:
                 days[i] = f
@@ -1502,9 +1524,11 @@ class Anchor:
             return p, level
 
         p, level = at({})
+        raw = p.copy()
         before = implied_summary(p if grid is None else grid.round(p), days, mask)
         result = plausibility_pull(p, level, days, known, mask, rules, grid)
         shrunk: dict[str, float] = {}
+        shrunk_clauses = result.failing
         if result.failing:
             named = (
                 ("advisory", "warning")
@@ -1515,9 +1539,17 @@ class Anchor:
                 w = max(0.0, round(1.0 - k * rules.step, 10))
                 shrunk = dict.fromkeys(named, w)
                 p, level = at(shrunk)
+                raw = p.copy()
                 result = plausibility_pull(p, level, days, known, mask, rules, grid)
                 if not result.failing:
                     break
+        alphas = tuple(
+            float(
+                self.fits[k].prior.alpha_mean
+                + shrunk.get(k, 1.0) * (self.fits[k].alpha - self.fits[k].prior.alpha_mean)
+            )
+            for k in CLASSES
+        )
         return UnitRates(
             p=p,
             q=tuple(self.fits[k].q for k in CLASSES),
@@ -1529,6 +1561,11 @@ class Anchor:
                 shrunk=shrunk,
                 levels={k: float(level[j]) for j, k in enumerate(CLASSES)},
             ),
+            raw=raw,
+            offsets=offsets,
+            deltas=deltas,
+            alpha=alphas,
+            shrunk_clauses=shrunk_clauses if shrunk else (),
         )
 
     def summary(self) -> dict[str, object]:
@@ -1753,11 +1790,14 @@ def plausibility_pull(  # noqa: PLR0913, PLR0917 - the chances, levels, days, wh
     def published(chances: Floats) -> Floats:
         return settle(chances, days, guard, limit, grid)
 
+    district_stage = p.copy()
+    first = failing(published(p), days, mask, rules)
     rounds = 0
     while failing(published(p), days, mask, rules) and rounds < count:
         if not _national_step(p, days, mask, capped, rules, (base, own, scale), published):
             break
         rounds += 1
+    national_stage = p.copy()
     p[:] = published(p)
     total = (p * days).sum(axis=1)
     return Pull(
@@ -1766,6 +1806,10 @@ def plausibility_pull(  # noqa: PLR0913, PLR0917 - the chances, levels, days, wh
         rounds=rounds,
         failing=failing(p, days, mask, rules),
         over=int((guard & (total > limit)).sum()),
+        district_stage=district_stage,
+        national_stage=national_stage,
+        capped_mask=capped.copy(),
+        first=first if rounds else (),
     )
 
 

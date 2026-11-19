@@ -1620,8 +1620,12 @@ def test_a_failed_read_keeps_the_last_lines_only_at_the_same_class_level_and_sna
     )  # fmt: skip
     kept = serve._kept(on, built)
     assert set(kept) == {(1, days[0])}
-    level, moved = kept[(1, days[0])]
+    level, moved, said = kept[(1, days[0])]
     assert level == (10, None, "advisory")
+    # What the last file's why said its forecast step read is kept with its lines.
+    assert said is not None
+    assert said.snow is not None
+    assert said.fc is None
     k = SITUATION_POSITION["advisory"]
     advisory = Situation.of(WeatherClass.ADVISORY, False)
     later = at + timedelta(minutes=30)
@@ -1629,28 +1633,29 @@ def test_a_failed_read_keeps_the_last_lines_only_at_the_same_class_level_and_sna
         moved,
         True,
         fa.snapshot(days[0], "America/Chicago"),
+        said,
     )
     # The class level moved (a new alert, the live labels): the last lines are not this day's.
-    other: serve.Kept = {(1, days[0]): ((12, None, "advisory"), moved)}
-    found, read, _snapshot = serve._adjusted(
+    other: serve.Kept = {(1, days[0]): ((12, None, "advisory"), moved, said)}
+    found, read, _snapshot, left = serve._adjusted(
         built, 1, k, days[0], NO_FORECASTS, advisory, later, other
     )
-    assert (found, read) == (None, False)
+    assert (found, read, left) == (None, False, serve.Read(fc=2))
     # PHYS-R2-S4: nor another situation's at the same level (a lake effect snow warning's
     # lines are never a winter storm warning's).
     snow = SITUATION_POSITION["snow_warning"]
     warning = Situation.of(WeatherClass.SNOW_WARNING, False)
     points = round(float(built.p[1, snow]) * 100)
-    lake: serve.Kept = {(1, days[0]): ((points, None, "lake_snow"), moved)}
-    found, read, _snapshot = serve._adjusted(
+    lake: serve.Kept = {(1, days[0]): ((points, None, "lake_snow"), moved, said)}
+    found, read, _snapshot, left = serve._adjusted(
         built, 1, snow, days[0], NO_FORECASTS, warning, later, lake
     )
-    assert (found, read) == (None, False)
-    same: serve.Kept = {(1, days[0]): ((points, "winter_storm_warning", None), moved)}
-    found, read, _snapshot = serve._adjusted(
+    assert (found, read, left) == (None, False, serve.Read(fc=2))
+    same: serve.Kept = {(1, days[0]): ((points, "winter_storm_warning", None), moved, said)}
+    found, read, _snapshot, left = serve._adjusted(
         built, 1, snow, days[0], NO_FORECASTS, warning, later, same
     )
-    assert (found, read) == (moved, True)
+    assert (found, read, left) == (moved, True, said)
     # A file made before the snapshot holds no lines of it.
     early = forecast_file(
         built, classes, days, at - timedelta(minutes=30), closed_on=lambda _d: None, last=None,

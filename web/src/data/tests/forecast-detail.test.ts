@@ -671,3 +671,30 @@ describe('few local records', () => {
     expect(found.thin).toBe(true);
   });
 });
+
+describe('a storm-class day’s forecast step (WHY-TRANSPARENT)', () => {
+  const classed = (why: Json): Json => ({
+    ...night(),
+    why: {
+      base: { kind: 'class', points: 30, alert: 'winter_storm_warning' },
+      ...why,
+    },
+  });
+
+  it('reads what the forecast step read, or why the forecast is left out', () => {
+    const waits = read({ ...classed({ fc: 0 }), p_no_school: 0.3 });
+    expect(waits.why?.read).toEqual({ fc: 0, snow: null, feels: null, ice: null, held: null });
+    const done = read({
+      ...classed({ snow: 6.2, feels: -3, held: 'low', reasons: [] }),
+      p_no_school: 0.3,
+    });
+    expect(done.why?.read).toEqual({ fc: null, snow: 6.2, feels: -3, ice: null, held: 'low' });
+  });
+
+  it('reads none of it where a field is wrong, or both a left out and a read are given', () => {
+    for (const why of [{ fc: 12 }, { fc: 0, snow: 1 }, { snow: 1, held: 'bent' }, { feels: -3 }]) {
+      const found = read({ ...classed(why), p_no_school: 0.3 });
+      expect(found.why?.read ?? null).toBeNull();
+    }
+  });
+});

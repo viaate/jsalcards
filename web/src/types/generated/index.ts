@@ -16,6 +16,7 @@ export const PUBLISHED_PATHS = {
   replay: 'replays/{id}.json',
   schoolDirectory: 'schools/meta.json',
   seasonStats: 'stats/season.json',
+  standing: 'predictions/standing/{id}.json',
   trackRecord: 'track-record.json',
 } as const;
 
@@ -34,6 +35,7 @@ export interface PublishedDocuments {
   readonly replay: ReplayFile;
   readonly schoolDirectory: SchoolDirectoryMeta;
   readonly seasonStats: SeasonStats;
+  readonly standing: StandingFile;
   readonly trackRecord: TrackRecord;
 }
 
@@ -635,6 +637,8 @@ export interface PredictionsFile {
    * outlook reason, and before generated_at.
    */
   readonly forecast_at?: UtcInstant | null;
+  /** With fc 5: the plausibility clauses the forecast broke. */
+  readonly forecast_check?: readonly PlausibilityClause[];
   /**
    * The NBM cycle (its hour) every night chart of the file is from; given with any night, and at
    * most 150 minutes before generated_at.
@@ -644,6 +648,11 @@ export interface PredictionsFile {
   readonly outlooks?: readonly DayForecast[];
   /** The private schools (no district), sorted by school, each once. */
   readonly schools?: readonly SchoolForecast[];
+  /**
+   * The stamp of the standing file (predictions/standing/<stamp>.json) whose numbers the
+   * storm-class days' steps are made of; absent: none, so no panel shows them.
+   */
+  readonly standing?: string | null;
   /** Each distinct time zone the schools name, once; every one is named. */
   readonly zones?: readonly TimeZoneName[];
 }
@@ -817,6 +826,19 @@ export interface Forecast {
   readonly record?: PastRecord | null;
 }
 
+/**
+ * Why the forecast is not in a storm-class day's chance: 0 before its 9 PM snapshot, 1 every chance
+ * left it out to fit the file, 2 no forecast came in, 3 not for every deciding school, 4 the
+ * district's days would come to more than 6 closings a winter, 5 the nation's would break a
+ * plausibility clause, 6 the bus hour timing served (the lines say the rest), 7 the adjustment is
+ * off, 8 no past 9 PM forecasts, 9 no usual snow balances its days.
+ * @minimum 0
+ * @maximum 9
+ */
+export type ForecastLeftOut = number;
+
+export type HeldBy = 'low' | 'high' | 'cap' | 'floor';
+
 /** Hours of an hourly series, by position: first to last, both included. */
 export interface HourSpan {
   readonly first: number;
@@ -845,6 +867,13 @@ export interface Hours {
   readonly high?: Inches | null;
   readonly low?: Inches | null;
 }
+
+/**
+ * Inches of ice, in hundredths (0.25, not 0.253).
+ * @minimum 0
+ * @maximum 9.99
+ */
+export type IceHundredths = number;
 
 /** Freezing rain leaves ``inches`` of ice on the roads: it only adds points. */
 export interface IceReason {
@@ -979,6 +1008,22 @@ export interface PastRecord {
   readonly days: readonly PastDay[];
   readonly inches?: Inches | null;
 }
+
+/**
+ * A plausibility clause (G6): the national advisory mean and its 99th percentile, the
+ * advisory and warning mean, and the most of any district.
+ */
+export const PlausibilityClause = {
+  advisory_mean: 'advisory_mean',
+  advisory_p99: 'advisory_p99',
+  advisory_warning_mean: 'advisory_warning_mean',
+  district_max: 'district_max',
+} as const;
+/**
+ * A plausibility clause (G6): the national advisory mean and its 99th percentile, the
+ * advisory and warning mean, and the most of any district.
+ */
+export type PlausibilityClause = (typeof PlausibilityClause)[keyof typeof PlausibilityClause];
 
 /**
  * Whole percentage points a reason adds to the chance, or below 0 takes away.
@@ -1201,10 +1246,30 @@ export interface TimingReason {
 /** Weather that already happened, with its time. */
 export type WeatherEvent = SnowStarted | SnowStopped;
 
-/** How the chance adds up: the base, then each reason's points, biggest first. */
+/**
+ * How the chance adds up: the base, then each reason's points, biggest first.
+ *
+ * On an advisory or warning class day of a district (WHY-TRANSPARENT), what the forecast
+ * step read: ``fc`` where the forecast is not in the chance, else (read) ``snow``, with
+ * ``feels``, ``ice`` and ``held`` where they apply.
+ */
 export interface Why {
   readonly base: Base;
+  readonly fc?: ForecastLeftOut | null;
+  /**
+   * Read, where the cold counts: how cold half the deciding schools feel at 7 AM, raised to whole
+   * degrees F, -99 for -99 or colder.
+   */
+  readonly feels?: number | null;
+  readonly held?: HeldBy | null;
+  /** Read, where ice counts: the ice at half the deciding schools, floored. */
+  readonly ice?: IceHundredths | null;
   readonly reasons?: readonly ReasonPoints[];
+  /**
+   * Read: the snow still to come by the window's end at half the deciding schools, floored to
+   * tenths.
+   */
+  readonly snow?: Inches | null;
 }
 
 /** The wind makes it feel like ``feels_like`` at the bus stop: it only adds points. */
@@ -1377,6 +1442,242 @@ export type StateCounts = readonly [
   remote: Count,
   early_dismissal: Count,
 ];
+
+// standing -----------------------------------------------------------------------
+
+/** predictions/standing/<stamp>.json (see the module docstring). */
+export interface StandingFile {
+  readonly schema_version: SchemaVersion;
+  readonly generated_at: UtcInstant;
+  readonly directory: DirectoryStamp;
+  readonly stamp: StandingStamp;
+  readonly ref: StandingRefs;
+  readonly nodes: number;
+  readonly winters: readonly [first: FallYear, last: FallYear];
+  readonly climate_winters: readonly [first: FallYear, last: FallYear];
+  readonly record_winters: readonly [first: FallYear, last: FallYear];
+  readonly climate_window: 'whole' | 'still_to_come';
+  readonly levels: StandingLevels;
+  readonly region_delta: StandingRegionDeltas;
+  readonly winter: readonly (WinterDays | null)[];
+  readonly flags: readonly StandingFlags[];
+  readonly usual: StandingSnow;
+  readonly alone: StandingSnow;
+  readonly own: StandingOwn;
+  readonly region: StandingRegion;
+  readonly held: StandingHeld;
+  readonly record: StandingRecord;
+  readonly record_sum: StandingSums;
+  readonly private: PrivateStanding;
+  readonly held_clauses?: readonly Clause[];
+}
+
+/**
+ * A plausibility clause (G6): the national advisory mean and its 99th percentile, the
+ * advisory and warning mean, and the most of any district.
+ */
+export const Clause = {
+  advisory_mean: 'advisory_mean',
+  advisory_p99: 'advisory_p99',
+  advisory_warning_mean: 'advisory_warning_mean',
+  district_max: 'district_max',
+} as const;
+/**
+ * A plausibility clause (G6): the national advisory mean and its 99th percentile, the
+ * advisory and warning mean, and the most of any district.
+ */
+export type Clause = (typeof Clause)[keyof typeof Clause];
+
+/**
+ * @minimum 2000
+ * @maximum 2100
+ */
+export type FallYear = number;
+
+/**
+ * @minItems 5
+ * @maxItems 5
+ */
+export type HeldRow = readonly [
+  unit: StandingIndex,
+  district: StandingPoints,
+  national: StandingPoints,
+  rounding: StandingPoints,
+  acted: number,
+];
+
+/**
+ * @minimum 0
+ * @maximum 3000
+ */
+export type Inches100 = number;
+
+/**
+ * @minItems 3
+ * @maxItems 3
+ */
+export type PrivateRow = readonly [winter: WinterDays | null, region: StandingPoints, bits: number];
+
+/**
+ * The private schools, by row: each distinct county exposure, region, tropical flag and
+ * hold; ``of`` gives each school's row in ``predictions/latest.json``'s ``schools`` order.
+ */
+export interface PrivateStanding {
+  readonly rows: readonly PrivateRow[];
+  readonly of: readonly number[];
+  readonly record: StandingRecord;
+  readonly record_sum: StandingSums;
+  readonly held: StandingHeld;
+}
+
+/**
+ * @minItems 4
+ * @maxItems 4
+ */
+export type RecordRow = readonly [
+  unit: StandingIndex,
+  closed: StandingCount,
+  delayed: StandingCount,
+  of: StandingCount,
+];
+
+/**
+ * @minItems 3
+ * @maxItems 3
+ */
+export type RecordSum = readonly [closed: StandingCount, delayed: StandingCount, of: StandingCount];
+
+export type RegionName =
+  | 'northeast'
+  | 'upper_midwest'
+  | 'ohio_valley'
+  | 'southeast'
+  | 'northern_rockies'
+  | 'south'
+  | 'southwest'
+  | 'northwest'
+  | 'west';
+
+/**
+ * @minItems 3
+ * @maxItems 3
+ */
+export type RegionRow = readonly [unit: StandingIndex, points: StandingPoints, clipped: number];
+
+/** @minimum 0 */
+export type StandingCount = number;
+
+/**
+ * @minimum 0
+ * @maximum 4095
+ */
+export type StandingFlags = number;
+
+export interface StandingHeld {
+  readonly advisory: readonly HeldRow[];
+  readonly warning: readonly HeldRow[];
+  readonly cold: readonly HeldRow[];
+}
+
+/** @minimum 0 */
+export type StandingIndex = number;
+
+/**
+ * A class's start: before this winter, as this winter's storms would move it, and as
+ * served (whole percent at a district with the middle exposure).
+ */
+export interface StandingLevel {
+  readonly prior: Percent;
+  readonly fit: Percent;
+  readonly now: Percent;
+  readonly storms: StandingCount;
+  readonly q: number;
+  readonly alpha: number;
+  readonly tau: number;
+  readonly shrunk?: readonly Clause[];
+}
+
+export interface StandingLevels {
+  readonly advisory: StandingLevel;
+  readonly warning: StandingLevel;
+  readonly cold: StandingLevel;
+}
+
+/** Per district, its own 9 PM forecasts of each class's school days. */
+export interface StandingOwn {
+  readonly advisory: readonly StandingCount[];
+  readonly warning: readonly StandingCount[];
+}
+
+/**
+ * @minimum -100
+ * @maximum 100
+ */
+export type StandingPoints = number;
+
+export interface StandingRecord {
+  readonly advisory: readonly RecordRow[];
+  readonly warning: readonly RecordRow[];
+  readonly cold: readonly RecordRow[];
+}
+
+/** Each class's middle of the school days a winter, over districts that get any. */
+export interface StandingRefs {
+  readonly advisory: WinterTenths;
+  readonly warning: WinterTenths;
+  readonly cold: WinterTenths;
+}
+
+export interface StandingRegion {
+  readonly advisory: readonly RegionRow[];
+  readonly warning: readonly RegionRow[];
+  readonly cold: readonly RegionRow[];
+}
+
+export interface StandingRegionDelta {
+  readonly region: RegionName;
+  readonly delta: number;
+  readonly clipped?: boolean;
+}
+
+export interface StandingRegionDeltas {
+  readonly advisory: readonly StandingRegionDelta[];
+  readonly warning: readonly StandingRegionDelta[];
+  readonly cold: readonly StandingRegionDelta[];
+}
+
+/** Per district, for the two classes the forecast moves. */
+export interface StandingSnow {
+  readonly advisory: UsualColumn;
+  readonly warning: UsualColumn;
+}
+
+/** @pattern ^[0-9a-f]{12}$ */
+export type StandingStamp = string;
+
+export interface StandingSums {
+  readonly advisory: RecordSum;
+  readonly warning: RecordSum;
+  readonly cold: RecordSum;
+}
+
+export type UsualColumn = readonly (Inches100 | null)[];
+
+/**
+ * @minItems 3
+ * @maxItems 3
+ */
+export type WinterDays = readonly [
+  advisory: WinterTenths,
+  warning: WinterTenths,
+  cold: WinterTenths,
+];
+
+/**
+ * @minimum 0
+ * @maximum 999.9
+ */
+export type WinterTenths = number;
 
 // track-record -------------------------------------------------------------------
 

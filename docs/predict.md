@@ -1387,6 +1387,112 @@ the new `LIVE_SCORE_SHA256`, as it did on the snow amount term's switch night: n
 stale state (it is the same snapshot's chance), but rows kept across the switch carry L5's timing,
 which a refit can leave out.
 
+## The why, step by step (WHY-TRANSPARENT: storm-class days)
+
+On an advisory, warning or cold class day, the school panel's "How we got N%" shows the
+district's own record first, then every step the chance took with its points, each step one
+sentence with its details folded under "How this step works" (closed every time a panel opens,
+never stored). Pooled days keep their words (POOLED-WHY). The steps are built from two files:
+
+* `predictions/latest.json`: each district's advisory or warning class day says what its
+  forecast step read in its `why`. `fc` where the forecast is not in the chance: 0 before its
+  9 PM snapshot, 1 every chance left it out to fit the file, 2 no forecast came in (and none of
+  the same snapshot was kept), 3 not for every deciding school (an unknown code or no snow
+  value), 4 the district's days would come to more than 6 closings a winter, 5 the nation's
+  would break a plausibility clause (the file names them in `forecast_check`), 6 the bus hour
+  timing served (its lines keep today's words), 7 the adjustment is off, 8 no 9 PM forecasts of
+  the class's days, 9 no usual snow balances them; by the order 7, 5, 4, 8, 9, 0, 1, 2, 3, 6.
+  Read: `snow` (the term's snow, floored to tenths), `feels` (raised to whole degrees, -99 for
+  colder, where the cold counts), `ice` (floored to hundredths, where ice counts) and `held`:
+  `low` (the class's lower bound raised the total), `cap` (the class order's cap), `high` (the
+  bend over the upper bound), `floor` (the snow alone's floor). The file's `standing` names the
+  standing file below; with none, every panel keeps today's why.
+* `predictions/standing/<stamp>.json` (`snowlight.predict.standing`): per class, the start
+  (`levels`: `prior`, `fit`, `now`, `storms`, `q`, `shrunk`, the served `alpha` and `tau`),
+  `ref` (the middle of the class's days a winter), `nodes` (20, the start's quadrature); per
+  district, its days a winter (`winter`, the exposure the anchor used), `flags` (1 county
+  middle, 2 a charter or virtual school left out of the deciding schools, 4 one deciding
+  school, 8/16 and 32/64 the advisory and warning usual snow's 10 more days from the region or
+  none, 128/256 the snow alone's floor clamped to a third of the usual, 512/1024/2048 capped),
+  the usual snow and the floor as shown (`usual`, `alone`, hundredths), its own 9 PM forecasts
+  (`own`), and sparse rows: the region step's points, each hold's stages and the record; the
+  private schools by row. The stamp is the first 12 hex of SHA-256 over every field but
+  `generated_at` and `stamp`, so a process start with nothing changed gives the same stamp; a
+  new one comes whenever a start, a delay share, a hold or a usual snow moves. The pass puts the
+  file up in the same commit as the latest file that names it, once per stamp per process.
+
+How the steps are made (whole points on the published grid, per unit and class): `v0` is the
+level at the unit's offset with no hold, `v1` after the district pull or cap, `v2` after the
+national steps, `v3` as served (the base). The holds are `[v1 - v0, v2 - v1, v3 - v2]`;
+`v0 - now` splits between the region delta and the exposure term `0.5 x` (`exposure_beta` 0.5,
+`x = -ln((f + 0.5) / (f_ref + 0.5))`, tau 1.5) by exact Shapley values on the chance scale,
+whole by the largest remainder. The panel shows the standing as what is left: `base.points -
+now - region - holds`. The deciding schools are `serve.eligible`: a district's schools other
+than private, charter and virtual ones, else all of them.
+
+The forecast step: the usual snow `u` and the snow alone's floor `b = min(max(alone, u/3), u)`
+are solved at the published class start. Where `ceil(b) < floor(u)` (hundredths) both show,
+each inside the exact range (from `b` to `u` the floor holds the total at 0, so the chance stays
+at the start); else `u` alone, to the nearest hundredth, moved one toward the exact `u` where
+the chance at the shown one does not round to the start. The snow rule's slope is 3.0 on
+warning days and 1.65 on advisory days, with an offset of 0.5 in; each past forecast counts as
+one amount for its range (`SNOW_CODE`), cut to the part still to come after 9 PM where the
+climate counted the window whole; a snow or ice morning counts as cold as often as the
+place's quiet and cold mornings among those days (`cold_mix`).
+
+The record note: the committed model's `y` (no school), `yd` (a late start) and `n` (labeled
+days), summed over the class's situations without `advisory_after`, by `labels.outcome_of`'s
+rule (no school at half the eligible schools closed or remote for the weather or with no reason
+given; else a late start at half delayed; school only when a whole morning list shows at most 1
+in 10 lit; any other day left out). The lists were kept mostly on storm mornings, so the note's
+fold gives the sums across all districts (`record_sum`) and never calls a count how often a
+district closes. Nothing served weighs a district's own record by itself yet (P6a is a shadow),
+and the note says so first.
+
+The guard (`standing.guard`): before a pass names a stamp it recomputes every deployed
+district's and private row's start from the file's own `alpha`, `tau`, `nodes`,
+`region_delta`, `winter` and `ref`, checks that the holds take it to the points served, that
+each `now` is its level at the middle exposure and each `record_sum` its rows' sums, and that
+the file is within `serve.standing_budget_raw_bytes` (4,000,000) and
+`serve.standing_budget_gzip_bytes` (600,000). Any failure: no stamp, no file, today's why
+(`tests/predict/test_why_steps.py` plants a wrong `winter`, `alpha`, `tau`, hold and record sum).
+The guard also refuses a file the panel has no words for: a shown usual snow whose zone weighs
+even snow off 1.0 (`even_factor`; 1.0 in every US zone today), and a private school whose region
+moves a class other than the advisory one (its row holds the advisory part alone). Each held row
+ends with a mask of the stages that moved the chance at all (1 the district pull or cap, 2 the
+national steps), so a stage that moved it under a point is a "0" row.
+
+The truth test (`check_steps`, run over the synthetic world's district and private class days
+and over every `latest.json` the storm drill's host gets, `tests/predict/test_drill.py`) takes
+each start from the file's own numbers and asserts `now + standing + region + held` is the base
+and the base and the lines the chance, with the region and the standing each within a point of
+their exact Shapley parts. OWN-rule's shares (half, half, 1 in 10) and the steps' fixed numbers
+(10 more days, 30 inches, 500 feet, 15 F to 0 F, 0.1 inch of ice like 2.5 inches, the
+plausibility clauses) are tested against `config/predict.yaml`, so the words and the code cannot
+drift apart.
+
+Size: a read class day grows by at most 51 bytes, one left out by 7 (`,"fc":9`). With the
+longest class lines and the widest fields a class day is 540 bytes against the 234 of the
+least worst case's own day, so 1.45% of its district-days carry lines before the pass steps to
+`Fit.NO_REASONS` (`CLASS_LINES_FIT`, `tests/predict/test_loop.py`); a class day whose forecast
+is left out is never longer than that case's own day, so `NO_REASONS` holds every chance.
+Where every district without a record is on a class day with `fc` and a previous chance on both
+days, the whole file is over by under 7 bytes a day and keeps every chance at `NO_RECORDS`; the
+night chart then fits 8,935 districts (`NIGHTS_FIT_CLASSED`). The standing file is about 0.9 MB
+raw and 0.2 MB gzip today; its widest is under the raw budget and, with random digits and no
+hold, under the gzip budget; with every hold stage on every unit it is over the gzip budget and
+refused. The standing file goes up with the first file that names its stamp and never again:
+a process start first reads the stamp's path from the host and uploads nothing when it is there
+(a host it cannot read gets the file). A file naming a stamp whose bytes were not in hand says
+so in the log and the panels keep today's why. The live host keeps every stamp's file: the
+host's commit API writes files and never removes them, so old stamps stay until a cleanup (a
+follow-up for the lead).
+
+The page reads the stamp's file through the live roots as it reads `latest.json`
+(`web/src/data/standing.ts`; the second root's proxy allows `predictions/standing/<stamp>.json`),
+starts the read as soon as a predictions file names it with a storm-class day in it, before any
+panel opens, and tries a failed read once more a minute on.
+
 ## The usual call time (predict-next CALL-TIME: off)
 
 The owner asked (Nov 2) for "average call time, with the chance declining once it passes", and

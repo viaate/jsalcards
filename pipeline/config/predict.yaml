@@ -88,6 +88,8 @@ serve:
   collapse_drop: 0.8          # ... followed by one with this much fewer: confirm first
   budget_raw_bytes: 16500000  # asserted worst cases (tests/predict/test_loop.py, counts from the committed model plus 5%): with no record days or previous chances and 9,000 private outlooks 16,326,296 bytes raw; with no record days and 2,000 outlooks 15,108,482; the committed model's whole file 16,446,182. A file over it steps down serve.Fit (docs/predict.md, Size)
   budget_gzip_bytes: 1500000
+  standing_budget_raw_bytes: 4000000  # predictions/standing/<stamp>.json (the why's steps): today about 0.93 MB raw; its widest about 2.9 MB (tests/predict/test_why_steps.py)
+  standing_budget_gzip_bytes: 600000  # its gzip: today about 0.2 MB; over either budget, no standing file and every panel keeps today's why
   heartbeat_minutes: 30       # an unchanged file is uploaded at least this often
   heartbeat_skip_minutes: 4   # ... and by every grid pass, unless an upload went out this recently
   memory_gap_minutes: 20      # the alert memory is whole only if the feed was read this often

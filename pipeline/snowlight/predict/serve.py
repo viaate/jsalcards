@@ -34,8 +34,17 @@ import numpy.typing as npt
 
 from snowlight.directory.points import NO_DISTRICT, Points
 from snowlight.predict import forecast_adjust, forecast_values
+from snowlight.predict import standing as standing_file
 from snowlight.predict.alerts_live import LiveEvent, UgcIndex
-from snowlight.predict.anchor import STANDINGS, Anchor, Grid, Plausible, Unit, implied_summary
+from snowlight.predict.anchor import (
+    STANDINGS,
+    Anchor,
+    Grid,
+    Plausible,
+    Unit,
+    UnitRates,
+    implied_summary,
+)
 from snowlight.predict.anchor import failing as failing_clauses
 from snowlight.predict.announce import announces_at
 from snowlight.predict.artifact import (
@@ -44,6 +53,7 @@ from snowlight.predict.artifact import (
     Learned,
     ModelArtifact,
     RecordDay,
+    Settings,
 )
 from snowlight.predict.calendar import forecast_days, is_school_day, previous_school_day
 from snowlight.predict.config import PredictConfig
@@ -108,6 +118,7 @@ from snowlight.schemas.predictions import (
     Forecast,
     NoThreat,
     OutlookReason,
+    PlausibilityClause,
     PredictionsFile,
     PreviousChance,
     SchoolForecast,
@@ -398,6 +409,17 @@ class ServeModel:
     adjust_check: "AdjustCheck | None" = None
     """The plausibility check (G6) on the forecast adjustment's chances as published, averaged
     over each district's days (PHYS-R3-S3); ``None``: no adjustment."""
+    usual_cause: npt.NDArray[np.int8] = field(
+        default_factory=lambda: np.zeros((0, 0), dtype=np.int8)
+    )
+    """(deployed districts, situations): why a situation has no usual snow
+    (:func:`_usual_snow`'s ``cause``); empty: not known."""
+    steps: "standing_file.Built | None" = None
+    """The standing file of the why's steps (:mod:`snowlight.predict.standing`), stamped
+    when built (its ``generated_at`` is set when published); ``None``: no class anchor."""
+    steps_error: str | None = None
+    """Why the standing file could not be built (the pass says so; every panel keeps today's
+    why); ``None``: it was, or there is no class anchor."""
 
     @property
     def coverage(self) -> float:
@@ -740,7 +762,7 @@ def _private_model(  # noqa: PLR0913 - the served schools, both chains and the m
     )
 
 
-def build_model(  # noqa: PLR0913, PLR0915 - the steps of one model, in order
+def build_model(  # noqa: PLR0912, PLR0913, PLR0915 - the steps of one model, in order
     directory: DeployedDirectory,
     artifact: ModelArtifact,
     config: PredictConfig,
@@ -854,7 +876,7 @@ def build_model(  # noqa: PLR0913, PLR0915 - the steps of one model, in order
     p_rate = np.array(no_school.p, dtype=np.float64)
     q_rate = np.array(delay.p, dtype=np.float64)
     own_rate = np.array(no_school.own, dtype=np.bool_)
-    classed, standing, plausible, tropical = _classed_rates(
+    classed, standing, plausible, tropical, unit_rates, units = _classed_rates(
         anchor,
         places,
         states,
@@ -887,10 +909,12 @@ def build_model(  # noqa: PLR0913, PLR0915 - the steps of one model, in order
     eligible: list[npt.NDArray[np.int64]] = []
     by_district = _schools_by_district(district, len(deployed))
     open_flags = (points.kind & (PRIVATE | CHARTER | VIRTUAL)) == 0
+    mixed = np.zeros(len(deployed), dtype=np.bool_)
     for index, leaid in enumerate(deployed):
         schools = by_district[index]
         mine = schools[open_flags[schools]] if schools.size else schools
         eligible.append(mine if mine.size else schools)
+        mixed[index] = 0 < mine.size < schools.size
         zone = entry[leaid].time_zone if leaid in entry else None
         if zone is None and schools.size:
             zone = zone_fallback(float(lon[schools[0]]), float(lat[schools[0]]))
@@ -899,12 +923,15 @@ def build_model(  # noqa: PLR0913, PLR0915 - the steps of one model, in order
         zones.append(zone)
     live = tuple(bool(value) for value in anchored)
     counties = places_county(places)
+    climate_places = [(places.districts[r], counties[r], _region(states[r])) for r in rows.tolist()]
+    usual_cause = np.full((rows.size, len(SITUATION_KEYS)), -1, dtype=np.int8)
     usual_snow, snow_usual, adjust_check = _usual_snow(
         anchor,
         p[rows],
-        [(places.districts[r], counties[r], _region(states[r])) for r in rows.tolist()],
+        climate_places,
         zones,
         Grid(settings.floor, settings.ceiling),
+        usual_cause,
     )
     private = None
     if served.positions.size:
@@ -931,6 +958,17 @@ def build_model(  # noqa: PLR0913, PLR0915 - the steps of one model, in order
         )
         if classed.any():
             private = _classed_private(private, p[prow], q[prow], classed, tropical[prow])
+    standing_built: standing_file.Built | None = None
+    steps_error: str | None = None
+    if anchor is not None and unit_rates is not None and classed.any():
+        try:
+            standing_built = _steps(
+                anchor, unit_rates, units, rows, position, pseudo, served, artifact, deployed,
+                mixed, eligible, climate_places, zones, p, usual_snow, snow_usual, settings,
+                directory,
+            )  # fmt: skip
+        except Exception as error:  # the why's steps only: never the chances
+            steps_error = f"{type(error).__name__}: {error}"[:200]
     return ServeModel(
         directory=directory,
         artifact=artifact,
@@ -966,8 +1004,60 @@ def build_model(  # noqa: PLR0913, PLR0915 - the steps of one model, in order
         usual_snow=usual_snow,
         snow_usual=snow_usual,
         adjust_check=adjust_check,
+        usual_cause=usual_cause,
+        steps=standing_built,
+        steps_error=steps_error,
     )
 
+
+def _steps(  # noqa: PLR0913, PLR0917 - what build_model holds, in its order
+    anchor: Anchor,
+    unit_rates: UnitRates,
+    units: list[Unit],
+    rows: npt.NDArray[np.int64],
+    position: Mapping[str, int],
+    pseudo: list[str],
+    served: _Served,
+    artifact: ModelArtifact,
+    deployed: tuple[str, ...],
+    mixed: npt.NDArray[np.bool_],
+    eligible: list[npt.NDArray[np.int64]],
+    places: list[forecast_adjust.Place],
+    zones: list[str],
+    p: Floats,
+    usual_snow: Floats,
+    snow_usual: Floats,
+    settings: Settings,
+    directory: DeployedDirectory,
+) -> standing_file.Built:
+    """The standing file of the why's steps (:func:`snowlight.predict.standing.build`)."""
+    return standing_file.build(
+        standing_file.Inputs(
+            anchor=anchor,
+            rates=unit_rates,
+            units=units,
+            rows=rows,
+            private_rows=np.array([position[unit] for unit in pseudo], dtype=np.int64),
+            private_ids=served.ids,
+            artifact=artifact,
+            district_ids=deployed,
+            mixed=mixed,
+            one=np.array([found.size == 1 for found in eligible], dtype=np.bool_),
+            places=places,
+            zones=zones,
+            p=p[rows],
+            usual_snow=usual_snow,
+            snow_usual=snow_usual,
+            grid=Grid(settings.floor, settings.ceiling),
+        ),
+        directory.stamp,
+        STANDING_TIME,
+    )
+
+
+STANDING_TIME: Final = datetime(2026, 1, 1, tzinfo=UTC)
+"""The standing file's time as built: a pass sets its own when it writes the file (the stamp
+leaves the time out)."""
 
 ORDERED: Final = frozenset({"snow_warning", "lake_snow", "ice", "blizzard"})
 """The winter warning situations an advisory day's chance is never over for the same forecast
@@ -1005,12 +1095,13 @@ class AdjustCheck:
         return text
 
 
-def _usual_snow(  # noqa: PLR0915 - each class's solve in order, then the plausibility check
+def _usual_snow(  # noqa: PLR0913, PLR0915, PLR0917 - each class's solve, then the check
     anchor: Anchor | None,
     p: Floats,
     places: Sequence[forecast_adjust.Place],
     zones: Sequence[str],
     grid: Grid,
+    cause: npt.NDArray[np.int8] | None = None,
 ) -> tuple[Floats, Floats, AdjustCheck | None]:
     """Each deployed district's usual snow per situation (:func:`snowlight.predict.
     forecast_adjust.usual_snow`): the forecast at which its adjusted chance is the situation's
@@ -1029,7 +1120,12 @@ def _usual_snow(  # noqa: PLR0915 - each class's solve in order, then the plausi
     Also each one's usual snow alone (its ice days of the class taken as quiet,
     :func:`snowlight.predict.forecast_adjust.ice_as_quiet`), for the snow line's comparison
     only (PHYS-R2-S1). Each zone's even snow has its timing term in the solve
-    (:func:`snowlight.predict.forecast_adjust.even_factor`, PHYS-R2-S2)."""
+    (:func:`snowlight.predict.forecast_adjust.even_factor`, PHYS-R2-S2).
+
+    ``cause``: where given (districts, situations), why each adjusted situation has no usual
+    snow, in place: 0 it has one, 4 the district's days held out by ``district_max``, 5 every
+    district held out by a failing clause, 8 no 9 PM forecasts of the class's days, 9 none
+    balances them; -1 where the situation is not adjusted (the why's ``fc``)."""
     if anchor is None or anchor.climate is None or anchor.adjust is None:
         return np.zeros((0, 0)), np.zeros((0, 0)), None
     settings = anchor.adjust
@@ -1129,6 +1225,9 @@ def _usual_snow(  # noqa: PLR0915 - each class's solve in order, then the plausi
         mean[:, j] = np.maximum(mean[:, j], days)
         found[:, k] = usual
         alone[:, k] = np.where(np.isfinite(usual), snow_alone[key], np.nan)
+        if cause is not None:
+            empty = counts[klass].sum(axis=1) <= 0
+            cause[:, k] = np.where(np.isfinite(usual), 0, np.where(empty, 8, 9))
     level = np.where(np.isfinite(level), level, np.nan)
     mean = np.where(np.isfinite(mean), mean, np.nan)
     days = np.array(
@@ -1146,9 +1245,13 @@ def _usual_snow(  # noqa: PLR0915 - each class's solve in order, then the plausi
     check = _adjust_check(
         anchor, np.where(over[:, None], level, mean), level, days, int(over.sum())
     )
+    if cause is not None:
+        cause[over[:, None] & (cause >= 0)] = 4
     if check.failing:
         found[:] = np.nan
         alone[:] = np.nan
+        if cause is not None:
+            cause[cause >= 0] = 5
     return found, alone, check
 
 
@@ -1187,20 +1290,28 @@ def _classed_rates(  # noqa: PLR0913, PLR0917 - the anchor, the places and their
     rows: npt.NDArray[np.int64],
     rates: tuple[Floats, Floats, npt.NDArray[np.bool_]],
     grid: Grid,
-) -> tuple[npt.NDArray[np.bool_], npt.NDArray[np.int8], Plausible | None, npt.NDArray[np.bool_]]:
+) -> tuple[
+    npt.NDArray[np.bool_],
+    npt.NDArray[np.int8],
+    Plausible | None,
+    npt.NDArray[np.bool_],
+    UnitRates | None,
+    list[Unit],
+]:
     """Serve each storm-class situation from its class's level (``anchor``), in place in
     ``rates`` (chance of no school, delay rate, own record) per place: the situations so
     served, each place's standing in their class and what the plausibility check did (G6:
     every place with known days held to ``district_max``, the deployed districts (``rows``) to
     the national clauses, all on the chances as published on ``grid``, which publishing then
     keeps), and whether each place's exposure holds a tropical storm or hurricane warning day;
-    a private school's pseudo-district takes its county's exposure."""
+    a private school's pseudo-district takes its county's exposure. Also the anchor's rates
+    and the units, for the why's steps (:mod:`snowlight.predict.standing`)."""
     p_rate, q_rate, own_rate = rates
     classed = np.zeros(len(SITUATION_KEYS), dtype=np.bool_)
     standing = np.zeros(p_rate.shape, dtype=np.int8)
     tropical = np.zeros(places.size, dtype=np.bool_)
     if anchor is None:
-        return classed, standing, None, tropical
+        return classed, standing, None, tropical, None, []
     units = [
         Unit(None if d in pseudo else d, county, _region(state))
         for d, state, county in zip(places.districts, states, places_county(places), strict=True)
@@ -1219,7 +1330,7 @@ def _classed_rates(  # noqa: PLR0913, PLR0917 - the anchor, the places and their
         q_rate[:, k] = served.q[j]
         standing[:, k] = served.standing[:, j]
         own_rate[:, k] = False
-    return classed, standing, served.plausible, tropical
+    return classed, standing, served.plausible, tropical, served, units
 
 
 def places_county(places: Places) -> list[str | None]:
@@ -1526,6 +1637,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     adjust: bool = False,
     read_last: frozenset[tuple[int, date]] | None = None,
     noted: dict[tuple[int, date], "Noted"] | None = None,
+    standing: str | None = None,
 ) -> PredictionsFile:
     """The predictions file of one pass (see the module docstring): every district, and with
     ``private_classes`` (from :func:`unit_classes`) every served private school; ``fit``: what
@@ -1564,6 +1676,12 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
     change in the weather. A previous chance ``last`` already carried stays only while the
     chance now shown is on the same side of it. The next file compares as before.
 
+    ``standing``: the stamp of the standing file whose numbers the storm-class days' steps
+    are made of (:mod:`snowlight.predict.standing`), its guard passed; the file names it. A
+    district's advisory or warning day says what its forecast step read (WHY-TRANSPARENT:
+    the why's ``fc``, or ``snow``, ``feels``, ``ice`` and ``held``), and where any day's
+    forecast is left out for a failing plausibility clause (``fc`` 5), the file names them.
+
     Raises:
         TableError: the private schools' outlooks are more than the file may hold.
     """
@@ -1597,11 +1715,20 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
             )
             usual = model.announce[index] if announces and model.announce else None
             line = outlook.lines.get((index, d)) if outlook is not None and fit.reasons else None
-            moved_by, forecast_read, snapshot = (
+            moved_by, forecast_read, snapshot, read = (
                 _adjusted(model, index, k, day, forecasts, situation, generated, kept, noted)
                 if adjust and fit.reasons and line is None
-                else (None, False, None)
+                else (None, False, None, None)
             )
+            if line is None and (not adjust or not fit.reasons):
+                # The forecast is out of every chance: why, by the same order (fc 1: to fit).
+                read = left_out(model, index, k, day, situation, generated, adjust=adjust)
+                if read is None and adjust and model.anchor is not None:
+                    klass = model.anchor.class_of(situation.key)
+                    if klass in forecast_adjust.CLASSES[:2] and (
+                        situation.key not in forecast_adjust.SKIP
+                    ):
+                        read = Read(fc=1)
             outlooks.append(
                 _forecast(
                     _Cell(
@@ -1640,6 +1767,7 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
                     last_read=read_last is not None and (index, day) in read_last,
                     snapshot=snapshot,
                     level_moved=_level_moved(moved, bases.get((index, day)), weather),
+                    read=read,
                 )
             )
             night = nights.get(day, index) if fit.nights else None
@@ -1685,10 +1813,32 @@ def forecast_file(  # noqa: PLR0913 - the model, the classes, the days and the l
         if forecast_at is not None and outlook is not None and outlook.lines and fit.reasons
         else None,
         night_at=nights.at if carried else None,
+        standing=standing,
+        forecast_check=_forecast_check(model, entries),
     )
 
 
-type Kept = dict[tuple[int, date], tuple[tuple[int, str | None, str | None], Moved]]
+def _forecast_check(
+    model: ServeModel, entries: Sequence[DistrictForecast]
+) -> tuple[PlausibilityClause, ...]:
+    """The plausibility clauses the forecast broke, where any day says so (``fc`` 5)."""
+    check = model.adjust_check
+    if check is None or not check.failing:
+        return ()
+    if not any(
+        isinstance(day, Forecast) and day.why.fc == 5  # noqa: PLR2004
+        for entry in entries
+        for day in entry.days
+    ):
+        return ()
+    return tuple(PlausibilityClause(c) for c in check.failing if c in FORECAST_CLAUSES)
+
+
+FORECAST_CLAUSES: Final = ("advisory_mean", "advisory_p99", "advisory_warning_mean", "district_max")
+"""The clauses a file names in ``forecast_check``."""
+
+
+type Kept = dict[tuple[int, date], tuple[tuple[int, str | None, str | None], Moved, "Read | None"]]
 """Each district-day the last file moved by the forecast adjustment from its class snapshot on:
 its class level (whole percent) with the alert or weather its base names, and its chance,
 delay and lines."""
@@ -1720,8 +1870,93 @@ def _kept(last: PredictionsFile | None, model: ServeModel) -> Kept:
                 p_no_school=item.p_no_school, p_delay=item.p_delay, reasons=item.why.reasons
             )
             base = item.why.base
-            found[(entry.district, day)] = ((base.points, base.alert, base.weather), moved)
+            why = item.why
+            read = (
+                Read(fc=why.fc, snow=why.snow, feels=why.feels, ice=why.ice, held=why.held)
+                if why.fc is not None or why.snow is not None
+                else None
+            )
+            found[(entry.district, day)] = ((base.points, base.alert, base.weather), moved, read)
     return found
+
+
+@dataclass(frozen=True, slots=True)
+class Read:
+    """What a district's storm-class day says of its forecast step (the why's ``fc``,
+    ``snow``, ``feels``, ``ice`` and ``held``, WHY-TRANSPARENT): ``fc`` where the forecast is
+    not in the chance, else what it read."""
+
+    fc: int | None = None
+    snow: float | None = None
+    feels: int | None = None
+    ice: float | None = None
+    held: str | None = None
+
+    def fields(self) -> dict[str, object]:
+        """The why's fields (only those given)."""
+        found = {
+            "fc": self.fc,
+            "snow": self.snow,
+            "feels": self.feels,
+            "ice": self.ice,
+            "held": self.held,
+        }
+        return {key: value for key, value in found.items() if value is not None}
+
+
+FEELS_MIN: Final = -99
+"""The coldest feel a why states ("-99 F or colder")."""
+
+
+def read_of(found: forecast_values.DistrictForecast, parts: forecast_adjust.TermParts) -> Read:
+    """What a read forecast's terms say: the snow floored to tenths, the feel raised to whole
+    degrees and clamped at -99 where the cold counts, the ice floored to hundredths where it
+    counts, and what held the total; ``fc`` 6 where the bus hour timing served (its lines
+    say the rest)."""
+    if parts.raw[1] != 0.0:
+        return Read(fc=6)
+    feels = None
+    if found.feels is not None and parts.raw[3] > 0 and found.feels_read is not None:
+        feels = max(FEELS_MIN, math.ceil(found.feels_read))
+    ice = None
+    if parts.ice > 0 and found.ice_read is not None:
+        ice = min(math.floor(round(found.ice_read * 100, 6)) / 100, 9.99)
+    return Read(
+        snow=min(math.floor(round(parts.snow * 10, 6)) / 10, 120.0),
+        feels=feels,
+        ice=ice,
+        held=parts.held,
+    )
+
+
+def left_out(  # noqa: PLR0913, PLR0917 - the model, the cell and the day
+    model: ServeModel,
+    index: int,
+    k: int,
+    day: date,
+    situation: Situation,
+    generated: datetime,
+    *,
+    adjust: bool,
+) -> Read | None:
+    """Why a district's advisory or warning day leaves its forecast out, by the order
+    7, 5, 4, 8, 9, 0 (the rest are known only once its forecast is looked for), or ``None``:
+    not such a day (cold, blizzard and tropical days take no forecast term and say so by
+    their alert), or one the forecast may move."""
+    anchor = model.anchor
+    if anchor is None:
+        return None
+    klass = anchor.class_of(situation.key)
+    if klass not in forecast_adjust.CLASSES[:2] or situation.key in forecast_adjust.SKIP:
+        return None
+    if not adjust or anchor.adjust is None or not model.usual_snow.size:
+        return Read(fc=7)
+    if not math.isfinite(float(model.usual_snow[index, k])):
+        cause = int(model.usual_cause[index, k]) if model.usual_cause.size else -1
+        return Read(fc=cause if cause in {4, 5, 8, 9} else 7)
+    if generated < forecast_adjust.snapshot(day, model.time_zone[index]):
+        return Read(fc=0)
+    return None
 
 
 def _adjusted(  # noqa: PLR0913, PLR0917 - the model, the cell, the day and its forecast
@@ -1734,25 +1969,27 @@ def _adjusted(  # noqa: PLR0913, PLR0917 - the model, the cell, the day and its 
     generated: datetime,
     kept: Kept,
     noted: dict[tuple[int, date], "Noted"] | None = None,
-) -> tuple[Moved | None, bool, datetime | None]:
+) -> tuple[Moved | None, bool, datetime | None, Read | None]:
     """A district's storm-class day with the forecast on top of its class level
     (:func:`snowlight.predict.forecast_adjust.adjusted`), or ``None`` where the forecast does
     not move it: not an adjusted situation, before the day's class snapshot (9 PM the evening
     before on the school's clock: turn-on items 8 and 10), no forecast read, or no term worth
     a point; whether its forecast was read for the adjustment (adjusted or not, or the same
-    snapshot's lines kept from the last file where this pass's read failed); and the class
-    snapshot (``None`` where the day is not adjusted)."""
+    snapshot's lines kept from the last file where this pass's read failed); the class
+    snapshot (``None`` where the day is not adjusted); and what the why says of the forecast
+    step (:class:`Read`; ``None`` where it says nothing)."""
     anchor = model.anchor
+    out = left_out(model, index, k, day, situation, generated, adjust=True)
     if anchor is None or anchor.adjust is None or not model.usual_snow.size:
-        return None, False, None
+        return None, False, None, out
     usual = float(model.usual_snow[index, k])
     klass = anchor.class_of(situation.key)
     if klass is None or not math.isfinite(usual):
-        return None, False, None
+        return None, False, None, out
     zone = model.time_zone[index]
     snapshot = forecast_adjust.snapshot(day, zone)
     if generated < snapshot:
-        return None, False, snapshot
+        return None, False, snapshot, out
     p0 = float(model.p[index, k])
     found = forecasts.get(day, index)
     if found is None:
@@ -1765,11 +2002,11 @@ def _adjusted(  # noqa: PLR0913, PLR0917 - the model, the cell, the day and its 
             None if situation.weather in ALERT_KIND else WEATHER_NAME.get(situation.weather),
         )
         if last is not None and last[0] == named:
-            return last[1], True, snapshot
-        return None, False, snapshot
+            return last[1], True, snapshot, last[2]
+        return None, False, snapshot, Read(fc=2)
     settings = model.artifact.settings
     cap = _order_cap(model, anchor, index, klass, day, zone, found)
-    parts: list[forecast_adjust.TermParts] | None = None if noted is None else []
+    parts: list[forecast_adjust.TermParts] = []
     moved = forecast_adjust.adjusted(
         p0,
         float(model.q_rate[index, k]) if model.q_rate.size else 0.0,
@@ -1787,7 +2024,8 @@ def _adjusted(  # noqa: PLR0913, PLR0917 - the model, the cell, the day and its 
     )
     if noted is not None:
         noted[(index, day)] = Noted(cap, parts[0] if parts else None)
-    return moved, True, snapshot
+    read = read_of(found, parts[0]) if parts else Read(fc=3)
+    return moved, True, snapshot, read
 
 
 @dataclass(frozen=True, slots=True)
@@ -2212,7 +2450,7 @@ def _level_moved(
     return last is not None and last[0] in moved and last[0] == CLASS_OF_WEATHER.get(int(weather))
 
 
-def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
+def _forecast(  # noqa: PLR0912, PLR0913 - one unit, one day, and its last chance
     cell: _Cell,
     situation: Situation,
     day: date,
@@ -2230,6 +2468,7 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     snapshot: datetime | None = None,
     last_read: bool = False,
     level_moved: bool = False,
+    read: Read | None = None,
 ) -> Forecast:
     """One unit's forecast for one school day. ``said_open``: the unit said school is on that
     day, so its chance of no school is the floor and of a delay 0 (:mod:`snowlight.predict.
@@ -2331,6 +2570,16 @@ def _forecast(  # noqa: PLR0913 - one unit, one day, and its last chance
     )
     if lines is not None:
         why = Why(base=why.base, reasons=lines.reasons)
+    if (
+        read is not None
+        and floor is None
+        and outlook is None
+        and cell.classed
+        and cell.of == "districts"
+        and why.base.kind == "class"
+    ):
+        # What the forecast step read (WHY-TRANSPARENT): a forecast left out, or what it read.
+        why = Why(base=why.base, reasons=why.reasons, **read.fields())  # type: ignore[arg-type]
     weather = reasons_for(situation.weather)
     if outlook is not None and floor is None and outlook[2].f is not None:
         # The outlook's forecast is weather forecast (spec-f s. 8): snow, ice or cold.
