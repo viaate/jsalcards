@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
 
   import { copy } from '../copy';
+  import { howCopy } from '../copy-how';
   import { legalCopy, type LegalPageName } from '../copy-legal';
   import LegalBlocks from './LegalBlocks.svelte';
 
@@ -12,7 +13,7 @@
 
   let { page, onclose }: Props = $props();
 
-  const doc = $derived(legalCopy.pages[page]);
+  const doc = $derived(page === 'how' ? howCopy : legalCopy.pages[page]);
   let heading = $state<HTMLElement>();
 
   onMount(() => {
@@ -29,7 +30,7 @@
 
 <!--
   The privacy policy or the terms of use (app/legal.ts, at ?privacy or ?terms): the owner's
-  approved words (copy-legal.ts), full screen over the app in the theme's own colors, its code
+  approved words (copy-legal.ts); or "How Snowlight guesses" (?how, copy-how.ts); full screen over the app in the theme's own colors, its code
   loaded only when the address asks for it.
 -->
 <div

@@ -91,10 +91,7 @@ function nextMorning(overrides: Partial<ChanceInput> = {}): ChanceInput {
 /** A line of the sum as it reads: its points, then its sentence. */
 function lines(why: WhyView | null): string[] {
   if (why === null) return [];
-  return [
-    `${why.base.number}% ${why.base.text}`,
-    ...why.lines.map((line) => `${line.points} ${line.text}`),
-  ];
+  return [...why.rows.map((row) => `${row.number} ${row.text}`)];
 }
 
 describe('the chance section, the night before', () => {
@@ -107,7 +104,7 @@ describe('the chance section, the night before', () => {
       number: '64',
       meaning: 'Chance of no school Tuesday',
       moved: { direction: 'up', text: `Up from 41% at 5${NBSP}PM` },
-      delay: '18% chance of a delayed start instead',
+      delay: '18% chance of a late start instead',
     });
     // The countdown in the school's own time zone, the weekday its own once half a day away.
     expect(view?.countdown(at('2026-01-13T11:30:00Z'), A_NOW)).toBe('in 8h 25m');
@@ -136,18 +133,18 @@ describe('the chance section, the night before', () => {
 
   it('adds up to the headline, naming what the chart and the timeline already say', () => {
     expect(lines(view?.why ?? null)).toEqual([
-      '30% Shawnee Mission closed or went remote on 3 in 10 recorded days with a winter storm warning.',
+      '30% This chance comes from Shawnee Mission’s own past days like this. Those are days with a winter storm warning. 3 in 10 of them had no school.',
       // "6 to 9 in" is the chart's answer; the record is said only here.
-      '+16 More snow than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
+      '+16 The forecast has more snow than most storms. We looked at its last 5 days with 6 inches of snow or more. It closed on 4 of them. So the chance goes up.',
       // Who canceled, and when, is the timeline's.
-      '+9 Districts next door canceled.',
+      '+9 Districts next door closed. So the chance goes up.',
       // The hours are the chart's key.
-      '+7 Heaviest snow just before the buses.',
-      `+5 The forecast has a wind chill of ${MINUS}4${NBSP}F at the bus stop.`,
+      '+7 The heaviest snow falls just before the buses go out. So the chance goes up.',
+      '+5 It will feel like 4 degrees below zero at the bus stop. So the chance goes up.',
       // The snow ends as the buses go out, whose hour is the chart's: no head start.
-      `${MINUS}3 The forecast has the snow ending as the buses go out.`,
+      `${MINUS}3 The snow ends as the buses go out. So the chance goes down.`,
     ]);
-    expect(view?.why?.title).toBe('How we got 64%');
+    expect(view?.why?.title).toBe('Why 64%');
   });
 
   it('says each fact once in the whole section', () => {
@@ -245,7 +242,7 @@ describe('the chance section, the next morning', () => {
       number: '22',
       meaning: 'Chance of no school Wednesday',
       moved: { direction: 'down', text: 'Down from 30% last night' },
-      delay: '31% chance of a delayed start instead',
+      delay: '31% chance of a late start instead',
     });
     expect(view?.moments.map((moment) => [moment.time, moment.mark, moment.text])).toEqual([
       [`6:00${NBSP}AM`, 'event', 'Snow stopped, 8 inches in all'],
@@ -258,12 +255,12 @@ describe('the chance section, the next morning', () => {
 
   it('adds up from the day after a snow day, naming the cold and the snow stopping', () => {
     expect(lines(view?.why ?? null)).toEqual([
-      '25% After a recorded snow day, Shawnee Mission stayed closed or went remote the next day 1 time in 4.',
+      '25% This chance comes from Shawnee Mission’s own past days like this. Those are days right after a day with no school for snow. 1 in 4 of them had no school.',
       // When it stopped is the timeline's; how cold, the chart's.
-      `${MINUS}8 The snow stopped, a full day for the plows.`,
-      '+6 Cold at the bus stop Wednesday morning.',
-      `${MINUS}5 The forecast has sun this afternoon to help melt the ice.`,
-      '+4 Side streets stay icy after 8 inches of snow.',
+      `${MINUS}8 The snow has stopped. The plows get a full day. So the chance goes down.`,
+      '+6 It will be cold at the bus stop Wednesday morning. So the chance goes up.',
+      `${MINUS}5 The forecast has sun this afternoon. Sun helps melt the ice. So the chance goes down.`,
+      '+4 Side streets stay icy after 8 inches of snow. So the chance goes up.',
     ]);
   });
 
@@ -345,7 +342,7 @@ describe('the school’s own clock', () => {
     );
     expect(bare?.chart).toBeNull();
     expect(lines(bare?.why ?? null)[5]).toBe(
-      `${MINUS}3 The forecast has the snow ending at 7${NBSP}AM${NBSP}CT, as the buses go out.`,
+      `${MINUS}3 The snow ends at 7${NBSP}AM${NBSP}CT, as the buses go out. So the chance goes down.`,
     );
     // A viewer on the school's clock, in another zone of the same offset, sees no zone.
     const same = chanceView(nightBefore({ timeZone: 'America/Menominee' }));
@@ -552,14 +549,14 @@ describe('what the section leaves out', () => {
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: low }, 0.01))).toEqual([
-      '1% Shawnee Mission almost never closed or went remote on recorded days like this.',
+      '1% This chance comes from Shawnee Mission’s own past days like this. Those are days with no winter warning or advisory. Fewer than 1 in 20 of them had no school.',
     ]);
     const high: WhyDetail = {
       base: { kind: 'similar_days', points: 99, borrowed: false, live: false },
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: high }, 0.99))).toEqual([
-      '99% Shawnee Mission almost always closed or went remote on recorded days like this.',
+      '99% This chance comes from Shawnee Mission’s own past days like this. Those are days with no winter warning or advisory. More than 19 in 20 of them had no school.',
     ]);
     // A base alone, when it is the chance.
     const alone: WhyDetail = {
@@ -567,7 +564,7 @@ describe('what the section leaves out', () => {
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: alone }, 0.2))).toEqual([
-      '20% Shawnee Mission closed or went remote on 1 in 5 recorded days like this.',
+      '20% This chance comes from Shawnee Mission’s own past days like this. Those are days with no winter warning or advisory. 1 in 5 of them had no school.',
     ]);
     // A district with too short a history of its own: the districts around it.
     const pooled: WhyDetail = {
@@ -583,7 +580,7 @@ describe('what the section leaves out', () => {
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: pooled }, 0.33))).toEqual([
-      '33% Districts near Shawnee Mission closed or went remote on 1 in 3 of their recorded days like this.',
+      '33% This chance comes from past days like this. We look at districts near Shawnee Mission. Those are days with no winter warning or advisory. 1 in 3 of those days had no school.',
     ]);
     // The pipeline states the days a snow line is weighed against; the base's kind does not
     // decide it (a day-after base over a storm's days still says "most storms").
@@ -610,8 +607,8 @@ describe('what the section leaves out', () => {
       ],
     };
     expect(lines(why({ ...A_DETAIL, record: null, why: light }, 0.53))).toEqual([
-      '74% Districts across the country closed or went remote on more than 7 in 10 of their recorded days like this.',
-      `${MINUS}21 Lighter than most advisory days, 0 to 1 inch.`,
+      '74% This chance comes from past days like this. We look at districts across the country. Those are days with no winter warning or advisory. More than 7 in 10 of those days had no school.',
+      `${MINUS}21 The forecast has 0 to 1 inch of snow. That is less than most winter advisory days bring. So the chance goes down.`,
     ]);
     const after: WhyDetail = {
       base: { kind: 'day_after', points: 60, live: false },
@@ -629,7 +626,9 @@ describe('what the section leaves out', () => {
     };
     expect(
       lines(why({ ...A_DETAIL, record: null, why: after }, 0.72)).some((line) =>
-        line.endsWith('The forecast has 9 to 12 inches overnight, more than most storms.'),
+        line.includes(
+          'The forecast has 9 to 12 inches of snow overnight. That is more than most storms bring.',
+        ),
       ),
     ).toBe(true);
   });
@@ -664,32 +663,32 @@ describe('what the section leaves out', () => {
         at: issued,
       }) as const;
     expect(said([snow(0, 0.5, false, -36)], 0.38)).toEqual([
-      `${MINUS}36 The forecast has 0 to 0.5 inches by 12${NBSP}PM, lighter than most advisory days.`,
+      `${MINUS}36 The forecast has 0 to 0.5 inches of snow by noon. That is less than most winter advisory days bring. So the chance goes down.`,
     ]);
     expect(said([snow(0, 0, false, -36)], 0.38)).toEqual([
-      `${MINUS}36 The forecast has no new snow by 12${NBSP}PM, lighter than most advisory days.`,
+      `${MINUS}36 The forecast has no new snow by noon. That is less than most winter advisory days bring. So the chance goes down.`,
     ]);
     expect(said([snow(6, 9, true, 1)], 0.75)).toEqual([
-      `+1 The forecast has 6 to 9 inches overnight, more than most advisory days.`,
+      '+1 The forecast has 6 to 9 inches of snow overnight. That is more than most winter advisory days bring. So the chance goes up.',
     ]);
     // The ice falls by the window's end, which can be after the buses (B2b).
     expect(said([{ kind: 'ice', points: 25, inches: 0.2, at: issued }], 0.99)).toEqual([
-      `+25 The forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
+      '+25 The forecast has freezing rain by noon. It leaves 0.2 inches of ice. So the chance goes up.',
     ]);
     expect(said([{ kind: 'wind_chill', points: 5, feelsLike: -4, at: issued }], 0.79)).toEqual([
-      `+5 The forecast has a wind chill of ${MINUS}4${NBSP}F at the bus stop.`,
+      '+5 It will feel like 4 degrees below zero at the bus stop. So the chance goes up.',
     ]);
     // A deciding school's forecast leaves the range: only the comparison, whatever the chart.
     expect(said([snow(null, null, false, -34)], 0.4)).toEqual([
-      `${MINUS}34 The forecast has less snow by 12${NBSP}PM than most advisory days.`,
+      `${MINUS}34 The forecast has less snow by noon than most winter advisory days. So the chance goes down.`,
     ]);
     expect(said([{ kind: 'ice', points: 25, inches: null, at: issued }], 0.99)).toEqual([
-      `+25 The forecast has freezing rain by 12${NBSP}PM.`,
+      '+25 The forecast has freezing rain by noon. So the chance goes up.',
     ]);
     // A snow line whose deciding schools' snow lies on both sides of the usual (SF-R4-1):
     // the range alone, never a comparison one of them contradicts.
     expect(said([{ ...snow(0, 6, false, -6), against: 'none' }], 0.68)).toEqual([
-      `${MINUS}6 The forecast has 0 to 6 inches by 12${NBSP}PM.`,
+      `${MINUS}6 The forecast has 0 to 6 inches of snow by noon. So the chance goes down.`,
     ]);
     // Snow in hours that are not the heaviest snow's (the forecast adjustment's timing line).
     expect(
@@ -704,7 +703,9 @@ describe('what the section leaves out', () => {
         ],
         0.77,
       ),
-    ).toEqual([`+3 The forecast has snow 12 to 6${NBSP}AM, just before the buses.`]);
+    ).toEqual([
+      `+3 Snow falls from 12 to 6${NBSP}AM. That is just before the buses go out. So the chance goes up.`,
+    ]);
     // At 6 AM the panel never says when the forecast was issued, neither its time nor its day
     // (the owner's ruling, Nov 1: no "Last night's forecast"): every line is "The forecast has",
     // as the evening it was issued.
@@ -728,22 +729,22 @@ describe('what the section leaves out', () => {
     const iced = { kind: 'ice', points: 22, inches: 0.2, at: issued } as const;
     const morning = panel(sixAm, [iced, hours], 0.99);
     expect(morning).toEqual([
-      `+22 The forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
-      `+3 The forecast has snow 12 to 6${NBSP}AM, just before the buses.`,
+      '+22 The forecast has freezing rain by noon. It leaves 0.2 inches of ice. So the chance goes up.',
+      `+3 Snow falls from 12 to 6${NBSP}AM. That is just before the buses go out. So the chance goes up.`,
     ]);
     expect(panel(sixAm, [snow(4, 6, false, 25)], 0.99)).toEqual([
-      `+25 The forecast has 4 to 6 inches by 12${NBSP}PM, more than most advisory days.`,
+      '+25 The forecast has 4 to 6 inches of snow by noon. That is more than most winter advisory days bring. So the chance goes up.',
     ]);
     for (const line of morning) {
       expect(line).not.toMatch(/\d:\d\d|night’s|Yesterday’s|day’s forecast/u);
     }
     // The evening it was issued, the same lines.
     expect(panel(A_NOW, [iced, hours], 0.99)).toEqual([
-      `+22 The forecast has freezing rain leaving 0.2 inches of ice by 12${NBSP}PM.`,
-      `+3 The forecast has snow 12 to 6${NBSP}AM, just before the buses.`,
+      '+22 The forecast has freezing rain by noon. It leaves 0.2 inches of ice. So the chance goes up.',
+      `+3 Snow falls from 12 to 6${NBSP}AM. That is just before the buses go out. So the chance goes up.`,
     ]);
     expect(said([{ kind: 'wind_chill', points: 5, feelsLike: null, at: issued }], 0.79)).toEqual([
-      `+5 The forecast has a wind chill at the bus stop.`,
+      '+5 It will be cold at the bus stop. So the chance goes up.',
     ]);
   });
 
@@ -775,12 +776,12 @@ describe('what the section leaves out', () => {
       ...args,
     });
     expect(lines(counted).slice(1, 3)).toEqual([
-      '+12 The forecast has 6 to 9 inches overnight, more than most storms.',
-      '+4 Shawnee Mission closed 4 of the last 5 times it got 6 inches or more.',
+      '+12 The forecast has 6 to 9 inches of snow overnight. That is more than most storms bring. So the chance goes up.',
+      '+4 We looked at Shawnee Mission’s last 5 days with 6 inches of snow or more. It closed on 4 of them. So the chance goes up.',
     ]);
     // The directory not read (yet): the districts next door by how many.
     const unnamed = whyView({ detail: A_DETAIL, chance: 0.64, nameOf: () => null, ...args });
-    expect(unnamed?.lines[1]?.text).toBe('2 districts next door canceled.');
+    expect(unnamed?.rows[2]?.text).toBe('2 districts next door closed. So the chance goes up.');
   });
 });
 
@@ -889,11 +890,11 @@ describe('the timeline', () => {
     ]);
     expect(timeline(one)).toEqual(['Olathe canceled Tuesday']);
     // The sum's reason has Blue Valley canceled: with its schools apart, what it did goes unsaid.
-    expect(chanceView(nightBefore({ closings: delayedThenClosed }))?.why?.lines[1]?.text).toBe(
-      'Districts next door posted.',
+    expect(chanceView(nightBefore({ closings: delayedThenClosed }))?.why?.rows[2]?.text).toBe(
+      'Districts next door posted about school. So the chance goes up.',
     );
-    expect(chanceView(nightBefore({ closings: one }))?.why?.lines[1]?.text).toBe(
-      'Districts next door posted.',
+    expect(chanceView(nightBefore({ closings: one }))?.why?.rows[2]?.text).toBe(
+      'Districts next door posted about school. So the chance goes up.',
     );
   });
 
@@ -930,8 +931,8 @@ describe('the timeline', () => {
       at: null,
     });
     expect(timedTimeline(untimed)).toEqual([`8:52${NBSP}PM Olathe canceled Tuesday`]);
-    expect(chanceView(nightBefore({ closings: untimed }))?.why?.lines[1]?.text).toBe(
-      'Blue Valley and Olathe, next door, canceled.',
+    expect(chanceView(nightBefore({ closings: untimed }))?.why?.rows[2]?.text).toBe(
+      'Next door, Blue Valley and Olathe closed. So the chance goes up.',
     );
   });
 
@@ -990,9 +991,9 @@ describe('the timeline', () => {
     expect(bare?.countdown(at('2026-01-13T11:30:00Z'), A_NOW)).toBe('in 8h 25m');
     // Without the chart, the sum says the numbers it would have said.
     expect(lines(bare?.why ?? null).slice(1, 4)).toEqual([
-      '+16 The forecast has 6 to 9 inches overnight, more than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
-      '+9 Districts next door canceled.',
-      `+7 The forecast has the heaviest snow 2 to 5${NBSP}AM, just before the buses.`,
+      '+16 The forecast has 6 to 9 inches of snow overnight. That is more than most storms bring. We looked at its last 5 days with 6 inches of snow or more. It closed on 4 of them. So the chance goes up.',
+      '+9 Districts next door closed. So the chance goes up.',
+      `+7 The heaviest snow falls from 2 to 5${NBSP}AM. That is just before the buses go out. So the chance goes up.`,
     ]);
     // From its buses at 7 AM (before 7:30) the day is under way: no section, so no
     // announcement to say.
@@ -1048,12 +1049,14 @@ describe('the timeline', () => {
       },
     };
     expect(lines(chanceView(nightBefore({ outlook: nightOutlook(more) }))?.why ?? null)[1]).toBe(
-      '+16 The forecast has 8 to 12 inches overnight, more than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
+      '+16 The forecast has 8 to 12 inches of snow overnight. That is more than most storms bring. We looked at its last 5 days with 6 inches of snow or more. It closed on 4 of them. So the chance goes up.',
     );
     // The districts next door not on the timeline (no live file): named in the sum.
     const unlisted = chanceView(nightBefore({ closings: null }));
     expect(unlisted?.moments).toEqual([]);
-    expect(unlisted?.why?.lines[1]?.text).toBe('Blue Valley and Olathe, next door, canceled.');
+    expect(unlisted?.why?.rows[2]?.text).toBe(
+      'Next door, Blue Valley and Olathe closed. So the chance goes up.',
+    );
     // Only one of them on the timeline: the sum still names both, or Blue Valley would go unsaid.
     const one: ClosingsFile = {
       ...A_CLOSINGS,
@@ -1061,7 +1064,9 @@ describe('the timeline', () => {
     };
     const partly = chanceView(nightBefore({ closings: one }));
     expect(partly?.moments.map((moment) => moment.text)).toEqual(['Olathe canceled Tuesday']);
-    expect(partly?.why?.lines[1]?.text).toBe('Blue Valley and Olathe, next door, canceled.');
+    expect(partly?.why?.rows[2]?.text).toBe(
+      'Next door, Blue Valley and Olathe closed. So the chance goes up.',
+    );
     // Both on it, but having gone remote rather than canceled: the sum leaves out what they
     // did, rather than say it two ways.
     const remote: ClosingsFile = {
@@ -1073,7 +1078,9 @@ describe('the timeline', () => {
       'Blue Valley is remote Tuesday',
       'Olathe is remote Tuesday',
     ]);
-    expect(other?.why?.lines[1]?.text).toBe('Districts next door posted.');
+    expect(other?.why?.rows[2]?.text).toBe(
+      'Districts next door posted about school. So the chance goes up.',
+    );
     // One of them gone remote, the other not listed: still not said two ways.
     const mixed: ClosingsFile = {
       ...A_CLOSINGS,
@@ -1083,11 +1090,13 @@ describe('the timeline', () => {
         announced: [null, null, 8, null],
       })),
     };
-    expect(chanceView(nightBefore({ closings: mixed }))?.why?.lines[1]?.text).toBe(
-      'Districts next door posted.',
+    expect(chanceView(nightBefore({ closings: mixed }))?.why?.rows[2]?.text).toBe(
+      'Districts next door posted about school. So the chance goes up.',
     );
     // Both on it, canceled: the timeline names them, the sum only the reason.
-    expect(chanceView(nightBefore())?.why?.lines[1]?.text).toBe('Districts next door canceled.');
+    expect(chanceView(nightBefore())?.why?.rows[2]?.text).toBe(
+      'Districts next door closed. So the chance goes up.',
+    );
     // How cold it feels at the bus hour is not the reason's: both are said.
     const colder: ForecastDetail = {
       ...B_DETAIL,
@@ -1105,7 +1114,7 @@ describe('the timeline', () => {
     if (tomorrow?.state !== 'forecast' || B_OUTLOOK === null) throw new Error('no forecast');
     const outlook: Outlook = { ...B_OUTLOOK, tomorrow: { ...tomorrow, detail: colder } };
     expect(lines(chanceView(nextMorning({ outlook }))?.why ?? null)[2]).toBe(
-      `+6 The forecast has it feeling like ${MINUS}12${NBSP}F at the bus stop Wednesday morning.`,
+      '+6 It will feel like 12 degrees below zero at the bus stop Wednesday morning. So the chance goes up.',
     );
   });
 });
@@ -1512,9 +1521,9 @@ describe('districts next door, told apart', () => {
     const view = chanceView(
       nightBefore({ district: 'Teton County', state: 'ID', names, closings: null }),
     );
-    expect(view?.why?.base.text).toMatch(/^Teton County /);
-    expect(view?.why?.lines[1]?.text).toBe(
-      'Teton County in Wyoming and Olathe, next door, canceled.',
+    expect(view?.why?.rows[0]?.text).toMatch(/^This chance comes from Teton County’s /);
+    expect(view?.why?.rows[2]?.text).toBe(
+      'Next door, Teton County in Wyoming and Olathe closed. So the chance goes up.',
     );
     const listed = chanceView(nightBefore({ district: 'Teton County', state: 'ID', names }));
     expect(listed?.moments.map((moment) => moment.text)).toEqual([
@@ -1538,7 +1547,7 @@ describe('few local records', () => {
     expect(thin).toMatchObject({
       number: '64',
       meaning: 'Chance of no school Tuesday',
-      fewRecords: 'Few local records',
+      fewRecords: 'Not many past days like this nearby',
     });
     expect(thin?.fewRecords).toBe(chanceCopy.fewRecords);
     // Any alert class names its weather: an advisory's winter storm, a cold warning's cold.

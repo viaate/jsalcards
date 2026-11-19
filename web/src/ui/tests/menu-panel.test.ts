@@ -5,6 +5,7 @@ import { startLegal } from '../../app/legal';
 import type { MenuView } from '../../app/menu';
 import { STATUS_KEYS, copy } from '../../copy';
 import { format } from '../../copy-format';
+import { howCopy } from '../../copy-how';
 import { legalCopy } from '../../copy-legal';
 import type { StatusCounts } from '../../data/closings';
 import { SHOW_ALL, withKind, withStatus } from '../../state/filter';
@@ -422,10 +423,12 @@ describe('MenuPanel', () => {
       flushSync();
       const links = [...panel.querySelectorAll<HTMLAnchorElement>('section.page .legal-foot a')];
       expect(links.map((link) => link.textContent)).toEqual([
+        howCopy.title,
         legalCopy.pages.privacy.title,
         legalCopy.pages.terms.title,
       ]);
       expect(links.map((link) => link.href)).toEqual([
+        `${location.origin}/?ref=x&how`,
         `${location.origin}/?ref=x&privacy`,
         `${location.origin}/?ref=x&terms`,
       ]);
@@ -434,7 +437,7 @@ describe('MenuPanel', () => {
       ).toBe(true);
 
       // A press opens the page over the app, the menu closing with the keyboard back on its button.
-      links[0]?.click();
+      links[1]?.click();
       expect(onclose).toHaveBeenCalledExactlyOnceWith(true);
       expect(location.search).toBe('?ref=x&privacy');
       await vi.waitFor(() => {
@@ -446,7 +449,7 @@ describe('MenuPanel', () => {
       await vi.waitFor(() => {
         expect(app.querySelector('[role="dialog"]')).toBeNull();
       });
-      links[1]?.click();
+      links[2]?.click();
       expect(onclose).toHaveBeenLastCalledWith(true);
       expect(location.search).toBe('?ref=x&terms');
       await vi.waitFor(() => {

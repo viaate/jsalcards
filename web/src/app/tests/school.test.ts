@@ -1157,7 +1157,7 @@ describe('the chance section in the panel', () => {
     expect(view?.chance).toMatchObject({
       number: '45',
       meaning: 'Chance of no school Tuesday',
-      delay: '20% chance of a delayed start instead',
+      delay: '20% chance of a late start instead',
     });
     // A private school's own outlook (contract C3): its own chance, the same way.
     expect(schoolView(input({ outlook, now: evening }))?.chance).toMatchObject({
@@ -1386,13 +1386,13 @@ describe('the chance section in the panel', () => {
       'Maries County usually announces',
     ]);
     // The timeline names them, so the sum only names the reason.
-    expect(named?.why?.lines.map((line) => `${line.points} ${line.text}`)).toEqual([
-      '+15 Districts next door canceled.',
+    expect(named?.why?.rows.slice(1).map((row) => `${row.number} ${row.text}`)).toEqual([
+      '+15 Districts next door closed. So the chance goes up.',
     ]);
     // Before the directory came, the same sum, by how many.
     const first = views.find((view) => (view?.chance ?? null) !== null)?.chance;
     expect(first?.moments.map((moment) => moment.mark)).toEqual(['announces']);
-    expect(first?.why?.lines[0]?.text).toBe('2 districts next door canceled.');
+    expect(first?.why?.rows[1]?.text).toBe('2 districts next door closed. So the chance goes up.');
     expect(directory).toHaveBeenCalledTimes(1);
     expect(directory).toHaveBeenCalledWith(stamp);
     stop();

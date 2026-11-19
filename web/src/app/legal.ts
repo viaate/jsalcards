@@ -20,7 +20,7 @@ import { mount, unmount } from 'svelte';
 
 import type { LegalPageName } from '../copy-legal';
 
-const PAGES: readonly LegalPageName[] = ['privacy', 'terms'];
+const PAGES: readonly LegalPageName[] = ['privacy', 'terms', 'how'];
 
 /**
  * The events the links at the foot of Settings and of the menu's About page (ui/LegalLinks.svelte,
@@ -44,7 +44,7 @@ function partName(part: string): string | null {
   }
 }
 
-/** Which page the address asks for (?privacy, or ?terms), or null for neither. */
+/** Which page the address asks for (?privacy, ?terms or ?how), or null for none. */
 export function legalPageOf(search: string = location.search): LegalPageName | null {
   const names = search.replace(/^\?/u, '').split('&').map(partName);
   return PAGES.find((page) => names.includes(page)) ?? null;

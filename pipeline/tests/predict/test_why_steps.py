@@ -640,9 +640,10 @@ def test_the_standing_file_fits_its_budgets_at_its_widest() -> None:
 
 
 def _rule() -> str:
-    """OWN-rule's three forms, as the panel says them (web/src/copy-chance.ts recordRule)."""
-    words = (WEB / "copy-chance.ts").read_text()
-    found = re.search(r"\nfunction recordRule\(who: StepWho\): string \{\n(.*?)\n\}\n", words, re.S)
+    """The habit rule as the How Snowlight guesses page says it (web/src/copy-how.ts, the section
+    "A district's habit"): the panel itself leaves it there (WHY-PLAIN)."""
+    words = (WEB / "copy-how.ts").read_text()
+    found = re.search(r"section\('A district\u2019s habit', \[\n(.*?)\n    \]\)", words, re.S)
     assert found
     return found[1]
 
@@ -652,7 +653,8 @@ SHARE_WORDS = {0.5: "half", 0.1: "1 in 10"}
 
 
 def test_own_rule_says_what_the_labels_count() -> None:
-    """OWN-rule's words state ``labels.outcome_of``'s shares and ``weather_positive``'s reasons:
+    """The habit rule's words (the How page) state ``labels.outcome_of``'s shares and
+    ``weather_positive``'s reasons:
     no school at ``no_school_share`` closed or remote (25% closed + 25% remote + 50% late is no
     school), a late start at ``delayed_share`` (a named non-weather late start is left out),
     school only at most ``open_max_share`` lit with anything (an early dismissal included)."""
@@ -664,14 +666,13 @@ def test_own_rule_says_what_the_labels_count() -> None:
         SHARE_WORDS[round(settings.open_max_share, 2)],
     )
     for text in (
-        f"at least {closed} of its schools closed or remote, for the weather or with no reason "
-        "given",
-        f"at least {late} of its schools starting late, for the weather or with no reason given",
-        f"at most {open_} of its schools closed, remote, late or let out early, for any reason",
-        f"at least {closed} of its schools other than charter and virtual ones closed or remote",
-        f"at least {late} of them starting late, for the weather or with no reason given",
-        f"at most {open_} of them closed, remote, late or let out early, for any reason",
-        "with no closing, late start or early dismissal for any reason",
+        "For no school and late starts, we count only closings for the weather or with no "
+        "reason given.",
+        f"A day counts as no school when at least {closed} of its main schools were closed or "
+        "remote.",
+        f"It counts as a late start when at least {late} of them started late.",
+        f"It counts as school when at most {open_} of them were closed, remote, late or let out "
+        "early. Here any reason counts.",
         "Other days are left out.",
     ):
         assert text in rule, text
@@ -704,29 +705,26 @@ def test_own_rule_says_what_the_labels_count() -> None:
 
 
 def test_the_rule_numbers_the_steps_state_are_the_config_s() -> None:
-    """Each fixed number a step's words state is the setting the model uses."""
-    words = (WEB / "copy-chance.ts").read_text()
+    """Each fixed number the words state is the setting the model uses. The panel states none
+    of them since WHY-PLAIN; the How Snowlight guesses page (web/src/copy-how.ts) states these,
+    and no longer states the usual snow's cap, the class plausibility numbers or the region's
+    share in numbers (lead ruling on SPEC WHY-PLAIN r2)."""
+    words = (WEB / "copy-how.ts").read_text()
     adjust = fa.AdjustSettings.of(CONFIG)
     plausible = an.AnchorSettings.of(CONFIG).plausibility
     zero_at = adjust.chill_from - adjust.chill_max / adjust.chill_per_degree
     for setting, text in (
-        (adjust.shrink_days, "and {} more mixed like"),
-        (adjust.usual_max, "up to {} inches"),
-        (CONFIG.serve.elevation_margin_feet, "within {} feet of those heights"),
-        (adjust.chill_from, "Each degree under {} F adds the same small amount"),
-        (zero_at, "down to {} F. Colder than that adds no more."),
-        (adjust.ice_snow * 0.1, "each 0.1 inch of ice like {} inches of snow"),
-        (plausible.advisory_mean, "no school on more than {} school day with a winter advisory"),
-        (plausible.advisory_p99, "no school on more than {} school days with a winter advisory"),
-        (plausible.advisory_warning_mean, "no school on more than {} school days with a winter "
-         "advisory or storm warning"),
-        (plausible.district_max, "more than {} alert days a winter"),
-        (plausible.district_max, "more than {} days with no school a winter"),
+        (adjust.shrink_days, "We add {} days from its county or part of the country"),
+        (CONFIG.serve.elevation_margin_feet, "at schools up to {} feet below"),
+        (adjust.chill_from, "Each degree under {} degrees at 7 AM adds a bit"),
+        (zero_at, "down to {} degrees."),
+        (adjust.ice_snow * 0.1, "Each 0.1 inch of ice counts like {} inches of snow."),
+        (plausible.district_max, "add up to more than {} days off a winter"),
     ):  # fmt: skip
         shown = f"{round(setting, 6):g}"
         assert text.format(shown) in words, text.format(shown)
-    assert an.AnchorSettings.of(CONFIG).delta_strength == 0.5  # "We count half of that difference"
-    assert "We count half of that difference" in words
+    assert adjust.snow_amount_floor_ratio == 3.0  # "It is never under a third of the usual amount."
+    assert "It is never under a third of the usual amount." in words
 
 
 def test_a_shown_usual_snow_weighs_even_snow_at_one(model: ServeModel) -> None:

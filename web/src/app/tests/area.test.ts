@@ -1325,9 +1325,11 @@ describe('few local records over an area', () => {
     const one: AreaRecord = { ...AREA, own: AREA.own.slice(0, 2), near: [] };
     const alone = chanceOf(predictions(thin(0.74), forecast(0.31)), one);
     expect(alone?.number).toBe('74');
-    expect(alone?.fewRecords).toBe('Few local records');
+    expect(alone?.fewRecords).toBe('Not many past days like this nearby');
     // Two districts, each the nation's record for want of local days.
-    expect(chanceOf(predictions(thin(0.74), thin(0.74)))?.fewRecords).toBe('Few local records');
+    expect(chanceOf(predictions(thin(0.74), thin(0.74)))?.fewRecords).toBe(
+      'Not many past days like this nearby',
+    );
   });
 
   it('says nothing where any part of the number is not a few-local-records chance', () => {

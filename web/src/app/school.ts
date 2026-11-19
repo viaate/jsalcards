@@ -797,11 +797,14 @@ export function schoolView(input: ViewInput): SchoolView | null {
   };
 }
 
-/** Whether a school's outlook shows a storm-class day, whose why the standing file steps. */
+/**
+ * Whether a school's outlook shows a day with a why, which the standing file completes: a
+ * storm-class day's rows, and every day's habit box (WHY-PLAIN).
+ */
 function classDay(outlook: Outlook): boolean {
   if (outlook === null) return false;
   return [outlook.today, outlook.tomorrow].some(
-    (day) => day?.state === 'forecast' && day.detail?.why?.base.kind === 'class',
+    (day) => day?.state === 'forecast' && (day.detail?.why ?? null) !== null,
   );
 }
 
@@ -1001,7 +1004,7 @@ export function watchSchool(options: WatchOptions): () => void {
       season,
     });
     onView(view);
-    // A storm-class day's steps: the standing file its predictions file names, read once.
+    // A day's why: the standing file its predictions file names, read once.
     const named = live.predictions?.standing ?? null;
     if (
       replay === null &&

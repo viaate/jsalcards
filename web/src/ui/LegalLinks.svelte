@@ -7,13 +7,14 @@
      * here, the keyboard back on its button, so closing the page brings the keyboard back there.
      */
     onopen?: () => void;
+    /** The pages linked, in the order they show: the privacy policy and the terms of use, or
+     * with "How Snowlight guesses" first (the menu's About page), or that page alone (a why). */
+    pages?: readonly LegalLink[];
   }
 
-  let { onopen = () => undefined }: Props = $props();
+  type LegalLink = 'privacy' | 'terms' | 'how';
 
-  /** The pages linked, in the order they show. */
-  const LEGAL_PAGES = ['privacy', 'terms'] as const;
-  type LegalLink = (typeof LEGAL_PAGES)[number];
+  let { onopen = () => undefined, pages = ['privacy', 'terms'] }: Props = $props();
 
   // The events app/legal.ts hears (LEGAL_EVENT, LEGAL_HREF_EVENT there): events, not an import,
   // so the code that shows these links and the page's first script carry none of the pages' code.
@@ -55,7 +56,7 @@
   the menu's About page (ui/MenuPanel.svelte), where a visitor who is not logged in finds them.
 -->
 <p class="legal">
-  {#each LEGAL_PAGES as page, index (page)}
+  {#each pages as page, index (page)}
     {#if index > 0}<span aria-hidden="true">·</span>{/if}
     <a
       href={legalLinkHref(page)}

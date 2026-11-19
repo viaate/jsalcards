@@ -27,4 +27,6 @@ function deepFreeze<T>(value: T): T {
 export const legalLinksCopy = /* @__PURE__ */ deepFreeze({
   privacy: 'Privacy policy',
   terms: 'Terms of use',
+  /** The page "How Snowlight guesses" (copy-how.ts), from About and from a school's why. */
+  how: 'How Snowlight guesses',
 });

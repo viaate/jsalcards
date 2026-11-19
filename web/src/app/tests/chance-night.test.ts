@@ -251,7 +251,7 @@ describe('one night, one source (critic r3 S3, S4)', () => {
     const view = chanceView(input({}, detail({ why, busesAt: at('2026-01-13T13:00:00Z') })));
     expect(view?.chart?.night).toBe(true);
     expect(view?.chart?.key.some((row) => row.mark === 'heavy')).toBe(true);
-    expect(view?.why?.lines[0]?.text).toMatch(/^The forecast has the heaviest snow 2 to 5/u);
+    expect(view?.why?.rows[1]?.text).toMatch(/^The heaviest snow falls from 2 to 5/u);
   });
 });
 
@@ -312,21 +312,21 @@ describe('the snow reason beside a night chart', () => {
   it('states no amount while the night chart shows', () => {
     const view = chanceView(input());
     expect(view?.chart?.night).toBe(true);
-    expect(view?.why?.lines.map((line) => line.text)).toEqual([
-      `The forecast has more snow by 12${NBSP}PM than most storms.`,
+    expect(view?.why?.rows.slice(1).map((row) => row.text)).toEqual([
+      'The forecast has more snow by noon than most storms. So the chance goes up.',
     ]);
   });
 
   it('states its amount when there is no night chart', () => {
     const view = chanceView(input({}, detail({ night: null })));
     expect(view?.chart).toBeNull();
-    expect(view?.why?.lines[0]?.text).toContain(`6 to 8 inches`);
+    expect(view?.why?.rows[1]?.text).toContain(`6 to 8 inches`);
   });
 
   it('states its amount once the night chart is gone', () => {
     const view = chanceView(input({ now: at('2026-01-13T05:00:00Z') }));
     expect(view?.chart).toBeNull();
-    expect(view?.why?.lines[0]?.text).toContain(`6 to 8 inches`);
+    expect(view?.why?.rows[1]?.text).toContain(`6 to 8 inches`);
   });
 });
 

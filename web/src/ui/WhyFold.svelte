@@ -1,22 +1,19 @@
 <script module lang="ts">
-  /** Each fold's ids on the page, so a button names its own help and sentence. */
+  /** Each fold's ids on the page, so a button names its own list. */
   let made = 0;
 </script>
 
 <script lang="ts">
+  import type { PartView } from '../app/steps';
+
   interface Props {
-    /** The step's one sentence, always shown. */
-    text: string;
-    /** The button's words: "How this step works". */
+    /** The button's words: "See each part". */
     label: string;
-    /** What the fold opens to, in place under the button. */
-    help: readonly string[];
-    /** What this button is for, said after its words to a screen reader alone ("for the
-     * snow"), so no two buttons in a panel share a name. */
-    name?: string;
+    /** Each part the row adds, then the row's total, in place under the button when open. */
+    parts: readonly PartView[];
   }
 
-  let { text, label, help, name = '' }: Props = $props();
+  let { label, parts }: Props = $props();
 
   made += 1;
   const id = `why-fold-${String(made)}`;
@@ -24,43 +21,36 @@
   let open = $state(false);
 </script>
 
-<!-- The button follows the sentence on its line (WHY-TRANSPARENT: the panel's height at 390 px). -->
-<p class="said">
-  <span id="{id}-text">{text}</span>{#if help.length > 0}<button
-      type="button"
-      class="fold"
-      aria-expanded={open}
-      aria-controls="{id}-help"
-      aria-describedby="{id}-text"
-      onclick={() => {
-        open = !open;
-      }}
-    >
-      <svg
-        class="chevron"
-        class:is-open={open}
-        viewBox="0 0 12 12"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <path d="M3 4.5l3 3 3-3" />
-      </svg>
-      {label}{#if name !== ''}<span class="sr-only">{` ${name}`}</span>{/if}
-    </button>{/if}
-</p>
-{#if help.length > 0}
-  <div class="fold-help" id="{id}-help" hidden={!open}>
-    {#each help as line, i (i)}
-      <p class="help">{line}</p>
-    {/each}
-  </div>
-{/if}
+<!-- WHY-PLAIN: the one fold, under a row that joins more than one published amount. -->
+<button
+  type="button"
+  class="fold"
+  aria-expanded={open}
+  aria-controls="{id}-parts"
+  onclick={() => {
+    open = !open;
+  }}
+>
+  <svg
+    class="chevron"
+    class:is-open={open}
+    viewBox="0 0 12 12"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path d="M3 4.5l3 3 3-3" />
+  </svg>
+  {label}
+</button>
+<ul class="fold-help" id="{id}-parts" hidden={!open}>
+  {#each parts as part, i (i)}
+    <li class="part" class:is-sum={i === parts.length - 1}>
+      <span class="part-label">{part.label}</span><span class="part-num">{part.number}</span>
+    </li>
+  {/each}
+</ul>
 
 <style>
-  p {
-    margin: 0;
-  }
-
   /* The fold's button: the help's colour, a 28px target, a chevron that turns when open. */
   .fold {
     display: inline-flex;
@@ -68,7 +58,7 @@
     vertical-align: baseline;
     gap: 4px;
     min-height: 24px;
-    margin: 0 0 0 8px;
+    margin: 4px 0 0;
     padding: 2px 0;
     border: 0;
     background: none;
@@ -110,15 +100,29 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* A part and its amount, on one line; the row's total last, over a hairline. */
+  .part {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font: var(--type-small);
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .part.is-sum {
+    padding-top: 4px;
+    border-top: 1px solid var(--border-1);
+    color: var(--text-1);
   }
 
   /* Closed: gone, whatever the display above says (the hidden attribute alone loses to it). */
   .fold-help[hidden] {
     display: none;
-  }
-
-  .help {
-    font: var(--type-small);
-    color: var(--text-2);
   }
 </style>

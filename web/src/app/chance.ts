@@ -30,7 +30,7 @@ import { STATUS_KEYS } from '../copy';
 import { format } from '../copy-format';
 import type { StatusKey } from '../copy';
 import { chanceCopy, chanceFormat, localHour } from '../copy-chance';
-import type { BaseInput, ReasonInput, RecordCount, Zones } from '../copy-chance';
+import type { ReasonInput, RecordCount, Zones } from '../copy-chance';
 import { decodeDay } from '../data/closings';
 import { NO_DETAIL } from '../data/forecast-detail';
 import { nightShows, nightUntil } from '../data/night';
@@ -45,7 +45,7 @@ import type {
 import type { DayOutlook, Outlook } from '../data/school-day';
 import { parseInstant } from '../state/instant';
 import { stepsView } from './steps';
-import type { StepsSource, StepsView } from './steps';
+import type { PlainWhyView, StepsSource } from './steps';
 import { districtName } from '../text/district-names';
 import type { ClosingsFile, DirectoryStamp, LocalDate } from '../types/generated';
 
@@ -204,28 +204,11 @@ export interface ChartView {
   readonly until: Date | null;
 }
 
-export interface WhyLineView {
-  readonly key: string;
-  /** "+16", "−3". */
-  readonly points: string;
-  /** "Blue Valley and Olathe, next door, canceled." */
-  readonly text: string;
-  /** A line under it that says what it counted (the outlook's cases), or none. */
-  readonly help?: string;
-}
-
-export interface WhyView {
-  /** "How we got 64%". */
-  readonly title: string;
-  /** Where the sum starts: "30", and the district's own rate in a sentence. */
-  readonly base: { readonly number: string; readonly text: string };
-  readonly lines: readonly WhyLineView[];
-  /**
-   * On a storm-class day whose standing file is read (WHY-TRANSPARENT): the record note first,
-   * then every step with its points and its folded details, in place of `base` and `lines`.
-   */
-  readonly steps?: StepsView | null;
-}
+/**
+ * The why in plain words (WHY-PLAIN, app/steps.ts): the headline reason, "Why 22%", the habit
+ * box, the rows that add up to the chance and the total line.
+ */
+export type WhyView = PlainWhyView;
 
 export interface ChanceView {
   /** The school's status lines, decided first: "Closed today". */
@@ -237,7 +220,7 @@ export interface ChanceView {
   /** "Chance of no school Tuesday". */
   readonly meaning: string;
   /**
-   * "Few local records", on its own line under the meaning, where the chance comes with a
+   * "Not many past days like this nearby", on its own line under the meaning, where the chance comes with a
    * weather alert and its base names the nation for want of the region's days
    * (`fewLocalRecords`); the number then shows lighter. Null otherwise, and for a file
    * without the flag.
@@ -247,7 +230,7 @@ export interface ChanceView {
   readonly moments: readonly MomentView[];
   readonly chart: ChartView | null;
   readonly why: WhyView | null;
-  /** "18% chance of a delayed start instead", or null. */
+  /** "18% chance of a late start instead", or null. */
   readonly delay: string | null;
   /**
    * The live countdown to a moment, as the clock reads `now`: "in 8h 25m",
@@ -1408,12 +1391,8 @@ export function whyView(input: {
   readonly said?: Said;
   /** The district's state ("KS"), for an outlook's share across its districts. */
   readonly state?: string | null;
-  /** The standing file and whose steps, on a storm-class day (WHY-TRANSPARENT). */
+  /** The standing file and whose it is (WHY-PLAIN): the habit box and the full rows. */
   readonly steps?: StepsSource | null;
-  /** The day's delay chance, for the delay line's fold. */
-  readonly delay?: number;
-  /** The panel shows the night chart (the forecast's fold says so). */
-  readonly nightChart?: boolean;
 }): WhyView | null {
   const { detail, chance, day, district, nameOf, now, zones } = input;
   const state = input.state ?? null;
@@ -1424,47 +1403,34 @@ export function whyView(input: {
   const parts = [why.base.points, ...why.reasons.map((reason) => reason.points)];
   if (!parts.every((part) => Number.isInteger(part))) return null;
   if (parts.reduce((sum, part) => sum + part, 0) !== percent) return null;
-  try {
-    const base: BaseInput = why.base;
-    const lines: WhyLineView[] = [];
-    for (const reason of why.reasons) {
+  // Each line in plain words, for the lines the plain rows do not word themselves.
+  const lines: (string | null)[] = [];
+  const helps: (string | undefined)[] = [];
+  for (const reason of why.reasons) {
+    try {
       const words = reasonInput(reason, detail, day, nameOf, said, {
         timeZone: zones.school,
         state,
       });
-      if (words === null) return null;
-      lines.push({
-        key: reason.kind,
-        points: chanceFormat.points(reason.points),
-        text: chanceFormat.reason(words, district, now, zones),
-        ...(words.kind === 'outlook' ? { help: chanceFormat.outlookHelp(words, zones) } : {}),
-      });
+      lines.push(words === null ? null : chanceFormat.plain.line(words, district, now, zones));
+      helps.push(
+        words?.kind === 'outlook' ? chanceFormat.plain.outlookHelp(words, zones) : undefined,
+      );
+    } catch {
+      lines.push(null);
+      helps.push(undefined);
     }
-    const source = input.steps ?? null;
-    const stepped =
-      source === null
-        ? null
-        : stepsView({
-            detail,
-            chance,
-            delay: input.delay ?? 0,
-            day,
-            district,
-            zones,
-            source,
-            nightChart: input.nightChart ?? false,
-            lines: lines.map((line) => line.text),
-          });
-    return {
-      title: chanceFormat.howWeGot(chance),
-      base: { number: String(why.base.points), text: chanceFormat.baseReason(base, district) },
-      lines,
-      steps: stepped,
-    };
-  } catch {
-    // A number the words refuse: no sum rather than a wrong one.
-    return null;
   }
+  return stepsView({
+    detail,
+    chance,
+    day,
+    district,
+    zones,
+    source: input.steps ?? null,
+    lines,
+    helps,
+  });
 }
 
 // The section -----------------------------------------------------------------------------
@@ -1563,8 +1529,6 @@ export function chanceView(input: ChanceInput): ChanceView | null {
         said,
         state,
         steps: input.steps ?? null,
-        delay: forecast.delay,
-        nightChart: night !== null,
       }),
       announces: (clock) => {
         if (announcement?.mark !== 'announces') return null;

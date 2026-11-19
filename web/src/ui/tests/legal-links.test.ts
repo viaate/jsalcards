@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { startLegal } from '../../app/legal';
 import { accountCopy } from '../../copy-account';
+import { howCopy } from '../../copy-how';
 import { legalCopy } from '../../copy-legal';
 import { legalLinksCopy } from '../../copy-legal-links';
 import LegalLinks from '../LegalLinks.svelte';
@@ -49,6 +50,7 @@ describe('LegalLinks', () => {
     expect(legalLinksCopy).toEqual({
       privacy: legalCopy.pages.privacy.title,
       terms: legalCopy.pages.terms.title,
+      how: howCopy.title,
     });
     // Neither is the Privacy row's name in Settings.
     expect(links.map((link) => link.textContent)).not.toContain(accountCopy.settings.privacyTitle);

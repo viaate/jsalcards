@@ -87,6 +87,7 @@ export const COPY_MODULES = [
   'src/copy.ts',
   'src/copy-format.ts',
   'src/copy-chance.ts',
+  'src/copy-how.ts',
   'src/copy-area.ts',
   'src/copy-account.ts',
   'src/copy-notify.ts',

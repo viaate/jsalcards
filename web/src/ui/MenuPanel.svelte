@@ -404,9 +404,11 @@
         {/if}
 
         {#if page === 'about'}
-          <!-- The privacy policy and the terms of use, for every visitor: opening one closes the menu. -->
+          <!-- How Snowlight guesses, the privacy policy and the terms of use, for every visitor:
+               opening one closes the menu. -->
           <div class="legal-foot">
             <LegalLinks
+              pages={['how', 'privacy', 'terms']}
               onopen={() => {
                 onclose(true);
               }}

@@ -38,7 +38,10 @@ export interface LegalDocument {
 }
 
 /** The two pages, by the name the address gives them (?privacy, ?terms). */
-export type LegalPageName = 'privacy' | 'terms';
+export type LegalDocName = 'privacy' | 'terms';
+
+/** Every page the shell shows, by its address: the two above and ?how (copy-how.ts). */
+export type LegalPageName = LegalDocName | 'how';
 
 /** Recursively freezes an object graph so no string can be changed at runtime. */
 function deepFreeze<T>(value: T): T {
@@ -328,5 +331,5 @@ const terms: LegalDocument = {
 };
 
 export const legalCopy = /* @__PURE__ */ deepFreeze({
-  pages: { privacy, terms } satisfies Record<LegalPageName, LegalDocument>,
+  pages: { privacy, terms } satisfies Record<LegalDocName, LegalDocument>,
 });

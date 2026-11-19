@@ -1387,12 +1387,59 @@ the new `LIVE_SCORE_SHA256`, as it did on the snow amount term's switch night: n
 stale state (it is the same snapshot's chance), but rows kept across the switch carry L5's timing,
 which a refit can leave out.
 
-## The why, step by step (WHY-TRANSPARENT: storm-class days)
+## The why, step by step (WHY-PLAIN: in plain words)
 
-On an advisory, warning or cold class day, the school panel's "How we got N%" shows the
-district's own record first, then every step the chance took with its points, each step one
-sentence with its details folded under "How this step works" (closed every time a panel opens,
-never stored). Pooled days keep their words (POOLED-WHY). The steps are built from two files:
+The school panel explains each chance for middle schoolers and parents (WHY-PLAIN, owner Nov 19,
+replacing WHY-TRANSPARENT's step folds). It never changes a chance: every number it shows is a
+published field. Top to bottom: the chance and its day; one plain reason (the headline); the
+late-start line; "Why N%"; the habit box; at most four rows that add up to the chance; the
+total line ("= 22%", "Add these up and you get 22%.") with 2 or more rows; the link to the page
+"How Snowlight guesses" (`?how`, web/src/copy-how.ts); then the evening's timeline and the night
+chart, so the chart never pushes the why down. The words are web/src/copy-chance.ts
+`chanceFormat.plain`; web/src/app/steps.ts builds the view.
+
+* **The headline** is the published part that moved the chance most, up or down (largest
+  absolute amount; ties in this order): the standing part, the region part, the held parts
+  together, snow, ice, cold, said open. Its sentence follows that part's own sign; "more (or
+  fewer) than a typical district" follows the district's days a winter against `ref`. Every part
+  0: "A winter storm warning is out for Thursday. That sets this chance." Ordinary days say how
+  often schools close on days like this, by the published base.
+* **The habit box**, titled "Does {district} close easily or hold out?", reads the standing
+  file's `record` for the kind of day the chance is counted over: the day's class, or on an
+  ordinary day the class of the base's alert or weather (storm warnings where it names none).
+  Under 5 days: "We do not know yet." With 5 or more, the district's closings are compared with
+  the other districts' in the same lists (`record_sum` less its own days) by a one-sided exact
+  binomial at 1 in 20, and the box says it as the test measures it, closings only (a late start
+  counts as not closed): "It tends to close easily. It closes on winter advisory days more
+  often than other districts do.", "It tends to hold out. It closes on ... less often ..." or
+  "It is about like most districts.", then the counts, then what the others did ("Other districts closed on more
+  than 19 in 20 of theirs."), so the counts and the verdict agree on the page. It ends with
+  whether the habit changed today's chance: it does not on a storm day (the own part is in shadow)
+  or a pooled day; an ordinary day counted over no alert days says the chance does not come from
+  storm warning days; an own base of an alert or a weather (`alert`, or `similar_days` naming a
+  weather) shows that kind's counts and says "Today's chance comes from what it did on days like
+  those."
+* **The rows**: the start (`levels.now`, and `prior` where it moved); the place (standing,
+  region and held parts summed, with "also" or "But" by the region part's sign against the
+  standing part's, and "So the chance goes down/up" by the row's sum); the forecast. At `held`
+  "low" or "floor" the ice and cold join the snow row and its amount is their published sum; at
+  "low" no joined part is said to add and no part is listed. Otherwise ice joins only when snow,
+  ice and cold are all published, and a part under 1% joins with "adds less than 1%". A row that
+  joins more than one published amount has the one fold, "See each part", closed every time,
+  never stored. Every other line (timing, snow hours, neighbors, the bus hour timing's lines, a
+  private school's or an ordinary day's lines, an outlook and what it counted) is its own row in
+  plain words (`chanceFormat.plain.line`), degrees said in words, its way up or down said last;
+  where the chart or the timeline already gives its numbers, it names itself without them.
+* **The fallback**: with no standing file, a stamp or directory mismatch, or rows that would not
+  add, the start row is the published base ("For {district}, days like that start at 31%."), the
+  forecast rows follow without the usual snow, and the habit box says it cannot show the habit.
+  Where neither adds to the chance, the panel shows no why. The standing file is read on any day
+  with a why, so ordinary days get their habit box too.
+* **Shares at the ends**: a published 1% base is a record under 1 in 20 with no school
+  (`almost_share`), so the row says "Fewer than 1 in 20 of them had no school." (99%: "More than
+  19 in 20").
+
+The steps are built from two files:
 
 * `predictions/latest.json`: each district's advisory or warning class day says what its
   forecast step read in its `why`. `fc` where the forecast is not in the chance: 0 before its

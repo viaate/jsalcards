@@ -157,15 +157,15 @@ describe('the outlook golden', () => {
             state: entry.district === 0 ? 'KS' : 'MO',
           });
           expect(view).not.toBeNull();
-          const line = view?.lines[0];
+          const line = view?.rows.find((row) => row.key.endsWith('-outlook'));
           expect(line?.text).toMatch(
             new RegExp(
-              `^No winter storm warning, winter advisory or winter storm watch covers half of Olathe’s schools yet, but the forecast has 6 to [89] inches of snow at Olathe’s schools by 12${NBSP}PM [A-Z][a-z]+day\\. Across (Kansas|Missouri) districts, in [34] of 5 cases like this, a winter (storm warning|advisory) was out by 5${NBSP}AM\\.$`,
+              `^Most of Olathe’s schools have no winter warning, advisory or watch yet\\. The forecast has 6 to [89] inches of snow at its schools\\. That much falls by noon [A-Z][a-z]+day\\. We looked at past times like this in (Kansas|Missouri)\\. By 5${NBSP}AM, [34] in 5 had a winter (storm warning|advisory)\\. So the chance goes up\\.$`,
               'u',
             ),
           );
           expect(line?.help).toMatch(
-            /^A case is one district at one hour between 7:30 and 10:30 PM/,
+            /^Each time is one district at one hour\. The hour is between 7:30 and 10:30 PM/,
           );
         }
       });

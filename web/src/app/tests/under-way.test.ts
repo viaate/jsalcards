@@ -166,8 +166,8 @@ describe('a day under way on the school’s own clock', () => {
       day: '2026-10-29',
       number: '12',
       meaning: 'Chance of no school Thursday',
-      // How we got N% explains the day headlined, and no other.
-      why: { title: 'How we got 12%' },
+      // Why N% explains the day headlined, and no other.
+      why: { title: 'Why 12%' },
     });
     expect(JSON.stringify(view)).not.toMatch(/"93"|93%|Wednesday/);
   });

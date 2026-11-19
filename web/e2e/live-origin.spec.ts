@@ -1014,9 +1014,9 @@ for (const [device, options] of DEVICES) {
       const section = school.page.locator('aside.detail .chance');
       await expect(section.locator('.number')).toHaveText('37%', SETTLE);
       await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
-      await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.37));
+      await expect(section.locator('.why-title')).toHaveText(chanceFormat.plain.why(37));
       await expect(section.locator('.sum > li').first()).toContainText(
-        'recorded days with a winter storm warning',
+        'Those are days with a winter storm warning.',
       );
       expect(live.predictionReads).toBeGreaterThanOrEqual(1);
       expect(school.problems).toEqual([]);
@@ -1055,7 +1055,9 @@ for (const [device, options] of DEVICES) {
       await expect(section.locator('.few')).toHaveText(chanceCopy.fewRecords);
       await expect(section.locator('.meaning + .few')).toHaveCount(1);
       await expect(number).toHaveClass(/\bis-thin\b/u);
-      await expect(section.locator('.sum > li').first()).toContainText('winter advisory days');
+      await expect(section.locator('.sum > li').first()).toContainText(
+        'Those are days with a winter advisory.',
+      );
       expect(await colorOf(number)).toBe(GRAY);
       expect(school.problems).toEqual([]);
       await school.context.close();
@@ -1137,13 +1139,13 @@ for (const [device, options] of DEVICES) {
       const section = panel.locator('.chance');
       await expect(section.locator('.number')).toHaveText('42%', SETTLE);
       await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
-      await expect(section.locator('.why-title')).toHaveText(chanceFormat.howWeGot(0.42));
+      await expect(section.locator('.why-title')).toHaveText(chanceFormat.plain.why(42));
       // Its base counts private schools only, around its own name.
       await expect(section.locator('.sum > li').first()).toContainText(
-        `Private schools near ${PRIVATE.name}`,
+        'We look at private schools near it.',
       );
       await expect(section.locator('.sum > li').first()).toContainText(
-        'recorded days with a winter storm warning',
+        'Those are days with a winter storm warning.',
       );
       expect(school.problems).toEqual([]);
       await school.context.close();

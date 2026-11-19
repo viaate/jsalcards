@@ -1,3 +1,8 @@
+<script module lang="ts">
+  /** Each section's habit box on the page, so its group names its own title. */
+  let made = 0;
+</script>
+
 <script lang="ts">
   import { onMount } from 'svelte';
 
@@ -6,6 +11,7 @@
   import { copy } from '../copy';
   import { chanceCopy } from '../copy-chance';
   import ChanceChart from './ChanceChart.svelte';
+  import LegalLinks from './LegalLinks.svelte';
   import WhyFold from './WhyFold.svelte';
 
   interface Props {
@@ -13,6 +19,9 @@
   }
 
   let { chance }: Props = $props();
+
+  made += 1;
+  const habitId = `why-habit-${String(made)}`;
 
   /** The glyph's class for a status, as the legend draws each status. */
   const GLYPHS = {
@@ -82,13 +91,13 @@
 </script>
 
 <!--
-  The chance section (app/chance.ts): the school's status lines, decided
-  first; then the chance of no school as the headline, what moved it and the
-  chance of a delayed start instead; the evening's early signals (and when the
-  district usually announces, where the chart does not say it); the night hour
-  by hour; and how the chance adds up, always open. On the panel's own scale
-  and grid (DetailPanel.svelte): each part a section under one hairline, every
-  list two columns.
+  The chance section (app/chance.ts): the school's status lines, decided first; then the chance
+  of no school as the headline, the one plain reason for it and the chance of a late start
+  instead; then why, in plain words (WHY-PLAIN, app/steps.ts): "Why 22%", the district's habit
+  in a box, the rows that add up to the chance, the total and the link to "How Snowlight
+  guesses"; then the evening's early signals and the night hour by hour. The why comes first,
+  so the chart never pushes it down (lead ruling O6). On the panel's own scale and grid
+  (DetailPanel.svelte): each part a section under one hairline, every list two columns.
 -->
 
 <section class="chance" aria-labelledby="chance-meaning">
@@ -143,19 +152,53 @@
           {chance.moved.text}
         </p>
       {/if}
+      {#if parts.why !== null && parts.why.headline !== null}
+        <p class="reason">{parts.why.headline}</p>
+      {/if}
       {#if chance.delay !== null}
-        {@const delayHelp = parts.why?.steps?.delayHelp ?? null}
-        {#if delayHelp !== null}
-          <div class="delay">
-            <WhyFold text={chance.delay} label={chanceCopy.foldDelay} help={[delayHelp]} />
-          </div>
-        {:else}
-          <p class="delay">{chance.delay}</p>
-        {/if}
+        <p class="delay">{chance.delay}</p>
       {/if}
     </div>
+  </div>
 
-    {#if parts.moments.length > 0}
+  {#if parts.why !== null}
+    {@const why = parts.why}
+    <div class="block why">
+      <h3 class="why-title">{why.title}</h3>
+      <div class="habit" role="group" aria-labelledby={habitId}>
+        <h4 class="habit-title" id={habitId}>{why.habit.title}</h4>
+        <p class="habit-text">{why.habit.text}</p>
+      </div>
+      <ol class="rows sum steps">
+        {#each why.rows as row (row.key)}
+          <li class="row {row.key === 'start' ? 'is-start' : 'is-reason'}">
+            <span class="label"><span class="num">{row.number}</span></span>
+            <div class="step">
+              <p>{row.text}</p>
+              {#if row.help !== undefined}
+                <p class="help">{row.help}</p>
+              {/if}
+              {#if row.parts !== null}
+                <WhyFold label={chanceCopy.fold} parts={row.parts} />
+              {/if}
+            </div>
+          </li>
+        {/each}
+      </ol>
+      {#if why.total !== null}
+        <p class="row total">
+          <span class="label"><span class="num">{why.total.label}</span></span>
+          <span>{why.total.text}</span>
+        </p>
+      {/if}
+      <div class="how">
+        <LegalLinks pages={['how']} />
+      </div>
+    </div>
+  {/if}
+
+  {#if parts.moments.length > 0}
+    <div class="block">
       <ol class="rows moments">
         {#each parts.moments as moment, i (moment.key)}
           {@const count = moment.at === null ? null : countdown(moment.at)}
@@ -172,8 +215,8 @@
           </li>
         {/each}
       </ol>
-    {/if}
-  </div>
+    </div>
+  {/if}
 
   {#if drawn && chance.chart !== null}
     <!--
@@ -186,59 +229,6 @@
       </div>
       {#snippet failed()}{/snippet}
     </svelte:boundary>
-  {/if}
-
-  {#if parts.why !== null && (parts.why.steps ?? null) !== null}
-    {@const steps = parts.why.steps}
-    <div class="block why">
-      <h3 class="why-title">{parts.why.title}</h3>
-      {#if steps}
-        {#if steps.whole !== null}
-          <p class="whole">{steps.whole}</p>
-        {/if}
-        <div class="record">
-          <WhyFold
-            text={steps.record.text}
-            label={chanceCopy.foldRecord}
-            help={steps.record.help}
-          />
-        </div>
-        <ol class="rows sum steps">
-          {#each steps.rows as row (row.key)}
-            <li class="row {row.key === 'start' ? 'is-start' : 'is-reason'}">
-              <span class="label"><span class="num">{row.number}</span></span>
-              <div class="step">
-                <WhyFold
-                  text={row.text}
-                  label={chanceCopy.foldStep}
-                  help={row.help}
-                  name={row.name}
-                />
-              </div>
-            </li>
-          {/each}
-        </ol>
-      {/if}
-    </div>
-  {:else if parts.why !== null}
-    <div class="block why">
-      <h3 class="why-title">{parts.why.title}</h3>
-      <ol class="rows sum">
-        <li class="row is-start">
-          <span class="label"><span class="num">{parts.why.base.number}</span>%</span>
-          <p>{parts.why.base.text}</p>
-        </li>
-        {#each parts.why.lines as line (line.key)}
-          <li class="row is-reason">
-            <span class="label"><span class="num">{line.points}</span></span>
-            <p>{line.text}</p>
-            {#if line.help !== undefined}
-              <p class="help">{line.help}</p>
-            {/if}
-          </li>
-        {/each}
-      </ol>
-    </div>
   {/if}
 </section>
 
@@ -378,7 +368,6 @@
     display: grid;
     grid-template-columns: fit-content(var(--column)) 22px minmax(0, 1fr);
     column-gap: 0;
-    margin-top: var(--section);
   }
 
   .moment {
@@ -468,30 +457,54 @@
     color: var(--text-2);
   }
 
-  /* The steps' district line and record note, above the column, in the sentence's type. */
-  .whole,
-  .record {
-    margin-bottom: var(--row);
+  /* The one plain reason, in the words' own type and colour, right under the chance. */
+  .reason {
+    margin-top: 8px;
     font: var(--type-body);
     color: var(--text-1);
     text-wrap: pretty;
   }
 
-  /* The steps sit closer than other rows: each is one sentence with its fold button after it,
-     so the panel stays within about 900 px at 390 px wide (WHY-TRANSPARENT). */
-  .rows.steps {
-    gap: 10px;
+  .delay {
+    margin-top: 4px;
   }
 
-  /* Who the chance is for: a qualifier over the record note, in the help's type. */
-  .whole {
-    margin-bottom: 8px;
-    font: var(--type-small);
-    color: var(--text-2);
-  }
-
-  .record {
+  /* The habit box: the owner's question, then one paragraph, in a thin frame. */
+  .habit {
     margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-1);
+    border-radius: 8px;
+    text-wrap: pretty;
+  }
+
+  .habit-title {
+    margin: 0 0 4px;
+    font: var(--type-strong);
+    color: var(--text-1);
+  }
+
+  .habit-text {
+    font: var(--why-type);
+    color: var(--text-1);
+  }
+
+  /* The why's amounts are short ("+12", "= 22%"): a narrower first column gives its words the
+     room, so the why stays short at 390 px (lead ruling O6). */
+  .why {
+    --column: 48px;
+    --gutter: 12px;
+    --why-type: 400 14px / 20px var(--font-sans);
+  }
+
+  .why .step p:not(.help),
+  .why .total {
+    font: var(--why-type);
+  }
+
+  /* The rows sit a little closer than other lists, so the why stays short at 390 px. */
+  .rows.steps {
+    gap: 8px;
   }
 
   .step {
@@ -500,9 +513,20 @@
     align-items: flex-start;
   }
 
+  /* "= 22%" and its sentence, over the rows' hairline. */
+  .total {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-1);
+  }
+
+  .how {
+    margin-top: 12px;
+  }
+
   /* How the chance adds up: open, a short sentence a reason, right under the chart. */
   .why-title {
-    margin-bottom: var(--row);
+    margin-bottom: 10px;
     font: var(--type-strong);
     color: var(--text-1);
   }

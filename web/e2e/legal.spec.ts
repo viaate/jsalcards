@@ -8,7 +8,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 import { copy } from '../src/copy';
-import { legalCopy, type LegalPageName } from '../src/copy-legal';
+import { legalCopy, type LegalDocName } from '../src/copy-legal';
 import { THEME_STORAGE_KEY } from '../src/theme/event';
 import { THEMES } from '../src/theme/themes';
 import { approvedWords, words } from '../src/ui/tests/legal-words';
@@ -21,7 +21,7 @@ const SITE = 'https://snowlightmap.com/';
 /** The value the lock keeps on a device that has entered the code. */
 const CODE = ['sl-lock', 'MjM4MQ=='] as const;
 
-const PAGES: readonly LegalPageName[] = ['privacy', 'terms'];
+const PAGES: readonly LegalDocName[] = ['privacy', 'terms'];
 
 /** Every request to the site's address, answered from the suite's build at `base`. */
 async function serveSite(context: BrowserContext, base: string): Promise<void> {
@@ -168,11 +168,12 @@ test.describe('behind the lock', () => {
     // Each a link to the page's own address, every other part of the address kept.
     await expect(privacy).toHaveAttribute('href', /\/\?ref=e2e&privacy$/u);
     await expect(terms).toHaveAttribute('href', /\/\?ref=e2e&terms$/u);
-    // Each a target at least 24px tall, as a finger needs, on a line that stays 18px.
+    // Each a target at least 24px tall, as a finger needs, on lines that stay 18px each (How
+    // Snowlight guesses comes first on About, so the three take one line or two, never more).
     for (const link of [privacy, terms]) {
       expect((await link.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(24);
     }
-    expect((await menu.locator('p.legal').boundingBox())?.height).toBe(18);
+    expect([18, 36]).toContain((await menu.locator('p.legal').boundingBox())?.height);
 
     // The privacy policy opens over the app and the menu closes; Back closes the page, the
     // keyboard on the menu's button.

@@ -21,6 +21,7 @@ import { shareCopy } from './copy-share';
 import { getCopy } from './copy-get';
 import { laterCopy, laterFormat } from './copy-later';
 import { legalCopy } from './copy-legal';
+import { howCopy } from './copy-how';
 import { legalLinksCopy } from './copy-legal-links';
 import { waitlistCopy } from './copy-waitlist';
 
@@ -859,14 +860,14 @@ describe('format', () => {
       expect(allProblems(copyLeaves(shareCopy).map(([, text]) => text))).toEqual([]);
       expect(chanceFormat.weekday('2026-01-13')).toBe('Tuesday');
       expect(chanceFormat.chanceOn('2026-01-14')).toBe('Chance of no school Wednesday');
-      // Under it where the chance is the nation's record for want of local days (owner, Oct 24).
-      expect(chanceCopy.fewRecords).toBe('Few local records');
+      // Under it where the chance is the nation's record for want of local days (WHY-PLAIN).
+      expect(chanceCopy.fewRecords).toBe('Not many past days like this nearby');
       expect(problems(chanceCopy.fewRecords)).toEqual([]);
       expect(chanceFormat.chanceNumber(0.64)).toBe('64');
       expect(chanceFormat.chanceNumber(0.01)).toBe('1');
       expect(chanceFormat.chanceNumber(0.99)).toBe('99');
-      expect(chanceFormat.howWeGot(0.64)).toBe('How we got 64%');
-      expect(chanceFormat.delayInstead(0.18)).toBe('18% chance of a delayed start instead');
+      expect(chanceFormat.plain.why(64)).toBe('Why 64%');
+      expect(chanceFormat.delayInstead(0.18)).toBe('18% chance of a late start instead');
       expect(chanceFormat.points(16)).toBe('+16');
       expect(chanceFormat.points(-3)).toBe('−3');
       expect(() => chanceFormat.points(0)).toThrow(RangeError);
@@ -2378,7 +2379,7 @@ describe('format', () => {
       }
       for (let percent = 0; percent <= 100; percent++) {
         const chance = percent / 100;
-        outputs.push(chanceFormat.chanceOn('2026-01-13'), chanceFormat.howWeGot(chance));
+        outputs.push(chanceFormat.chanceOn('2026-01-13'), chanceFormat.plain.why(percent));
         outputs.push(chanceFormat.delayInstead(chance));
         outputs.push(
           chanceFormat.baseReason(
@@ -4524,7 +4525,8 @@ ${aliases}
     // screen check's (src/copy-diag.ts), the themes' (src/copy-themes.ts), the share cards'
     // (src/copy-share.ts), the getsnowlight landing's (src/copy-get.ts), the later days'
     // key line's (src/copy-later.ts), the privacy policy's and terms' (src/copy-legal.ts) and
-    // the links to them (src/copy-legal-links.ts).
+    // the links to them (src/copy-legal-links.ts), and the page How Snowlight guesses
+    // (src/copy-how.ts).
     expect(scanned.strings).toBe(
       strings.length +
         copyLeaves(chanceCopy).length +
@@ -4539,7 +4541,8 @@ ${aliases}
         copyLeaves(getCopy).length +
         copyLeaves(laterCopy).length +
         copyLeaves(legalCopy).length +
-        copyLeaves(legalLinksCopy).length,
+        copyLeaves(legalLinksCopy).length +
+        copyLeaves(howCopy).length,
     );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s

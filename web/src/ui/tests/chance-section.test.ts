@@ -119,7 +119,7 @@ describe('the chance section', () => {
     expect(text(section, '.meaning')).toEqual(['64% Chance of no school Tuesday']);
     expect(text(section, '.change')).toEqual([`Up from 41% at 5${NBSP}PM`]);
     expect(section.querySelectorAll('.change svg')).toHaveLength(1);
-    expect(text(section, '.delay')).toEqual(['18% chance of a delayed start instead']);
+    expect(text(section, '.delay')).toEqual(['18% chance of a late start instead']);
     // The districts next door; when this one announces is the chart's to say.
     expect(text(section, '.moment')).toEqual([
       `8:41${NBSP}PM Blue Valley canceled Tuesday`,
@@ -169,18 +169,18 @@ describe('the chance section', () => {
     );
     expect(section.querySelector('.key .sample')?.getAttribute('aria-hidden')).toBe('true');
 
-    expect(text(section, '.why-title')).toEqual(['How we got 64%']);
-    expect(text(section, '.sum > li .num')).toEqual(['30', '+16', '+9', '+7', '+5', '−3']);
-    // The sum adds up to the headline, which it does not repeat; the record is in its sentence.
-    expect(section.querySelector('.is-total')).toBeNull();
+    expect(text(section, '.why-title')).toEqual(['Why 64%']);
+    expect(text(section, '.sum > li .num')).toEqual(['30%', '+16', '+9', '+7', '+5', '−3']);
+    // The rows add up to the chance, and the total line says so.
+    expect(text(section, '.total')).toEqual(['= 64% Add these up and you get 64%.']);
     expect(section.querySelector('.record')).toBeNull();
     // Each reason names itself; the chart and the timeline hold their numbers.
     expect(text(section, '.is-reason').slice(0, 3)).toEqual([
-      '+16 More snow than most storms. It closed 4 of the last 5 times it got 6 inches or more.',
-      '+9 Districts next door canceled.',
-      '+7 Heaviest snow just before the buses.',
+      '+16 The forecast has more snow than most storms. We looked at its last 5 days with 6 inches of snow or more. It closed on 4 of them. So the chance goes up.',
+      '+9 Districts next door closed. So the chance goes up.',
+      '+7 The heaviest snow falls just before the buses go out. So the chance goes up.',
     ]);
-    // Nothing folds away, and no words lead in bold.
+    // Nothing folds away (no row joins parts), and no words lead in bold.
     expect(section.querySelectorAll('details, [aria-expanded]')).toHaveLength(0);
     expect(section.querySelectorAll('strong, b')).toHaveLength(0);
   });
@@ -366,14 +366,15 @@ describe('the chance section', () => {
     expect(moments).toContain('Shawnee Mission usually announces in 8h 25m');
     expect(view.moments.some((m) => m.key === 'announces')).toBe(false);
     const lines = text(section, '.why .row.is-reason p');
-    expect(lines).toEqual(bare.why?.lines.map((line) => line.text));
-    expect(lines).not.toEqual(view.why?.lines.map((line) => line.text));
+    const reasons = (why: ChanceView['why']) => why?.rows.slice(1).map((row) => row.text);
+    expect(lines).toEqual(reasons(bare.why));
+    expect(lines).not.toEqual(reasons(view.why));
     expect(lines.some((line) => line.includes('6 to 9'))).toBe(true);
     // A later good chart (a new reading), with no null between: drawn again, its facts its own.
     set({ ...view, chart: { ...chart } });
     expect(section.querySelectorAll('figure')).toHaveLength(1);
     expect(text(section, '.moment .m-text')).toEqual(view.moments.map((m) => m.text));
-    expect(text(section, '.why .row.is-reason p')).toEqual(view.why?.lines.map((l) => l.text));
+    expect(text(section, '.why .row.is-reason p')).toEqual(reasons(view.why));
     // The same failed chart again stays hidden; a broken one after a good one fails alone.
     set({ ...view, chart: throwing(chart) });
     expect(section.querySelector('figure')).toBeNull();
@@ -421,7 +422,7 @@ describe('the chance section', () => {
     const moments = text(section, '.moment');
     expect(moments.some((line) => line.includes('usually announces'))).toBe(true);
     const lines = text(section, '.why .row.is-reason p');
-    expect(lines).toEqual(bare.why?.lines.map((line) => line.text));
+    expect(lines).toEqual(bare.why?.rows.slice(1).map((row) => row.text));
     expect(lines.some((line) => line.includes('6 to 9'))).toBe(true);
   });
 
@@ -451,7 +452,7 @@ describe('the chance section', () => {
     // No lit hours to name on a cold night: no key.
     expect(section.querySelector('.key')).toBeNull();
     expect(text(section, '.is-start')).toEqual([
-      '25% After a recorded snow day, Shawnee Mission stayed closed or went remote the next day 1 time in 4.',
+      '25% This chance comes from Shawnee Mission’s own past days like this. Those are days right after a day with no school for snow. 1 in 4 of them had no school.',
     ]);
   });
 
@@ -580,7 +581,7 @@ describe('the chance section', () => {
     const section = show({ ...chance(true), fewRecords: chanceCopy.fewRecords });
     expect(text(section, '.number')).toEqual(['64%']);
     expect(section.querySelectorAll('.number.is-thin')).toHaveLength(1);
-    expect(text(section, '.few')).toEqual(['Few local records']);
+    expect(text(section, '.few')).toEqual(['Not many past days like this nearby']);
     // Directly under "Chance of no school Tuesday", before what moved it.
     const meaning = section.querySelector('.meaning');
     expect(meaning?.nextElementSibling?.className).toMatch(/\bfew\b/u);
@@ -651,101 +652,153 @@ describe('the lighter number', () => {
   });
 });
 
-describe('the why, step by step (WHY-TRANSPARENT)', () => {
-  /** A section whose why carries steps, each with folded details, made up for these tests. */
-  function stepped(): ChanceView {
+describe('the why in plain words (WHY-PLAIN)', () => {
+  /** A section whose why has a joined row, made up for these tests. */
+  function plainView(): ChanceView {
     const base = chance(true);
     if (base.why === null) throw new Error('no why');
     return {
       ...base,
-      delay: '8% chance of a delayed start instead',
+      delay: '8% chance of a late start instead',
       why: {
-        ...base.why,
-        steps: {
-          whole: 'This chance is for Shawnee Mission as a whole, the same at each of its schools.',
-          record: {
-            text: 'Record sentence.',
-            help: ['This winter’s days are not in that record.'],
-          },
-          rows: [
-            {
-              key: 'start',
-              number: '45%',
-              text: 'Start sentence.',
-              help: ['Start help.'],
-              name: chanceFormat.steps.foldName.start,
-            },
-            {
-              key: 'standing',
-              number: `${MINUS}15`,
-              text: 'Standing sentence.',
-              help: ['Standing help.'],
-              name: chanceFormat.steps.foldName.standing,
-            },
-            {
-              key: 'forecast',
-              number: '0',
-              text: 'Forecast sentence.',
-              help: [],
-              name: chanceFormat.steps.foldName.forecast,
-            },
-          ],
-          delayHelp: 'Delay help.',
+        title: 'Why 64%',
+        headline: 'Shawnee Mission gets fewer winter advisories than a typical district.',
+        habit: {
+          title: 'Does Shawnee Mission close easily or hold out?',
+          text: 'We do not know yet.',
         },
+        rows: [
+          { key: 'start', number: '45%', text: 'Start sentence.', parts: null },
+          {
+            key: 'place',
+            number: '+12',
+            text: 'Place sentence.',
+            parts: [
+              { label: chanceFormat.plain.part.standing, number: '+14' },
+              { label: chanceFormat.plain.part.region, number: '−2' },
+              { label: chanceFormat.plain.part.sum, number: '+12' },
+            ],
+          },
+          { key: 'snow', number: '+7', text: 'Snow sentence.', parts: null },
+        ],
+        total: { label: '= 64%', text: 'Add these up and you get 64%.' },
       },
     };
   }
 
-  it('shows every fold closed, opens one alone in place, and stores nothing', () => {
+  const words = (root: Element, selector: string): string[] =>
+    [...root.querySelectorAll(selector)].map((node) =>
+      node.textContent.replace(/[\t\n\r ]+/gu, ' ').trim(),
+    );
+
+  it('puts the why first: the chance, its reason, the late start, the habit, the rows, the total, the link, then the night', () => {
+    vi.useFakeTimers({ now: A_NOW });
+    const target = document.createElement('div');
+    document.body.append(target);
+    const app = mount(ChanceSection, { target, props: { chance: plainView() } });
+    flushSync();
+    const order = [
+      '.meaning',
+      '.reason',
+      '.delay',
+      '.why-title',
+      '.habit',
+      '.steps',
+      '.total',
+      '.how',
+      '.moments',
+      'figure',
+    ].map((selector) => target.querySelector(selector));
+    expect(order.every((node) => node !== null)).toBe(true);
+    for (let k = 1; k < order.length; k += 1) {
+      const before = order[k - 1];
+      const after = order[k];
+      if (before === null || before === undefined || after === null || after === undefined)
+        continue;
+      expect(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+    }
+    expect(words(target, '.habit-title')).toEqual([
+      'Does Shawnee Mission close easily or hold out?',
+    ]);
+    expect(words(target, '.steps > li .num')).toEqual(['45%', '+12', '+7']);
+    expect(words(target, '.total')).toEqual(['= 64% Add these up and you get 64%.']);
+    expect(words(target, '.how a')).toEqual(['How Snowlight guesses']);
+    void unmount(app);
+    target.remove();
+  });
+
+  it('shows one fold, closed, opened by click, Enter and Space, and stores nothing', () => {
     const stored = vi.spyOn(Storage.prototype, 'setItem');
     const target = document.createElement('div');
     document.body.append(target);
-    const app = mount(ChanceSection, { target, props: { chance: stepped() } });
+    const app = mount(ChanceSection, { target, props: { chance: plainView() } });
     flushSync();
     const buttons = [...target.querySelectorAll<HTMLButtonElement>('button.fold')];
-    // Each button's name is its own: a step's says which step after its words.
-    const names = buttons.map((button) => button.textContent.trim());
-    expect(names).toEqual([
-      chanceCopy.foldDelay,
-      chanceCopy.foldRecord,
-      `${chanceCopy.foldStep} ${chanceFormat.steps.foldName.start}`,
-      `${chanceCopy.foldStep} ${chanceFormat.steps.foldName.standing}`,
+    expect(buttons.map((button) => button.textContent.trim())).toEqual([chanceCopy.fold]);
+    const button = buttons[0];
+    if (button === undefined) throw new Error('no fold');
+    const list = document.getElementById(button.getAttribute('aria-controls') ?? '');
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(list?.hidden).toBe(true);
+    button.click();
+    flushSync();
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    expect(list?.hidden).toBe(false);
+    expect(words(target, '.part')).toEqual([
+      `${chanceFormat.plain.part.standing}+14`,
+      `${chanceFormat.plain.part.region}−2`,
+      `${chanceFormat.plain.part.sum}+12`,
     ]);
-    expect(new Set(names).size).toBe(names.length);
-    expect(buttons[2]?.querySelector('.sr-only')?.textContent).toBe(
-      ` ${chanceFormat.steps.foldName.start}`,
-    );
-    for (const button of buttons) {
-      expect(button.getAttribute('aria-expanded')).toBe('false');
-      const help = document.getElementById(button.getAttribute('aria-controls') ?? '');
-      expect(help?.hidden).toBe(true);
-      expect(document.getElementById(button.getAttribute('aria-describedby') ?? '')).not.toBeNull();
-    }
-    const record = buttons[1];
-    record?.click();
+    // A native button: Enter and Space press it as a click does.
+    expect(button.tagName).toBe('BUTTON');
+    expect(button.type).toBe('button');
+    button.click();
     flushSync();
-    expect(record?.getAttribute('aria-expanded')).toBe('true');
-    expect(document.getElementById(record?.getAttribute('aria-controls') ?? '')?.hidden).toBe(
-      false,
-    );
-    expect(
-      buttons.filter((button) => button.getAttribute('aria-expanded') === 'true'),
-    ).toHaveLength(1);
-    // The row with no details shows its sentence and no button.
-    expect(target.textContent).toContain('Forecast sentence.');
-    expect(target.textContent).toContain('This chance is for Shawnee Mission as a whole');
+    expect(button.getAttribute('aria-expanded')).toBe('false');
     void unmount(app);
-    // Opened again, every fold is closed.
-    const again = mount(ChanceSection, { target, props: { chance: stepped() } });
+    const again = mount(ChanceSection, { target, props: { chance: plainView() } });
     flushSync();
-    expect(
-      [...target.querySelectorAll('button.fold')].every(
-        (button) => button.getAttribute('aria-expanded') === 'false',
-      ),
-    ).toBe(true);
+    expect(target.querySelector('button.fold')?.getAttribute('aria-expanded')).toBe('false');
     void unmount(again);
     target.remove();
     expect(stored).not.toHaveBeenCalled();
     stored.mockRestore();
+  });
+
+  it('shows no fold where no row joins parts', () => {
+    const view = plainView();
+    if (view.why === null) throw new Error('no why');
+    const target = document.createElement('div');
+    document.body.append(target);
+    const app = mount(ChanceSection, {
+      target,
+      props: {
+        chance: {
+          ...view,
+          why: { ...view.why, rows: view.why.rows.map((row) => ({ ...row, parts: null })) },
+        },
+      },
+    });
+    flushSync();
+    expect(target.querySelectorAll('button.fold')).toHaveLength(0);
+    void unmount(app);
+    target.remove();
+  });
+
+  it('opens How Snowlight guesses from its link', () => {
+    const asked = vi.fn();
+    window.addEventListener('snowlight:legal', asked);
+    const target = document.createElement('div');
+    document.body.append(target);
+    const app = mount(ChanceSection, { target, props: { chance: plainView() } });
+    flushSync();
+    target
+      .querySelector<HTMLAnchorElement>('.how a')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+    expect(asked).toHaveBeenCalledTimes(1);
+    expect((asked.mock.calls[0]?.[0] as CustomEvent).detail).toBe('how');
+    window.removeEventListener('snowlight:legal', asked);
+    void unmount(app);
+    target.remove();
   });
 });
