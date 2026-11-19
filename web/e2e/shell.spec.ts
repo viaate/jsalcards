@@ -41,6 +41,11 @@ const FIRST_SCRIPT_BUDGET = 75_000;
  * page's first script.
  */
 const DEPLOYED_API_ROOT = 'https://snowlight-api.a-workers-subdomain-for-the-check.workers.dev/';
+// preview.yml's second live root, word for word, and what it gives with no repository variables
+// set: the status host's same-site copy of the live root.
+const DEPLOYED_LIVE_FALLBACK_EXPRESSION =
+  "${{ vars.SNOWLIGHT_LIVE_FALLBACK || ((vars.SNOWLIGHT_LIVE_ROOT == '' || vars.SNOWLIGHT_LIVE_ROOT == 'https://viaate.github.io/snowlight-live/v1/') && 'https://status.snowlightmap.com/api/live/v1/' || '') }}";
+const DEPLOYED_LIVE_FALLBACK = 'https://status.snowlightmap.com/api/live/v1/';
 
 interface Viewport {
   name: string;
@@ -1212,11 +1217,15 @@ test.describe('handover to the WebGL map', () => {
       // The accounts API root preview.yml finds, which this build stands in for.
       else if (value === '${{ steps.api.outputs.root }}') vite[name] = DEPLOYED_API_ROOT;
       else if (value === '${{ github.repository }}') vite[name] = 'viaate/jsalcards';
+      // The second live root that workflow names when neither live variable is set, as here:
+      // the status host's same-site copy of the live root (src/data/live-roots.ts).
+      else if (value === DEPLOYED_LIVE_FALLBACK_EXPRESSION) vite[name] = DEPLOYED_LIVE_FALLBACK;
       else throw new Error(`preview.yml gives ${name} as ${value}, which this build does not copy`);
     }
     expect(Object.keys(vite).sort()).toEqual([
       'VITE_API_ROOT',
       'VITE_GITHUB_REPO',
+      'VITE_SNOWLIGHT_LIVE_FALLBACK',
       'VITE_SNOWLIGHT_LIVE_ROOT',
       'VITE_WAITLIST_CONFIRM',
       'VITE_WAITLIST_CONTACT',
@@ -1225,6 +1234,7 @@ test.describe('handover to the WebGL map', () => {
     ]);
     // The live root and the waitlist as deployed: the page is the waitlist's.
     expect(vite.VITE_SNOWLIGHT_LIVE_ROOT).toMatch(/^https:\/\//u);
+    expect(vite.VITE_SNOWLIGHT_LIVE_FALLBACK).toBe(DEPLOYED_LIVE_FALLBACK);
     expect(vite.VITE_WAITLIST_KIT_FORM).not.toBe('');
     const env = Object.fromEntries(
       Object.entries(process.env).filter(([name]) => !name.startsWith('VITE_')),
