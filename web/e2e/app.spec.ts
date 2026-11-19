@@ -6430,7 +6430,7 @@ test.describe('with data staged', () => {
       await expect(chart).not.toContainText('uses');
       // The snow line states no amount while the chart does (O6), never its forecast's time.
       await expect(section.locator('.sum > li').nth(1).locator('p').first()).toHaveText(
-        `The forecast has more snow by 12${S}PM than most storms.`,
+        'The forecast has more snow by noon than most storms. So the chance goes up.',
       );
       await expectChartFits(page, `night ${phone ? 'phone' : 'desktop'}`);
       const sideways = await panel.evaluate((node) => node.scrollWidth - node.clientWidth);
