@@ -691,7 +691,7 @@ describe('the why in plain words (WHY-PLAIN)', () => {
       node.textContent.replace(/[\t\n\r ]+/gu, ' ').trim(),
     );
 
-  it('puts the why first: the chance, its reason, the late start, the habit, the rows, the total, the link, then the night', () => {
+  it('puts the night above the why: the chance, its reason, the late start, the night, then the habit, the rows, the total and the link', () => {
     vi.useFakeTimers({ now: A_NOW });
     const target = document.createElement('div');
     document.body.append(target);
@@ -701,13 +701,13 @@ describe('the why in plain words (WHY-PLAIN)', () => {
       '.meaning',
       '.reason',
       '.delay',
+      '.moments',
+      'figure',
       '.why-title',
       '.habit',
       '.steps',
       '.total',
       '.how',
-      '.moments',
-      'figure',
     ].map((selector) => target.querySelector(selector));
     expect(order.every((node) => node !== null)).toBe(true);
     for (let k = 1; k < order.length; k += 1) {

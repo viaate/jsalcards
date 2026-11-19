@@ -1572,22 +1572,36 @@ const STEPS_HOURS = {
  * and the private school's (Pembroke Hill's Tuesday). Every number is made up and adds up.
  */
 /**
- * The panel from its top to the bottom of the How link, folds closed (lead ruling O6), in CSS
- * px, whatever the sheet's scroll: both ends move together. A drawn chart sits below the link.
+ * The panel from its top to the bottom of the How link, folds closed, in CSS px, whatever the
+ * sheet's scroll: both ends move together. The early signals and a drawn chart sit above the
+ * why (the owner, Nov 19) and are not counted: the bar holds the chance and its why.
  */
 async function whyHeight(panel: Locator): Promise<number> {
   const found = await panel.evaluate((node) => {
     const how = node.querySelector('.chance .how');
     if (how === null) return null;
+    const why = node.querySelector('.chance .why');
     const chart = node.querySelector('.chance figure');
+    const moments = node.querySelector('.chance .moments');
+    const blockOf = (inner: Element | null): number =>
+      inner === null ? 0 : (inner.closest('.block') ?? inner).getBoundingClientRect().height;
     return {
-      height: how.getBoundingClientRect().bottom - node.getBoundingClientRect().top,
-      chartBelow:
-        chart === null || chart.getBoundingClientRect().top >= how.getBoundingClientRect().bottom,
+      height:
+        how.getBoundingClientRect().bottom -
+        node.getBoundingClientRect().top -
+        blockOf(chart) -
+        blockOf(moments),
+      nightAbove:
+        why !== null &&
+        [chart, moments].every(
+          (part) =>
+            part === null ||
+            part.getBoundingClientRect().bottom <= why.getBoundingClientRect().top + 0.5,
+        ),
     };
   });
   if (found === null) throw new Error('no How link in the panel');
-  expect(found.chartBelow).toBe(true);
+  expect(found.nightAbove).toBe(true);
   return found.height;
 }
 
@@ -4514,8 +4528,8 @@ test.describe('with data staged', () => {
     expect((hero?.y ?? 844) + (hero?.height ?? 0)).toBeLessThan(844);
     const actions = await sheet.locator('.actions').boundingBox();
     expect(actions?.y).toBeGreaterThan((hero?.y ?? 0) + (hero?.height ?? 0));
-    // The why first (lead ruling O6): from the panel's top to the How link at most 1,250 px with
-    // the folds closed, the hour-by-hour chart drawn below the link.
+    // The night above the why (the owner, Nov 19): the chance and its why at most 1,250 px with
+    // the folds closed, the hour-by-hour chart drawn above the why and not counted.
     await expect(section.locator('figure')).toHaveCount(1);
     const tall = await whyHeight(sheet);
     if (process.env.SNOWLIGHT_STEPS_SHOT !== undefined) {
@@ -4815,7 +4829,7 @@ test.describe('with data staged', () => {
   });
 
   for (const shape of ['warning', 'advisory', 'private'] as const) {
-    test(`a Sierra-shaped ${shape} day in plain words at 390 px: from the panel's top to the How link at most 1,250 px, the chart below, its fold open by tap, Tab, Enter and Space`, async ({
+    test(`a Sierra-shaped ${shape} day in plain words at 390 px: from the panel's top to the How link at most 1,250 px, the night above the why, its fold open by tap, Tab, Enter and Space`, async ({
       browser,
     }) => {
       // WHY-TRANSPARENT acceptance bar 2's height on the day shapes the Sierra's panels have.
@@ -4883,13 +4897,13 @@ test.describe('with data staged', () => {
         );
         await expect(section.locator('.status')).toBeVisible();
       }
-      // Every fold closed: from the panel's top to the How link at most 1,250 px, and the
-      // night chart below it (lead ruling O6: the chart never pushes the why down).
+      // Every fold closed: from the panel's top to the How link at most 1,250 px, the night
+      // above the why (the owner, Nov 19) and not counted.
       const folds = section.locator('button.fold');
       await expect(folds).toHaveCount(shape === 'advisory' ? 1 : 0);
       for (const fold of await folds.all())
         await expect(fold).toHaveAttribute('aria-expanded', 'false');
-      // From the top of the panel to the How link (lead ruling O6), folds closed.
+      // From the top of the panel to the How link, folds closed, the night not counted.
       const height = await whyHeight(panel);
       if (process.env.SNOWLIGHT_STEPS_SHOT !== undefined) {
         await section.screenshot({ path: `${process.env.SNOWLIGHT_STEPS_SHOT}-${shape}.png` });

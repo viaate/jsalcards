@@ -93,10 +93,10 @@
 <!--
   The chance section (app/chance.ts): the school's status lines, decided first; then the chance
   of no school as the headline, the one plain reason for it and the chance of a late start
-  instead; then why, in plain words (WHY-PLAIN, app/steps.ts): "Why 22%", the district's habit
-  in a box, the rows that add up to the chance, the total and the link to "How Snowlight
-  guesses"; then the evening's early signals and the night hour by hour. The why comes first,
-  so the chart never pushes it down (lead ruling O6). On the panel's own scale and grid
+  instead; then the evening's early signals and the night hour by hour (the owner, Nov 19: the
+  snow chart goes above the why); then why, in plain words (WHY-PLAIN, app/steps.ts): "Why
+  22%", the district's habit in a box, the rows that add up to the chance, the total and the
+  link to "How Snowlight guesses". On the panel's own scale and grid
   (DetailPanel.svelte): each part a section under one hairline, every list two columns.
 -->
 
@@ -161,6 +161,39 @@
     </div>
   </div>
 
+  {#if parts.moments.length > 0}
+    <div class="block">
+      <ol class="rows moments">
+        {#each parts.moments as moment, i (moment.key)}
+          {@const count = moment.at === null ? null : countdown(moment.at)}
+          <li class="moment">
+            <span class="label">{moment.time}</span>
+            <span class="m-text">
+              {moment.text}
+              {#if count !== null}<span class="m-count">{count}</span>{/if}
+            </span>
+            <span class="rail" aria-hidden="true">
+              <span class="mark {MARKS[moment.mark]}"></span>
+              {#if i < parts.moments.length - 1}<span class="link"></span>{/if}
+            </span>
+          </li>
+        {/each}
+      </ol>
+    </div>
+  {/if}
+
+  {#if drawn && chance.chart !== null}
+    <!--
+      A chart bug is no chart: the number, its meaning and the sum around it still show, with
+      the chart's facts back in them; a new chart draws again in a new boundary.
+    -->
+    <svelte:boundary onerror={drawFailed}>
+      <div class="block">
+        <ChanceChart chart={chance.chart} announces={parts.announces(new Date(now))} />
+      </div>
+      {#snippet failed()}{/snippet}
+    </svelte:boundary>
+  {/if}
   {#if parts.why !== null}
     {@const why = parts.why}
     <div class="block why">
@@ -195,40 +228,6 @@
         <LegalLinks pages={['how']} />
       </div>
     </div>
-  {/if}
-
-  {#if parts.moments.length > 0}
-    <div class="block">
-      <ol class="rows moments">
-        {#each parts.moments as moment, i (moment.key)}
-          {@const count = moment.at === null ? null : countdown(moment.at)}
-          <li class="moment">
-            <span class="label">{moment.time}</span>
-            <span class="m-text">
-              {moment.text}
-              {#if count !== null}<span class="m-count">{count}</span>{/if}
-            </span>
-            <span class="rail" aria-hidden="true">
-              <span class="mark {MARKS[moment.mark]}"></span>
-              {#if i < parts.moments.length - 1}<span class="link"></span>{/if}
-            </span>
-          </li>
-        {/each}
-      </ol>
-    </div>
-  {/if}
-
-  {#if drawn && chance.chart !== null}
-    <!--
-      A chart bug is no chart: the number, its meaning and the sum around it still show, with
-      the chart's facts back in them; a new chart draws again in a new boundary.
-    -->
-    <svelte:boundary onerror={drawFailed}>
-      <div class="block">
-        <ChanceChart chart={chance.chart} announces={parts.announces(new Date(now))} />
-      </div>
-      {#snippet failed()}{/snippet}
-    </svelte:boundary>
   {/if}
 </section>
 
