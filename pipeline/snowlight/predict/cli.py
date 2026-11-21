@@ -213,6 +213,7 @@ from snowlight.predict.serve import (
     with_terms,
 )
 from snowlight.predict.situations import CLASS_BY_CODE, Window
+from snowlight.predict.standing import full_records_read as standing_full_records
 from snowlight.predict.standing import guard as standing_guard
 from snowlight.predict.standing import path_of as standing_path
 from snowlight.schemas.live import DayTimeline
@@ -548,12 +549,15 @@ def run_labels(args: argparse.Namespace) -> int:  # pragma: no cover - the real 
         places = train.history_places(paths, schools, seasons)
         table = train.district_table(schools, places.zone_of_school)
         private = train.private_table(schools, places.zone_of_school)
-        weather, private_weather, stats = train.weather_history(places, schools, config)
+        weather, private_weather, stats, charter_weather = train.weather_history(
+            places, schools, config
+        )
         paths.out.mkdir(parents=True, exist_ok=True)
         table.write_parquet(paths.out / "districts.parquet")
         weather.write_parquet(paths.out / "weather.parquet")
         private.write_parquet(paths.out / "private.parquet")
         private_weather.write_parquet(paths.out / "weather-private.parquet")
+        charter_weather.write_parquet(paths.out / "weather-charter.parquet")
         write_json(paths.out / "weather-stats.json", json.loads(json.dumps(stats, default=str)))
     _out(f"weather: {weather.height:,} district-days, {private_weather.height:,} private days")
     zone_of = {
@@ -1192,6 +1196,7 @@ class Pass:
                 self.config,
                 self.zone_fallback,
                 anchor=self.anchor,
+                full=standing_full_records(_warn),
             )
             if why is not None:
                 _warn(why)
@@ -1231,6 +1236,7 @@ class Pass:
                 self.config,
                 self.zone_fallback,
                 anchor=self.anchor,
+                full=standing_full_records(_warn),
             )
             if why is not None:
                 _warn(f"outlook: v3 rates: {why}")

@@ -103,6 +103,18 @@ def eligible_schools(schools: pl.DataFrame) -> pl.DataFrame:
     )
 
 
+def charter_lea_schools(schools: pl.DataFrame) -> pl.DataFrame:
+    """The public schools of each district with no eligible school (every one of its schools a
+    charter or fully virtual school, as a charter LEA's are): its class comes from all of
+    them, as ``serve.eligible`` falls back to all its schools (records-mo MO-3)."""
+    have = eligible_schools(schools)["district_id"].unique().implode()
+    return schools.filter(
+        (pl.col("kind") == "public")
+        & pl.col("district_id").is_not_null()
+        & ~pl.col("district_id").is_in(have)
+    )
+
+
 def private_schools(schools: pl.DataFrame) -> pl.DataFrame:
     """The private schools labeled as their own units (contract C3, spec c.1 "school type"):
     every private school that is not fully virtual. Each is its own unit, as a district is:
@@ -288,12 +300,23 @@ def school_zones(
 
 def weather_history(
     places: HistoryPlaces, schools: pl.DataFrame, config: PredictConfig
-) -> tuple[pl.DataFrame, pl.DataFrame, dict[str, object]]:
+) -> tuple[pl.DataFrame, pl.DataFrame, dict[str, object], pl.DataFrame]:
     """Each (district, day) whose class is above ``none``, each (private school, day) the same
-    way (its own school's class), and the counts behind them."""
+    way (its own school's class), the counts behind them, and each (charter LEA, day) by all
+    its schools (:func:`charter_lea_schools`; ``weather-charter.parquet``, apart from the
+    districts' file so that no exposure or label moves)."""
     weather = config.weather
     window = Window(weather.window_from, weather.window_until, weather.snapshot_hour)
     district_of_school, private_of_school, zone_by_index = school_zones(places, schools)
+    charter = charter_lea_schools(schools)
+    charter_of_school = charter.select(
+        pl.col("index").cast(pl.Int64).alias("school"), pl.col("district_id").alias("district")
+    )
+    table = district_table(schools, places.zone_of_school)
+    zone_of_district = dict(zip(table["district"], table["time_zone"], strict=True))
+    for index, district in charter_of_school.iter_rows():
+        if index < len(zone_by_index):
+            zone_by_index[index] = zone_of_district.get(district)
     rows = [
         row
         for season, path in sorted(places.files.items())
@@ -302,6 +325,7 @@ def weather_history(
     classes = school_day_classes(rows, places.reach, zone_by_index, window)
     found = district_day_classes(classes.frame, district_of_school, weather.covered_share)
     private_found = district_day_classes(classes.frame, private_of_school, weather.covered_share)
+    charter_found = district_day_classes(classes.frame, charter_of_school, weather.covered_share)
     stats: dict[str, object] = {
         "rows": classes.rows,
         "rows_unresolved": classes.rows_unresolved,
@@ -316,7 +340,7 @@ def weather_history(
             for value, count in private_found.group_by("weather").len().sort("weather").iter_rows()
         },
     }
-    return found, private_found, stats
+    return found, private_found, stats, charter_found
 
 
 # --- the archive --------------------------------------------------------------------------------

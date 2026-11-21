@@ -1567,6 +1567,25 @@ const headline = {
 /** Who a habit is compared with: other districts, or other private schools. */
 type Peers = 'districts' | 'private schools';
 
+/**
+ * The plain share nearest to `p` among the panel's shares and 1 in N (N 2 to 100), ties to the
+ * smaller, as the words after "about": "half", "2 in 5" (a complete record's peers, records-mo).
+ */
+function nearestShare(p: number): string {
+  const shares = [...SHARES, ...Array.from({ length: 99 }, (_, n) => [1, n + 2] as const)];
+  let best: readonly [number, number] = [1, 2];
+  for (const share of shares) {
+    const gap = Math.abs(share[0] / share[1] - p);
+    const bestGap = Math.abs(best[0] / best[1] - p);
+    if (
+      gap < bestGap - 1e-12 ||
+      (Math.abs(gap - bestGap) <= 1e-12 && share[0] / share[1] < best[0] / best[1])
+    )
+      best = share;
+  }
+  return best[0] === 1 && best[1] === 2 ? 'half' : `${String(best[0])} in ${String(best[1])}`;
+}
+
 /** The habit box (WHY-PLAIN 3c): one paragraph, in this order. */
 const habit = {
   title: (d: string) => `Does ${d} close easily or hold out?`,
@@ -1619,6 +1638,36 @@ const habit = {
     const share = some === 1 && out === 2 ? 'half' : `${String(some)} in ${String(out)}`;
     return `Other ${peers} closed on ${more ? 'more than' : 'about'} ${share} of theirs.`;
   },
+  /** A complete record (a state's calendar file, records-mo): at most five short sentences
+   * (lead ruling LR-4), "no school" meaning closed or school at home (the How page says so). */
+  earlyFull: 'It tends to close easily.',
+  holdOutFull: 'It tends to hold out.',
+  checked: (n: number, k: StepClass) =>
+    n === 1
+      ? `We checked 1 past school day with a ${words(k).alert}.`
+      : `We checked ${String(n)} past school days with a ${words(k).alert}.`,
+  noSchool: (n: number, none: number): string => {
+    const school = n - none;
+    if (!Number.isInteger(n) || !Number.isInteger(none) || n < 1 || none < 0 || school < 0)
+      throw new RangeError('copy: a complete record adds up');
+    if (n === 1) return none === 1 ? 'It had no school that day.' : 'It had school that day.';
+    if (school === 0)
+      return n === 2 ? 'It had no school on both.' : `It had no school on all ${String(n)}.`;
+    if (none === 0)
+      return n === 2 ? 'It had school on both.' : `It had school on all ${String(n)}.`;
+    return `It had no school on ${String(none)} and school on ${String(school)}.`;
+  },
+  /** The districts near it on the same days: the share the verdict is tested against. */
+  near: (p: number): string => {
+    if (!(p >= 0 && p <= 1)) throw new RangeError('copy: a share is 0 to 1');
+    if (p === 1) return 'Districts near it had no school on all of those days.';
+    if (p === 0) return 'Districts near it had school on all of those days.';
+    if (p > 0.99) return 'Districts near it had no school on almost all of those days.';
+    if (p < 0.01) return 'Districts near it had no school on almost none of those days.';
+    return `Districts near it had no school on about ${nearestShare(p)} of those days.`;
+  },
+  notUsedFull: 'Its habit does not change today’s chance yet.',
+  ownAlertFull: 'Today’s chance comes from its days in our past closing lists, in the row below.',
   tooFew: 'That is not enough to know.',
   notUsedFew: 'So its habit did not change today’s chance.',
   notUsed: 'Its habit did not change today’s chance.',

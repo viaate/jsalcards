@@ -1407,13 +1407,23 @@ chart, so the chart never pushes the why down. The words are web/src/copy-chance
 * **The habit box**, titled "Does {district} close easily or hold out?", reads the standing
   file's `record` for the kind of day the chance is counted over: the day's class, or on an
   ordinary day the class of the base's alert or weather (storm warnings where it names none).
-  Under 5 days: "We do not know yet." With 5 or more, the district's closings are compared with
-  the other districts' in the same lists (`record_sum` less its own days) by a one-sided exact
-  binomial at 1 in 20, and the box says it as the test measures it, closings only (a late start
-  counts as not closed): "It tends to close easily. It closes on winter advisory days more
-  often than other districts do.", "It tends to hold out. It closes on ... less often ..." or
-  "It is about like most districts.", then the counts, then what the others did ("Other districts closed on more
-  than 19 in 20 of theirs."), so the counts and the verdict agree on the page. It ends with
+  **A closings-only record (the lists) is never judged** (records-mo MO-4): its open days are
+  mostly unseen (1,027 closed of 1,071 storm warning days), so the box says "We do not know
+  yet." and the counts, and under 5 days "That is not enough to know." (from 5 on more list days
+  would not settle it, so it is not said). A district with a **complete record**
+  (the standing file's `record_full`, from a state's calendar file: Missouri, below) shows it in
+  place of the lists, in at most five short sentences (lead ruling LR-4): the verdict, "We
+  checked 13 past school days with a winter advisory.", "It had no school on 7 and school on
+  6." (no school is closed or at home; a short day counts as school), "Districts near it had no
+  school on about 3 in 5 of those days." (only with a verdict; the nearest plain share, ties to
+  the smaller) and the ending ("Its habit does not change today's chance yet." on a storm day).
+  Its verdict tests its no-school days against `p = same100 / (100 x days)`, the same-day
+  no-school share of the districts near it (its NWS forecast office area, LR-5), by a one-sided
+  exact binomial at 1 in 20 over 5 days or more, and "It tends to hold out." needs 2 days with
+  school (`HABIT_MIN_SCHOOL`: on storm warning days nearly every district near it has no school,
+  so one day read as school held, which may be a closing the file does not hold, would give the
+  verdict alone); with 1 the box gives no verdict ("We do not know yet."), never "about like
+  most", which the test rejected. Under 5 days: "We do not know yet." and "That is not enough to know." It ends with
   whether the habit changed today's chance: it does not on a storm day (the own part is in shadow)
   or a pooled day; an ordinary day counted over no alert days says the chance does not come from
   storm warning days; an own base of an alert or a weather (`alert`, or `similar_days` naming a
@@ -4695,6 +4705,100 @@ a public log hold counts, codes and file ids only, never a district code next to
 line, every public file and the frozen day are the same with them as without
 (`test_new_york_past_rows_change_no_shadow_line`,
 `test_ny_past_rows_in_the_kept_record_change_no_served_or_published_byte`).
+
+### Missouri's school calendars (records-mo, edition 1: the habit box only, no chance moves)
+
+**What it is.** Missouri's Department of Elementary and Secondary Education sent, in answer to a
+public records request (2026-11-19), one workbook (`mo-dese-calendar-2026-11-18`, received, no
+URL, pinned by size and SHA-256 in `state-records.yaml` and read only from `--files`; it is
+never committed). For every public district and charter (an LEA) it lists each day lost to the
+weather, each day of school at home and each make-up day, dated, for the school years 2016-17,
+2017-18, 2018-19, 2024-25 and 2025-26; and yearly hours per building for 2019-20 to 2023-24 (no
+dates; `-100` there is a placeholder, read as missing).
+
+**What each kind means** (the file and the department's own rules page): an *Actual Weather Day*
+is a scheduled day lost to the weather; 0 hours attended is `closed`, more than 0 is a short
+day (`short`: school met, so it is a day with school and never a late start). An *Actual
+Weather Make-up Day* is a day added to make up hours: school was held, never a closing. An *AMI
+Day* (Alternative Methods of Instruction) is school at home (`remote`, no school in the
+building). A *Half Day Indicator* `A` or `P` marks the morning or afternoon session of a half-day
+pre-K or kindergarten program, not a short day: those rows are left out. The department's codes
+01 (school not in session), 12 (other exceptional or emergency circumstances), 13 (inclement
+weather, other) and 14 (make-up, other) are **not in the file**: a weather closing filed under
+code 13 would have no row and be read as open. The lead asked the department on 2026-11-21
+whether any code 12 or 13 days were left out; until it answers, "school held" on a day with no
+row rests on that answer (LR-7).
+
+**The derived files** (lead ruling LR-6; `snowlight/predict/state_records_mo.py`, `snowlight
+predict each-school past --state mo --files <folder> --derive pipeline/data/records/mo`), each
+committed gzipped and pinned by the SHA-256 and rows of its uncompressed bytes, with the raw
+file's own SHA-256 in the config's `provenance`: `mo-days-ed1.csv` (`leaid,date,call,scope,
+weather`, 26,265 rows: every mapped LEA's dated district day with a row, `weather` 1 when a
+weather row is among its rows) and `mo-counts-ed1.csv` (2,784 rows of yearly hours). LEA ids,
+dates and letters only: no name, no building code, no hours by day, no person. The roll-up: a
+district-wide row decides; with building rows only, the LEA's deciding schools (its open CCD
+2024-25 schools that are not charters, all of them for a charter LEA) decide by the label
+rule's shares (half or more with no school: closed or at home; half or more with no school or a
+short day: short; at most 1 in 10: no call, `N`; between: some, `P`, left out). Ids by the
+written rule only: the file's code is the CCD `ST_LEAID` after `MO-`; 561 of 571 codes map, 10
+charters with no CCD 2024-25 school are listed, never matched.
+
+**The open-day rule** (`snowlight/predict/open_days.py`, rule 3: spec RECORDS-MO r2 section 3
+with LR-1). A school day with an alert by 9 PM the evening before (the class history's, a
+charter LEA's from all its schools: `weather-charter.parquet`, MO-3) that the file does not list
+counts as a day with school only when every test passes; each only removes days: a weekday and
+school day of the default calendar of a complete year; not Thanksgiving week, Martin Luther
+King Jr. Day, Presidents' Day, Good Friday, Easter Monday, Veterans Day or its observed day; the
+Monday after Thanksgiving week and the Tuesday after Martin Luther King Jr. Day and Presidents'
+Day only with a row that week (LR-1); December 15 to 31 only with a later December row, January
+1 to 12 only with an earlier or same January row; March 1 to April 20 only with a row that
+week; in a year of 6 or more lost days (closed, at home, short or some; never a make-up day) a
+weekday with no lost day all year is a four-day week's day off, and under 6 every Monday and
+Friday is left out; a year with no weather row gives none; and the **isolation guard** (LR-1):
+a day with no row before a no-school next school day (read past the fixed days off, so a
+Friday before Martin Luther King Jr. Day reads the Tuesday after it) is left out when 80% or
+more of at least 3 county peers, or of the districts near it, had no school that day, and
+**whatever its next day** when 95% or more of at least 10 of either had none. A peer is every
+other district of the group with an alert that day: one with a row by its call (closed or at
+home, no school; short or a make-up day, school), even when its own record leaves the day out
+as an advisory day after a day off, so the second day of a storm reads every district closed
+again; one with no row counts as school only when the rule counts its own day as school. The
+guard runs until no more days are left out, so a day it leaves out is never another district's
+peer with school (with nearly every district near it
+closed, a day the file does not list is far likelier a closing it does not hold: the storm
+warning of February 12, 2025, when 188 of 193 districts near two KC-metro districts had no
+school). A day with a row is decided
+by its row, so **a make-up day held on an alert day counts as a day with school**. An advisory
+day right after a no-school day is `advisory_after`, left out of the advisory record. On the
+real files: 8,373 kept alert days; 91 isolated (19 in KC metro; 51 by the first arm, 40 more by
+the second: 26 advisory, 9 storm warning, 5 cold days); left out among others 17,404 days
+outside the complete years, 1,314 advisory days after a day off, 787 winter break, 697 days in
+years with no weather row, 494 MLK Days,
+445 spring break, 378 Good Friday or Easter Monday, 263 Veterans Day, 248 Mondays or Fridays of
+few lost days, 220 four-day-week weekdays, 138 break edges, 109 Presidents' Days.
+
+**Which days the box counts**: school days with a winter alert out by 9 PM the evening before,
+without an advisory day right after a day off. In the January 2025 storm week most KC no-school
+days were days after the storm with no alert the evening before, so they are not in the box; a
+"day after a storm" habit is a later piece.
+
+**The complete records** (`snowlight/predict/habit_record.py`, `mo-record-ed1.csv`, built with
+`--derive <folder> --record-from <labels folder>` from the day file, the labels run's
+`weather.parquet` and `weather-charter.parquet` and the newest zone-county release for each
+county's forecast office): per LEA and kind its days, no school (and at home among them), short
+days, `same100` and complete winters, counting only days on which at least 5 districts near it
+had the same kind of day (`HABIT_NEAR`, so no day rests on one or two districts; 94 days had
+fewer, and the 2 Missouri LEAs of the Quad Cities office have no row). 1,522 rows over 556
+LEAs: advisory 556 (521 with 5 days or more; verdicts: 5 close easily, 3 hold out, 513 about
+like most), storm warning 533 (113 with 5 or more: 112 about like most, 1 with no verdict as a
+holds out on 1 day with school), cold 433 (none with 5). KC metro (52
+LEAs, all in the EAX area): 51 with 5 or more advisory days (Raymore-Peculiar R-II tends to close
+easily: no school on 8 of 11 when the districts near it had none on about 2 in 5; the other 50
+about like most) and 46 with 5 or more storm warning days. At `same100` every verdict equals the
+verdict at the exact share (0 of 1,522 differ). The standing file carries them as `record_full`
+(`[unit, no school, home, short, days, same100, winters]`; about 51 KB raw and 9 KB gzip for
+Missouri), read by the habit box only: no pass reads them for a chance and the published chance
+does not change (LR-9; the own record's KC gain stays in shadow, MO-6).
 
 ## The forecast history (S7-F, piece F1: data only)
 

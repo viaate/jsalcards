@@ -60,6 +60,7 @@ from snowlight.predict.config import PredictConfig
 from snowlight.predict.exposure import CLASS_OF_WEATHER, CLASSES
 from snowlight.predict.forecast_values import NO_FORECASTS, Forecasts
 from snowlight.predict.geography import REGION_OF, districts_near, neighbors, state_of_leaid
+from snowlight.predict.habit_record import FullRow
 from snowlight.predict.labels import NO_SCHOOL, WEATHER_REASONS
 from snowlight.predict.night_serve import NO_NIGHTS, Nights
 from snowlight.predict.nowcast import UNREAD, Neighbors
@@ -770,9 +771,14 @@ def build_model(  # noqa: PLR0912, PLR0913, PLR0915 - the steps of one model, in
     learned: Learned | None = None,
     *,
     anchor: Anchor | None = None,
+    full: Mapping[str, Mapping[str, FullRow]] | None = None,
 ) -> ServeModel:
     """Every deployed district's rates per situation (see the module docstring), and every
     private school's of the contiguous states (:class:`PrivateServe`).
+
+    ``full``: each LEAID's complete records by class (records-mo,
+    :func:`snowlight.predict.standing.full_records`), shown in the standing file's
+    ``record_full`` and never read by a chance; ``None``: none.
 
     ``zone_fallback(lon, lat)`` gives the zone of a district the model does not know.
     ``learned`` adds what the live-read days taught: its anchored situations are counted over
@@ -965,7 +971,7 @@ def build_model(  # noqa: PLR0912, PLR0913, PLR0915 - the steps of one model, in
             standing_built = _steps(
                 anchor, unit_rates, units, rows, position, pseudo, served, artifact, deployed,
                 mixed, eligible, climate_places, zones, p, usual_snow, snow_usual, settings,
-                directory,
+                directory, full or {},
             )  # fmt: skip
         except Exception as error:  # the why's steps only: never the chances
             steps_error = f"{type(error).__name__}: {error}"[:200]
@@ -1029,6 +1035,7 @@ def _steps(  # noqa: PLR0913, PLR0917 - what build_model holds, in its order
     snow_usual: Floats,
     settings: Settings,
     directory: DeployedDirectory,
+    full: Mapping[str, Mapping[str, FullRow]],
 ) -> standing_file.Built:
     """The standing file of the why's steps (:func:`snowlight.predict.standing.build`)."""
     return standing_file.build(
@@ -1049,6 +1056,7 @@ def _steps(  # noqa: PLR0913, PLR0917 - what build_model holds, in its order
             usual_snow=usual_snow,
             snow_usual=snow_usual,
             grid=Grid(settings.floor, settings.ceiling),
+            full=full,
         ),
         directory.stamp,
         STANDING_TIME,

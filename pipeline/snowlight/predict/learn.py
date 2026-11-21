@@ -89,6 +89,7 @@ from snowlight.predict.backtest import Bin, brier, ece, reliability
 from snowlight.predict.calendar import is_school_day, previous_school_day
 from snowlight.predict.config import PredictConfig
 from snowlight.predict.geography import state_of_leaid
+from snowlight.predict.habit_record import FullRow
 from snowlight.predict.labels import Outcome
 from snowlight.predict.live_labels import (
     DAMAGED,
@@ -815,16 +816,20 @@ def serving_model(  # noqa: PLR0913 - the model's inputs, as build_model's
     zone_fallback: Callable[[float, float], str | None],
     *,
     anchor: Anchor | None = None,
+    full: Mapping[str, Mapping[str, FullRow]] | None = None,
 ) -> tuple[ServeModel, str | None]:
     """The serving model with the learned file, or the committed model alone when that one
     does not build (and why): a learned file never darkens a pass the committed model can
-    serve. ``anchor``: the storm classes' levels (:mod:`snowlight.predict.anchor`), either way."""
+    serve. ``anchor``: the storm classes' levels (:mod:`snowlight.predict.anchor`), either way;
+    ``full``: the complete records the standing file shows (``build_model``'s)."""
     if learned is not None:
         try:
             return build_model(
-                directory, artifact, config, zone_fallback, learned, anchor=anchor
+                directory, artifact, config, zone_fallback, learned, anchor=anchor, full=full
             ), None
         except ServeError as error:
             reason = f"the learned file does not build ({error}); serving the committed model"
-            return build_model(directory, artifact, config, zone_fallback, anchor=anchor), reason
-    return build_model(directory, artifact, config, zone_fallback, anchor=anchor), None
+            return build_model(
+                directory, artifact, config, zone_fallback, anchor=anchor, full=full
+            ), reason
+    return build_model(directory, artifact, config, zone_fallback, anchor=anchor, full=full), None

@@ -73,10 +73,12 @@ export const howCopy: LegalDocument = /* @__PURE__ */ deepFreeze({
     section('A district’s habit', [
       'We look at past closing lists to see what each district did on storm days. This winter’s days are not in them yet.',
       'For no school and late starts, we count only closings for the weather or with no reason given. A day counts as no school when at least half of its main schools were closed or remote. It counts as a late start when at least half of them started late. It counts as school when at most 1 in 10 of them were closed, remote, late or let out early. Here any reason counts. Other days are left out.',
-      'To tell a district’s habit, we need at least 5 of its days with one kind of alert. Then we compare it with every other district on the same kind of day.',
-      'Most past lists were kept on storm mornings, so they show mostly days off. That is why we compare a district with other districts, not with every day.',
-      'A district tends to close easily if it closes more often than the other districts. It tends to hold out if it closes less often than they do. If it is close to them, it is about like most districts.',
-      'We only say this when a gap that big would come from luck less than 1 time in 20.',
+      'Most past lists were kept on storm mornings, so they show mostly days off. So the lists alone cannot tell a district’s habit.',
+      'For schools in Missouri, the state sends us each school day lost to weather. A school day with an alert that is not on that list counts as open. We count a day when a winter alert was out by 9 at night. A make-up day counts as a day with school. A winter advisory day right after a day off is left out.',
+      'For Missouri, no school means the school was closed or had school at home. There, a short day counts as a day with school.',
+      'To tell a district’s habit, we need at least 5 school days with one kind of alert. Then we compare it with districts near it on the same days.',
+      'A district tends to close easily if it has no school more often than the districts near it. It tends to hold out if it has no school less often than they do. If it is close to them, it is about like most districts.',
+      'We only say this when a gap that big would come from luck less than 1 time in 20. To say it holds out, it must have had school on at least 2 of those days.',
       'On storm days, the chance does not use a district’s habit yet. We are testing that now.',
     ]),
     section('Days with no storm alert', [

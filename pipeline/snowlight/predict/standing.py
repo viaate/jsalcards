@@ -17,12 +17,13 @@ delta and the exposure term by exact Shapley values on the chance scale, whole b
 ``base.points - now - region - held``.
 """
 
+import functools
 import gzip
 import hashlib
 import json
 import math
-from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Final
 
@@ -43,6 +44,7 @@ from snowlight.predict.anchor import (
 from snowlight.predict.artifact import SITUATION_KEYS, DistrictModel, ModelArtifact
 from snowlight.predict.exposure import CLASSES
 from snowlight.predict.forecast_values import DistrictForecast
+from snowlight.predict.habit_record import FullRow, read_record_file
 from snowlight.predict.shapley import whole_points
 from snowlight.schemas.directory import DirectoryStamp
 from snowlight.schemas.predictions import PlausibilityClause
@@ -63,6 +65,7 @@ from snowlight.schemas.standing import (
     StandingLevels,
     StandingOwn,
     StandingRecord,
+    StandingRecordFull,
     StandingRefs,
     StandingRegion,
     StandingRegionDelta,
@@ -119,6 +122,9 @@ class Inputs:
     usual_snow: Floats
     snow_usual: Floats
     grid: Grid
+    full: Mapping[str, Mapping[str, FullRow]] = field(default_factory=dict)
+    """Each LEAID's complete records by class (:func:`full_records`, records-mo): shown in
+    place of its list record, never read by a chance (LR-9)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -413,6 +419,7 @@ def build(inputs: Inputs, directory: DirectoryStamp, generated: datetime) -> Bui
         held_clauses=_clauses(pull.first),
         record=StandingRecord(**{k: tuple(v) for k, v in record_rows.items()}),
         record_sum=StandingSums(**{k: _sum(v) for k, v in record_rows.items()}),
+        record_full=_full_rows(inputs),
         private=private,
     )
     found = body.model_copy(update={"stamp": stamp_of(body)})
@@ -427,6 +434,50 @@ def build(inputs: Inputs, directory: DirectoryStamp, generated: datetime) -> Bui
         refused=tuple(refused),
         unsaid=tuple(unsaid),
     )
+
+
+def _full_rows(inputs: Inputs) -> StandingRecordFull:
+    """Each deployed district's complete record rows, by class, in directory order."""
+    rows: dict[str, list[tuple[int, int, int, int, int, int, int]]] = {k: [] for k in CLASSES}
+    for i, leaid in enumerate(inputs.district_ids):
+        for klass, row in sorted(inputs.full.get(leaid, {}).items()):
+            rows[klass].append(
+                (i, row.no_school, row.home, row.short, row.days, row.same100, row.winters)
+            )
+    return StandingRecordFull(**{k: tuple(v) for k, v in rows.items()})
+
+
+@functools.cache
+def full_records() -> Mapping[str, Mapping[str, FullRow]]:
+    """Every state's committed complete records (``config/state-records.yaml``
+    ``full_record``), each file checked by its pin, by LEAID and class; read once a process.
+
+    Raises:
+        StateRecordError: a file is missing or off its pin (:func:`full_records_read` is the
+            pass's reader, which never raises).
+        FullRecordError: a file does not read or add up.
+    """
+    from snowlight.predict import state_records  # noqa: PLC0415
+
+    found: dict[str, dict[str, FullRow]] = {}
+    for state in state_records.load().states.values():
+        if state.full_record is None:
+            continue
+        data = state_records.read_derived(state, state.full_record.name)
+        for row in read_record_file(data):
+            found.setdefault(row.leaid, {})[row.kind] = row
+    return found
+
+
+def full_records_read(warn: Callable[[str], None]) -> Mapping[str, Mapping[str, FullRow]]:
+    """:func:`full_records`, or none when a file is missing, off its pin or does not read: that
+    is warned, the standing file then carries no ``record_full`` (every habit box keeps the
+    lists' words) and nothing else in the pass changes, so a bad record file never stops it."""
+    try:
+        return full_records()
+    except (ValueError, OSError) as error:  # StateRecordError and FullRecordError are ValueErrors
+        warn(f"the complete records were not read, so no habit box shows one: {error}")
+        return {}
 
 
 def _storms(fit: ClassFit) -> int:

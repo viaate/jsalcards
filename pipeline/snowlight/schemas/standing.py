@@ -203,6 +203,29 @@ class StandingRecord(CompactModel):
     cold: tuple[RecordRow, ...]
 
 
+type FullRecordRow = tuple[
+    Annotated[StandingIndex, Field(title="unit")],
+    Annotated[StandingCount, Field(title="no_school")],
+    Annotated[StandingCount, Field(title="home")],
+    Annotated[StandingCount, Field(title="short")],
+    Annotated[StandingCount, Field(title="of")],
+    Annotated[int, Field(ge=0, title="same100")],
+    Annotated[int, Field(ge=0, le=99, title="winters")],
+]
+"""A complete record from a state's calendar file (records-mo): [unit, no school (closed or at
+home), at home among them, short days, days, 100 x the sum over its days of the same-day
+no-school share of the districts near it, rounded half up, the complete winters it holds]. Its
+verdict is tested against ``same100 / (100 x days)``, never against the lists' ``record_sum``."""
+
+
+class StandingRecordFull(CompactModel):
+    """Per class, the districts with a complete record (none: the field is left out)."""
+
+    advisory: tuple[FullRecordRow, ...]
+    warning: tuple[FullRecordRow, ...]
+    cold: tuple[FullRecordRow, ...]
+
+
 class StandingSums(CompactModel):
     advisory: RecordSum
     warning: RecordSum
@@ -234,6 +257,15 @@ class PrivateStanding(CompactModel):
         if any(row >= len(self.rows) for row in self.of):
             raise ValueError("private: a school names a row the file does not hold")
         return self
+
+
+def _check_full(rows: tuple[FullRecordRow, ...], count: int, klass: str) -> None:
+    """A class's complete records name a district, are sorted and unique, and add up."""
+    if any(row[0] >= count for row in rows) or any(b[0] <= a[0] for a, b in pairwise(rows)):
+        raise ValueError(f"standing: {klass} complete records are sorted, unique, named")
+    for _unit, no, home, short, days, same100, _winters in rows:
+        if days < 1 or home > no or no + short > days or same100 > 100 * days:
+            raise ValueError("standing: a complete record does not add up")
 
 
 class StandingFile(CompactModel):
@@ -271,6 +303,9 @@ class StandingFile(CompactModel):
     held_clauses: Annotated[tuple[Clause, ...], Field(max_length=4)] = ()
     record: StandingRecord
     record_sum: StandingSums
+    record_full: StandingRecordFull = StandingRecordFull(advisory=(), warning=(), cold=())
+    """Where a district has a complete record of a class, the panel shows it in place of its
+    ``record`` row (records-mo MO-4)."""
     private: PrivateStanding
 
     @model_validator(mode="after")
@@ -299,6 +334,7 @@ class StandingFile(CompactModel):
             for row in (*getattr(self.record, klass), *getattr(self.private.record, klass)):
                 if row[1] + row[2] > row[3] or row[3] < 1:
                     raise ValueError("standing: a record's parts are more than its days")
+            _check_full(getattr(self.record_full, klass), count, klass)
         for klass in ("advisory", "warning"):
             usual, alone = getattr(self.usual, klass), getattr(self.alone, klass)
             if any(

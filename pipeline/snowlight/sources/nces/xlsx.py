@@ -1,4 +1,5 @@
-"""A small, dependency-free reader for the first worksheet of an ``.xlsx`` file.
+"""A small, dependency-free reader for the worksheets of an ``.xlsx`` file (the first by
+default).
 
 NCES ships its EDGE geocode tables as Excel workbooks next to pipe-delimited
 text. The text files have no header row and the private-school release has no
@@ -56,20 +57,35 @@ def _shared_strings(book: zipfile.ZipFile) -> list[str]:
     return [_text_of(item) for item in root.findall(f"{_MAIN}si")]
 
 
-def _first_sheet_path(book: zipfile.ZipFile) -> str:
+def _sheet_paths(book: zipfile.ZipFile) -> list[tuple[str, str]]:
+    """Each worksheet's name and part path, in workbook order."""
     workbook = ET.fromstring(book.read("xl/workbook.xml"))  # noqa: S314 - official NCES file
-    sheet = workbook.find(f"{_MAIN}sheets/{_MAIN}sheet")
-    if sheet is None:
+    sheets = workbook.findall(f"{_MAIN}sheets/{_MAIN}sheet")
+    if not sheets:
         raise XlsxFormatError("workbook has no sheets")
-    rel_id = sheet.get(f"{_DOC_REL}id")
     rels = ET.fromstring(book.read("xl/_rels/workbook.xml.rels"))  # noqa: S314 - official NCES file
-    for rel in rels.findall(f"{_PKG_REL}Relationship"):
-        if rel.get("Id") == rel_id:
-            target = rel.get("Target", "")
-            if target.startswith("/"):
-                return target.lstrip("/")
-            return posixpath.normpath(posixpath.join("xl", target))
-    raise XlsxFormatError(f"no relationship for sheet id {rel_id!r}")
+    targets = {
+        rel.get("Id"): rel.get("Target", "") for rel in rels.findall(f"{_PKG_REL}Relationship")
+    }
+    found: list[tuple[str, str]] = []
+    for sheet in sheets:
+        rel_id = sheet.get(f"{_DOC_REL}id")
+        target = targets.get(rel_id)
+        if target is None:
+            raise XlsxFormatError(f"no relationship for sheet id {rel_id!r}")
+        path = (
+            target.lstrip("/")
+            if target.startswith("/")
+            else posixpath.normpath(posixpath.join("xl", target))
+        )
+        found.append((sheet.get("name", ""), path))
+    return found
+
+
+def sheet_names(workbook: bytes) -> list[str]:
+    """The workbook's worksheet names, in order."""
+    with zipfile.ZipFile(io.BytesIO(workbook)) as book:
+        return [name for name, _path in _sheet_paths(book)]
 
 
 def _cell_value(cell: ET.Element, strings: list[str]) -> str | None:
@@ -87,17 +103,20 @@ def _cell_value(cell: ET.Element, strings: list[str]) -> str | None:
     return value.text
 
 
-def iter_rows(workbook: bytes) -> Iterator[Row]:
-    """Yield every row of the first worksheet of ``workbook`` as a list of cell texts.
+def iter_rows(workbook: bytes, sheet: int = 0) -> Iterator[Row]:
+    """Yield every row of the first worksheet of ``workbook`` (or of worksheet ``sheet``, by
+    its position) as a list of cell texts.
 
     Cells missing from the XML (Excel omits empty ones) are ``None``; each row is
     as long as its right-most non-empty cell. Blank rows are skipped.
     """
     with zipfile.ZipFile(io.BytesIO(workbook)) as book:
         strings = _shared_strings(book)
-        sheet_path = _first_sheet_path(book)
-        with book.open(sheet_path) as sheet:
-            for _event, element in ET.iterparse(sheet):  # noqa: S314 - official NCES file
+        paths = _sheet_paths(book)
+        if not 0 <= sheet < len(paths):
+            raise XlsxFormatError(f"workbook has no sheet {sheet}")
+        with book.open(paths[sheet][1]) as part:
+            for _event, element in ET.iterparse(part):  # noqa: S314 - official NCES file
                 if element.tag != f"{_MAIN}row":
                     continue
                 row: Row = []

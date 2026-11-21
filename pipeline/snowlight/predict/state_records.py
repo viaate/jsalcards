@@ -108,6 +108,7 @@ import hashlib
 import re
 import sys
 import zlib
+from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
@@ -119,6 +120,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 
 from snowlight.predict.calendar import is_school_day, previous_school_day
 from snowlight.predict.config import PIPELINE_ROOT
+from snowlight.predict.open_days import OpenDayRule
 from snowlight.predict.record import (
     PAST_COUNTS,
     PAST_DAYS,
@@ -159,7 +161,7 @@ class StateFile(BaseModel):
 
     id: str = Field(pattern=r"^[a-z]{2}-[a-z0-9-]{1,40}$")
     """The file's id: the record's rows name it, never its URL."""
-    form: Literal["ky_summary", "ky_trend", "ny_a8"]
+    form: Literal["ky_summary", "ky_trend", "ny_a8", "mo_calendar", "ccd_schools"]
     url: str | None = Field(default=None, pattern=r"^https://")
     """Where it is fetched by plain GET; ``None`` for a received file."""
     page: str | None = Field(default=None, pattern=r"^https://")
@@ -233,6 +235,18 @@ class NotWeather(BaseModel):
     checked: date
 
 
+class DerivedFile(BaseModel):
+    """A derived file a state's files build, committed under ``data/records/<state>/`` as
+    ``<name>.gz`` and pinned by its uncompressed bytes (Missouri, lead ruling LR-6)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    name: str = Field(pattern=r"^[a-z]{2}-[a-z0-9-]{1,40}\.csv$")
+    rows: int = Field(ge=0)
+    """Its data rows (lines after the header)."""
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
 class StateRecords(BaseModel):
     """One state's files, codes and ids."""
 
@@ -262,6 +276,16 @@ class StateRecords(BaseModel):
     """Days listed under a weather code that were not the weather (see :class:`NotWeather`)."""
     unconfirmed: tuple[NotWeather, ...] = ()
     """Days listed under a weather code that the review could not tie to the weather."""
+    provenance: str | None = None
+    """Where a received file came from, in plain words (no person, no request number)."""
+    open_days: OpenDayRule | None = None
+    """Its open-day rule (a state whose derived day file lists every lost school day)."""
+    full_record: DerivedFile | None = None
+    """Its districts' complete records (:mod:`snowlight.predict.habit_record`), built from its
+    day file, the class history and the forecast office areas, read by the standing file."""
+    derived: tuple[DerivedFile, ...] = ()
+    """The derived files its files build (a state of the ``mo_calendar`` form): its rows are
+    read from these committed files, never from the record kind."""
 
     def other_cause(self, number: str, day: date, code: str) -> bool:
         """The written ``not_weather`` list names this listed day."""
@@ -1596,6 +1620,8 @@ KINDS: Final[Mapping[str, tuple[Kind, ...]]] = {
     "ky_summary": (PAST_DAYS, PAST_COUNTS),
     "ky_trend": (PAST_COUNTS,),
     "ny_a8": (PAST_DAYS, PAST_COUNTS),
+    "mo_calendar": (),
+    "ccd_schools": (),
 }
 """The record keys each file form writes."""
 
@@ -1623,6 +1649,159 @@ def checked(item: StateFile, data: bytes) -> bytes:
     return data
 
 
+# --- the derived files ------------------------------------------------------------------------
+
+DERIVED_ROOT: Final = PIPELINE_ROOT / "data" / "records"
+
+
+def gzipped(data: bytes) -> bytes:
+    """``data`` gzipped the same way every time (level 9, no time, no name)."""
+    import gzip  # noqa: PLC0415
+
+    return gzip.compress(data, compresslevel=9, mtime=0)
+
+
+def check_derived(state: StateRecords, name: str, data: bytes) -> bytes:
+    """``data`` when it is the derived file ``name`` the state pins.
+
+    Raises:
+        StateRecordError: not a derived file of the state, or not its pinned rows and SHA-256.
+    """
+    pins = {item.name: item for item in state.derived}
+    if state.full_record is not None:
+        pins[state.full_record.name] = state.full_record
+    pin = pins.get(name)
+    if pin is None:
+        raise StateRecordError(f"{state.state}: {name} is not a derived file it pins")
+    digest = hashlib.sha256(data).hexdigest()
+    rows = data.count(b"\n") - 1
+    if digest != pin.sha256 or rows != pin.rows:
+        raise StateRecordError(
+            f"{state.state}: {name} {rows} rows, SHA-256 {digest[:12]}, not the pinned"
+            f" {pin.rows} rows {pin.sha256[:12]}: a changed file needs a reviewed pin"
+        )
+    return data
+
+
+def read_derived(state: StateRecords, name: str, root: Path = DERIVED_ROOT) -> bytes:
+    """The committed derived file ``name`` (``<root>/<state>/<name>.gz``), checked by its pin.
+
+    Raises:
+        StateRecordError: missing, not gzip, or not the pinned bytes.
+    """
+    import gzip  # noqa: PLC0415
+
+    path = root / state.state / f"{name}.gz"
+    try:
+        data = gzip.decompress(path.read_bytes())
+    except (OSError, EOFError) as error:
+        raise StateRecordError(
+            f"{state.state}: {name} does not read: {type(error).__name__}"
+        ) from error
+    return check_derived(state, name, data)
+
+
+def derive(
+    state: StateRecords,
+    folder: Path | None,
+    fetch: Callable[[str], bytes],
+    say: Callable[[str], None],
+) -> dict[str, bytes]:
+    """A state's derived files built from its pinned files (``--files``), each checked by its
+    pin. A state with none gives none.
+
+    Raises:
+        StateRecordError: a file is missing, not pinned, does not read, or builds a derived
+            file whose bytes are not the pinned ones.
+    """
+    if not state.derived:
+        return {}
+    if folder is None:
+        raise StateRecordError(f"{state.state}: its derived files are built only with --files")
+    from snowlight.predict import state_records_mo  # noqa: PLC0415
+    from snowlight.predict.config import PredictConfig  # noqa: PLC0415
+
+    files = read_files(state, folder, fetch)
+    forms = {item.form: item.id for item in state.files}
+    if set(forms) != {"mo_calendar", "ccd_schools"} or len(forms) != len(state.files):
+        raise StateRecordError(f"{state.state}: not one calendar file and one directory")
+    labels = PredictConfig.load().labels
+    try:
+        built = state_records_mo.build(
+            files[forms["mo_calendar"]],
+            files[forms["ccd_schools"]],
+            state.ids,
+            state.unmapped,
+            (labels.no_school_share, labels.open_max_share),
+        )
+    except state_records_mo.MoCalendarError as error:
+        raise StateRecordError(f"{state.state}: {error}") from error
+    for line in built.lines:
+        say(line)
+    if set(built.files) != {item.name for item in state.derived}:
+        raise StateRecordError(f"{state.state}: built other derived files than it pins")
+    return {name: check_derived(state, name, data) for name, data in built.files.items()}
+
+
+def office_of_county(release: str, label: str, state_fips: str) -> dict[str, str]:
+    """Each county's NWS forecast office (CWA) in a zone-county correlation release: the
+    office of most of its zones (ties to the first by name)."""
+    from snowlight.weights.zones import read_release  # noqa: PLC0415
+
+    by: dict[str, Counter[str]] = {}
+    for record in read_release(release, label):
+        if record.fips.startswith(state_fips):
+            by.setdefault(record.fips, Counter())[record.cwa] += 1
+    return {fips: min(counts, key=lambda cwa: (-counts[cwa], cwa)) for fips, counts in by.items()}
+
+
+def full_record(
+    state: StateRecords,
+    classes: Iterable[tuple[str, date, int]],
+    county_of: Mapping[str, str],
+    office_of: Mapping[str, str],
+) -> tuple[bytes, list[str]]:
+    """The state's complete-record file and its lines: its committed day file through its
+    open-day rule (isolation peers: its county by the state's code, and its forecast office
+    area), then :func:`snowlight.predict.habit_record.full_rows` with the area as the peers.
+    ``county_of`` is each LEAID's county FIPS (the directory's), ``office_of`` each county's
+    office.
+
+    Raises:
+        StateRecordError: no open-day rule or full-record pin, or a file off its pin.
+    """
+    from snowlight.predict import habit_record, open_days  # noqa: PLC0415
+    from snowlight.predict.calendar import season_label  # noqa: PLC0415
+
+    rule, pin = state.open_days, state.full_record
+    if rule is None or pin is None:
+        raise StateRecordError(f"{state.state}: no open-day rule or full-record pin")
+    days = open_days.read_days(read_derived(state, state.derived[0].name))
+    leaids = set(state.ids.values())
+    code_group = {leaid: code[:3] for code, leaid in state.ids.items()}
+    area = {
+        leaid: office_of[county]
+        for leaid, county in county_of.items()
+        if leaid in leaids and county in office_of
+    }
+    kept = open_days.alert_days(
+        days, [c for c in classes if c[0] in leaids], (code_group, area), rule
+    )
+    complete = set(rule.complete_years)
+    winters = Counter(u for u, season in days.weather_years if season_label(season) in complete)
+    rows = habit_record.full_rows(kept.kept, area, winters)
+    data = habit_record.record_file(rows)
+    lines = [
+        f"predict each-school past: {state.state}: {len(kept.kept)} kept alert days,"
+        f" {len(kept.isolated)} isolated; left out: "
+        + ", ".join(f"{n} {why}" for why, n in kept.left.most_common()),
+        f"predict each-school past: {state.state}: {pin.name} {len(rows)} rows over"
+        f" {len({r.leaid for r in rows})} districts, {sum(r.days for r in rows)} days,"
+        f" SHA-256 {hashlib.sha256(data).hexdigest()[:12]}",
+    ]
+    return check_derived(state, pin.name, data), lines
+
+
 # --- the step ---------------------------------------------------------------------------------
 
 
@@ -1641,6 +1820,25 @@ def register(steps: "argparse._SubParsersAction[argparse.ArgumentParser]") -> No
         type=Path,
         default=None,
         help="write each key's rows to this folder; the evidence store is not asked",
+    )
+    past.add_argument(
+        "--derive",
+        type=Path,
+        default=None,
+        help="build each state's derived files (with --files) into this folder, gzipped",
+    )
+    past.add_argument(
+        "--record-from",
+        type=Path,
+        default=None,
+        help="with --derive: also build each state's complete records from this labels folder"
+        " (weather.parquet, weather-charter.parquet, districts.parquet)",
+    )
+    past.add_argument(
+        "--weights-cache",
+        type=Path,
+        default=PIPELINE_ROOT / ".cache" / "weights",
+        help="the weights cache holding the zone-county correlation releases",
     )
     past.set_defaults(handler=run_past)
 
@@ -1723,6 +1921,12 @@ def past_keys(
     found: dict[str, bytes] = {}
     for state in states:
         keys = wanted(state, held)
+        if not keys and state.derived:
+            say(
+                f"predict each-school past: {state.state}: writes no record keys; its"
+                f" {len(state.derived)} derived files are built with --derive"
+            )
+            continue
         if not keys:
             say(f"predict each-school past: {state.state}: every key is kept already")
             continue
@@ -1767,6 +1971,37 @@ def past_keys(
     return found
 
 
+def _full_record_from(  # pragma: no cover - the real labels run and the weights cache
+    state: StateRecords, work: Path, cache_root: Path
+) -> tuple[bytes, list[str]]:
+    import polars as pl  # noqa: PLC0415
+
+    from snowlight.sources.nws.http import HttpCache, make_client  # noqa: PLC0415
+    from snowlight.weights import zones  # noqa: PLC0415
+    from snowlight.weights.cache import WeightsCache  # noqa: PLC0415
+
+    weather = pl.concat(
+        [
+            pl.read_parquet(work / "weather.parquet"),
+            pl.read_parquet(work / "weather-charter.parquet"),
+        ]
+    )
+    table = pl.read_parquet(work / "districts.parquet")
+    name = zones.RELEASES[-1]
+    with HttpCache(make_client()) as http:
+        release = zones.load_releases(WeightsCache(http, root=cache_root, siblings=()), (name,))[0]
+    if release.file is None:
+        raise StateRecordError(f"{state.state}: the zone release did not read")
+    text = release.file.path.read_bytes().decode("latin-1")
+    fips = next(iter(state.ids.values()))[:2]
+    return full_record(
+        state,
+        weather.select("district", "day", "weather").iter_rows(),
+        dict(zip(table["district"], table["county"], strict=True)),
+        office_of_county(text, name, fips),
+    )
+
+
 def run_past(args: argparse.Namespace) -> int:  # pragma: no cover - the real world
     """Run ``predict each-school past`` (each-school-record.yml): the keys :func:`past_keys`
     gives are offered to the evidence store's record kind (``--dry-run``: written to a folder,
@@ -1781,6 +2016,20 @@ def run_past(args: argparse.Namespace) -> int:  # pragma: no cover - the real wo
 
     config = load(args.config)
     states = [s for k, s in sorted(config.states.items()) if not args.state or k in args.state]
+    if args.derive is not None:
+        try:
+            for state in states:
+                for name, data in derive(state, args.files, _fetch, _say).items():
+                    write_bytes_atomic(args.derive / f"{name}.gz", gzipped(data))
+                if args.record_from is not None and state.full_record is not None:
+                    data, lines = _full_record_from(state, args.record_from, args.weights_cache)
+                    for line in lines:
+                        _say(line)
+                    write_bytes_atomic(args.derive / f"{state.full_record.name}.gz", gzipped(data))
+        except StateRecordError as error:
+            _say(f"::error::predict each-school past: {error}")
+            return 1
+        return 0
     if args.dry_run is not None:
         for key, data in past_keys(states, (), args.files, _fetch, _say).items():
             write_bytes_atomic(args.dry_run / key.replace("/", "_"), data)

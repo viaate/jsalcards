@@ -456,6 +456,71 @@ function rules(text: string): string[] {
   return problems(plainText.replace(/^the district/, 'The district'), 'src/copy-chance.ts');
 }
 
+/** Every complete-record box (records-mo, lead ruling LR-4): its five sentences at most. */
+function fullForms(): string[] {
+  const out: string[] = [];
+  const shares = [0, 0.004, 0.2, 0.37, 0.433, 0.5, 0.553, 0.71, 0.9, 0.97, 0.995, 1];
+  for (const k of CLASSES) {
+    for (const [n, none] of [
+      [1, 1],
+      [1, 0],
+      [2, 2],
+      [3, 2],
+      [6, 6],
+      [11, 8],
+      [13, 7],
+      [17, 0],
+    ] as const) {
+      for (const verdict of [
+        habit.earlyFull,
+        habit.holdOutFull,
+        habit.likeMost('districts'),
+        habit.unknown,
+      ]) {
+        for (const p of shares) {
+          const unknown = verdict === habit.unknown;
+          for (const end of [
+            unknown ? [habit.tooFew, habit.notUsedFew] : [habit.notUsedFull],
+            [habit.notToday],
+            [habit.ownAlertFull],
+          ]) {
+            const near = unknown ? [] : [habit.near(p)];
+            out.push(
+              [verdict, habit.checked(n, k), habit.noSchool(n, none), ...near, ...end].join(' '),
+            );
+          }
+        }
+      }
+    }
+  }
+  return out;
+}
+
+describe('a complete record box reads at grade 6, the whole and each sentence alone', () => {
+  const boxes = [...new Set(fullForms())];
+
+  it('keeps the whole box and every sentence alone at grade 6, 15 words, five sentences', () => {
+    const failing: string[] = [];
+    for (const text of boxes) {
+      const sentences = (text.match(/[^.]+\./gu) ?? []).map((x) => x.trim());
+      if (sentences.length > 5) failing.push(`over 5 | ${text}`);
+      for (const part of [text, ...sentences]) {
+        const { grade, longest } = measure(part, NAMES);
+        if ((grade !== null && grade > 6) || longest > 15 || bannedIn(part).length > 0) {
+          failing.push(`${String(grade)} ${String(longest)} | ${part}`);
+        }
+        if (/[!\u2014]/u.test(part)) failing.push(`mark | ${part}`);
+      }
+    }
+    expect([...new Set(failing)]).toEqual([]);
+  }, 60_000);
+
+  it('follows the house style in every box', () => {
+    const failing = boxes.flatMap((text) => rules(text).map((problem) => `${problem} | ${text}`));
+    expect([...new Set(failing)]).toEqual([]);
+  }, 60_000);
+});
+
 describe('the plain why reads at grade 6', () => {
   const all = [...new Set([...forms(), ...lineForms()])];
 
@@ -510,5 +575,22 @@ describe('the page How Snowlight guesses', () => {
     expect(page).toContain('tends to close easily');
     expect(page).toContain('It tends to hold out');
     expect(page).not.toMatch(/delayed start|close early/u);
+  });
+
+  it('says Missouri’s calendar days as lead ruling LR-2 words them, and never that it shows open days', () => {
+    const page = paragraphs.join(' ');
+    expect(paragraphs).toContain(
+      'For schools in Missouri, the state sends us each school day lost to weather. A school day with an alert that is not on that list counts as open. We count a day when a winter alert was out by 9 at night. A make-up day counts as a day with school. A winter advisory day right after a day off is left out.',
+    );
+    expect(page).toContain('school at home');
+    expect(page).not.toMatch(/shows? (the )?(days|open)|stayed open/u);
+    for (const paragraph of paragraphs) {
+      for (const sentence of (paragraph.match(/[^.]+\./gu) ?? []).map((x) => x.trim())) {
+        const { grade } = measure(sentence, []);
+        if (paragraph.includes('Missouri')) {
+          expect([sentence, grade === null || grade <= 6]).toEqual([sentence, true]);
+        }
+      }
+    }
   });
 });

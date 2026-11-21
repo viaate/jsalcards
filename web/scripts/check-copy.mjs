@@ -264,6 +264,8 @@ export const PROPER_NOUNS = new Set([
   'K',
   // The language the site speaks: "said in plain English" (src/copy-get.ts).
   'English',
+  // A state whose own school calendars the How page names (src/copy-how.ts, records-mo).
+  'Missouri',
   ...['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August'],
   ...['September', 'October', 'November', 'December'],
   ...['Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Sept', 'Oct', 'Nov', 'Dec'],

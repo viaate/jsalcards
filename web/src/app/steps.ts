@@ -80,10 +80,18 @@ const ONE = 4;
 /** The fewest days of one kind a habit is judged on, and how unlikely by luck its gap must be. */
 export const HABIT_DAYS = 5;
 export const HABIT_LUCK = 0.05;
+/**
+ * The fewest days with school a "holds out" verdict rests on (records-mo; `habit_record.py`
+ * `HABIT_MIN_SCHOOL`): on storm warning days nearly every district near it has no school, so one
+ * day read as school held would give the verdict alone. With fewer there is no verdict, never
+ * "about like most": the test said it is not.
+ */
+export const HABIT_MIN_SCHOOL = 2;
 
 type Row4 = readonly [number, number, number, number];
 type Row5 = readonly [number, number, number, number, number];
 type Row3 = readonly [number, number, number];
+type Row7 = readonly [number, number, number, number, number, number, number];
 
 function rowFor<T extends readonly number[]>(
   rows: readonly T[] | undefined,
@@ -122,6 +130,8 @@ interface Unit {
   readonly held: number;
   readonly record: { closed: number; late: number; of: number } | null;
   readonly sum: { closed: number; of: number };
+  /** Its complete record of the class (a state's calendar file, records-mo), or null. */
+  readonly full: { noSchool: number; of: number; same100: number } | null;
 }
 
 /** What the standing file says of one unit and class, or null where it says it wrong. */
@@ -135,6 +145,7 @@ function unitOf(source: StepsSource, klass: StepClass, name: string): Unit | nul
     const held = rowFor(file.held[klass] as readonly Row5[], i);
     const record = rowFor(file.record[klass] as readonly Row4[], i);
     const sum = file.record_sum[klass];
+    const full = rowFor(file.record_full?.[klass] as readonly Row7[] | undefined, i);
     return {
       name,
       school: false,
@@ -146,6 +157,7 @@ function unitOf(source: StepsSource, klass: StepClass, name: string): Unit | nul
       held: held === null ? 0 : held[1] + held[2] + held[3],
       record: record === null ? null : { closed: record[1], late: record[2], of: record[3] },
       sum: { closed: sum[0], of: sum[2] },
+      full: full === null ? null : { noSchool: full[1], of: full[4], same100: full[5] },
     };
   }
   const privateFile = file.private;
@@ -172,6 +184,7 @@ function unitOf(source: StepsSource, klass: StepClass, name: string): Unit | nul
     held: held === null ? 0 : held[1] + held[2] + held[3],
     record: record === null ? null : { closed: record[1], late: record[2], of: record[3] },
     sum: { closed: sum[0], of: sum[2] },
+    full: null,
   };
 }
 
@@ -190,23 +203,53 @@ export function tails(n: number, k: number, p: number): { low: number; high: num
 }
 
 /**
- * The habit's verdict (WHY-PLAIN 3c): with 5 or more days of the kind, the unit against the
- * others in the same lists (`record_sum` less its own days), one-sided exact binomial; null
- * under 5 days or where the sums cannot give a share.
+ * The habit's verdict (WHY-PLAIN 3c, records-mo): a complete record's no-school days against
+ * `p`, the share of the districts near it that had no school on its same days, one-sided exact
+ * binomial; null under 5 days or with no share, and null for a "holds out" on fewer than
+ * `HABIT_MIN_SCHOOL` days with school. A closings-only record (the lists) never gets one: its open days are mostly
+ * unseen, so it is never judged (`habitText`).
  */
 export function verdictOf(
   record: { readonly closed: number; readonly of: number },
-  sum: { readonly closed: number; readonly of: number },
+  p: number,
 ): 'hold' | 'close' | 'like' | null {
   const { closed: k, of: n } = record;
-  if (n < HABIT_DAYS) return null;
-  const others = sum.of - n;
-  const othersClosed = sum.closed - k;
-  if (others <= 0 || othersClosed < 0 || othersClosed > others) return null;
-  const { low, high } = tails(n, k, othersClosed / others);
-  if (low < HABIT_LUCK) return 'hold';
+  if (n < HABIT_DAYS || !(p >= 0 && p <= 1) || k < 0 || k > n) return null;
+  const { low, high } = tails(n, k, p);
+  if (low < HABIT_LUCK) return n - k >= HABIT_MIN_SCHOOL ? 'hold' : null;
   if (high < HABIT_LUCK) return 'close';
   return 'like';
+}
+
+/**
+ * The habit box from a complete record (records-mo, lead ruling LR-4): at most five short
+ * sentences, the verdict, the days checked, no school and school, the districts near it on
+ * those days (only with a verdict), then the ending.
+ */
+function fullHabitText(
+  full: { readonly noSchool: number; readonly of: number; readonly same100: number },
+  klass: StepClass,
+  ending: 'storm' | 'ordinary' | 'alert',
+): string {
+  const p = full.same100 / (100 * full.of);
+  const verdict = verdictOf({ closed: full.noSchool, of: full.of }, p);
+  const said: string[] = [
+    verdict === null
+      ? habit.unknown
+      : verdict === 'hold'
+        ? habit.holdOutFull
+        : verdict === 'close'
+          ? habit.earlyFull
+          : habit.likeMost('districts'),
+    habit.checked(full.of, klass),
+    habit.noSchool(full.of, full.noSchool),
+  ];
+  if (verdict !== null) said.push(habit.near(p));
+  if (ending === 'alert') said.push(habit.ownAlertFull);
+  else if (ending === 'ordinary') said.push(habit.notToday);
+  else if (verdict === null) said.push(habit.tooFew, habit.notUsedFew);
+  else said.push(habit.notUsedFull);
+  return said.join(' ');
 }
 
 /**
@@ -227,43 +270,29 @@ function habitText(
     if (ending === 'ordinary') return `${habit.cannot} ${habit.notToday}`;
     return habit.fallback;
   }
-  const peers = unit.school ? 'private schools' : 'districts';
+  if (unit.full !== null) return fullHabitText(unit.full, klass, ending);
+  // A closings-only record (the lists) is never judged: its open days are mostly unseen, so the
+  // box says what the lists show, and under 5 days that it is not enough to know (more list days
+  // would not settle it, so that is never said from 5 on).
   const record = unit.record;
   const n = record?.of ?? 0;
-  const said: string[] = [];
-  const verdict = record === null ? null : verdictOf(record, unit.sum);
   if (ending === 'alert') {
     // Its own days like today's made the chance (the row below counts them), which can be fewer
-    // than the class record shown here: no verdict, the record as the class's days, then that.
-    // With no record, only that it is not known, never "no days" beside "comes from".
-    if (n === 0) said.push(habit.unknown);
-  } else if (verdict === null) {
-    said.push(habit.unknown);
-  } else {
-    said.push(
-      verdict === 'hold'
-        ? habit.holdOut(klass, peers)
-        : verdict === 'close'
-          ? habit.early(klass, peers)
-          : habit.likeMost(peers),
+    // than the class record shown here: the record as the class's days, then that. With no
+    // record, only that it is not known, never "no days" beside "comes from".
+    if (record === null || n === 0) return [habit.unknown, habit.ownAlert].join(' ');
+    return [habit.seen(n, klass), habit.counts(n, record.closed, record.late), habit.ownAlert].join(
+      ' ',
     );
   }
-  if (ending === 'alert' && n === 0) {
-    // Said above.
-  } else if (record === null || n === 0) {
+  const said: string[] = [habit.unknown];
+  if (record === null || n === 0) {
     said.push(habit.seenNone(klass));
   } else {
     said.push(habit.seen(n, klass), habit.counts(n, record.closed, record.late));
+    if (n < HABIT_DAYS) said.push(habit.tooFew);
   }
-  // With a verdict, what the others did: the share it is tested against.
-  if (verdict !== null && record !== null && ending !== 'alert') {
-    said.push(habit.others(peers, unit.sum.closed - record.closed, unit.sum.of - n));
-  }
-  if (ending === 'alert') return [...said, habit.ownAlert].join(' ');
-  if (verdict === null && n >= 1) said.push(habit.tooFew);
-  said.push(
-    ending === 'ordinary' ? habit.notToday : verdict === null ? habit.notUsedFew : habit.notUsed,
-  );
+  said.push(ending === 'ordinary' ? habit.notToday : habit.notUsedFew);
   return said.join(' ');
 }
 

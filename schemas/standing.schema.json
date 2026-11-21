@@ -51,6 +51,44 @@
       "minimum": 2000,
       "type": "integer"
     },
+    "FullRecordRow": {
+      "maxItems": 7,
+      "minItems": 7,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/StandingIndex",
+          "title": "unit"
+        },
+        {
+          "$ref": "#/$defs/StandingCount",
+          "title": "no_school"
+        },
+        {
+          "$ref": "#/$defs/StandingCount",
+          "title": "home"
+        },
+        {
+          "$ref": "#/$defs/StandingCount",
+          "title": "short"
+        },
+        {
+          "$ref": "#/$defs/StandingCount",
+          "title": "of"
+        },
+        {
+          "minimum": 0,
+          "title": "same100",
+          "type": "integer"
+        },
+        {
+          "maximum": 99,
+          "minimum": 0,
+          "title": "winters",
+          "type": "integer"
+        }
+      ],
+      "type": "array"
+    },
     "HeldRow": {
       "maxItems": 5,
       "minItems": 5,
@@ -415,6 +453,37 @@
       "title": "StandingRecord",
       "type": "object"
     },
+    "StandingRecordFull": {
+      "additionalProperties": false,
+      "description": "Per class, the districts with a complete record (none: the field is left out).",
+      "properties": {
+        "advisory": {
+          "items": {
+            "$ref": "#/$defs/FullRecordRow"
+          },
+          "type": "array"
+        },
+        "cold": {
+          "items": {
+            "$ref": "#/$defs/FullRecordRow"
+          },
+          "type": "array"
+        },
+        "warning": {
+          "items": {
+            "$ref": "#/$defs/FullRecordRow"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "advisory",
+        "warning",
+        "cold"
+      ],
+      "title": "StandingRecordFull",
+      "type": "object"
+    },
     "StandingRefs": {
       "additionalProperties": false,
       "description": "Each class's middle of the school days a winter, over districts that get any.",
@@ -671,6 +740,9 @@
     },
     "record": {
       "$ref": "#/$defs/StandingRecord"
+    },
+    "record_full": {
+      "$ref": "#/$defs/StandingRecordFull"
     },
     "record_sum": {
       "$ref": "#/$defs/StandingSums"

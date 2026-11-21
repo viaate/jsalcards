@@ -4741,6 +4741,72 @@ test.describe('with data staged', () => {
     }
   });
 
+  test("Kansas City 33's complete record in the habit box at 390 px, in place of the lists", async ({
+    browser,
+  }) => {
+    // records-mo MO-4: the standing file's record_full row for Kansas City 33 (unit 3), as the
+    // committed Missouri records give it (13 advisory days: 7 no school, 2 at home, 1 short).
+    test.setTimeout(240_000);
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      timezoneId: MORNING_VIEWER,
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await fixDate(page, BEFORE_UNDER_WAY);
+    const { problems } = watch(page);
+    const standing = {
+      ...(JSON.parse(stepsStanding()) as Record<string, unknown>),
+      record: { advisory: [[3, 12, 0, 12]], warning: [], cold: [] },
+      record_full: {
+        advisory: [[3, 7, 2, 1, 13, 720, 5]],
+        warning: [[3, 6, 2, 0, 6, 599, 5]],
+        cold: [],
+      },
+    };
+    // Kansas City 33 (district 3) gets Olathe's (district 0) advisory days.
+    const predictions = JSON.parse(stepsPredictions(BEFORE_UNDER_WAY_FILES)) as {
+      districts: { district: number }[];
+    };
+    const first = predictions.districts.find((entry) => entry.district === 0);
+    if (first === undefined) throw new Error('no district 0');
+    predictions.districts.push({ ...first, district: 3 });
+    await page.route('**/data/predictions/latest.json*', (route) =>
+      route.fulfill({ contentType: 'application/json', body: JSON.stringify(predictions) }),
+    );
+    await page.route(`**/data/predictions/standing/${STEPS_STAMP}.json*`, (route) =>
+      route.fulfill({ contentType: 'application/json', body: JSON.stringify(standing) }),
+    );
+    await page.route('**/data/live/closings.json*', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: morningClosings(BEFORE_UNDER_WAY_FILES),
+      }),
+    );
+    await page.route('**/data/live/covered.json*', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: morningCovered(BEFORE_UNDER_WAY_FILES),
+      }),
+    );
+    const section = page.locator('aside.detail .chance');
+    await page.goto(`${site}?school=${BORDER_STAR_ID}`);
+    await expect(section.locator('.habit-title')).toHaveText(
+      'Does Kansas City close easily or hold out?',
+      { timeout: 60_000 },
+    );
+    // The complete record, never the lists' 12 closings beside it, in at most five sentences.
+    await expect(section.locator('.habit-text')).toHaveText(
+      'It is about like most districts. We checked 13 past school days with a winter advisory. It had no school on 7 and school on 6. Districts near it had no school on about 3 in 5 of those days. Its habit does not change today’s chance yet.',
+    );
+    await expect(section.locator('.number')).toHaveText('10%');
+    expect(problems).toEqual([]);
+    await context.close();
+  });
+
   test('a storm-class chance in plain words at 390 px: the reason, the habit box, rows that add up, the total and the How page', async ({
     browser,
   }) => {
@@ -4882,10 +4948,10 @@ test.describe('with data staged', () => {
       }[shape];
       await expect(rows.locator('.num')).toHaveText(expected, { timeout: 60_000 });
       if (shape === 'warning') {
-        // 9 storm warning days in the lists: enough to judge, and it closes less often than the
-        // others, whose share is said beside its counts.
+        // 9 storm warning days in the lists: a closings-only record is never judged (records-mo
+        // MO-4: its open days are mostly unseen), so the box gives its counts and no verdict.
         await expect(section.locator('.habit-text')).toHaveText(
-          'It tends to hold out. It closes on storm warning days less often than other districts do. Our past closing lists show it on 9 storm warning days. It closed on 6, started late on 1 and stayed open on 2. Other districts closed on more than 19 in 20 of theirs. Its habit did not change today’s chance.',
+          'We do not know yet. Our past closing lists show it on 9 storm warning days. It closed on 6, started late on 1 and stayed open on 2. So its habit did not change today’s chance.',
         );
         await expect(rows.nth(2)).toContainText('The forecast shows at least 3.9 inches of snow');
         await expect(rows.nth(2)).toContainText('Each extra inch adds a little less.');

@@ -1471,6 +1471,7 @@ export interface StandingFile {
   readonly record_sum: StandingSums;
   readonly private: PrivateStanding;
   readonly held_clauses?: readonly Clause[];
+  readonly record_full?: StandingRecordFull;
 }
 
 /**
@@ -1494,6 +1495,20 @@ export type Clause = (typeof Clause)[keyof typeof Clause];
  * @maximum 2100
  */
 export type FallYear = number;
+
+/**
+ * @minItems 7
+ * @maxItems 7
+ */
+export type FullRecordRow = readonly [
+  unit: StandingIndex,
+  no_school: StandingCount,
+  home: StandingCount,
+  short: StandingCount,
+  of: StandingCount,
+  same100: number,
+  winters: number,
+];
 
 /**
  * @minItems 5
@@ -1620,6 +1635,13 @@ export interface StandingRecord {
   readonly advisory: readonly RecordRow[];
   readonly warning: readonly RecordRow[];
   readonly cold: readonly RecordRow[];
+}
+
+/** Per class, the districts with a complete record (none: the field is left out). */
+export interface StandingRecordFull {
+  readonly advisory: readonly FullRecordRow[];
+  readonly warning: readonly FullRecordRow[];
+  readonly cold: readonly FullRecordRow[];
 }
 
 /** Each class's middle of the school days a winter, over districts that get any. */

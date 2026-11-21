@@ -1557,7 +1557,7 @@ PINNED: Final = {
     "schemas/predictions.py": {
         "Forecast._check_why": 2, "PastRecord": 1, "RecordReason": 1, "Why._check": 1,
     },
-    "schemas/standing.py": {"StandingFile._check": 6},
+    "schemas/standing.py": {"StandingFile._check": 7},
     "schemas/stats.py": {"ReadAuditDay._check": 1},
     "social/post.py": {"Run.send": 1},
     "sources/stations/adapters.py": {"load_adapter": 1, "module_exists": 1},
@@ -1584,7 +1584,9 @@ document or a station page's tag (schemas, drill.py, sources/stations); a data f
 ``held`` or ``items`` used as a value (live/publish.py, learn.py, live_read.py and the
 others; cli.py's ``make_pass`` keeps the boundaries catalog's ``held``; the why's steps, WHY-
 TRANSPARENT: serve.py's forecast step ``held`` state, standing.py's and schemas/standing.py's
-``held`` and ``record`` columns of the standing file, the committed model's ``y``, ``yd`` and
+``held``, ``record`` and ``record_full`` columns of the standing file (``record_full``: the
+complete records from a state's calendar file, records-mo, never the evidence record), the
+committed model's ``y``, ``yd`` and
 ``n`` read by ``getattr`` per class, and the why's ``held`` check); and ``getattr``,
 ``vars``, ``__dict__``, dynamic imports and ``held`` calls on other objects with a name not
 written out."""

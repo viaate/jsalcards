@@ -8,7 +8,7 @@ import type { Zones } from '../../copy-chance';
 import { NO_DETAIL } from '../../data/forecast-detail';
 import type { ForecastDetail, ReasonDetail, WhyDetail } from '../../data/forecast-detail';
 import type { StandingFile } from '../../types/generated';
-import { amountOf, pickOf, stepsView, tails, verdictOf } from '../steps';
+import { HABIT_MIN_SCHOOL, amountOf, pickOf, stepsView, tails, verdictOf } from '../steps';
 import type { PlainWhyView, StepsInput, StepsSource } from '../steps';
 import { bannedIn, measure } from './plain-reading';
 
@@ -160,7 +160,7 @@ describe('the why in plain words', () => {
     );
     expect(view.habit.title).toBe('Does Tahoe-Truckee close easily or hold out?');
     expect(view.habit.text).toBe(
-      'It tends to hold out. It closes on storm warning days less often than other districts do. Our past closing lists show it on 5 storm warning days. It closed on 3, started late on 1 and stayed open on 1. Other districts closed on more than 19 in 20 of theirs. Its habit did not change today’s chance.',
+      'We do not know yet. Our past closing lists show it on 5 storm warning days. It closed on 3, started late on 1 and stayed open on 1. So its habit did not change today’s chance.',
     );
     expect(view.rows.map((row) => [row.key, row.number, row.parts])).toEqual([
       ['start', '45%', null],
@@ -286,19 +286,22 @@ describe('the why in plain words', () => {
 });
 
 describe('the habit', () => {
-  /** A unit's record against others in the lists at `p` (1,000 other days). */
-  const against = (closed: number, of: number, p: number) =>
-    verdictOf({ closed, of }, { closed: Math.round(1000 * p) + closed, of: 1000 + of });
-
-  it('judges a district only on 5 days or more, against the other districts', () => {
-    expect(against(4, 4, 0.96)).toBeNull();
-    expect(against(5, 5, 0.96)).toBe('like');
-    expect(against(3, 6, 0.96)).toBe('hold');
-    expect(against(12, 12, 0.74)).toBe('close');
+  it('judges a complete record only on 5 days or more, against the districts near it', () => {
+    expect(verdictOf({ closed: 4, of: 4 }, 0.96)).toBeNull();
+    expect(verdictOf({ closed: 5, of: 5 }, 0.96)).toBe('like');
+    expect(verdictOf({ closed: 3, of: 6 }, 0.96)).toBe('hold');
+    expect(verdictOf({ closed: 12, of: 12 }, 0.74)).toBe('close');
+    expect(verdictOf({ closed: 8, of: 11 }, 0.433)).toBe('close');
     expect(tails(5, 5, 0.96).high).toBeCloseTo(0.96 ** 5, 10);
+    // one day with school when 99.7% of the districts near it had none: never "holds out", and
+    // never "about like most" either (the test said it is not), so no verdict
+    expect(tails(7, 6, 0.997).low).toBeLessThan(0.05);
+    expect(HABIT_MIN_SCHOOL).toBe(2);
+    expect(verdictOf({ closed: 6, of: 7 }, 0.997)).toBeNull();
+    expect(verdictOf({ closed: 5, of: 7 }, 0.997)).toBe('hold');
   });
 
-  it('says a planted verdict in the box, then that it did not change today', () => {
+  it('never judges a closings-only record from the lists, however many days', () => {
     const file = {
       ...FILE,
       record: { advisory: [[0, 12, 0, 12]], warning: [], cold: [] },
@@ -308,7 +311,7 @@ describe('the habit', () => {
     const advisory = classDay(10, [], read, { alert: 'winter_weather_advisory' });
     const view = stepsView({ ...input(advisory, 0.1, { file }), district: 'Tahoe-Truckee' });
     expect(view?.habit.text).toBe(
-      'It tends to close easily. It closes on winter advisory days more often than other districts do. Our past closing lists show it on 12 winter advisory days. It closed on all 12. Other districts closed on more than 7 in 10 of theirs. Its habit did not change today’s chance.',
+      'We do not know yet. Our past closing lists show it on 12 winter advisory days. It closed on all 12. So its habit did not change today’s chance.',
     );
   });
 });
@@ -316,20 +319,17 @@ describe('the habit', () => {
 describe('the habit, true to what it measures and to the base', () => {
   const { habit } = chanceFormat.plain;
 
-  it('says a late-heavy record closes less often, never that it stays open, beside the others', () => {
-    // A planted advisory record: 6 days, closed on 2, late on 4, open on none, against others
-    // that closed on about 74 in 100 of theirs: P(X <= 2 | 6, 0.742) is about 0.042, so "hold".
+  it('says a late-heavy closings-only record as the lists show it, with no verdict', () => {
     const file = {
       ...FILE,
       record: { advisory: [[0, 2, 4, 6]], warning: [], cold: [] },
       record_sum: { advisory: [744, 93, 1006], warning: [1027, 10, 1071], cold: [24, 6, 32] },
     } as unknown as StandingFile;
-    expect(verdictOf({ closed: 2, of: 6 }, { closed: 744, of: 1006 })).toBe('hold');
     const read = { fc: null, snow: 1, feels: null, ice: null, held: null } as const;
     const advisory = classDay(10, [], read, { alert: 'winter_weather_advisory' });
     const view = stepsView(input(advisory, 0.1, { file }));
     expect(view?.habit.text).toBe(
-      'It tends to hold out. It closes on winter advisory days less often than other districts do. Our past closing lists show it on 6 winter advisory days. It closed on 2 and started late on 4. Other districts closed on more than 7 in 10 of theirs. Its habit did not change today’s chance.',
+      'We do not know yet. Our past closing lists show it on 6 winter advisory days. It closed on 2 and started late on 4. So its habit did not change today’s chance.',
     );
     if (view !== null) readsPlain(view);
   });
@@ -419,7 +419,7 @@ describe('the habit, true to what it measures and to the base', () => {
           'Our past closing lists show it on 5 storm warning days.',
         );
         expect(view?.habit.text).not.toContain(habit.notToday);
-        expect(view?.habit.text).toMatch(/Its habit did not change today’s chance\.$/u);
+        expect(view?.habit.text).toMatch(/So its habit did not change today’s chance\.$/u);
         if (view !== null) readsPlain(view);
       }
     }
@@ -617,5 +617,168 @@ describe('the truth of every row', () => {
     // The habit always says whether it changed today's chance.
     expect(view.habit.text).toMatch(/did not change today’s chance\.$/u);
     readsPlain(view);
+  });
+});
+
+describe('a complete record (records-mo)', () => {
+  const { habit } = chanceFormat.plain;
+  // Kansas City 33's rows in pipeline/data/records/mo/mo-record-ed1.csv.gz:
+  // [unit, no school, at home, short, days, same100, winters].
+  const KC33 = {
+    advisory: [[0, 7, 2, 1, 13, 719, 5]],
+    warning: [[0, 6, 2, 0, 6, 597, 5]],
+    cold: [],
+  };
+  const fileWith = (full: Record<string, unknown>) =>
+    ({ ...FILE, record_full: full }) as unknown as StandingFile;
+  const read = { fc: null, snow: 1, feels: null, ice: null, held: null } as const;
+  const advisoryDay = classDay(10, [], read, { alert: 'winter_weather_advisory' });
+  const warningDay = classDay(30, [snow(-9), cold(1, 12)], {
+    fc: null,
+    snow: 4.7,
+    feels: 12,
+    ice: null,
+    held: 'low',
+  });
+  const box = (full: Record<string, unknown>, why = advisoryDay, district = 'Kansas City 33') =>
+    stepsView({
+      ...input(why, why === advisoryDay ? 0.1 : 0.22, { file: fileWith(full) }),
+      district,
+    })?.habit.text;
+
+  /** Every sentence alone: grade 6 or under, 15 words or fewer, no banned word, the house style. */
+  function sentencesRead(text: string, names: readonly string[]): void {
+    const sentences = text.match(/[^.]+\./gu) ?? [];
+    expect(sentences.length).toBeLessThanOrEqual(5);
+    for (const sentence of sentences.map((x) => x.trim())) {
+      const { grade, longest } = measure(sentence, names);
+      expect([sentence, grade === null || grade <= 6]).toEqual([sentence, true]);
+      expect([sentence, longest]).toEqual([sentence, Math.min(longest, 15)]);
+      expect([sentence, bannedIn(sentence)]).toEqual([sentence, []]);
+      expect(sentence).not.toMatch(/[!\u2014]/u);
+    }
+  }
+
+  it('reads Kansas City 33 on a winter advisory day in five short sentences', () => {
+    const text = box(KC33);
+    expect(text).toBe(
+      'It is about like most districts. We checked 13 past school days with a winter advisory. It had no school on 7 and school on 6. Districts near it had no school on about 3 in 5 of those days. Its habit does not change today’s chance yet.',
+    );
+    if (text !== undefined) sentencesRead(text, ['Kansas City 33']);
+  });
+
+  it('reads its storm warning record, all no school, on a storm warning day', () => {
+    expect(box(KC33, warningDay)).toBe(
+      'It is about like most districts. We checked 6 past school days with a storm warning. It had no school on all 6. Districts near it had no school on almost all of those days. Its habit does not change today’s chance yet.',
+    );
+  });
+
+  it('ends an ordinary day with the storm warning record and an alert day with the row below', () => {
+    const file = fileWith(KC33);
+    const ordinary = stepsView({
+      ...input(
+        {
+          base: { kind: 'similar_days', points: 4, weather: null, borrowed: false },
+          reasons: [],
+          read,
+        } as unknown as WhyDetail,
+        0.04,
+        { file },
+      ),
+      district: 'Kansas City 33',
+    });
+    expect(ordinary?.habit.text).toBe(
+      'It is about like most districts. We checked 6 past school days with a storm warning. It had no school on all 6. Districts near it had no school on almost all of those days. Today’s chance does not come from storm warning days, so this did not change it.',
+    );
+    const alert = stepsView({
+      ...input(
+        {
+          base: { kind: 'alert', points: 40, alert: 'winter_weather_advisory', borrowed: false },
+          reasons: [],
+          read,
+        } as unknown as WhyDetail,
+        0.4,
+        { file },
+      ),
+      district: 'Kansas City 33',
+    });
+    expect(alert?.habit.text).toBe(
+      'It is about like most districts. We checked 13 past school days with a winter advisory. It had no school on 7 and school on 6. Districts near it had no school on about 3 in 5 of those days. Today’s chance comes from its days in our past closing lists, in the row below.',
+    );
+    for (const text of [ordinary?.habit.text, alert?.habit.text]) {
+      if (text !== undefined) sentencesRead(text, ['Kansas City 33']);
+    }
+  });
+
+  it('says Raymore-Peculiar tends to close easily against the districts near it', () => {
+    const text = box({ advisory: [[0, 8, 0, 0, 11, 476, 5]], warning: [], cold: [] });
+    expect(text).toBe(
+      'It tends to close easily. We checked 11 past school days with a winter advisory. It had no school on 8 and school on 3. Districts near it had no school on about 2 in 5 of those days. Its habit does not change today’s chance yet.',
+    );
+    if (text !== undefined) sentencesRead(text, ['Kansas City 33']);
+  });
+
+  it('says a full record of 3 days is not enough to know', () => {
+    const text = box({ advisory: [[0, 2, 1, 1, 3, 255, 2]], warning: [], cold: [] });
+    expect(text).toBe(
+      'We do not know yet. We checked 3 past school days with a winter advisory. It had no school on 2 and school on 1. That is not enough to know. So its habit did not change today’s chance.',
+    );
+    if (text !== undefined) sentencesRead(text, ['Kansas City 33']);
+  });
+
+  it('shows the complete record in place of the lists and never judges one day with school', () => {
+    const lists = { ...FILE, record: { advisory: [[0, 12, 0, 12]], warning: [], cold: [] } };
+    const view = stepsView({
+      ...input(advisoryDay, 0.1, {
+        file: { ...lists, record_full: KC33 } as unknown as StandingFile,
+      }),
+      district: 'Kansas City 33',
+    });
+    expect(view?.habit.text).toContain('We checked 13 past school days');
+    expect(view?.habit.text).not.toContain('closing lists show');
+    // 6 of 7 with no school beside 0.997 near it: the test says it holds out, but on one day with
+    // school (maybe a closing the file does not hold), so no verdict, never "about like most".
+    expect(box({ advisory: [], warning: [[0, 6, 2, 0, 7, 698, 5]], cold: [] }, warningDay)).toBe(
+      'We do not know yet. We checked 7 past school days with a storm warning. It had no school on 6 and school on 1. That is not enough to know. So its habit did not change today’s chance.',
+    );
+    expect(verdictOf({ closed: 5, of: 7 }, 0.997)).toBe('hold');
+  });
+
+  it('adds the parts to the days and words every share and edge', () => {
+    expect(habit.noSchool(13, 7)).toBe('It had no school on 7 and school on 6.');
+    expect(habit.noSchool(6, 6)).toBe('It had no school on all 6.');
+    expect(habit.noSchool(2, 2)).toBe('It had no school on both.');
+    expect(habit.noSchool(5, 0)).toBe('It had school on all 5.');
+    expect(habit.noSchool(1, 1)).toBe('It had no school that day.');
+    expect(habit.noSchool(1, 0)).toBe('It had school that day.');
+    expect(() => habit.noSchool(3, 4)).toThrow(RangeError);
+    expect(habit.near(0.51)).toBe('Districts near it had no school on about half of those days.');
+    expect(habit.near(0.45)).toBe('Districts near it had no school on about 2 in 5 of those days.');
+    expect(habit.near(1)).toBe('Districts near it had no school on all of those days.');
+    expect(habit.near(0.995)).toBe('Districts near it had no school on almost all of those days.');
+    expect(habit.near(0)).toBe('Districts near it had school on all of those days.');
+    expect(habit.checked(1, 'cold')).toBe('We checked 1 past school day with a cold warning.');
+    for (let p = 0.01; p <= 0.99; p += 0.0137) {
+      const said = habit.near(p);
+      const match = /about (half|(\d+) in (\d+))/u.exec(said);
+      const share = match?.[1] === 'half' ? 0.5 : Number(match?.[2]) / Number(match?.[3]);
+      expect(Math.abs(share - p)).toBeLessThanOrEqual(0.05);
+    }
+  });
+
+  it('gives the stored same100 the exact share’s verdict but within a hundredth of the turn', () => {
+    // 3 of 11 no-school days, sums of peer shares 5.000 to 8.000: tenths (same10) flip the
+    // verdict on 10 times more sums than hundredths (same100), and hundredths only within 0.005
+    // of where it turns (spec same-round.txt: 0 of Missouri's 1,529 rows).
+    let byTenths = 0;
+    let byHundredths = 0;
+    const at = (sum: number) => verdictOf({ closed: 3, of: 11 }, sum / 11);
+    for (let thousandths = 5000; thousandths < 8000; thousandths += 1) {
+      const exact = at(thousandths / 1000);
+      if (at(Math.floor((thousandths + 50) / 100) / 10) !== exact) byTenths += 1;
+      if (at(Math.floor((thousandths + 5) / 10) / 100) !== exact) byHundredths += 1;
+    }
+    expect(byTenths).toBeGreaterThan(0);
+    expect(byHundredths * 10).toBeLessThanOrEqual(byTenths);
   });
 });
