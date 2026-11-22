@@ -380,7 +380,8 @@ export function problems(text, file) {
       .map((word) => word.replace(EDGE_PUNCTUATION, ''))
       .filter((word) => word.length > 0);
     words.forEach((word, index) => {
-      if (PROPER_NOUNS.has(word)) return;
+      // A proper noun keeps its capital when it owns something too: "Tuesday’s 15%".
+      if (PROPER_NOUNS.has(word) || PROPER_NOUNS.has(word.replace(/’s$/u, ''))) return;
       if (/\p{L}/u.test(word) && word.length > 1 && word === word.toUpperCase()) {
         found.push(`all caps "${word}"`);
       } else if (index > 0 && /^\p{Lu}/u.test(word)) {

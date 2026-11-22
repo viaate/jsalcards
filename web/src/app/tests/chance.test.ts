@@ -133,7 +133,7 @@ describe('the chance section, the night before', () => {
 
   it('adds up to the headline, naming what the chart and the timeline already say', () => {
     expect(lines(view?.why ?? null)).toEqual([
-      '30% This chance comes from Shawnee Mission’s own past days like this. Those are days with a winter storm warning. 3 in 10 of them had no school.',
+      '30% This chance comes from Shawnee Mission’s own past days like this. 3 in 10 of them had no school.',
       // "6 to 9 in" is the chart's answer; the record is said only here.
       '+16 The forecast has more snow than most storms. We looked at its last 5 days with 6 inches of snow or more. It closed on 4 of them. So the chance goes up.',
       // Who canceled, and when, is the timeline's.
@@ -549,14 +549,14 @@ describe('what the section leaves out', () => {
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: low }, 0.01))).toEqual([
-      '1% This chance comes from Shawnee Mission’s own past days like this. Those are days with no winter warning or advisory. Fewer than 1 in 20 of them had no school.',
+      '1% This chance comes from Shawnee Mission’s own past days like this. Fewer than 1 in 20 of them had no school.',
     ]);
     const high: WhyDetail = {
       base: { kind: 'similar_days', points: 99, borrowed: false, live: false },
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: high }, 0.99))).toEqual([
-      '99% This chance comes from Shawnee Mission’s own past days like this. Those are days with no winter warning or advisory. More than 19 in 20 of them had no school.',
+      '99% This chance comes from Shawnee Mission’s own past days like this. More than 19 in 20 of them had no school.',
     ]);
     // A base alone, when it is the chance.
     const alone: WhyDetail = {
@@ -564,7 +564,7 @@ describe('what the section leaves out', () => {
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: alone }, 0.2))).toEqual([
-      '20% This chance comes from Shawnee Mission’s own past days like this. Those are days with no winter warning or advisory. 1 in 5 of them had no school.',
+      '20% This chance comes from Shawnee Mission’s own past days like this. 1 in 5 of them had no school.',
     ]);
     // A district with too short a history of its own: the districts around it.
     const pooled: WhyDetail = {
@@ -580,7 +580,7 @@ describe('what the section leaves out', () => {
       reasons: [],
     };
     expect(lines(why({ ...A_DETAIL, why: pooled }, 0.33))).toEqual([
-      '33% This chance comes from past days like this. We look at districts near Shawnee Mission. Those are days with no winter warning or advisory. 1 in 3 of those days had no school.',
+      '33% This chance comes from past days like this. We look at districts near Shawnee Mission. 1 in 3 of those days had no school.',
     ]);
     // The pipeline states the days a snow line is weighed against; the base's kind does not
     // decide it (a day-after base over a storm's days still says "most storms").
@@ -607,7 +607,7 @@ describe('what the section leaves out', () => {
       ],
     };
     expect(lines(why({ ...A_DETAIL, record: null, why: light }, 0.53))).toEqual([
-      '74% This chance comes from past days like this. We look at districts across the country. Those are days with no winter warning or advisory. More than 7 in 10 of those days had no school.',
+      '74% This chance comes from past days like this. We look at districts across the country. More than 7 in 10 of those days had no school.',
       `${MINUS}21 The forecast has 0 to 1 inch of snow. That is less than most winter advisory days bring. So the chance goes down.`,
     ]);
     const after: WhyDetail = {
@@ -782,6 +782,48 @@ describe('what the section leaves out', () => {
     // The directory not read (yet): the districts next door by how many.
     const unnamed = whyView({ detail: A_DETAIL, chance: 0.64, nameOf: () => null, ...args });
     expect(unnamed?.rows[2]?.text).toBe('2 districts next door closed. So the chance goes up.');
+  });
+
+  it('names the day the chance is for by the school’s clock: the evening before, the same day and a later day (WHY-V2 V3)', () => {
+    const pooled: ForecastDetail = {
+      ...A_DETAIL,
+      why: {
+        base: {
+          kind: 'pooled',
+          points: 30,
+          scope: 'county',
+          alert: 'winter_storm_warning',
+          borrowed: false,
+          live: false,
+          of: 'districts',
+        },
+        reasons: [],
+      } as unknown as WhyDetail,
+    };
+    const end = (day: string, now: Date): string | null | undefined =>
+      whyView({
+        detail: pooled,
+        chance: 0.3,
+        day,
+        district: 'Shawnee Mission',
+        nameOf: NAME_OF,
+        now,
+        zones: HERE,
+      })?.habit.end;
+    // Monday 9:05 PM in Kansas City, for Tuesday: the evening before.
+    expect(end('2026-01-13', A_NOW)).toBe('This does not change Tuesday’s 30% yet.');
+    // Monday 11:59 PM there is still Monday (05:59Z Tuesday).
+    expect(end('2026-01-13', new Date('2026-01-13T05:59:00Z'))).toBe(
+      'This does not change Tuesday’s 30% yet.',
+    );
+    // Tuesday 6 AM there, for Tuesday: today.
+    expect(end('2026-01-13', new Date('2026-01-13T12:00:00Z'))).toBe(
+      'This does not change today’s 30% yet.',
+    );
+    // Tuesday 6 AM there, for Wednesday: a later day.
+    expect(end('2026-01-14', new Date('2026-01-13T12:00:00Z'))).toBe(
+      'This does not change Wednesday’s 30% yet.',
+    );
   });
 });
 

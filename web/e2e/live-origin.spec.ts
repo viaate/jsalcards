@@ -1015,9 +1015,11 @@ for (const [device, options] of DEVICES) {
       await expect(section.locator('.number')).toHaveText('37%', SETTLE);
       await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn(TODAY));
       await expect(section.locator('.why-title')).toHaveText(chanceFormat.plain.why(37));
-      await expect(section.locator('.sum > li').first()).toContainText(
-        'Those are days with a winter storm warning.',
+      // The start's title names the alert, and its line does not say it again.
+      await expect(section.locator('.sum > li').first().locator('.name')).toHaveText(
+        'Winter storm warning',
       );
+      await expect(section.locator('.sum > li').first()).not.toContainText('Those are days with');
       expect(live.predictionReads).toBeGreaterThanOrEqual(1);
       expect(school.problems).toEqual([]);
       await school.context.close();
@@ -1055,9 +1057,11 @@ for (const [device, options] of DEVICES) {
       await expect(section.locator('.few')).toHaveText(chanceCopy.fewRecords);
       await expect(section.locator('.meaning + .few')).toHaveCount(1);
       await expect(number).toHaveClass(/\bis-thin\b/u);
-      await expect(section.locator('.sum > li').first()).toContainText(
-        'Those are days with a winter advisory.',
+      // The start's title names the alert, and its line does not say it again.
+      await expect(section.locator('.sum > li').first().locator('.name')).toHaveText(
+        'Winter advisory',
       );
+      await expect(section.locator('.sum > li').first()).not.toContainText('Those are days with');
       expect(await colorOf(number)).toBe(GRAY);
       expect(school.problems).toEqual([]);
       await school.context.close();
@@ -1144,9 +1148,11 @@ for (const [device, options] of DEVICES) {
       await expect(section.locator('.sum > li').first()).toContainText(
         'We look at private schools near it.',
       );
-      await expect(section.locator('.sum > li').first()).toContainText(
-        'Those are days with a winter storm warning.',
+      // The start's title names the alert, and its line does not say it again.
+      await expect(section.locator('.sum > li').first().locator('.name')).toHaveText(
+        'Winter storm warning',
       );
+      await expect(section.locator('.sum > li').first()).not.toContainText('Those are days with');
       expect(school.problems).toEqual([]);
       await school.context.close();
     });

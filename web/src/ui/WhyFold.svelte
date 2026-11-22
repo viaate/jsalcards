@@ -57,6 +57,7 @@
     align-items: center;
     vertical-align: baseline;
     gap: 4px;
+    position: relative;
     min-height: 24px;
     margin: 4px 0 0;
     padding: 2px 0;
@@ -66,6 +67,13 @@
     color: var(--text-2);
     cursor: pointer;
     text-align: left;
+  }
+
+  /* A 44 px tall hit area around the 24 px button, without moving the layout (LR-V7). */
+  .fold::before {
+    content: '';
+    position: absolute;
+    inset: -10px 0;
   }
 
   .fold:focus-visible {

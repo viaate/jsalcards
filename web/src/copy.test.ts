@@ -309,6 +309,14 @@ describe('house style rules', () => {
     expect(problems('Tap Shared')).toContain('Title Case "Shared"');
   });
 
+  it('keeps the capital of a proper noun that owns something, and only of a proper noun', () => {
+    expect(problems('This is Tuesday’s 15%.')).toEqual([]);
+    expect(problems('This is Snowlight’s map.')).toEqual([]);
+    expect(problems('This is the School’s 15%.')).toContain('Title Case "School’s"');
+    expect(problems('Ask the Storm’s team.')).toContain('Title Case "Storm’s"');
+    expect(problems('Ask TUESDAY’S team.')).toContain('all caps "TUESDAY’S"');
+  });
+
   it.each([
     'May 4, 2026',
     'Mon, May 4',

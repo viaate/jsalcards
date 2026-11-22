@@ -1373,6 +1373,15 @@ function reasonInput(
   }
 }
 
+/** Whether a day is today on the school's clock (the why says "today’s" only then). */
+function isToday(day: LocalDate, now: Date, timeZone: string): boolean {
+  try {
+    return format.localDay(now, timeZone) === day;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * How the chance adds up, or null. Null unless the base and every reason's
  * points add up to the headline exactly and every reason can be said. The
@@ -1430,6 +1439,7 @@ export function whyView(input: {
     source: input.steps ?? null,
     lines,
     helps,
+    today: isToday(day, now, zones.school),
   });
 }
 

@@ -170,15 +170,35 @@ describe('the chance section', () => {
     expect(section.querySelector('.key .sample')?.getAttribute('aria-hidden')).toBe('true');
 
     expect(text(section, '.why-title')).toEqual(['Why 64%']);
-    expect(text(section, '.sum > li .num')).toEqual(['30%', '+16', '+9', '+7', '+5', '−3']);
-    // The rows add up to the chance, and the total line says so.
-    expect(text(section, '.total')).toEqual(['= 64% Add these up and you get 64%.']);
+    expect(text(section, '.sum > li .amount')).toEqual(['30%', '+16', '+9', '+7', '+5', '−3']);
+    // The rows add up to the chance, and "All together" says it once.
+    expect(text(section, '.total')).toEqual(['All together 64%']);
     expect(section.querySelector('.record')).toBeNull();
     // Each reason names itself; the chart and the timeline hold their numbers.
-    expect(text(section, '.is-reason').slice(0, 3)).toEqual([
-      '+16 The forecast has more snow than most storms. We looked at its last 5 days with 6 inches of snow or more. It closed on 4 of them. So the chance goes up.',
-      '+9 Districts next door closed. So the chance goes up.',
-      '+7 The heaviest snow falls just before the buses go out. So the chance goes up.',
+    expect(text(section, '.is-reason .name').slice(0, 3)).toEqual([
+      'Snow',
+      'Districts next door',
+      'Heaviest snow',
+    ]);
+    expect(text(section, '.is-reason .says').slice(0, 3)).toEqual([
+      'The forecast has more snow than most storms. We looked at its last 5 days with 6 inches of snow or more. It closed on 4 of them. So the chance goes up.',
+      'Districts next door closed. So the chance goes up.',
+      'The heaviest snow falls just before the buses go out. So the chance goes up.',
+    ]);
+    // Each step's bar: what came before it, then what it adds or takes away (drawn, not read).
+    const tracks = [...section.querySelectorAll('.sum > li .track')];
+    expect(tracks.map((track) => track.getAttribute('aria-hidden'))).toEqual(
+      tracks.map(() => 'true'),
+    );
+    expect(
+      [...section.querySelectorAll<HTMLElement>('.sum > li:nth-child(2) .seg')].map((seg) => [
+        seg.className.replace(/\s*svelte-\S+/gu, ''),
+        seg.style.left,
+        seg.style.width,
+      ]),
+    ).toEqual([
+      ['seg is-base', '', '30%'],
+      ['seg is-up', '30%', '16%'],
     ]);
     // Nothing folds away (no row joins parts), and no words lead in bold.
     expect(section.querySelectorAll('details, [aria-expanded]')).toHaveLength(0);
@@ -257,7 +277,7 @@ describe('the chance section', () => {
     expect(section.querySelector('figure')).toBeNull();
     expect(text(section, '.number')[0]).toContain(view.number);
     expect(section.textContent).toContain(view.meaning);
-    expect(section.querySelectorAll('.why .row').length).toBeGreaterThan(0);
+    expect(section.querySelectorAll('.why .step').length).toBeGreaterThan(0);
     // Never a silent loss (critic r2 S5): the console, where the e2e's watch looks, has the bug.
     expect(errors.mock.calls.flat().some((arg) => String(arg).includes('a chart bug'))).toBe(true);
     // A bug in the panel's own check is no chart either, and leaves its trace too.
@@ -365,7 +385,7 @@ describe('the chance section', () => {
     );
     expect(moments).toContain('Shawnee Mission usually announces in 8h 25m');
     expect(view.moments.some((m) => m.key === 'announces')).toBe(false);
-    const lines = text(section, '.why .row.is-reason p');
+    const lines = text(section, '.why .step.is-reason .says');
     const reasons = (why: ChanceView['why']) => why?.rows.slice(1).map((row) => row.text);
     expect(lines).toEqual(reasons(bare.why));
     expect(lines).not.toEqual(reasons(view.why));
@@ -374,7 +394,7 @@ describe('the chance section', () => {
     set({ ...view, chart: { ...chart } });
     expect(section.querySelectorAll('figure')).toHaveLength(1);
     expect(text(section, '.moment .m-text')).toEqual(view.moments.map((m) => m.text));
-    expect(text(section, '.why .row.is-reason p')).toEqual(reasons(view.why));
+    expect(text(section, '.why .step.is-reason .says')).toEqual(reasons(view.why));
     // The same failed chart again stays hidden; a broken one after a good one fails alone.
     set({ ...view, chart: throwing(chart) });
     expect(section.querySelector('figure')).toBeNull();
@@ -411,9 +431,9 @@ describe('the chance section', () => {
     expect(section.querySelectorAll('figure')).toHaveLength(1);
     // While the night chart shows, it states the amount and the announcement (O6).
     expect(text(section, '.moment').some((line) => line.includes('usually announces'))).toBe(false);
-    expect(text(section, '.why .row.is-reason p').some((line) => line.includes('6 to 9'))).toBe(
-      false,
-    );
+    expect(
+      text(section, '.why .step.is-reason .says').some((line) => line.includes('6 to 9')),
+    ).toBe(false);
     // Its `until` passes on the panel's clock: at the next tick, with no reading, both are back.
     vi.setSystemTime(new Date('2026-01-13T04:15:10Z'));
     vi.advanceTimersByTime(20_000);
@@ -421,7 +441,7 @@ describe('the chance section', () => {
     expect(section.querySelector('figure')).toBeNull();
     const moments = text(section, '.moment');
     expect(moments.some((line) => line.includes('usually announces'))).toBe(true);
-    const lines = text(section, '.why .row.is-reason p');
+    const lines = text(section, '.why .step.is-reason .says');
     expect(lines).toEqual(bare.why?.rows.slice(1).map((row) => row.text));
     expect(lines.some((line) => line.includes('6 to 9'))).toBe(true);
   });
@@ -451,8 +471,10 @@ describe('the chance section', () => {
     expect(text(section, '.words.is-end .value')).toEqual([`${MINUS}8${NBSP}F`]);
     // No lit hours to name on a cold night: no key.
     expect(section.querySelector('.key')).toBeNull();
-    expect(text(section, '.is-start')).toEqual([
-      '25% This chance comes from Shawnee Mission’s own past days like this. Those are days right after a day with no school for snow. 1 in 4 of them had no school.',
+    expect(text(section, '.is-start .name')).toEqual(['Right after a day with no school']);
+    expect(text(section, '.is-start .amount')).toEqual(['25%']);
+    expect(text(section, '.is-start .says')).toEqual([
+      'This chance comes from Shawnee Mission’s own past days like this. Those are days right after a day with no school for snow. 1 in 4 of them had no school.',
     ]);
   });
 
@@ -664,14 +686,32 @@ describe('the why in plain words (WHY-PLAIN)', () => {
         title: 'Why 64%',
         headline: 'Shawnee Mission gets fewer winter advisories than a typical district.',
         habit: {
-          title: 'Does Shawnee Mission close easily or hold out?',
-          text: 'We do not know yet.',
+          title: 'Shawnee Mission’s past winter advisory days',
+          days: ['closed', 'remote', 'school'],
+          key: [
+            { mark: 'closed', label: 'Closed 1' },
+            { mark: 'remote', label: 'Remote 1' },
+            { mark: 'school', label: 'School 1' },
+          ],
+          lead: 'No school on 2 of 3.',
+          text: 'Only 3 days on file. That is too few to tell a habit.',
+          end: 'This does not change Tuesday’s 64% yet.',
         },
+        still: 'No change from the snow.',
         rows: [
-          { key: 'start', number: '45%', text: 'Start sentence.', parts: null },
+          {
+            key: 'start',
+            number: '45%',
+            points: 45,
+            title: 'Winter advisory',
+            text: 'Start sentence.',
+            parts: null,
+          },
           {
             key: 'place',
             number: '+12',
+            points: 12,
+            title: 'Winter advisories are rare here',
             text: 'Place sentence.',
             parts: [
               { label: chanceFormat.plain.part.standing, number: '+14' },
@@ -679,9 +719,16 @@ describe('the why in plain words (WHY-PLAIN)', () => {
               { label: chanceFormat.plain.part.sum, number: '+12' },
             ],
           },
-          { key: 'snow', number: '+7', text: 'Snow sentence.', parts: null },
+          {
+            key: 'ice',
+            number: '+7',
+            points: 7,
+            title: 'A little ice by noon',
+            text: 'Ice sentence.',
+            parts: null,
+          },
         ],
-        total: { label: '= 64%', text: 'Add these up and you get 64%.' },
+        total: { label: 'All together', number: '64%' },
       },
     };
   }
@@ -691,7 +738,7 @@ describe('the why in plain words (WHY-PLAIN)', () => {
       node.textContent.replace(/[\t\n\r ]+/gu, ' ').trim(),
     );
 
-  it('puts the night above the why: the chance, its reason, the late start, the night, then the habit, the rows, the total and the link', () => {
+  it('puts the night above the why: the chance, its reason, the late start, the night, then the build-up, the total, the quiet line, the past days and the link', () => {
     vi.useFakeTimers({ now: A_NOW });
     const target = document.createElement('div');
     document.body.append(target);
@@ -704,9 +751,11 @@ describe('the why in plain words (WHY-PLAIN)', () => {
       '.moments',
       'figure',
       '.why-title',
-      '.habit',
-      '.steps',
+      '.build',
       '.total',
+      '.scale',
+      '.quiet',
+      '.habit',
       '.how',
     ].map((selector) => target.querySelector(selector));
     expect(order.every((node) => node !== null)).toBe(true);
@@ -717,11 +766,32 @@ describe('the why in plain words (WHY-PLAIN)', () => {
         continue;
       expect(before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
     }
-    expect(words(target, '.habit-title')).toEqual([
-      'Does Shawnee Mission close easily or hold out?',
+    expect(words(target, '.build > li .name')).toEqual([
+      'Winter advisory',
+      'Winter advisories are rare here',
+      'A little ice by noon',
     ]);
-    expect(words(target, '.steps > li .num')).toEqual(['45%', '+12', '+7']);
-    expect(words(target, '.total')).toEqual(['= 64% Add these up and you get 64%.']);
+    expect(words(target, '.build > li .amount')).toEqual(['45%', '+12', '+7']);
+    expect(words(target, '.total')).toEqual(['All together 64%']);
+    expect(words(target, '.quiet')).toEqual(['No change from the snow.']);
+    // The past days: the title names the group; the marks are drawn, the key and words read.
+    const habit = target.querySelector('.habit');
+    expect(habit?.getAttribute('role')).toBe('group');
+    expect(document.getElementById(habit?.getAttribute('aria-labelledby') ?? '')?.textContent).toBe(
+      'Shawnee Mission’s past winter advisory days',
+    );
+    expect(
+      [...target.querySelectorAll('.habit .cell')].map((cell) =>
+        cell.className.replace(/\s*svelte-\S+/gu, ''),
+      ),
+    ).toEqual(['cell is-closed', 'cell is-remote', 'cell is-school']);
+    expect(target.querySelector('.habit .cells')?.getAttribute('aria-hidden')).toBe('true');
+    expect(words(target, '.habit-key .key-item')).toEqual(['Closed 1', 'Remote 1', 'School 1']);
+    expect(words(target, '.habit-text')).toEqual([
+      'No school on 2 of 3. Only 3 days on file. That is too few to tell a habit.',
+    ]);
+    expect(words(target, '.habit-text strong')).toEqual(['No school on 2 of 3.']);
+    expect(words(target, '.habit-end')).toEqual(['This does not change Tuesday’s 64% yet.']);
     expect(words(target, '.how a')).toEqual(['How Snowlight guesses']);
     void unmount(app);
     target.remove();

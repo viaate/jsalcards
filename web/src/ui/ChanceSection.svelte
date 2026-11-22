@@ -9,10 +9,8 @@
   import type { ChanceView } from '../app/chance';
   import { chartFailed, chartShown } from '../app/chart-shown';
   import { copy } from '../copy';
-  import { chanceCopy } from '../copy-chance';
   import ChanceChart from './ChanceChart.svelte';
-  import LegalLinks from './LegalLinks.svelte';
-  import WhyFold from './WhyFold.svelte';
+  import WhyBuild from './WhyBuild.svelte';
 
   interface Props {
     chance: ChanceView;
@@ -94,9 +92,9 @@
   The chance section (app/chance.ts): the school's status lines, decided first; then the chance
   of no school as the headline, the one plain reason for it and the chance of a late start
   instead; then the evening's early signals and the night hour by hour (the owner, Nov 19: the
-  snow chart goes above the why); then why, in plain words (WHY-PLAIN, app/steps.ts): "Why
-  22%", the district's habit in a box, the rows that add up to the chance, the total and the
-  link to "How Snowlight guesses". On the panel's own scale and grid
+  snow chart goes above the why); then why, as the build-up (WHY-V2, WhyBuild.svelte): "Why
+  22%", a bar for each step that moved the chance, "All together", one quiet line, the
+  district's past days of the kind and the link to "How Snowlight guesses". On the panel's own scale and grid
   (DetailPanel.svelte): each part a section under one hairline, every list two columns.
 -->
 
@@ -195,39 +193,7 @@
     </svelte:boundary>
   {/if}
   {#if parts.why !== null}
-    {@const why = parts.why}
-    <div class="block why">
-      <h3 class="why-title">{why.title}</h3>
-      <div class="habit" role="group" aria-labelledby={habitId}>
-        <h4 class="habit-title" id={habitId}>{why.habit.title}</h4>
-        <p class="habit-text">{why.habit.text}</p>
-      </div>
-      <ol class="rows sum steps">
-        {#each why.rows as row (row.key)}
-          <li class="row {row.key === 'start' ? 'is-start' : 'is-reason'}">
-            <span class="label"><span class="num">{row.number}</span></span>
-            <div class="step">
-              <p>{row.text}</p>
-              {#if row.help !== undefined}
-                <p class="help">{row.help}</p>
-              {/if}
-              {#if row.parts !== null}
-                <WhyFold label={chanceCopy.fold} parts={row.parts} />
-              {/if}
-            </div>
-          </li>
-        {/each}
-      </ol>
-      {#if why.total !== null}
-        <p class="row total">
-          <span class="label"><span class="num">{why.total.label}</span></span>
-          <span>{why.total.text}</span>
-        </p>
-      {/if}
-      <div class="how">
-        <LegalLinks pages={['how']} />
-      </div>
-    </div>
+    <WhyBuild why={parts.why} {habitId} />
   {/if}
 </section>
 
@@ -237,8 +203,7 @@
     flex-direction: column;
   }
 
-  p,
-  h3 {
+  p {
     margin: 0;
   }
 
@@ -448,14 +413,6 @@
     white-space: nowrap;
   }
 
-  /* What an outlook line counted, under it in the sentence's column, quieter. */
-  .help {
-    grid-column: 2;
-    margin-top: 4px;
-    font: var(--type-small);
-    color: var(--text-2);
-  }
-
   /* The one plain reason, in the words' own type and colour, right under the chance. */
   .reason {
     margin-top: 8px;
@@ -466,67 +423,5 @@
 
   .delay {
     margin-top: 4px;
-  }
-
-  /* The habit box: the owner's question, then one paragraph, in a thin frame. */
-  .habit {
-    margin-bottom: 12px;
-    padding: 10px 12px;
-    border: 1px solid var(--border-1);
-    border-radius: 8px;
-    text-wrap: pretty;
-  }
-
-  .habit-title {
-    margin: 0 0 4px;
-    font: var(--type-strong);
-    color: var(--text-1);
-  }
-
-  .habit-text {
-    font: var(--why-type);
-    color: var(--text-1);
-  }
-
-  /* The why's amounts are short ("+12", "= 22%"): a narrower first column gives its words the
-     room, so the why stays short at 390 px (lead ruling O6). */
-  .why {
-    --column: 48px;
-    --gutter: 12px;
-    --why-type: 400 14px / 20px var(--font-sans);
-  }
-
-  .why .step p:not(.help),
-  .why .total {
-    font: var(--why-type);
-  }
-
-  /* The rows sit a little closer than other lists, so the why stays short at 390 px. */
-  .rows.steps {
-    gap: 8px;
-  }
-
-  .step {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  /* "= 22%" and its sentence, over the rows' hairline. */
-  .total {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--border-1);
-  }
-
-  .how {
-    margin-top: 12px;
-  }
-
-  /* How the chance adds up: open, a short sentence a reason, right under the chart. */
-  .why-title {
-    margin-bottom: 10px;
-    font: var(--type-strong);
-    color: var(--text-1);
   }
 </style>

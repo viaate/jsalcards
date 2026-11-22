@@ -18,7 +18,7 @@ const { problems } = (await import(/* @vite-ignore */ checkCopy)) as {
 };
 
 const { plain } = chanceFormat;
-const { headline, habit, row } = plain;
+const { headline, row, build } = plain;
 /** Each form filled with each of three names (WHY-PLAIN 5). */
 const NAMES = ['Danbury', 'Tahoe-Truckee', 'Creekside Charter'] as const;
 const CLASSES: readonly StepClass[] = ['warning', 'advisory', 'cold'];
@@ -33,14 +33,13 @@ const ALERTS = [
 ] as const;
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] as const;
 const END = '10 AM';
+const NBSP = '\u00a0';
 
 /** Every panel template in every form, joined as the panel shows it. */
 function forms(): string[] {
   const out: string[] = [
     chanceCopy.fold,
     chanceCopy.fewRecords,
-    habit.titlePrivate,
-    habit.fallback,
     ...Object.values(plain.part),
     headline.ice,
     headline.cold,
@@ -53,7 +52,9 @@ function forms(): string[] {
     out.push(headline.region(k, false));
   }
   for (const a of ALERTS) {
-    for (const w of WEEKDAYS) out.push(headline.start(a, w), row.start(a, w, 45));
+    for (const w of WEEKDAYS) {
+      out.push(headline.start(a, w), headline.parts(a, w), row.start(a, w, 45));
+    }
     out.push(`${row.start(a, 'Wednesday', 45)} ${row.startMoved(42)}`);
     for (const p of [1, 12, 30, 50, 75, 99]) out.push(headline.alertDays(a, p));
     out.push(
@@ -66,71 +67,9 @@ function forms(): string[] {
   }
   out.push(row.tropical, row.privateDay, row.wait('Wednesday'));
   for (const d of NAMES) {
-    out.push(habit.title(d), headline.saidOpen(d), row.saidOpen(d));
+    out.push(headline.saidOpen(d), row.saidOpen(d));
     for (const k of CLASSES) {
       out.push(headline.moreOwn(d, k), headline.fewerOwn(d, k));
-      for (const peers of ['districts', 'private schools'] as const) {
-        for (const [n, closed, late] of [
-          [5, 5, 0],
-          [6, 3, 1],
-          [12, 0, 4],
-        ] as const) {
-          for (const verdict of [
-            habit.early(k, peers),
-            habit.holdOut(k, peers),
-            habit.likeMost(peers),
-          ]) {
-            for (const end of [habit.notUsed, habit.notToday]) {
-              for (const [othersClosed, othersOf] of [
-                [1027, 1071],
-                [0, 40],
-                [40, 40],
-                [999, 1000],
-                [1, 1000],
-                [20, 40],
-                [13, 40],
-              ] as const) {
-                out.push(
-                  [
-                    verdict,
-                    habit.seen(n, k),
-                    habit.counts(n, closed, late),
-                    habit.others(peers, othersClosed, othersOf),
-                    end,
-                  ].join(' '),
-                );
-              }
-            }
-          }
-        }
-      }
-      for (const end of [habit.notUsedFew, habit.notToday]) {
-        out.push([habit.unknown, habit.seenNone(k), end].join(' '));
-        for (const [n, closed, late] of [
-          [1, 1, 0],
-          [1, 0, 1],
-          [1, 0, 0],
-          [3, 2, 0],
-          [3, 3, 0],
-          [2, 2, 0],
-          [2, 0, 2],
-          [2, 0, 0],
-          [4, 2, 1],
-        ] as const) {
-          out.push(
-            [
-              habit.unknown,
-              habit.seen(n, k),
-              habit.counts(n, closed, late),
-              habit.tooFew,
-              end,
-            ].join(' '),
-          );
-        }
-      }
-      out.push([habit.seen(3, k), habit.counts(3, 2, 0), habit.ownAlert].join(' '));
-      out.push([habit.seenNone(k), habit.ownAlert].join(' '));
-      out.push(`${habit.cannot} ${habit.ownAlertAlone(d)}`, `${habit.cannot} ${habit.notToday}`);
       const ref = { warning: 1.4, advisory: 4, cold: 0.3 }[k];
       const firsts = [
         [row.placeOwn(d, 0, k)],
@@ -181,7 +120,7 @@ function forms(): string[] {
     for (const set of [[], [row.half(d, 'snow')], [row.half(d, 'snow'), row.mainOnly]]) {
       for (const s of [0, 0.4, 1, 4.7, 12]) {
         const lead = [row.snow(s, END), ...set];
-        for (const dir of [row.less, row.more, row.same]) {
+        for (const dir of [row.snowMoves(false), row.snowMoves(true), row.same]) {
           for (const usual of [row.usual(5.62, null), row.usual(0.91, 0.8)]) {
             for (const tail of [
               [],
@@ -456,69 +395,363 @@ function rules(text: string): string[] {
   return problems(plainText.replace(/^the district/, 'The district'), 'src/copy-chance.ts');
 }
 
-/** Every complete-record box (records-mo, lead ruling LR-4): its five sentences at most. */
-function fullForms(): string[] {
-  const out: string[] = [];
-  const shares = [0, 0.004, 0.2, 0.37, 0.433, 0.5, 0.553, 0.71, 0.9, 0.97, 0.995, 1];
+/** The days the habit box's ending names: today, or a weekday. */
+const DAYS = [null, ...WEEKDAYS] as const;
+
+/** Every sentence the build-up shows (WHY-V2, COPY-RULES 1 to 5), in every form. */
+function buildForms(): string[] {
+  const out: string[] = [
+    build.saidOpenLine,
+    build.recordNone,
+    build.recordCannot,
+    build.recordUnseen,
+    build.heldLine(true),
+    build.heldLine(false),
+  ];
   for (const k of CLASSES) {
-    for (const [n, none] of [
-      [1, 1],
-      [1, 0],
-      [2, 2],
-      [3, 2],
-      [6, 6],
-      [11, 8],
-      [13, 7],
-      [17, 0],
-    ] as const) {
-      for (const verdict of [
-        habit.earlyFull,
-        habit.holdOutFull,
-        habit.likeMost('districts'),
-        habit.unknown,
-      ]) {
-        for (const p of shares) {
-          const unknown = verdict === habit.unknown;
-          for (const end of [
-            unknown ? [habit.tooFew, habit.notUsedFew] : [habit.notUsedFull],
-            [habit.notToday],
-            [habit.ownAlertFull],
-          ]) {
-            const near = unknown ? [] : [habit.near(p)];
-            out.push(
-              [verdict, habit.checked(n, k), habit.noSchool(n, none), ...near, ...end].join(' '),
-            );
-          }
+    out.push(build.startLine(k));
+    for (const place of [true, false]) {
+      for (const snow of ['usual', 'plain', null] as const) {
+        for (const joined of ['ice', 'cold', 'both', null] as const) {
+          const said = build.still(k, place, snow, joined);
+          if (said !== null) out.push(said, `${said} ${row.wait('Monday')}`);
         }
       }
+    }
+    const ref = { warning: 1.4, advisory: 4, cold: 0.3 }[k];
+    for (const f of [0, 0.4, 0.7, 1, 1.8, 2, 2.6, 4, 5.7, 11.2, 30]) {
+      out.push(build.placeCount(f, ref));
+      for (const more of [row.placeMore, row.placeFewer]) {
+        out.push(`${build.placeCount(f, ref)} ${more}`);
+        out.push(`${row.placeCountyPrivate} ${build.placeCount(f, ref)} ${more}`);
+        out.push(`${row.placeCountyWhy(NAMES[0])} ${build.placeCount(f, ref)} ${more}`);
+      }
+    }
+  }
+  for (const [s, u] of [
+    [14.3, 5.62],
+    [6.1, 3.24],
+    [2.4, 1.4],
+    [1.5, 1.4],
+    [2.5, 0.04],
+    [1, 2.4],
+    [3.1, 3.4],
+    [1.2, 3.24],
+    [0, 1.4],
+    [2.4, 1.2],
+    [0.6, 1.2],
+    [0, 0.04],
+    [0.3, 0.04],
+    [1.8, 1.82],
+    [0, 0.03],
+  ] as const) {
+    out.push(build.snowGap(s, u));
+  }
+  for (const n of [1, 3, 4, 5, 6, 13, 40]) {
+    out.push(build.recordFew(n));
+    for (const k of [0, 1, Math.floor(n / 2), n]) {
+      out.push(build.recordLead(k, n));
+      out.push(`${build.recordLead(k, n)} ${build.recordFew(n)}`);
+      for (const near of [0, 0.4, k - 1.4, k + 1.6, n * 0.9, n]) {
+        for (const verdict of ['close', 'hold', null] as const) {
+          const gap = build.recordGap(k, n, Math.max(0, near), verdict);
+          if (gap !== null) out.push(gap, `${build.recordLead(k, n)} ${gap}`);
+        }
+      }
+      out.push(build.recordLists(k, n));
+    }
+  }
+  for (const day of DAYS) {
+    for (const n of [1, 15, 59, 99]) {
+      out.push(build.notUsed(day, n), build.notStorm(day, n));
+      out.push(build.ownLists(day, n));
     }
   }
   return out;
 }
 
-describe('a complete record box reads at grade 6, the whole and each sentence alone', () => {
-  const boxes = [...new Set(fullForms())];
+/** Every label the build-up shows: titles, the key and the total, short noun phrases. */
+function buildLabels(): string[] {
+  const out: string[] = [
+    build.total,
+    ...build.scale(),
+    build.startCalm,
+    build.startAfter,
+    build.regionTitle,
+    build.heldTitle,
+    build.coldTitle,
+  ];
+  for (const a of ALERTS) out.push(build.startTitle(a));
+  for (const kind of ['snow_total', 'record', 'neighbors', 'timing', 'snow_hours', 'wind_chill']) {
+    out.push(build.lineTitle(kind));
+  }
+  for (const kind of ['cold', 'snow_stops', 'sun', 'icy_roads', 'ice', 'said_open', 'outlook']) {
+    out.push(build.lineTitle(kind));
+  }
+  for (const k of CLASSES) {
+    for (const more of [true, false]) {
+      for (const f of [0, 1, 4, 11.2]) out.push(build.placeTitle(k, more, f, 4));
+    }
+    for (const d of NAMES) out.push(build.recordTitle(d, k));
+  }
+  for (const d of NAMES) out.push(build.saidOpenTitle(d));
+  for (const s of [0, 0.4, 1, 4.7, 14.3]) out.push(build.snowTitle(s, `10${NBSP}AM PT`));
+  out.push(build.iceTitle(null, END), build.iceTitle('0.12', END), build.iceTitle('1', END));
+  for (const k of CLASSES) out.push(build.placeTitle(k, true, 1.4, 1.4));
+  for (const n of [1, 6, 13]) out.push(build.keyClosed(n), build.keyRemote(n), build.keySchool(n));
+  return out;
+}
 
-  it('keeps the whole box and every sentence alone at grade 6, 15 words, five sentences', () => {
+describe('the build-up reads at grade 6 (WHY-V2)', () => {
+  const sentences = [...new Set(buildForms())];
+
+  it('keeps every sentence at grade 6 or under, 15 words a sentence, no banned word, never "like most"', () => {
     const failing: string[] = [];
-    for (const text of boxes) {
-      const sentences = (text.match(/[^.]+\./gu) ?? []).map((x) => x.trim());
-      if (sentences.length > 5) failing.push(`over 5 | ${text}`);
-      for (const part of [text, ...sentences]) {
-        const { grade, longest } = measure(part, NAMES);
-        if ((grade !== null && grade > 6) || longest > 15 || bannedIn(part).length > 0) {
-          failing.push(`${String(grade)} ${String(longest)} | ${part}`);
-        }
-        if (/[!\u2014]/u.test(part)) failing.push(`mark | ${part}`);
+    for (const text of sentences) {
+      const { grade, longest } = measure(text, NAMES);
+      if ((grade !== null && grade > 6) || longest > 15 || bannedIn(text).length > 0) {
+        failing.push(`${String(grade)} ${String(longest)} ${bannedIn(text).join(',')} | ${text}`);
+      }
+      if (/like most|[!—]/u.test(text)) failing.push(`mark | ${text}`);
+    }
+    expect(failing).toEqual([]);
+  });
+
+  it('follows the house style in every sentence and label', () => {
+    const failing = [...sentences, ...buildLabels()].flatMap((text) =>
+      rules(text).map((problem) => `${problem} | ${text}`),
+    );
+    expect([...new Set(failing)]).toEqual([]);
+  });
+
+  it('keeps every label to 9 words or fewer, with no banned word and no sentence end', () => {
+    for (const text of buildLabels()) {
+      expect([text, text.split(/\s+/u).length <= 9, /[.!?]$/u.test(text)]).toEqual([
+        text,
+        true,
+        false,
+      ]);
+      expect([text, bannedIn(text)]).toEqual([text, []]);
+    }
+  });
+
+  it('says the snow gap by its side and size (COPY-RULES 2)', () => {
+    expect(build.snowGap(14.3, 5.62)).toBe('More than twice the 5.6 inches usual here.');
+    expect(build.snowGap(6.1, 3.24)).toBe('Almost twice the 3.2 inches usual here.');
+    expect(build.snowGap(2.4, 1.4)).toBe('About 1 inch more than usual here.');
+    expect(build.snowGap(1.5, 1.4)).toBe('A bit more than the 1.4 inches usual here.');
+    expect(build.snowGap(1, 2.4)).toBe('Less than half the 2.4 inches usual here.');
+    expect(build.snowGap(1.2, 2.4)).toBe('Half the 2.4 inches usual here.');
+    expect(build.snowGap(3.1, 5.62)).toBe('About 3 inches less than usual here.');
+    expect(build.snowGap(3.1, 3.4)).toBe('A bit less than the 3.4 inches usual here.');
+    // A usual that rounds to 0 is never named or doubled.
+    expect(build.snowGap(2.4, 0.04)).toBe('About 2 inches more than usual here.');
+    // "Twice" and "half" only when exactly so (S3): floored tenths can land on them.
+    expect(build.snowGap(2.4, 1.2)).toBe('Twice the 1.2 inches usual here.');
+    expect(build.snowGap(0.6, 1.2)).toBe('Half the 1.2 inches usual here.');
+    expect(build.snowGap(2.5, 1.2)).toBe('More than twice the 1.2 inches usual here.');
+    expect(build.snowGap(0.5, 1.2)).toBe('Less than half the 1.2 inches usual here.');
+    // The words hold for the two amounts as the panel shows them, in tenths (LR-V5): equal as
+    // shown is "about the", and twice or half as shown is never "more than" or "less than".
+    expect(build.snowGap(1.8, 1.82)).toBe('About the 1.8 inches usual here.');
+    expect(build.snowGap(1.8, 1.78)).toBe('About the 1.8 inches usual here.');
+    expect(build.snowGap(8.4, 4.19)).toBe('Twice the 4.2 inches usual here.');
+    expect(build.snowGap(0.4, 0.82)).toBe('Half the 0.8 inches usual here.');
+    expect(build.snowGap(2.41, 1.2)).toBe('Twice the 1.2 inches usual here.');
+    expect(build.snowGap(0.59, 1.2)).toBe('Half the 1.2 inches usual here.');
+    expect(build.snowGap(8.5, 4.19)).toBe('More than twice the 4.2 inches usual here.');
+    expect(build.snowGap(0.3, 0.82)).toBe('Less than half the 0.8 inches usual here.');
+    expect(build.snowGap(7.4, 4.19)).toBe('Almost twice the 4.2 inches usual here.');
+    expect(build.snowGap(7.3, 4.19)).toBe('About 3 inches more than usual here.');
+    expect(build.snowGap(0, 0.03)).toBe('A bit less than usual here.');
+    // A usual that rounds to 0 is never named on the less side either.
+    expect(build.snowGap(0, 0.04)).toBe('A bit less than usual here.');
+    expect(build.snowGap(0.3, 0.04)).toBe('A bit more than usual here.');
+    // Never "1 inches".
+    expect(build.snowGap(1.2, 1)).toBe('A bit more than the 1 inch usual here.');
+    for (const [s0, u0] of [
+      [2.4, 1.2],
+      [0.6, 1.2],
+      [0, 0.04],
+      [0.3, 0.04],
+      [1.2, 1],
+      [3, 1],
+      [0.4, 1],
+    ] as const) {
+      expect(build.snowGap(s0, u0)).not.toMatch(/\b0 inches|\b1 inches/u);
+    }
+    // Never "1 inches" of ice either (LR-V6).
+    expect(row.iceJoined('1')).toBe('The forecast also shows at least 1 inch of ice.');
+    expect(row.iceJoined('0.25')).toBe('The forecast also shows at least 0.25 inches of ice.');
+    expect(row.ice('1', 'noon')).toBe('The forecast shows at least 1 inch of ice by noon.');
+    expect(build.iceTitle('1', 'noon')).toBe('At least 1 inch of ice by noon');
+    expect(build.snowTitle(14.3, '10 AM PT')).toBe('About 14.3 inches of snow by 10 AM PT');
+    expect(build.snowTitle(0.4, 'noon')).toBe('Under 1 inch of snow by noon');
+    expect(build.snowTitle(0, 'noon')).toBe('No snow by noon');
+  });
+
+  it('says how often the alerts come, "common" and "rare" only at twice or half (COPY-RULES 2)', () => {
+    expect(build.placeTitle('warning', true, 11.2, 1.4)).toBe('Storm warnings are common here');
+    expect(build.placeTitle('warning', true, 2, 1.4)).toBe('Storm warnings come more often here');
+    expect(build.placeTitle('advisory', false, 2, 4)).toBe('Winter advisories are rare here');
+    expect(build.placeTitle('advisory', false, 3, 4)).toBe(
+      'Winter advisories come less often here',
+    );
+    // Numbers that read the same take neither side (S4).
+    expect(build.placeTitle('warning', true, 1.42, 1.38)).toBe(
+      'How often storm warnings come here',
+    );
+    expect(build.placeTitle('advisory', false, 4.2, 3.9)).toBe(
+      'How often winter advisories come here',
+    );
+    // Two short sentences, the rule's one reads at grade 8.9; "So each one is less likely"
+    // has the banned hedge "likely", so the row keeps its own sentence (row.placeMore).
+    expect(build.placeCount(11.2, 1.4)).toBe(
+      'About 11 a winter. That is 8 times a typical district.',
+    );
+    expect(build.placeCount(1.8, 4)).toBe(
+      'About 1.8 a winter. That is under half a typical district.',
+    );
+    expect(build.placeCount(5.7, 4)).toBe('About 6 a winter. It is 4 in a typical district.');
+    // "Under half" only under half: exactly half (810 published districts with 0.7 storm
+    // warnings against 1.4, 118 with 2 advisories against 4) says "half", and so does a count
+    // that reads as half once said (1.96 is "2" of "4").
+    expect(build.placeCount(0.7, 1.4)).toBe('About 0.7 a winter. That is half a typical district.');
+    expect(build.placeCount(2, 4)).toBe('About 2 a winter. That is half a typical district.');
+    expect(build.placeCount(1.96, 4)).toBe('About 2 a winter. That is half a typical district.');
+    expect(build.placeCount(0.69, 1.4)).toBe(
+      'About 0.7 a winter. That is half a typical district.',
+    );
+    expect(build.placeCount(0.6, 1.4)).toBe(
+      'About 0.6 a winter. That is under half a typical district.',
+    );
+    expect(build.placeCount(0.75, 1.4)).toBe(
+      'About 0.8 a winter. It is 1.4 in a typical district.',
+    );
+    expect(build.placeCount(0, 1.4)).toBe('Almost none a winter. It is 1.4 in a typical district.');
+  });
+
+  it('keeps the rule’s own words for every class where they read at grade 6 or under (COPY-RULES 1, 2)', () => {
+    const plurals = {
+      warning: 'storm warnings',
+      advisory: 'winter advisories',
+      cold: 'cold warnings',
+    };
+    for (const k of CLASSES) {
+      const one = plurals[k].replace(/ies$/u, 'y').replace(/s$/u, '');
+      for (const [rule, built] of [
+        [`Every ${one} day starts here.`, build.startLine(k)],
+        [`No change from how often ${plurals[k]} come here.`, build.still(k, true, null)],
+      ] as const) {
+        const ruleGrade = measure(rule, []).grade ?? 0;
+        if (ruleGrade <= 6) expect([k, built]).toEqual([k, rule]);
+        else expect([k, rule, (measure(built ?? '', []).grade ?? 0) <= 6]).toEqual([k, rule, true]);
       }
     }
-    expect([...new Set(failing)]).toEqual([]);
-  }, 60_000);
+  });
 
-  it('follows the house style in every box', () => {
-    const failing = boxes.flatMap((text) => rules(text).map((problem) => `${problem} | ${text}`));
-    expect([...new Set(failing)]).toEqual([]);
-  }, 60_000);
+  it('says the quiet line once for every part that did not move the chance (COPY-RULES 1)', () => {
+    expect(build.still('advisory', true, null)).toBe(
+      'There is no change from how often winter advisories come here.',
+    );
+    // The rule's own words wherever they read at grade 6 or under (only the advisory's do not).
+    expect(build.still('warning', true, null)).toBe(
+      'No change from how often storm warnings come here.',
+    );
+    expect(build.still('cold', true, null)).toBe(
+      'No change from how often cold warnings come here.',
+    );
+    // The ice and cold that joined a folded snow row are named with it.
+    expect(build.still('warning', false, 'plain', 'ice')).toBe('No change from the snow or ice.');
+    expect(build.still('warning', false, 'usual', 'both')).toBe(
+      'No change from the snow, ice or cold. The snow is about usual here.',
+    );
+    expect(build.still('advisory', true, 'plain', 'cold')).toBe(
+      'No change from how often winter advisories come here. No change from the snow or cold.',
+    );
+    expect(build.still('warning', true, 'usual')).toBe(
+      'No change from how often storm warnings come here, or from the snow. The snow is about usual here.',
+    );
+    expect(build.still('advisory', true, 'plain')).toBe(
+      'No change from how often winter advisories come here, or from the snow.',
+    );
+    expect(build.still('warning', false, 'plain')).toBe('No change from the snow.');
+    expect(build.still('cold', false, 'usual')).toBe(
+      'No change from the snow, which is about usual.',
+    );
+    expect(build.still('warning', false, null)).toBeNull();
+  });
+
+  it('says the past days box in the words of COPY-RULES 3, the few-days form word for word', () => {
+    // "days" kept: the rule's "Only 3 on file." grades 6.6 as a sentence alone (see recordFew).
+    expect(build.recordFew(3)).toBe('Only 3 days on file. That is too few to tell a habit.');
+    expect(build.recordFew(1)).toBe('Only 1 day on file. That is too few to tell a habit.');
+    expect(build.recordNone).toBe('None on file yet.');
+    // An own base's box never says "none" (the start row says its own days made the chance).
+    expect(build.recordUnseen).not.toMatch(/none|no days|not on file/iu);
+  });
+
+  it('gives every kind of row its own title, no two alike in their first three words (S6)', () => {
+    const kinds = [
+      'snow_total',
+      'record',
+      'neighbors',
+      'timing',
+      'snow_hours',
+      'wind_chill',
+      'cold',
+      'snow_stops',
+      'sun',
+      'icy_roads',
+      'ice',
+      'said_open',
+      'outlook',
+    ];
+    const start = (text: string): string => text.toLowerCase().split(/\s+/u).slice(0, 3).join(' ');
+    for (const k of CLASSES) {
+      const titles: [string, string][] = [
+        ['total', build.total],
+        ['region', build.regionTitle],
+        ['held', build.heldTitle],
+        ['cold row', build.coldTitle],
+        ['said open', build.saidOpenTitle('Kansas City')],
+        ['snow row', build.snowTitle(4.7, END)],
+        ['under row', build.snowTitle(0.4, END)],
+        ['no snow row', build.snowTitle(0, END)],
+        ['ice row', build.iceTitle('0.12', END)],
+        ['little ice row', build.iceTitle(null, END)],
+        ['start calm', build.startCalm],
+        ['start after', build.startAfter],
+        ...ALERTS.map((a): [string, string] => [`start ${a}`, build.startTitle(a)]),
+        ['place common', build.placeTitle(k, true, 11.2, 1.4)],
+        ['place more', build.placeTitle(k, true, 2, 1.4)],
+        ['place rare', build.placeTitle(k, false, 1, 4)],
+        ['place less', build.placeTitle(k, false, 3, 4)],
+        ['place even', build.placeTitle(k, true, 1.4, 1.4)],
+        ...kinds.map((kind): [string, string] => [`line ${kind}`, build.lineTitle(kind)]),
+      ];
+      // Each start is one alert's own: only one of them is ever in a panel.
+      const seen = new Map<string, string>();
+      for (const [kind, title] of titles) {
+        const key = start(title);
+        const other = seen.get(key);
+        const both =
+          other !== undefined && !(other.startsWith('start') && kind.startsWith('start'));
+        const places = other?.startsWith('place') === true && kind.startsWith('place');
+        expect([k, kind, other, key, both && !places]).toEqual([k, kind, other, key, false]);
+        seen.set(key, kind);
+      }
+    }
+  });
+
+  it('names the day the chance is for, "today’s" only for today (WHY-V2 V3)', () => {
+    expect(build.notUsed(null, 15)).toBe('This does not change today’s 15% yet.');
+    expect(build.notUsed('Tuesday', 15)).toBe('This does not change Tuesday’s 15% yet.');
+    expect(build.notStorm(null, 4)).toBe('Today’s 4% does not come from storm warning days.');
+    expect(build.ownLists('Monday', 30)).toBe(
+      'Monday’s 30% starts from its days in our past closing lists.',
+    );
+  });
 });
 
 describe('the plain why reads at grade 6', () => {
@@ -575,6 +808,16 @@ describe('the page How Snowlight guesses', () => {
     expect(page).toContain('tends to close easily');
     expect(page).toContain('It tends to hold out');
     expect(page).not.toMatch(/delayed start|close early/u);
+  });
+
+  it('never says "like most" and says what the card shows instead (WHY-V2 V2)', () => {
+    // Every string in the How page's copy, not only its paragraphs.
+    const all = JSON.stringify(howCopy);
+    expect(all).not.toMatch(/like most|about like/iu);
+    const page = paragraphs.join(' ');
+    expect(page).toContain('a bit fewer or more days with no school');
+    expect(page).not.toContain('more days off');
+    expect(page).toContain('only for a gap of at least 1 day');
   });
 
   it('says Missouri’s calendar days as lead ruling LR-2 words them, and never that it shows open days', () => {

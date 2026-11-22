@@ -42,7 +42,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { devices, expect, test } from '@playwright/test';
-import type { BrowserContext, Locator, Page, Route } from '@playwright/test';
+import type { Browser, BrowserContext, Locator, Page, Route } from '@playwright/test';
 import sharp from 'sharp';
 import { build, preview } from 'vite';
 import type { PreviewServer } from 'vite';
@@ -1623,9 +1623,10 @@ async function whyParts(panel: Locator): Promise<string> {
       '.reason',
       '.delay',
       '.why-title',
-      '.habit',
       '.why .sum',
       '.total',
+      '.quiet',
+      '.habit',
       '.how',
     ]
       .map(at)
@@ -1644,8 +1645,9 @@ function sierraPredictions(generatedAt: string, shape: StepsShape): string {
     snow: number,
     cold: number,
     read: Record<string, unknown>,
+    ice = 0,
   ) => {
-    const points = (base.points as number) + snow + cold;
+    const points = (base.points as number) + snow + cold + ice;
     return {
       state: 'forecast',
       p_no_school: points / 100,
@@ -1657,6 +1659,7 @@ function sierraPredictions(generatedAt: string, shape: StepsShape): string {
         reasons: [
           { kind: 'snow_total', points: snow, low: 3.0, high: 5.0, overnight: true },
           { kind: 'wind_chill', points: cold, feels_like: 13 },
+          ...(ice === 0 ? [] : [{ kind: 'ice', points: ice, inches: 0.1, at: null }]),
         ],
         ...read,
       },
@@ -1664,11 +1667,14 @@ function sierraPredictions(generatedAt: string, shape: StepsShape): string {
   };
   const [olathe, shawnee] = found.districts;
   if (shape === 'warning' && shawnee !== undefined) {
-    shawnee.days[0] = lined({ kind: 'class', points: 47, alert: 'winter_storm_warning' }, 8, 2, {
-      snow: 3.9,
-      feels: 13,
-      held: 'high',
-    });
+    // An ice line as well, so the snow row joins a part and has the one fold.
+    shawnee.days[0] = lined(
+      { kind: 'class', points: 47, alert: 'winter_storm_warning' },
+      8,
+      2,
+      { snow: 3.9, feels: 13, ice: 0.1, held: 'high' },
+      1,
+    );
   }
   if (shape === 'advisory' && olathe !== undefined) {
     olathe.days[1] = lined({ kind: 'class', points: 12, weather: 'advisory' }, 6, 1, {
@@ -4277,12 +4283,18 @@ test.describe('with data staged', () => {
     const rows = section.locator('.sum > li');
     await expect(rows).toHaveCount(6);
     // Each reason names itself: its numbers are the chart's, and who canceled is the timeline's.
-    await expect(rows.nth(1)).toHaveText(
-      '+16 The forecast has more snow than most storms. We looked at its last 5 days with 6 inches of snow or more. It closed on 4 of them. So the chance goes up.',
+    // Each line row by its kind of day, then today's sentence under it.
+    await expect(rows.nth(1).locator('.name')).toHaveText('Snow');
+    await expect(rows.nth(2).locator('.name')).toHaveText('Districts next door');
+    await expect(rows.nth(3).locator('.name')).toHaveText('Heaviest snow');
+    await expect(rows.nth(1).locator('.says')).toHaveText(
+      'The forecast has more snow than most storms. We looked at its last 5 days with 6 inches of snow or more. It closed on 4 of them. So the chance goes up.',
     );
-    await expect(rows.nth(2)).toHaveText('+9 Districts next door closed. So the chance goes up.');
-    await expect(rows.nth(3)).toHaveText(
-      '+7 The heaviest snow falls just before the buses go out. So the chance goes up.',
+    await expect(rows.nth(2).locator('.says')).toHaveText(
+      'Districts next door closed. So the chance goes up.',
+    );
+    await expect(rows.nth(3).locator('.says')).toHaveText(
+      'The heaviest snow falls just before the buses go out. So the chance goes up.',
     );
     // Nothing said twice in the section as it shows.
     const shown = await shownText(section);
@@ -4293,9 +4305,7 @@ test.describe('with data staged', () => {
       Number(text.replace('−', '-').replace('%', '')),
     );
     expect(numbers.reduce((sum, n) => sum + n, 0)).toBe(64);
-    await expect(section.locator('.total')).toHaveText(
-      `${chanceFormat.plain.totalLabel(64)} ${chanceFormat.plain.total(64)}`,
-    );
+    await expect(section.locator('.total')).toHaveText(`${chanceFormat.plain.build.total} 64%`);
     await expect(section.locator('details, [aria-expanded="false"]')).toHaveCount(0);
     await expect(section.locator('.delay')).toHaveText(chanceFormat.delayInstead(0.18));
 
@@ -4530,6 +4540,12 @@ test.describe('with data staged', () => {
     expect(actions?.y).toBeGreaterThan((hero?.y ?? 0) + (hero?.height ?? 0));
     // The night above the why (the owner, Nov 19): the chance and its why at most 1,250 px with
     // the folds closed, the hour-by-hour chart drawn above the why and not counted.
+    // Its start row says the chance comes from its own past days, so the past days box does not
+    // say it again (said once).
+    await expect(section.locator('.why .sum > li').first().locator('.says')).toContainText(
+      'This chance comes from Shawnee Mission’s own past days like this.',
+    );
+    await expect(section.locator('.habit-end')).toHaveCount(0);
     await expect(section.locator('figure')).toHaveCount(1);
     const tall = await whyHeight(sheet);
     if (process.env.SNOWLIGHT_STEPS_SHOT !== undefined) {
@@ -4539,7 +4555,8 @@ test.describe('with data staged', () => {
     // Up to full height, then down to the sum: every part of the section inside the sheet.
     await sheet.locator('.grip').tap();
     await expect(sheet).toHaveAttribute('data-detent', 'full');
-    for (const part of ['.delay', '.moments', '.chart', '.why']) {
+    // The build-up and the past days box are each a part of their own.
+    for (const part of ['.delay', '.moments', '.chart', '.why', '.habit']) {
       const node = section.locator(part);
       await node.scrollIntoViewIfNeeded();
       const box = await node.boundingBox();
@@ -4693,6 +4710,8 @@ test.describe('with data staged', () => {
           id: SHAWNEE_MISSION_EAST,
           name: 'Shawnee Mission East High',
           chance: 0.07,
+          // Tuesday's chance, before 7:30 AM Tuesday in Kansas City: today.
+          day: null,
           words:
             /For Shawnee Mission, days like that start at 7%\. Shawnee Mission gets more winter advisories than a typical district\. Places like that close less often on each one\.$/u,
         },
@@ -4700,6 +4719,8 @@ test.describe('with data staged', () => {
           id: '201014000137',
           name: 'Olathe North Senior High',
           chance: 0.1,
+          // Olathe's chance is Wednesday's (the hero says "Chance of no school Wednesday").
+          day: 'Wednesday',
           words:
             /days like that start at 10%\. That number already counts how often these alerts come here\.$/u,
         },
@@ -4707,6 +4728,7 @@ test.describe('with data staged', () => {
           id: PEMBROKE_HILL,
           name: null,
           chance: 0.12,
+          day: null,
           words:
             /For this school, days like that start at 12%\. That number already counts how often these alerts come here\.$/u,
         },
@@ -4730,7 +4752,17 @@ test.describe('with data staged', () => {
         // Never a share of a record, never a hedge, and inside the panel's width; with no
         // standing file the habit box says it cannot show the habit.
         expect(await said()).not.toMatch(/recorded|read live|about/u);
-        await expect(section.locator('.habit-text')).toHaveText(chanceFormat.plain.habit.fallback);
+        await expect(section.locator('.habit-text')).toHaveText(
+          chanceFormat.plain.build.recordCannot,
+        );
+        // The day the chance is for: "today’s" for Tuesday's (before 7:30 AM Tuesday in Kansas
+        // City), the weekday for a later day's, as the hero names it.
+        await expect(section.locator('.meaning')).toContainText(
+          chanceFormat.chanceOn(item.day === null ? '2026-01-13' : '2026-01-14'),
+        );
+        await expect(section.locator('.habit-end')).toHaveText(
+          chanceFormat.plain.build.notUsed(item.day, Math.round(item.chance * 100)),
+        );
         await base.scrollIntoViewIfNeeded();
         const box = await base.boundingBox();
         const width = phone ? 390 : 1440;
@@ -4795,16 +4827,294 @@ test.describe('with data staged', () => {
     const section = page.locator('aside.detail .chance');
     await page.goto(`${site}?school=${BORDER_STAR_ID}`);
     await expect(section.locator('.habit-title')).toHaveText(
-      'Does Kansas City close easily or hold out?',
+      'Kansas City’s past winter advisory days',
       { timeout: 60_000 },
     );
-    // The complete record, never the lists' 12 closings beside it, in at most five sentences.
-    await expect(section.locator('.habit-text')).toHaveText(
-      'It is about like most districts. We checked 13 past school days with a winter advisory. It had no school on 7 and school on 6. Districts near it had no school on about 3 in 5 of those days. Its habit does not change today’s chance yet.',
-    );
+    // The complete record, never the lists' 12 closings beside it: its 13 days as marks (closed,
+    // remote, school), the key, the lead and no gap line (7 of 13 against 7.2), never "like most".
+    await expect(section.locator('.habit .cell')).toHaveCount(13);
+    await expect(section.locator('.habit .cell.is-closed')).toHaveCount(5);
+    await expect(section.locator('.habit .cell.is-remote')).toHaveCount(2);
+    await expect(section.locator('.habit .cell.is-school')).toHaveCount(6);
+    await expect(section.locator('.habit-key .key-item')).toHaveText([
+      'Closed 5',
+      'Remote 2',
+      'School 6',
+    ]);
+    await expect(section.locator('.habit-text')).toHaveText('No school on 7 of 13.');
+    await expect(section.locator('.habit-end')).toHaveText('This does not change today’s 10% yet.');
+    await expect(section).not.toContainText('like most');
+    await expect(section).not.toContainText('closing lists');
     await expect(section.locator('.number')).toHaveText('10%');
     expect(problems).toEqual([]);
     await context.close();
+  });
+
+  test('the past days box names the day on the evening before: Tuesday’s, never today’s (WHY-V2 V3)', async ({
+    browser,
+  }) => {
+    // Monday 9:05 PM in Kansas City, Shawnee Mission's Tuesday chance from a pool's storm warning
+    // days (the habit not in it): the ending names Tuesday, by the school's clock.
+    test.setTimeout(180_000);
+    const evening = JSON.parse(syntheticPredictions()) as {
+      districts: { district: number; days: { why?: { base: Record<string, unknown> } }[] }[];
+    };
+    const tuesday = evening.districts.find((entry) => entry.district === 1)?.days[1];
+    if (tuesday?.why === undefined) throw new Error('no Tuesday why');
+    tuesday.why.base = {
+      kind: 'pooled',
+      points: tuesday.why.base.points,
+      scope: 'county',
+      alert: 'winter_storm_warning',
+      borrowed: false,
+      live: false,
+      of: 'districts',
+    };
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      timezoneId: ZONE,
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    await fixDate(page, EVENING);
+    const { problems } = watch(page);
+    await page.route('**/data/predictions/latest.json*', (route) =>
+      route.fulfill({ contentType: 'application/json', body: JSON.stringify(evening) }),
+    );
+    await page.route('**/data/live/closings.json*', (route) =>
+      route.fulfill({ contentType: 'application/json', body: syntheticEveningClosings() }),
+    );
+    await page.goto(`${site}?school=${SHAWNEE_MISSION_EAST}`);
+    const section = page.locator('aside.detail .chance');
+    await expect(section.locator('.number')).toHaveText('64%', { timeout: 60_000 });
+    await expect(section.locator('.meaning')).toContainText(chanceFormat.chanceOn('2026-01-13'));
+    await expect(section.locator('.habit-end')).toHaveText(
+      'This does not change Tuesday’s 64% yet.',
+    );
+    await expect(section).not.toContainText(/today’s|Today’s/u);
+    expect(
+      problems.filter((line) => !line.includes('Service Worker registration blocked')),
+    ).toEqual([]);
+    await context.close();
+  });
+
+  test('the past days box in every form at 390 px, light and dark: what is different, never "like most" (WHY-V2)', async ({
+    browser,
+  }) => {
+    // WHY-V2 V6: Kansas City 33 (district 3) on Olathe's 10% advisory day, its standing file's
+    // record of the kind in each form the habit box has. Every record is made up.
+    test.setTimeout(420_000);
+    const forms: {
+      name: string;
+      full: number[] | null;
+      lists: number[] | null;
+      lead: string | null;
+      text: string;
+      marks: number;
+    }[] = [
+      {
+        name: 'all no school',
+        full: [3, 6, 2, 0, 6, 599, 5],
+        lists: null,
+        lead: 'No school on all 6.',
+        text: '',
+        marks: 6,
+      },
+      {
+        name: 'gap fewer',
+        full: [3, 3, 0, 0, 10, 440, 5],
+        lists: null,
+        lead: 'No school on 3 of 10.',
+        text: 'That is a bit fewer than districts near it, about 4 of 10.',
+        marks: 10,
+      },
+      {
+        name: 'gap more',
+        full: [3, 8, 0, 0, 12, 666, 5],
+        lists: null,
+        lead: 'No school on 8 of 12.',
+        text: 'That is a bit more than districts near it, about 7 of 12.',
+        marks: 12,
+      },
+      {
+        name: 'verdict close',
+        full: [3, 8, 0, 0, 11, 476, 5],
+        lists: null,
+        lead: 'No school on 8 of 11.',
+        text: 'It tends to close easily. Districts near it had no school on about 5 of those 11 days.',
+        marks: 11,
+      },
+      {
+        name: 'verdict hold',
+        full: [3, 3, 1, 0, 6, 576, 5],
+        lists: null,
+        lead: 'No school on 3 of 6.',
+        text: 'It tends to hold out. Districts near it had no school on about 6 of those 6 days.',
+        marks: 6,
+      },
+      {
+        name: 'under 5 days',
+        full: [3, 2, 1, 1, 3, 255, 2],
+        lists: null,
+        lead: 'No school on 2 of 3.',
+        text: 'Only 3 days on file. That is too few to tell a habit.',
+        marks: 3,
+      },
+      {
+        name: 'lists only',
+        full: null,
+        lists: [3, 4, 1, 9],
+        lead: null,
+        text: 'Closed on 4 of 9 in past closing lists. Those lists show mostly days off.',
+        marks: 0,
+      },
+      { name: 'none', full: null, lists: null, lead: null, text: 'None on file yet.', marks: 0 },
+    ];
+    const predictions = JSON.parse(stepsPredictions(BEFORE_UNDER_WAY_FILES)) as {
+      districts: { district: number }[];
+    };
+    const first = predictions.districts.find((entry) => entry.district === 0);
+    if (first === undefined) throw new Error('no district 0');
+    predictions.districts.push({ ...first, district: 3 });
+    // The dark pass's surface color, which the light pass must not have.
+    let darkPanel: string | null = null;
+    for (const scheme of ['dark', 'light'] as const) {
+      const context = await browser.newContext({
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+        isMobile: true,
+        hasTouch: true,
+        colorScheme: scheme,
+        timezoneId: MORNING_VIEWER,
+        serviceWorkers: 'block',
+      });
+      const page = await context.newPage();
+      // Snowlight takes its theme from its own setting, not the system's: light is Daylight.
+      if (scheme === 'light') {
+        await page.addInitScript(() => {
+          localStorage.setItem('snowlight:theme', JSON.stringify({ id: 'daylight' }));
+        });
+      }
+      await fixDate(page, BEFORE_UNDER_WAY);
+      const { problems } = watch(page);
+      let form = forms[0];
+      await page.route('**/data/predictions/latest.json*', (route) =>
+        route.fulfill({ contentType: 'application/json', body: JSON.stringify(predictions) }),
+      );
+      await page.route(`**/data/predictions/standing/${STEPS_STAMP}.json*`, (route) =>
+        route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ...(JSON.parse(stepsStanding()) as Record<string, unknown>),
+            record: { advisory: form?.lists === null ? [] : [form?.lists], warning: [], cold: [] },
+            ...(form?.full === null
+              ? {}
+              : { record_full: { advisory: [form?.full], warning: [], cold: [] } }),
+          }),
+        }),
+      );
+      await page.route('**/data/live/closings.json*', (route) =>
+        route.fulfill({
+          contentType: 'application/json',
+          body: morningClosings(BEFORE_UNDER_WAY_FILES),
+        }),
+      );
+      await page.route('**/data/live/covered.json*', (route) =>
+        route.fulfill({
+          contentType: 'application/json',
+          body: morningCovered(BEFORE_UNDER_WAY_FILES),
+        }),
+      );
+      const panel = page.locator('aside.detail');
+      const section = panel.locator('.chance');
+      const habit = section.locator('.habit');
+      // Light shows every form; dark the first two, for the colors.
+      for (const one of scheme === 'light' ? forms : forms.slice(0, 2)) {
+        form = one;
+        await page.goto(`${site}?school=${BORDER_STAR_ID}`);
+        await expect(habit.locator('.habit-title')).toHaveText(
+          'Kansas City’s past winter advisory days',
+          { timeout: 60_000 },
+        );
+        // The scheme took: Daylight on the light pass, never on the dark one.
+        expect(
+          (await page.evaluate(() => document.documentElement.dataset.theme ?? '')) === 'daylight',
+        ).toBe(scheme === 'light');
+        await expect(habit.locator('.cell')).toHaveCount(one.marks);
+        if (one.lead === null) await expect(habit.locator('strong')).toHaveCount(0);
+        else await expect(habit.locator('.habit-text strong')).toHaveText(one.lead);
+        await expect(habit.locator('.habit-text')).toHaveText(
+          [one.lead ?? '', one.text].filter((x) => x !== '').join(' '),
+        );
+        // The ending only where there is a record, on the day the chance is for (today here).
+        if (one.name === 'none') await expect(habit.locator('.habit-end')).toHaveCount(0);
+        else
+          await expect(habit.locator('.habit-end')).toHaveText(
+            'This does not change today’s 10% yet.',
+          );
+        // A remote day is never called closed.
+        if (one.full !== null && (one.full[2] ?? 0) > 0) {
+          await expect(habit).not.toContainText(/Closed on (every|all)/u);
+          await expect(habit.locator('.cell.is-remote')).toHaveCount(one.full[2] ?? 0);
+        }
+        await expect(section).not.toContainText('like most');
+        // At 390 px nothing in the box runs past the panel's 16 px gutter, or sideways.
+        await habit.scrollIntoViewIfNeeded();
+        const right = await habit.evaluate((node) =>
+          Math.max(...[...node.querySelectorAll('*')].map((x) => x.getBoundingClientRect().right)),
+        );
+        expect(right, one.name).toBeLessThanOrEqual(390 - 16 + 0.5);
+        expect(
+          await panel.evaluate((node) => node.scrollWidth - node.clientWidth),
+        ).toBeLessThanOrEqual(0);
+      }
+      // The marks in the map's own colors for the same meanings, in this scheme.
+      await page.goto(`${site}?school=${BORDER_STAR_ID}`);
+      form = forms[0];
+      await expect(habit.locator('.cell')).toHaveCount(forms[0]?.marks ?? 0, { timeout: 60_000 });
+      const colors = await habit.evaluate((node) => {
+        const probe = document.createElement('span');
+        document.body.append(probe);
+        const token = (name: string): string => {
+          probe.style.background = `var(${name})`;
+          return getComputedStyle(probe).backgroundColor;
+        };
+        const closed = token('--status-closed');
+        const remote = token('--status-remote');
+        probe.remove();
+        const cell = (kind: string): string =>
+          getComputedStyle(node.querySelector(`.cell.is-${kind}`) ?? node).backgroundColor;
+        return { closed, remote, cellClosed: cell('closed'), cellRemote: cell('remote') };
+      });
+      expect(colors.cellClosed).toBe(colors.closed);
+      expect(colors.cellRemote).toBe(colors.remote);
+      // The panel itself is in this scheme's colors: the light pass's differs from the dark's.
+      const panelColor = await habit.evaluate((node) => {
+        const probe = document.createElement('span');
+        node.append(probe);
+        probe.style.background = 'var(--surface-1)';
+        const color = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return color;
+      });
+      if (scheme === 'dark') {
+        darkPanel = panelColor;
+      } else {
+        expect(darkPanel).not.toBeNull();
+        expect(panelColor).not.toBe(darkPanel);
+      }
+      if (process.env.SNOWLIGHT_STEPS_SHOT !== undefined) {
+        // The whole card, scrolled into the sheet, as the page shows it.
+        await page.locator('.grip').tap();
+        await section.locator('.why').scrollIntoViewIfNeeded();
+        await page.screenshot({
+          path: `${process.env.SNOWLIGHT_STEPS_SHOT}-habit-${scheme}.png`,
+          fullPage: false,
+        });
+      }
+      expect(problems).toEqual([]);
+      await context.close();
+    }
   });
 
   test('a storm-class chance in plain words at 390 px: the reason, the habit box, rows that add up, the total and the How page', async ({
@@ -4851,29 +5161,66 @@ test.describe('with data staged', () => {
     await page.goto(`${site}?school=${SHAWNEE_MISSION_EAST}`);
     await expect(panel.locator('h2')).toHaveText('Shawnee Mission East High', { timeout: 60_000 });
     await expect(section.locator('.number')).toHaveText('7%', { timeout: 60_000 });
-    // The why first: the reason, "Why 7%", the habit box, the rows adding to the chance.
+    // The why: the reason, "Why 7%", the start and the one part that moved it, the total once,
+    // the quiet line for the snow that did not, then its past days.
     await expect(section.locator('.reason')).toHaveText(
       chanceFormat.plain.headline.moreOwn('Shawnee Mission', 'advisory'),
       { timeout: 60_000 },
     );
+    const rows = section.locator('.why .sum > li');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.locator('.amount')).toHaveText(['10%', '\u22123']);
+    await expect(rows.locator('.name')).toHaveText([
+      'Winter advisory',
+      'Winter advisories come more often here',
+    ]);
+    await expect(rows.locator('.says')).toHaveText([
+      'Each day with a winter advisory starts here.',
+      // The hero says why already, so the row does not.
+      'About 6 a winter. It is 4 in a typical district.',
+    ]);
+    // Each bar on one 0 to 100 track: the start's 10, then the 3 it takes away, struck through.
+    const segs = async (n: number) =>
+      rows
+        .nth(n)
+        .locator('.seg')
+        .evaluateAll((all) =>
+          all.map((seg) => [
+            [...seg.classList].filter((c) => c.startsWith('is-')).join(' '),
+            (seg as HTMLElement).style.left,
+            (seg as HTMLElement).style.width,
+          ]),
+        );
+    expect(await segs(0)).toEqual([['is-base', '', '10%']]);
+    expect(await segs(1)).toEqual([
+      ['is-base', '', '7%'],
+      ['is-off', '7%', '3%'],
+    ]);
+    await expect(section.locator('.total')).toHaveText('All together 7%');
+    await expect(section.locator('.quiet')).toHaveText('No change from the snow.');
     await expect(section.locator('.habit-title')).toHaveText(
-      'Does Shawnee Mission close easily or hold out?',
+      'Shawnee Mission’s past winter advisory days',
     );
     await expect(section.locator('.habit-text')).toHaveText(
-      'We do not know yet. Our past closing lists show it on 2 winter advisory days. It closed on 1 and stayed open on 1. That is not enough to know. So its habit did not change today’s chance.',
+      'Closed on 1 of 2 in past closing lists. Those lists show mostly days off.',
     );
-    const rows = section.locator('.why .sum > li');
-    await expect(rows).toHaveCount(3);
-    await expect(rows.locator('.num')).toHaveText(['10%', '\u22123', '0']);
-    await expect(rows.nth(0)).toContainText(
-      'A winter advisory is out for Tuesday. Days like that start at 10%.',
+    await expect(section.locator('.habit-end')).toHaveText('This does not change today’s 7% yet.');
+    // The past days come after the rows, and the How link last.
+    const order = await section.evaluate((node) =>
+      ['.why-title', '.build', '.total', '.quiet', '.habit', '.how'].map(
+        (one) => node.querySelector(one)?.getBoundingClientRect().top ?? -1,
+      ),
     );
-    await expect(rows.nth(1)).toContainText(
-      'In a winter, Shawnee Mission has about 6 school days with a winter advisory.',
-    );
-    await expect(rows.nth(2)).toContainText('The forecast shows no snow by');
-    await expect(rows.nth(2)).toContainText('The snow changes it by less than 1%.');
-    await expect(section.locator('.total')).toHaveText('= 7% Add these up and you get 7%.');
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(order.every((top) => top >= 0)).toBe(true);
+    // The card holds all it says: no line stands taller than its words (the page's own
+    // classes never reach it) and nothing spills past its box onto the rows below it (the
+    // How link's own line box stands 3 px over it).
+    const quiet = await section.locator('.quiet').boundingBox();
+    expect(quiet?.height ?? 0).toBeLessThanOrEqual(40);
+    expect(
+      await section.locator('.why').evaluate((node) => node.scrollHeight - node.clientHeight),
+    ).toBeLessThanOrEqual(4);
     // No row joins parts here: no fold.
     await expect(section.locator('button.fold')).toHaveCount(0);
     // From the chance's number to the How link, at most 1,250 px at 390 px wide.
@@ -4942,31 +5289,61 @@ test.describe('with data staged', () => {
       await page.goto(`${site}?school=${id}`);
       const rows = section.locator('.why .sum > li');
       const expected = {
-        warning: ['45%', '+2', '+8', '+2'],
-        advisory: ['10%', '+2', '+6', '+1'],
-        private: ['10%', '+2', '0'],
+        warning: ['45%', '+2', '+9', '+2'],
+        // How often advisories come, its part of the country: each its own row (COPY-RULES 1).
+        advisory: ['10%', '\u22121', '+3', '+6', '+1'],
+        // The private school's forecast is not in its chance: the quiet line says so, no 0 row.
+        private: ['10%', '+2'],
       }[shape];
-      await expect(rows.locator('.num')).toHaveText(expected, { timeout: 60_000 });
+      await expect(rows.locator('.amount')).toHaveText(expected, { timeout: 60_000 });
       if (shape === 'warning') {
         // 9 storm warning days in the lists: a closings-only record is never judged (records-mo
-        // MO-4: its open days are mostly unseen), so the box gives its counts and no verdict.
+        // MO-4: its open days are mostly unseen), so the box says what the lists show.
         await expect(section.locator('.habit-text')).toHaveText(
-          'We do not know yet. Our past closing lists show it on 9 storm warning days. It closed on 6, started late on 1 and stayed open on 2. So its habit did not change today’s chance.',
+          'Closed on 6 of 9 in past closing lists. Those lists show mostly days off.',
         );
-        await expect(rows.nth(2)).toContainText('The forecast shows at least 3.9 inches of snow');
-        await expect(rows.nth(2)).toContainText('Each extra inch adds a little less.');
-        await expect(rows.nth(3)).toContainText('At 7 AM it will feel like 13 degrees or colder.');
+        await expect(section.locator('.habit-end')).toHaveText(
+          'This does not change today’s 58% yet.',
+        );
+        await expect(rows.nth(2).locator('.name')).toContainText('About 3.9 inches of snow by');
+        await expect(rows.nth(2).locator('.says')).toContainText(
+          'More than twice the 1.8 inches usual here.',
+        );
+        await expect(rows.nth(2).locator('.says')).toContainText(
+          'Each extra inch adds a little less.',
+        );
+        await expect(rows.nth(3).locator('.name')).toHaveText('Cold at 7 AM');
+        await expect(rows.nth(3).locator('.says')).toContainText(
+          'At 7 AM it will feel like 13 degrees or colder.',
+        );
       }
       if (shape === 'advisory') {
-        await expect(rows.nth(1)).toContainText(
-          'But districts in its part of the country close more on these days.',
+        // Each row's title agrees with its own sign: more advisories, so −1; its part of the
+        // country closes more, so +3.
+        await expect(rows.nth(1).locator('.name')).toHaveText(
+          'Winter advisories come more often here',
         );
+        await expect(rows.nth(1).locator('.says')).toHaveText(
+          'About 5 a winter. It is 4 in a typical district. Districts with more of them close less often on each one.',
+        );
+        await expect(rows.nth(2).locator('.name')).toHaveText('Its part of the country');
+        await expect(rows.nth(2).locator('.says')).toHaveText(
+          'Districts in its part of the country close more on these days.',
+        );
+        await expect(section).not.toContainText('But districts');
         await expect(section.locator('.status')).toBeVisible();
+        // A chance for a later day names that day, never "today’s" (WHY-V2 V3).
+        await expect(section.locator('.habit-end')).toHaveText(
+          'This does not change Wednesday’s 19% yet.',
+        );
+      }
+      if (shape === 'private') {
+        await expect(section.locator('.quiet')).toHaveText(chanceFormat.plain.row.privateDay);
       }
       // Every fold closed: from the panel's top to the How link at most 1,250 px, the night
       // above the why (the owner, Nov 19) and not counted.
       const folds = section.locator('button.fold');
-      await expect(folds).toHaveCount(shape === 'advisory' ? 1 : 0);
+      await expect(folds).toHaveCount(shape === 'warning' ? 1 : 0);
       for (const fold of await folds.all())
         await expect(fold).toHaveAttribute('aria-expanded', 'false');
       // From the top of the panel to the How link, folds closed, the night not counted.
@@ -4976,15 +5353,33 @@ test.describe('with data staged', () => {
         console.warn(`steps ${shape}: ${String(Math.round(height))} px ${await whyParts(panel)}`);
       }
       expect(height).toBeLessThanOrEqual(1250);
-      if (shape === 'advisory') {
+      // The fold and the How link: each hit area 44 px tall around its 24 px box (LR-V7).
+      const reach = async (target: Locator): Promise<boolean[]> =>
+        target.evaluate((node) => {
+          const box = node.getBoundingClientRect();
+          const x = box.left + Math.min(box.width / 2, 20);
+          const y = box.top + box.height / 2;
+          return [y - 21, y + 21].map((at) => {
+            const hit = document.elementFromPoint(x, at);
+            return hit !== null && (hit === node || node.contains(hit));
+          });
+        });
+      const how = section.locator('.how a');
+      await how.scrollIntoViewIfNeeded();
+      expect(await reach(how)).toEqual([true, true]);
+      for (const fold of await folds.all()) {
+        await fold.scrollIntoViewIfNeeded();
+        expect(await reach(fold)).toEqual([true, true]);
+      }
+      if (shape === 'warning') {
         // The one fold opens by a tap, by Enter and by Space, in place, listing each part.
         const fold = folds.first();
         await fold.tap();
         await expect(fold).toHaveAttribute('aria-expanded', 'true');
         await expect(section.locator('.fold-help .part')).toHaveText([
-          `${chanceFormat.plain.part.standing}\u22121`,
-          `${chanceFormat.plain.part.region}+3`,
-          `${chanceFormat.plain.part.sum}+2`,
+          `${chanceFormat.plain.part.snow}+8`,
+          `${chanceFormat.plain.part.ice}+1`,
+          `${chanceFormat.plain.part.sum}+9`,
         ]);
         await fold.tap();
         await expect(fold).toHaveAttribute('aria-expanded', 'false');
@@ -5010,6 +5405,258 @@ test.describe('with data staged', () => {
       await context.close();
     });
   }
+
+  /** A 390 px phone in dark (the default) or Daylight, on the morning the Sierra days are for. */
+  async function sierraPage(
+    browser: Browser,
+    scheme: 'dark' | 'light',
+    predictions: string,
+    standing: string,
+  ) {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      colorScheme: scheme,
+      timezoneId: MORNING_VIEWER,
+      serviceWorkers: 'block',
+    });
+    const page = await context.newPage();
+    if (scheme === 'light') {
+      await page.addInitScript(() => {
+        localStorage.setItem('snowlight:theme', JSON.stringify({ id: 'daylight' }));
+      });
+    }
+    await fixDate(page, BEFORE_UNDER_WAY);
+    const { problems } = watch(page);
+    await page.route('**/data/predictions/latest.json*', (route) =>
+      route.fulfill({ contentType: 'application/json', body: predictions }),
+    );
+    await page.route(`**/data/predictions/standing/${STEPS_STAMP}.json*`, (route) =>
+      route.fulfill({ contentType: 'application/json', body: standing }),
+    );
+    await page.route('**/data/live/closings.json*', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: morningClosings(BEFORE_UNDER_WAY_FILES),
+      }),
+    );
+    await page.route('**/data/live/covered.json*', (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: morningCovered(BEFORE_UNDER_WAY_FILES),
+      }),
+    );
+    return { context, page, problems };
+  }
+
+  test('a take-away under 3 points looks like a take-away in dark and Daylight, never like the carried base or an up step (LR-V3)', async ({
+    browser,
+  }) => {
+    test.setTimeout(240_000);
+    for (const scheme of ['dark', 'light'] as const) {
+      const { context, page, problems } = await sierraPage(
+        browser,
+        scheme,
+        sierraPredictions(BEFORE_UNDER_WAY_FILES, 'advisory'),
+        sierraStanding(),
+      );
+      const panel = page.locator('aside.detail');
+      const section = panel.locator('.chance');
+      await page.goto(`${site}?school=201014000137`);
+      const rows = section.locator('.why .sum > li');
+      await expect(rows.locator('.amount')).toHaveText(['10%', '−1', '+3', '+6', '+1'], {
+        timeout: 60_000,
+      });
+      expect(
+        (await page.evaluate(() => document.documentElement.dataset.theme ?? '')) === 'daylight',
+      ).toBe(scheme === 'light');
+      // The −1 row: the carried base to 9%, then the small take-away ending at the old 10%.
+      const small = rows.nth(1).locator('.seg.is-off.is-small');
+      await expect(small).toHaveCount(1);
+      await expect(rows.nth(2).locator('.seg.is-off.is-small')).toHaveCount(0);
+      const seen = await section.evaluate((node) => {
+        // Any CSS color as sRGB 0 to 255, through a canvas (color-mix included).
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (ctx === null) throw new Error('no canvas');
+        const rgb = (color: string): number[] => {
+          ctx.clearRect(0, 0, 1, 1);
+          ctx.fillStyle = '#000';
+          ctx.fillStyle = color;
+          ctx.fillRect(0, 0, 1, 1);
+          return [...ctx.getImageData(0, 0, 1, 1).data.slice(0, 3)];
+        };
+        const colorIn = (text: string): string => {
+          const found = /(rgba?\([^)]*\)|color\([^)]*\)|#[0-9a-f]{3,8})/iu.exec(text);
+          if (found === null) throw new Error(`no color in ${text}`);
+          return found[1] ?? '';
+        };
+        const steps = node.querySelectorAll('.why .sum > li');
+        const style = (selector: string, n: number): CSSStyleDeclaration => {
+          const seg = steps[n]?.querySelector(selector);
+          if (seg === null || seg === undefined) throw new Error(`no ${selector}`);
+          return getComputedStyle(seg);
+        };
+        const mark = style('.seg.is-small', 1);
+        const box = steps[1]?.querySelector('.seg.is-small')?.getBoundingClientRect();
+        const above = steps[0]?.querySelector('.seg.is-base')?.getBoundingClientRect();
+        const one = steps[1]?.querySelector('.track')?.getBoundingClientRect();
+        return {
+          right: box?.right ?? 0,
+          aboveEnd: above?.right ?? -100,
+          pointPx: (one?.width ?? 0) / 100,
+          base: rgb(style('.seg.is-base', 1).backgroundColor),
+          up: rgb(style('.seg.is-up', 2).backgroundColor),
+          stripe: rgb(colorIn(mark.backgroundImage)),
+          outline: rgb(colorIn(mark.boxShadow)),
+          fill: mark.backgroundColor,
+          width: box?.width ?? 0,
+        };
+      });
+      // Clearly apart: some channel at least 40 levels off from both the base and the up step.
+      const apart = (a: number[], b: number[]): boolean =>
+        a.some((value, i) => Math.abs(value - (b[i] ?? 0)) >= 40);
+      for (const part of [seen.stripe, seen.outline]) {
+        expect([scheme, part, apart(part, seen.base), apart(part, seen.up)]).toEqual([
+          scheme,
+          part,
+          true,
+          true,
+        ]);
+      }
+      // A strike over the track, never a solid fill like the base or an up step.
+      expect(seen.fill).toBe('rgba(0, 0, 0, 0)');
+      expect(seen.width).toBeGreaterThanOrEqual(8);
+      // It ends where the row above ended (the old 10%), its 8 px reaching back toward 9%,
+      // never past the old total.
+      expect(Math.abs(seen.right - seen.aboveEnd)).toBeLessThanOrEqual(1);
+      expect(seen.width).toBeLessThanOrEqual(Math.max(8, seen.pointPx) + 1);
+      if (process.env.SNOWLIGHT_STEPS_SHOT !== undefined) {
+        // The sheet at full height, the −1 and +3 rows in view, for the picture only.
+        await panel.locator('button.grip').tap();
+        await page.waitForTimeout(900);
+        await rows.nth(1).evaluate((node) => {
+          node.scrollIntoView({ block: 'center' });
+        });
+        await page.waitForTimeout(400);
+        const one = await rows.nth(1).boundingBox();
+        const two = await rows.nth(2).boundingBox();
+        if (one !== null && two !== null) {
+          await page.screenshot({
+            path: `${process.env.SNOWLIGHT_STEPS_SHOT}-small-${scheme}.png`,
+            clip: { x: 0, y: one.y - 8, width: 390, height: two.y + two.height - one.y + 16 },
+          });
+        }
+      }
+      expect(problems).toEqual([]);
+      await context.close();
+    }
+  });
+
+  test('the quiet line names how often the alerts come, the snow and the ice and cold that joined it, whole at 390 px in dark and Daylight', async ({
+    browser,
+  }) => {
+    test.setTimeout(240_000);
+    // SYNTHETIC: Olathe's Wednesday at the usual 10%: as many advisories as a typical district,
+    // no region row, about the usual snow and a little ice and cold, none of it in the chance.
+    const predictions = JSON.parse(sierraPredictions(BEFORE_UNDER_WAY_FILES, 'private')) as {
+      districts: { days: Record<string, unknown>[] }[];
+    };
+    const olathe = predictions.districts[0];
+    if (olathe === undefined) throw new Error('no Olathe');
+    olathe.days[1] = {
+      state: 'forecast',
+      p_no_school: 0.1,
+      p_delay: 0.1,
+      reasons: [],
+      hours: STEPS_HOURS,
+      why: {
+        base: { kind: 'class', points: 10, weather: 'advisory' },
+        reasons: [],
+        snow: 0.9,
+        feels: 13,
+        ice: 0.05,
+      },
+    };
+    const standing = JSON.parse(sierraStanding()) as Record<string, unknown>;
+    const quietStanding = JSON.stringify({
+      ...standing,
+      region_delta: { advisory: [], warning: [], cold: [] },
+      region: { advisory: [], warning: [], cold: [] },
+      winter: Array.from({ length: STAMP.districts }, (_, i) =>
+        i === 1 ? [5.7, 1, 0] : [4, 1.4, 0.3],
+      ),
+    });
+    for (const scheme of ['dark', 'light'] as const) {
+      const { context, page, problems } = await sierraPage(
+        browser,
+        scheme,
+        JSON.stringify(predictions),
+        quietStanding,
+      );
+      const panel = page.locator('aside.detail');
+      const section = panel.locator('.chance');
+      await page.goto(`${site}?school=201014000137`);
+      const rows = section.locator('.why .sum > li');
+      await expect(rows.locator('.amount')).toHaveText(['10%'], { timeout: 60_000 });
+      // The start is the whole chance: it sets it (LR-V2).
+      await expect(section.locator('.reason')).toHaveText(
+        chanceFormat.plain.headline.start('advisory', 'Wednesday'),
+      );
+      const quiet = section.locator('.quiet');
+      await expect(quiet).toHaveText(
+        'No change from how often winter advisories come here. No change from the snow, ice or cold. The snow is about usual here.',
+      );
+      await expect(section.locator('button.fold')).toHaveCount(0);
+      // Whole: it wraps inside the card, nothing clipped or spilling onto the past days.
+      const fit = await section.evaluate((node) => {
+        const line = node.querySelector('.quiet');
+        const why = node.querySelector('.why');
+        const habit = node.querySelector('.habit');
+        if (line === null || why === null || habit === null) return null;
+        const box = line.getBoundingClientRect();
+        return {
+          lines: Math.round(box.height / parseFloat(getComputedStyle(line).lineHeight)),
+          clipped: line.scrollHeight - line.clientHeight,
+          spill: why.scrollHeight - why.clientHeight,
+          right: box.right <= why.getBoundingClientRect().right + 0.5,
+          above: box.bottom <= habit.getBoundingClientRect().top + 0.5,
+        };
+      });
+      expect(fit).not.toBeNull();
+      expect(fit?.lines ?? 0).toBeGreaterThanOrEqual(2);
+      expect(fit?.lines ?? 9).toBeLessThanOrEqual(4);
+      expect(fit?.clipped ?? 9).toBeLessThanOrEqual(0);
+      expect(fit?.spill ?? 9).toBeLessThanOrEqual(4);
+      expect([fit?.right, fit?.above]).toEqual([true, true]);
+      const height = await whyHeight(panel);
+      if (process.env.SNOWLIGHT_STEPS_SHOT !== undefined) {
+        // The sheet at full height, the why and the past days in view, for the picture only.
+        await panel.locator('button.grip').tap();
+        await page.waitForTimeout(900);
+        await section.locator('.why').evaluate((node) => {
+          node.scrollIntoView({ block: 'start' });
+        });
+        await page.waitForTimeout(400);
+        const why = await section.locator('.why').boundingBox();
+        const habit = await section.locator('.habit').boundingBox();
+        if (why !== null && habit !== null) {
+          await page.screenshot({
+            path: `${process.env.SNOWLIGHT_STEPS_SHOT}-quiet-${scheme}.png`,
+            clip: { x: 0, y: why.y - 8, width: 390, height: habit.y + habit.height - why.y + 16 },
+          });
+        }
+        console.warn(`steps quiet ${scheme}: ${String(Math.round(height))} px`);
+      }
+      expect(height).toBeLessThanOrEqual(1250);
+      expect(problems).toEqual([]);
+      await context.close();
+    }
+  });
 
   test('the chance section the evening of a closed day: the status first, then tomorrow’s chance and its cold night', async ({
     browser,
@@ -5053,11 +5700,16 @@ test.describe('with data staged', () => {
       ),
     );
     // How cold, and when the snow stopped, are the chart's and the timeline's.
-    await expect(section.locator('.sum > li').nth(1)).toHaveText(
-      '−8 The snow has stopped. The plows get a full day. So the chance goes down.',
+    await expect(section.locator('.sum > li').nth(1).locator('.name')).toHaveText(
+      'When the snow ends',
     );
-    await expect(section.locator('.sum > li').nth(2)).toHaveText(
-      '+6 It will be cold at the bus stop Tuesday morning. So the chance goes up.',
+    await expect(section.locator('.sum > li').nth(1).locator('.amount')).toHaveText('−8');
+    await expect(section.locator('.sum > li').nth(1).locator('.says')).toHaveText(
+      'The snow has stopped. The plows get a full day. So the chance goes down.',
+    );
+    await expect(section.locator('.sum > li').nth(2).locator('.amount')).toHaveText('+6');
+    await expect(section.locator('.sum > li').nth(2).locator('.says')).toHaveText(
+      'It will be cold at the bus stop Tuesday morning. So the chance goes up.',
     );
     const chart = section.locator('.chart');
     await expect(chart.locator('figcaption')).toHaveText(chanceCopy.coldTonight);

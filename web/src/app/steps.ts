@@ -1,13 +1,13 @@
 /**
- * The why in plain words (WHY-PLAIN), for middle schoolers and parents: under the chance one
- * plain reason (the published part that moved it most); then "Why 22%", the district's habit in
- * a box with the owner's question as its title, at most four short rows that add up to the
- * chance, each with its amount, a total line, and at most one fold that lists the parts of a row
- * that joins more than one (ui/ChanceSection.svelte). It never changes a chance: every number
- * is a field of the predictions file's why or of the standing file it names
- * (data/standing.ts). Where the standing file is missing or does not match, the rows come from
- * the predictions file alone (the fallback); where neither adds up to the chance, null, and the
- * panel shows no why.
+ * The why in plain words (WHY-PLAIN, WHY-V2 Direction A, the build-up), for middle schoolers
+ * and parents: under the chance one plain reason (the published part that moved it most); then
+ * "Why 22%": the start and one row for each part that moved the chance, each with its amount and
+ * a bar on one 0 to 100 scale, "All together" once, one quiet line for every part that did not
+ * move it, and the district's past days of the kind, what is different first
+ * (ui/ChanceSection.svelte). It never changes a chance: every number is a field of the
+ * predictions file's why or of the standing file it names (data/standing.ts). Where the standing
+ * file is missing or does not match, the rows come from the predictions file alone (the
+ * fallback); where neither adds up to the chance, null, and the panel shows no why.
  */
 
 import { chanceFormat } from '../copy-chance';
@@ -16,7 +16,7 @@ import type { ForecastDetail, ReasonDetail } from '../data/forecast-detail';
 import type { LocalDate, StandingFile } from '../types/generated';
 
 const plain = chanceFormat.plain;
-const { headline, habit, row } = plain;
+const { headline, row, build } = plain;
 
 /** One part a joined row adds: its words and its amount. */
 export interface PartView {
@@ -24,15 +24,42 @@ export interface PartView {
   readonly number: string;
 }
 
-/** One row: its amount, its sentences (one paragraph) and, for a joined row, its parts. */
+/**
+ * One step of the build-up: its amount as said ("45%" for the start, "+12", "−8") and as a
+ * number, its title, its plain line (today's sentence for a line row) and, for a joined row, its
+ * parts.
+ */
 export interface WhyRowView {
   readonly key: string;
   readonly number: string;
+  readonly points: number;
+  readonly title: string;
   readonly text: string;
   /** The one fold, "See each part": each part, then the row's total. Null: no fold. */
   readonly parts: readonly PartView[] | null;
   /** What an outlook line counted, under it, quieter. */
   readonly help?: string;
+  /** A 0 row whose published parts are not 0 (they met the bound): it keeps its place. */
+  readonly holds?: true;
+}
+
+/** A past day of the kind as its mark: closed, remote (school at home) or school. */
+export type DayMark = 'closed' | 'remote' | 'school';
+
+/** The district's past days of the kind (the habit box), what is different first. */
+export interface HabitView {
+  /** "Kansas City’s past storm warning days". */
+  readonly title: string;
+  /** A complete record's days as marks (closed, then remote, then school), or null. */
+  readonly days: readonly DayMark[] | null;
+  /** The marks' key, each with its count, only the kinds it has. */
+  readonly key: readonly { readonly mark: DayMark; readonly label: string }[];
+  /** "No school on all 6.", in strong type, or null. */
+  readonly lead: string | null;
+  /** The gap, the few days or the lists, or null. */
+  readonly text: string | null;
+  /** Whether the record changes the chance, on the day it is for, or null. */
+  readonly end: string | null;
 }
 
 export interface PlainWhyView {
@@ -40,11 +67,13 @@ export interface PlainWhyView {
   readonly title: string;
   /** The one plain reason under the chance, or null where none is true to say. */
   readonly headline: string | null;
-  /** The habit box: the owner's question, then one paragraph. */
-  readonly habit: { readonly title: string; readonly text: string };
+  /** The start, then each part that moved the chance; they add up to it. */
   readonly rows: readonly WhyRowView[];
-  /** "= 22%" and "Add these up and you get 22%.", with 2 or more rows. */
-  readonly total: { readonly label: string; readonly text: string } | null;
+  /** The one quiet line for the parts that did not move it, or null. */
+  readonly still: string | null;
+  /** "All together" and the chance, said once. */
+  readonly total: { readonly label: string; readonly number: string };
+  readonly habit: HabitView;
 }
 
 /** Whose standing: a district by its directory position, or a private school by its place in
@@ -130,8 +159,19 @@ interface Unit {
   readonly held: number;
   readonly record: { closed: number; late: number; of: number } | null;
   readonly sum: { closed: number; of: number };
-  /** Its complete record of the class (a state's calendar file, records-mo), or null. */
-  readonly full: { noSchool: number; of: number; same100: number } | null;
+  /** Its complete record of the class (a state's calendar file, records-mo), or null: its
+   * no-school days, how many of those were school at home, its days, and the districts near it
+   * (`same100`, their shares with no school on its days, summed, in hundredths). */
+  readonly full: { noSchool: number; home: number; of: number; same100: number } | null;
+}
+
+/** A complete record's row as the habit box reads it, or null where it does not add up. */
+function fullOf(found: Row7 | null): Unit['full'] {
+  if (found === null) return null;
+  const [, noSchool, home, , of, same100] = found;
+  const whole = [noSchool, home, of, same100].every((n) => Number.isInteger(n) && n >= 0);
+  if (!whole || of < 1 || noSchool > of || home > noSchool || same100 > 100 * of) return null;
+  return { noSchool, home, of, same100 };
 }
 
 /** What the standing file says of one unit and class, or null where it says it wrong. */
@@ -157,7 +197,7 @@ function unitOf(source: StepsSource, klass: StepClass, name: string): Unit | nul
       held: held === null ? 0 : held[1] + held[2] + held[3],
       record: record === null ? null : { closed: record[1], late: record[2], of: record[3] },
       sum: { closed: sum[0], of: sum[2] },
-      full: full === null ? null : { noSchool: full[1], of: full[4], same100: full[5] },
+      full: fullOf(full),
     };
   }
   const privateFile = file.private;
@@ -207,7 +247,7 @@ export function tails(n: number, k: number, p: number): { low: number; high: num
  * `p`, the share of the districts near it that had no school on its same days, one-sided exact
  * binomial; null under 5 days or with no share, and null for a "holds out" on fewer than
  * `HABIT_MIN_SCHOOL` days with school. A closings-only record (the lists) never gets one: its open days are mostly
- * unseen, so it is never judged (`habitText`).
+ * unseen, so it is never judged (`habitView`).
  */
 export function verdictOf(
   record: { readonly closed: number; readonly of: number },
@@ -221,83 +261,93 @@ export function verdictOf(
   return 'like';
 }
 
-/**
- * The habit box from a complete record (records-mo, lead ruling LR-4): at most five short
- * sentences, the verdict, the days checked, no school and school, the districts near it on
- * those days (only with a verdict), then the ending.
- */
-function fullHabitText(
-  full: { readonly noSchool: number; readonly of: number; readonly same100: number },
-  klass: StepClass,
-  ending: 'storm' | 'ordinary' | 'alert',
-): string {
-  const p = full.same100 / (100 * full.of);
-  const verdict = verdictOf({ closed: full.noSchool, of: full.of }, p);
-  const said: string[] = [
-    verdict === null
-      ? habit.unknown
-      : verdict === 'hold'
-        ? habit.holdOutFull
-        : verdict === 'close'
-          ? habit.earlyFull
-          : habit.likeMost('districts'),
-    habit.checked(full.of, klass),
-    habit.noSchool(full.of, full.noSchool),
-  ];
-  if (verdict !== null) said.push(habit.near(p));
-  if (ending === 'alert') said.push(habit.ownAlertFull);
-  else if (ending === 'ordinary') said.push(habit.notToday);
-  else if (verdict === null) said.push(habit.tooFew, habit.notUsedFew);
-  else said.push(habit.notUsedFull);
-  return said.join(' ');
+/** What the habit box ends on, and the day and chance it names (WHY-V2 V3). */
+interface Ending {
+  /** `storm`, a chance counted over days of the kind its record shows, which the habit did not
+   * change; `ordinary`, a chance counted over other days than storm warning days (the record
+   * shown); `alert`, a chance counted over the district's own past days of the kind. */
+  readonly kind: 'storm' | 'ordinary' | 'alert';
+  /** The weekday the chance is for, or null when it is for today. */
+  readonly day: string | null;
+  readonly percent: number;
 }
 
 /**
- * The habit box's paragraph for a unit and kind of day, ending as `ending` says: `storm`, a
- * chance counted over days of the kind its record shows, which the habit did not change;
- * `ordinary`, a chance counted over other days than storm warning days (the record shown);
- * `alert`, a chance counted over the district's own past days of the kind.
+ * The habit box (WHY-V2 3): the title names the district and the kind of day; a complete record
+ * shows its days as marks with a key, then the lead, the gap to the districts near it only where
+ * the test or a gap of a day says one, and the ending; a closings-only record says what the
+ * lists show and is never judged; with none, only that.
  */
-function habitText(
-  unit: Unit | null,
-  klass: StepClass,
-  ending: 'storm' | 'ordinary' | 'alert',
-  name: string,
-): string {
+function habitView(unit: Unit | null, klass: StepClass, ending: Ending, name: string): HabitView {
+  const { day, percent } = ending;
+  const title = build.recordTitle(name, klass);
+  const empty = { title, days: null, key: [], lead: null };
   if (unit === null) {
-    // No standing file to read: only what is true without it.
-    if (ending === 'alert') return `${habit.cannot} ${habit.ownAlertAlone(name)}`;
-    if (ending === 'ordinary') return `${habit.cannot} ${habit.notToday}`;
-    return habit.fallback;
+    // No standing file to read: only what is true without it. An own base's start row says
+    // already that its own past days made the chance, so the box does not say it again.
+    const end =
+      ending.kind === 'alert'
+        ? null
+        : ending.kind === 'ordinary'
+          ? build.notStorm(day, percent)
+          : build.notUsed(day, percent);
+    return { ...empty, text: build.recordCannot, end };
   }
-  if (unit.full !== null) return fullHabitText(unit.full, klass, ending);
-  // A closings-only record (the lists) is never judged: its open days are mostly unseen, so the
-  // box says what the lists show, and under 5 days that it is not enough to know (more list days
-  // would not settle it, so that is never said from 5 on).
+  const full = unit.full;
+  if (full !== null) {
+    const { noSchool, home, of } = full;
+    const closed = noSchool - home;
+    const school = of - noSchool;
+    const days: DayMark[] = [
+      ...Array.from({ length: closed }, () => 'closed' as const),
+      ...Array.from({ length: home }, () => 'remote' as const),
+      ...Array.from({ length: school }, () => 'school' as const),
+    ];
+    const key = [
+      ...(closed > 0 ? [{ mark: 'closed' as const, label: build.keyClosed(closed) }] : []),
+      ...(home > 0 ? [{ mark: 'remote' as const, label: build.keyRemote(home) }] : []),
+      ...(school > 0 ? [{ mark: 'school' as const, label: build.keySchool(school) }] : []),
+    ];
+    const p = full.same100 / (100 * of);
+    const verdict = verdictOf({ closed: noSchool, of }, p);
+    const text =
+      of < HABIT_DAYS
+        ? build.recordFew(of)
+        : build.recordGap(
+            noSchool,
+            of,
+            full.same100 / 100,
+            verdict === 'hold' || verdict === 'close' ? verdict : null,
+          );
+    const end =
+      ending.kind === 'alert'
+        ? build.ownLists(day, percent)
+        : ending.kind === 'ordinary'
+          ? build.notStorm(day, percent)
+          : build.notUsed(day, percent);
+    return { title, days, key, lead: build.recordLead(noSchool, of), text, end };
+  }
+  // A closings-only record (the lists) is never judged: its open days are mostly unseen.
   const record = unit.record;
-  const n = record?.of ?? 0;
-  if (ending === 'alert') {
-    // Its own days like today's made the chance (the row below counts them), which can be fewer
-    // than the class record shown here: the record as the class's days, then that. With no
-    // record, only that it is not known, never "no days" beside "comes from".
-    if (record === null || n === 0) return [habit.unknown, habit.ownAlert].join(' ');
-    return [habit.seen(n, klass), habit.counts(n, record.closed, record.late), habit.ownAlert].join(
-      ' ',
-    );
-  }
-  const said: string[] = [habit.unknown];
-  if (record === null || n === 0) {
-    said.push(habit.seenNone(klass));
-  } else {
-    said.push(habit.seen(n, klass), habit.counts(n, record.closed, record.late));
-    if (n < HABIT_DAYS) said.push(habit.tooFew);
-  }
-  said.push(ending === 'ordinary' ? habit.notToday : habit.notUsedFew);
-  return said.join(' ');
-}
-
-function habitTitle(name: string, school: boolean): string {
-  return school ? habit.titlePrivate : habit.title(name);
+  const listed = record !== null && record.of > 0;
+  // An own base's start row says already that these days made the chance: no ending again.
+  const end =
+    ending.kind === 'alert'
+      ? null
+      : !listed
+        ? null
+        : ending.kind === 'ordinary'
+          ? build.notStorm(day, percent)
+          : build.notUsed(day, percent);
+  // With no record of the kind, "none on file" only where the chance does not come from its own
+  // past days: beside an own base's start row ("This chance comes from {d}'s own past days"),
+  // only that the box cannot show them, never "none" (WHY-V2 truth rule).
+  const text = listed
+    ? build.recordLists(record.closed, record.of)
+    : ending.kind === 'alert'
+      ? build.recordUnseen
+      : build.recordNone;
+  return { ...empty, text, end };
 }
 
 export interface StepsInput {
@@ -314,6 +364,8 @@ export interface StepsInput {
   readonly lines: readonly (string | null)[];
   /** What each outlook line counted, by its place in the lines. */
   readonly helps?: readonly (string | undefined)[];
+  /** Whether `day` is today on the school's clock: the habit box says "today’s" only then. */
+  readonly today?: boolean;
 }
 
 /** The why in plain words, or null where neither the full rows nor the fallback add up. */
@@ -338,12 +390,13 @@ export function stepsView(input: StepsInput): PlainWhyView | null {
   return null;
 }
 
-/** The rows' amounts add to the chance, and the total line says it. */
+/** The rows' amounts add to the chance, each row's number says its points, and the total says
+ * the chance once. */
 function adds(view: PlainWhyView, percent: number): boolean {
   const sum = view.rows.reduce((acc, one) => acc + amountOf(one.number), 0);
   if (sum !== percent) return false;
-  if (view.rows.length >= 2) return view.total?.label === plain.totalLabel(percent);
-  return view.total === null;
+  if (!view.rows.every((one) => amountOf(one.number) === one.points)) return false;
+  return view.total.number === `${String(percent)}%` && view.rows[0]?.key === 'start';
 }
 
 /** A row's amount as a number: "45%" 45, "−8" -8, "0" 0. */
@@ -351,19 +404,43 @@ export function amountOf(label: string): number {
   return Number(label.replace('%', '').replace('−', '-').replace('+', ''));
 }
 
+/** The day the habit box names: null for today, else the weekday (WHY-V2 V3). */
+function dayNamed(input: StepsInput): string | null {
+  return input.today === true ? null : chanceFormat.weekday(input.day);
+}
+
+/**
+ * The view from its rows: every row that moved the chance, or whose parts did, keeps its place;
+ * a 0 row's sentence goes to the quiet line, after `still` (the folded place and snow).
+ */
+/** A row that moved the chance, or whose parts did: it keeps its place on the panel. */
+function moves(one: WhyRowView): boolean {
+  return (
+    one.points !== 0 ||
+    one.holds === true ||
+    (one.parts ?? []).some((part) => amountOf(part.number) !== 0)
+  );
+}
+
 function finish(
   percent: number,
   headlineText: string | null,
-  habitBox: { title: string; text: string },
-  rows: WhyRowView[],
+  habitBox: HabitView,
+  rows: readonly WhyRowView[],
+  still: string | null,
 ): PlainWhyView {
+  const moved = (one: WhyRowView): boolean => one.key === 'start' || moves(one);
+  const quiet = [
+    still,
+    ...rows.filter((one) => !moved(one) && one.text !== '').map((one) => one.text),
+  ].filter((text): text is string => text !== null);
   return {
     title: plain.why(percent),
     headline: headlineText,
+    rows: rows.filter(moved),
+    still: quiet.length === 0 ? null : quiet.join(' '),
+    total: { label: build.total, number: `${String(percent)}%` },
     habit: habitBox,
-    rows,
-    total:
-      rows.length >= 2 ? { label: plain.totalLabel(percent), text: plain.total(percent) } : null,
   };
 }
 
@@ -373,7 +450,9 @@ function lineRow(input: StepsInput, reason: ReasonDetail, k: number, unitName: s
     return {
       key: 'said-open',
       number: plain.rowPoints(reason.points),
-      text: row.saidOpen(unitName),
+      points: reason.points,
+      title: build.saidOpenTitle(unitName),
+      text: build.saidOpenLine,
       parts: null,
     };
   }
@@ -383,6 +462,8 @@ function lineRow(input: StepsInput, reason: ReasonDetail, k: number, unitName: s
   return {
     key: `line-${String(k)}-${reason.kind}`,
     number: plain.rowPoints(reason.points),
+    points: reason.points,
+    title: build.lineTitle(reason.kind),
     text,
     parts: null,
     ...(help === undefined ? {} : { help }),
@@ -452,6 +533,12 @@ export function pickOf(parts: Readonly<Record<Pick, number>>): Pick | null {
   return pick;
 }
 
+/** "That sets this chance." only when the start is the whole chance: every row after it is 0,
+ * its fold too (LR-V2); else the parts below add up to it. */
+function startOrParts(after: readonly WhyRowView[], alert: string, dayWord: string): string {
+  return after.some(moves) ? headline.parts(alert, dayWord) : headline.start(alert, dayWord);
+}
+
 function classView(input: StepsInput): PlainWhyView | null {
   const day = classDayOf(input);
   const source = input.source;
@@ -470,77 +557,36 @@ function classView(input: StepsInput): PlainWhyView | null {
   if (unit.region !== 0 && klass !== 'advisory') return null;
   const percent = Math.round(input.chance * 100);
   const d = unit.name;
-  const rows: WhyRowView[] = [];
-
-  // The start.
-  rows.push({
-    key: 'start',
-    number: plain.startLabel(level.now),
-    text: [
-      row.start(named, day.dayWord, level.now),
-      ...(level.prior !== level.now ? [row.startMoved(level.prior)] : []),
-    ].join(' '),
-    parts: null,
-  });
-
-  // The place: how often these alerts come, its part of the country, the limits.
-  const place = standing + unit.region + unit.held;
-  const said: string[] = [];
-  if (days === null) {
-    said.push(row.placeUnknown);
-  } else {
-    if (unit.school) said.push(row.placeCountyPrivate, row.placeCounty(days, klass));
-    else if (unit.borrowed) said.push(row.placeCountyWhy(d), row.placeCounty(days, klass));
-    else said.push(row.placeOwn(d, days, klass));
-    said.push(row.placeRef(ref));
-    said.push(standing < 0 ? row.placeMore : standing > 0 ? row.placeFewer : row.placeSame);
-  }
-  if (unit.region !== 0) {
-    const join =
-      standing === 0 || days === null ? null : standing < 0 === unit.region < 0 ? 'also' : 'but';
-    said.push(row.placeRegion(unit.region < 0, join));
-  }
-  if (unit.held !== 0) said.push(row.placeHeld);
-  if (place < 0) said.push(row.down);
-  if (place > 0) said.push(row.up);
-  said.push(unit.school ? row.notHabitPrivate(klass) : row.notHabit(d, klass));
-  const joined = unit.region !== 0 || unit.held !== 0;
-  rows.push({
-    key: 'place',
-    number: plain.rowPoints(place),
-    text: said.join(' '),
-    parts: joined
-      ? [
-          { label: plain.part.standing, number: plain.rowPoints(standing) },
-          ...(unit.region !== 0
-            ? [{ label: plain.part.region, number: plain.rowPoints(unit.region) }]
-            : []),
-          ...(unit.held !== 0
-            ? [{ label: plain.part.held, number: plain.rowPoints(unit.held) }]
-            : []),
-          { label: plain.part.sum, number: plain.rowPoints(place) },
-        ]
-      : null,
-  });
 
   // The forecast and the lines after it.
   const usual = source.unit.kind === 'district' ? usualOf(file, klass, source.unit.index) : null;
   const forecast = forecastRows(input, day, unit, usual);
   if (forecast === null) return null;
-  rows.push(...forecast.rows);
+
+  // The place part's side: the district's days against the typical's as said (neither when
+  // they read the same), and whether the part's sign agrees with it.
+  const placeAgrees =
+    days !== null &&
+    plain.perWinter(days) !== plain.perWinter(ref) &&
+    (days > ref ? standing < 0 : standing > 0);
 
   // The headline: the biggest published part after the start, up or down.
   const parts = { standing, region: unit.region, held: unit.held, ...forecast.parts };
+  const pick = pickOf(parts);
   let reason: string;
-  switch (pickOf(parts)) {
+  switch (pick) {
     case null:
-      reason = headline.start(named, day.dayWord);
+      // No part pickOf weighs moved it; a line it does not weigh (timing, hours of snow, when the
+      // snow ends, sun) still may, and then the start is not the whole chance (LR-V2).
+      reason = startOrParts(forecast.rows, named, day.dayWord);
       break;
     case 'standing': {
-      // "More than a typical district" follows the district's days against the typical's.
-      const more = days !== null && days !== ref ? days > ref : standing < 0;
-      reason =
-        unit.school || unit.borrowed
+      // "More than a typical district" follows the district's days against the typical's, as
+      // the place row says them, and only where the part's sign agrees with that side.
+      const more = days !== null && days > ref;
+      reason = !placeAgrees
+        ? headline.parts(named, day.dayWord)
+        : unit.school || unit.borrowed
           ? more
             ? headline.moreCounty(klass)
             : headline.fewerCounty(klass)
@@ -556,7 +602,10 @@ function classView(input: StepsInput): PlainWhyView | null {
       reason = headline.held(unit.held > 0);
       break;
     case 'snow':
-      reason = headline.snow(parts.snow > 0);
+      // "More snow than usual" only where the amounts as shown say so (LR-V5).
+      reason = forecast.snowSide
+        ? headline.snow(parts.snow > 0)
+        : headline.parts(named, day.dayWord);
       break;
     case 'ice':
       reason = headline.ice;
@@ -568,12 +617,97 @@ function classView(input: StepsInput): PlainWhyView | null {
       reason = headline.saidOpen(d);
       break;
   }
+
+  const rows: WhyRowView[] = [
+    {
+      key: 'start',
+      number: plain.startLabel(level.now),
+      points: level.now,
+      title: build.startTitle(named),
+      text: [
+        build.startLine(klass),
+        ...(level.prior !== level.now ? [row.startMoved(level.prior)] : []),
+      ].join(' '),
+      parts: null,
+    },
+  ];
+
+  // The place (COPY-RULES 1): how often these alerts come, its part of the country and the
+  // limits, each its own row only where it moved the chance, so each title agrees with its sign.
+  if (standing !== 0 && days !== null) {
+    // The title by the district's days against the typical's as said (neither side when they
+    // read the same); "So each one is ..." only where the part's sign agrees with that side,
+    // and not when the hero says why already.
+    const more = days > ref;
+    const said: string[] = [];
+    if (unit.school) said.push(row.placeCountyPrivate);
+    else if (unit.borrowed) said.push(row.placeCountyWhy(d));
+    said.push(build.placeCount(days, ref));
+    if (pick !== 'standing' && placeAgrees) said.push(more ? row.placeMore : row.placeFewer);
+    rows.push({
+      key: 'place',
+      number: plain.rowPoints(standing),
+      points: standing,
+      title: build.placeTitle(klass, more, days, ref),
+      text: said.join(' '),
+      parts: null,
+    });
+  }
+  if (unit.region !== 0) {
+    rows.push({
+      key: 'region',
+      number: plain.rowPoints(unit.region),
+      points: unit.region,
+      title: build.regionTitle,
+      text: row.placeRegion(unit.region < 0, null),
+      parts: null,
+    });
+  }
+  if (unit.held !== 0) {
+    rows.push({
+      key: 'held',
+      number: plain.rowPoints(unit.held),
+      points: unit.held,
+      title: build.heldTitle,
+      text: build.heldLine(unit.held > 0),
+      parts: null,
+    });
+  }
+  rows.push(...forecast.rows);
+
+  // What did not move it, in one quiet line: how often these alerts come (where it is known),
+  // and the snow.
+  const placeQuiet = standing === 0 && days !== null;
+  const still = [
+    quietOf(forecast, klass, placeQuiet),
+    ...(standing === 0 && days === null ? [row.placeUnknown] : []),
+  ].filter((text): text is string => text !== null);
   return finish(
     percent,
     reason,
-    { title: habitTitle(d, unit.school), text: habitText(unit, klass, 'storm', d) },
+    habitView(unit, klass, { kind: 'storm', day: dayNamed(input), percent }, d),
     rows,
+    still.length === 0 ? null : still.join(' '),
   );
+}
+
+/** The forecast's rows, its parts, and what a folded snow row leaves to the quiet line: the
+ * snow's form and the ice or cold that joined it. */
+interface ForecastRows {
+  readonly rows: WhyRowView[];
+  readonly parts: ForecastParts;
+  readonly still: 'usual' | 'plain' | null;
+  readonly joined: 'ice' | 'cold' | 'both' | null;
+  /** The folded snow row carried the cap's sentence, which the quiet line keeps after it. */
+  readonly capped?: true;
+  /** The snow's words may say more or less than usual: the amounts as shown agree (LR-V5). */
+  readonly snowSide: boolean;
+}
+
+/** The quiet line's forecast part: what did not move the chance, then the cap where it held. */
+function quietOf(forecast: ForecastRows, k: StepClass, place: boolean): string | null {
+  const said = build.still(k, place, forecast.still, forecast.joined);
+  return forecast.capped === true && said !== null ? `${said} ${row.capped}` : said;
 }
 
 /** The forecast's rows (WHY-PLAIN 3d.3 to 3d.7) and its parts, or null to fall back. */
@@ -582,7 +716,7 @@ function forecastRows(
   day: ClassDay,
   unit: Unit | null,
   usual: Usual | null,
-): { rows: WhyRowView[]; parts: ForecastParts } | null {
+): ForecastRows | null {
   const why = input.detail.why;
   if (why === null) return null;
   const reasons = why.reasons;
@@ -596,36 +730,47 @@ function forecastRows(
     cold: sumOf('wind_chill'),
     saidOpen: sumOf('said_open'),
   };
-  const notIn = (text: string): WhyRowView[] => [
-    { key: 'forecast', number: '0', text, parts: null },
-  ];
-  const lines = (): WhyRowView[] => reasons.map((reason, k) => lineRow(input, reason, k, d));
-  if (day.school) return { rows: reasons.length === 0 ? notIn(row.privateDay) : lines(), parts };
+  // A forecast that is not in the chance: a 0 row, which the quiet line says (finish).
+  const notIn = (text: string): ForecastRows => ({
+    rows: [{ key: 'forecast', number: '0', points: 0, title: '', text, parts: null }],
+    parts,
+    still: null,
+    joined: null,
+    snowSide: true,
+  });
+  const lines = (): ForecastRows => ({
+    rows: reasons.map((reason, k) => lineRow(input, reason, k, d)),
+    parts,
+    still: null,
+    joined: null,
+    snowSide: true,
+  });
+  if (day.school) return reasons.length === 0 ? notIn(row.privateDay) : lines();
   if (reasons.length === 0) {
-    if (day.klass === 'cold') return { rows: notIn(row.coldDay), parts };
-    if (day.named === 'blizzard_warning') return { rows: notIn(row.blizzard), parts };
-    if (day.named === 'tropical') return { rows: notIn(row.tropical), parts };
+    if (day.klass === 'cold') return notIn(row.coldDay);
+    if (day.named === 'blizzard_warning') return notIn(row.blizzard);
+    if (day.named === 'tropical') return notIn(row.tropical);
   }
   // No forecast fields: the file says nothing of the forecast, so no row claims one.
-  if (read === null) return { rows: lines(), parts };
+  if (read === null) return lines();
   if (read.fc !== null) {
     // fc 6, the bus hour timing: today's sentence for each line, in its place.
-    if (reasons.length > 0) return { rows: lines(), parts };
+    if (reasons.length > 0) return lines();
     switch (read.fc) {
       case 0:
-        return { rows: notIn(row.wait(eveningBefore(input.day, input.zones.school))), parts };
+        return notIn(row.wait(eveningBefore(input.day, input.zones.school)));
       case 1:
       case 7:
-        return { rows: notIn(row.offAll), parts };
+        return notIn(row.offAll);
       case 2:
       case 3:
-        return { rows: notIn(row.unread), parts };
+        return notIn(row.unread);
       case 4:
       case 5:
-        return { rows: notIn(row.limit), parts };
+        return notIn(row.limit);
       case 8:
       case 9:
-        return { rows: notIn(row.noPast), parts };
+        return notIn(row.noPast);
       default:
         return null;
     }
@@ -642,43 +787,58 @@ function forecastRows(
   const bound = held === 'low' || held === 'floor';
   // Joining (3d.3): at "low" or "floor" the ice and cold always join the snow; otherwise ice
   // joins only when snow, ice and cold are all published, and a part under 1% always joins.
-  const iceJoins = read.ice !== null && (bound || !iceLine || (snowLine && coldLine));
-  const coldJoins = read.feels !== null && (bound || !coldLine);
+  // A row is named for what moved the chance (LR-V6): when the snow moved nothing, an ice or
+  // cold part that did gets its own row, and the snow folds with only the 0 parts that joined it.
+  const alone = (part: number): boolean => parts.snow === 0 && part !== 0;
+  const iceJoins =
+    read.ice !== null && (bound || !iceLine || (snowLine && coldLine)) && !alone(parts.ice);
+  const coldJoins = read.feels !== null && (bound || !coldLine) && !alone(parts.cold);
   const s = Math.floor(read.snow * 10 + 1e-9) / 10;
   const ice = read.ice === null || read.ice === 0 ? null : String(Number(read.ice.toFixed(2)));
-  const set = (kind: 'snow' | 'under' | 'ice' | 'cold'): string[] =>
+  const set = (kind: 'ice' | 'cold'): string[] =>
     unit === null || unit.school || unit.one
       ? []
       : unit.mixed
         ? [row.half(d, kind), row.mainOnly]
         : [row.half(d, kind)];
 
-  // The snow row, with what joins it.
+  // The snow row, with what joins it: the gap to the usual first (WHY-V2 2), where its side
+  // agrees with the part's sign; else today's usual and its sentence.
   const snowAmount = parts.snow + (iceJoins ? parts.ice : 0) + (coldJoins ? parts.cold : 0);
-  const snowSaid: string[] = [row.snow(s, day.end), ...set(s < 1 ? 'under' : 'snow')];
-  if (iceJoins) snowSaid.push(row.iceJoined(ice));
+  // The snow and the usual in tenths as the panel shows them (LR-V5): "more" only where the
+  // shown snow is over the shown usual, "less" only where it is under; where they read equal or
+  // the other way, the usual's equal form or the part's sign alone, never a comparison.
+  const shown = Math.round(s * 10);
+  const shownUsual = usual === null ? null : Math.round(usual.u * 10);
+  const snowSide =
+    shownUsual === null ||
+    parts.snow === 0 ||
+    (parts.snow > 0 ? shown > shownUsual : shown < shownUsual);
+  const about = shownUsual !== null && Math.abs(shown - shownUsual) < 5;
+  const snowSaid: string[] = [];
   if (usual !== null) {
-    snowSaid.push(row.usual(usual.u, usual.b));
-    // At 0, "about that much" only where it is: else the snow moved it under 1%.
-    snowSaid.push(
-      parts.snow < 0
-        ? row.less
-        : parts.snow > 0
-          ? row.more
-          : Math.abs(s - usual.u) < 0.5
-            ? row.same
-            : row.snowSmall,
-    );
+    if (parts.snow === 0)
+      snowSaid.push(row.usual(usual.u, usual.b), about ? row.same : row.snowSmall);
+    else if (snowSide) snowSaid.push(build.snowGap(s, usual.u));
+    else {
+      if (shown === shownUsual) snowSaid.push(build.snowGap(s, usual.u));
+      snowSaid.push(row.snowMoves(parts.snow > 0));
+    }
   } else if (parts.snow !== 0) {
     snowSaid.push(headline.snow(parts.snow > 0));
   }
+  // The title's "About" says the snow is the middle of its schools' (COPY-RULES 2).
+  if (unit !== null && !unit.school && !unit.one && unit.mixed) snowSaid.push(row.mainOnly);
   if (held === 'low') {
+    if (iceJoins) snowSaid.push(row.iceJoined(ice));
     if (coldJoins) snowSaid.push(row.coldLine(read.feels));
     snowSaid.push(iceJoins || coldJoins ? row.lowNoChange(iceJoins, coldJoins) : row.low);
   } else {
+    // The snow's own sentences first, then the ice and the cold that joined it, each with its
+    // own sentence after it.
     if (held === 'floor') snowSaid.push(row.floorSnow);
     if (held === 'high') snowSaid.push(row.high);
-    if (iceJoins) snowSaid.push(parts.ice === 0 ? row.iceSmall : row.iceAdds);
+    if (iceJoins) snowSaid.push(row.iceJoined(ice), parts.ice === 0 ? row.iceSmall : row.iceAdds);
     if (coldJoins) {
       snowSaid.push(row.coldLine(read.feels), parts.cold === 0 ? row.coldSmall : row.coldAdds);
     }
@@ -697,6 +857,8 @@ function forecastRows(
     {
       key: 'snow',
       number: plain.rowPoints(snowAmount),
+      points: snowAmount,
+      title: build.snowTitle(s, day.end),
       text: snowSaid.join(' '),
       parts:
         joinedParts.length > 0
@@ -712,7 +874,9 @@ function forecastRows(
     rows.push({
       key: 'ice',
       number: plain.rowPoints(parts.ice),
-      text: [row.ice(ice, day.end), ...set('ice'), row.iceAdds].join(' '),
+      points: parts.ice,
+      title: build.iceTitle(ice, day.end),
+      text: [...set('ice'), row.iceAdds].join(' '),
       parts: null,
     });
   }
@@ -720,10 +884,15 @@ function forecastRows(
     rows.push({
       key: 'cold',
       number: plain.rowPoints(parts.cold),
+      points: parts.cold,
+      title: build.coldTitle,
       text: [row.coldLine(read.feels), ...set('cold'), row.coldRow].join(' '),
       parts: null,
     });
   }
+  // The cap's sentence goes on the last amount row; a snow row that carries it and folds leaves
+  // it to the quiet line, after what did not move the chance.
+  const capsSnow = held === 'cap' && rows.length === 1;
   if (held === 'cap') {
     const last = rows.at(-1);
     if (last !== undefined) {
@@ -737,7 +906,26 @@ function forecastRows(
     }
     rows.push(lineRow(input, reason, k, d));
   });
-  return { rows, parts };
+  // A snow row that moved nothing, with no published part that did, folds into the quiet line,
+  // which names the ice and cold that joined it too (COPY-RULES 1: every 0 part checked is
+  // named). Published parts that met the bound at 0 keep their row (COPY-RULES 5).
+  const snowRow = rows[0];
+  const published =
+    parts.snow !== 0 || (iceJoins && parts.ice !== 0) || (coldJoins && parts.cold !== 0);
+  if (snowRow !== undefined && snowAmount === 0 && published) rows[0] = { ...snowRow, holds: true };
+  else if (snowRow !== undefined && snowAmount === 0 && snowRow.parts === null) {
+    rows.shift();
+    const joined = iceJoins ? (coldJoins ? 'both' : 'ice') : coldJoins ? 'cold' : null;
+    return {
+      rows,
+      parts,
+      still: about ? 'usual' : 'plain',
+      joined,
+      ...(capsSnow ? { capped: true as const } : {}),
+      snowSide,
+    };
+  }
+  return { rows, parts, still: null, joined: null, snowSide };
 }
 
 /** The storm-class day from the predictions file alone (no standing file, or one that does not
@@ -763,6 +951,8 @@ function fallbackView(input: StepsInput): PlainWhyView | null {
     {
       key: 'start',
       number: plain.startLabel(base.points),
+      points: base.points,
+      title: build.startTitle(day.named),
       text: `${row.fallbackStart(day.named, day.dayWord, day.school ? 'this school' : d, base.points)} ${standing}`,
       parts: null,
     },
@@ -781,8 +971,14 @@ function fallbackView(input: StepsInput): PlainWhyView | null {
           ? headline.cold
           : pick === 'saidOpen'
             ? headline.saidOpen(d)
-            : headline.start(day.named, day.dayWord);
-  return finish(percent, reason, { title: habitTitle(d, day.school), text: habit.fallback }, rows);
+            : startOrParts(forecast.rows, day.named, day.dayWord);
+  return finish(
+    percent,
+    reason,
+    habitView(null, day.klass, { kind: 'storm', day: dayNamed(input), percent }, d),
+    rows,
+    quietOf(forecast, day.klass, false),
+  );
 }
 
 // The ordinary day -------------------------------------------------------------------------
@@ -809,9 +1005,10 @@ function ordinaryView(input: StepsInput): PlainWhyView | null {
   if (named !== null && CLASS_OF[named] === undefined) return null;
   const ending: 'storm' | 'ordinary' | 'alert' =
     named === null ? 'ordinary' : base.kind === 'pooled' ? 'storm' : 'alert';
+  // The start's title names the alert or the calm day, so its line does not say it again.
   switch (base.kind) {
     case 'alert':
-      text = `${row.ordOwn(d)} ${row.ordAlert(base.alert)} ${row.ordShare(p, true)}`;
+      text = `${row.ordOwn(d)} ${row.ordShare(p, true)}`;
       // Counted over other days than the day's own: no claim of what is out today.
       reason = base.borrowed ? null : headline.alertDays(base.alert, p);
       break;
@@ -820,8 +1017,7 @@ function ordinaryView(input: StepsInput): PlainWhyView | null {
       reason = headline.after(p);
       break;
     case 'similar_days': {
-      const tail = weather === null ? row.ordCalm : row.ordAlert(weather);
-      text = `${row.ordOwn(d)} ${tail} ${row.ordShare(p, true)}`;
+      text = `${row.ordOwn(d)} ${row.ordShare(p, true)}`;
       reason = base.borrowed
         ? null
         : weather === null
@@ -830,8 +1026,7 @@ function ordinaryView(input: StepsInput): PlainWhyView | null {
       break;
     }
     case 'pooled': {
-      const tail = named === null ? row.ordCalm : row.ordAlert(named);
-      text = `${row.ordFrom(plain.ordinaryWhoOf(base.scope, d, school))} ${tail} ${row.ordShare(p, false)}`;
+      text = `${row.ordFrom(plain.ordinaryWhoOf(base.scope, d, school))} ${row.ordShare(p, false)}`;
       reason = base.borrowed
         ? null
         : named === null
@@ -840,8 +1035,14 @@ function ordinaryView(input: StepsInput): PlainWhyView | null {
       break;
     }
   }
+  const title =
+    named !== null
+      ? build.startTitle(named)
+      : base.kind === 'day_after'
+        ? build.startAfter
+        : build.startCalm;
   const rows: WhyRowView[] = [
-    { key: 'start', number: plain.startLabel(p), text, parts: null },
+    { key: 'start', number: plain.startLabel(p), points: p, title, text, parts: null },
     ...why.reasons.map((line, k) => lineRow(input, line, k, d)),
   ];
   const source = input.source;
@@ -850,10 +1051,8 @@ function ordinaryView(input: StepsInput): PlainWhyView | null {
   return finish(
     percent,
     reason,
-    {
-      title: habitTitle(d, school),
-      text: habitText(unit, klass, ending, school ? 'this school' : d),
-    },
+    habitView(unit, klass, { kind: ending, day: dayNamed(input), percent }, d),
     rows,
+    null,
   );
 }

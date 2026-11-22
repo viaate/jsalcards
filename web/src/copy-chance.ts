@@ -1556,126 +1556,16 @@ const headline = {
   saidOpen: (d: string) => `${d} said school is on, so the chance is low.`,
   start: (alert: string, day: string) =>
     `${anAlert(alertOf(alert))} is out for ${day}. That sets this chance.`,
+  /** Where the part that moved it most cannot be said in its own words (how often the alerts
+   * come, against the side its sign takes): never that the alert alone sets the chance. */
+  parts: (alert: string, day: string) =>
+    `${anAlert(alertOf(alert))} is out for ${day}. The parts below add up to this chance.`,
   calm: (p: number) =>
     `No winter warning or advisory is out. Schools ${oftenWords(p)[0]} on days like this.`,
   after: (p: number) =>
     `School was off the day before. Schools here ${oftenWords(p)[1]} the next day.`,
   alertDays: (alert: string, p: number) =>
     `${anAlert(alertOf(alert))} is out. Schools here ${oftenWords(p)[0]} on days like this.`,
-};
-
-/** Who a habit is compared with: other districts, or other private schools. */
-type Peers = 'districts' | 'private schools';
-
-/**
- * The plain share nearest to `p` among the panel's shares and 1 in N (N 2 to 100), ties to the
- * smaller, as the words after "about": "half", "2 in 5" (a complete record's peers, records-mo).
- */
-function nearestShare(p: number): string {
-  const shares = [...SHARES, ...Array.from({ length: 99 }, (_, n) => [1, n + 2] as const)];
-  let best: readonly [number, number] = [1, 2];
-  for (const share of shares) {
-    const gap = Math.abs(share[0] / share[1] - p);
-    const bestGap = Math.abs(best[0] / best[1] - p);
-    if (
-      gap < bestGap - 1e-12 ||
-      (Math.abs(gap - bestGap) <= 1e-12 && share[0] / share[1] < best[0] / best[1])
-    )
-      best = share;
-  }
-  return best[0] === 1 && best[1] === 2 ? 'half' : `${String(best[0])} in ${String(best[1])}`;
-}
-
-/** The habit box (WHY-PLAIN 3c): one paragraph, in this order. */
-const habit = {
-  title: (d: string) => `Does ${d} close easily or hold out?`,
-  titlePrivate: 'Does this school close easily or hold out?',
-  early: (k: StepClass, peers: Peers) =>
-    `It tends to close easily. It closes on ${words(k).days} more often than other ${peers} do.`,
-  holdOut: (k: StepClass, peers: Peers) =>
-    `It tends to hold out. It closes on ${words(k).days} less often than other ${peers} do.`,
-  likeMost: (peers: Peers) => `It is about like most ${peers}.`,
-  unknown: 'We do not know yet.',
-  seenNone: (k: StepClass) =>
-    `Our past closing lists do not show what it did on a ${words(k).day}.`,
-  seen: (n: number, k: StepClass) =>
-    n === 1
-      ? `Our past closing lists show it on 1 ${words(k).day}.`
-      : `Our past closing lists show it on ${String(n)} ${words(k).days}.`,
-  counts: (n: number, closed: number, late: number): string => {
-    const open = n - closed - late;
-    if (n < 1 || closed < 0 || late < 0 || open < 0) throw new RangeError('copy: a record adds up');
-    if (n === 1) {
-      return closed > 0
-        ? 'It closed that day.'
-        : late > 0
-          ? 'It started late that day.'
-          : 'It stayed open that day.';
-    }
-    const parts: string[] = [];
-    if (closed > 0) parts.push(`closed on ${String(closed)}`);
-    if (late > 0) parts.push(`started late on ${String(late)}`);
-    if (open > 0) parts.push(`stayed open on ${String(open)}`);
-    if (parts.length === 1) {
-      const did = closed > 0 ? 'closed' : late > 0 ? 'started late' : 'stayed open';
-      return n === 2 ? `It ${did} on both.` : `It ${did} on all ${String(n)}.`;
-    }
-    return parts.length === 2
-      ? `It ${parts[0] ?? ''} and ${parts[1] ?? ''}.`
-      : `It ${parts[0] ?? ''}, ${parts[1] ?? ''} and ${parts[2] ?? ''}.`;
-  },
-  /** What the other districts (or private schools) in the same lists did on days of the kind:
-   * the share the verdict is tested against, so the counts and the verdict agree on the page. */
-  others: (peers: Peers, closed: number, of: number): string => {
-    if (!Number.isInteger(closed) || !Number.isInteger(of) || closed < 0 || of < 1 || closed > of)
-      throw new RangeError('copy: the other days add up');
-    if (closed === of) return `Other ${peers} closed on all of theirs.`;
-    if (closed === 0) return `Other ${peers} closed on none of theirs.`;
-    const ratio = closed / of;
-    if (ratio > 0.99) return `Other ${peers} closed on almost all of theirs.`;
-    if (ratio < 0.01) return `Other ${peers} closed on almost none of theirs.`;
-    const { some, of: out, more } = shareOf(Math.round(ratio * 100));
-    const share = some === 1 && out === 2 ? 'half' : `${String(some)} in ${String(out)}`;
-    return `Other ${peers} closed on ${more ? 'more than' : 'about'} ${share} of theirs.`;
-  },
-  /** A complete record (a state's calendar file, records-mo): at most five short sentences
-   * (lead ruling LR-4), "no school" meaning closed or school at home (the How page says so). */
-  earlyFull: 'It tends to close easily.',
-  holdOutFull: 'It tends to hold out.',
-  checked: (n: number, k: StepClass) =>
-    n === 1
-      ? `We checked 1 past school day with a ${words(k).alert}.`
-      : `We checked ${String(n)} past school days with a ${words(k).alert}.`,
-  noSchool: (n: number, none: number): string => {
-    const school = n - none;
-    if (!Number.isInteger(n) || !Number.isInteger(none) || n < 1 || none < 0 || school < 0)
-      throw new RangeError('copy: a complete record adds up');
-    if (n === 1) return none === 1 ? 'It had no school that day.' : 'It had school that day.';
-    if (school === 0)
-      return n === 2 ? 'It had no school on both.' : `It had no school on all ${String(n)}.`;
-    if (none === 0)
-      return n === 2 ? 'It had school on both.' : `It had school on all ${String(n)}.`;
-    return `It had no school on ${String(none)} and school on ${String(school)}.`;
-  },
-  /** The districts near it on the same days: the share the verdict is tested against. */
-  near: (p: number): string => {
-    if (!(p >= 0 && p <= 1)) throw new RangeError('copy: a share is 0 to 1');
-    if (p === 1) return 'Districts near it had no school on all of those days.';
-    if (p === 0) return 'Districts near it had school on all of those days.';
-    if (p > 0.99) return 'Districts near it had no school on almost all of those days.';
-    if (p < 0.01) return 'Districts near it had no school on almost none of those days.';
-    return `Districts near it had no school on about ${nearestShare(p)} of those days.`;
-  },
-  notUsedFull: 'Its habit does not change today’s chance yet.',
-  ownAlertFull: 'Today’s chance comes from its days in our past closing lists, in the row below.',
-  tooFew: 'That is not enough to know.',
-  notUsedFew: 'So its habit did not change today’s chance.',
-  notUsed: 'Its habit did not change today’s chance.',
-  notToday: 'Today’s chance does not come from storm warning days, so this did not change it.',
-  ownAlert: 'Today’s chance comes from its own past days like this, in the row below.',
-  ownAlertAlone: (d: string) => `Today’s chance comes from what ${d} did on past days like this.`,
-  fallback: 'We cannot show its habit right now. Its habit did not change today’s chance.',
-  cannot: 'We cannot show its habit right now.',
 };
 
 /** The rows' sentences (WHY-PLAIN 3d), `{end}` filled by the caller's clock. */
@@ -1731,8 +1621,8 @@ const row = {
     b === null
       ? `About ${inchesSaid(u)} is usual here on days like this.`
       : `About ${inchTenths(b)} to ${inchesSaid(u)} is usual here on days like this.`,
-  less: 'This forecast has less, so the chance goes down.',
-  more: 'This forecast has more, so the chance goes up.',
+  /** The snow's part by its sign alone, where the amounts as shown do not take its side (LR-V5). */
+  snowMoves: (up: boolean) => `This snow ${up ? 'raises' : 'lowers'} the chance.`,
   same: 'This forecast has about that much, so snow does not change it.',
   high: 'Each extra inch adds a little less.',
   low: 'That is as low as a forecast can take it here.',
@@ -1740,7 +1630,7 @@ const row = {
   iceJoined: (i: string | null) =>
     i === null
       ? 'The forecast also shows a little ice.'
-      : `The forecast also shows at least ${i} inches of ice.`,
+      : `The forecast also shows at least ${i} ${inchWord(i)} of ice.`,
   iceSmall: 'The ice adds less than 1%.',
   snowSmall: 'The snow changes it by less than 1%.',
   coldSmall: 'The cold adds less than 1%.',
@@ -1757,12 +1647,13 @@ const row = {
   ice: (i: string | null, end: string) =>
     i === null
       ? `The forecast shows a little ice by ${end}.`
-      : `The forecast shows at least ${i} inches of ice by ${end}.`,
+      : `The forecast shows at least ${i} ${inchWord(i)} of ice by ${end}.`,
   coldRow: 'Very cold mornings raise the chance a little.',
   wait: (day: string) => `The forecast is not in this chance yet. We add it at 9 PM ${day}.`,
   offAll: 'The forecast is not in any chance right now.',
   unread: 'The forecast did not come in this time. So it is not in this chance.',
-  limit: 'The forecast is left out today. That keeps days off in one winter in a normal range.',
+  limit:
+    'The forecast is left out of this chance. That keeps days off in one winter in a normal range.',
   noPast: 'We have no past forecasts here to compare with. So the forecast is left out.',
   coldDay: 'The forecast does not change a cold warning day. The cold is the warning.',
   blizzard:
@@ -2221,8 +2112,221 @@ const partWords = {
   sum: 'Together',
 };
 
+/** A gap of snow in plain inches: "1 inch", "3 inches". */
+function snowGapSaid(gap: number): string {
+  const whole = Math.round(gap);
+  return whole === 1 ? '1 inch' : `${String(whole)} inches`;
+}
+
+/** "inch" after a said "1", else "inches" (never "1 inches"). */
+function inchWord(said: string): string {
+  return said === '1' ? 'inch' : 'inches';
+}
+
+/** The day a chance is for, owned: "today’s" only when it is for today, else "Tuesday’s". */
+function dayOwn(day: string | null, start: boolean): string {
+  if (day === null) return start ? 'Today’s' : 'today’s';
+  return `${day}’s`;
+}
+
+/** The kind of day a line row is, as its short title (WHY-V2 V2: no two rows alike). */
+const LINE_TITLES = {
+  snow_total: 'Snow',
+  record: 'Its own past closings',
+  neighbors: 'Districts next door',
+  timing: 'Heaviest snow',
+  snow_hours: 'Hours of snow',
+  wind_chill: 'Wind chill at the bus stop',
+  cold: 'Cold at the bus stop',
+  snow_stops: 'When the snow ends',
+  sun: 'Sun before the day',
+  icy_roads: 'Icy side streets',
+  ice: 'Ice',
+  said_open: 'Said school is on',
+  outlook: 'The outlook',
+} as const;
+
+/**
+ * The Why card as the build-up (WHY-V2, Direction A): one bar a step from the start to the
+ * total, a row only for a part that moved the chance, one quiet line for every part that did
+ * not, and the district's past days of the kind, what is different first (COPY-RULES 1 to 5).
+ */
+const build = {
+  total: 'All together',
+  /** The track's scale under the total: 0%, 50% and 100%. */
+  scale: (): readonly string[] => [0, 50, 100].map((n) => `${String(n)}%`),
+  /** The start row: the day's alert, or what kind of day it is. */
+  startTitle: (alert: string) => capital(alertOf(alert)),
+  startCalm: 'No winter alert',
+  startAfter: 'Right after a day with no school',
+  /** The rule's "Every {one} day starts here." where it reads at grade 6 or under; "Every winter
+   * advisory day starts here." reads 10.4, so the advisory's says "Each day with a". */
+  startLine: (k: StepClass) =>
+    k === 'advisory'
+      ? `Each day with a ${words(k).alert} starts here.`
+      : `Every ${words(k).day} starts here.`,
+  /** How often the kind of alert comes here, by the side it falls on; "common" and "rare" only
+   * at twice or half the typical district. */
+  placeTitle: (k: StepClass, more: boolean, f: number, ref: number) =>
+    perWinter(f) === perWinter(ref)
+      ? `How often ${words(k).plural} come here`
+      : more
+        ? f >= 2 * ref
+          ? `${capital(words(k).plural)} are common here`
+          : `${capital(words(k).plural)} come more often here`
+        : f <= ref / 2
+          ? `${capital(words(k).plural)} are rare here`
+          : `${capital(words(k).plural)} come less often here`,
+  /** "About 11 a winter. That is 8 times a typical district." Two short sentences: the rule's
+   * one ("About 11 a winter, 8 times a typical district.") reads at grade 8.9. "Under half" only
+   * where both the count and the two numbers as said are under half; "half" at half, exactly or
+   * as said (0.7 of 1.4, 2 of 4). */
+  placeCount: (f: number, ref: number) => {
+    const said = perWinter(f);
+    const typical = perWinter(ref) ?? '0';
+    if (said === null) return `Almost none a winter. It is ${typical} in a typical district.`;
+    const ratio = ref > 0 ? f / ref : 1;
+    const saidRatio = Number(typical) > 0 ? Number(said) / Number(typical) : 1;
+    if (ratio >= 2)
+      return `About ${said} a winter. That is ${String(Math.round(ratio))} times a typical district.`;
+    if (ratio < 0.5 && saidRatio < 0.5)
+      return `About ${said} a winter. That is under half a typical district.`;
+    if (ratio <= 0.5) return `About ${said} a winter. That is half a typical district.`;
+    return `About ${said} a winter. It is ${typical} in a typical district.`;
+  },
+  regionTitle: 'Its part of the country',
+  heldTitle: 'Keeping days off in a normal range',
+  heldLine: (up: boolean) =>
+    `We keep days off in one winter in a normal range. So the chance goes ${up ? 'up' : 'down'}.`,
+  /** The snow by the window's end, floored to tenths over its schools, hence "About". */
+  snowTitle: (s: number, end: string) =>
+    s === 0
+      ? `No snow by ${end}`
+      : s < 1
+        ? `Under 1 inch of snow by ${end}`
+        : `About ${inchesSaid(s)} of snow by ${end}`,
+  /** How the forecast differs from the usual, by its side and size, for the two amounts as the
+   * panel shows them, in tenths (LR-V5): "more than twice" and "less than half" only when they
+   * hold as shown, "twice" and "half" at exactly so, "about the" when they show the same, and the
+   * usual named only when it says more than 0. */
+  snowGap: (s: number, u: number) => {
+    const said = inchTenths(u);
+    const usual = `${said} ${inchWord(said)} usual here`;
+    const named = said !== '0';
+    // Whole tenths, so the edges are exact.
+    const a = Math.round(Number(inchTenths(s)) * 10);
+    const b = Math.round(Number(said) * 10);
+    const gap = Math.abs(a - b) / 10;
+    // A usual shown as 0 is never named, so nothing shown can disagree with "a bit".
+    if (a === b) return named ? `About the ${usual}.` : 'A bit less than usual here.';
+    if (a > b) {
+      if (named && a > 2 * b) return `More than twice the ${usual}.`;
+      if (named && a === 2 * b) return `Twice the ${usual}.`;
+      if (named && 4 * a >= 7 * b) return `Almost twice the ${usual}.`;
+      if (gap >= 0.5) return `About ${snowGapSaid(gap)} more than usual here.`;
+      return named ? `A bit more than the ${usual}.` : 'A bit more than usual here.';
+    }
+    if (2 * a < b) return `Less than half the ${usual}.`;
+    if (2 * a === b) return `Half the ${usual}.`;
+    if (gap >= 0.5) return `About ${snowGapSaid(gap)} less than usual here.`;
+    return `A bit less than the ${usual}.`;
+  },
+  /** At least this much ice, as today's ice sentence says it. */
+  iceTitle: (i: string | null, end: string) =>
+    i === null ? `A little ice by ${end}` : `At least ${i} ${inchWord(i)} of ice by ${end}`,
+  coldTitle: 'Cold at 7 AM',
+  saidOpenTitle: (d: string) => `${d} said school is on`,
+  saidOpenLine: 'So the chance drops this far.',
+  lineTitle: (kind: string) => LINE_TITLES[checkKey(LINE_TITLES, kind, 'line')],
+  /** The one quiet line for the parts that did not move the chance (COPY-RULES 1), the ice and
+   * cold that joined a snow row that folded named with the snow. Alone, how often the alerts
+   * come keeps the rule's words where they read at grade 6 or under; the advisory's ("No change
+   * from how often winter advisories come here.") reads 6.3, so it starts "There is". With a
+   * joined part, how often they come is its own sentence, as one sentence runs over 15 words. */
+  still: (
+    k: StepClass,
+    place: boolean,
+    snow: 'usual' | 'plain' | null,
+    joined: 'ice' | 'cold' | 'both' | null = null,
+  ): string | null => {
+    const often = `how often ${words(k).plural} come here`;
+    const usual = snow === 'usual' ? ' The snow is about usual here.' : '';
+    const what =
+      joined === 'both'
+        ? 'the snow, ice or cold'
+        : joined === null
+          ? 'the snow'
+          : `the snow or ${joined}`;
+    if (place && snow !== null)
+      return joined === null
+        ? `No change from ${often}, or from the snow.${usual}`
+        : `No change from ${often}. No change from ${what}.${usual}`;
+    if (place) return `${k === 'advisory' ? 'There is no' : 'No'} change from ${often}.`;
+    if (snow === 'usual' && joined === null)
+      return 'No change from the snow, which is about usual.';
+    if (snow !== null) return `No change from ${what}.${usual}`;
+    return null;
+  },
+  /** The district's past days of the kind (the habit box), what is different first. */
+  recordTitle: (d: string, k: StepClass) => `${d}’s past ${words(k).days}`,
+  recordLead: (noSchool: number, of: number) => {
+    if (!Number.isInteger(noSchool) || !Number.isInteger(of) || noSchool < 0 || noSchool > of)
+      throw new RangeError('copy: a complete record adds up');
+    if (of < HABIT_DAYS_SAID) return `No school on ${String(noSchool)} of ${String(of)}.`;
+    if (noSchool === of) return `No school on all ${String(of)}.`;
+    if (noSchool === 0) return `School on all ${String(of)}.`;
+    return `No school on ${String(noSchool)} of ${String(of)}.`;
+  },
+  keyClosed: (n: number) => `Closed ${String(n)}`,
+  keyRemote: (n: number) => `Remote ${String(n)}`,
+  keySchool: (n: number) => `School ${String(n)}`,
+  /**
+   * The gap to the districts near it on the same days (`near`, their no-school days summed):
+   * with a verdict, the habit and the gap; without one, a gap only of a day or more that rounds
+   * away from its own; otherwise nothing, never "like most".
+   */
+  recordGap: (
+    noSchool: number,
+    of: number,
+    near: number,
+    verdict: 'hold' | 'close' | null,
+  ): string | null => {
+    const nearDays = String(Math.round(near));
+    if (verdict === 'close')
+      return `It tends to close easily. Districts near it had no school on about ${nearDays} of those ${String(of)} days.`;
+    if (verdict === 'hold')
+      return `It tends to hold out. Districts near it had no school on about ${nearDays} of those ${String(of)} days.`;
+    if (Math.abs(noSchool - near) < 1 || Math.round(near) === noSchool) return null;
+    return noSchool < near
+      ? `That is a bit fewer than districts near it, about ${nearDays} of ${String(of)}.`
+      : `That is a bit more than districts near it, about ${nearDays} of ${String(of)}.`;
+  },
+  /** COPY-RULES 3.5 says "Only {n} on file.", which the per-sentence grade test of the records
+   * (steps.test.ts, from records-mo) grades 6.6 alone; "Only {n} days on file." grades 5.2. */
+  recordFew: (of: number) =>
+    `Only ${String(of)} ${of === 1 ? 'day' : 'days'} on file. That is too few to tell a habit.`,
+  recordLists: (closed: number, of: number) =>
+    `Closed on ${String(closed)} of ${String(of)} in past closing lists. Those lists show mostly days off.`,
+  recordNone: 'None on file yet.',
+  /** An own base with no record of the kind shown: its own past days made the chance (the start
+   * row says so), so never "none" here, only that the box cannot show them. */
+  recordUnseen: 'We cannot show them here yet.',
+  recordCannot: 'We cannot show its past days right now.',
+  /** The endings, on the day the chance is for (WHY-V2 V3): null `day` is today. */
+  notUsed: (day: string | null, n: number) =>
+    `This does not change ${dayOwn(day, false)} ${String(n)}% yet.`,
+  notStorm: (day: string | null, n: number) =>
+    `${dayOwn(day, true)} ${String(n)}% does not come from storm warning days.`,
+  ownLists: (day: string | null, n: number) =>
+    `${dayOwn(day, true)} ${String(n)}% starts from its days in our past closing lists.`,
+};
+
+/** The fewest days of one kind a habit is told on (app/steps.ts HABIT_DAYS). */
+const HABIT_DAYS_SAID = 5;
+
 /** The why in plain words, as chanceFormat.plain holds it. */
 const plain = /* @__PURE__ */ deepFreeze({
+  build,
   alertOf,
   words,
   perWinter,
@@ -2238,7 +2342,6 @@ const plain = /* @__PURE__ */ deepFreeze({
   total: (n: number) => `Add these up and you get ${String(n)}%.`,
   totalLabel: (n: number) => `= ${String(n)}%`,
   headline,
-  habit,
   row,
   ordinaryWhoOf,
   part: partWords,
