@@ -1,0 +1,113 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "FlightsAirportCode": {
+      "description": "An airport's three-letter code as people say it (MCI).",
+      "pattern": "^[A-Z0-9]{3}$",
+      "type": "string"
+    },
+    "FlightsHeld": {
+      "description": "How a past storm day was kept from the model.",
+      "enum": [
+        0,
+        1
+      ],
+      "title": "FlightsHeld",
+      "type": "integer",
+      "x-enum-names": [
+        "test_year",
+        "left_out"
+      ]
+    },
+    "FlightsPerMille": {
+      "description": "Tenths of a percent.",
+      "maximum": 1000,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsReplayId": {
+      "description": "A past storm day: the airport and the local date (MCI-2025-01-05).",
+      "pattern": "^[A-Z0-9]{3}-\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "FlightsReplaySummary": {
+      "additionalProperties": false,
+      "description": "A past storm day in the index.",
+      "properties": {
+        "apart": {
+          "$ref": "#/$defs/FlightsHeld",
+          "description": "How the day was kept apart from the model."
+        },
+        "cancelled": {
+          "$ref": "#/$defs/FlightsPerMille",
+          "description": "The day's departures cancelled."
+        },
+        "code": {
+          "$ref": "#/$defs/FlightsAirportCode"
+        },
+        "day": {
+          "$ref": "#/$defs/LocalDate"
+        },
+        "id": {
+          "$ref": "#/$defs/FlightsReplayId"
+        },
+        "said": {
+          "$ref": "#/$defs/FlightsPerMille",
+          "description": "The rough-day chance the evening before."
+        }
+      },
+      "required": [
+        "id",
+        "code",
+        "day",
+        "apart",
+        "said",
+        "cancelled"
+      ],
+      "title": "FlightsReplaySummary",
+      "type": "object"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "``flights/replays/index.json``.",
+  "properties": {
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "replays": {
+      "items": {
+        "$ref": "#/$defs/FlightsReplaySummary"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "replays"
+  ],
+  "title": "FlightsReplayIndex",
+  "type": "object",
+  "x-snowlight-path": "flights/replays/index.json"
+}

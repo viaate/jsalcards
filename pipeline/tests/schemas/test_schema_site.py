@@ -12,7 +12,7 @@ from schemas.helpers import example, example_path, example_points
 from snowlight.output import dumps_json
 from snowlight.schemas.base import PublishedModel
 from snowlight.schemas.export import main
-from snowlight.schemas.registry import PUBLISHED_FILES
+from snowlight.schemas.registry import FLIGHTS_ID_FIELDS, PUBLISHED_FILES
 from snowlight.schemas.site import SiteReport, _load, validate_site
 
 
@@ -20,6 +20,9 @@ def _id(name: str) -> str:
     """What ``{id}`` stands for in a published path: a replay's id, or a live day."""
     if name == "standing":
         return str(example("standing")["stamp"])
+    if name in FLIGHTS_ID_FIELDS:
+        # A Flights file is named by its id field in lower case (the live host's keys).
+        return str(example(name)[FLIGHTS_ID_FIELDS[name]]).lower()
     return str(example("live-day")["day"]) if name == "live-day" else str(example("replay")["id"])
 
 

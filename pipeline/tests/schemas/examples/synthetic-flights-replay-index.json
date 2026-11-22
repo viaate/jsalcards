@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-21T18:20:00Z",
+  "replays": [
+    {
+      "id": "AAA-2025-01-05",
+      "code": "AAA",
+      "day": "2025-01-05",
+      "apart": 1,
+      "said": 740,
+      "cancelled": 612
+    }
+  ]
+}

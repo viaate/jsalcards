@@ -1,0 +1,112 @@
+# Flights live (docs/flights.md): one `snowlight flights live` pass about every 20 minutes.
+#
+# What starts it: every run of live-ingest.yml. The owner's Cloudflare timer dispatches that
+# workflow every 5 minutes, and each of its runs, as it is requested, also starts one run of
+# this workflow (workflow_run), the way chances-watch.yml is started. GitHub's own schedule on
+# this repository fires only a few times a day, so the hourly cron below is only a backstop.
+# Each run first reads v1/flights/latest.json from the live host's repository (not the Pages
+# cache) and goes on only when it is 15 minutes old or more (or missing or unreadable), so a
+# pass runs about every fourth tick. A run still
+# waiting for a runner is replaced by the next tick's; a pass under way is never cancelled.
+#
+# The pass reads the newest 00Z forecast bulletins (the public NBM bucket), the FAA airport
+# status, the NWS alerts and the weather reports, and writes v1/flights/live/<slot>.json and
+# v1/flights/latest.json to the live host (the same repository and token as predict.yml). Each
+# source that fails is published as not read, never as nothing in effect; with neither the
+# forecast nor the FAA status read, nothing is written and the job ends with exit 3 (the page
+# grays the old file by its age). Each request waits 20 s at most and the pass stops asking
+# after 6 minutes, writing what it read. Once a day, from that day's 00Z run, it also keeps the
+# day's archive snapshot in a write of its own (v1/flights/archive/<slot of the day>.json).
+#
+# Publishing needs the secret SNOWLIGHT_LIVE_TOKEN in the environment `live`; until it exists
+# every run ends at the first step with a notice: nothing is published, nothing fails.
+# NEVER make this a job of live-ingest.yml (see chances-watch.yml): as a workflow of its own,
+# in a concurrency group of its own, it cannot hold the timer's tick.
+name: flights-live
+
+on:
+  workflow_run:
+    workflows: [live-ingest]
+    types: [requested]
+  schedule:
+    - cron: "7 * * * *"
+
+concurrency:
+  group: flights-live
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    if: github.event_name == 'schedule' || github.event.workflow_run.head_branch == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: live
+    defaults:
+      run:
+        working-directory: pipeline
+    env:
+      LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - id: token
+        name: Stay dark without the live host token
+        working-directory: .
+        run: |
+          if [ -z "$LIVE_HOST_TOKEN" ]; then
+            echo "::notice::No SNOWLIGHT_LIVE_TOKEN in the live environment: nothing is published (docs/flights.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The age is read from the live host's own repository (the contents API, no cache in
+      # between), never through the Pages CDN, whose copy can be up to 10 minutes old and would
+      # make a fresh file look stale. Only when that read fails is the Pages copy read, with a
+      # query that no cache holds.
+      - if: steps.token.outputs.ready == 'true'
+        id: due
+        name: Go on only when the live file is 15 minutes old or more
+        working-directory: .
+        run: |
+          set +e
+          body=$(curl -sS --compressed --max-time 15 -H "Authorization: Bearer $LIVE_HOST_TOKEN" -H "Accept: application/vnd.github.raw+json" https://api.github.com/repos/viaate/snowlight-live/contents/v1/flights/latest.json 2>/dev/null)
+          made=$(printf '%s' "$body" | jq -r '.generated_at // empty' 2>/dev/null)
+          if [ -z "$made" ]; then
+            body=$(curl -sS --compressed --max-time 15 "https://viaate.github.io/snowlight-live/v1/flights/latest.json?t=$(date -u +%s)" 2>/dev/null)
+            made=$(printf '%s' "$body" | jq -r '.generated_at // empty' 2>/dev/null)
+          fi
+          when=$(date -u -d "$made" +%s 2>/dev/null)
+          if [ -z "$when" ]; then
+            echo "flights live: no readable latest.json: a pass runs"
+            echo "due=true" >> "$GITHUB_OUTPUT"
+          elif [ $(( $(date -u +%s) - when )) -ge 900 ]; then
+            echo "flights live: latest.json made at $made: a pass runs"
+            echo "due=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "flights live: latest.json made at $made is fresh: no pass this tick"
+            echo "due=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.token.outputs.ready == 'true' && steps.due.outputs.due == 'true'
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - if: steps.token.outputs.ready == 'true' && steps.due.outputs.due == 'true'
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - if: steps.token.outputs.ready == 'true' && steps.due.outputs.due == 'true'
+        run: uv sync --locked --no-dev
+
+      - if: steps.token.outputs.ready == 'true' && steps.due.outputs.due == 'true'
+        name: One live pass
+        timeout-minutes: 8
+        run: uv run snowlight flights live --host github

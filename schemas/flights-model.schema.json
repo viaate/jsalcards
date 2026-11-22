@@ -1,0 +1,326 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "FlightsAirportCode": {
+      "description": "An airport's three-letter code as people say it (MCI).",
+      "pattern": "^[A-Z0-9]{3}$",
+      "type": "string"
+    },
+    "FlightsAirportGate": {
+      "additionalProperties": false,
+      "description": "Which of one airport's chances passed the test, per target, by lead class.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/FlightsAirportCode"
+        },
+        "passed": {
+          "$ref": "#/$defs/FlightsTargetMasks",
+          "description": "Per target in FlightsTarget order, the lead classes that passed."
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "FlightsAirportGate",
+      "type": "object"
+    },
+    "FlightsAirportUsual": {
+      "additionalProperties": false,
+      "description": "One airport's usual rates.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/FlightsAirportCode"
+        },
+        "rates": {
+          "$ref": "#/$defs/FlightsUsualRates"
+        }
+      },
+      "required": [
+        "code",
+        "rates"
+      ],
+      "title": "FlightsAirportUsual",
+      "type": "object"
+    },
+    "FlightsBlockMonths": {
+      "items": {
+        "$ref": "#/$defs/FlightsMonthShares"
+      },
+      "type": "array"
+    },
+    "FlightsCoefficient": {
+      "maximum": 1000000.0,
+      "minimum": -1000000.0,
+      "type": "number"
+    },
+    "FlightsFit": {
+      "additionalProperties": false,
+      "description": "One regression: ``chance = 1 / (1 + exp(-(intercept + sum(coef * (x - mean) / scale))))``\nover the inputs in :class:`FlightsInput` order.",
+      "properties": {
+        "after_storm": {
+          "description": "Whether its chances passed on the days after an observed storm; where not, those days show the usual rate.",
+          "type": "boolean"
+        },
+        "coef": {
+          "items": {
+            "$ref": "#/$defs/FlightsCoefficient"
+          },
+          "type": "array"
+        },
+        "intercept": {
+          "$ref": "#/$defs/FlightsCoefficient"
+        },
+        "lead": {
+          "maximum": 3,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "mean": {
+          "items": {
+            "$ref": "#/$defs/FlightsCoefficient"
+          },
+          "type": "array"
+        },
+        "scale": {
+          "items": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1000000.0,
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "target": {
+          "$ref": "#/$defs/FlightsTarget"
+        }
+      },
+      "required": [
+        "target",
+        "lead",
+        "intercept",
+        "coef",
+        "mean",
+        "scale",
+        "after_storm"
+      ],
+      "title": "FlightsFit",
+      "type": "object"
+    },
+    "FlightsInput": {
+      "description": "One input of the chances' regressions, in the order of their coefficients\n(``snowlight.flights.model.FEATURES``).",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "title": "FlightsInput",
+      "type": "integer",
+      "x-enum-names": [
+        "base",
+        "snow",
+        "snow_before",
+        "ice",
+        "p_snow",
+        "p_zr",
+        "thunder",
+        "gust",
+        "wind",
+        "low_vis",
+        "low_cig",
+        "cold",
+        "south_snow",
+        "hub_snow",
+        "hub_storm",
+        "day_snow",
+        "day_ice",
+        "day_storm",
+        "pre_snow",
+        "pre_ice",
+        "obs_snow",
+        "obs_snow_old",
+        "obs_frz"
+      ]
+    },
+    "FlightsLeadMask": {
+      "description": "One bit per lead class, 1 (bit 0) to 3 (bit 2).",
+      "maximum": 7,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsMonthShares": {
+      "items": {
+        "$ref": "#/$defs/FlightsShare"
+      },
+      "type": "array"
+    },
+    "FlightsShare": {
+      "description": "A share, 0 to 1.",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "type": "number"
+    },
+    "FlightsTarget": {
+      "description": "What a chance is of.",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "title": "FlightsTarget",
+      "type": "integer",
+      "x-enum-names": [
+        "dep_canc",
+        "dep_late",
+        "arr_canc",
+        "arr_late",
+        "rough"
+      ]
+    },
+    "FlightsTargetMasks": {
+      "maxItems": 5,
+      "minItems": 5,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FlightsLeadMask",
+          "title": "dep_canc"
+        },
+        {
+          "$ref": "#/$defs/FlightsLeadMask",
+          "title": "dep_late"
+        },
+        {
+          "$ref": "#/$defs/FlightsLeadMask",
+          "title": "arr_canc"
+        },
+        {
+          "$ref": "#/$defs/FlightsLeadMask",
+          "title": "arr_late"
+        },
+        {
+          "$ref": "#/$defs/FlightsLeadMask",
+          "title": "rough"
+        }
+      ],
+      "type": "array"
+    },
+    "FlightsUsualRates": {
+      "additionalProperties": false,
+      "description": "Usual rates: per block and month the shares cancelled and late, and per month the share\nof rough days.",
+      "properties": {
+        "arr_canc": {
+          "$ref": "#/$defs/FlightsBlockMonths"
+        },
+        "arr_late": {
+          "$ref": "#/$defs/FlightsBlockMonths"
+        },
+        "dep_canc": {
+          "$ref": "#/$defs/FlightsBlockMonths"
+        },
+        "dep_late": {
+          "$ref": "#/$defs/FlightsBlockMonths"
+        },
+        "rough": {
+          "$ref": "#/$defs/FlightsMonthShares"
+        }
+      },
+      "required": [
+        "dep_canc",
+        "dep_late",
+        "arr_canc",
+        "arr_late",
+        "rough"
+      ],
+      "title": "FlightsUsualRates",
+      "type": "object"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "``flights/model.json``: the fitted chances the live job uses (the committed model file,\ngzipped, has the same content), refit and published by the monthly job.",
+  "properties": {
+    "fits": {
+      "items": {
+        "$ref": "#/$defs/FlightsFit"
+      },
+      "type": "array"
+    },
+    "gates": {
+      "items": {
+        "$ref": "#/$defs/FlightsAirportGate"
+      },
+      "type": "array"
+    },
+    "inputs": {
+      "description": "The regressions' inputs, in order.",
+      "items": {
+        "$ref": "#/$defs/FlightsInput"
+      },
+      "type": "array"
+    },
+    "national": {
+      "$ref": "#/$defs/FlightsUsualRates",
+      "description": "For an airport with no history."
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    },
+    "test_first": {
+      "$ref": "#/$defs/LocalDate"
+    },
+    "test_last": {
+      "$ref": "#/$defs/LocalDate"
+    },
+    "usual": {
+      "items": {
+        "$ref": "#/$defs/FlightsAirportUsual"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "inputs",
+    "test_first",
+    "test_last",
+    "fits",
+    "gates",
+    "usual",
+    "national"
+  ],
+  "title": "FlightsModel",
+  "type": "object",
+  "x-snowlight-path": "flights/model.json"
+}

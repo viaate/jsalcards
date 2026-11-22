@@ -5,7 +5,8 @@ and ``npm run gen:types`` turns into TypeScript. A new published JSON file is ad
 here, and nowhere else.
 
 Paths are relative to the site's data root (``pipeline/out/site-data`` when built
-locally). ``{id}`` stands for a replay id, or a live day (``YYYY-MM-DD``).
+locally). ``{id}`` stands for a replay id, or a live day (``YYYY-MM-DD``); under ``flights/``,
+for the field :data:`FLIGHTS_ID_FIELDS` names.
 
 Published files that are not JSON documents have no model and are listed in
 :data:`OTHER_PUBLISHED_FILES` instead: ``schools/points.bin`` (byte layout in
@@ -23,6 +24,18 @@ from dataclasses import dataclass
 
 from snowlight.schemas.base import PublishedModel
 from snowlight.schemas.directory import DirectoryEdition, SchoolDirectoryMeta
+from snowlight.schemas.flights import (
+    FlightsAirports,
+    FlightsArchive,
+    FlightsLatest,
+    FlightsLive,
+    FlightsModel,
+    FlightsRecord,
+    FlightsReplay,
+    FlightsReplayIndex,
+    FlightsRoutes,
+    FlightsTrackRecord,
+)
 from snowlight.schemas.live import (
     AlertsFile,
     ClosingsFile,
@@ -63,7 +76,27 @@ PUBLISHED_FILES: tuple[PublishedFile, ...] = (
     PublishedFile("track-record", "track-record.json", TrackRecord),
     PublishedFile("replay-index", "replays/index.json", ReplayIndex),
     PublishedFile("replay", "replays/{id}.json", ReplayFile),
+    PublishedFile("flights-airports", "flights/airports.json", FlightsAirports),
+    PublishedFile("flights-latest", "flights/latest.json", FlightsLatest),
+    PublishedFile("flights-live", "flights/live/{id}.json", FlightsLive),
+    PublishedFile("flights-routes", "flights/routes/{id}.json", FlightsRoutes),
+    PublishedFile("flights-record", "flights/records/{id}.json", FlightsRecord),
+    PublishedFile("flights-track-record", "flights/track-record.json", FlightsTrackRecord),
+    PublishedFile("flights-replay-index", "flights/replays/index.json", FlightsReplayIndex),
+    PublishedFile("flights-replay", "flights/replays/{id}.json", FlightsReplay),
+    PublishedFile("flights-model", "flights/model.json", FlightsModel),
+    PublishedFile("flights-archive", "flights/archive/{id}.json", FlightsArchive),
 )
+
+FLIGHTS_ID_FIELDS: dict[str, str] = {
+    "flights-live": "slot",
+    "flights-routes": "code",
+    "flights-record": "code",
+    "flights-replay": "id",
+    "flights-archive": "slot",
+}
+"""The field that a Flights file named by ``{id}`` holds its name in; the file's name is that
+field in lower case (the live host takes lower-case keys only)."""
 
 BY_NAME: dict[str, PublishedFile] = {entry.name: entry for entry in PUBLISHED_FILES}
 

@@ -1,0 +1,641 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "FlightsAirportCode": {
+      "description": "An airport's three-letter code as people say it (MCI).",
+      "pattern": "^[A-Z0-9]{3}$",
+      "type": "string"
+    },
+    "FlightsAirportLive": {
+      "additionalProperties": false,
+      "description": "One airport's chances and what is going on now.",
+      "properties": {
+        "alerts": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/FlightsAlert"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "NWS alerts in effect when read (empty: none, as of alerts_at); none: not read for this airport this pass, so nothing is known of them."
+        },
+        "arr_canc": {
+          "$ref": "#/$defs/FlightsDayRows"
+        },
+        "arr_late": {
+          "$ref": "#/$defs/FlightsDayRows"
+        },
+        "code": {
+          "$ref": "#/$defs/FlightsAirportCode"
+        },
+        "dep_canc": {
+          "$ref": "#/$defs/FlightsDayRows"
+        },
+        "dep_late": {
+          "$ref": "#/$defs/FlightsDayRows"
+        },
+        "now": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FlightsWeatherNow"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The airport's newest weather report; none: no report read this pass."
+        },
+        "programs": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/FlightsProgramNow"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "FAA programs in effect when read (empty: none in effect, as of programs_at); none: not read for this airport this pass, so nothing is known of them."
+        },
+        "rough": {
+          "$ref": "#/$defs/FlightsDayChances"
+        },
+        "rough_usual": {
+          "$ref": "#/$defs/FlightsDayMask",
+          "description": "The days whose rough-day value is the usual rate."
+        },
+        "runs": {
+          "$ref": "#/$defs/FlightsDayRuns",
+          "description": "Per day, the 00Z forecast run of the evening (or two or three evenings) before that day the day's chances come from; none: no run read covers that day."
+        },
+        "today": {
+          "$ref": "#/$defs/LocalDate",
+          "description": "The airport's own date when the file was made."
+        },
+        "usual": {
+          "$ref": "#/$defs/FlightsUsualMasks",
+          "description": "Per block target, per day: the blocks whose value is the usual rate."
+        },
+        "why": {
+          "$ref": "#/$defs/FlightsDayWhys",
+          "description": "Per day, the plain reasons in the forecast, strongest first."
+        }
+      },
+      "required": [
+        "code",
+        "today",
+        "dep_canc",
+        "dep_late",
+        "arr_canc",
+        "arr_late",
+        "rough",
+        "runs",
+        "usual",
+        "rough_usual",
+        "why",
+        "programs",
+        "alerts",
+        "now"
+      ],
+      "title": "FlightsAirportLive",
+      "type": "object"
+    },
+    "FlightsAlert": {
+      "description": "An NWS alert in effect at the airport.",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "title": "FlightsAlert",
+      "type": "integer",
+      "x-enum-names": [
+        "winter_storm",
+        "blizzard",
+        "ice_storm",
+        "winter_weather",
+        "severe_thunderstorm",
+        "tornado",
+        "high_wind",
+        "dense_fog",
+        "hurricane",
+        "tropical_storm",
+        "extreme_cold"
+      ]
+    },
+    "FlightsBlockMask": {
+      "description": "One bit per block, early first (bit 0).",
+      "maximum": 31,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsBlockRow": {
+      "maxItems": 5,
+      "minItems": 5,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "early"
+        },
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "morning"
+        },
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "afternoon"
+        },
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "evening"
+        },
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "night"
+        }
+      ],
+      "type": "array"
+    },
+    "FlightsChance": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FlightsPerMille"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "FlightsDayChances": {
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "today"
+        },
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "tomorrow"
+        },
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "after"
+        }
+      ],
+      "type": "array"
+    },
+    "FlightsDayMask": {
+      "description": "One bit per day, today first.",
+      "maximum": 7,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsDayMasks": {
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FlightsBlockMask",
+          "title": "today"
+        },
+        {
+          "$ref": "#/$defs/FlightsBlockMask",
+          "title": "tomorrow"
+        },
+        {
+          "$ref": "#/$defs/FlightsBlockMask",
+          "title": "after"
+        }
+      ],
+      "type": "array"
+    },
+    "FlightsDayRows": {
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FlightsBlockRow",
+          "title": "today"
+        },
+        {
+          "$ref": "#/$defs/FlightsBlockRow",
+          "title": "tomorrow"
+        },
+        {
+          "$ref": "#/$defs/FlightsBlockRow",
+          "title": "after"
+        }
+      ],
+      "type": "array"
+    },
+    "FlightsDayRuns": {
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "today"
+        },
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "tomorrow"
+        },
+        {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "after"
+        }
+      ],
+      "type": "array"
+    },
+    "FlightsDayWhys": {
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FlightsWhys",
+          "title": "today"
+        },
+        {
+          "$ref": "#/$defs/FlightsWhys",
+          "title": "tomorrow"
+        },
+        {
+          "$ref": "#/$defs/FlightsWhys",
+          "title": "after"
+        }
+      ],
+      "type": "array"
+    },
+    "FlightsKind": {
+      "description": "A kind of weather in an airport's own record.",
+      "enum": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "title": "FlightsKind",
+      "type": "integer",
+      "x-enum-names": [
+        "freezing_rain",
+        "snow",
+        "thunder",
+        "fog",
+        "wind"
+      ]
+    },
+    "FlightsLiveStamp": {
+      "description": "A live file's stamp: its UTC minute, YYYYMMDDTHHMMZ.",
+      "pattern": "^\\d{8}T\\d{4}Z$",
+      "type": "string"
+    },
+    "FlightsPerMille": {
+      "description": "Tenths of a percent.",
+      "maximum": 1000,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsProgram": {
+      "description": "An FAA traffic program or status at an airport.",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "title": "FlightsProgram",
+      "type": "integer",
+      "x-enum-names": [
+        "ground_stop",
+        "ground_delay",
+        "departure_delay",
+        "arrival_delay",
+        "closed",
+        "deicing"
+      ]
+    },
+    "FlightsProgramNow": {
+      "additionalProperties": false,
+      "description": "An FAA program at an airport when it was read.",
+      "properties": {
+        "minutes": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The average or longest delay it gives, in minutes; none when not given."
+        },
+        "program": {
+          "$ref": "#/$defs/FlightsProgram"
+        },
+        "until": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UtcInstant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "When it is set to end; none when not given."
+        },
+        "why": {
+          "$ref": "#/$defs/FlightsProgramWhy",
+          "description": "The kind of reason the FAA gives."
+        }
+      },
+      "required": [
+        "program",
+        "minutes",
+        "until",
+        "why"
+      ],
+      "title": "FlightsProgramNow",
+      "type": "object"
+    },
+    "FlightsProgramWhy": {
+      "description": "The kind of reason the FAA gives for a program (its own words stay in the archive).",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "title": "FlightsProgramWhy",
+      "type": "integer",
+      "x-enum-names": [
+        "other",
+        "weather",
+        "volume",
+        "equipment",
+        "runway"
+      ]
+    },
+    "FlightsSlot": {
+      "description": "One of the three live files the passes take in turn.",
+      "pattern": "^slot-[0-2]$",
+      "type": "string"
+    },
+    "FlightsUsualMasks": {
+      "maxItems": 4,
+      "minItems": 4,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FlightsDayMasks",
+          "title": "dep_canc"
+        },
+        {
+          "$ref": "#/$defs/FlightsDayMasks",
+          "title": "dep_late"
+        },
+        {
+          "$ref": "#/$defs/FlightsDayMasks",
+          "title": "arr_canc"
+        },
+        {
+          "$ref": "#/$defs/FlightsDayMasks",
+          "title": "arr_late"
+        }
+      ],
+      "type": "array"
+    },
+    "FlightsWeatherNow": {
+      "additionalProperties": false,
+      "description": "The airport's latest weather report.",
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        "gust": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Knots."
+        },
+        "kinds": {
+          "description": "The record's weather kinds it shows.",
+          "items": {
+            "$ref": "#/$defs/FlightsKind"
+          },
+          "type": "array"
+        },
+        "visibility": {
+          "anyOf": [
+            {
+              "maximum": 100.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Miles."
+        }
+      },
+      "required": [
+        "at",
+        "kinds",
+        "visibility",
+        "gust"
+      ],
+      "title": "FlightsWeatherNow",
+      "type": "object"
+    },
+    "FlightsWhy": {
+      "description": "A plain reason in the forecast for a day.",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "title": "FlightsWhy",
+      "type": "integer",
+      "x-enum-names": [
+        "snow",
+        "ice",
+        "thunder",
+        "wind",
+        "fog",
+        "cold",
+        "hubs",
+        "before"
+      ]
+    },
+    "FlightsWhys": {
+      "items": {
+        "$ref": "#/$defs/FlightsWhy"
+      },
+      "type": "array"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "``flights/live/<slot>.json``: the passes take the three slots in turn, so each file is\nrewritten an hour after it was last written (past any cache) and the host keeps three.",
+  "properties": {
+    "airports": {
+      "items": {
+        "$ref": "#/$defs/FlightsAirportLive"
+      },
+      "type": "array"
+    },
+    "alerts_at": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the NWS alerts were read; none: they could not be read."
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "observed_at": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The newest hour of the observed reports read (the hours before the runs); none: they could not be read, and every chance is the usual rate. An airport whose own reports end more than 3 hours before the newest run shows the usual rate."
+    },
+    "programs_at": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the FAA programs were read; none: they could not be read."
+    },
+    "run": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The newest forecast run read; none: no forecast was read. Each airport day names its own run (runs)."
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    },
+    "slot": {
+      "$ref": "#/$defs/FlightsSlot"
+    },
+    "stamp": {
+      "$ref": "#/$defs/FlightsLiveStamp"
+    },
+    "weather_at": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/UtcInstant"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "When the weather reports were read; none: they could not be read."
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "slot",
+    "stamp",
+    "run",
+    "programs_at",
+    "alerts_at",
+    "weather_at",
+    "observed_at",
+    "airports"
+  ],
+  "title": "FlightsLive",
+  "type": "object",
+  "x-snowlight-path": "flights/live/{id}.json"
+}

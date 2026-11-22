@@ -201,6 +201,17 @@ describe('routeFor', () => {
       covered: 'data',
       // No route: a reader must get the deployed file, never a cached copy.
       directoryEdition: null,
+      // Flights (FL-1): read like the other data files until the Flights mode routes them.
+      flightsAirports: 'data',
+      flightsArchive: 'data',
+      flightsLatest: 'data',
+      flightsLive: 'data',
+      flightsModel: 'data',
+      flightsRecord: 'data',
+      flightsReplay: 'data',
+      flightsReplayIndex: 'data',
+      flightsRoutes: 'data',
+      flightsTrackRecord: 'data',
       liveDay: 'data',
       liveDays: 'data',
       liveSeason: 'data',

@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-21T18:20:00Z",
+  "code": "AAA",
+  "months": [
+    {
+      "month": "2026-09",
+      "flights": [
+        {
+          "carrier": "ZZ",
+          "number": 1234,
+          "to_airport": "BBB",
+          "leaves": 420,
+          "lands": 535,
+          "weekdays": 31,
+          "days": 21,
+          "cancelled": 0,
+          "late": 2
+        },
+        {
+          "carrier": "YY",
+          "number": 88,
+          "to_airport": "BBB",
+          "leaves": 1050,
+          "lands": 1170,
+          "weekdays": 127,
+          "days": 30,
+          "cancelled": 1,
+          "late": 4
+        }
+      ]
+    },
+    {
+      "month": "2025-11",
+      "flights": [
+        {
+          "carrier": "ZZ",
+          "number": 1234,
+          "to_airport": "BBB",
+          "leaves": 425,
+          "lands": 540,
+          "weekdays": 31,
+          "days": 20,
+          "cancelled": 2,
+          "late": 3
+        }
+      ]
+    }
+  ]
+}

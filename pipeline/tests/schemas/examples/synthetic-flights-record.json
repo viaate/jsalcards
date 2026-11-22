@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-21T18:20:00Z",
+  "code": "AAA",
+  "first": "2015-01-01",
+  "last": "2026-09-30",
+  "lines": [
+    {
+      "kind": 2,
+      "blocks": 180,
+      "bad": 41,
+      "share": 96,
+      "others": 71,
+      "verdict": 2,
+      "days": 90,
+      "bad_days": 41,
+      "worse": 30,
+      "better": 9
+    },
+    {
+      "kind": 1,
+      "blocks": 6,
+      "bad": 3,
+      "share": 210,
+      "others": 150,
+      "verdict": 0,
+      "days": 3,
+      "bad_days": 3,
+      "worse": 1,
+      "better": 0
+    }
+  ],
+  "carriers": [
+    {
+      "carrier": "ZZ",
+      "lines": [
+        {
+          "kind": 2,
+          "blocks": 150,
+          "bad": 30,
+          "share": 80,
+          "others": 110,
+          "verdict": 3,
+          "days": 75,
+          "bad_days": 30,
+          "worse": 6,
+          "better": 25
+        }
+      ]
+    }
+  ]
+}

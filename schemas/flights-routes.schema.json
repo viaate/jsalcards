@@ -1,0 +1,151 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsAirportCode": {
+      "description": "An airport's three-letter code as people say it (MCI).",
+      "pattern": "^[A-Z0-9]{3}$",
+      "type": "string"
+    },
+    "FlightsCarrierCode": {
+      "description": "An airline's two-character code (WN).",
+      "pattern": "^[A-Z0-9]{2}$",
+      "type": "string"
+    },
+    "FlightsMonthLabel": {
+      "description": "A calendar month, YYYY-MM.",
+      "pattern": "^\\d{4}-\\d{2}$",
+      "type": "string"
+    },
+    "FlightsRouteMonth": {
+      "additionalProperties": false,
+      "description": "The usual flights of one posted month.",
+      "properties": {
+        "flights": {
+          "items": {
+            "$ref": "#/$defs/FlightsUsualFlight"
+          },
+          "type": "array"
+        },
+        "month": {
+          "$ref": "#/$defs/FlightsMonthLabel"
+        }
+      },
+      "required": [
+        "month",
+        "flights"
+      ],
+      "title": "FlightsRouteMonth",
+      "type": "object"
+    },
+    "FlightsUsualFlight": {
+      "additionalProperties": false,
+      "description": "A flight that flew the route in a posted month.",
+      "properties": {
+        "cancelled": {
+          "$ref": "#/$defs/Count"
+        },
+        "carrier": {
+          "$ref": "#/$defs/FlightsCarrierCode"
+        },
+        "days": {
+          "$ref": "#/$defs/Count",
+          "description": "Days it flew that month."
+        },
+        "lands": {
+          "$ref": "#/$defs/MinuteOfDay",
+          "description": "Scheduled arrival, the arrival airport's clock."
+        },
+        "late": {
+          "$ref": "#/$defs/Count",
+          "description": "Days it left 45+ minutes late."
+        },
+        "leaves": {
+          "$ref": "#/$defs/MinuteOfDay",
+          "description": "Scheduled departure, the departure airport's clock."
+        },
+        "number": {
+          "maximum": 9999,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "to_airport": {
+          "$ref": "#/$defs/FlightsAirportCode"
+        },
+        "weekdays": {
+          "$ref": "#/$defs/FlightsWeekdayMask"
+        }
+      },
+      "required": [
+        "carrier",
+        "number",
+        "to_airport",
+        "leaves",
+        "lands",
+        "weekdays",
+        "days",
+        "cancelled",
+        "late"
+      ],
+      "title": "FlightsUsualFlight",
+      "type": "object"
+    },
+    "FlightsWeekdayMask": {
+      "description": "One bit per weekday, Monday (bit 0) to Sunday.",
+      "maximum": 127,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "MinuteOfDay": {
+      "description": "A local wall-clock time as minutes after midnight (630 is 10:30).",
+      "exclusiveMaximum": 1440,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "``flights/routes/<code>.json``: the usual flights from one airport (D11).",
+  "properties": {
+    "code": {
+      "$ref": "#/$defs/FlightsAirportCode"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "months": {
+      "items": {
+        "$ref": "#/$defs/FlightsRouteMonth"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "code",
+    "months"
+  ],
+  "title": "FlightsRoutes",
+  "type": "object",
+  "x-snowlight-path": "flights/routes/{id}.json"
+}

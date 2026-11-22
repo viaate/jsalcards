@@ -42,6 +42,7 @@ from snowlight.schemas.directory import (
 from snowlight.schemas.live import ClosingsFile, CoveredFile, DayTimeline, check_live_pair
 from snowlight.schemas.registry import (
     BY_NAME,
+    FLIGHTS_ID_FIELDS,
     INTERNAL_SUFFIX,
     OTHER_PUBLISHED_FILES,
     PUBLISHED_FILES,
@@ -270,12 +271,50 @@ def _is_live_day(path: str) -> bool:
     return folder == _LIVE_DAY_DIR and name.endswith(".json") and name != _REPLAY_INDEX
 
 
+def _flights_entry(path: str) -> PublishedFile | None:
+    """The Flights file named by ``{id}`` that ``path`` is one of, if any."""
+    folder, _, name = path.rpartition("/")
+    if not name.endswith(".json"):
+        return None
+    fixed = {entry.path for entry in PUBLISHED_FILES if "{id}" not in entry.path}
+    if path in fixed:
+        return None
+    for entry in PUBLISHED_FILES:
+        if entry.name in FLIGHTS_ID_FIELDS and entry.path.rpartition("/")[0] == folder:
+            return entry
+    return None
+
+
+def _load_flights(root: Path, report: SiteReport) -> None:
+    """Each Flights file named by ``{id}``, checked to hold its own name (file names are lower
+    case, as the live host takes them: ``flights/records/mci.json`` holds ``MCI``)."""
+    for entry in PUBLISHED_FILES:
+        field = FLIGHTS_ID_FIELDS.get(entry.name)
+        if field is None:
+            continue
+        folder = entry.path.rpartition("/")[0]
+        for path in sorted((root / folder).glob("*.json")):
+            shown = f"{folder}/{path.name}"
+            if _flights_entry(shown) is not entry:
+                continue
+            found = _load(entry.model, path, shown, report)
+            named = None if found is None else found.model_dump()[field]
+            if found is not None and str(named).lower() != path.stem:
+                report.problems.append(f"{shown}: holds {field} {named}")
+
+
 def _account_for_others(root: Path, report: SiteReport) -> None:
     """Scan, list or refuse every file that no model covers."""
     modeled = {entry.path for entry in PUBLISHED_FILES if "{id}" not in entry.path}
     for path in sorted(item for item in root.rglob("*") if item.is_file()):
         shown = path.relative_to(root).as_posix()
-        if shown in modeled or _is_replay(shown) or _is_live_day(shown) or _is_standing(shown):
+        if (
+            shown in modeled
+            or _is_replay(shown)
+            or _is_live_day(shown)
+            or _is_standing(shown)
+            or _flights_entry(shown) is not None
+        ):
             continue
         if shown.endswith(INTERNAL_SUFFIX):
             report.skipped.append(shown)
@@ -308,6 +347,7 @@ def validate_site(root: Path) -> SiteReport:
     replays = _load_replays(root, report)
     live_days = _load_live_days(root, report)
     _load_standing(root, report)
+    _load_flights(root, report)
     _check_stamps(root, loaded, replays, report, live_days)
     _check_edition(root, loaded, report)
     _check_live(root, loaded, report)

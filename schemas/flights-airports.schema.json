@@ -1,0 +1,144 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "FlightsAirportCode": {
+      "description": "An airport's three-letter code as people say it (MCI).",
+      "pattern": "^[A-Z0-9]{3}$",
+      "type": "string"
+    },
+    "FlightsAirportEntry": {
+      "additionalProperties": false,
+      "description": "One airport on the map.",
+      "properties": {
+        "city": {
+          "$ref": "#/$defs/FlightsPlaceName"
+        },
+        "code": {
+          "$ref": "#/$defs/FlightsAirportCode"
+        },
+        "lat": {
+          "$ref": "#/$defs/Latitude"
+        },
+        "lon": {
+          "$ref": "#/$defs/Longitude"
+        },
+        "name": {
+          "$ref": "#/$defs/FlightsPlaceName"
+        },
+        "per_day": {
+          "description": "Scheduled departures per day over the last 12 posted months.",
+          "maximum": 10000.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        "state": {
+          "$ref": "#/$defs/FlightsStateCode"
+        },
+        "tz": {
+          "$ref": "#/$defs/FlightsZoneName"
+        }
+      },
+      "required": [
+        "code",
+        "name",
+        "city",
+        "state",
+        "lat",
+        "lon",
+        "tz",
+        "per_day"
+      ],
+      "title": "FlightsAirportEntry",
+      "type": "object"
+    },
+    "FlightsMonthLabel": {
+      "description": "A calendar month, YYYY-MM.",
+      "pattern": "^\\d{4}-\\d{2}$",
+      "type": "string"
+    },
+    "FlightsMonthSpan": {
+      "maxItems": 2,
+      "minItems": 2,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FlightsMonthLabel",
+          "title": "first"
+        },
+        {
+          "$ref": "#/$defs/FlightsMonthLabel",
+          "title": "last"
+        }
+      ],
+      "type": "array"
+    },
+    "FlightsPlaceName": {
+      "description": "An airport's or city's name.",
+      "maxLength": 120,
+      "minLength": 1,
+      "type": "string"
+    },
+    "FlightsStateCode": {
+      "description": "Two-letter state or territory code.",
+      "pattern": "^[A-Z]{2}$",
+      "type": "string"
+    },
+    "FlightsZoneName": {
+      "description": "An IANA time zone (America/Chicago).",
+      "pattern": "^[A-Za-z_]+/[A-Za-z_/+-]+$",
+      "type": "string"
+    },
+    "Latitude": {
+      "description": "Degrees north of the equator (WGS 84).",
+      "maximum": 90.0,
+      "minimum": -90.0,
+      "type": "number"
+    },
+    "Longitude": {
+      "description": "Degrees east of Greenwich (WGS 84).",
+      "maximum": 180.0,
+      "minimum": -180.0,
+      "type": "number"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "``flights/airports.json``.",
+  "properties": {
+    "airports": {
+      "items": {
+        "$ref": "#/$defs/FlightsAirportEntry"
+      },
+      "type": "array"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "months": {
+      "$ref": "#/$defs/FlightsMonthSpan",
+      "description": "The first and last posted month the departures per day count."
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "months",
+    "airports"
+  ],
+  "title": "FlightsAirports",
+  "type": "object",
+  "x-snowlight-path": "flights/airports.json"
+}

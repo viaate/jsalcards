@@ -1,0 +1,54 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "FlightsLiveStamp": {
+      "description": "A live file's stamp: its UTC minute, YYYYMMDDTHHMMZ.",
+      "pattern": "^\\d{8}T\\d{4}Z$",
+      "type": "string"
+    },
+    "FlightsSlot": {
+      "description": "One of the three live files the passes take in turn.",
+      "pattern": "^slot-[0-2]$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "``flights/latest.json``: the newest live file.",
+  "properties": {
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    },
+    "slot": {
+      "$ref": "#/$defs/FlightsSlot",
+      "description": "The newest live file: flights/live/<slot>.json."
+    },
+    "stamp": {
+      "$ref": "#/$defs/FlightsLiveStamp",
+      "description": "That file's stamp. The three slot files are reused in turn, so a reader takes a slot file as current only when its own stamp is this one; any other stamp is an older pass (a cached copy) and is stale."
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "slot",
+    "stamp"
+  ],
+  "title": "FlightsLatest",
+  "type": "object",
+  "x-snowlight-path": "flights/latest.json"
+}

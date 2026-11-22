@@ -1,0 +1,340 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsAirportCode": {
+      "description": "An airport's three-letter code as people say it (MCI).",
+      "pattern": "^[A-Z0-9]{3}$",
+      "type": "string"
+    },
+    "FlightsAirportGate": {
+      "additionalProperties": false,
+      "description": "Which of one airport's chances passed the test, per target, by lead class.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/FlightsAirportCode"
+        },
+        "passed": {
+          "$ref": "#/$defs/FlightsTargetMasks",
+          "description": "Per target in FlightsTarget order, the lead classes that passed."
+        }
+      },
+      "required": [
+        "code",
+        "passed"
+      ],
+      "title": "FlightsAirportGate",
+      "type": "object"
+    },
+    "FlightsBin": {
+      "additionalProperties": false,
+      "description": "One bin of the reliability table.",
+      "properties": {
+        "high": {
+          "$ref": "#/$defs/FlightsPerMille"
+        },
+        "low": {
+          "$ref": "#/$defs/FlightsPerMille"
+        },
+        "said": {
+          "$ref": "#/$defs/FlightsPerMille"
+        },
+        "seen": {
+          "$ref": "#/$defs/FlightsPerMille"
+        },
+        "units": {
+          "$ref": "#/$defs/Count"
+        }
+      },
+      "required": [
+        "low",
+        "high",
+        "units",
+        "said",
+        "seen"
+      ],
+      "title": "FlightsBin",
+      "type": "object"
+    },
+    "FlightsLeadMask": {
+      "description": "One bit per lead class, 1 (bit 0) to 3 (bit 2).",
+      "maximum": 7,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsMonthLabel": {
+      "description": "A calendar month, YYYY-MM.",
+      "pattern": "^\\d{4}-\\d{2}$",
+      "type": "string"
+    },
+    "FlightsMonthScore": {
+      "additionalProperties": false,
+      "description": "How the published chances did in one month, scored once its flights were posted.",
+      "properties": {
+        "brier": {
+          "$ref": "#/$defs/FlightsScore"
+        },
+        "brier_usual": {
+          "$ref": "#/$defs/FlightsScore"
+        },
+        "caught": {
+          "$ref": "#/$defs/Count",
+          "description": "Rough days given 30% or more the evening before."
+        },
+        "days_in_month": {
+          "description": "The month's days.",
+          "maximum": 31,
+          "minimum": 28,
+          "type": "integer"
+        },
+        "days_scored": {
+          "description": "The month's days whose evening-before chances were scored: a day whose snapshot was not kept is left out, so fewer than days_in_month says the month was scored in part.",
+          "maximum": 31,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "month": {
+          "$ref": "#/$defs/FlightsMonthLabel"
+        },
+        "rough_days": {
+          "$ref": "#/$defs/Count"
+        },
+        "target": {
+          "$ref": "#/$defs/FlightsTarget"
+        },
+        "units": {
+          "$ref": "#/$defs/Count"
+        }
+      },
+      "required": [
+        "month",
+        "target",
+        "units",
+        "brier",
+        "brier_usual",
+        "rough_days",
+        "caught",
+        "days_in_month",
+        "days_scored"
+      ],
+      "title": "FlightsMonthScore",
+      "type": "object"
+    },
+    "FlightsPerMille": {
+      "description": "Tenths of a percent.",
+      "maximum": 1000,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsScore": {
+      "description": "A Brier score.",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "type": "number"
+    },
+    "FlightsSkill": {
+      "description": "1 minus the Brier score over the usual rate's.",
+      "maximum": 1.0,
+      "minimum": -100.0,
+      "type": "number"
+    },
+    "FlightsTarget": {
+      "description": "What a chance is of.",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "title": "FlightsTarget",
+      "type": "integer",
+      "x-enum-names": [
+        "dep_canc",
+        "dep_late",
+        "arr_canc",
+        "arr_late",
+        "rough"
+      ]
+    },
+    "FlightsTargetMasks": {
+      "maxItems": 5,
+      "minItems": 5,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FlightsLeadMask",
+          "title": "dep_canc"
+        },
+        {
+          "$ref": "#/$defs/FlightsLeadMask",
+          "title": "dep_late"
+        },
+        {
+          "$ref": "#/$defs/FlightsLeadMask",
+          "title": "arr_canc"
+        },
+        {
+          "$ref": "#/$defs/FlightsLeadMask",
+          "title": "arr_late"
+        },
+        {
+          "$ref": "#/$defs/FlightsLeadMask",
+          "title": "rough"
+        }
+      ],
+      "type": "array"
+    },
+    "FlightsTargetTest": {
+      "additionalProperties": false,
+      "description": "The held-out test of one target and lead, pooled over airports.",
+      "properties": {
+        "bins": {
+          "description": "Reliability of what the files would have shown in the test year: the model's chance where it passed, the usual rate elsewhere.",
+          "items": {
+            "$ref": "#/$defs/FlightsBin"
+          },
+          "type": "array"
+        },
+        "brier": {
+          "$ref": "#/$defs/FlightsScore"
+        },
+        "brier_usual": {
+          "$ref": "#/$defs/FlightsScore"
+        },
+        "events": {
+          "$ref": "#/$defs/Count"
+        },
+        "expected": {
+          "$ref": "#/$defs/Count"
+        },
+        "lead": {
+          "maximum": 3,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "published": {
+          "$ref": "#/$defs/Count",
+          "description": "Airports where this chance passed the test."
+        },
+        "skill": {
+          "$ref": "#/$defs/FlightsSkill",
+          "description": "The model's chances at every airport tested."
+        },
+        "skill_confirmed": {
+          "$ref": "#/$defs/FlightsSkill",
+          "description": "Out of selection: airports chosen on the even weeks of the test year scored on the odd ones, and the reverse."
+        },
+        "skill_published": {
+          "$ref": "#/$defs/FlightsSkill",
+          "description": "What the files show: the chance where it passed, else the usual rate."
+        },
+        "target": {
+          "$ref": "#/$defs/FlightsTarget"
+        },
+        "tested": {
+          "$ref": "#/$defs/Count",
+          "description": "Airports tested."
+        },
+        "units": {
+          "$ref": "#/$defs/Count"
+        }
+      },
+      "required": [
+        "target",
+        "lead",
+        "units",
+        "events",
+        "expected",
+        "brier",
+        "brier_usual",
+        "skill",
+        "skill_published",
+        "skill_confirmed",
+        "published",
+        "tested",
+        "bins"
+      ],
+      "title": "FlightsTargetTest",
+      "type": "object"
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "``flights/track-record.json``: how the flight chances did (D9).",
+  "properties": {
+    "airports": {
+      "items": {
+        "$ref": "#/$defs/FlightsAirportGate"
+      },
+      "type": "array"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "months": {
+      "items": {
+        "$ref": "#/$defs/FlightsMonthScore"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    },
+    "test_first": {
+      "$ref": "#/$defs/LocalDate"
+    },
+    "test_last": {
+      "$ref": "#/$defs/LocalDate"
+    },
+    "tests": {
+      "items": {
+        "$ref": "#/$defs/FlightsTargetTest"
+      },
+      "type": "array"
+    },
+    "usual_first": {
+      "$ref": "#/$defs/LocalDate",
+      "description": "The first day the usual rates average over (the test year's, and the live files' usual rates, which come from the same model)."
+    },
+    "usual_last": {
+      "$ref": "#/$defs/LocalDate",
+      "description": "The last day the usual rates average over, before the test year: they are a dated average, never a rate of the test year or of today."
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "test_first",
+    "test_last",
+    "usual_first",
+    "usual_last",
+    "tests",
+    "airports",
+    "months"
+  ],
+  "title": "FlightsTrackRecord",
+  "type": "object",
+  "x-snowlight-path": "flights/track-record.json"
+}

@@ -1,0 +1,168 @@
+# Flights monthly (docs/flights.md): the scoring and refit, checked once a day.
+#
+# Each run checks for a newly posted BTS month, fetches what the history cache lacks (one file
+# at a time, for 200 minutes at most: a cold start takes several days, each run going on from
+# what the last one kept), and, once the history is whole and the live host has not published
+# that month yet, scores what was published for every month since, refits, tests on the newest
+# 12 months and publishes the airports, usual flights, own records, track record, past storms
+# and the new model file (v1/flights/model.json) in one write. What is published is read back
+# from the host each run, so a run stopped anywhere before that write is done again the next
+# day. The history cache (one entry kept, under 1 GB, the older one deleted only after the new one
+# is saved) is saved only when a run kept something new (a history file or a copy of a day's
+# archive snapshot, which it holds for scoring).
+#
+# What starts it: every run of live-ingest.yml (the owner's 5-minute timer, workflow_run, as
+# flights-live.yml is started), since GitHub's own schedule on this repository fires hours late
+# or not at all; the daily cron stays as a backstop. A run goes on only once a UTC day: the first
+# run of the day keeps a small marker in the Actions cache (flights-monthly-day-<date>) before
+# its work, and every later run that day finds it and ends at once.
+#
+# Its own workflow and concurrency group, so it never holds the live pass (flights-live.yml).
+# Publishing needs the secret SNOWLIGHT_LIVE_TOKEN in the environment `live`; until it exists
+# every run ends at the first step with a notice: nothing is published, nothing fails.
+name: flights-monthly
+
+on:
+  workflow_run:
+    workflows: [live-ingest]
+    types: [requested]
+  workflow_dispatch:
+  schedule:
+    - cron: "41 9 * * *"
+
+concurrency:
+  group: flights-monthly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  monthly:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    environment: live
+    # actions: write only to delete the job's own older caches (gh cache delete); it never starts
+    # or repeats a workflow.
+    permissions:
+      contents: read
+      actions: write
+    defaults:
+      run:
+        working-directory: pipeline
+    env:
+      LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - id: token
+        name: Stay dark without the live host token
+        working-directory: .
+        run: |
+          if [ -z "$LIVE_HOST_TOKEN" ]; then
+            echo "::notice::No SNOWLIGHT_LIVE_TOKEN in the live environment: nothing is published (docs/flights.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.token.outputs.ready == 'true'
+        id: day
+        name: Name today's marker
+        working-directory: .
+        run: |
+          mkdir -p .flights-day
+          date -u +%F > .flights-day/day
+          echo "key=flights-monthly-day-$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      - if: steps.token.outputs.ready == 'true'
+        id: seen
+        uses: actions/cache/restore@v4
+        with:
+          path: .flights-day
+          key: ${{ steps.day.outputs.key }}
+          lookup-only: true
+
+      - if: steps.token.outputs.ready == 'true' && steps.seen.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .flights-day
+          key: ${{ steps.day.outputs.key }}
+
+      - if: steps.token.outputs.ready == 'true' && steps.seen.outputs.cache-hit != 'true'
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - if: steps.token.outputs.ready == 'true' && steps.seen.outputs.cache-hit != 'true'
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.12"
+          working-directory: pipeline
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - if: steps.token.outputs.ready == 'true' && steps.seen.outputs.cache-hit != 'true'
+        run: uv sync --locked --no-dev
+
+      # The compact history (about 1 GB: BTS tables, forecast rows, weather flags), kept between
+      # runs so a run fetches only what is new.
+      - if: steps.token.outputs.ready == 'true' && steps.seen.outputs.cache-hit != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: pipeline/.flights-raw
+          key: flights-history-none
+          restore-keys: flights-history-
+
+      - if: steps.token.outputs.ready == 'true' && steps.seen.outputs.cache-hit != 'true'
+        id: month
+        name: Check, fetch, score, refit and publish
+        timeout-minutes: 280
+        run: uv run snowlight flights monthly --raw .flights-raw --out out/flights --host github
+
+      # One flights history cache kept, never deleted before its successor is saved, so a failed
+      # save leaves the last one in place (R6-S1). Each save takes a new key (this run's id), so it
+      # never meets an existing entry; restore picks the newest flights-history-* entry. Past
+      # 1 GB nothing is saved, so the old and the new entry together stay under 2 GB for the
+      # moment both exist (the lead's ruling LR-F7: the Flights caches never push the Schools
+      # caches out of the shared 10 GB). Only once the save succeeded are the older
+      # flights-history entries (and every day marker but today's) deleted.
+      - if: steps.token.outputs.ready == 'true' && steps.seen.outputs.cache-hit != 'true' && always() && steps.month.outputs.fetched == 'true'
+        id: room
+        name: Check the flights history fits
+        run: |
+          size=$(du -sb .flights-raw | cut -f1)
+          if [ "$size" -gt 1000000000 ]; then
+            echo "::warning::The flights history is $size bytes, over 1 GB: not saved (docs/flights.md)."
+            echo "save=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "key=flights-history-$(date -u +%Y-%m-%d)-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+          echo "save=true" >> "$GITHUB_OUTPUT"
+
+      - if: steps.token.outputs.ready == 'true' && steps.seen.outputs.cache-hit != 'true' && always() && steps.room.outputs.save == 'true'
+        id: save
+        uses: actions/cache/save@v4
+        with:
+          path: pipeline/.flights-raw
+          key: ${{ steps.room.outputs.key }}
+
+      - if: steps.token.outputs.ready == 'true' && steps.seen.outputs.cache-hit != 'true' && always() && steps.save.outcome == 'success'
+        name: Delete the older flights history caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TODAY_KEY: ${{ steps.day.outputs.key }}
+          SAVED_KEY: ${{ steps.room.outputs.key }}
+        run: |
+          gh cache list --repo "$GITHUB_REPOSITORY" --key "$SAVED_KEY" --limit 1 --json key --jq '.[].key' | grep -qx "$SAVED_KEY" || {
+            echo "::warning::The new flights history cache $SAVED_KEY is not listed: the older ones are kept."
+            exit 0
+          }
+          gh cache list --repo "$GITHUB_REPOSITORY" --key flights- --limit 100 --json key --jq '.[].key' |
+            while read -r key; do
+              case "$key" in
+                "$TODAY_KEY"|"$SAVED_KEY") ;;
+                flights-history-*|flights-monthly-day-*)
+                  gh cache delete "$key" --repo "$GITHUB_REPOSITORY" || echo "::warning::cache $key not deleted" ;;
+              esac
+            done

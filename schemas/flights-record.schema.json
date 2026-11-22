@@ -1,0 +1,201 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsAirportCode": {
+      "description": "An airport's three-letter code as people say it (MCI).",
+      "pattern": "^[A-Z0-9]{3}$",
+      "type": "string"
+    },
+    "FlightsCarrierCode": {
+      "description": "An airline's two-character code (WN).",
+      "pattern": "^[A-Z0-9]{2}$",
+      "type": "string"
+    },
+    "FlightsCarrierRecord": {
+      "additionalProperties": false,
+      "description": "One airline's record at the airport, against the others in the same blocks.",
+      "properties": {
+        "carrier": {
+          "$ref": "#/$defs/FlightsCarrierCode"
+        },
+        "lines": {
+          "items": {
+            "$ref": "#/$defs/FlightsRecordLine"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "carrier",
+        "lines"
+      ],
+      "title": "FlightsCarrierRecord",
+      "type": "object"
+    },
+    "FlightsKind": {
+      "description": "A kind of weather in an airport's own record.",
+      "enum": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "title": "FlightsKind",
+      "type": "integer",
+      "x-enum-names": [
+        "freezing_rain",
+        "snow",
+        "thunder",
+        "fog",
+        "wind"
+      ]
+    },
+    "FlightsPerMille": {
+      "description": "Tenths of a percent.",
+      "maximum": 1000,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsRecordLine": {
+      "additionalProperties": false,
+      "description": "A record in one kind of weather.",
+      "properties": {
+        "bad": {
+          "$ref": "#/$defs/Count",
+          "description": "Of those, blocks with 10% or more of departures cancelled."
+        },
+        "bad_days": {
+          "$ref": "#/$defs/Count",
+          "description": "Of those, days with a bad block of this weather."
+        },
+        "better": {
+          "$ref": "#/$defs/Count",
+          "description": "Days the test counts on which it cancelled clearly fewer than its peers that day."
+        },
+        "blocks": {
+          "$ref": "#/$defs/Count",
+          "description": "Time blocks of this weather counted in the record: an airport's with 3+ departures, a carrier's with 2+ of its own."
+        },
+        "days": {
+          "$ref": "#/$defs/Count",
+          "description": "Days with a block of this weather and a peer in it the same day."
+        },
+        "kind": {
+          "$ref": "#/$defs/FlightsKind"
+        },
+        "others": {
+          "$ref": "#/$defs/FlightsPerMille",
+          "description": "Its peers' share in the same weather on the same days, each day's weighted by its own departures that day."
+        },
+        "share": {
+          "$ref": "#/$defs/FlightsPerMille",
+          "description": "Its departures cancelled in those blocks."
+        },
+        "verdict": {
+          "$ref": "#/$defs/FlightsVerdict"
+        },
+        "worse": {
+          "$ref": "#/$defs/Count",
+          "description": "Days the test counts (one cancel or more expected at the peers' share that day) on which it cancelled clearly more than its peers."
+        }
+      },
+      "required": [
+        "kind",
+        "blocks",
+        "bad",
+        "days",
+        "bad_days",
+        "share",
+        "others",
+        "worse",
+        "better",
+        "verdict"
+      ],
+      "title": "FlightsRecordLine",
+      "type": "object"
+    },
+    "FlightsVerdict": {
+      "description": "What a record says (the lead's ruling LR-F1). Value 1 (the retired middle verdict) is\nnever published.",
+      "enum": [
+        0,
+        2,
+        3
+      ],
+      "title": "FlightsVerdict",
+      "type": "integer",
+      "x-enum-names": [
+        "none",
+        "sooner",
+        "longer"
+      ]
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "``flights/records/<code>.json``: one airport's own record (D8).",
+  "properties": {
+    "carriers": {
+      "items": {
+        "$ref": "#/$defs/FlightsCarrierRecord"
+      },
+      "type": "array"
+    },
+    "code": {
+      "$ref": "#/$defs/FlightsAirportCode"
+    },
+    "first": {
+      "$ref": "#/$defs/LocalDate"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "last": {
+      "$ref": "#/$defs/LocalDate"
+    },
+    "lines": {
+      "items": {
+        "$ref": "#/$defs/FlightsRecordLine"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "code",
+    "first",
+    "last",
+    "lines",
+    "carriers"
+  ],
+  "title": "FlightsRecord",
+  "type": "object",
+  "x-snowlight-path": "flights/records/{id}.json"
+}

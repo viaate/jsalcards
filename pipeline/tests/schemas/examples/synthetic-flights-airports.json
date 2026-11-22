@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-21T18:20:00Z",
+  "months": [
+    "2025-10",
+    "2026-09"
+  ],
+  "airports": [
+    {
+      "code": "AAA",
+      "name": "Synthetic Field One",
+      "city": "Synthetic City",
+      "state": "MO",
+      "lat": 39.25,
+      "lon": -94.75,
+      "tz": "America/Chicago",
+      "per_day": 123.4
+    },
+    {
+      "code": "BBB",
+      "name": "Synthetic Field Two",
+      "city": "Synthetic Town",
+      "state": "CO",
+      "lat": 39.75,
+      "lon": -104.5,
+      "tz": "America/Denver",
+      "per_day": 8.5
+    }
+  ]
+}

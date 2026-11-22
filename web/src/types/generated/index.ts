@@ -7,6 +7,16 @@ export const PUBLISHED_PATHS = {
   closings: 'live/closings.json',
   covered: 'live/covered.json',
   directoryEdition: 'schools/edition.json',
+  flightsAirports: 'flights/airports.json',
+  flightsArchive: 'flights/archive/{id}.json',
+  flightsLatest: 'flights/latest.json',
+  flightsLive: 'flights/live/{id}.json',
+  flightsModel: 'flights/model.json',
+  flightsRecord: 'flights/records/{id}.json',
+  flightsReplayIndex: 'flights/replays/index.json',
+  flightsReplay: 'flights/replays/{id}.json',
+  flightsRoutes: 'flights/routes/{id}.json',
+  flightsTrackRecord: 'flights/track-record.json',
   liveDay: 'live/days/{id}.json',
   liveDays: 'live/days/index.json',
   liveSeason: 'live/season.json',
@@ -26,6 +36,16 @@ export interface PublishedDocuments {
   readonly closings: ClosingsFile;
   readonly covered: CoveredFile;
   readonly directoryEdition: DirectoryEdition;
+  readonly flightsAirports: FlightsAirports;
+  readonly flightsArchive: FlightsArchive;
+  readonly flightsLatest: FlightsLatest;
+  readonly flightsLive: FlightsLive;
+  readonly flightsModel: FlightsModel;
+  readonly flightsRecord: FlightsRecord;
+  readonly flightsReplayIndex: FlightsReplayIndex;
+  readonly flightsReplay: FlightsReplay;
+  readonly flightsRoutes: FlightsRoutes;
+  readonly flightsTrackRecord: FlightsTrackRecord;
   readonly liveDay: DayTimeline;
   readonly liveDays: DayIndex;
   readonly liveSeason: SeasonFile;
@@ -107,6 +127,307 @@ export interface DirectoryStamp {
 }
 
 /**
+ * An airport's three-letter code as people say it (MCI).
+ * @pattern ^[A-Z0-9]{3}$
+ */
+export type FlightsAirportCode = string;
+
+/** Which of one airport's chances passed the test, per target, by lead class. */
+export interface FlightsAirportGate {
+  readonly code: FlightsAirportCode;
+  /** Per target in FlightsTarget order, the lead classes that passed. */
+  readonly passed: FlightsTargetMasks;
+}
+
+/** One airport's chances and what is going on now. */
+export interface FlightsAirportLive {
+  readonly code: FlightsAirportCode;
+  /** The airport's own date when the file was made. */
+  readonly today: LocalDate;
+  readonly dep_canc: FlightsDayRows;
+  readonly dep_late: FlightsDayRows;
+  readonly arr_canc: FlightsDayRows;
+  readonly arr_late: FlightsDayRows;
+  readonly rough: FlightsDayChances;
+  /**
+   * Per day, the 00Z forecast run of the evening (or two or three evenings) before that day the
+   * day's chances come from; none: no run read covers that day.
+   */
+  readonly runs: FlightsDayRuns;
+  /** Per block target, per day: the blocks whose value is the usual rate. */
+  readonly usual: FlightsUsualMasks;
+  /** The days whose rough-day value is the usual rate. */
+  readonly rough_usual: FlightsDayMask;
+  /** Per day, the plain reasons in the forecast, strongest first. */
+  readonly why: FlightsDayWhys;
+  /**
+   * FAA programs in effect when read (empty: none in effect, as of programs_at); none: not read for
+   * this airport this pass, so nothing is known of them.
+   */
+  readonly programs: readonly FlightsProgramNow[] | null;
+  /**
+   * NWS alerts in effect when read (empty: none, as of alerts_at); none: not read for this airport
+   * this pass, so nothing is known of them.
+   */
+  readonly alerts: readonly FlightsAlert[] | null;
+  /** The airport's newest weather report; none: no report read this pass. */
+  readonly now: FlightsWeatherNow | null;
+}
+
+/** An NWS alert in effect at the airport. */
+export const FlightsAlert = {
+  winter_storm: 0,
+  blizzard: 1,
+  ice_storm: 2,
+  winter_weather: 3,
+  severe_thunderstorm: 4,
+  tornado: 5,
+  high_wind: 6,
+  dense_fog: 7,
+  hurricane: 8,
+  tropical_storm: 9,
+  extreme_cold: 10,
+} as const;
+/** An NWS alert in effect at the airport. */
+export type FlightsAlert = (typeof FlightsAlert)[keyof typeof FlightsAlert];
+
+/**
+ * One bit per block, early first (bit 0).
+ * @minimum 0
+ * @maximum 31
+ */
+export type FlightsBlockMask = number;
+
+/**
+ * @minItems 5
+ * @maxItems 5
+ */
+export type FlightsBlockRow = readonly [
+  early: FlightsChance,
+  morning: FlightsChance,
+  afternoon: FlightsChance,
+  evening: FlightsChance,
+  night: FlightsChance,
+];
+
+/**
+ * An airline's two-character code (WN).
+ * @pattern ^[A-Z0-9]{2}$
+ */
+export type FlightsCarrierCode = string;
+
+export type FlightsChance = FlightsPerMille | null;
+
+/**
+ * @minItems 3
+ * @maxItems 3
+ */
+export type FlightsDayChances = readonly [
+  today: FlightsChance,
+  tomorrow: FlightsChance,
+  after: FlightsChance,
+];
+
+/**
+ * One bit per day, today first.
+ * @minimum 0
+ * @maximum 7
+ */
+export type FlightsDayMask = number;
+
+/**
+ * @minItems 3
+ * @maxItems 3
+ */
+export type FlightsDayMasks = readonly [
+  today: FlightsBlockMask,
+  tomorrow: FlightsBlockMask,
+  after: FlightsBlockMask,
+];
+
+/**
+ * @minItems 3
+ * @maxItems 3
+ */
+export type FlightsDayRows = readonly [
+  today: FlightsBlockRow,
+  tomorrow: FlightsBlockRow,
+  after: FlightsBlockRow,
+];
+
+/**
+ * @minItems 3
+ * @maxItems 3
+ */
+export type FlightsDayRuns = readonly [
+  today: UtcInstant | null,
+  tomorrow: UtcInstant | null,
+  after: UtcInstant | null,
+];
+
+/**
+ * @minItems 3
+ * @maxItems 3
+ */
+export type FlightsDayWhys = readonly [
+  today: FlightsWhys,
+  tomorrow: FlightsWhys,
+  after: FlightsWhys,
+];
+
+/** How a past storm day was kept from the model. */
+export const FlightsHeld = {
+  test_year: 0,
+  left_out: 1,
+} as const;
+/** How a past storm day was kept from the model. */
+export type FlightsHeld = (typeof FlightsHeld)[keyof typeof FlightsHeld];
+
+/** A kind of weather in an airport's own record. */
+export const FlightsKind = {
+  freezing_rain: 1,
+  snow: 2,
+  thunder: 3,
+  fog: 4,
+  wind: 5,
+} as const;
+/** A kind of weather in an airport's own record. */
+export type FlightsKind = (typeof FlightsKind)[keyof typeof FlightsKind];
+
+/**
+ * One bit per lead class, 1 (bit 0) to 3 (bit 2).
+ * @minimum 0
+ * @maximum 7
+ */
+export type FlightsLeadMask = number;
+
+/**
+ * A live file's stamp: its UTC minute, YYYYMMDDTHHMMZ.
+ * @pattern ^\d{8}T\d{4}Z$
+ */
+export type FlightsLiveStamp = string;
+
+/**
+ * A calendar month, YYYY-MM.
+ * @pattern ^\d{4}-\d{2}$
+ */
+export type FlightsMonthLabel = string;
+
+/**
+ * Tenths of a percent.
+ * @minimum 0
+ * @maximum 1000
+ */
+export type FlightsPerMille = number;
+
+/** An FAA traffic program or status at an airport. */
+export const FlightsProgram = {
+  ground_stop: 0,
+  ground_delay: 1,
+  departure_delay: 2,
+  arrival_delay: 3,
+  closed: 4,
+  deicing: 5,
+} as const;
+/** An FAA traffic program or status at an airport. */
+export type FlightsProgram = (typeof FlightsProgram)[keyof typeof FlightsProgram];
+
+/** An FAA program at an airport when it was read. */
+export interface FlightsProgramNow {
+  readonly program: FlightsProgram;
+  /** The average or longest delay it gives, in minutes; none when not given. */
+  readonly minutes: number | null;
+  /** When it is set to end; none when not given. */
+  readonly until: UtcInstant | null;
+  /** The kind of reason the FAA gives. */
+  readonly why: FlightsProgramWhy;
+}
+
+/** The kind of reason the FAA gives for a program (its own words stay in the archive). */
+export const FlightsProgramWhy = {
+  other: 0,
+  weather: 1,
+  volume: 2,
+  equipment: 3,
+  runway: 4,
+} as const;
+/** The kind of reason the FAA gives for a program (its own words stay in the archive). */
+export type FlightsProgramWhy = (typeof FlightsProgramWhy)[keyof typeof FlightsProgramWhy];
+
+/**
+ * A past storm day: the airport and the local date (MCI-2025-01-05).
+ * @pattern ^[A-Z0-9]{3}-\d{4}-\d{2}-\d{2}$
+ */
+export type FlightsReplayId = string;
+
+/**
+ * One of the three live files the passes take in turn.
+ * @pattern ^slot-[0-2]$
+ */
+export type FlightsSlot = string;
+
+/** What a chance is of. */
+export const FlightsTarget = {
+  dep_canc: 0,
+  dep_late: 1,
+  arr_canc: 2,
+  arr_late: 3,
+  rough: 4,
+} as const;
+/** What a chance is of. */
+export type FlightsTarget = (typeof FlightsTarget)[keyof typeof FlightsTarget];
+
+/**
+ * @minItems 5
+ * @maxItems 5
+ */
+export type FlightsTargetMasks = readonly [
+  dep_canc: FlightsLeadMask,
+  dep_late: FlightsLeadMask,
+  arr_canc: FlightsLeadMask,
+  arr_late: FlightsLeadMask,
+  rough: FlightsLeadMask,
+];
+
+/**
+ * @minItems 4
+ * @maxItems 4
+ */
+export type FlightsUsualMasks = readonly [
+  dep_canc: FlightsDayMasks,
+  dep_late: FlightsDayMasks,
+  arr_canc: FlightsDayMasks,
+  arr_late: FlightsDayMasks,
+];
+
+/** The airport's latest weather report. */
+export interface FlightsWeatherNow {
+  readonly at: UtcInstant;
+  /** The record's weather kinds it shows. */
+  readonly kinds: readonly FlightsKind[];
+  /** Miles. */
+  readonly visibility: number | null;
+  /** Knots. */
+  readonly gust: number | null;
+}
+
+/** A plain reason in the forecast for a day. */
+export const FlightsWhy = {
+  snow: 0,
+  ice: 1,
+  thunder: 2,
+  wind: 3,
+  fog: 4,
+  cold: 5,
+  hubs: 6,
+  before: 7,
+} as const;
+/** A plain reason in the forecast for a day. */
+export type FlightsWhy = (typeof FlightsWhy)[keyof typeof FlightsWhy];
+
+export type FlightsWhys = readonly FlightsWhy[];
+
+/**
  * How many frames a replay has.
  * @minimum 1
  * @maximum 4032
@@ -121,11 +442,25 @@ export type FrameCount = number;
 export type FrameIndex = number;
 
 /**
+ * Degrees north of the equator (WGS 84).
+ * @minimum -90
+ * @maximum 90
+ */
+export type Latitude = number;
+
+/**
  * A calendar day in the school's own time zone: YYYY-MM-DD.
  * @format date
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 export type LocalDate = string;
+
+/**
+ * Degrees east of Greenwich (WGS 84).
+ * @minimum -180
+ * @maximum 180
+ */
+export type Longitude = number;
 
 /**
  * A local wall-clock time as minutes after midnight (630 is 10:30).
@@ -309,20 +644,6 @@ export type BBox = readonly [west: Longitude, south: Latitude, east: Longitude, 
 export type Hazard = 'winter' | 'cold' | 'flood' | 'tropical' | 'heat' | 'wind' | 'severe';
 
 /**
- * Degrees north of the equator (WGS 84).
- * @minimum -90
- * @maximum 90
- */
-export type Latitude = number;
-
-/**
- * Degrees east of Greenwich (WGS 84).
- * @minimum -180
- * @maximum 180
- */
-export type Longitude = number;
-
-/**
  * An exterior ring (counter-clockwise), then its holes.
  * @minItems 1
  */
@@ -466,6 +787,522 @@ export interface DirectoryEdition {
   readonly schools: Count;
   readonly districts: Count;
   readonly content_sha256: ContentDigest;
+}
+
+// flights-airports ---------------------------------------------------------------
+
+/** ``flights/airports.json``. */
+export interface FlightsAirports {
+  readonly schema_version: SchemaVersion;
+  readonly generated_at: UtcInstant;
+  /** The first and last posted month the departures per day count. */
+  readonly months: FlightsMonthSpan;
+  readonly airports: readonly FlightsAirportEntry[];
+}
+
+/** One airport on the map. */
+export interface FlightsAirportEntry {
+  readonly code: FlightsAirportCode;
+  readonly name: FlightsPlaceName;
+  readonly city: FlightsPlaceName;
+  readonly state: FlightsStateCode;
+  readonly lat: Latitude;
+  readonly lon: Longitude;
+  readonly tz: FlightsZoneName;
+  /** Scheduled departures per day over the last 12 posted months. */
+  readonly per_day: number;
+}
+
+/**
+ * @minItems 2
+ * @maxItems 2
+ */
+export type FlightsMonthSpan = readonly [first: FlightsMonthLabel, last: FlightsMonthLabel];
+
+/**
+ * An airport's or city's name.
+ * @minLength 1
+ * @maxLength 120
+ */
+export type FlightsPlaceName = string;
+
+/**
+ * Two-letter state or territory code.
+ * @pattern ^[A-Z]{2}$
+ */
+export type FlightsStateCode = string;
+
+/**
+ * An IANA time zone (America/Chicago).
+ * @pattern ^[A-Za-z_]+/[A-Za-z_/+-]+$
+ */
+export type FlightsZoneName = string;
+
+// flights-archive ----------------------------------------------------------------
+
+/** ``flights/archive/<NNN>.json``: one day's snapshot (D9), kept in a ring of slots. */
+export interface FlightsArchive {
+  readonly schema_version: SchemaVersion;
+  /** The ring slot it is kept in: the day's ordinal modulo the ring's days. */
+  readonly slot: string;
+  /** The UTC date of the 00Z run the snapshot holds. */
+  readonly day: LocalDate;
+  /** The live file published. */
+  readonly live: FlightsLive;
+  /** The usual rates behind it, rounded as the published chances are. */
+  readonly usual_tomorrow: readonly FlightsUsualTomorrow[];
+  readonly programs: readonly FlightsArchiveProgram[];
+  readonly reports: readonly FlightsArchiveReport[];
+  readonly forecasts: readonly FlightsArchiveForecast[];
+}
+
+/** An airport's newest TAF as read. */
+export interface FlightsArchiveForecast {
+  readonly code: FlightsAirportCode;
+  readonly text: FlightsForecastText;
+}
+
+/** An FAA program as read. */
+export interface FlightsArchiveProgram {
+  readonly code: FlightsAirportCode;
+  readonly program: FlightsProgram;
+  readonly minutes: number | null;
+  readonly why: FlightsProgramText;
+}
+
+/** An airport's latest weather report as read. */
+export interface FlightsArchiveReport {
+  readonly code: FlightsAirportCode;
+  readonly report: FlightsWeatherNow;
+}
+
+/**
+ * An airport forecast (TAF) as issued, in its coded form.
+ * @maxLength 1200
+ */
+export type FlightsForecastText = string;
+
+/**
+ * The FAA's reason as it wrote it (screened).
+ * @maxLength 80
+ */
+export type FlightsProgramText = string;
+
+/** An airport's usual rates for the day after the snapshot's ``today``, as published. */
+export interface FlightsUsualTomorrow {
+  readonly code: FlightsAirportCode;
+  readonly dep_canc: FlightsBlockRow;
+  readonly rough: FlightsPerMille;
+}
+
+// flights-latest -----------------------------------------------------------------
+
+/** ``flights/latest.json``: the newest live file. */
+export interface FlightsLatest {
+  readonly schema_version: SchemaVersion;
+  readonly generated_at: UtcInstant;
+  /** The newest live file: flights/live/<slot>.json. */
+  readonly slot: FlightsSlot;
+  /**
+   * That file's stamp. The three slot files are reused in turn, so a reader takes a slot file as
+   * current only when its own stamp is this one; any other stamp is an older pass (a cached copy)
+   * and is stale.
+   */
+  readonly stamp: FlightsLiveStamp;
+}
+
+// flights-live -------------------------------------------------------------------
+
+/**
+ * ``flights/live/<slot>.json``: the passes take the three slots in turn, so each file is
+ * rewritten an hour after it was last written (past any cache) and the host keeps three.
+ */
+export interface FlightsLive {
+  readonly schema_version: SchemaVersion;
+  readonly generated_at: UtcInstant;
+  readonly slot: FlightsSlot;
+  readonly stamp: FlightsLiveStamp;
+  /**
+   * The newest forecast run read; none: no forecast was read. Each airport day names its own run
+   * (runs).
+   */
+  readonly run: UtcInstant | null;
+  /** When the FAA programs were read; none: they could not be read. */
+  readonly programs_at: UtcInstant | null;
+  /** When the NWS alerts were read; none: they could not be read. */
+  readonly alerts_at: UtcInstant | null;
+  /** When the weather reports were read; none: they could not be read. */
+  readonly weather_at: UtcInstant | null;
+  /**
+   * The newest hour of the observed reports read (the hours before the runs); none: they could not
+   * be read, and every chance is the usual rate. An airport whose own reports end more than 3 hours
+   * before the newest run shows the usual rate.
+   */
+  readonly observed_at: UtcInstant | null;
+  readonly airports: readonly FlightsAirportLive[];
+}
+
+// flights-model ------------------------------------------------------------------
+
+/**
+ * ``flights/model.json``: the fitted chances the live job uses (the committed model file,
+ * gzipped, has the same content), refit and published by the monthly job.
+ */
+export interface FlightsModel {
+  readonly schema_version: SchemaVersion;
+  /** The regressions' inputs, in order. */
+  readonly inputs: readonly FlightsInput[];
+  readonly test_first: LocalDate;
+  readonly test_last: LocalDate;
+  readonly fits: readonly FlightsFit[];
+  readonly gates: readonly FlightsAirportGate[];
+  readonly usual: readonly FlightsAirportUsual[];
+  /** For an airport with no history. */
+  readonly national: FlightsUsualRates;
+}
+
+/** One airport's usual rates. */
+export interface FlightsAirportUsual {
+  readonly code: FlightsAirportCode;
+  readonly rates: FlightsUsualRates;
+}
+
+export type FlightsBlockMonths = readonly FlightsMonthShares[];
+
+/**
+ * @minimum -1000000
+ * @maximum 1000000
+ */
+export type FlightsCoefficient = number;
+
+/**
+ * One regression: ``chance = 1 / (1 + exp(-(intercept + sum(coef * (x - mean) / scale))))``
+ * over the inputs in :class:`FlightsInput` order.
+ */
+export interface FlightsFit {
+  readonly target: FlightsTarget;
+  readonly lead: number;
+  readonly intercept: FlightsCoefficient;
+  readonly coef: readonly FlightsCoefficient[];
+  readonly mean: readonly FlightsCoefficient[];
+  readonly scale: readonly number[];
+  /**
+   * Whether its chances passed on the days after an observed storm; where not, those days show the
+   * usual rate.
+   */
+  readonly after_storm: boolean;
+}
+
+/**
+ * One input of the chances' regressions, in the order of their coefficients
+ * (``snowlight.flights.model.FEATURES``).
+ */
+export const FlightsInput = {
+  base: 0,
+  snow: 1,
+  snow_before: 2,
+  ice: 3,
+  p_snow: 4,
+  p_zr: 5,
+  thunder: 6,
+  gust: 7,
+  wind: 8,
+  low_vis: 9,
+  low_cig: 10,
+  cold: 11,
+  south_snow: 12,
+  hub_snow: 13,
+  hub_storm: 14,
+  day_snow: 15,
+  day_ice: 16,
+  day_storm: 17,
+  pre_snow: 18,
+  pre_ice: 19,
+  obs_snow: 20,
+  obs_snow_old: 21,
+  obs_frz: 22,
+} as const;
+/**
+ * One input of the chances' regressions, in the order of their coefficients
+ * (``snowlight.flights.model.FEATURES``).
+ */
+export type FlightsInput = (typeof FlightsInput)[keyof typeof FlightsInput];
+
+export type FlightsMonthShares = readonly FlightsShare[];
+
+/**
+ * A share, 0 to 1.
+ * @minimum 0
+ * @maximum 1
+ */
+export type FlightsShare = number;
+
+/**
+ * Usual rates: per block and month the shares cancelled and late, and per month the share
+ * of rough days.
+ */
+export interface FlightsUsualRates {
+  readonly dep_canc: FlightsBlockMonths;
+  readonly dep_late: FlightsBlockMonths;
+  readonly arr_canc: FlightsBlockMonths;
+  readonly arr_late: FlightsBlockMonths;
+  readonly rough: FlightsMonthShares;
+}
+
+// flights-record -----------------------------------------------------------------
+
+/** ``flights/records/<code>.json``: one airport's own record (D8). */
+export interface FlightsRecord {
+  readonly schema_version: SchemaVersion;
+  readonly generated_at: UtcInstant;
+  readonly code: FlightsAirportCode;
+  readonly first: LocalDate;
+  readonly last: LocalDate;
+  readonly lines: readonly FlightsRecordLine[];
+  readonly carriers: readonly FlightsCarrierRecord[];
+}
+
+/** One airline's record at the airport, against the others in the same blocks. */
+export interface FlightsCarrierRecord {
+  readonly carrier: FlightsCarrierCode;
+  readonly lines: readonly FlightsRecordLine[];
+}
+
+/** A record in one kind of weather. */
+export interface FlightsRecordLine {
+  readonly kind: FlightsKind;
+  /**
+   * Time blocks of this weather counted in the record: an airport's with 3+ departures, a carrier's
+   * with 2+ of its own.
+   */
+  readonly blocks: Count;
+  /** Of those, blocks with 10% or more of departures cancelled. */
+  readonly bad: Count;
+  /** Days with a block of this weather and a peer in it the same day. */
+  readonly days: Count;
+  /** Of those, days with a bad block of this weather. */
+  readonly bad_days: Count;
+  /** Its departures cancelled in those blocks. */
+  readonly share: FlightsPerMille;
+  /**
+   * Its peers' share in the same weather on the same days, each day's weighted by its own
+   * departures that day.
+   */
+  readonly others: FlightsPerMille;
+  /**
+   * Days the test counts (one cancel or more expected at the peers' share that day) on which it
+   * cancelled clearly more than its peers.
+   */
+  readonly worse: Count;
+  /** Days the test counts on which it cancelled clearly fewer than its peers that day. */
+  readonly better: Count;
+  readonly verdict: FlightsVerdict;
+}
+
+/**
+ * What a record says (the lead's ruling LR-F1). Value 1 (the retired middle verdict) is
+ * never published.
+ */
+export const FlightsVerdict = {
+  none: 0,
+  sooner: 2,
+  longer: 3,
+} as const;
+/**
+ * What a record says (the lead's ruling LR-F1). Value 1 (the retired middle verdict) is
+ * never published.
+ */
+export type FlightsVerdict = (typeof FlightsVerdict)[keyof typeof FlightsVerdict];
+
+// flights-replay-index -----------------------------------------------------------
+
+/** ``flights/replays/index.json``. */
+export interface FlightsReplayIndex {
+  readonly schema_version: SchemaVersion;
+  readonly generated_at: UtcInstant;
+  readonly replays: readonly FlightsReplaySummary[];
+}
+
+/** A past storm day in the index. */
+export interface FlightsReplaySummary {
+  readonly id: FlightsReplayId;
+  readonly code: FlightsAirportCode;
+  readonly day: LocalDate;
+  /** How the day was kept apart from the model. */
+  readonly apart: FlightsHeld;
+  /** The rough-day chance the evening before. */
+  readonly said: FlightsPerMille;
+  /** The day's departures cancelled. */
+  readonly cancelled: FlightsPerMille;
+}
+
+// flights-replay -----------------------------------------------------------------
+
+/** ``flights/replays/<id>.json``: one past storm day (D14). */
+export interface FlightsReplay {
+  readonly schema_version: SchemaVersion;
+  readonly generated_at: UtcInstant;
+  readonly id: FlightsReplayId;
+  readonly code: FlightsAirportCode;
+  readonly day: LocalDate;
+  /** How the day was kept apart from the model. */
+  readonly apart: FlightsHeld;
+  /** The forecast run the evening before. */
+  readonly run: UtcInstant;
+  /** The departure cancel chance said per block. */
+  readonly said: FlightsBlockRow;
+  readonly said_usual: FlightsBlockMask;
+  readonly departures: FlightsCounts;
+  readonly cancelled: FlightsCounts;
+  readonly rough_said: FlightsPerMille;
+  readonly rough_usual: boolean;
+  readonly why: readonly FlightsWhy[];
+}
+
+/**
+ * @minItems 5
+ * @maxItems 5
+ */
+export type FlightsCounts = readonly [
+  early: Count,
+  morning: Count,
+  afternoon: Count,
+  evening: Count,
+  night: Count,
+];
+
+// flights-routes -----------------------------------------------------------------
+
+/** ``flights/routes/<code>.json``: the usual flights from one airport (D11). */
+export interface FlightsRoutes {
+  readonly schema_version: SchemaVersion;
+  readonly generated_at: UtcInstant;
+  readonly code: FlightsAirportCode;
+  readonly months: readonly FlightsRouteMonth[];
+}
+
+/** The usual flights of one posted month. */
+export interface FlightsRouteMonth {
+  readonly month: FlightsMonthLabel;
+  readonly flights: readonly FlightsUsualFlight[];
+}
+
+/** A flight that flew the route in a posted month. */
+export interface FlightsUsualFlight {
+  readonly carrier: FlightsCarrierCode;
+  readonly number: number;
+  readonly to_airport: FlightsAirportCode;
+  /** Scheduled departure, the departure airport's clock. */
+  readonly leaves: MinuteOfDay;
+  /** Scheduled arrival, the arrival airport's clock. */
+  readonly lands: MinuteOfDay;
+  readonly weekdays: FlightsWeekdayMask;
+  /** Days it flew that month. */
+  readonly days: Count;
+  readonly cancelled: Count;
+  /** Days it left 45+ minutes late. */
+  readonly late: Count;
+}
+
+/**
+ * One bit per weekday, Monday (bit 0) to Sunday.
+ * @minimum 1
+ * @maximum 127
+ */
+export type FlightsWeekdayMask = number;
+
+// flights-track-record -----------------------------------------------------------
+
+/** ``flights/track-record.json``: how the flight chances did (D9). */
+export interface FlightsTrackRecord {
+  readonly schema_version: SchemaVersion;
+  readonly generated_at: UtcInstant;
+  readonly test_first: LocalDate;
+  readonly test_last: LocalDate;
+  /**
+   * The first day the usual rates average over (the test year's, and the live files' usual rates,
+   * which come from the same model).
+   */
+  readonly usual_first: LocalDate;
+  /**
+   * The last day the usual rates average over, before the test year: they are a dated average,
+   * never a rate of the test year or of today.
+   */
+  readonly usual_last: LocalDate;
+  readonly tests: readonly FlightsTargetTest[];
+  readonly airports: readonly FlightsAirportGate[];
+  readonly months: readonly FlightsMonthScore[];
+}
+
+/** One bin of the reliability table. */
+export interface FlightsBin {
+  readonly low: FlightsPerMille;
+  readonly high: FlightsPerMille;
+  readonly units: Count;
+  readonly said: FlightsPerMille;
+  readonly seen: FlightsPerMille;
+}
+
+/** How the published chances did in one month, scored once its flights were posted. */
+export interface FlightsMonthScore {
+  readonly month: FlightsMonthLabel;
+  readonly target: FlightsTarget;
+  readonly units: Count;
+  readonly brier: FlightsScore;
+  readonly brier_usual: FlightsScore;
+  readonly rough_days: Count;
+  /** Rough days given 30% or more the evening before. */
+  readonly caught: Count;
+  /** The month's days. */
+  readonly days_in_month: number;
+  /**
+   * The month's days whose evening-before chances were scored: a day whose snapshot was not kept is
+   * left out, so fewer than days_in_month says the month was scored in part.
+   */
+  readonly days_scored: number;
+}
+
+/**
+ * A Brier score.
+ * @minimum 0
+ * @maximum 1
+ */
+export type FlightsScore = number;
+
+/**
+ * 1 minus the Brier score over the usual rate's.
+ * @minimum -100
+ * @maximum 1
+ */
+export type FlightsSkill = number;
+
+/** The held-out test of one target and lead, pooled over airports. */
+export interface FlightsTargetTest {
+  readonly target: FlightsTarget;
+  readonly lead: number;
+  readonly units: Count;
+  readonly events: Count;
+  readonly expected: Count;
+  readonly brier: FlightsScore;
+  readonly brier_usual: FlightsScore;
+  /** The model's chances at every airport tested. */
+  readonly skill: FlightsSkill;
+  /** What the files show: the chance where it passed, else the usual rate. */
+  readonly skill_published: FlightsSkill;
+  /**
+   * Out of selection: airports chosen on the even weeks of the test year scored on the odd ones,
+   * and the reverse.
+   */
+  readonly skill_confirmed: FlightsSkill;
+  /** Airports where this chance passed the test. */
+  readonly published: Count;
+  /** Airports tested. */
+  readonly tested: Count;
+  /**
+   * Reliability of what the files would have shown in the test year: the model's chance where it
+   * passed, the usual rate elsewhere.
+   */
+  readonly bins: readonly FlightsBin[];
 }
 
 // live-day -----------------------------------------------------------------------

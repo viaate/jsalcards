@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-21T18:20:00Z",
+  "test_first": "2025-10-01",
+  "test_last": "2026-09-30",
+  "usual_first": "2022-10-01",
+  "usual_last": "2025-09-30",
+  "tests": [
+    {
+      "target": 0,
+      "lead": 1,
+      "units": 6000000,
+      "events": 90000,
+      "expected": 88000,
+      "brier": 0.0131,
+      "brier_usual": 0.0145,
+      "skill": 0.097,
+      "published": 120,
+      "tested": 340,
+      "bins": [
+        {
+          "low": 0,
+          "high": 10,
+          "units": 4000000,
+          "said": 4,
+          "seen": 4
+        },
+        {
+          "low": 200,
+          "high": 350,
+          "units": 20000,
+          "said": 260,
+          "seen": 240
+        }
+      ],
+      "skill_published": 0.097,
+      "skill_confirmed": 0.097
+    }
+  ],
+  "airports": [
+    {
+      "code": "AAA",
+      "passed": [
+        1,
+        3,
+        1,
+        0,
+        1
+      ]
+    },
+    {
+      "code": "BBB",
+      "passed": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "months": [
+    {
+      "month": "2026-10",
+      "target": 0,
+      "units": 500000,
+      "brier": 0.011,
+      "brier_usual": 0.012,
+      "rough_days": 14,
+      "caught": 9,
+      "days_in_month": 31,
+      "days_scored": 29
+    }
+  ]
+}

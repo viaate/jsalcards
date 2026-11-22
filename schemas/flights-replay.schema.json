@@ -1,0 +1,224 @@
+{
+  "$comment": "Generated from pipeline/snowlight/schemas by `uv run python -m snowlight.schemas`. Do not edit.",
+  "$defs": {
+    "Count": {
+      "description": "A whole number of things.",
+      "maximum": 4294967294,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsAirportCode": {
+      "description": "An airport's three-letter code as people say it (MCI).",
+      "pattern": "^[A-Z0-9]{3}$",
+      "type": "string"
+    },
+    "FlightsBlockMask": {
+      "description": "One bit per block, early first (bit 0).",
+      "maximum": 31,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsBlockRow": {
+      "maxItems": 5,
+      "minItems": 5,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "early"
+        },
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "morning"
+        },
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "afternoon"
+        },
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "evening"
+        },
+        {
+          "$ref": "#/$defs/FlightsChance",
+          "title": "night"
+        }
+      ],
+      "type": "array"
+    },
+    "FlightsChance": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FlightsPerMille"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "FlightsCounts": {
+      "maxItems": 5,
+      "minItems": 5,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/Count",
+          "title": "early"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "morning"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "afternoon"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "evening"
+        },
+        {
+          "$ref": "#/$defs/Count",
+          "title": "night"
+        }
+      ],
+      "type": "array"
+    },
+    "FlightsHeld": {
+      "description": "How a past storm day was kept from the model.",
+      "enum": [
+        0,
+        1
+      ],
+      "title": "FlightsHeld",
+      "type": "integer",
+      "x-enum-names": [
+        "test_year",
+        "left_out"
+      ]
+    },
+    "FlightsPerMille": {
+      "description": "Tenths of a percent.",
+      "maximum": 1000,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "FlightsReplayId": {
+      "description": "A past storm day: the airport and the local date (MCI-2025-01-05).",
+      "pattern": "^[A-Z0-9]{3}-\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "FlightsWhy": {
+      "description": "A plain reason in the forecast for a day.",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "title": "FlightsWhy",
+      "type": "integer",
+      "x-enum-names": [
+        "snow",
+        "ice",
+        "thunder",
+        "wind",
+        "fog",
+        "cold",
+        "hubs",
+        "before"
+      ]
+    },
+    "LocalDate": {
+      "description": "A calendar day in the school's own time zone: YYYY-MM-DD.",
+      "format": "date",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "type": "string"
+    },
+    "SchemaVersion": {
+      "const": 1,
+      "description": "The file format's version. A reader refuses a file with any other.",
+      "type": "integer"
+    },
+    "UtcInstant": {
+      "description": "A moment in UTC, whole seconds: YYYY-MM-DDTHH:MM:SSZ.",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "``flights/replays/<id>.json``: one past storm day (D14).",
+  "properties": {
+    "apart": {
+      "$ref": "#/$defs/FlightsHeld",
+      "description": "How the day was kept apart from the model."
+    },
+    "cancelled": {
+      "$ref": "#/$defs/FlightsCounts"
+    },
+    "code": {
+      "$ref": "#/$defs/FlightsAirportCode"
+    },
+    "day": {
+      "$ref": "#/$defs/LocalDate"
+    },
+    "departures": {
+      "$ref": "#/$defs/FlightsCounts"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/UtcInstant"
+    },
+    "id": {
+      "$ref": "#/$defs/FlightsReplayId"
+    },
+    "rough_said": {
+      "$ref": "#/$defs/FlightsPerMille"
+    },
+    "rough_usual": {
+      "type": "boolean"
+    },
+    "run": {
+      "$ref": "#/$defs/UtcInstant",
+      "description": "The forecast run the evening before."
+    },
+    "said": {
+      "$ref": "#/$defs/FlightsBlockRow",
+      "description": "The departure cancel chance said per block."
+    },
+    "said_usual": {
+      "$ref": "#/$defs/FlightsBlockMask"
+    },
+    "schema_version": {
+      "$ref": "#/$defs/SchemaVersion"
+    },
+    "why": {
+      "items": {
+        "$ref": "#/$defs/FlightsWhy"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "id",
+    "code",
+    "day",
+    "apart",
+    "run",
+    "said",
+    "said_usual",
+    "departures",
+    "cancelled",
+    "rough_said",
+    "rough_usual",
+    "why"
+  ],
+  "title": "FlightsReplay",
+  "type": "object",
+  "x-snowlight-path": "flights/replays/{id}.json"
+}
