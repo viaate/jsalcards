@@ -8,6 +8,7 @@ import type {
   MapTouchEvent,
   TransformConstrainFunction,
 } from 'maplibre-gl';
+import { hideWhileMarked, otherModeMarked } from '../other-mode';
 import { DATA_FILES } from 'virtual:snowlight/data-files';
 
 import { mapLocale } from '../../copy';
@@ -281,6 +282,28 @@ const FALLBACK_SIZE: Size = { width: 400, height: 300 };
  * school tiles, which come over the network.
  */
 const HELD_IN_FLIGHT = [BASEMAP_IDS.openFreeMapSource, BASEMAP_IDS.schoolsSource] as const;
+
+/**
+ * A school layer goes on hidden while another mode than Schools shows (the root's data-mode,
+ * which the page's head sets before the first paint for a link to one): no school draws under
+ * that mode's first frames before its code has come in to hide them. It shows again as the mark
+ * comes off by any path (map/other-mode.ts), the host's Schools or no host at all. Spelled here
+ * so Schools' code never pulls the modes' in.
+ */
+const SCHOOL_MARKS: ReadonlySet<string> = new Set([
+  BASEMAP_IDS.schoolDots,
+  BASEMAP_IDS.schoolLight,
+  BASEMAP_IDS.schoolSelected,
+  BASEMAP_IDS.schoolNames,
+  BASEMAP_IDS.schoolSpace,
+]);
+
+function hiddenInOtherMode(layer: LayerSpecification): LayerSpecification {
+  if (!otherModeMarked()) return layer;
+  const school =
+    SCHOOL_MARKS.has(layer.id) || ('source' in layer && layer.source === BASEMAP_IDS.schoolsSource);
+  return school ? { ...layer, layout: { ...layer.layout, visibility: 'none' } } : layer;
+}
 
 /**
  * How long past its own duration a glide may hold them, in milliseconds,
@@ -684,7 +707,9 @@ export async function createBasemap({
     for (let layer = pendingLayers[0]; layer !== undefined; layer = pendingLayers[0]) {
       const at = staged.order.indexOf(layer.id);
       const before = staged.order.slice(at + 1).find((id) => map.getLayer(id) !== undefined);
-      map.style.addLayer(layer, before, NOT_CHECKED);
+      const added = hiddenInOtherMode(layer);
+      map.style.addLayer(added, before, NOT_CHECKED);
+      if (added !== layer) hideWhileMarked(map, layer.id);
       pendingLayers.shift();
       if (nowLeft > 0) nowLeft -= 1;
       const viewLayersOn = nowLeft === 0 && pendingLayers.length === staged.later.length;
@@ -781,9 +806,11 @@ export async function createBasemap({
     if (pendingLayers.length === 0) map.off('zoom', onZoomAllLayers);
   };
   map.on('zoom', onZoomAllLayers);
-  // No label runs under the page's controls, or under the attribution button.
+  // No label runs under the page's controls, another mode's own among them (.mode-own,
+  // src/modes/), or under the attribution button.
   const clearance = keepLabelsClear(map, () => [
     ...(controls?.() ?? []),
+    ...document.querySelectorAll('.mode-own'),
     ...container.querySelectorAll('.maplibregl-ctrl'),
   ]);
   // End-to-end tests read what the map drew; only a browser under automation gets the handle.

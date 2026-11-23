@@ -1,0 +1,462 @@
+/*
+ * Flights mode's parts, in the page's own tokens and the panels' type scale (PanelShell.svelte
+ * sets --type-*, --section, --row and --gutter): siblings of Schools' panels, never a new look
+ * (flights spec D1, D21). Loaded with the mode.
+ */
+
+.fl-block {
+  margin: var(--section, 20px) 0 0;
+  padding-top: var(--section, 20px);
+  border-top: 1px solid var(--border-1);
+}
+
+.fl-heading {
+  margin: 0 0 var(--row, 10px);
+  font: var(--type-strong);
+  color: var(--text-1);
+}
+
+.fl-kind {
+  margin: 0 0 4px;
+  font: var(--type-small);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.fl-name {
+  margin: 0;
+  font: var(--type-title);
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+  text-wrap: balance;
+}
+
+.fl-place,
+.fl-note,
+.fl-small {
+  margin: 0;
+  font: var(--type-small);
+  color: var(--text-2);
+  text-wrap: pretty;
+}
+
+.fl-text {
+  margin: 0;
+  font: var(--type-body);
+  color: var(--text-1);
+  text-wrap: pretty;
+}
+
+/*
+ * The answer first, as Schools' chance (ChanceSection.svelte .hero, flights spec LR-F9): under
+ * one hairline, the big digits with the raised %, the line that says what they are, one plain
+ * reason, then gray lines. The same declarations as Schools', in the same tokens.
+ */
+.fl-hero {
+  margin-top: var(--section, 20px);
+  padding-top: var(--section, 20px);
+  border-top: 1px solid var(--border-1);
+}
+
+.fl-hero-number {
+  display: flex;
+  align-items: flex-start;
+  /* The big digits' own side bearing: their ink starts at the panel's left edge. */
+  margin: 0 0 8px -3px;
+  font: var(--type-number);
+  letter-spacing: -0.04em;
+  color: var(--text-1);
+}
+
+.fl-hero-pct {
+  margin: 6px 0 0 2px;
+  font: var(--type-title);
+  letter-spacing: 0;
+  color: var(--text-2);
+}
+
+.fl-hero-meaning {
+  margin: 0;
+  font: var(--type-title);
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+}
+
+/*
+ * Every fact under an answer as one block of rows (LR-F18.2), as Schools' detail rows
+ * (DetailPanel.svelte .rows): one size, one weight, one line height, the label on the left in
+ * gray and its value on the right, the same room between each.
+ */
+.fl-facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row, 10px);
+  margin-bottom: 0;
+}
+
+.fl-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: var(--gutter, 16px);
+  font: var(--type-body);
+  text-wrap: pretty;
+}
+
+.fl-fact dt {
+  flex: 0 1 auto;
+  min-width: 0;
+  color: var(--text-2);
+}
+
+.fl-fact dd {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: var(--text-1);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fl-hero.is-old .fl-hero-meaning {
+  color: var(--text-2);
+}
+
+[data-level='low'] {
+  --fl-ink: var(--text-2);
+}
+
+[data-level='delay'] {
+  --fl-ink: var(--status-delayed);
+}
+
+[data-level='cancel'] {
+  --fl-ink: var(--status-closed);
+}
+
+/* A status pill in its level's color (D21 pattern 1). */
+.fl-pill {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 2px 8px;
+  font: var(--type-small);
+  font-weight: 500;
+  color: var(--text-1);
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--fl-ink, var(--text-2)) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fl-ink, var(--text-2)) 50%, transparent);
+  border-radius: 999px;
+}
+
+.fl-pill::before {
+  width: 6px;
+  height: 6px;
+  content: '';
+  background: var(--fl-ink, var(--text-2));
+  border-radius: 50%;
+}
+
+/* Chip rows for a choice (the day). */
+.fl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: var(--row, 10px) 0 0;
+}
+
+.fl-chip {
+  min-height: 32px;
+  padding: 0 12px;
+  font: var(--type-small);
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: 16px;
+}
+
+.fl-chip[aria-pressed='true'] {
+  color: var(--text-1);
+  background: var(--border-2);
+}
+
+.fl-chip:focus-visible,
+.fl-link:focus-visible,
+.fl-cell:focus-visible,
+.fl-row-button:focus-visible {
+  outline: 1px solid var(--text-2);
+  outline-offset: 2px;
+}
+
+/* The day by time of day: one row a block. */
+.fl-blocks {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: 14px;
+  row-gap: 8px;
+  align-items: center;
+  margin: var(--row, 10px) 0 0;
+  font: var(--type-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.fl-blocks .fl-col {
+  color: var(--text-3);
+  text-align: right;
+}
+
+.fl-blocks .fl-when {
+  display: flex;
+  flex-direction: column;
+  color: var(--text-1);
+}
+
+.fl-blocks .fl-when span + span {
+  color: var(--text-3);
+}
+
+.fl-value {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+.fl-value.is-none {
+  color: var(--text-3);
+}
+
+.fl-value .fl-bar {
+  width: 32px;
+  height: 4px;
+  overflow: hidden;
+  background: var(--border-1);
+  border-radius: 2px;
+}
+
+.fl-value .fl-bar span {
+  display: block;
+  height: 100%;
+  background: var(--fl-ink, var(--text-2));
+  border-radius: 2px;
+}
+
+.fl-usual {
+  font: var(--type-small);
+  color: var(--text-3);
+}
+
+/* Good to know: one small card a question (D21, notes.md ref-09). */
+.fl-cards {
+  display: grid;
+  gap: 8px;
+  margin: var(--row, 10px) 0 0;
+}
+
+.fl-card {
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+}
+
+.fl-card .fl-card-title {
+  margin: 0 0 2px;
+  font: var(--type-small);
+  color: var(--text-2);
+}
+
+.fl-link {
+  font: var(--type-small);
+  color: var(--text-1);
+  text-decoration: underline;
+  text-decoration-color: var(--border-2);
+  text-underline-offset: 3px;
+}
+
+/* The flight card (D21 pattern 1): both codes big, times large, a thin route line between. */
+.fl-ends {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: center;
+  margin: var(--row, 10px) 0 0;
+}
+
+.fl-end:last-child {
+  text-align: right;
+}
+
+.fl-code {
+  margin: 0;
+  font: var(--type-title);
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+}
+
+.fl-time {
+  margin: 4px 0 0;
+  font: var(--type-strong);
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.fl-line {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  width: 72px;
+  color: var(--text-3);
+}
+
+.fl-line::before,
+.fl-line::after {
+  flex: 1;
+  height: 1px;
+  content: '';
+  background: var(--border-2);
+}
+
+.fl-line svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  transform: rotate(90deg);
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Best time to fly: three days by five blocks, each cell in its level's color. */
+.fl-grid {
+  display: grid;
+  grid-template-columns: minmax(64px, auto) repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  margin: var(--row, 10px) 0 0;
+  font: var(--type-small);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The grid's five columns are about 52 px wide on a 375 px phone: "Afternoon" and a cell's
+ * "No forecast" fit only at 11 px, the size the account tags use (ui/account/UserTag.svelte).
+ */
+.fl-grid .fl-col,
+.fl-cell.is-none {
+  font-size: 11px;
+  line-height: 14px;
+  text-align: center;
+}
+
+.fl-grid .fl-col {
+  color: var(--text-3);
+}
+
+.fl-grid .fl-day {
+  align-self: center;
+  color: var(--text-2);
+}
+
+.fl-cell {
+  min-height: 40px;
+  padding: 0;
+  font: inherit;
+  color: var(--text-1);
+  cursor: pointer;
+  background: color-mix(in srgb, var(--fl-ink, var(--text-3)) 18%, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--fl-ink, var(--text-3)) 45%, var(--border-1));
+  border-radius: 8px;
+}
+
+.fl-cell.is-usual {
+  background: transparent;
+}
+
+.fl-cell.is-none {
+  display: grid;
+  place-items: center;
+  padding: 0 2px;
+  color: var(--text-3);
+  cursor: default;
+  background: transparent;
+  border-style: dashed;
+}
+
+/* An old file: every value in gray, as the airport panel's (AirportPanel .is-old). */
+.fl-grid.is-old .fl-cell,
+.fl-pill.is-old {
+  color: var(--text-3);
+}
+
+.fl-pill.is-old::before {
+  background: var(--text-3);
+}
+
+.fl-cell[aria-pressed='true'] {
+  outline: 2px solid var(--text-1);
+  outline-offset: 1px;
+}
+
+/* Rows of flights (the usual flights of a block). */
+.fl-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--row, 10px) 0 0;
+}
+
+.fl-row-button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 8px;
+  font: var(--type-small);
+  color: var(--text-1);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fl-row-button:hover {
+  background: var(--surface-2);
+}
+
+.fl-row-button span + span {
+  color: var(--text-2);
+}
+
+/* A page of its own in the panel (past storms, the record). */
+.fl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--row, 10px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fl-cell,
+  .fl-chip {
+    transition:
+      background-color 150ms ease-out,
+      border-color 150ms ease-out;
+  }
+}
+
+/* Open, its results list goes over the panels and the controls, as Schools' does. */
+.bar:has(.fl-results) {
+  z-index: 3;
+}

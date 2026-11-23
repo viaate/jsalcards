@@ -150,6 +150,10 @@ jobs:
       # A returning visitor who kept Snowball: its own style sheet, which the page waits for on a
       # first load, and its face. The same gates: 90 or more, mobile FCP under 1.5 s, CLS 0.
       - run: npm run perf -- --theme=snowball
+      # The site opened in Flights mode (/?mode=flights) with a made-up storm live file in its
+      # data folder (perf/flights-fixture.mjs, LR-F13): the same gates, so the second mode never
+      # costs the first view (flights spec FL-2).
+      - run: npm run perf -- --mode=flights
       # The waitlist build (tools/waitlist.ts) in both its looks: phone Performance 95 or more,
       # CLS 0, no script file and nothing asked of another site before a signup.
       - run: npm run perf:waitlist

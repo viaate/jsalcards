@@ -30,6 +30,7 @@
  * who it is come from the one directory, so no speck shows that a tap could
  * not open, or that would open another school.
  */
+import { hideWhileMarked } from './other-mode';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 
 import type { LitSchools } from '../data/closings';
@@ -325,8 +326,12 @@ export function mountGlow(map: MapLibreMap, options: GlowOptions = {}): Glow {
       shownLook.mode === 'flat' ? BASEMAP_IDS.glowSlotFlat : BASEMAP_IDS.glowSlot,
     );
     const before = slot < 0 ? undefined : order[slot + 1];
-    if (map.getLayer(GLOW_LAYER_ID) === undefined) map.addLayer(layer, before);
-    else if (before !== GLOW_LAYER_ID) map.moveLayer(GLOW_LAYER_ID, before);
+    if (map.getLayer(GLOW_LAYER_ID) === undefined) {
+      map.addLayer(layer, before);
+      // Another mode than Schools shows (the root's data-mode, from the page's head for a link to
+      // one): the glow goes on hidden, as the school layers do, until the mark comes off.
+      hideWhileMarked(map, GLOW_LAYER_ID);
+    } else if (before !== GLOW_LAYER_ID) map.moveLayer(GLOW_LAYER_ID, before);
   };
   // Midnight is the layer's own look: a page with no theme on reads no style for it.
   const page = typeof document === 'undefined' ? null : document;

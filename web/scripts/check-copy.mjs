@@ -101,6 +101,8 @@ export const COPY_MODULES = [
   'src/copy-later.ts',
   'src/copy-legal.ts',
   'src/copy-legal-links.ts',
+  'src/copy-modes.ts',
+  'src/copy-flights.ts',
 ];
 
 /** The waitlist page's words (src/copy-waitlist.ts), filled into pages under copy.waitlist. */
@@ -250,6 +252,8 @@ export const PROPER_NOUNS = new Set([
   'iPad',
   'Safari',
   'ZIP',
+  // The Federal Aviation Administration, as people say it (src/copy-flights.ts).
+  'FAA',
   'AM',
   'PM',
   // A school's time zone after its time, where the viewer's differs: "7 AM CT".

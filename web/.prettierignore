@@ -10,3 +10,5 @@ test-results/
 bench/out/
 perf/raw/
 public/data/
+public/flights/
+dist-flights/

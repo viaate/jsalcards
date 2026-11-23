@@ -14,6 +14,7 @@ import { themeCss, themeProperties } from '../css';
 import { THEME_EVENT, THEME_RETRY, THEME_STORAGE_KEY } from '../event';
 import { PAGE_THEMES_ID, readPageThemes } from '../page';
 import { snowballRules } from '../snowball';
+import { MODE_SIBLINGS } from '../siblings';
 import { THEMES, THEME_IDS, themeOf } from '../themes';
 import type { ThemeId } from '../themes';
 
@@ -626,6 +627,36 @@ describe('a theme as CSS', () => {
         expect(part.trim()).toMatch(/^:root\[data-theme='snowball'\]/);
     }
   });
+
+  it.each(THEME_IDS.filter((id) => id !== 'midnight'))(
+    'draws each Schools piece’s sibling in another mode in every %s rule on the piece',
+    (id) => {
+      const root = `:root[data-theme='${id}'] `;
+      let seen = 0;
+      for (const rule of rulesOf(id)) {
+        const body = rule.replace(/^@media[^{]*\{/, '');
+        const parts = body
+          .slice(0, body.indexOf('{'))
+          .split(',')
+          .map((part) => part.trim());
+        for (const part of parts) {
+          if (!part.startsWith(root)) continue;
+          const piece = part.slice(root.length);
+          for (const [schools, siblings] of Object.entries(MODE_SIBLINGS)) {
+            // The piece itself, not one whose name only starts the same (.menu-button).
+            if (!new RegExp(`^\\${schools}(?![\\w-])`).test(piece)) continue;
+            seen += 1;
+            for (const sibling of siblings)
+              expect(parts, part).toContain(`${root}${sibling}${piece.slice(schools.length)}`);
+          }
+        }
+      }
+      // Snowball: the card list, the menu's corners, the update time's color and its sticker.
+      // A light theme: the update time's halo and its veil.
+      if (id === 'snowball') expect(seen).toBeGreaterThanOrEqual(5);
+      if (id === 'daylight') expect(seen).toBeGreaterThanOrEqual(2);
+    },
+  );
 
   it.each(THEME_IDS)(
     'never takes a word’s halo away in %s without a card that renders under it',

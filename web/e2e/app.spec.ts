@@ -53,6 +53,7 @@ import { diagCopy, diagFormat } from '../src/copy-diag';
 import { format } from '../src/copy-format';
 import { laterCopy, laterFormat } from '../src/copy-later';
 import { THEME_STORAGE_KEY } from '../src/theme/event';
+import { DEFAULT_THEME, THEME_IDS, THEMES_UNRELEASED } from '../src/theme/ids';
 import { shareCopy } from '../src/copy-share';
 import { OPEN_SETTLE_ZOOM } from '../src/map/basemap/flight';
 import { COPIED_MS } from '../src/ui/share';
@@ -2776,6 +2777,162 @@ test.describe('with data staged', () => {
     ]);
     expect(statSync(path.join(root, 'site', 'data', 'search-index.bin')).size).toBeGreaterThan(0);
   });
+
+  // LR-F14.1: one table of (Flights piece, Schools piece), walked under every released theme
+  // on a phone and a desktop, so a theme that dresses Schools' piece never skips Flights': one
+  // test for each device and theme (LOOK-R11-S3).
+  for (const [deviceName, device] of [
+    ['desktop', devices['Desktop Chrome']],
+    ['phone', devices['Pixel 7']],
+  ] as const)
+    for (const theme of THEME_IDS.filter((id) => !THEMES_UNRELEASED.has(id)))
+      test(`draws every Flights piece with a Schools counterpart as Schools draws it, in ${theme} on a ${deviceName}`, async ({
+        browser,
+      }) => {
+        test.setTimeout(120_000);
+        /** How to show each piece: the address, then what to do there. */
+        const PAIRS: readonly {
+          readonly name: string;
+          readonly flights: string;
+          readonly schools: string;
+          readonly pseudo?: '::before';
+        }[] = [
+          {
+            name: 'search',
+            flights: 'header.bar .search.mode-own',
+            schools: 'header.bar > .search:not(.mode-own)',
+          },
+          {
+            name: 'menu button',
+            flights: '.fl-head > .menu-button',
+            schools: 'header.bar > .menu-button',
+          },
+          { name: 'menu', flights: '.fl-menu', schools: 'aside.menu' },
+          { name: 'results', flights: '.fl-results', schools: '.results' },
+          { name: 'update line', flights: '.fl-updated', schools: 'p.updated' },
+          {
+            name: 'update sticker',
+            flights: '.fl-updated',
+            schools: 'p.updated',
+            pseudo: '::before',
+          },
+          { name: 'panel', flights: '.mode-ui .detail', schools: '.detail' },
+        ];
+        type Look = Record<string, string>;
+        const lookOf = (page: Page, selector: string, pseudo?: string): Promise<Look | null> =>
+          page.evaluate(
+            ([box, after]) => {
+              const element = document.querySelector(box);
+              if (element === null) return null;
+              const style = getComputedStyle(element, after);
+              return {
+                borderWidth: style.borderTopWidth,
+                // A border of no width draws no color (its color is the text's, which says the
+                // line's own state, live or old).
+                borderColor: style.borderTopWidth === '0px' ? '' : style.borderTopColor,
+                shadow: style.boxShadow,
+                radius: style.borderTopLeftRadius,
+                font: style.fontFamily,
+                textShadow: style.textShadow,
+              };
+            },
+            [selector, pseudo] as const,
+          );
+        const live = (): { latest: string; slot: string } => {
+          const at = new Date(Date.now() - 5 * 60_000).toISOString().replace(/\.\d+Z$/, 'Z');
+          const stamp = `${at.slice(0, 16).replace(/[-:]/g, '')}Z`;
+          return {
+            latest: JSON.stringify({ schema_version: 1, generated_at: at, slot: 'slot-0', stamp }),
+            slot: JSON.stringify({
+              schema_version: 1,
+              generated_at: at,
+              slot: 'slot-0',
+              stamp,
+              run: at,
+              programs_at: at,
+              alerts_at: at,
+              weather_at: at,
+              observed_at: at,
+              airports: [],
+            }),
+          };
+        };
+        const context = await browser.newContext({ ...device, serviceWorkers: 'block' });
+        await context.addInitScript(
+          ([key, id]) => {
+            localStorage.setItem(key, JSON.stringify({ id }));
+          },
+          [THEME_STORAGE_KEY, theme] as const,
+        );
+        const page = await context.newPage();
+        const files = live();
+        await page.route('**/data/flights/**', async (route) => {
+          const name = new URL(route.request().url()).pathname.replace(/^.*\/data\/flights\//, '');
+          const body =
+            name === 'latest.json' ? files.latest : name === 'live/slot-0.json' ? files.slot : null;
+          if (body === null) await route.fulfill({ status: 404, body: '' });
+          else await route.fulfill({ status: 200, contentType: 'application/json', body });
+        });
+        const themed = (): Promise<string | null> =>
+          page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+        const want = theme === DEFAULT_THEME ? null : theme;
+        const seen = {
+          flights: new Map<string, Look | null>(),
+          schools: new Map<string, Look | null>(),
+        };
+        const read = async (side: 'flights' | 'schools', only?: string): Promise<void> => {
+          await page.evaluate(() => document.fonts.ready);
+          for (const pair of PAIRS)
+            if (only === undefined || pair.name === only)
+              seen[side].set(pair.name, await lookOf(page, pair[side], pair.pseudo));
+        };
+        // Schools: its strip and update line, its menu, its results, then a school's panel.
+        await page.goto(site);
+        await waitForMap(page);
+        await expect.poll(themed, { timeout: 30_000 }).toBe(want);
+        await expect(page.locator('p.updated')).toBeVisible({ timeout: 30_000 });
+        await read('schools');
+        await page.getByRole('button', { name: copy.menu.label, exact: true }).click();
+        await arrived(page.locator('aside.menu'));
+        await read('schools', 'menu');
+        await page.keyboard.press('Escape');
+        const field = page.locator('header.bar > .search:not(.mode-own) input');
+        await field.click();
+        await field.pressSequentially('qqqzzx', { delay: 20 });
+        await expect(page.locator('.results')).toBeVisible();
+        await read('schools', 'results');
+        await page.goto(`${site}?school=${PEMBROKE_HILL}`);
+        await expect(page.locator('.detail')).toBeVisible({ timeout: 30_000 });
+        await arrived(page.locator('.detail'));
+        await read('schools', 'panel');
+        // Flights: the same pieces.
+        await page.goto(`${site}?mode=flights`);
+        await expect(page.locator('.fl-updated')).toBeVisible({ timeout: 60_000 });
+        await expect.poll(themed, { timeout: 30_000 }).toBe(want);
+        await page.locator('.fl-updated').evaluate(async (line) => {
+          await Promise.all(line.getAnimations().map((animation) => animation.finished));
+        });
+        await read('flights');
+        await page.getByRole('button', { name: 'Flights menu' }).click();
+        await arrived(page.locator('.fl-menu'));
+        await read('flights', 'menu');
+        await page.keyboard.press('Escape');
+        await page
+          .getByRole('combobox', { name: 'Search an airport, flight or route' })
+          .fill('MCI');
+        await expect(page.locator('.fl-results')).toBeVisible();
+        await read('flights', 'results');
+        await page.goto(`${site}?mode=flights&airport=MCI`);
+        await expect(page.locator('.mode-ui .detail')).toBeVisible({ timeout: 60_000 });
+        await arrived(page.locator('.mode-ui .detail'));
+        await read('flights', 'panel');
+        for (const pair of PAIRS) {
+          const where = `${theme}, ${String(device.viewport.width)}px: ${pair.name}`;
+          expect(seen.schools.get(pair.name), where).not.toBeNull();
+          expect(seen.flights.get(pair.name), where).toEqual(seen.schools.get(pair.name));
+        }
+        await context.close();
+      });
 
   test('the menu counts today’s schools, and opens the season, the track record and About from their files', async ({
     browser,

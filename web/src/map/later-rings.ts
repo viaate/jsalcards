@@ -407,6 +407,22 @@ export function ringLayers(): readonly RingLayer[] {
   ];
 }
 
+/**
+ * Sent on the window each time the mode shown changes (modes/schools-layers.ts, which a test
+ * holds to this name): spelled here so Schools' code never pulls the modes' chunk in.
+ */
+const MODE_EVENT = 'snowlight:mode';
+
+/** Whether another mode than Schools shows (modes/host.ts marks the root). */
+function otherMode(): boolean {
+  // Read as loosely as a test's stand-in page allows.
+  const root =
+    typeof document === 'undefined'
+      ? undefined
+      : (document.documentElement as Partial<HTMLElement> | null | undefined);
+  return root?.dataset?.mode !== undefined;
+}
+
 export interface LaterRings {
   /** Shows these rings, at their schools' places in `directory`; none with none. */
   show(marks: readonly LaterMark[], directory: Pick<Directory, 'lngLat' | 'meta'> | null): void;
@@ -474,7 +490,9 @@ export function startLaterRings(map: MapLibreMap): LaterRings {
     for (const layer of ringLayers()) {
       if (map.getLayer(layer.id) !== undefined) continue;
       map.addLayer(
-        hidden ? { ...layer, layout: { ...layer.layout, visibility: 'none' } } : layer,
+        hidden || otherMode()
+          ? { ...layer, layout: { ...layer.layout, visibility: 'none' } }
+          : layer,
         BASEMAP_IDS.glowSlotFlat,
       );
     }
@@ -490,12 +508,21 @@ export function startLaterRings(map: MapLibreMap): LaterRings {
   let changes = 0;
   const setHidden = (hide: boolean): void => {
     hidden = hide;
+    // While another mode shows, the rings stay hidden too (modes/host.ts).
+    const off = hide || otherMode();
     for (const id of LATER_RING_LAYERS) {
       if (map.getLayer(id) !== undefined) {
-        map.setLayoutProperty(id, 'visibility', hide ? 'none' : 'visible');
+        map.setLayoutProperty(id, 'visibility', off ? 'none' : 'visible');
       }
     }
   };
+  /** The mode shown changed (modes/schools-layers.ts MODE_EVENT): the rings look again. */
+  const onMode = (): void => {
+    setHidden(hidden);
+  };
+  // Off a page (the rings' tests run in Node), there is no other mode to hear of.
+  const page = typeof window === 'undefined' ? null : window;
+  page?.addEventListener(MODE_EVENT, onMode);
   /**
    * Shows the rings again once the map holds this change's rings, every tile of them. Asked at
    * each source event and at each frame drawn: a source whose layers were hidden before the map
@@ -564,6 +591,7 @@ export function startLaterRings(map: MapLibreMap): LaterRings {
       markDots();
       map.off('styledata', onStyle);
       document.removeEventListener(THEME_EVENT, onTheme);
+      page?.removeEventListener(MODE_EVENT, onMode);
       for (const id of LATER_RING_LAYERS) if (map.getLayer(id) !== undefined) map.removeLayer(id);
       if (map.getSource(LATER_SOURCE) !== undefined) map.removeSource(LATER_SOURCE);
     },

@@ -11,6 +11,7 @@ web/dist-waitlist-chrome/
 web/dist-accounts/
 web/dist-get/
 web/dist-theme/
+web/dist-flights/
 *.egg-info/
 *.tsbuildinfo
 

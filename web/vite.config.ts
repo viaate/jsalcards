@@ -30,6 +30,16 @@ const EAGER_CHUNKS: ReadonlySet<string> = new Set([
   'maplibre',
   'maplibre-shared',
 ]);
+/**
+ * Every built file's content hash, in characters: seven, not eight, the least the bundler takes for
+ * this many chunks. The first script lists some 60 of the names, so the eighth
+ * character costs it some 80 B gzipped, and its size on the wire decides Schools' first paint
+ * (perf/lighthouse.mjs, the first script's gzip budget).
+ */
+const HASH = '[hash:7]';
+/** The panel's frame (src/ui/PanelShell.svelte) and Schools' chart, which go in one chunk. */
+const PANEL_SHELL =
+  /[\\/]src[\\/](?:ui[\\/](?:PanelShell\.svelte|sheet\.ts|ChanceChart\.svelte|chart-labels\.ts)|app[\\/]chart-shown\.ts)/;
 /** The module that holds every theme's palette (src/theme/themes.ts). */
 const THEME_PALETTES = /[\\/]src[\\/]theme[\\/]themes\.ts$/;
 /**
@@ -106,8 +116,26 @@ export default defineConfig(({ mode }) => {
           // never downloads them (src/theme/tests/build.test.ts).
           chunkFileNames: (chunk) =>
             chunk.moduleIds.some((id) => THEME_PALETTES.test(id))
-              ? 'assets/themes/[name]-[hash].js'
-              : 'assets/[name]-[hash].js',
+              ? `assets/themes/[name]-${HASH}.js`
+              : `assets/[name]-${HASH}.js`,
+          entryFileNames: `assets/[name]-${HASH}.js`,
+          assetFileNames: `assets/[name]-${HASH}[extname]`,
+          // Schools' chart goes with the panel's frame, as it did before the other modes came
+          // (src/modes/): their panels take the frame alone, and without this group the chart
+          // would move out to a chunk of its own, one name more in the first script's list. A
+          // test's build of one module alone (src/search/tests/bundle.test.ts) keeps its entry's
+          // exports strict, which a group that leaves out its modules' imports cannot do.
+          codeSplitting: isVitest
+            ? true
+            : {
+                groups: [
+                  {
+                    name: 'PanelShell',
+                    includeDependenciesRecursively: false,
+                    test: PANEL_SHELL,
+                  },
+                ],
+              },
         },
       },
     },

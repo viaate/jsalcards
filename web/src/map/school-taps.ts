@@ -548,11 +548,20 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
   const typeOf = (event: Event): string =>
     ('pointerType' in event && typeof event.pointerType === 'string' ? event.pointerType : '') ||
     pointerType;
-  const dust = (): DustSpots | null => options.dust?.() ?? null;
+  /** While another mode shows (modes/host.ts marks the root), a tap on the map finds no school. */
+  const off = (): boolean => {
+    const root =
+      typeof document === 'undefined'
+        ? undefined
+        : (document.documentElement as Partial<HTMLElement> | null | undefined);
+    return root?.dataset?.mode !== undefined;
+  };
+  const lit = (): ReturnType<SchoolTapOptions['lit']> => (off() ? null : options.lit());
+  const dust = (): DustSpots | null => (off() ? null : (options.dust?.() ?? null));
   /** A press where a tap would open a school: onPress hears of it. */
   const pressed = (point: { readonly x: number; readonly y: number }, type: string): void => {
     if (options.onPress === undefined) return;
-    const action = tapAction(map, point, hitRadius(type), options.lit(), undefined, dust());
+    const action = tapAction(map, point, hitRadius(type), lit(), undefined, dust());
     if (action?.kind === 'open') options.onPress(action.school);
   };
   /** Whether a press or a click at this time and place is the second of a double click on `click`. */
@@ -622,7 +631,14 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
     last = { time, x: point.x, y: point.y, acted: false };
     cancel();
     const type = typeOf(originalEvent);
-    const action = tapAction(map, point, hitRadius(type), options.lit(), options.area?.(), dust());
+    const action = tapAction(
+      map,
+      point,
+      hitRadius(type),
+      lit(),
+      off() ? undefined : options.area?.(),
+      dust(),
+    );
     if (action === null) return false;
     // A mouse or a pen acts at once, and so does a finger where a double tap zooms no further.
     if (type !== 'touch' || map.getZoom() >= map.getMaxZoom()) {
@@ -670,7 +686,7 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
   };
   const lookUnderMouse = (): void => {
     frame = undefined;
-    seen = options.lit();
+    seen = lit();
     seenDust = dust();
     point(
       hover !== null && schoolsInReach(map, hover, HIT_RADIUS.mouse, seen, seenDust).length > 0,
@@ -699,7 +715,7 @@ export function attachSchoolTaps(map: MapLibreMap, options: SchoolTapOptions): S
   };
   // The glow lit other schools under a still mouse, and drew them, or its dust came in.
   const onRender = (): void => {
-    if (hover !== null && (options.lit() !== seen || dust() !== seenDust)) lookSoon();
+    if (hover !== null && (lit() !== seen || dust() !== seenDust)) lookSoon();
   };
 
   container.addEventListener('pointerdown', onPointerDown, { passive: true });

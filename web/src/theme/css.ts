@@ -7,6 +7,7 @@
  * map/glow-mount.ts glowLook), so the page and the map change together.
  */
 import { mix, roadTiers, type Theme } from './themes.ts';
+import { selectorsOf } from './siblings.ts';
 
 /** The phone rules' media query in index.html, where the lines are a step clearer. */
 const PHONE = '(max-width: 719px), (max-height: 519px)';
@@ -122,8 +123,8 @@ export function themeRules(theme: Theme, extra: readonly string[] = []): readonl
       // With the veil that faint, the words at the top read on a halo of their own, solid enough
       // that a dark line of the map under them never runs into their letters, and the update
       // time on a veil of its own, as the key has.
-      `${root} .wordmark,${root} .updated{text-shadow:0 0 1px var(--halo),0 0 2px var(--halo),0 0 3px var(--halo),0 0 4px var(--halo),0 0 12px var(--halo)}`,
-      `${root} .updated::before{position:absolute;inset:calc(50% - 12px) -6px;z-index:-1;pointer-events:none;content:'';background:rgb(var(--veil) / 0.85);border-radius:12px;box-shadow:0 0 10px 6px rgb(var(--veil) / 0.85)}`,
+      `${root} .wordmark,${selectorsOf(root, '.updated')}{text-shadow:0 0 1px var(--halo),0 0 2px var(--halo),0 0 3px var(--halo),0 0 4px var(--halo),0 0 12px var(--halo)}`,
+      `${selectorsOf(root, '.updated', '::before')}{position:absolute;inset:calc(50% - 12px) -6px;z-index:-1;pointer-events:none;content:'';background:rgb(var(--veil) / 0.85);border-radius:12px;box-shadow:0 0 10px 6px rgb(var(--veil) / 0.85)}`,
     );
   }
   // Flat statuses on a light ground: the key's marks as the map draws them, without the glow.

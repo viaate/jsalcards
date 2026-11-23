@@ -40,6 +40,13 @@
  * dist-waitlist-chrome/ and perf/lighthouse-waitlist-chrome.json, against the
  * same gates. `npm run perf:waitlist` runs both; CI's perf job runs it.
  *
+ * --mode=flights measures the site opened in Flights mode (/?mode=flights), built into
+ * dist-flights/ with a SYNTHETIC live file for every airport written into its data folder after
+ * the build (perf/flights-fixture.mjs: made up for the run, never published), report in
+ * perf/raw/lighthouse-flights.json. The file is a storm map, the costliest to draw: many
+ * airports at risk, each tag at risk placed clear of the others, over the calm tags of every
+ * view; --calm measures the usual day instead. The gates are the site's.
+ *
  * --theme=<id> measures the site with that theme kept on the device, as a
  * returning visitor who has put it on: built with VITE_THEMES_PREVIEW naming
  * it (so a theme waiting for approval, such as Snowball, can be measured
@@ -69,6 +76,8 @@ import lighthouse from 'lighthouse';
 import desktopConfig from 'lighthouse/core/config/desktop-config.js';
 import prettier from 'prettier';
 
+import { writeFlightsFixture } from './flights-fixture.mjs';
+
 const WEB = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WAITLIST = process.argv.includes('--waitlist');
 /** The theme kept on the device for every run (--theme=<id>), or null. */
@@ -83,23 +92,32 @@ if (THEME !== null && !/^[a-z]+$/.test(THEME)) throw new Error(`Not a theme id: 
 let themeFace = null;
 /** The waitlist's other look: its headline in chrome lettering. */
 const CHROME = WAITLIST && process.argv.includes('--chrome');
+const FLIGHTS = process.argv.includes('--mode=flights');
 const WAITLIST_NAME = CHROME ? 'waitlist-chrome' : 'waitlist';
 /** The Kit form id the waitlist build is made with; the page never sends a signup here. */
 const WAITLIST_FORM = '1234567';
-const OUT_DIR = WAITLIST ? `dist-${WAITLIST_NAME}` : THEME !== null ? 'dist-theme' : 'dist';
+const OUT_DIR = WAITLIST
+  ? `dist-${WAITLIST_NAME}`
+  : THEME !== null
+    ? 'dist-theme'
+    : FLIGHTS
+      ? 'dist-flights'
+      : 'dist';
 const DIST = join(WEB, OUT_DIR);
 const RAW_DIR = join(WEB, WAITLIST ? `perf/raw/${WAITLIST_NAME}` : 'perf/raw');
 const REPORT = process.argv.includes('--live-origin')
   ? join(RAW_DIR, 'lighthouse-live.json')
   : THEME !== null
     ? join(RAW_DIR, `lighthouse-theme-${THEME}.json`)
-    : join(WEB, WAITLIST ? `perf/lighthouse-${WAITLIST_NAME}.json` : 'perf/lighthouse.json');
+    : FLIGHTS
+      ? join(RAW_DIR, 'lighthouse-flights.json')
+      : join(WEB, WAITLIST ? `perf/lighthouse-${WAITLIST_NAME}.json` : 'perf/lighthouse.json');
 /** Mobile Performance the waitlist must reach: the page phones come to from a video. */
 const MIN_WAITLIST_PERFORMANCE = 0.95;
 const PORT = Number(process.env.PERF_PORT ?? '5104');
 const RUNS = Number(process.env.PERF_RUNS ?? '3');
 const ORIGIN = `http://127.0.0.1:${String(PORT)}`;
-const URL_UNDER_TEST = `${ORIGIN}/`;
+const URL_UNDER_TEST = FLIGHTS ? `${ORIGIN}/?mode=flights` : `${ORIGIN}/`;
 const CHROME_PATH = process.env.CHROME_PATH ?? chromium.executablePath();
 const LIVE_ORIGIN_MODE = process.argv.includes('--live-origin');
 const LIVE_PORT = Number(process.env.PERF_LIVE_PORT ?? String(PORT + 1));
@@ -115,6 +133,17 @@ const MIN_SCORE = 0.9;
 const MAX_FCP_MS = 1500;
 /** MapLibre's scripts, which load after first paint, gzipped at zlib's default level. */
 const MAX_MAPLIBRE_GZIP_BYTES = 310_000;
+/**
+ * The first script (the one index.html names), gzipped at zlib's default level as the preview
+ * server sends it: a FIXED budget of 28,820 B (lead ruling LR-F17.2, in place of LR-F16.5's
+ * 28,900 B), never loosened without a new ruling; the 75,000-character budget stands beside it.
+ * The reason: past some 28,830 B the transfer, with its some 370 B of headers, takes a 21st TCP
+ * segment of 1,460 B, and Lighthouse's simulated load one round trip more before the first paint
+ * (about 150 ms on mobile and 40 ms on desktop, LOOK-R11-B1), so the budget sits just under that
+ * line and no gate passes while Schools pays it. Origin was 28,780 B and FL-2 28,701 B when it was
+ * set; the perf line shows the spare bytes.
+ */
+const MAX_FIRST_SCRIPT_GZIP_BYTES = 28_820;
 /** A name only MapLibre's shared module defines: each file containing it is a copy. */
 const SHARED_MODULE_MARKER = 'REGISTERED_PROTOCOLS';
 
@@ -456,6 +485,18 @@ function chromeVersion() {
 }
 
 /**
+ * The script index.html names, read from dist/: its path, its length in characters and its size
+ * gzipped at zlib's default level, as a static host serves it; null when index.html names none.
+ */
+async function firstScript() {
+  const html = await readFile(join(DIST, 'index.html'), 'utf8');
+  const path = /<script type="module"[^>]+src="\/([^"]+)"/.exec(html)?.[1];
+  if (path === undefined) return null;
+  const code = await readFile(join(DIST, path));
+  return { path, chars: code.toString('utf8').length, gzipBytes: gzipSync(code).length };
+}
+
+/**
  * The scripts loaded after first paint, read from dist/: every script
  * requested except the one index.html names. Sizes are gzipped at zlib's
  * default level, as a static host serves them.
@@ -510,10 +551,17 @@ async function main() {
         [join(WEB, 'node_modules/vite/bin/vite.js'), 'build', '--outDir', OUT_DIR, '--emptyOutDir'],
         { ...process.env, VITE_THEMES_PREVIEW: THEME },
       );
+    } else if (FLIGHTS) {
+      run(
+        process.execPath,
+        [join(WEB, 'node_modules/vite/bin/vite.js'), 'build', '--outDir', OUT_DIR, '--emptyOutDir'],
+        process.env,
+      );
     } else {
       run('npm', ['run', 'build']);
     }
   }
+  if (FLIGHTS) await writeFlightsFixture(DIST, { calm: process.argv.includes('--calm') });
   await mkdir(RAW_DIR, { recursive: true });
   if (THEME !== null) {
     const html = await readFile(join(DIST, 'index.html'), 'utf8');
@@ -636,6 +684,17 @@ async function main() {
       pass: scripts.length === 0,
     });
   } else {
+    const first = await firstScript();
+    const gzip = first?.gzipBytes ?? Infinity;
+    gates.push({
+      gate: 'the first script, gzipped',
+      value:
+        first === null
+          ? 'none'
+          : `${String(gzip)} B (${String(MAX_FIRST_SCRIPT_GZIP_BYTES - gzip)} B to spare; ${String(first.chars)} chars)`,
+      limit: `<= ${String(MAX_FIRST_SCRIPT_GZIP_BYTES)} B`,
+      pass: gzip <= MAX_FIRST_SCRIPT_GZIP_BYTES,
+    });
     gates.push({
       gate: "MapLibre's scripts, gzipped",
       value: lazy.maplibreGzipBytes,

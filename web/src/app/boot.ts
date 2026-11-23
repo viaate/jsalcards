@@ -872,7 +872,50 @@ export function boot(options: BootOptions): Services {
         .finally(() => map?.off('movestart', onMove));
     },
   };
+  // The mode switch and the other modes (modes/host.ts), in a chunk of its own, as soon as the
+  // map takes input: a mode's layer goes on with the map's first frames. With no map (no WebGL,
+  // a map that failed) or no host chunk, no other mode can show: the mark the page's head put on
+  // the root for one comes off, so Schools' own fallback shows whole, never a page with nothing.
+  void options.map.then((map) => {
+    if (map === undefined) unmarkMode();
+  }, unmarkMode);
+  void (options.mapCreated ?? options.map)
+    .then(async (map) => {
+      if (map === undefined || aborted()) return;
+      const { startModes } = await import('../modes/host');
+      if (aborted()) return;
+      startModes({
+        map,
+        signal,
+        closeSchools: () => {
+          links.select(null, { replace: true });
+        },
+      });
+    })
+    .catch(unmarkMode);
   return services;
+}
+
+/**
+ * Takes the head's mark for another mode off the root (index.html): Schools shows whole, its
+ * layers hidden under the mark with it (map/other-mode.ts), and the later rings look again
+ * (map/later-rings.ts hears the mode event). The address stops naming the mode it does not
+ * show, so a reload or a shared copy opens what the page shows; the mode kept stays kept.
+ */
+function unmarkMode(): void {
+  const root = document.documentElement;
+  if (!root.hasAttribute('data-mode')) return;
+  root.removeAttribute('data-mode');
+  window.dispatchEvent(new Event('snowlight:mode'));
+  try {
+    const address = new URL(location.href);
+    if (address.searchParams.has('mode')) {
+      address.searchParams.delete('mode');
+      history.replaceState(history.state, '', address);
+    }
+  } catch {
+    // The address could not change (Safari's write limit): Schools still shows.
+  }
 }
 
 /** A selection the app opened by itself (a link or the pin): go to it once it is placed. */

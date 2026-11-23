@@ -14,6 +14,7 @@
 import unicode from '@fontsource-variable/fredoka/unicode.json' with { type: 'json' };
 
 import { SNOWBALL_FONT } from './themes.ts';
+import { selectorsOf, withSiblings } from './siblings.ts';
 
 export { SNOWBALL_FONT } from './themes.ts';
 
@@ -55,14 +56,19 @@ export function snowballRules(fonts: SnowballFonts): readonly string[] {
   const cards = [
     '.search',
     '.menu-button',
+    // The mode switch beside the menu's button (modes/ModeSwitch.svelte): a control of the strip.
+    '.mode-switch',
     '.locate',
     '.detail',
     '.menu',
     '.results',
     '.maplibregl-ctrl.maplibregl-ctrl-attrib',
   ]
+    .flatMap(withSiblings)
     .map((card) => `${root} ${card}`)
     .join(',');
+  /** Every rule on a Schools piece draws its siblings in the other modes too. */
+  const all = (piece: string, rest = ''): string => selectorsOf(root, piece, rest);
   return [
     ...snowballFontFaces(fonts),
     `${root}{--font-sans:'${SNOWBALL_FONT}','Geist Variable',system-ui,sans-serif}`,
@@ -70,7 +76,7 @@ export function snowballRules(fonts: SnowballFonts): readonly string[] {
     `${cards}{border-width:${OUTLINE};border-color:var(--border-2);box-shadow:${DROP} ${DROP} 0 0 var(--border-2)}`,
     `${root} .search:focus-within{border-color:var(--border-2);box-shadow:${DROP} ${DROP} 0 0 var(--accent),${DROP} ${DROP} 0 ${OUTLINE} var(--border-2)}`,
     `${root} .detail{border-radius:22px}`,
-    `${root} .menu{border-radius:20px}`,
+    `${all('.menu')}{border-radius:20px}`,
     `@media (max-width: 719px){${root} .detail{border-width:${OUTLINE} 0 0;border-radius:28px 28px 0 0;box-shadow:0 -${DROP} 0 0 var(--border-2),0 40px 0 0 var(--surface-1)}}`,
     // The info button over the bare sea: filled like the menu's and the locate buttons, so its ink
     // outline frames a card (open, it keeps the page's own fill).
@@ -81,8 +87,10 @@ export function snowballRules(fonts: SnowballFonts): readonly string[] {
     // time keeps its halo as well, since a long line of it wraps past its sticker. The key's marks
     // are the page's own glowing glyphs (index.html), as the night map lights them: no ink ring.
     `${root} .wordmark{font-weight:700;letter-spacing:0}`,
-    `${root} .updated{color:var(--text-1)}`,
-    `${root} .updated::before{${sticker('calc(50% - 14px) -9px', '14px')}}`,
+    `${all('.updated')}{color:var(--text-1)}`,
+    // An old line keeps its gray, the cue that what it dates is old (never shown as current).
+    `${root} .mode-updated.is-old{color:var(--text-3)}`,
+    `${all('.updated', '::before')}{${sticker('calc(50% - 14px) -9px', '14px')}}`,
     `${root} .legend{font-weight:600;color:var(--text-1);text-shadow:none}`,
     `${root} .legend::before{${sticker('0 -8px', 'calc(var(--control-height) / 2)')}}`,
   ];

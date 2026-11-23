@@ -364,6 +364,25 @@
       }
 
       /*
+        While another mode shows (the root's data-mode, src/modes/host.ts), Schools' own
+        controls step aside: its search field, its menu, its key, its update line, its day
+        bar, its later key, its locate button and its panels. The wordmark, the account
+        control and the switch stay; the other mode's own parts carry .mode-own or sit in
+        its .mode-ui, so none of this reaches them.
+      */
+      :root[data-mode] .bar > .search:not(.mode-own),
+      :root[data-mode] .bar > .menu-button:not(.mode-own),
+      :root[data-mode] .stage > .legend,
+      :root[data-mode] .stage > .updated,
+      :root[data-mode] .stage > .map-day,
+      :root[data-mode] .stage > .later-key,
+      :root[data-mode] .stage > .locate,
+      :root[data-mode] .stage > .detail,
+      :root[data-mode] .stage > .menu {
+        display: none !important;
+      }
+
+      /*
         Its box is the name alone, so a mask over it covers the name and nothing
         else. Beside the field, a fallback face wider than its slot runs a
         little into the gap after it until Geist loads, as the legend's keys do.
@@ -2285,6 +2304,43 @@
             face.href = theme.font;
             document.head.appendChild(face);
           }
+        } catch (e) {}
+      })();
+    </script>
+    <script>
+      // A link to another mode than Schools (?mode=flights), or the mode kept on this device at
+      // the bare address (src/modes/registry.ts): the root says so before the first paint, so
+      // Schools' own controls never show first. The mode's code marks it again, or takes it off,
+      // from the same address: the one the page opened on, kept here before Schools' own code can
+      // change it (a link to a school it does not know), so the two never disagree.
+      (function () {
+        window.snowlightOpening = location.search;
+        // Takes the mark off when a script cannot load before the modes' code has started
+        // (src/modes/host.ts takes this off as it starts), the app's own among them: Schools
+        // shows whole (the mode event), and the address stops naming the mode, so a reload or a
+        // shared copy opens what the page shows. Vite's event for a failed import says so.
+        window.snowlightUnmark = function () {
+          var root = document.documentElement;
+          if (!root.hasAttribute('data-mode')) return;
+          root.removeAttribute('data-mode');
+          window.dispatchEvent(new Event('snowlight:mode'));
+          try {
+            var address = new URL(location.href);
+            if (address.searchParams.has('mode')) {
+              address.searchParams.delete('mode');
+              history.replaceState(history.state, '', address);
+            }
+          } catch (e) {}
+        };
+        addEventListener('vite:preloadError', function () {
+          if (window.snowlightUnmark) window.snowlightUnmark();
+        });
+        try {
+          var mode = new URLSearchParams(location.search).get('mode');
+          if (mode === null && location.search.length < 2)
+            mode = localStorage.getItem('snowlight:mode');
+          if (mode && mode !== 'schools' && /^[a-z]{1,20}$/.test(mode))
+            document.documentElement.setAttribute('data-mode', mode);
         } catch (e) {}
       })();
     </script>

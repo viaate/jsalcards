@@ -34,6 +34,15 @@ const WEB = fileURLToPath(new URL('..', import.meta.url));
 
 /** The most the page's first script may be, in characters: the suite's build and the deployed one. */
 const FIRST_SCRIPT_BUDGET = 75_000;
+/**
+ * The most it may be gzipped, at zlib's default level: a FIXED budget of 28,820 B set by the lead
+ * (LR-F17.2, in place of LR-F16.5's 28,900 B) and never loosened without a new ruling. The reason:
+ * past some 28,830 B the transfer takes a 21st TCP segment and Lighthouse's simulated first paint
+ * one round trip more (about 150 ms on mobile, perf/lighthouse.mjs), so the budget sits just under
+ * that line and no gate can pass while Schools pays it. Origin was 28,780 B and FL-2 28,701 B when
+ * it was set.
+ */
+const FIRST_SCRIPT_GZIP_BUDGET = 28_820;
 
 /**
  * An accounts API root standing in for the deployed one (preview.yml finds it on the Cloudflare
@@ -125,10 +134,10 @@ function markupOf(html: string): string {
   return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
 }
 
-/** "assets/maplibre-shared-AbCd1234.js" -> "maplibre-shared"; "geo/us-lines.1a2b.json" -> "us-lines". */
+/** "assets/maplibre-shared-AbCd123.js" -> "maplibre-shared"; "geo/us-lines.1a2b.json" -> "us-lines". */
 function downloadName(url: string): string | null {
   const { pathname } = new URL(url);
-  const asset = /\/assets\/(.+)-[\w-]{8}\.js$/.exec(pathname);
+  const asset = /\/assets\/(.+)-[\w-]{7}\.js$/.exec(pathname);
   if (asset !== null) return asset[1] ?? null;
   const geo = /\/geo\/([\w-]+)\.[0-9a-f]+\.json$/.exec(pathname);
   return geo?.[1] ?? null;
@@ -1027,10 +1036,12 @@ test.describe('handover to the WebGL map', () => {
       expect(handover.bestShift).toEqual([0, 0]);
       expect(handover.meanAbsDiff).toBeLessThan(1.5);
 
-      // The chrome above the map does not change at all.
+      // The chrome above the map does not change at all, but for the mode switch, which comes in
+      // with the app's services into a place of its own and moves nothing (e2e/flights.spec.ts).
       const bar = await box(page, '.bar');
       const barRegion = deviceRect(bar, scale, after, 4);
-      expect(compareLines(before, after, barRegion, null).meanAbsDiff).toBeLessThan(0.05);
+      const modeSwitch = deviceRect(await box(page, '.mode-switch'), scale, after, 2);
+      expect(compareLines(before, after, barRegion, modeSwitch).meanAbsDiff).toBeLessThan(0.05);
 
       const shifts = await page.evaluate(
         () => (window as unknown as { __shifts: number[] }).__shifts,
@@ -1169,6 +1180,7 @@ test.describe('handover to the WebGL map', () => {
     // address store (src/state/url-store.ts) come in chunks of their own after the first paint.
     // The menu's button is in it; the menu itself, and what it reads, load with the first press.
     expect(entryJs.length).toBeLessThan(FIRST_SCRIPT_BUDGET);
+    expect(gzipSync(entryJs).length).toBeLessThanOrEqual(FIRST_SCRIPT_GZIP_BUDGET);
     expect(entryJs).not.toMatch(/maplibregl-/);
 
     const context = await newContext(browser, DESKTOP);
