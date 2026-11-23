@@ -43,7 +43,7 @@ import polars as pl
 from scipy import stats  # type: ignore[import-untyped]
 
 from snowlight.flights.obs import KINDS, Kind
-from snowlight.flights.spans import weather_days
+from snowlight.flights.spans import weather_days, weather_rows
 
 HABIT_LUCK: Final = 0.05
 DAY_POINTS: Final = 0.02
@@ -391,7 +391,7 @@ def carrier_lines(
     ``dep_carriers``: the ``dep`` table (per carrier; codes current).
     """
     blocks = (
-        dep_carriers.filter(weather_days())
+        dep_carriers.filter(weather_rows())
         .join(
             kinds.filter(pl.col("kind") > 0).select("apt", "day", "block", "kind"),
             on=["apt", "day", "block"],

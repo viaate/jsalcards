@@ -122,6 +122,56 @@ def _input_notes(
     return notes
 
 
+def gate_notes(validated: Sequence[train.Tested], model: fm.Model) -> list[str]:
+    """The report's notes on the gates (LR-H1): set on the validation year by a fit on the years
+    before it, never on the test year, with that year's scores of the gating fit."""
+    if not validated:
+        return ["Gates: no validation year rows; nothing is published."]
+    first, last = validated[0].split
+    notes = [
+        f"Gates (where a chance is published, and after a storm) set on the validation year, "
+        f"{first} to {last}, by a fit on the years before it; the test year scores them once."
+    ]
+    for test in validated:
+        shown = sum(
+            1
+            for (_, target, lead), ok in model.published.items()
+            if ok and (target, lead) == (test.target, test.lead)
+        )
+        notes.append(
+            f"Validation year, {test.target} lead {test.lead}: skill "
+            f"{100 * test.pooled.skill:+.1f}% if shown at every airport, "
+            f"{100 * test.confirmed.skill:+.1f}% out of selection, "
+            f"{100 * test.as_published.skill:+.1f}% as published at {shown} airports; under "
+            f"said heavy {test.as_published.under} of {test.as_published.heavy}."
+        )
+    return notes
+
+
+def _iem_last(tables: train.Tables) -> date | None:
+    """The last day of IEM's NBS runs the fit read (``None``: none)."""
+    from snowlight.flights.pull import NBS_LAST  # noqa: PLC0415
+
+    runs = tables.blocks["dep"].get_column("run")
+    if runs.is_empty() or runs.min().date() > NBS_LAST:  # type: ignore[union-attr]
+        return None
+    older = runs.filter(runs.dt.date() <= NBS_LAST)
+    return older.max().date()  # type: ignore[union-attr, no-any-return]
+
+
+def nbs_rows(raw: Path) -> pl.LazyFrame:
+    """Every kept NBS row: the bucket's bulletins (``nbs/``), and IEM's copy of the winters
+    before them (``nbs-iem/``, :mod:`snowlight.flights.nbs_iem`) up to its last 00Z run."""
+    rows = pl.scan_parquet(raw / "nbs" / "*.parquet")
+    iem = raw / "nbs-iem"
+    if iem.is_dir() and any(iem.glob("*.parquet")):
+        from snowlight.flights.pull import NBS_LAST  # noqa: PLC0415
+
+        older = pl.scan_parquet(iem / "*.parquet").filter(pl.col("run").dt.date() <= NBS_LAST)
+        rows = pl.concat([older, rows], how="vertical")
+    return rows
+
+
 def _usual(tables: train.Tables) -> tuple[date, date]:
     """The usual rates' dated window (:attr:`snowlight.flights.train.Tables.usual_window`)."""
     if tables.usual_window is None:  # pragma: no cover - every assembled table sets it
@@ -133,7 +183,7 @@ def _usual(tables: train.Tables) -> tuple[date, date]:
 def train_all(raw: Path, out: Path, model_path: Path, first_run: date) -> int:
     """Fit, test, and write the model file, the report, the track record and the replays."""
     airports = load()
-    rows = pl.scan_parquet(raw / "nbs" / "*.parquet").filter(pl.col("run").dt.date() >= first_run)
+    rows = nbs_rows(raw).filter(pl.col("run").dt.date() >= first_run)
     kept = kept_months(raw / "bts")
     gaps = observed_gaps(raw / "obs", first_run, kept[0], kept[-1])
     if gaps:
@@ -146,8 +196,7 @@ def train_all(raw: Path, out: Path, model_path: Path, first_run: date) -> int:
     chosen, left = train.choose_inputs(checks)
     together = train.validation_chosen(tables, chosen)
     inputs = train.confirm_inputs(chosen, together)
-    model = train.train(tables, inputs=inputs)
-    tests = train.evaluate(tables, model)
+    model, validated, tests = train.fit_and_gate(tables, inputs)
     base_dep, national_dep = artifact_module.base_tables(tables.base["dep"])
     base_arr, national_arr = artifact_module.base_tables(tables.base["arr"])
     rough, national_rough = artifact_module.rough_table(tables.rough)
@@ -164,7 +213,13 @@ def train_all(raw: Path, out: Path, model_path: Path, first_run: date) -> int:
     gates = made.gates()
     runs = tables.blocks["dep"].get_column("run")
     notes = [
-        f"Forecast runs used: {str(runs.min())[:10]} to {str(runs.max())[:10]} (00Z NBS).",
+        f"Forecast runs used: {str(runs.min())[:10]} to {str(runs.max())[:10]} (00Z NBS"
+        + (
+            f"; IEM's copy to {iem_last}, the AWS bucket after"
+            if (iem_last := _iem_last(tables)) is not None
+            else ""
+        )
+        + ").",
         "Usual rates: "
         + (
             f"the {tables.base_years} years before the test year"
@@ -180,6 +235,11 @@ def train_all(raw: Path, out: Path, model_path: Path, first_run: date) -> int:
         *[
             f"Left out of fitting and testing, as not weather: {first} to {last}, {why}."
             for first, last, why in spans.NOT_WEATHER
+        ],
+        *[
+            f"Left out of fitting and testing for {code} flights only, as not weather: {first} to "
+            f"{last}, {why}."
+            for code, first, last, why in spans.CARRIER_NOT_WEATHER
         ],
     ]
     leads = (
@@ -209,6 +269,7 @@ def train_all(raw: Path, out: Path, model_path: Path, first_run: date) -> int:
             f"{100 * shown:+.1f}%), against {usual:.5f} for the usual rates."
         )
     notes += _input_notes(checks, left, together, chosen, inputs)
+    notes += gate_notes(validated, model)
     out.mkdir(parents=True, exist_ok=True)
     (out / "heldout.md").write_text(report.markdown(tests, gates, notes), encoding="utf-8")
     now = _now()
@@ -319,7 +380,7 @@ def static_all(raw: Path, out: Path) -> int:
         pl.max_horizontal(pl.col("day").min(), pl.lit(bts_first)).alias("first"),
         pl.min_horizontal(pl.col("day").max(), pl.lit(bts_last)).alias("last"),
     ).row(0)
-    dep = scan(raw / "bts", "dep").with_columns(current_code("apt"))
+    dep = scan(raw / "bts", "dep").filter(spans.carrier_weather()).with_columns(current_code("apt"))
     dep_blocks = dep.group_by("apt", "day", "block").agg(pl.col("n").sum(), pl.col("canc").sum())
     own = records.airport_lines(dep_blocks, kinds.lazy())
     carriers = records.carrier_lines(dep, kinds.lazy())

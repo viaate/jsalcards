@@ -29,6 +29,7 @@ import polars as pl
 from snowlight.flights.bts import Month, kept_months, months, scan
 from snowlight.flights.live import ARCHIVE_DAYS, archive_path
 from snowlight.flights.model import ROUGH_SHARE
+from snowlight.flights.spans import not_weather_days, weather_rows
 from snowlight.schemas.flights import (
     FlightsArchive,
     FlightsModel,
@@ -116,6 +117,21 @@ def snapshot(read: ReadArchive, day: date, raw: Path | None = None) -> FlightsAr
     except ValueError:
         return None
     return found if found.day == day else None
+
+
+def month_departures(store: Path, month: Month) -> pl.DataFrame:
+    """The month's departures and cancels per airport, day and block, for :func:`score_month`.
+    As in every other count (LR-F2), the non-weather spans are left out: a span's days, and an
+    airline's own span days, are never scored as weather (a day with none left goes unscored,
+    never guessed)."""
+    return (
+        scan(store, "dep")
+        .filter(pl.col("day").is_between(month.first, month.next().first - timedelta(days=1)))
+        .filter(weather_rows())
+        .group_by("apt", "day", "block")
+        .agg(pl.col("n").sum(), pl.col("canc").sum())
+        .collect()
+    )
 
 
 def score_month(
@@ -206,6 +222,25 @@ def score_month(
     return out
 
 
+def unscored_warning(label: str, score: FlightsMonthScore, left_out: int) -> str | None:
+    """The warning for a month ``score`` that misses days, each told by its reason: ``left_out``
+    days of the month lie in a non-weather span (never scored as weather), the others had no
+    snapshot kept; ``None`` when every day was scored."""
+    missing = score.days_in_month - score.days_scored
+    if missing <= 0:
+        return None
+    span = min(left_out, missing)
+    reasons = [
+        *([f"{span} in a non-weather span, left out"] if span else []),
+        *([f"{missing - span} not kept"] if missing > span else []),
+    ]
+    return (
+        f"flights monthly: ::warning:: {label} {score.target.name.lower()} scored on "
+        f"{score.days_scored} of its {score.days_in_month} days (of the rest, "
+        f"{' and '.join(reasons)}): the track record says so"
+    )
+
+
 def merge(
     old: Sequence[FlightsMonthScore], new: Sequence[FlightsMonthScore]
 ) -> tuple[FlightsMonthScore, ...]:
@@ -219,6 +254,9 @@ def merge(
 
 HISTORY_FIRST: Final = Month(2015, 1)
 FIRST_RUN: Final = date(2020, 6, 1)
+AWS_FIRST: Final = date(2020, 6, 1)
+"""The bucket's bulletins are fetched from this run on; a first run before it reads IEM's copy
+of the NBS for the winters before (:func:`snowlight.flights.history.fetch_iem_nbs`)."""
 FETCH_SECONDS: Final = 200 * 60.0
 """A run fetches history for this long at most, then stops; the next day's run goes on from
 what the cache kept (a cold start takes several days)."""
@@ -395,9 +433,10 @@ def fetch_history(  # noqa: PLR0913 - the source, the store, the airports and th
     today: date,
     log: Log,
     budget: Budget,
+    get_iem: Get | None = None,
 ) -> bool:
     """Fetch what the cache lacks, oldest gaps last, until the budget is spent; whether any
-    file was kept."""
+    file was kept. ``get_iem``: the polite client for IEM's NBS (``get`` when not given)."""
     from snowlight.flights import history  # noqa: PLC0415
 
     every = list(months(first_month, newest))
@@ -406,8 +445,18 @@ def fetch_history(  # noqa: PLR0913 - the source, the store, the airports and th
     # month, so a day with no new month keeps nothing new (and saves no cache).
     last = min(today, newest.next().first - timedelta(days=1))
     runs = history.fetch_nbs(
-        get, raw / "nbs", wanted, first=first_run, last=last, log=log, out_of_time=budget.out
+        get,
+        raw / "nbs",
+        wanted,
+        first=max(first_run, AWS_FIRST),
+        last=last,
+        log=log,
+        out_of_time=budget.out,
     )
+    if first_run < AWS_FIRST:
+        runs += history.fetch_iem_nbs(
+            get_iem or get, raw / "nbs-iem", sorted(wanted), log, out_of_time=budget.out
+        )
     budget.required_out = budget.ran_out
     reports = history.fetch_obs(
         get,
@@ -436,6 +485,7 @@ def run(  # noqa: PLR0913, PLR0917 - the steps of one run, each one injectable f
     budget: Budget | None = None,
     first_month: Month = HISTORY_FIRST,
     first_run: date = FIRST_RUN,
+    get_iem: Get | None = None,
 ) -> Outcome:
     """One monthly run: check for a new BTS month, fetch what the cache lacks (bounded), then,
     once the history is whole and the host has not published that month yet, score every
@@ -468,6 +518,7 @@ def run(  # noqa: PLR0913, PLR0917 - the steps of one run, each one injectable f
         today=today,
         log=log,
         budget=budget,
+        get_iem=get_iem,
     )
     fetched = archived or got_history
     from snowlight.flights.build import observed_gaps  # noqa: PLC0415
@@ -475,6 +526,11 @@ def run(  # noqa: PLR0913, PLR0917 - the steps of one run, each one injectable f
     have_months = set(kept_months(raw / "bts"))
     missing = [m for m in months(first_month, newest) if m not in have_months]
     reports_missing = observed_gaps(raw / "obs", first_run, first_month, newest)
+    if first_run < AWS_FIRST:
+        # IEM's winters are part of the fit: a refit without them is never published.
+        reports_missing += [
+            f"IEM NBS {name}" for name in history.iem_nbs_missing(raw / "nbs-iem", sorted(wanted))
+        ]
     if budget.required_out or missing or reports_missing:
         # Stuck from the history fetch alone: a new archive copy is kept nearly every day.
         stuck = not got_history and not budget.ran_out and bool(missing or reports_missing)
@@ -506,21 +562,12 @@ def run(  # noqa: PLR0913, PLR0917 - the steps of one run, each one injectable f
         label = f"{month.year}-{month.month:02d}"
         if label in have:
             continue
-        dep = (
-            scan(raw / "bts", "dep")
-            .filter(pl.col("day").is_between(month.first, month.next().first - timedelta(days=1)))
-            .group_by("apt", "day", "block")
-            .agg(pl.col("n").sum(), pl.col("canc").sum())
-            .collect()
-        )
+        dep = month_departures(raw / "bts", month)
         month_scores = score_month(month, read_host, dep, raw)
+        left_out = not_weather_days(month.first, month.next().first - timedelta(days=1))
         for score in month_scores:
-            if score.days_scored < score.days_in_month:
-                log(
-                    f"flights monthly: ::warning:: {label} {score.target.name.lower()} scored on "
-                    f"{score.days_scored} of its {score.days_in_month} days (the rest were not "
-                    "kept): the track record says so"
-                )
+            if (line := unscored_warning(label, score, left_out)) is not None:
+                log(line)
         scores += month_scores
         labels.append(label)
     model_path = out / "model.json.gz"

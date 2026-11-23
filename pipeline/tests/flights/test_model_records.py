@@ -565,7 +565,8 @@ def test_storm_only_weather_at_the_peers_share_gets_no_verdict() -> None:
         assert line.verdict is records.Verdict.NONE, code
         assert (line.worse, line.better) == (0, 0)
     assert lines["AAA"][0].others_share == pytest.approx(0.30)
-    assert lines["BBB"][0].days == 360
+    # 360 days, less the COVID-19 span's mild days (13 weeks of 2020).
+    assert lines["BBB"][0].days == 360 - 13
     # The others' share shown beside each line is its peers' on its own days at its own
     # departures, so the plain numbers never suggest a difference the days do not hold.
     for code in ("AAA", "BBB", "CCC"):

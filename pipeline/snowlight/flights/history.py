@@ -3,7 +3,10 @@
 * :func:`fetch_bts`: BTS months, reduced to the compact tables (:mod:`snowlight.flights.bts`);
   the raw zip and CSV are deleted once reduced;
 * :func:`fetch_nbs`: 00Z NBS bulletins, kept as our airports' rows only (one parquet per day);
-* :func:`fetch_obs`: hourly weather reports, kept as hourly flags (one parquet per month).
+* :func:`fetch_obs`: hourly weather reports, kept as hourly flags (one parquet per month);
+* :func:`fetch_iem_nbs`: IEM's copy of the NBS for the winters before the bucket (2018-11-07 to
+  2020-02-25), in the bulletins' rows (one parquet per station and winter,
+  :mod:`snowlight.flights.nbs_iem`).
 
 Each takes a ``get`` (url to bytes, ``None`` when not there) so tests run without the network,
 fetches one file at a time, and says what it did through ``log``.
@@ -144,6 +147,7 @@ def fetch_nbs(  # noqa: PLR0913 - the source, the store, the stations, the span 
 KEPT: Final = (
     ("bts", "*.parquet"),
     ("nbs", "*.parquet"),
+    ("nbs-iem", "*.parquet"),
     ("obs", "*.parquet"),
     ("archive", "*.json"),
 )
@@ -201,4 +205,56 @@ def fetch_obs(  # noqa: PLR0913 - the source, the store, the stations, the month
             pl.concat(parts).write_parquet(target, compression="zstd")
             kept += 1
     log(f"flights history: reports {kept} months kept")
+    return kept
+
+
+def iem_nbs_files(stations: Sequence[str]) -> list[tuple[str, str]]:
+    """The IEM NBS requests (url, file name), one per station and winter."""
+    from snowlight.flights import pull  # noqa: PLC0415
+
+    return [(task.url, task.path.name) for task in pull.nbs_tasks(sorted(stations), Path())]
+
+
+def iem_nbs_missing(root: Path, stations: Sequence[str]) -> list[str]:
+    """The IEM NBS files not kept yet (a station-winter with no runs is kept, empty)."""
+    return [name for _, name in iem_nbs_files(stations) if not (root / name).is_file()]
+
+
+def fetch_iem_nbs(
+    get: Get,
+    root: Path,
+    stations: Sequence[str],
+    log: Log,
+    *,
+    out_of_time: OutOfTime = _never,
+) -> int:
+    """Fetch IEM's NBS of every station and winter not kept yet, until ``out_of_time``, into the
+    bulletins' rows; how many were kept. ``get`` must be the polite IEM client (one request at a
+    time, 2 s apart or more, backing off when busy: :func:`snowlight.flights.pull.get_politely`).
+    """
+    from snowlight.flights import nbs_iem, pull  # noqa: PLC0415
+
+    root.mkdir(parents=True, exist_ok=True)
+    kept = 0
+    for url, name in iem_nbs_files(stations):
+        target = root / name
+        if target.exists():
+            continue
+        if out_of_time():
+            break
+        try:
+            body = get(url)
+            rows = (
+                nbs_iem.to_rows(pull.reduce_mos(body))
+                if body is not None
+                else nbs_iem.to_rows(pl.DataFrame())
+            )
+        except (FetchError, pull.PullError, pull.NotTableError) as error:
+            log(f"flights history: IEM NBS {name} failed ({error})")
+            continue
+        part = target.with_suffix(".part")
+        rows.write_parquet(part, compression="zstd")
+        part.replace(target)
+        kept += 1
+    log(f"flights history: IEM NBS {kept} station-winters kept")
     return kept

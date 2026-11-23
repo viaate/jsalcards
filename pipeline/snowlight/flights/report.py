@@ -138,7 +138,9 @@ def markdown(tests: Sequence[Tested], gates: dict[str, list[int]], notes: Sequen
         "# Flights: the held-out test",
         "",
         f"Test year: {split[0]} to {split[1]} (the newest 12 posted months), never used in "
-        "fitting.",
+        "fitting or in setting a gate: every gate (where a chance is published, and after a",
+        "storm) is set on the validation year, the 12 months before, by a fit on the years",
+        "before it; this year scores the published choice once.",
         "Brier: the mean squared gap between the chance and what happened (lower is better).",
         "Skill: how much lower than each airport's own usual rate for that block and month.",
         "Lead 1 is the 00Z run issued the afternoon or evening before the block's day (by the",
@@ -151,9 +153,11 @@ def markdown(tests: Sequence[Tested], gates: dict[str, list[int]], notes: Sequen
         "## Pooled over airports",
         "",
         "Skill (model): the model's chances at every airport. As published: what the files show,",
-        "the chance where it passed and the usual rate elsewhere. Out of selection: the airports",
-        "chosen on the even ISO weeks of the test year scored on the odd ones, and the reverse; a",
-        f"target and lead under {100 * MIN_TARGET_SKILL:.0f}% there is published nowhere.",
+        "the chance where it passed on the validation year and the usual rate elsewhere. Out of",
+        "selection: the airports the even ISO weeks of the test year would choose, scored on its",
+        "odd ones, and the reverse (a second view only: the gates, a target and lead under",
+        f"{100 * MIN_TARGET_SKILL:.0f}% out of selection published nowhere among them, are set on "
+        "the validation year).",
         "",
         "target | lead | units | events | expected | Brier | Brier usual | skill (model) | "
         "as published | out of selection (chosen) | published at",
@@ -178,7 +182,8 @@ def markdown(tests: Sequence[Tested], gates: dict[str, list[int]], notes: Sequen
         "its heavy ones (more than one) shows the usual rate. After a storm: the run came after",
         f"{AFTER_STORM_HOURS} or more hours of observed falling snow or freezing rain in the 48 "
         "hours",
-        "before it; those rows at the airports that passed, pooled, must have at least "
+        "before it; on the validation year, those rows at the airports that passed, pooled, "
+        "must have at least "
         f"{AFTER_MIN_EVENTS} events, a skill whose lower 90% bound (whole days drawn again "
         f"{AFTER_DRAWS:,} times, fixed seed) is above 0, be",
         "calibrated and keep under-said heavy block-days rare, else the files show the usual rate",
@@ -192,8 +197,11 @@ def markdown(tests: Sequence[Tested], gates: dict[str, list[int]], notes: Sequen
     ]
     for test in tests:
         after, out = test.after_storm, test.after_out
-        shown = after_storm_ok(after, test.after_lower) and after_storm_ok(
-            out, test.after_out_lower
+        shown = (
+            test.after_shown
+            if test.after_shown is not None
+            else after_storm_ok(after, test.after_lower)
+            and after_storm_ok(out, test.after_out_lower)
         )
         lines.append(
             f"{test.target} | {test.lead} | {test.pooled.heavy} | {test.pooled.under} | "
@@ -226,16 +234,29 @@ def markdown(tests: Sequence[Tested], gates: dict[str, list[int]], notes: Sequen
             "",
             "## With the non-weather spans put back",
             "",
-            "The same pooled test with the test year's non-weather spans kept in (see the notes):",
+            "The same tests with the test year's non-weather spans kept in (see the notes): the",
+            "model's chances at every airport, then the skill as published and out of selection",
+            "(the airports each half of the weather days chose, scored on every row of the other",
+            "half), as in the pooled table above.",
             "",
-            "target | lead | units | events | expected | Brier | Brier usual | skill | "
-            "expected over seen",
-            "--- | --- | --- | --- | --- | --- | --- | --- | ---",
+            "target | lead | units | events | expected | Brier | Brier usual | skill (model) | "
+            "expected over seen | as published | out of selection",
+            "--- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---",
         ]
         for test in put_back:
             score = test.with_not_weather
             assert score is not None  # noqa: S101 - filtered above
-            lines.append(f"{test.target} | {test.lead} | {_row(score)} | {score.calibration:.3f}")
+            shown_back, out_back = test.published_with_not_weather, test.confirmed_with_not_weather
+            lines.append(
+                f"{test.target} | {test.lead} | {_row(score)} | {score.calibration:.3f} | "
+                + (f"{100 * shown_back.skill:+.1f}%" if shown_back is not None else "none")
+                + " | "
+                + (
+                    f"{100 * out_back.skill:+.1f}%"
+                    if out_back is not None and out_back.units
+                    else "none"
+                )
+            )
     lines += ["", "## Reliability (pooled): when the chance said X, how often it happened", ""]
     for test in tests:
         if test.lead != 1:

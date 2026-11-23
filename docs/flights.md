@@ -14,6 +14,7 @@ never committed.
 | --- | --- | --- |
 | Every scheduled domestic flight of the reporting carriers, 2015 on | BTS On-Time Reporting monthly files | outcomes, usual rates, own records, usual flights |
 | Forecast weather by airport, 00Z runs, mid 2020 on, and the two newest 00Z runs live | NBM station text (NBS) in the public NBM bucket on AWS | the model's inputs, history and live alike |
+| The same forecast, 00Z runs from 2018-11-07 to 2020-02-25 | IEM's copy of the NBS (`mos.py`, model NBS), read into the bulletin's rows (`nbs_iem`) | read and checked, not fitted: the validation year did not keep them (below) |
 | Hourly airport weather reports, 2015 on | IEM ASOS archive | the weather kinds of each airport's own record |
 | Airport stations, time zones, NWS offices and zones | IEM station tables | the airports table |
 | Airport names and four-letter codes | OurAirports | the airports table |
@@ -80,20 +81,75 @@ back from the test year, so a January 2025 row reads October 2021 to September 2
 usual rate holds its own outcome or anything after it. The window length (3 years, 5 years or
 every year) is chosen on the validation year, the 12 months before the test year.
 
-Two spans are left out of fitting and testing, because their cancellations were not weather:
-July 19-23, 2024 (the airline computer outage) and November 7-15, 2025 (the FAA's ordered flight
-cuts in the shutdown).
+Three spans are left out of fitting and testing, because their cancellations were not weather
+(`spans.NOT_WEATHER`): March 10 to June 7, 2020 (the COVID-19 collapse in flying: the national
+cancelled share was 0.9% on March 10, over 5% from March 17 and above 2% to May 31), July 19-23,
+2024 (the airline computer outage) and November 7-15, 2025 (the FAA's ordered flight cuts in the
+shutdown). One airline's own days are left out of that airline's flights only, before they are
+summed to airports (`spans.CARRIER_NOT_WEATHER`): Southwest from December 24 to 31, 2022 (its
+meltdown: 44% to 78% of its flights cancelled from December 24 to 29 while the other airlines
+were back to 1% to 16%). The same filter holds everywhere: the fit, the test, the usual rates, the
+own records, the replays and the usual flights.
+
+## The two winters before the bucket
+
+IEM keeps the same NBS run by run from 2018-11-07; its 00Z runs end on 2020-02-25 (01Z after).
+`nbs_iem.to_rows` reads them into the bulletin's own rows, element by element: the same numbers
+for temperature, wind, gust, the chances and the snow and ice amounts; ceiling 888 (none) as the
+bulletin's -88; 999 in any element as no value; visibility as tenths of a mile, IEM's whole miles
+times 10 for the runs before 2020-02-20 (NBM 3.1: the median of every 00Z run is 9 to 15 through
+2020-02-19 and 110 from 2020-02-21; there is no 00Z run on 2020-02-20). On the 00Z runs both
+sources hold from 2026-10-01 to 2026-11-21 (359 stations, 18,309 runs, 421,107 rows), every
+element is equal on every row. A run IEM lacks stays a hole.
+
+They are not in the model. Fitted with them (`--first-run 2018-11-07`), the validation year's
+departure-cancel Brier at lead 1 was 0.012140 against 0.012134 without them, and 629 heavy
+departure block-days were said far too low against 616: both worse, so the step is reverted
+(the lead's rule H3). In those winters the forecast gave snow in 6 to 7% of its 6-hour cells
+against 13% in 2020-21 (an older NBM version); a version input is the next thing to try. The
+code stays ready: with a first run before 2020-06-01 the fit reads them (`build.nbs_rows`,
+`nbs-iem/` beside `nbs/`), and the monthly job fetches them once into its history cache through
+the polite IEM client and publishes no refit until every station-winter is kept.
+
+## The long history pull
+
+`python -m snowlight.flights.pull iem|bts|status` (`flights.pull`) fetches the 20 years before the
+bucket into RAM, re-runnable, one file at a time, each reduced and its raw body dropped. One IEM
+queue, in order: the NBS overlap above, the two NBS winters, GFS MOS (MAV; AVN until 2003-12-16)
+00Z from 2000-06-01, one station-year a request, then the hourly reports 2000 to 2014. IEM
+requests are serial, and each waits at least 2 s (3 s from 13:00 to 01:00 UTC) after the last
+reply ended. A busy reply (429, 5xx, "Too many requests", a dropped connection) or a body that is
+not the table stretches the pause and waits the shared backoff: 60 s, doubled on each busy reply
+whichever task got it, to 15 minutes, and halved only after 50 calm replies in a row; its end is
+kept with the pace, so a restarted queue waits it out. A request the local agent proxy refused
+never reached IEM: it leaves the pace and the backoff alone, and three in a row stop the queue
+(exit 3) with that reason in the status. Five tasks failing in a row stop the queue. While the
+live pass may be reading IEM (its `latest.json` 14.5 to 27 minutes old) no request goes. A hole (a
+header-only reply) is asked once more a day later and noted as confirmed. The status file, written
+at least once a minute through every wait, says whether each queue runs (its lock, pid, last
+request, pause, backoff and its end) or why it stopped, "no table kept for N min" with the last
+error once a running queue kept nothing for 15 minutes, and the hours left at the pace of the last
+2 hours up to now ("unknown" when nothing was kept in them). `pull stuck iem` gives the pid of a
+running queue that kept nothing for 30 minutes; the restart command replaces such a queue with a
+fresh copy from its own shell. The BTS queue runs on its own hosts: PREZIP
+2000-01 to 2014-12 and the Data Expo copy (Harvard Dataverse, CC0) for 1997-10 to 1999-12 (old
+years keep `dep`, `arr`, `legs` and `places`). The Data Expo copy and PREZIP agree on flights and
+cancels on every airport-day of 2000-01 to 2000-03 (17,956 airport-days).
 
 ## The held-out test and the gate
 
 The test year is the newest 12 posted BTS months. It is never used to fit or to choose a
-setting. For every airport, target and lead, the test scores the Brier score per departure (or
-per day) against the airport's own usual rate. A chance is published only where all of these
-hold (`model.passes`):
+setting, and it sets no gate (the lead's ruling LR-H1, `train.fit_and_gate`): every gate below is
+set on the validation year (the 12 months before the test year) by a fit on the years before it;
+the model is then fitted on every year before the test year with those gates fixed, and the test
+year scores the published choice once. An airport, target and lead with no rows in the
+validation year is never published. For every airport, target and lead, the validation year
+scores the Brier score per departure (or per day) against the airport's own usual rate. A chance
+is published only where all of these hold (`model.passes`):
 
 * skill above 0 (a lower Brier score than the usual rate), on the whole year and on each half
   of it (the even and the odd ISO weeks);
-* at least 10 events in the test year (2 rough days for the rough-day chance);
+* at least 10 events in the validation year (2 rough days for the rough-day chance);
 * expected events within 0.67 to 1.5 times what happened;
 * where it said 20% or more, what happened was at least half of what it said: pooled, and in
   every reliability bin from 20% up that holds 2 or more block-days (days for the rough-day
@@ -112,8 +168,10 @@ hold (`model.passes`):
   (`model.drop_under_said`);
 * the target and lead holds out of selection: the airports chosen on the even weeks, scored
   together on the odd weeks, and the reverse, have a skill of 1% or more. Under that no
-  airport's chance is published for that target and lead (today: neither late target, at any
-  lead; their skill out of selection is under 1%, so every airport shows its usual late rate).
+  airport's chance is published for that target and lead.
+
+The test year's own split-week figures (the airports its even weeks would choose, scored on its
+odd weeks, and the reverse) stay in the report as a second view only; they set nothing.
 
 The days after an observed storm (6 or more hours of falling snow or freezing rain in the 48
 hours before the run) are held to their own test (the lead's ruling LR-F6): those rows at the
@@ -132,8 +190,9 @@ Everywhere else the files give the usual rate with its `usual` bit set, and the 
 as the usual rate, never as a forecast. The report (`snowlight flights train --out DIR`, then
 `DIR/heldout.md`) lists every airport and target, the pooled skill of the model, of what the
 files show (as published) and out of selection, the usual rates' own score on the test year, the
-same test with the non-weather spans put back, and the validation-year checks behind each input
-group.
+same three with the non-weather spans put back, and the validation-year checks behind each input
+group. A candidate (a span, an input group, a winter tried) is judged by
+`train.gate_on_validation` alone, so choosing never scores the test year.
 
 The usual rates are a dated average: each block's share over the window chosen on the
 validation year, ending the day before the test year (non-weather spans left out). The live
@@ -299,7 +358,8 @@ as a backstop), in steps
    that validates, stop. A host without them (the first run after landing) gets the whole build
    with no month to score;
 4. score every month after the published one that the track record lacks, against the day's
-   snapshots (a day without one is not scored). Each month's score says the month's days
+   snapshots (a day without one is not scored; a non-weather span's days, and an airline's own
+   span days, are left out as in every other count). Each month's score says the month's days
    (`days_in_month`) and the days it was scored on (`days_scored`), so a month scored on part of
    its days never reads as the whole month, and the run says such a month with `::warning::`;
 5. refit and test on the newest 12 months, rebuild every file, and publish them with the refit

@@ -26,6 +26,7 @@ from snowlight.flights import (
     monthly,
     nbs,
     replays,
+    report,
     spans,
     train,
 )
@@ -65,10 +66,10 @@ def _github_fake() -> type:
 
 
 GitHubFake = _github_fake()
-FIRST = date(2023, 10, 1)
+FIRST = date(2022, 10, 1)
 """The made-up history starts a year before the fit's first run, so the oldest fit rows have
 usual rates from the year before their own period."""
-FIRST_RUN = date(2024, 10, 1)
+FIRST_RUN = date(2023, 10, 1)
 LAST = date(2026, 9, 30)
 
 
@@ -705,7 +706,7 @@ def test_the_monthly_score_reads_the_evening_before(trained: tuple[Path, Path], 
     assert monthly.score_month(Month(2026, 8), store.get, dep) == []
 
 
-HISTORY_START = Month(2023, 10)
+HISTORY_START = Month(2022, 10)
 
 
 def _monthly(  # noqa: PLR0913 - the parts of one run
@@ -717,6 +718,8 @@ def _monthly(  # noqa: PLR0913 - the parts of one run
     budget: monthly.Budget | None = None,
     first: Month = HISTORY_START,
     committed_last: date = date(2026, 8, 31),
+    first_run: date = FIRST_RUN,
+    get_iem: Callable[[str], bytes | None] | None = None,
 ) -> monthly.Outcome:
     host = fake.publisher()
     return monthly.run(
@@ -734,8 +737,41 @@ def _monthly(  # noqa: PLR0913 - the parts of one run
         wanted=frozenset({"KAAA", "KBBB"}),
         budget=budget,
         first_month=first,
-        first_run=FIRST_RUN,
+        first_run=first_run,
+        get_iem=get_iem,
     )
+
+
+def test_a_first_run_before_the_bucket_needs_every_iem_winter_before_a_publish(
+    raw: Path, tmp_path: Path
+) -> None:
+    # FL-1b.1: with IEM's winters in the fit, a refit without all of them is never published;
+    # the IEM requests go through their own polite client, never the plain one.
+    copy = tmp_path / "raw"
+    shutil.copytree(raw, copy)
+    asked: list[str] = []
+
+    def get_iem(url: str) -> bytes | None:
+        asked.append(url)
+        return None if "KAAA" in url else b"ERROR: Too many requests"
+
+    lines: list[str] = []
+    outcome = _monthly(
+        copy,
+        tmp_path / "out",
+        GitHubFake(clock=lambda: datetime(2026, 11, 22, 9, 41, tzinfo=UTC)),
+        lines,
+        first_run=monthly.AWS_FIRST - timedelta(days=500),
+        get_iem=get_iem,
+    )
+    assert outcome.published == 0
+    assert "history not whole" in outcome.said
+    assert {"KAAA" in url for url in asked} == {True, False}
+    assert all("mesonet.agron.iastate.edu" in url for url in asked)
+    assert sorted(p.name for p in (copy / "nbs-iem").glob("*.parquet")) == [
+        "KAAA_201811.parquet",
+        "KAAA_201907.parquet",
+    ]
 
 
 def test_the_monthly_command_scores_refits_and_publishes_a_fixture_month(
@@ -758,7 +794,7 @@ def test_the_monthly_command_scores_refits_and_publishes_a_fixture_month(
     lines: list[str] = []
     # Out of time before the history is whole: nothing is published, the next run goes on.
     spent = monthly.Budget(seconds=0.0)
-    early = _monthly(raw, tmp_path / "a", fake, lines, budget=spent, first=Month(2023, 9))
+    early = _monthly(raw, tmp_path / "a", fake, lines, budget=spent, first=Month(2022, 9))
     assert early.code == 0
     assert early.published == 0
     assert "history not whole" in early.said
@@ -789,7 +825,7 @@ def test_running_out_in_the_oldest_reports_alone_does_not_hold_the_publish(
 ) -> None:
     copy = tmp_path / "raw"
     shutil.copytree(raw, copy)
-    for key in ("2023_10", "2023_11"):  # before the month the fit's first run needs
+    for key in ("2022_10", "2022_11"):  # before the month the fit's first run needs
         (copy / "obs" / f"{key}.parquet").unlink()
     late = [False]
 
@@ -1339,3 +1375,86 @@ def test_bad_numbers_and_times_in_every_source_still_write_every_airport(
     for at in (document.programs_at, document.alerts_at, document.observed_at):
         assert at is None or at <= now
     assert any("times off the clock left out" in line for line in lines)
+
+
+def test_the_gates_are_set_on_the_validation_year_and_never_read_the_test_year(raw: Path) -> None:
+    # LR-H1: change every outcome of the test year and the gates stay as they were; the
+    # published model's gates are the validation year's, from a fit that never saw it.
+    rows = pl.scan_parquet(raw / "nbs" / "*.parquet").filter(pl.col("run").dt.date() >= FIRST_RUN)
+    flags = pl.scan_parquet(raw / "obs" / "*.parquet")
+    tables = train.assemble(raw / "bts", rows, AIRPORTS, flags)
+    model, validated, tested = train.fit_and_gate(tables)
+    window = train.validation_of(tables.split)
+    assert {t.split for t in validated} == {(window.test_first, window.test_last)}
+    assert {t.split for t in tested} == {(tables.split.test_first, tables.split.test_last)}
+    assert any(model.published.values())
+    # The report's after-storm column is the gate the files follow, not the test year's own.
+    assert all(t.after_shown == model.after.get((t.target, t.lead), False) for t in tested)
+    inside = tables.split.inside()
+    flipped = dataclasses.replace(
+        tables,
+        blocks={
+            name: frame.with_columns(
+                pl.when(inside).then(pl.col("n")).otherwise(pl.col("canc")).alias("canc"),
+                pl.when(inside).then(0).otherwise(pl.col("late")).alias("late"),
+            )
+            for name, frame in tables.blocks.items()
+        },
+        days=tables.days.with_columns(
+            pl.when(inside).then(True).otherwise(pl.col("rough")).alias("rough")
+        ),
+    )
+    again, _, retested = train.fit_and_gate(flipped)
+    assert again.published == model.published
+    assert again.after == model.after
+    # The test year itself is scored on what happened there.
+    assert retested[0].pooled.events != tested[0].pooled.events
+
+
+def test_a_candidate_is_judged_on_the_validation_year_alone(
+    tables: train.Tables, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # H2 (critic r1 B1): choosing among candidate fits never scores the test year.
+    windows: list[train.Split | None] = []
+    evaluate = train.evaluate
+
+    def watched(*args: Any, **kwargs: Any) -> list[train.Tested]:
+        windows.append(kwargs.get("window"))
+        return evaluate(*args, **kwargs)
+
+    monkeypatch.setattr(train, "evaluate", watched)
+    gating, validated = train.gate_on_validation(tables)
+    window = train.validation_of(tables.split)
+    assert windows == [window]
+    assert {t.split for t in validated} == {(window.test_first, window.test_last)}
+    assert any(gating.published.values())
+
+
+def test_the_test_year_scores_say_the_non_weather_spans_put_back_as_shown_too(
+    tables: train.Tables, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # LR-H1 (critic r1 B2): the owner's figures (as published and out of selection) come with
+    # the left-out spans put back, not the every-airport skill alone.
+    model, _, tested = train.fit_and_gate(tables)
+    before = {(t.target, t.lead): t.with_not_weather for t in tested}
+    first = tables.split.test_first + timedelta(days=200)
+    span = (first, first + timedelta(days=9), "a test span")
+    monkeypatch.setattr(spans, "NOT_WEATHER", (*spans.NOT_WEATHER, span))
+    again = train.evaluate(tables, model, set_gates=False)
+    for test in again:
+        assert test.with_not_weather is not None
+        assert test.published_with_not_weather is not None
+        assert test.confirmed_with_not_weather is not None
+        assert test.published_with_not_weather.units == test.with_not_weather.units
+        assert test.with_not_weather.units > test.pooled.units
+        earlier = before[test.target, test.lead]
+        assert earlier is None or test.with_not_weather.units == earlier.units
+        assert test.confirmed_with_not_weather.units >= test.confirmed.units
+    # Where no airport shows the chance, the put-back figure as published is the usual rate's.
+    model.published = {}
+    for test in train.evaluate(tables, model, set_gates=False):
+        shown = test.published_with_not_weather
+        assert shown is not None
+        assert shown.brier == pytest.approx(shown.brier_base)
+    text = report.markdown(again, {}, [])
+    assert "expected over seen | as published | out of selection" in text

@@ -29,7 +29,7 @@ from typing import Final
 import polars as pl
 
 from snowlight.flights.blocks import DAY_START_HOUR, STARTS, Block
-from snowlight.flights.spans import weather_days
+from snowlight.flights.spans import weather_rows
 
 LATE_MINUTES: Final = 45
 """A departure (or arrival) this many minutes after its scheduled time is late (D6)."""
@@ -196,8 +196,11 @@ def reduce_rows(rows: pl.LazyFrame) -> dict[str, pl.DataFrame]:
     )
     sched = (
         # The usual flights' counts stand for weather days only (D11): a non-weather span's
-        # days (:data:`snowlight.flights.spans.NOT_WEATHER`) are left out of them.
-        rows.filter(pl.col("number").is_not_null() & weather_days("FlightDate"))
+        # days (:data:`snowlight.flights.spans.NOT_WEATHER`, and an airline's own in
+        # :data:`snowlight.flights.spans.CARRIER_NOT_WEATHER`) are left out of them.
+        rows.filter(
+            pl.col("number").is_not_null() & weather_rows("FlightDate", "Reporting_Airline")
+        )
         .group_by(
             pl.col("Reporting_Airline").alias("carrier"),
             "number",
@@ -248,7 +251,7 @@ def reduce_rows(rows: pl.LazyFrame) -> dict[str, pl.DataFrame]:
 
 def reduce_csv(csv: Path) -> dict[str, pl.DataFrame]:
     """The compact tables of a raw month's CSV."""
-    return reduce_rows(read_rows(pl.scan_csv(csv, infer_schema=False)))
+    return reduce_rows(read_rows(pl.scan_csv(csv, infer_schema=False, encoding="utf8-lossy")))
 
 
 def reduce_zip(archive: Path, scratch: Path) -> dict[str, pl.DataFrame]:

@@ -27,7 +27,7 @@ import polars as pl
 
 from snowlight.flights import airports as airports_module
 from snowlight.flights import artifact as artifact_module
-from snowlight.flights import fetch, inputs, live, nbs, obs
+from snowlight.flights import fetch, inputs, live, nbs, obs, pull
 from snowlight.flights.airports import Airport
 from snowlight.schemas.flights import FlightsLive
 
@@ -416,6 +416,11 @@ def run_monthly(args: argparse.Namespace) -> int:
             def get(url: str) -> bytes | None:  # pragma: no cover - the network
                 return fetch.get_bytes(http, url)
 
+            pacer = pull.Pacer(args.raw / "iem.last", pull.gap_at)
+
+            def get_iem(url: str) -> bytes | None:  # pragma: no cover - the network
+                return pull.get_politely(pull.requester(http), url, pacer, _say)
+
             outcome = monthly.run(
                 raw=args.raw,
                 out=args.out,
@@ -429,6 +434,7 @@ def run_monthly(args: argparse.Namespace) -> int:
                 static_all=build.static_all,
                 stations=sorted({a.wx for a in table}),
                 wanted=frozenset(a.icao for a in table),
+                get_iem=get_iem,
             )
         _say(f"flights monthly: {outcome.said}")
         code = outcome.code

@@ -8,6 +8,11 @@ names.
 The split: the test year is the newest 12 posted BTS months (:func:`split`). The usual rates come
 from every BTS month before it (2015 on); the regressions from the NBS runs before it (mid 2020
 on). Nothing of the test year is used in fitting or in choosing a setting.
+
+The gates (LR-H1): where a chance is published, after a storm or not, is set on the validation
+year (the 12 months before the test year) by a fit on the years before it
+(:func:`fit_and_gate`); the model is then fitted on every year before the test year with those
+gates fixed, and the test year scores the published choice once.
 """
 
 import itertools
@@ -25,7 +30,7 @@ from snowlight.flights.airports import Airport, current_code
 from snowlight.flights.bts import Month, kept_months, scan
 from snowlight.flights.features import BLOCK_COLUMNS, block_features, with_hubs
 from snowlight.flights.obs import OBSERVED_COLUMNS, with_observed
-from snowlight.flights.spans import weather_days
+from snowlight.flights.spans import carrier_weather, weather_days
 
 DAY_COLUMNS: Final = BLOCK_COLUMNS
 
@@ -45,6 +50,12 @@ class Split:
     def inside(self, column: str = "day") -> pl.Expr:
         """Rows in the test year."""
         return (pl.col(column) >= self.test_first) & (pl.col(column) <= self.test_last)
+
+
+def validation_of(cut: Split) -> Split:
+    """The validation year: the 12 months before the test year."""
+    first = date(cut.test_first.year - 1, cut.test_first.month, cut.test_first.day)
+    return Split(test_first=first, test_last=cut.test_first - timedelta(days=1))
 
 
 def split(newest: Month) -> Split:
@@ -67,9 +78,12 @@ def zones(airports: Sequence[Airport]) -> pl.DataFrame:
 
 
 def outcomes(root: Path, table: str) -> pl.LazyFrame:
-    """A ``dep`` or ``arr`` table summed over carriers, codes current."""
+    """A ``dep`` or ``arr`` table summed over carriers, codes current; an airline's own
+    non-weather days (:data:`snowlight.flights.spans.CARRIER_NOT_WEATHER`) are left out before
+    the sum."""
     return (
         scan(root, table)
+        .filter(carrier_weather())
         .with_columns(current_code("apt"))
         .group_by("apt", "day", "block")
         .agg(pl.col("n").sum(), pl.col("canc").sum(), pl.col("late").sum())
@@ -373,14 +387,17 @@ def train(
     tables: Tables,
     exclude: tuple[date, date] | None = None,
     inputs: Sequence[str] = fm.FEATURES,
+    before: date | None = None,
 ) -> fm.Model:
-    """Fit every target and lead on the rows before the test year (and outside ``exclude``, a
+    """Fit every target and lead on the rows before the test year (or before ``before``: the
+    validation year's first day, for the fit that sets the gates) and outside ``exclude`` (a
     span left out so its days can be shown as never seen), with ``inputs`` (the groups chosen
     on the validation year, :func:`choose_inputs`)."""
     model = fm.Model(inputs=tuple(inputs))
     keep = fm.columns(model.inputs)
+    end = tables.split.test_first if before is None else min(before, tables.split.test_first)
     for target in fm.TARGETS:
-        frame = _frame_of(tables, target).filter(tables.split.before() & weather_days())
+        frame = _frame_of(tables, target).filter((pl.col("day") < end) & weather_days())
         if exclude is not None:
             frame = frame.filter((pl.col("day") < exclude[0]) | (pl.col("day") > exclude[1]))
         for lead in fm.leads():
@@ -436,9 +453,18 @@ class Tested:
     shown_by_month: list[tuple[str, float, float, float]] = field(default_factory=list)
     """Per month of the test year: the units, the expected and the seen events of the model's
     chances shown (so one storm's misses are not hidden in the year's sum)."""
+    after_shown: bool | None = None
+    """Whether the files show the model's chance after a storm for this target and lead: the
+    gate as set on the validation year (``None``: read from this test's own scores)."""
     with_not_weather: fm.Score | None = None
     """The pooled test with the :data:`snowlight.flights.spans.NOT_WEATHER` spans of the test
     year put back in."""
+    published_with_not_weather: fm.Score | None = None
+    """:attr:`as_published` with those spans put back in: on their days too, the chance where
+    it passed (after a storm only where :attr:`after_shown`), else the usual rate."""
+    confirmed_with_not_weather: fm.Score | None = None
+    """:attr:`confirmed` with those spans put back in: the airports each half of the weather
+    days chose, scored on every row of the other half, their non-weather days too."""
 
 
 def _halves(frame: pl.DataFrame) -> np.ndarray:
@@ -446,15 +472,56 @@ def _halves(frame: pl.DataFrame) -> np.ndarray:
     return (frame.get_column("day").dt.week().to_numpy() % 2).astype(np.int64)
 
 
-def evaluate(tables: Tables, model: fm.Model) -> list[Tested]:
-    """Test every target and lead on the held-out year, and set the model's gate: an airport's
-    chance passes on the whole year and on each half (even and odd ISO weeks), and only where
-    the target and lead's skill out of selection is at least
-    :data:`snowlight.flights.model.MIN_TARGET_SKILL`; the days after an observed storm show it
-    only where those rows, pooled over the airports that passed, pass too."""
+def gate_on_validation(
+    tables: Tables, inputs: Sequence[str] = fm.FEATURES
+) -> tuple[fm.Model, list[Tested]]:
+    """Step 1 of :func:`fit_and_gate` alone: the fit on the years before the validation year,
+    gated and scored there. A candidate (a span, an input, a winter tried) is judged on this,
+    so choosing among candidates never scores the test year (H2: it is read once, for the
+    model published).
+
+    Out: the gating fit and the validation year's tests."""
+    window = validation_of(tables.split)
+    gating = train(tables, inputs=inputs, before=window.test_first)
+    return gating, evaluate(tables, gating, window=window)
+
+
+def fit_and_gate(
+    tables: Tables, inputs: Sequence[str] = fm.FEATURES
+) -> tuple[fm.Model, list[Tested], list[Tested]]:
+    """LR-H1: set every gate on the validation year, never on the test year.
+
+    1. Fit on the years before the validation year and set the gates on it (:func:`evaluate`):
+       per airport, the halves, the under-said drop, the target's skill out of selection, and
+       the after-storm gate.
+    2. Fit on every year before the test year, with those gates fixed.
+    3. Score the test year once, as published (the split-week out-of-selection figures there
+       are a second view only; they set nothing).
+
+    Out: the published model, the validation year's tests (of the gating fit) and the test
+    year's."""
+    gating, validated = gate_on_validation(tables, inputs)
+    model = train(tables, inputs=inputs)
+    model.published = dict(gating.published)
+    model.after = dict(gating.after)
+    tested = evaluate(tables, model, set_gates=False)
+    return model, validated, tested
+
+
+def evaluate(  # noqa: PLR0912, PLR0915 - one target and lead's test, gate and views
+    tables: Tables, model: fm.Model, window: Split | None = None, *, set_gates: bool = True
+) -> list[Tested]:
+    """Test every target and lead on ``window`` (the held-out year by default), and, with
+    ``set_gates``, set the model's gate there: an airport's chance passes on the whole year and
+    on each half (even and odd ISO weeks), and only where the target and lead's skill out of
+    selection is at least :data:`snowlight.flights.model.MIN_TARGET_SKILL`; the days after an
+    observed storm show it only where those rows, pooled over the airports that passed, pass
+    too. Without ``set_gates`` the model's gates are read as they are (fixed on the validation
+    year, :func:`fit_and_gate`) and only scored."""
+    span = tables.split if window is None else window
     out: list[Tested] = []
     for target in fm.TARGETS:
-        every = _frame_of(tables, target).filter(tables.split.inside())
+        every = _frame_of(tables, target).filter(span.inside())
         frame = every.filter(weather_days())
         for lead in fm.leads():
             part = frame.filter(pl.col("lead_class") == lead)
@@ -483,15 +550,20 @@ def evaluate(tables: Tables, model: fm.Model) -> list[Tested]:
             chose_odd_codes = {c for c, pair in halves.items() if fm.passes(target, pair[1])}
             target_ok = sure.units > 0 and sure.skill >= fm.MIN_TARGET_SKILL
             passed = np.zeros(len(part), dtype=bool)
-            for code, test in by_airport.items():
-                ok = target_ok and fm.passes(target, test, halves[code])
-                model.published[(code, target, lead)] = ok
-                if ok:
-                    passed |= apts == code
-            # Pooled over the airports that passed, no bin of the chances shown says too low.
-            for code in fm.drop_under_said(p, events, trials, apts, passed & ~storm):
-                model.published[(code, target, lead)] = False
-                passed &= apts != code
+            if set_gates:
+                for code, test in by_airport.items():
+                    ok = target_ok and fm.passes(target, test, halves[code])
+                    model.published[(code, target, lead)] = ok
+                    if ok:
+                        passed |= apts == code
+                # Pooled over the airports that passed, no bin of the chances shown says too low.
+                for code in fm.drop_under_said(p, events, trials, apts, passed & ~storm):
+                    model.published[(code, target, lead)] = False
+                    passed &= apts != code
+            else:
+                for code in by_airport:
+                    if model.is_published(code, target, lead):
+                        passed |= apts == code
             days = part.get_column("day").to_numpy()
             rows_after = passed & storm
             after = scored(rows_after)
@@ -517,23 +589,35 @@ def evaluate(tables: Tables, model: fm.Model) -> list[Tested]:
             lower_out = fm.skill_lower(
                 p[rows_out], base[rows_out], events[rows_out], trials[rows_out], days[rows_out]
             )
-            model.after[(target, lead)] = fm.after_storm_ok(
-                after_out, lower_out
-            ) and fm.after_storm_ok(after, lower)
-            shown_mask = passed & (~storm | model.after[(target, lead)])
+            if set_gates:
+                model.after[(target, lead)] = fm.after_storm_ok(
+                    after_out, lower_out
+                ) and fm.after_storm_ok(after, lower)
+            shown_mask = passed & (~storm | model.after.get((target, lead), False))
             shown = np.where(shown_mask, p, base)
             whole = every.filter(pl.col("lead_class") == lead)
-            put_back = None
+            put_back = published_back = confirmed_back = None
             if len(whole) > len(part):
                 xa, ea, ta, ba = _rows(whole, target)
                 sa, na = _seen(whole, target)
-                put_back = fm.score(model.chance(target, lead, xa), ba, ea, ta, sa, na)
+                pa = model.chance(target, lead, xa)
+                back = _scorer(pa, ba, ea, ta, sa, na)
+                apts_all = whole.get_column("apt").to_numpy()
+                half_all = _halves(whole)
+                passed_all = np.isin(apts_all, sorted({str(c) for c in apts[passed]}))
+                shown_all = passed_all & (~stormy(whole) | model.after.get((target, lead), False))
+                put_back = back(np.ones(len(whole), dtype=bool))
+                published_back = back(np.ones(len(whole), dtype=bool), np.where(shown_all, pa, ba))
+                confirmed_back = back(
+                    (half_all == 1) & np.isin(apts_all, sorted(chose_even_codes))
+                    | (half_all == 0) & np.isin(apts_all, sorted(chose_odd_codes))
+                )
             everything = np.ones(len(part), dtype=bool)
             out.append(
                 Tested(
                     target=target,
                     lead=lead,
-                    split=(tables.split.test_first, tables.split.test_last),
+                    split=(span.test_first, span.test_last),
                     pooled=scored(everything),
                     reliability=fm.reliability(p, events, trials),
                     airports=by_airport,
@@ -541,6 +625,9 @@ def evaluate(tables: Tables, model: fm.Model) -> list[Tested]:
                     confirmed=sure,
                     chosen=(chose_even, chose_odd),
                     with_not_weather=put_back,
+                    published_with_not_weather=published_back,
+                    confirmed_with_not_weather=confirmed_back,
+                    after_shown=model.after.get((target, lead), False),
                     reliability_published=fm.reliability(shown, events, trials),
                     after_storm=after,
                     after_lower=lower,
@@ -660,6 +747,7 @@ def flight_test(tables: Tables, model: fm.Model, legs: pl.LazyFrame) -> dict[str
     joined = (
         legs.with_columns(current_code("dep_apt"), current_code("arr_apt"))
         .filter(pl.col("dep_day").is_between(tables.split.test_first, tables.split.test_last))
+        .filter(carrier_weather("dep_day"))
         .join(dep.lazy(), on=["dep_apt", "dep_day", "dep_block"])
         .join(arr.lazy(), on=["arr_apt", "arr_day", "arr_block"])
         .with_columns(
