@@ -10,6 +10,17 @@ export interface Env {
   ALLOWED_ORIGINS?: string;
   /** "1" only under `wrangler dev`: also allows http://localhost and http://127.0.0.1 on any port. */
   LOCAL_DEV?: string;
+  /** The Google OAuth client's id (public; flights spec D12). Unset: Google stays dormant. */
+  GOOGLE_CLIENT_ID?: string;
+  /** The Google OAuth client's secret (a Worker secret the owner adds). Unset: dormant. */
+  GOOGLE_CLIENT_SECRET?: string;
+  /** "1": the demo-only Find my flights in Gmail button shows (flights spec D19). */
+  GMAIL_READ_DEMO?: string;
+  /**
+   * The Gmail demo's own OAuth client id (public), in its own Google Cloud project: its grant and
+   * its revoke can never touch Connect Google's. Unset, or the same as GOOGLE_CLIENT_ID: no demo.
+   */
+  GMAIL_DEMO_CLIENT_ID?: string;
 }
 
 export class HttpError extends Error {

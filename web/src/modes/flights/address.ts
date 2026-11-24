@@ -2,7 +2,7 @@
  * What Flights mode shows, and its address, so every screen has a link of its own (flights spec
  * D2): `?mode=flights&airport=MCI`, `&route=MCI-LAX`, `&flight=WN1234-MCI` (the flight and the
  * airport it leaves from), `&day=1` (tomorrow, for a route or a flight), `&storm=MCI-2025-01-05`
- * and `&page=storms` or `&page=record`. Parameters other modes own are kept as they are.
+ * and `&page=storms`, `&page=record` or `&page=trips` (with `&trip=<id>` for one saved trip). Parameters other modes own are kept as they are.
  */
 
 export type FlightsView =
@@ -17,15 +17,26 @@ export type FlightsView =
       readonly day: number;
     }
   | { readonly kind: 'storms' }
+  /** My trips (`&page=trips`), or one saved trip (`&page=trips&trip=<id>`). */
+  | { readonly kind: 'trips'; readonly trip: string | null }
   | { readonly kind: 'storm'; readonly id: string }
   | { readonly kind: 'record' };
 
-export const FLIGHTS_PARAMS = ['airport', 'route', 'flight', 'day', 'storm', 'page'] as const;
+export const FLIGHTS_PARAMS = [
+  'airport',
+  'route',
+  'flight',
+  'day',
+  'storm',
+  'page',
+  'trip',
+] as const;
 
 const CODE = /^[A-Z0-9]{3}$/;
 const ROUTE = /^([A-Z0-9]{3})-([A-Z0-9]{3})$/;
 const FLIGHT = /^([A-Z0-9]{2})(\d{1,4})-([A-Z0-9]{3})$/;
 const STORM = /^[A-Z0-9]{3}-\d{4}-\d{2}-\d{2}$/;
+const TRIP = /^[0-9a-f]{32}$/;
 
 function dayOf(params: URLSearchParams): number {
   const day = Number(params.get('day') ?? '0');
@@ -53,6 +64,10 @@ export function viewOfSearch(search: string): FlightsView {
   if (airport !== null && CODE.test(airport)) return { kind: 'airport', code: airport };
   if (storm !== null && STORM.test(storm)) return { kind: 'storm', id: storm };
   if (page === 'storms') return { kind: 'storms' };
+  if (page === 'trips') {
+    const trip = params.get('trip');
+    return { kind: 'trips', trip: trip !== null && TRIP.test(trip) ? trip : null };
+  }
   if (page === 'record') return { kind: 'record' };
   return { kind: 'home' };
 }
@@ -81,6 +96,10 @@ export function hrefOfView(href: string, view: FlightsView): string {
       break;
     case 'record':
       url.searchParams.set('page', 'record');
+      break;
+    case 'trips':
+      url.searchParams.set('page', 'trips');
+      if (view.trip !== null) url.searchParams.set('trip', view.trip);
       break;
     case 'home':
       break;

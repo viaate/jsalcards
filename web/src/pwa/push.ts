@@ -16,6 +16,8 @@
 
 import { detailsFormat } from '../copy-details';
 import { notifyCopy, notifyFormat } from '../copy-notify';
+import { alertBody, alertRings, alertTitle } from '../copy-trips';
+import { readAlert } from '../modes/flights/alert';
 
 const STATUS_WORDS: ReadonlySet<string> = new Set([
   'closed',
@@ -120,7 +122,11 @@ export function readPayload(data: unknown): PushPayload | null {
 
 export interface Shown {
   readonly title: string;
-  readonly options: Omit<NotificationOptions, 'data'> & { readonly data: { readonly url: string } };
+  /** `renotify` is in the Notifications spec but not in TypeScript's DOM types. */
+  readonly options: Omit<NotificationOptions, 'data'> & {
+    readonly data: { readonly url: string; readonly at?: number | null };
+    readonly renotify?: boolean;
+  };
 }
 
 /** The map opened on a school (?school=ID), under the worker's scope. */
@@ -156,8 +162,49 @@ export function bodyOf(payload: PushPayload, now: Date): string {
   }
 }
 
+/** The map opened on a saved trip (?mode=flights&page=trips&trip=ID), under the worker's scope. */
+export function tripUrl(scope: string, trip: string): string {
+  const url = new URL(scope);
+  url.search = '';
+  url.hash = '';
+  url.searchParams.set('mode', 'flights');
+  url.searchParams.set('page', 'trips');
+  url.searchParams.set('trip', trip);
+  return url.href;
+}
+
+/** The tray group of a Flights alert kind: the risk kinds share one. */
+export function flightTag(kind: string): string {
+  return kind === 'faa' || kind === 'waiver' ? kind : 'risk';
+}
+
 /** What to show for a push's data (null, or text that does not read: the plain notification). */
 export function notificationFor(data: unknown, scope: string, icon: string, now: Date): Shown {
+  // A Flights trip alert (flights spec D12): its facts in copy-trips.ts's words.
+  const alert = readAlert(data);
+  if (alert !== null) {
+    const at = Math.floor(now.getTime() / 1000);
+    const rings = alertRings(alert, at);
+    return {
+      title: alertTitle(alert),
+      options: {
+        body: alertBody(alert, at),
+        icon,
+        // The trip's risk (chance, rise, fall, safer, evening check) is one notification: the
+        // newest replaces the last, so an old number never stays in the tray. FAA and waiver
+        // alerts keep their own.
+        tag: `fl-${flightTag(alert.alert)}-${alert.trip}`,
+        // Each one is a real change: one that replaces an earlier push still in the tray rings
+        // and shows again, never a silent swap. A safer alert shown after its safer flights left
+        // says only the chance already said (TRAV-R5-S1): it updates the tray without a sound.
+        renotify: rings,
+        silent: !rings,
+        // `at`: when the sender checked, so the worker never lets an older one replace a newer
+        // one already in the tray (TRAV-R6-B1).
+        data: { url: tripUrl(scope, alert.trip), at: alert.at },
+      },
+    };
+  }
   const payload = readPayload(data);
   if (payload === null) {
     return {
@@ -188,6 +235,7 @@ export interface PushScope {
   readonly registration: {
     readonly scope: string;
     showNotification(title: string, options?: NotificationOptions): Promise<void>;
+    getNotifications?(filter?: GetNotificationOptions): Promise<readonly ShownLike[]>;
   };
   readonly clients: {
     matchAll(options?: ClientQueryOptions): Promise<readonly WindowLike[]>;
@@ -195,6 +243,15 @@ export interface PushScope {
   };
   addEventListener(type: 'push', listener: (event: PushEventLike) => void): void;
   addEventListener(type: 'notificationclick', listener: (event: ClickEventLike) => void): void;
+}
+
+/** A notification in the tray, as getNotifications gives it. */
+export interface ShownLike {
+  readonly title: string;
+  readonly body: string;
+  readonly icon: string;
+  readonly tag: string;
+  readonly data: unknown;
 }
 
 export interface WindowLike {
@@ -235,6 +292,44 @@ async function open(scope: PushScope, url: string): Promise<void> {
   await scope.clients.openWindow(url);
 }
 
+/** When the sender checked a shown Flights alert (its data's `at`), or null. */
+function checkedAt(data: unknown): number | null {
+  return isRecord(data) && typeof data.at === 'number' ? data.at : null;
+}
+
+/**
+ * Shows a push, unless the tray holds a newer Flights alert under its tag (TRAV-R6-B1): alerts
+ * from two passes can reach a phone out of order, and an older one must never stand as the
+ * current one. Then the newer one is shown again as it is, without a sound, so the push still
+ * shows a notification and the tray keeps the newest.
+ */
+async function show(scope: PushScope, shown: Shown): Promise<void> {
+  const at = checkedAt(shown.options.data);
+  const tag = shown.options.tag;
+  if (at !== null && tag !== undefined && scope.registration.getNotifications !== undefined) {
+    let held: readonly ShownLike[] = [];
+    try {
+      held = await scope.registration.getNotifications({ tag });
+    } catch {
+      // The tray cannot be read: show the push as it is.
+    }
+    const newer = held.find((one) => (checkedAt(one.data) ?? -Infinity) > at);
+    if (newer !== undefined) {
+      const again: Shown['options'] = {
+        body: newer.body,
+        icon: newer.icon,
+        tag: newer.tag,
+        data: newer.data as Shown['options']['data'],
+        renotify: false,
+        silent: true,
+      };
+      await scope.registration.showNotification(newer.title, again);
+      return;
+    }
+  }
+  await scope.registration.showNotification(shown.title, shown.options);
+}
+
 /** Installs the push and click handlers on the worker's scope. `now` is for tests. */
 export function installPush(
   scope: PushScope,
@@ -249,7 +344,7 @@ export function installPush(
       data = null;
     }
     const shown = notificationFor(data, scope.registration.scope, icon, now());
-    event.waitUntil(scope.registration.showNotification(shown.title, shown.options));
+    event.waitUntil(show(scope, shown));
   });
   scope.addEventListener('notificationclick', (event) => {
     event.notification.close();

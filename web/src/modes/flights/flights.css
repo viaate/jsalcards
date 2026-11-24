@@ -437,6 +437,24 @@
   color: var(--text-2);
 }
 
+/* My trips' rows: the text lines up with the next trip's rows above (LR-F18), the hover still
+   has room around it, and a day and time never break inside. */
+.fl-row-flush {
+  width: calc(100% + 16px);
+  margin-inline: -8px;
+  font: var(--type-body);
+}
+
+.fl-row-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fl-nowrap {
+  white-space: nowrap;
+}
+
 /* A page of its own in the panel (past storms, the record). */
 .fl-list {
   display: flex;
@@ -459,4 +477,219 @@
 /* Open, its results list goes over the panels and the controls, as Schools' does. */
 .bar:has(.fl-results) {
   z-index: 3;
+}
+
+/*
+ * Trips (flights spec D12, D18, D19): Save and the trip's other actions are Schools' pin and
+ * share actions (DetailPanel.svelte .action), words with their marks and no boxes.
+ */
+.fl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  margin: var(--row, 10px) 0 0;
+}
+
+.fl-action {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  height: 32px;
+  padding: 0;
+  font: var(--type-body);
+  color: var(--text-1);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+}
+
+span.fl-action {
+  cursor: default;
+}
+
+/* The main action of a row (Add a found flight): the account sheet's filled button. */
+.fl-primary {
+  height: 36px;
+  padding: 0 16px;
+  font: var(--type-body);
+  font-weight: 600;
+  color: var(--bg);
+  white-space: nowrap;
+  cursor: pointer;
+  background: var(--text-1);
+  border: 0;
+  border-radius: 10px;
+}
+
+.fl-primary:hover {
+  opacity: 0.88;
+}
+
+.fl-primary:focus-visible {
+  outline: 2px solid var(--text-1);
+  outline-offset: 2px;
+}
+
+.fl-action:hover:not(span) {
+  color: var(--text-2);
+}
+
+.fl-action:disabled {
+  color: var(--text-3);
+  cursor: default;
+}
+
+.fl-action:focus-visible,
+.fl-trip:focus-visible,
+.fl-need input:focus-visible {
+  outline: 1px solid var(--text-2);
+  outline-offset: 2px;
+}
+
+.fl-action svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fl-action.is-on svg path:first-child {
+  fill: currentColor;
+}
+
+/* The next trip: the flight card as one button (D21 pattern 6). */
+.fl-trip {
+  display: block;
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.fl-trip .fl-end {
+  display: flex;
+  flex-direction: column;
+}
+
+.fl-trip .fl-end:last-child {
+  align-items: flex-end;
+}
+
+.fl-trip .fl-dt {
+  color: var(--text-2);
+}
+
+.fl-trip .fl-dd {
+  color: var(--text-1);
+  text-align: right;
+}
+
+.fl-ask {
+  margin: var(--row, 10px) 0 0;
+}
+
+.fl-need {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--row, 10px) 0 0;
+}
+
+.fl-need input {
+  min-height: 32px;
+  padding: 0 8px;
+  font: var(--type-small);
+  color: var(--text-1);
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+  color-scheme: light dark;
+}
+
+/* Backup plans (D21 pattern 8): one row a plan, as the facts rows, its chance on the right. */
+.fl-plans {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row, 10px);
+  margin: var(--row, 10px) 0 0;
+}
+
+.fl-plan {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  align-items: start;
+  font: var(--type-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.fl-plan dt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: var(--text-1);
+}
+
+.fl-plan dt span + span {
+  color: var(--text-2);
+}
+
+.fl-plan dd {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+  margin: 0;
+  color: var(--text-1);
+  text-align: right;
+}
+
+.fl-plan.is-own dt span:first-child {
+  color: var(--text-2);
+}
+
+.fl-plan .fl-bar {
+  width: 64px;
+  height: 4px;
+  overflow: hidden;
+  background: var(--border-1);
+  border-radius: 2px;
+}
+
+.fl-plan .fl-bar span {
+  display: block;
+  height: 100%;
+  background: var(--fl-ink, var(--text-2));
+  border-radius: 2px;
+}
+
+.fl-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding-left: 16px;
+}
+
+.fl-trip .fl-facts {
+  margin-top: var(--row, 10px);
+}
+
+.fl-found {
+  margin-top: var(--section, 20px);
 }

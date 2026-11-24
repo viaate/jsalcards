@@ -23,7 +23,9 @@ import {
 } from './auth';
 import { HttpError, clientIp, json, networkOf, readBody, type Env } from './http';
 import { RELEASED_HOLD, holdUsername, legacySalt, usableUsername } from './names';
+import { eraseGoogle, revokeAt } from './google';
 import { eraseNotify } from './notify';
+import { eraseTrips } from './trips';
 import { secretEqual } from './util';
 import * as v from './validate';
 
@@ -472,9 +474,13 @@ export async function eraseAccount(env: Env, user: UserRow, now: number): Promis
       .filter((value): value is string => value !== null)
       .flatMap((value) => [bucket('login-account', value), bucket('login-name', value)]),
   );
+  // Google is asked to revoke first: its token is gone with the account's rows below.
+  await revokeAt(env, user.id);
   await env.DB.batch([
     env.DB.prepare('DELETE FROM sessions WHERE user_id = ?1').bind(user.id),
     ...eraseNotify(env, user.id),
+    ...eraseTrips(env, user.id),
+    ...eraseGoogle(env, user.id),
     env.DB.prepare('DELETE FROM users WHERE id = ?1').bind(user.id),
     ...(user.email !== null
       ? [env.DB.prepare('UPDATE audit SET target = ?1 WHERE target = ?2').bind(user.id, user.email)]

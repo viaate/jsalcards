@@ -5,6 +5,7 @@
   import type { NotifyClient } from '../../account/notify';
   import type { AccountState, AccountStore, SheetView } from '../../account/session';
   import UserTag from './UserTag.svelte';
+  import { shareOpener } from '../../account/shared';
 
   interface Props {
     store: AccountStore;
@@ -67,11 +68,16 @@
   }
 
   onMount(() => {
+    // Another mode's sign-in asks (Flights' trips) open the same sheet (account/shared.ts).
+    shareOpener((view) => {
+      onopen(view);
+    });
     const stop = store.subscribe((next) => (account = next));
     const stopAdded = store.onSchoolAdded((school) => {
       void maybeOffer(school.name).catch(() => undefined);
     });
     return () => {
+      shareOpener(null);
       stop();
       stopAdded();
     };

@@ -41,8 +41,11 @@
   import Hero from './Hero.svelte';
   import type { Fact } from '../../copy-flights';
   import RecordBox from './RecordBox.svelte';
+  import BackupPlans from './BackupPlans.svelte';
+  import TripTools from './TripTools.svelte';
+  import type { TripsHost } from './trips-host.svelte';
   import { flightLegs, rowForDay } from './schedule';
-  import { addDays, flightChance, instantOf, localToday, weekdayIndex } from './chance';
+  import { addDays, flightChance, instantOf, localParts, localToday, weekdayIndex } from './chance';
   import {
     AIRLINE_SITES,
     REGIONAL_AIRLINES,
@@ -75,6 +78,10 @@
     onflight: (carrier: string, number: number, day: number) => void;
     onclose: () => void;
     onsettle: () => void;
+    /** The account's trips (null: no accounts on this page): Save, the ticket type, Backup plans. */
+    host?: TripsHost | null;
+    /** Opened from a saved trip: the leg it lands at. */
+    tripTo?: string | null;
   }
 
   let {
@@ -93,6 +100,8 @@
     onflight,
     onclose,
     onsettle,
+    host = null,
+    tripTo = null,
   }: Props = $props();
 
   let routes = $state<FlightsRoutes | null | undefined>(undefined);
@@ -134,6 +143,12 @@
     return null;
   });
   const legs = $derived(found === null ? [] : flightLegs(found.rows));
+  // A saved trip opens on its own leg; the chips below still pick another.
+  $effect(() => {
+    if (tripTo === null) return;
+    const index = legs.indexOf(tripTo);
+    if (index >= 0) leg = index;
+  });
   const dest = $derived(legs[leg] ?? legs[0] ?? null);
   const today = $derived(from === null ? null : localToday(from.tz, now));
   const date = $derived(today === null ? null : addDays(today, day));
@@ -350,6 +365,31 @@
     return lines;
   }
 
+  /** The local date it lands, at the arrival airport's clock (for "I need to be there by"). */
+  const arriveDate = $derived(
+    chance === null || flight === null || date === null || from === null || to === null
+      ? null
+      : localParts(
+          new Date(instantOf(date, flight.leaves, from.tz).getTime() + chance.minutes * 60_000),
+          to.tz,
+        ).day,
+  );
+
+  /** Every leg the number flies from here on the day shown, for Save's leg pick (D19). */
+  const dayLegs = $derived(
+    found === null
+      ? []
+      : legs.flatMap((code) => {
+          const row = rowForDay(found.rows, code, date);
+          return row === null ? [] : [{ to: code, leaves: row.leaves, lands: row.lands }];
+        }),
+  );
+  const saved = $derived(
+    host === null || from === null || date === null
+      ? null
+      : host.find(carrier, number, from.code, date),
+  );
+
   const alertsLink = $derived.by(() => {
     const site = AIRLINE_SITES[carrier];
     if (site === undefined) return null;
@@ -500,6 +540,19 @@
       {/each}
     </div>
 
+    {#if host !== null && flies && !gone}
+      <TripTools
+        {host}
+        {carrier}
+        {number}
+        from={from.code}
+        day={date}
+        leg={{ to: to.code, leaves: flight.leaves, lands: flight.lands }}
+        legs={dayLegs}
+        arriveDay={arriveDate ?? date}
+      />
+    {/if}
+
     <!-- Good to know: the FAA at each end, and the airline's waiver at each end (W2). -->
     <div class="fl-cards">
       {#each [{ airport: from, entry: fromLive }, { airport: to, entry: toLive }] as end (end.airport.code)}
@@ -538,6 +591,27 @@
         >
       {/if}
     </div>
+
+    {#if flies && !gone && !stale && live !== null}
+      <BackupPlans
+        trip={{
+          carrier,
+          number,
+          from: from.code,
+          to: to.code,
+          day: date,
+          leaves: flight.leaves,
+          lands: flight.lands,
+          needBy: saved?.need_by ?? null,
+        }}
+        ticket={saved?.ticket ?? 'unsure'}
+        {byCode}
+        {live}
+        {waivers}
+        {files}
+        {now}
+      />
+    {/if}
 
     <!--
       This flight on past storm days (D22): its own counts are not in the published files yet,

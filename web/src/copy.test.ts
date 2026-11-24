@@ -12,6 +12,7 @@ import { detailsCopy } from './copy-details';
 import { areaFormat } from './copy-area';
 import { chanceCopy, chanceFormat } from './copy-chance';
 import { flightsCopy } from './copy-flights';
+import { tripsCopy } from './copy-trips';
 import { modesCopy } from './copy-modes';
 import type { BaseInput, ReasonInput, Zones } from './copy-chance';
 import { format } from './copy-format';
@@ -4536,7 +4537,8 @@ ${aliases}
     // (src/copy-share.ts), the getsnowlight landing's (src/copy-get.ts), the later days'
     // key line's (src/copy-later.ts), the privacy policy's and terms' (src/copy-legal.ts) and
     // the links to them (src/copy-legal-links.ts), and the page How Snowlight guesses
-    // (src/copy-how.ts), and the mode switch's (src/copy-modes.ts) and Flights mode's (src/copy-flights.ts).
+    // (src/copy-how.ts), and the mode switch's (src/copy-modes.ts), Flights mode's (src/copy-flights.ts)
+    // and Flights trips' (src/copy-trips.ts).
     expect(scanned.strings).toBe(
       strings.length +
         copyLeaves(chanceCopy).length +
@@ -4554,7 +4556,8 @@ ${aliases}
         copyLeaves(legalLinksCopy).length +
         copyLeaves(howCopy).length +
         copyLeaves(modesCopy).length +
-        copyLeaves(flightsCopy).length,
+        copyLeaves(flightsCopy).length +
+        copyLeaves(tripsCopy).length,
     );
     expect(scanned.svelte).toBeGreaterThan(0);
     // The whole site read as one program: about 37 s of one core with the chance section (50 s

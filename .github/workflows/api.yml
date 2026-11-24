@@ -21,6 +21,10 @@ on:
     paths:
       - api/**
       - .github/workflows/api.yml
+      # The Worker words the Flights alert email from the site's own copy (api/src/google.ts).
+      - web/src/copy-trips.ts
+      - web/src/copy-flights.ts
+      - web/src/modes/flights/alert.ts
   workflow_dispatch:
 
 permissions:
@@ -92,12 +96,23 @@ jobs:
       - if: steps.secrets.outputs.enabled == 'true'
         run: npx wrangler d1 migrations apply snowlight-accounts --remote
       # The site's origins: its domain and the repository's GitHub Pages origin.
+      # Connect Google (docs/flights-trips.md) stays dormant until the owner adds the repository
+      # variable GOOGLE_CLIENT_ID and the secret GOOGLE_CLIENT_SECRET; GMAIL_READ_DEMO=1 (a
+      # variable) with GMAIL_DEMO_CLIENT_ID (the demo's own client id, in its own Google Cloud
+      # project) shows the demo-only Find my flights in Gmail button.
       - if: steps.secrets.outputs.enabled == 'true'
         env:
           PAGES_ORIGIN: https://${{ github.repository_owner }}.github.io
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          GMAIL_READ_DEMO: ${{ vars.GMAIL_READ_DEMO }}
+          GMAIL_DEMO_CLIENT_ID: ${{ vars.GMAIL_DEMO_CLIENT_ID }}
         run: |
           pages="$(printf '%s' "${PAGES_ORIGIN}" | tr '[:upper:]' '[:lower:]')"
-          npx wrangler deploy --var "ALLOWED_ORIGINS:https://snowlightmap.com,https://www.snowlightmap.com,${pages}"
+          vars=(--var "ALLOWED_ORIGINS:https://snowlightmap.com,https://www.snowlightmap.com,${pages}")
+          if [ -n "${GOOGLE_CLIENT_ID}" ]; then vars+=(--var "GOOGLE_CLIENT_ID:${GOOGLE_CLIENT_ID}"); fi
+          if [ "${GMAIL_READ_DEMO}" = "1" ]; then vars+=(--var "GMAIL_READ_DEMO:1"); fi
+          if [ -n "${GMAIL_DEMO_CLIENT_ID}" ]; then vars+=(--var "GMAIL_DEMO_CLIENT_ID:${GMAIL_DEMO_CLIENT_ID}"); fi
+          npx wrangler deploy "${vars[@]}"
 
       - if: steps.secrets.outputs.enabled == 'true'
         env:
@@ -111,6 +126,18 @@ jobs:
           login="$(sed -n 's/^ADMIN_USERNAME = "\(.*\)"$/\1/p' wrangler.toml)"
           DERIVE_LOGIN="${login}" DERIVE_PASSWORD="${ADMIN_PASSWORD}" node scripts/derive-key.mjs \
             | npx wrangler secret put ADMIN_KEY > /dev/null
+
+      # The Google client's secret, piped on stdin; without it Google stays dormant.
+      - if: steps.secrets.outputs.enabled == 'true'
+        env:
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        run: |
+          if [ -z "${GOOGLE_CLIENT_SECRET}" ]; then
+            echo "::notice::No GOOGLE_CLIENT_SECRET secret: Connect Google stays off (docs/flights-trips.md)."
+            npx wrangler secret delete GOOGLE_CLIENT_SECRET > /dev/null 2>&1 || true
+            exit 0
+          fi
+          printf '%s' "${GOOGLE_CLIENT_SECRET}" | npx wrangler secret put GOOGLE_CLIENT_SECRET > /dev/null
 
       # The API root, from the account's workers.dev subdomain, and a health check.
       - if: steps.secrets.outputs.enabled == 'true'

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Snowlight</title>
+    <style>
+      html {
+        background: #000;
+        color-scheme: dark light;
+      }
+    </style>
+    <script>
+      // Google sends the person back here after Connect Google (flights spec D12). The answer
+      // goes to this tab's session storage for the signed-in trips page, which sends it to the
+      // accounts API with its own session (modes/flights/trips.ts takeGoogleReturn), and this
+      // page is replaced at once, so the code never stays in the history.
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var keep = {};
+        ['code', 'state', 'error'].forEach(function (name) {
+          var value = params.get(name);
+          if (value !== null && value.length <= 512) keep[name] = value;
+        });
+        try {
+          sessionStorage.setItem('snowlight:google-return', JSON.stringify(keep));
+        } catch (error) {
+          // Storage off: the trips page says Google was not connected.
+        }
+        location.replace('./?mode=flights&page=trips');
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>

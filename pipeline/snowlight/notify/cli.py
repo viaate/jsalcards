@@ -364,3 +364,6 @@ def register(subparsers: "argparse._SubParsersAction[argparse.ArgumentParser]") 
     )
     status.add_argument("--config", type=Path, default=DEFAULT_CONFIG, help="live.yaml")
     status.set_defaults(handler=run_status)
+    from snowlight.notify import flights  # noqa: PLC0415
+
+    flights.register(actions)

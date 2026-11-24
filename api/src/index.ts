@@ -10,8 +10,10 @@
 
 import * as account from './account';
 import * as admin from './admin';
+import * as google from './google';
 import * as names from './names';
 import * as notify from './notify';
+import * as trips from './trips';
 import { sweep } from './auth';
 import { HttpError, allowedOrigin, corsHeaders, json, type Env } from './http';
 import { prepareBlocklist } from './usernames/check';
@@ -19,6 +21,8 @@ import { prepareBlocklist } from './usernames/check';
 // The username lists compile here, at startup, which has its own time limit,
 // and a few checks run so the code is compiled too: no request pays for either.
 prepareBlocklist(true);
+// The Flights alert email's words too (google.ts prepareEmail).
+google.prepareEmail();
 
 export type { Env } from './http';
 
@@ -44,6 +48,18 @@ const routes: [method: string, pattern: RegExp, handler: Handler][] = [
   ['DELETE', /^\/v1\/me\/push$/, notify.deletePush],
   ['GET', /^\/v1\/me\/notify$/, notify.getNotify],
   ['PATCH', /^\/v1\/me\/notify$/, notify.patchNotify],
+  ['GET', /^\/v1\/me\/trips$/, trips.listTrips],
+  ['POST', /^\/v1\/me\/trips$/, trips.addTrip],
+  ['PATCH', /^\/v1\/me\/trips\/([^/]+)$/, trips.patchTrip],
+  ['DELETE', /^\/v1\/me\/trips\/([^/]+)$/, trips.deleteTrip],
+  ['GET', /^\/v1\/me\/flights\/notify$/, trips.getFlightsNotify],
+  ['PATCH', /^\/v1\/me\/flights\/notify$/, trips.patchFlightsNotify],
+  ['GET', /^\/v1\/me\/google$/, google.getGoogle],
+  ['POST', /^\/v1\/me\/google\/start$/, google.startGoogle],
+  ['POST', /^\/v1\/me\/google\/finish$/, google.finishGoogle],
+  ['POST', /^\/v1\/me\/google\/calendar$/, google.importCalendar],
+  ['DELETE', /^\/v1\/me\/google$/, google.disconnectGoogle],
+  ['POST', /^\/v1\/internal\/flights\/mail$/, google.sendAlertMail],
   ['GET', /^\/v1\/admin\/summary$/, admin.summary],
   ['GET', /^\/v1\/admin\/users$/, admin.users],
   ['POST', /^\/v1\/admin\/users\/([^/]+)\/reset-password$/, admin.resetPassword],
@@ -85,6 +101,8 @@ export async function handle(request: Request, env: Env, now = Date.now()): Prom
       return json(200, { ok: true, api: 1 }, cors);
     if (request.method === 'GET' && url.pathname === '/v1/push/key')
       return withCors(await notify.pushKey(env), cors);
+    if (request.method === 'GET' && url.pathname === '/v1/google/config')
+      return withCors(google.googleConfig(env), cors);
     if (request.method === 'GET' && url.pathname === '/v1/overrides')
       return await admin.publicOverrides(env, now, cors);
     for (const [method, pattern, handler] of routes) {
@@ -109,12 +127,14 @@ export async function handle(request: Request, env: Env, now = Date.now()): Prom
 
 /**
  * The daily run (wrangler.toml [triggers]): drops expired sessions with their
- * push subscriptions and expired username holds (auth.ts sweep). A failed run
+ * push subscriptions and expired username holds (auth.ts sweep), trips long past (trips.ts) and
+ * Google connects never finished (google.ts). A failed run
  * logs one line without any data and the next day's run tries again.
  */
 export async function daily(env: Env, now: number): Promise<void> {
   try {
     await sweep(env, now);
+    await env.DB.batch([...trips.sweepTrips(env, now), google.sweepGoogle(env, now)]);
   } catch {
     console.error('daily sweep failed');
   }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import type { Attachment } from 'svelte/attachments';
 
   import { flightsCopy, flightName, routeName, sectionName, updated } from '../../copy-flights';
@@ -10,6 +10,11 @@
   import RoutePanel from './RoutePanel.svelte';
   import type { RouteBack } from './schedule';
   import StormsPanel from './StormsPanel.svelte';
+  import TripsPanel from './TripsPanel.svelte';
+  import { TripsHost } from './trips-host.svelte';
+  import type { Trip } from './trips';
+  import { tripsCopy } from '../../copy-trips';
+  import { localToday } from './chance';
   import { backOf, backState, hrefOfView, sameView, viewOfSearch } from './address';
   import type { FlightsView } from './address';
   import { dotStates, dotStatesInTurns } from './layer';
@@ -39,6 +44,13 @@
 
   const LIST_ID = 'flights-results';
 
+  /** The account's trips (D12): read only once a panel that shows them opens. */
+  const tripsAlive = new AbortController();
+  const trips = new TripsHost(tripsAlive.signal);
+  onDestroy(() => {
+    tripsAlive.abort();
+  });
+
   let airports = $state<readonly Airport[] | null>(null);
   let live = $state<LiveRead | null>(null);
   /** Whether the live file has been asked for at least once, and whether the last ask failed. */
@@ -63,6 +75,30 @@
 
   const byCode = $derived(new Map((airports ?? []).map((airport) => [airport.code, airport])));
   const zones = $derived(new Map((airports ?? []).map((airport) => [airport.code, airport.tz])));
+  /** The saved trip open (`&page=trips&trip=<id>`), once the trips are read. */
+  const openTrip = $derived.by(() => {
+    const id = view.kind === 'trips' ? view.trip : null;
+    return id === null ? null : (trips.trips.find((trip) => trip.id === id) ?? null);
+  });
+  /** Its day as the flight panel counts days: from today at the airport it leaves from. */
+  const tripDay = $derived.by(() => {
+    const zone = openTrip === null ? undefined : byCode.get(openTrip.from)?.tz;
+    if (openTrip === null || zone === undefined) return 0;
+    const today = localToday(zone, now);
+    return Math.round(
+      (Date.parse(`${openTrip.day}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86_400_000,
+    );
+  });
+
+  function showTrip(trip: Trip): void {
+    go({ kind: 'trips', trip: trip.id });
+    void focusPanel();
+  }
+
+  // A flight or a trip shows whether it is saved: the trips are read once one opens.
+  $effect(() => {
+    if (view.kind === 'flight' || view.kind === 'trips') trips.load();
+  });
   const openAirport = $derived(
     view.kind === 'airport'
       ? view.code
@@ -391,6 +427,13 @@
       const to = toCode === null ? null : (known.get(toCode) ?? null);
       layer.route(from, to);
       if (from !== null && to !== null) fitRoute(from, to);
+    } else if (current.kind === 'trips' && openTrip !== null) {
+      // A saved trip: both its ends and its arc, as a flight's (D21 pattern 7).
+      layer.select(openTrip.from);
+      const from = known.get(openTrip.from) ?? null;
+      const to = known.get(openTrip.to) ?? null;
+      layer.route(from, to);
+      if (from !== null && to !== null) fitRoute(from, to);
     } else if (pastAirport !== null) {
       // A past day frames its own airport, with none of today's tags beside it (below).
       layer.select(pastAirport.code);
@@ -405,7 +448,7 @@
   // A panel with waiver lines reads the waivers file as it opens.
   $effect(() => {
     const kind = view.kind;
-    if (kind !== 'airport' && kind !== 'flight') return;
+    if (kind !== 'airport' && kind !== 'flight' && kind !== 'trips') return;
     void files.waivers().then((read) => {
       waivers = read;
     });
@@ -446,7 +489,7 @@
       if (next !== null) live = next;
       now = Date.now();
       // The waivers file only once a panel shows a waiver line (W8), never at the first view.
-      if (view.kind !== 'airport' && view.kind !== 'flight') return;
+      if (view.kind !== 'airport' && view.kind !== 'flight' && view.kind !== 'trips') return;
       const read = await files.waivers();
       if (stopped()) return;
       waivers = read;
@@ -679,6 +722,13 @@
           go({ kind: 'record' });
         }}>{flightsCopy.menu.record}</button
       >
+      <button
+        type="button"
+        onclick={() => {
+          menuOpen = false;
+          go({ kind: 'trips', trip: null });
+        }}>{tripsCopy.menu}</button
+      >
     </nav>
   {/if}
 
@@ -754,6 +804,52 @@
       onday={setDay}
       onroute={showRoute}
       onflight={openFlight}
+      onclose={close}
+      onsettle={() => {
+        map.controlsChanged();
+      }}
+      host={trips}
+    />
+  {:else if view.kind === 'trips' && openTrip !== null}
+    <FlightPanel
+      carrier={openTrip.carrier}
+      number={openTrip.number}
+      from={byCode.get(openTrip.from) ?? null}
+      day={tripDay}
+      {byCode}
+      {live}
+      failed={tried && live === null}
+      {waivers}
+      {files}
+      {now}
+      onday={(day: number) => {
+        go({
+          kind: 'flight',
+          carrier: openTrip.carrier,
+          number: openTrip.number,
+          from: openTrip.from,
+          day,
+        });
+      }}
+      onroute={() => undefined}
+      onflight={() => undefined}
+      onclose={() => {
+        go({ kind: 'trips', trip: null });
+      }}
+      onsettle={() => {
+        map.controlsChanged();
+      }}
+      host={trips}
+      tripTo={openTrip.to}
+    />
+  {:else if view.kind === 'trips'}
+    <TripsPanel
+      host={trips}
+      {byCode}
+      {live}
+      {files}
+      {now}
+      onopen={showTrip}
       onclose={close}
       onsettle={() => {
         map.controlsChanged();

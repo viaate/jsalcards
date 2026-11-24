@@ -110,3 +110,20 @@ jobs:
         name: One live pass
         timeout-minutes: 8
         run: uv run snowlight flights live --host github
+
+      # The Flights trip alerts (docs/flights-trips.md, flights spec D12), right after each pass:
+      # `snowlight notify flights` reads the saved trips from the accounts database (D1, over the
+      # Cloudflare API with the API's own two secrets) and the files just published (through
+      # GitHub's API), and sends what is due by web push and, where Google is connected, by email
+      # through the accounts API. With no Cloudflare secrets, no trips tables or no trips it says
+      # one line and sends nothing; a problem there never turns the live pass red.
+      - if: steps.token.outputs.ready == 'true' && steps.due.outputs.due == 'true'
+        name: Send the trip alerts
+        timeout-minutes: 4
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+          SNOWLIGHT_API_ROOT: ${{ vars.SNOWLIGHT_API_ROOT }}
+        run: uv run snowlight notify flights

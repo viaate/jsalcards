@@ -52,7 +52,11 @@ async function applyMigration(db: D1Database, file: string): Promise<void> {
 
 export async function startApi(
   bindings: Record<string, string> = {},
-  options: { skipMigrations?: (file: string) => boolean } = {},
+  options: {
+    skipMigrations?: (file: string) => boolean;
+    /** Answers the Worker's own fetches (a local mock of an outside service such as Google). */
+    outbound?: (request: Request) => Response | Promise<Response>;
+  } = {},
 ): Promise<Api> {
   const bundle = await build({
     entryPoints: [join(root, 'src/index.ts')],
@@ -69,6 +73,7 @@ export async function startApi(
       script: bundle.outputFiles[0]!.text,
       compatibilityDate: '2026-08-01',
       d1Databases: ['DB'],
+      ...(options.outbound === undefined ? {} : { outboundService: options.outbound }),
       bindings: {
         ADMIN_USERNAME: 'Olivia',
         ADMIN_KEY,

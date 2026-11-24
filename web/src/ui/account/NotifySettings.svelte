@@ -12,6 +12,14 @@
   } from '../../account/notify';
   import type { AccountStore } from '../../account/session';
   import { notifyCopy, notifyFormat } from '../../copy-notify';
+  import { connectedAs, quietNote, settingTime, thresholdName, tripsCopy } from '../../copy-trips';
+  import {
+    createTripsClient,
+    localDay,
+    type FlightsNotify,
+    type GoogleState,
+    type TripsClient,
+  } from '../../modes/flights/trips';
 
   interface Props {
     store: AccountStore;
@@ -49,8 +57,34 @@
   let note = $state<'saving' | 'saved' | null>(null);
   /** The iPhone steps, opened from the "How" link. */
   let howOpen = $state(false);
+  /** The Flights group (flights spec D3, D12): its own choices beside the Schools ones. */
+  let trips = $state<TripsClient | null>(null);
+  let flights = $state<FlightsNotify | null>(null);
+  /** Google, when the owner has set it up: email is offered only while it is connected. */
+  let google = $state<GoogleState | null>(null);
+
+  async function saveFlights(change: Partial<FlightsNotify>): Promise<void> {
+    if (trips === null) return;
+    try {
+      flights = await trips.setNotify(change);
+    } catch {
+      failed = 'failed';
+    }
+  }
 
   onMount(() => {
+    const flightsClient = createTripsClient(store);
+    trips = flightsClient;
+    void flightsClient.notify().then(
+      (read) => {
+        flights = read;
+      },
+      () => undefined,
+    );
+    void flightsClient.googleConfig().then(async (config) => {
+      if (!config.configured) return;
+      google = await flightsClient.google().catch(() => null);
+    });
     client =
       given ??
       createNotifyClient(
@@ -69,6 +103,31 @@
 
   const quietOn = $derived(
     current !== null && current.settings.quiet_from !== current.settings.quiet_to,
+  );
+  /** This device, for the Flights group: what it is, and whether this page can turn it on. */
+  const blocked = $derived(permission === 'denied' || failed === 'blocked');
+  const deviceWord = $derived(
+    deviceOn
+      ? tripsCopy.notify.deviceOn
+      : can === 'unsupported'
+        ? notifyCopy.settings.unsupported
+        : can === 'ios-install'
+          ? notifyCopy.ios.title
+          : blocked
+            ? tripsCopy.notify.deviceBlocked
+            : tripsCopy.notify.deviceOff,
+  );
+  const deviceHint = $derived(
+    deviceOn
+      ? null
+      : can === 'unsupported' || can === 'ios-install'
+        ? tripsCopy.notify.cannotHint
+        : blocked
+          ? tripsCopy.notify.blockedHint
+          : tripsCopy.notify.offHint,
+  );
+  const canTurnOn = $derived(
+    !deviceOn && !blocked && can !== 'unsupported' && can !== 'ios-install',
   );
 
   async function turnOn(): Promise<void> {
@@ -210,7 +269,12 @@
     {/if}
 
     {#if schools === 0}
-      <div class="row"><span class="label dim">{notifyCopy.settings.noSchools}</span></div>
+      <!-- With the Flights group below, the note says it is about school alerts only. -->
+      <div class="row">
+        <span class="label dim"
+          >{flights === null ? notifyCopy.settings.noSchools : tripsCopy.notify.noSchools}</span
+        >
+      </div>
     {/if}
 
     {#if current !== null && (deviceOn || current.devices > 0)}
@@ -351,6 +415,118 @@
       {/if}
     {/if}
   </div>
+
+  {#if flights !== null}
+    <div class="group" data-testid="notify-flights">
+      <div class="row head">
+        <h3 class="label">{tripsCopy.notify.title}</h3>
+      </div>
+      <label class="row">
+        <span class="label">{tripsCopy.notify.alerts}</span>
+        <input
+          class="switch"
+          type="checkbox"
+          role="switch"
+          checked={flights.alerts}
+          onchange={(event) => void saveFlights({ alerts: event.currentTarget.checked })}
+        />
+      </label>
+      {#if flights.alerts}
+        <div class="row" data-testid="flights-device">
+          <span class="label">{tripsCopy.notify.device}</span>
+          <span class="value">{deviceWord}</span>
+        </div>
+        {#if deviceHint !== null}
+          <div class="row sub"><span class="label dim">{deviceHint}</span></div>
+        {/if}
+        {#if canTurnOn}
+          <button
+            class="row action positive"
+            type="button"
+            disabled={busy}
+            onclick={() => void turnOn()}
+            data-testid="flights-turn-on"
+          >
+            <span class="label">{tripsCopy.notify.turnOn}</span>
+          </button>
+        {/if}
+        <div class="row">
+          <span class="label" id="flights-threshold-label">{tripsCopy.notify.threshold}</span>
+          <div class="segments" role="radiogroup" aria-labelledby="flights-threshold-label">
+            {#each [30, 50, 70] as const as value (value)}
+              <label class="segment" class:on={flights.threshold === value}>
+                <input
+                  type="radio"
+                  name="flights-threshold"
+                  value={String(value)}
+                  checked={flights.threshold === value}
+                  onchange={() => void saveFlights({ threshold: value })}
+                />
+                <span>{thresholdName(value)}</span>
+              </label>
+            {/each}
+          </div>
+        </div>
+        <div class="row sub"><span class="label dim">{tripsCopy.notify.thresholdHint}</span></div>
+        <label class="row">
+          <span class="label">{tripsCopy.notify.night}</span>
+          <input
+            class="switch"
+            type="checkbox"
+            role="switch"
+            checked={flights.night_before}
+            onchange={(event) => void saveFlights({ night_before: event.currentTarget.checked })}
+          />
+        </label>
+        {#if flights.night_before}
+          <label class="row sub">
+            <span class="label dim">{tripsCopy.notify.nightTime}</span>
+            <span class="pick">
+              <span class="shown" aria-hidden="true">{settingTime(flights.night_time)}</span>
+              <select
+                value={flights.night_time}
+                onchange={(event) => void saveFlights({ night_time: chosen(event) })}
+                data-testid="flights-night-time"
+              >
+                {#each NIGHT_TIMES as value (value)}
+                  <option {value}>{settingTime(value)}</option>
+                {/each}
+              </select>
+            </span>
+          </label>
+        {/if}
+        {#if current !== null && quietOn}
+          <div class="row sub">
+            <span class="label dim"
+              >{quietNote(
+                settingTime(current.settings.quiet_from),
+                settingTime(current.settings.quiet_to),
+              )}</span
+            >
+          </div>
+        {/if}
+        {#if google?.connected === true && google.send === true}
+          <label class="row">
+            <span class="label">{tripsCopy.notify.email}</span>
+            <input
+              class="switch"
+              type="checkbox"
+              role="switch"
+              checked={flights.email}
+              onchange={(event) => void saveFlights({ email: event.currentTarget.checked })}
+            />
+          </label>
+          <div class="row sub"><span class="label dim">{tripsCopy.notify.emailHint}</span></div>
+          <!-- When it was connected: a Google client in Testing mode ends its link after 7 days. -->
+          <div class="row sub">
+            <span class="label dim">{connectedAs(google.email ?? '', localDay(google.since))}</span>
+          </div>
+        {:else if google !== null}
+          <div class="row sub"><span class="label dim">{tripsCopy.notify.emailOff}</span></div>
+        {/if}
+      {/if}
+    </div>
+  {/if}
 
   {#if current !== null && current.devices > 0}
     <div class="group">
@@ -608,6 +784,11 @@
 
   .action .label {
     color: var(--destructive);
+  }
+
+  .action.positive .label {
+    color: var(--text-1);
+    font-weight: 600;
   }
 
   .action:disabled {

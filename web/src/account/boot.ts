@@ -11,6 +11,7 @@ import type { SchoolId } from '../types/generated';
 import type AccountControl from '../ui/account/AccountControl.svelte';
 import { createApi } from './api';
 import { syncPins } from './pins';
+import { shareStore } from './shared';
 import { createAccountStore, type AccountStore } from './session';
 
 export interface Accounts {
@@ -87,6 +88,15 @@ export async function startAccounts(
     import('../ui/account/AccountControl.svelte'),
   ]);
   if (signal.aborted || !store.state.available) return null;
+  // Flights' trips read the same account (account/shared.ts).
+  shareStore(store);
+  signal.addEventListener(
+    'abort',
+    () => {
+      shareStore(null);
+    },
+    { once: true },
+  );
   // After a sign-in, a browser's notifications come back only for the account that turned
   // them on here; another account's sign-in turns them off (account/notify.ts follow).
   let following: string | null = null;

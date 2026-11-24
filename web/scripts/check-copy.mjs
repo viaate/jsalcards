@@ -103,6 +103,7 @@ export const COPY_MODULES = [
   'src/copy-legal-links.ts',
   'src/copy-modes.ts',
   'src/copy-flights.ts',
+  'src/copy-trips.ts',
 ];
 
 /** The waitlist page's words (src/copy-waitlist.ts), filled into pages under copy.waitlist. */
@@ -254,6 +255,9 @@ export const PROPER_NOUNS = new Set([
   'ZIP',
   // The Federal Aviation Administration, as people say it (src/copy-flights.ts).
   'FAA',
+  // Connect Google, for calendar flights and the alert email (src/copy-trips.ts).
+  'Google',
+  'Gmail',
   'AM',
   'PM',
   // A school's time zone after its time, where the viewer's differs: "7 AM CT".
