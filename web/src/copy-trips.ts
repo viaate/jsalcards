@@ -622,8 +622,8 @@ export function adviceOf(ticket: TicketKey): string {
 }
 
 /**
- * The push's text: what changed, the chance, why, and the best backup with the money words
- * (D12, D18). `now` (Unix seconds): a push that reaches the phone late says when it was checked
+ * The push's text: what changed, the chance, why, and the best backup (for a safer alert also
+ * the plan that made it) with the money words (D12, D18). `now` (Unix seconds): a push that reaches the phone late says when it was checked
  * first, so an old one never reads as current.
  */
 export function alertBody(sent: AlertFacts, now: number | null = null): string {
@@ -650,6 +650,12 @@ export function alertBody(sent: AlertFacts, now: number | null = null): string {
   const first = facts.backups[0];
   if (first !== undefined) {
     parts.push(backupSentence(first, facts.day, facts.from, facts.to));
+    // A safer push names the plan that made it (TRAV-R7-S1): after the first (the sender's rank,
+    // same airline first) when that plan is not the first. It is still live here: a safer alert
+    // whose plan has left reads as the chance (shownAt).
+    const trigger = facts.alert === 'safer' ? saferTrigger(sent) : null;
+    if (trigger !== null && trigger !== first && facts.backups.includes(trigger))
+      parts.push(backupSentence(trigger, facts.day, facts.from, facts.to));
     parts.push(tripsCopy.backup.money);
   } else {
     const line = noBackupLine(sent, facts);

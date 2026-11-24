@@ -61,26 +61,28 @@ export async function startAccounts(
   signal: AbortSignal,
 ): Promise<Accounts | null> {
   const api = createApi(root);
-  // Notifications (account/notify.ts), loaded only when this browser has allowed them.
+  // Notifications (account/notify.ts), loaded only when this browser has allowed them, or at a
+  // sign-out or account delete.
   const notify = () => import('./notify');
   const allowed = (): boolean =>
     typeof Notification !== 'undefined' && Notification.permission === 'granted';
   const store = createAccountStore(api, {
-    // Logging out stops this browser's notifications for the account.
+    // Logging out stops this browser's notifications for the account. Both also drop the
+    // worker's notes of shown Flights alerts (pwa/alert-store.ts), even when this browser no
+    // longer allows notifications.
     onLogout: async (held) => {
-      if (allowed())
-        await (
-          await notify()
+      await (
+        await notify()
+      )
+        .createNotifyClient(
+          api,
+          () => held,
+          () => null,
         )
-          .createNotifyClient(
-            api,
-            () => held,
-            () => null,
-          )
-          .turnOff();
+        .turnOff();
     },
     onDeleted: async () => {
-      if (allowed()) await (await notify()).dropLocal();
+      await (await notify()).dropLocal();
     },
   });
   const [, control] = await Promise.all([

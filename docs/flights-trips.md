@@ -45,15 +45,31 @@ Flights spec FL-3 (D12, D18, D19, D20 W8). One account serves Schools and Flight
   leaves within 2 hours (3 from a nearby airport), the sender's own lead (`BACKUP_LEAD_S`). So
   that a late one still has a later flight to name, each alert carries up to six safer plans best
   first (`ALERT_CARRIED`) and a `more` flag when the sender found others past them; it names the
-  top live one (push) or two (email). It says "We see no safer usual flight you can still catch."
+  top live one (push) or two (email); a safer push also names the plan that made it when that
+  plan is not the first (the first stays first, so the same airline leads). It says "We see no safer usual flight you can still catch."
   only when that is so: the sender found none, or every plan it found has left and it found no
   more. When the carried ones have left but it found more, it says "The safer flights in this
   alert have left. Open the trip to look for others." A safer push whose new flight (the best of
   the one or two it names, the one that made it) has left reads as the trip's chance. The risk
   pushes of a trip (chance, rise, fall, safer, evening check) share one notification and one push
   topic (`fl-risk-<trip>`), so the push service keeps only the newest for a phone that was
-  offline, and the worker never lets one checked earlier replace a newer one in the tray (it
-  shows the newer one again without a sound). Each one that replaces another rings again
+  offline, and the worker never lets one checked earlier replace a newer one (it shows the newer
+  one again without a sound). It keeps the newest `at` it has shown under each tag, with its
+  facts, in memory from the moment it shows a push, and as a note in its own IndexedDB store
+  (`snowlight-flights-alerts`, one note per tag), so an older push is dropped even when the newer
+  one was swiped away; then the newer one is shown again, worded for now (from the tray as it is
+  only when it knows no words for it). When the newest it knows no longer reads, the older push
+  is shown without a sound: an older push never rings. The worker handles a tag's pushes one at a
+  time, so two in flight together never leave the older one last. Notes are written one after
+  another on one chain, each in one readwrite transaction that puts the note only when there is
+  none or it is older, so a slow write never lands over a newer note; a write is never cut short.
+  A second delivery of the same push is shown again without a sound. A store or tray read that
+  takes over a second is skipped, and memory still knows what this worker showed. Each write
+  drops the notes of trips whose day is over, and the page drops them all at sign-out, account
+  delete, and notifications or Flights alerts turned off, and a trip's own when it is deleted
+  (`web/src/pwa/alert-store.ts`). With no store it checks the tray and its memory alone. Schools
+  pushes are shown at once, never behind a Flights push. Each Flights alert shows the time the
+  sender checked (`timestamp`), not the time the phone got it. Each one that replaces another rings again
   (`renotify`), as FAA and waiver pushes do (each on its own topic); a safer push whose new
   flight has left says nothing new and updates the tray without a sound. Web push through the
   existing push path, and email when Google is connected.

@@ -5,6 +5,7 @@
  */
 import { ApiError, type Api } from '../../account/api';
 import type { AccountStore } from '../../account/session';
+import { forgetAlerts, forgetTrip } from '../../pwa/alert-store';
 import type { TicketKey } from '../../copy-trips';
 import type { CalendarEvent } from './found';
 
@@ -112,11 +113,21 @@ export function createTripsClient(store: AccountStore): TripsClient {
       (await call<{ trip: Trip }>('PATCH', `/v1/me/trips/${encodeURIComponent(id)}`, change)).trip,
     remove: async (id) => {
       await call('DELETE', `/v1/me/trips/${encodeURIComponent(id)}`);
+      // The worker's notes of this trip's alerts go with it (pwa/alert-store.ts).
+      await forgetTrip(id);
     },
     notify: async () =>
       (await call<{ settings: FlightsNotify }>('GET', '/v1/me/flights/notify')).settings,
-    setNotify: async (change) =>
-      (await call<{ settings: FlightsNotify }>('PATCH', '/v1/me/flights/notify', change)).settings,
+    setNotify: async (change) => {
+      const { settings } = await call<{ settings: FlightsNotify }>(
+        'PATCH',
+        '/v1/me/flights/notify',
+        change,
+      );
+      // Flights alerts off: no note of a shown one stays (pwa/alert-store.ts).
+      if (!settings.alerts) await forgetAlerts();
+      return settings;
+    },
     // The config is public: any failure reads as Google off, so nothing about Google shows.
     googleConfig: async () => {
       try {

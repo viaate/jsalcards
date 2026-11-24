@@ -16,6 +16,7 @@
  * notifications without pressing Turn on.
  */
 
+import { forgetAlerts, type AlertDb } from '../pwa/alert-store';
 import { ApiError, type Api } from './api';
 
 export const THRESHOLDS = [30, 50, 70] as const;
@@ -62,6 +63,8 @@ export interface NotifyHost {
     setItem(key: string, value: string): void;
     removeItem(key: string): void;
   };
+  /** Where the worker keeps its notes of shown Flights alerts (pwa/alert-store.ts). */
+  readonly indexedDB?: AlertDb;
 }
 
 /** Where this browser keeps the id of the account that turned its notifications on. */
@@ -238,6 +241,7 @@ export function createNotifyClient(
         let held = await manager.getSubscription();
         // Another account's subscription is never handed over: this account gets its own.
         if (held !== null && ownerOf(env) !== id) {
+          await forgetAlerts(env.indexedDB ?? null);
           await held.unsubscribe().catch(() => false);
           held = null;
         }
@@ -253,6 +257,8 @@ export function createNotifyClient(
       }
     },
     async turnOff() {
+      // The worker's notes of this account's Flights alerts go first, whatever else happens.
+      await forgetAlerts(env?.indexedDB ?? null);
       if (env?.Notification?.permission !== 'granted') return;
       const subscription = await current().catch(() => null);
       if (subscription === null) return;
@@ -270,6 +276,7 @@ export function createNotifyClient(
         keepOwner(env, null);
         await subscription?.unsubscribe().catch(() => false);
       }
+      await forgetAlerts(env?.indexedDB ?? null);
       return devices;
     },
     async follow() {
@@ -281,6 +288,7 @@ export function createNotifyClient(
         return;
       }
       keepOwner(env, null);
+      await forgetAlerts(env.indexedDB ?? null);
       await subscription.unsubscribe().catch(() => false);
     },
     read: () => call<NotifyState>('GET', '/v1/me/notify'),
@@ -296,6 +304,7 @@ export function granted(env: NotifyHost | null = host()): boolean {
 /** Drops this browser's subscription without the API (after the account was deleted there). */
 export async function dropLocal(env: NotifyHost | null = host()): Promise<void> {
   keepOwner(env, null);
+  await forgetAlerts(env?.indexedDB ?? null);
   if (env === null || !granted(env) || support(env) !== 'supported') return;
   const manager = await pushManager(env);
   const subscription = manager === null ? null : await manager.getSubscription();

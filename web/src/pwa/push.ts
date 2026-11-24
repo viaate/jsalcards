@@ -18,6 +18,7 @@ import { detailsFormat } from '../copy-details';
 import { notifyCopy, notifyFormat } from '../copy-notify';
 import { alertBody, alertRings, alertTitle } from '../copy-trips';
 import { readAlert } from '../modes/flights/alert';
+import { ALERT_NOTES, finished, openNotes, type AlertDb } from './alert-store';
 
 const STATUS_WORDS: ReadonlySet<string> = new Set([
   'closed',
@@ -126,6 +127,8 @@ export interface Shown {
   readonly options: Omit<NotificationOptions, 'data'> & {
     readonly data: { readonly url: string; readonly at?: number | null };
     readonly renotify?: boolean;
+    /** `timestamp` is in the Notifications spec but not in TypeScript's DOM types. */
+    readonly timestamp?: number;
   };
 }
 
@@ -202,6 +205,8 @@ export function notificationFor(data: unknown, scope: string, icon: string, now:
         // `at`: when the sender checked, so the worker never lets an older one replace a newer
         // one already in the tray (TRAV-R6-B1).
         data: { url: tripUrl(scope, alert.trip), at: alert.at },
+        // The tray says when the sender checked, not when the phone got it (TRAV-R7-S3).
+        ...(alert.at === null ? {} : { timestamp: alert.at * 1000 }),
       },
     };
   }
@@ -232,6 +237,8 @@ export function notificationFor(data: unknown, scope: string, icon: string, now:
 
 /** The parts of the worker's global scope these handlers use (tests hand it a fake). */
 export interface PushScope {
+  /** Absent, or failing: the worker checks the tray and its memory alone. */
+  readonly indexedDB?: AlertDb;
   readonly registration: {
     readonly scope: string;
     showNotification(title: string, options?: NotificationOptions): Promise<void>;
@@ -298,36 +305,218 @@ function checkedAt(data: unknown): number | null {
 }
 
 /**
- * Shows a push, unless the tray holds a newer Flights alert under its tag (TRAV-R6-B1): alerts
- * from two passes can reach a phone out of order, and an older one must never stand as the
- * current one. Then the newer one is shown again as it is, without a sound, so the push still
- * shows a notification and the tray keeps the newest.
+ * The newest Flights alert shown under a tag: its `at` and its facts. The worker keeps it two
+ * ways (TRAV-R7-S2, TRAV-P2-B1). In memory, set the moment a push is shown and read first, so no
+ * write still under way can open a gap while the worker runs. And as a note in IndexedDB
+ * (alert-store.ts), for after the worker has stopped: the tray forgets an alert the person swiped
+ * away, the note does not, so an older push that comes after it is still dropped. A note whose
+ * trip day is over is dropped (TRAV-P1-S3); the page drops them all at sign-out and the like.
  */
-async function show(scope: PushScope, shown: Shown): Promise<void> {
-  const at = checkedAt(shown.options.data);
-  const tag = shown.options.tag;
-  if (at !== null && tag !== undefined && scope.registration.getNotifications !== undefined) {
-    let held: readonly ShownLike[] = [];
-    try {
-      held = await scope.registration.getNotifications({ tag });
-    } catch {
-      // The tray cannot be read: show the push as it is.
+interface Kept {
+  readonly at: number;
+  readonly data: unknown;
+}
+
+/** How long a store or tray read may take before the push goes on without it (TRAV-P1-S4). */
+export const STORE_WAIT_MS = 1000;
+const DAY_MS = 86_400_000;
+const NOTE_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Runs a read for at most STORE_WAIT_MS; past that, or when it fails, `fallback`. A store or
+ * tray that hangs must not keep the push from showing. Only reads are cut short: a write is
+ * never (see Notes.keep).
+ */
+async function timed<T>(work: () => Promise<T>, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      work().catch(() => fallback),
+      new Promise<T>((resolve) => (timer = setTimeout(resolve, STORE_WAIT_MS, fallback))),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** A stored note, read back: its `at` and facts, or null. */
+function readNote(note: unknown): Kept | null {
+  const at = isRecord(note) ? checkedAt(note) : null;
+  return at === null || !isRecord(note) ? null : { at, data: note.data };
+}
+
+/** Whether a note's trip day is over (any US airport's day is over once this UTC date is past). */
+function over(note: Kept, now: Date): boolean {
+  const day = isRecord(note.data) ? note.data.day : null;
+  const done = new Date(now.getTime() - DAY_MS).toISOString().slice(0, 10);
+  return typeof day !== 'string' || !NOTE_DAY.test(day) || day < done;
+}
+
+function request<T>(asked: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    asked.onsuccess = () => {
+      resolve(asked.result);
+    };
+    asked.onerror = () => {
+      reject(asked.error ?? new Error('The alert note cannot be read.'));
+    };
+  });
+}
+
+/** The worker's notes, in memory and in IndexedDB. */
+class Notes {
+  private readonly shown = new Map<string, Kept>();
+  private open: Promise<IDBDatabase> | null = null;
+  /** The one write chain: each write waits behind the one before it, however long that takes. */
+  private writes: Promise<void> = Promise.resolve();
+
+  constructor(private readonly db: AlertDb | undefined) {}
+
+  private notes(): Promise<IDBDatabase> {
+    if (this.db === undefined) return Promise.reject(new Error('No store.'));
+    if (this.open === null) {
+      const opening = openNotes(this.db, () => {
+        if (this.open === opening) this.open = null;
+      });
+      opening.catch(() => {
+        if (this.open === opening) this.open = null;
+      });
+      this.open = opening;
     }
-    const newer = held.find((one) => (checkedAt(one.data) ?? -Infinity) > at);
-    if (newer !== undefined) {
-      const again: Shown['options'] = {
-        body: newer.body,
-        icon: newer.icon,
-        tag: newer.tag,
-        data: newer.data as Shown['options']['data'],
-        renotify: false,
-        silent: true,
+    return this.open;
+  }
+
+  /** The newest alert known in memory under `tag`, or null. */
+  remembered(tag: string): Kept | null {
+    return this.shown.get(tag) ?? null;
+  }
+
+  /** Remembers `kept` as the newest under `tag`, unless a newer one is known. */
+  remember(tag: string, kept: Kept, now: Date): void {
+    const old = this.shown.get(tag);
+    if (old === undefined || old.at < kept.at) this.shown.set(tag, kept);
+    for (const [key, note] of this.shown) if (over(note, now)) this.shown.delete(key);
+  }
+
+  /** The note under `tag`, or null (none, or it cannot be read in time). */
+  read(tag: string): Promise<Kept | null> {
+    return timed(async () => {
+      const open = await this.notes();
+      const store = open.transaction(ALERT_NOTES, 'readonly').objectStore(ALERT_NOTES);
+      return readNote(await request<unknown>(store.get(tag)));
+    }, null);
+  }
+
+  /**
+   * Notes `kept` under `tag`. In one readwrite transaction it reads the note and puts the new one
+   * only when there is none or it is older (compare and set), then drops notes whose day is over.
+   * Never cut short and never left behind: the next write waits on this one, and a transaction is
+   * all or nothing, so no write lands late over a newer note.
+   */
+  keep(tag: string, kept: Kept, now: Date): Promise<void> {
+    const write = this.writes.then(async () => {
+      const open = await this.notes();
+      const transaction = open.transaction(ALERT_NOTES, 'readwrite');
+      const done = finished(transaction);
+      const store = transaction.objectStore(ALERT_NOTES);
+      const old = store.get(tag);
+      old.onsuccess = () => {
+        const note = readNote(old.result);
+        if (note === null || note.at < kept.at) store.put({ at: kept.at, data: kept.data }, tag);
+        const keys = store.getAllKeys();
+        keys.onsuccess = () => {
+          const all = store.getAll();
+          all.onsuccess = () => {
+            keys.result.forEach((key, i) => {
+              const one = readNote(all.result[i]);
+              if (one === null || over(one, now)) store.delete(key);
+            });
+          };
+        };
       };
-      await scope.registration.showNotification(newer.title, again);
-      return;
+      await done;
+    });
+    // A write that fails leaves the note as it was: the tray and memory still hold the newest.
+    this.writes = write.catch(() => undefined);
+    return this.writes;
+  }
+}
+
+/** A notification shown again, never as a new change: no sound, its own checked time. */
+function quiet(options: Shown['options']): Shown['options'] {
+  const at = checkedAt(options.data);
+  return {
+    ...options,
+    renotify: false,
+    silent: true,
+    ...(at === null ? {} : { timestamp: at * 1000 }),
+  };
+}
+
+/**
+ * Shows a Flights push, unless the same or a newer alert was shown under its tag (TRAV-R6-B1,
+ * TRAV-R7-S2, TRAV-P1-S1, TRAV-P1-S2, TRAV-P2-S1): alerts from two passes can reach a phone out
+ * of order, or twice, and an older one must never stand as the current one or ring. Then the
+ * newest is shown again, without a sound: from memory or the note, in its words at `now`, so it
+ * never names a backup that can no longer be caught; from the tray as it is. When the newest
+ * cannot be worded, the push itself is shown, without a sound. The push always shows a
+ * notification (a browser requires one). Resolves once shown, with the note's write, if any.
+ */
+async function showFlights(
+  scope: PushScope,
+  notes: Notes,
+  data: unknown,
+  shownFor: (data: unknown) => Shown,
+  now: Date,
+): Promise<{ readonly written: Promise<void> | null }> {
+  const shown = shownFor(data);
+  const at = checkedAt(shown.options.data) ?? -Infinity;
+  const tag = shown.options.tag ?? '';
+  const mine = notes.remembered(tag);
+  const [held, note] = await Promise.all([
+    timed(async () => (await scope.registration.getNotifications?.({ tag })) ?? [], []),
+    notes.read(tag),
+  ]);
+  // The newest alert in the tray under this tag (the tray cannot be read: none).
+  let tray: ShownLike | null = null;
+  for (const one of held) {
+    if ((checkedAt(one.data) ?? -Infinity) > (checkedAt(tray?.data) ?? -Infinity)) tray = one;
+  }
+  const trayAt = checkedAt(tray?.data) ?? -Infinity;
+  const known = [mine, note]
+    .filter((one): one is Kept => one !== null && one.at >= at)
+    .sort((a, b) => b.at - a.at);
+  const newest = Math.max(trayAt, ...known.map((one) => one.at));
+  if (newest < at) {
+    await scope.registration.showNotification(shown.title, shown.options);
+    notes.remember(tag, { at, data }, now);
+    return { written: notes.keep(tag, { at, data }, now) };
+  }
+  // The same or a newer alert was shown: this push never rings.
+  for (const one of known) {
+    notes.remember(tag, one, now);
+    const again = shownFor(one.data);
+    // Only an alert that reads back whole, under this tag, with its own `at`.
+    if (one.at >= trayAt && again.options.tag === tag && checkedAt(again.options.data) === one.at) {
+      await scope.registration.showNotification(again.title, quiet(again.options));
+      return { written: null };
     }
   }
-  await scope.registration.showNotification(shown.title, shown.options);
+  if (tray !== null && trayAt > at) {
+    await scope.registration.showNotification(
+      tray.title,
+      quiet({
+        body: tray.body,
+        icon: tray.icon,
+        tag: tray.tag,
+        data: tray.data as Shown['options']['data'],
+      }),
+    );
+    return { written: null };
+  }
+  // The same alert again, or a newer one that no longer reads: this push, without a sound.
+  await scope.registration.showNotification(shown.title, quiet(shown.options));
+  return { written: null };
 }
 
 /** Installs the push and click handlers on the worker's scope. `now` is for tests. */
@@ -336,6 +525,15 @@ export function installPush(
   icon: string,
   now: () => Date = () => new Date(),
 ): void {
+  let db: AlertDb | undefined;
+  try {
+    db = scope.indexedDB;
+  } catch {
+    db = undefined;
+  }
+  const notes = new Notes(db);
+  /** The Flights pushes waiting under each tag. */
+  const queues = new Map<string, Promise<unknown>>();
   scope.addEventListener('push', (event) => {
     let data: unknown;
     try {
@@ -343,8 +541,42 @@ export function installPush(
     } catch {
       data = null;
     }
-    const shown = notificationFor(data, scope.registration.scope, icon, now());
-    event.waitUntil(show(scope, shown));
+    const first = notificationFor(data, scope.registration.scope, icon, now());
+    const tag = first.options.tag;
+    if (checkedAt(first.options.data) === null || tag === undefined) {
+      // Schools pushes (no `at`) are shown at once, as they always were (TRAV-P2-S3).
+      event.waitUntil(scope.registration.showNotification(first.title, first.options));
+      return;
+    }
+    // One Flights push at a time per tag (TRAV-P1-B1): each reads the tray and the notes only
+    // after the one before it has shown, so two in flight together never leave the older last.
+    const before = queues.get(tag) ?? Promise.resolve();
+    const run = before.then(() => {
+      const at = now();
+      return showFlights(
+        scope,
+        notes,
+        data,
+        (facts) => notificationFor(facts, scope.registration.scope, icon, at),
+        at,
+      );
+    });
+    const after = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    queues.set(tag, after);
+    void after.then(() => {
+      if (queues.get(tag) === after) queues.delete(tag);
+    });
+    event.waitUntil(run);
+    // The note's write keeps the worker up until it is done.
+    event.waitUntil(
+      run.then(
+        ({ written }) => written,
+        () => undefined,
+      ),
+    );
   });
   scope.addEventListener('notificationclick', (event) => {
     event.notification.close();

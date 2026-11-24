@@ -826,6 +826,50 @@ describe('alert facts and their words (D12)', () => {
     expect(dropped.more).toBe(true);
     expect(alertBody(dropped)).not.toContain(tripsCopy.alert.noBackup);
   });
+  it('a safer push names the plan that made it when that plan is not the first (TRAV-R7-S1)', () => {
+    // The sender's own safer fixture: WN 1500 (91%, same airline) ranks first, and AA 88 on Mon
+    // at 6:00 pm (92%) is the plan that made the alert.
+    const safer = must(readAlert(SENT.safer));
+    const at = must(safer.at);
+    const wn = 'Safer: WN 1500 at 3:00 pm, 91% chance to get there on time.';
+    const aa = 'Leave a day early: AA 88, Mon, Jan 5 at 6:00 pm, 92% chance to get there on time.';
+    const body = alertBody(safer, at);
+    expect(body).toBe(
+      `Another usual flight looks safer. Leaves Tue, Jan 6 at 10:00 am. 31% chance of a cancel. Snow in the forecast at MCI. ${wn} ${aa} ${tripsCopy.backup.money}`,
+    );
+    // Same airline stays first; the money words come after both.
+    expect(body.indexOf(wn)).toBeLessThan(body.indexOf(aa));
+    // The email names the same two.
+    const mail = alertEmail(safer, 'https://snowlightmap.com/', at).text;
+    expect(mail).toContain(`${wn}\n${aa}`);
+    // Once AA 88 is inside its lead the alert reads as the trip's chance and names WN 1500 alone.
+    const after = alertBody(safer, must(safer.backups[1]).departs - BACKUP_LEAD_S + 1);
+    expect(after).not.toContain(tripsCopy.alert.safer);
+    expect(after).toContain(wn);
+    expect(after).not.toContain('AA 88');
+    // Shown late while AA 88 can still be caught: both, after the checked line.
+    const later = {
+      ...safer,
+      backups: safer.backups.map((b, i) => (i === 1 ? { ...b, departs: at + 5 * 3600 } : b)),
+    };
+    const late = alertBody(later, at + 70 * 60);
+    expect(late).toMatch(/^Checked Mon, Jan 5 at 4:00 pm, MCI time\. Another usual flight/);
+    expect(late).toContain(`${wn} ${aa} ${tripsCopy.backup.money}`);
+    expect(alertRings(later, at + 70 * 60)).toBe(true);
+    // When the first plan is the one that made it, the push names it alone.
+    const top = {
+      ...safer,
+      backups: safer.backups.map((b, i) => (i === 0 ? { ...b, chance: 95 } : b)),
+    };
+    expect(alertBody(top, at)).toContain(
+      `Safer: WN 1500 at 3:00 pm, 95% chance to get there on time. ${tripsCopy.backup.money}`,
+    );
+    expect(alertBody(top, at)).not.toContain('AA 88');
+    // Every other kind still names one backup in the push.
+    expect(alertBody(must(readAlert(SENT.chance)), at)).not.toContain('AA 88');
+    // The facts are unchanged: the sender's safer payload stays under 3,000 bytes.
+    expect(new TextEncoder().encode(JSON.stringify(SENT.safer)).length).toBeLessThan(3000);
+  });
   it('a safer alert shown after its safer flights left never rings again (TRAV-R5-S1)', () => {
     const safer = must(readAlert(SENT.safer));
     const at = must(safer.at);

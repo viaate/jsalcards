@@ -14,6 +14,7 @@ import {
   type PushManagerLike,
   type SubscriptionLike,
 } from '../notify';
+import { fakeIdb } from '../../pwa/tests/fake-idb';
 
 const CHROME = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/141.0 Safari/537.36';
 const IPHONE =
@@ -63,6 +64,9 @@ function browser(
     permission = options.answer ?? 'granted';
     return Promise.resolve(permission);
   });
+  /** The worker's Flights alert notes: `drop` each time they are dropped. */
+  const notes = fakeIdb();
+  const dropped = notes.log;
   const env: NotifyHost = {
     navigator: {
       userAgent: options.ua ?? CHROME,
@@ -84,8 +88,9 @@ function browser(
       setItem: (key, value) => void stored.set(key, value),
       removeItem: (key) => void stored.delete(key),
     },
+    indexedDB: notes.db,
   };
-  return { env, subscribe, requestPermission, stored };
+  return { env, subscribe, requestPermission, stored, dropped };
 }
 
 function fakeApi(fail?: (path: string) => ApiError | null) {
@@ -249,6 +254,37 @@ describe('turning notifications on and off', () => {
     await dropLocal(deleted.env);
     expect(unsubscribe).toHaveBeenCalled();
     expect(ownerOf(deleted.env)).toBeNull();
+  });
+
+  it('drops the worker’s Flights alert notes whenever this browser stops getting them (TRAV-P1-S3)', async () => {
+    const client = (env: NotifyHost, user = 'u1') =>
+      createNotifyClient(
+        fakeApi().api,
+        () => 'tok',
+        () => user,
+        env,
+      );
+    // Off, and signed out (turnOff), even once the browser no longer allows notifications.
+    for (const permission of ['granted', 'denied'] as const) {
+      const off = browser({ permission, held: subscription().held, owner: 'u1' });
+      await client(off.env).turnOff();
+      expect(off.dropped).toEqual(['drop']);
+    }
+    const all = browser({ permission: 'granted', held: subscription().held, owner: 'u1' });
+    await client(all.env).turnOffAll();
+    expect(all.dropped).toEqual(['drop']);
+    // Another account signs in on this browser.
+    const other = browser({ permission: 'granted', held: subscription().held, owner: 'u1' });
+    await client(other.env, 'u2').follow();
+    expect(other.dropped).toEqual(['drop']);
+    // The account was deleted.
+    const deleted = browser({ permission: 'denied', owner: 'u1' });
+    await dropLocal(deleted.env);
+    expect(deleted.dropped).toEqual(['drop']);
+    // Still signed in as its owner: the notes stay.
+    const mine = browser({ permission: 'granted', held: subscription().held, owner: 'u1' });
+    await client(mine.env).follow();
+    expect(mine.dropped).toEqual([]);
   });
 
   it('never hands one account’s notifications to another who signs in', async () => {
