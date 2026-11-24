@@ -181,7 +181,7 @@ export class TripsHost {
     if (client === null) return null;
     try {
       const saved = await client.add(trip);
-      this.trips = [...this.trips.filter((t) => t.id !== saved.id), saved].sort(byWhen);
+      this.trips = withTrip(this.trips, saved);
       this.note = tripsCopy.added;
       return saved;
     } catch (error) {
@@ -198,7 +198,7 @@ export class TripsHost {
     if (client === null) return;
     try {
       const saved = await client.change(id, change);
-      this.trips = this.trips.map((t) => (t.id === saved.id ? saved : t));
+      this.trips = replaceTrip(this.trips, saved);
     } catch {
       this.note = tripsCopy.saveFailed;
     }
@@ -209,7 +209,7 @@ export class TripsHost {
     if (client === null) return;
     try {
       await client.remove(id);
-      this.trips = this.trips.filter((t) => t.id !== id);
+      this.trips = withoutTrip(this.trips, id);
       this.note = tripsCopy.removed;
     } catch {
       this.note = tripsCopy.saveFailed;
@@ -219,4 +219,23 @@ export class TripsHost {
 
 function byWhen(a: Trip, b: Trip): number {
   return a.day.localeCompare(b.day) || a.leaves - b.leaves;
+}
+
+// The list changes go through these plain functions rather than reading `this.trips` inside its
+// own write: the copy lint (scripts/check-copy.mjs) follows a field written from itself round
+// after round, and on the class it ran out of memory.
+
+/** The trips with this one added or put in place of its old copy, in trip order. */
+function withTrip(trips: readonly Trip[], saved: Trip): readonly Trip[] {
+  return [...trips.filter((t) => t.id !== saved.id), saved].sort(byWhen);
+}
+
+/** The trips without this one. */
+function withoutTrip(trips: readonly Trip[], id: string): readonly Trip[] {
+  return trips.filter((t) => t.id !== id);
+}
+
+/** The trips with this one's new copy in its place. */
+function replaceTrip(trips: readonly Trip[], saved: Trip): readonly Trip[] {
+  return trips.map((t) => (t.id === saved.id ? saved : t));
 }
