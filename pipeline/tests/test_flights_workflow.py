@@ -1,9 +1,9 @@
-"""Contract tests for the Flights workflows: .github/workflows/flights-live.yml (the live pass on
-the live-ingest tick) and flights-monthly.yml (the daily check, scoring and refit).
+"""Contract tests for the Flights workflows: .github/workflows/flights-live.yml (the self-chained
+live loop) and flights-monthly.yml (the daily check, scoring and refit).
 
-Both stay dark without the live host token, publish only through the flights commands, keep
-their own concurrency groups (the monthly job never holds the live one), and never start
-another workflow or run (no rerun, no dispatch)."""
+Both stay dark without the live host token, publish only through the flights commands and keep
+their own concurrency groups (the monthly job never holds the live one). Neither starts another
+workflow; the live loop dispatches only its own successor."""
 
 from pathlib import Path
 
@@ -33,13 +33,20 @@ def monthly() -> dict[str, object]:
     return _load(MONTHLY)
 
 
-def _job(workflow: dict[str, object]) -> dict[str, object]:
+def _job(workflow: dict[str, object], name: str | None = None) -> dict[str, object]:
     jobs = workflow["jobs"]
     assert isinstance(jobs, dict)
-    assert len(jobs) == 1
-    job = next(iter(jobs.values()))
+    if name is None:
+        assert len(jobs) == 1
+        job = next(iter(jobs.values()))
+    else:
+        job = jobs[name]
     assert isinstance(job, dict)
     return job
+
+
+def _loop(live: dict[str, object]) -> dict[str, object]:
+    return _job(live, "live")
 
 
 def _steps(job: dict[str, object]) -> list[dict[str, object]]:
@@ -52,31 +59,82 @@ def test_the_old_single_workflow_is_gone() -> None:
     assert not (WORKFLOWS / "flights.yml").exists()
 
 
-def test_the_live_pass_hangs_off_the_live_ingest_tick(live: dict[str, object]) -> None:
+def test_the_loop_starts_itself_and_from_every_backstop(live: dict[str, object]) -> None:
     triggers = live["on"]
     assert isinstance(triggers, dict)
     assert triggers["workflow_run"] == {"workflows": ["live-ingest"], "types": ["requested"]}
-    # The hourly cron is only a backstop; there is no dispatch.
-    assert [entry["cron"] for entry in triggers["schedule"]] == ["7 * * * *"]
-    assert "workflow_dispatch" not in triggers
-    assert live["concurrency"] == {"group": "flights-live", "cancel-in-progress": False}
-    job = _job(live)
-    assert "default_branch" in str(job["if"])
+    assert [entry["cron"] for entry in triggers["schedule"]] == ["*/20 * * * *"]
+    assert triggers["push"] == {"paths": [".github/workflows/flights-live.yml"]}
+    dispatch = triggers["workflow_dispatch"]
+    assert isinstance(dispatch, dict)
+    assert set(dispatch["inputs"]) == {"after"}
+    # One loop job at a time, never cancelled, and no group of live-ingest or live-read held.
+    assert "concurrency" not in live
+    job = _loop(live)
+    assert job["concurrency"] == {"group": "flights-live", "cancel-in-progress": False}
+    assert job["needs"] == "check"
+    assert job["if"] == (
+        "${{ !cancelled() && needs.check.result != 'skipped'"
+        " && needs.check.outputs.start != 'false' }}"
+    )
+    assert "per_page=100" in str(_steps(_job(live, "check"))[0]["run"])
+    check = _job(live, "check")
+    assert "concurrency" not in check
+    assert "default_branch" in str(check["if"])
+    assert "workflow_run.head_branch" in str(check["if"])
+    assert check["permissions"] == {"actions": "read"}
+    assert check["timeout-minutes"] == 2
+    text = LIVE.read_text(encoding="utf-8")
+    assert "group: live-read" not in text
+    assert "group: live-ingest" not in text
 
 
-def test_the_live_pass_runs_only_when_the_served_file_is_old(live: dict[str, object]) -> None:
-    steps = _steps(_job(live))
-    due = next(step for step in steps if step.get("id") == "due")
-    assert "v1/flights/latest.json" in str(due["run"])
-    assert "-ge 900" in str(due["run"])
-    assert "--max-time 15" in str(due["run"])
-    # Read past the Pages cache: the host repository first, a query no cache holds after.
-    assert "api.github.com/repos/viaate/snowlight-live/contents/" in str(due["run"])
-    assert "latest.json?t=" in str(due["run"])
-    later = steps[steps.index(due) + 1 :]
-    assert later
-    for step in later:
-        assert "steps.due.outputs.due == 'true'" in str(step["if"])
+def test_the_loop_runs_its_passes_under_hard_limits(live: dict[str, object]) -> None:
+    from snowlight.flights import loop  # noqa: PLC0415
+
+    job = _loop(live)
+    steps = _steps(job)
+    run = next(step for step in steps if step.get("id") == "loop")
+    assert run["run"] == "uv run snowlight flights loop --until +300m"
+    assert loop.PASS_SECONDS <= 9 * 60
+    assert loop.ALERTS_SECONDS <= 4 * 60
+    # Every step is bounded, and the job outlasts the set-up, the loop and the successor.
+    bounded = [step for step in steps[1:] if step.get("id") != "successor"]
+    assert all(isinstance(step.get("timeout-minutes"), int) for step in bounded)
+    total = sum(int(str(step["timeout-minutes"])) for step in bounded)
+    assert int(str(run["timeout-minutes"])) >= 300 + 9 + 4 + 2
+    assert isinstance(job["timeout-minutes"], int)
+    assert total + 2 <= job["timeout-minutes"] <= 355
+    env = run["env"]
+    assert isinstance(env, dict)
+    assert set(env) == {
+        "LIVE_HOST_TOKEN",
+        "CLOUDFLARE_API_TOKEN",
+        "CLOUDFLARE_ACCOUNT_ID",
+        "GITHUB_TOKEN",
+        "SNOWLIGHT_API_ROOT",
+    }
+    # The live host token reaches only the token check and the loop.
+    for step in steps:
+        if step.get("id") not in {"token", "loop"}:
+            assert "SNOWLIGHT_LIVE_TOKEN" not in str(step)
+
+
+def test_the_successor_is_dispatched_unless_cancelled(live: dict[str, object]) -> None:
+    job = _loop(live)
+    assert job["permissions"] == {"contents": "read", "actions": "write"}
+    steps = _steps(job)
+    successor = steps[-1]
+    assert successor["id"] == "successor"
+    condition = str(successor["if"])
+    assert "(success() || failure())" in condition
+    assert "always()" not in condition
+    assert "steps.loop.outcome != 'skipped'" in condition
+    script = str(successor["run"])
+    assert "actions/workflows/flights-live.yml/dispatches" in script
+    assert '--arg after "$GITHUB_RUN_ID"' in script
+    assert "::warning::" in script
+    assert script.rstrip().endswith("exit 0")
 
 
 def test_the_monthly_job_has_its_own_group(monthly: dict[str, object]) -> None:
@@ -169,7 +227,7 @@ def test_the_flights_caches_stay_one_history_under_2_gb(monthly: dict[str, objec
 def test_each_job_stays_dark_without_the_token(path: Path) -> None:
     workflow = _load(path)
     assert workflow["permissions"] == {"contents": "read"}
-    job = _job(workflow)
+    job = _loop(workflow) if path == LIVE else _job(workflow)
     assert job["environment"] == "live"
     steps = _steps(job)
     assert steps[0]["id"] == "token"
@@ -181,68 +239,118 @@ def test_each_job_stays_dark_without_the_token(path: Path) -> None:
 def test_the_jobs_run_the_flights_commands_only(
     live: dict[str, object], monthly: dict[str, object]
 ) -> None:
-    runs = [str(step.get("run", "")) for step in _steps(_job(live))]
-    assert "uv run snowlight flights live --host github" in runs
+    runs = [str(step.get("run", "")) for step in _steps(_loop(live))]
+    assert "uv run snowlight flights loop --until +300m" in runs
     runs = [str(step.get("run", "")) for step in _steps(_job(monthly))]
     assert any("snowlight flights monthly" in run for run in runs)
     for path in (LIVE, MONTHLY):
         text = path.read_text(encoding="utf-8")
-        for forbidden in ("gh workflow run", "rerun", "--no-verify", "gh api"):
+        for forbidden in ("gh workflow run", "rerun", "re-run", "--no-verify", "gh api", "/cancel"):
             assert forbidden not in text
+    # The only dispatch is the loop's own successor.
+    assert MONTHLY.read_text(encoding="utf-8").count("dispatches") == 0
+    assert LIVE.read_text(encoding="utf-8").count("/dispatches") == 1
 
 
-def test_the_live_job_is_short(live: dict[str, object]) -> None:
-    job = _job(live)
-    assert isinstance(job["timeout-minutes"], int)
-    assert job["timeout-minutes"] <= 15
-    passes = next(s for s in _steps(job) if s.get("name") == "One live pass")
-    assert passes["timeout-minutes"] == 8
-
-
-def _due(live: dict[str, object], tmp_path: Path, answers: dict[str, str]) -> str:
-    """Run the due step with a stand-in curl that answers by host; its ``due=`` output."""
+def _check(
+    live: dict[str, object],
+    tmp_path: Path,
+    answers: dict[str, str],
+    env: dict[str, str] | None = None,
+) -> str:
+    """Run the check step with a stand-in curl that answers by URL; its ``start=`` output."""
     import os  # noqa: PLC0415
     import shutil  # noqa: PLC0415
     import subprocess  # noqa: PLC0415
 
     if shutil.which("jq") is None or shutil.which("bash") is None:
         pytest.skip("jq and bash are needed to run the step")
-    due = next(step for step in _steps(_job(live)) if step.get("id") == "due")
+    step = next(s for s in _steps(_job(live, "check")) if s.get("id") == "loop")
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(parents=True)
+    for name, body in answers.items():
+        (tmp_path / name).write_text(body)
+    lines = [
+        "#!/bin/bash",
+        'out=""; url=""',
+        'while [ $# -gt 0 ]; do case "$1" in -o) out="$2"; shift 2 ;; -w|-H|--max-time) shift 2 ;;'
+        ' -*) shift ;; *) url="$1"; shift ;; esac; done',
+        'case "$url" in',
+        f"  */workflows/flights-live.yml/runs*) src={tmp_path}/runs ;;",
+        f"  */runs/*/jobs) id=${{url%/jobs}}; id=${{id##*/}}; src={tmp_path}/jobs-$id ;;",
+        "  *) exit 7 ;;",
+        "esac",
+        '[ -f "$src" ] || { printf 404; exit 0; }',
+        'cp "$src" "$out"; printf 200',
+    ]
     curl = bin_dir / "curl"
-    lines = ["#!/bin/bash", 'case "$*" in']
-    lines += [f"  *{host}*) printf '%s' '{body}' ;;" for host, body in answers.items()]
-    lines += ["  *) exit 7 ;;", "esac"]
     curl.write_text("\n".join(lines) + "\n")
     curl.chmod(0o755)
     output = tmp_path / "out"
     output.write_text("")
-    env = {
+    work = tmp_path / "work"
+    work.mkdir()
+    full = {
         **os.environ,
         "PATH": f"{bin_dir}:{os.environ['PATH']}",
         "GITHUB_OUTPUT": str(output),
-        "LIVE_HOST_TOKEN": "x",
+        "GITHUB_REPOSITORY": "o/r",
+        "GITHUB_RUN_ID": "9",
+        "GH_TOKEN": "x",
+        "AFTER": "",
+        "EVENT": "schedule",
+        **(env or {}),
     }
-    subprocess.run(["bash", "-c", str(due["run"])], env=env, check=True, capture_output=True)  # noqa: S603, S607
+    subprocess.run(  # noqa: S603
+        ["bash", "-c", str(step["run"])],  # noqa: S607
+        env=full,
+        cwd=work,
+        check=True,
+        capture_output=True,
+    )
     return output.read_text().strip()
 
 
-def _stamp(minutes_ago: int) -> str:
-    from datetime import UTC, datetime, timedelta  # noqa: PLC0415
+def _runs(*ids: int) -> str:
+    import json  # noqa: PLC0415
 
-    made = datetime.now(UTC) - timedelta(minutes=minutes_ago)
-    return '{"generated_at": "' + made.strftime("%Y-%m-%dT%H:%M:%SZ") + '"}'
+    return json.dumps({"workflow_runs": [{"id": i, "status": "in_progress"} for i in ids]})
 
 
-def test_the_due_gate_reads_the_host_before_the_cache(
+def _jobs(*jobs: tuple[str, str]) -> str:
+    import json  # noqa: PLC0415
+
+    return json.dumps({"jobs": [{"name": n, "status": s} for n, s in jobs]})
+
+
+def test_a_run_ends_quietly_while_a_loop_runs(live: dict[str, object], tmp_path: Path) -> None:
+    running = {
+        "runs": _runs(9, 7),
+        "jobs-7": _jobs(("check", "completed"), ("live", "in_progress")),
+    }
+    assert _check(live, tmp_path / "a", running) == "start=false"
+    # A loop waiting in the group counts too.
+    waiting = {"runs": _runs(7), "jobs-7": _jobs(("live", "queued"))}
+    assert _check(live, tmp_path / "b", waiting) == "start=false"
+    # Its own run, and the predecessor that dispatched it, never count.
+    assert _check(live, tmp_path / "c", running, {"AFTER": "7"}) == "start=true"
+    assert _check(
+        live, tmp_path / "d", {"runs": _runs(9), "jobs-9": _jobs(("live", "queued"))}
+    ) == ("start=true")
+    # A run whose loop is over, or that only checked, holds nothing.
+    over = {
+        "runs": _runs(7, 8),
+        "jobs-7": _jobs(("live", "completed")),
+        "jobs-8": _jobs(("check", "in_progress")),
+    }
+    assert _check(live, tmp_path / "e", over) == "start=true"
+
+
+def test_a_list_that_fails_leaves_the_group_to_keep_one_loop(
     live: dict[str, object], tmp_path: Path
 ) -> None:
-    # The host repository says fresh, the Pages copy (cached) says old: no pass.
-    fresh = {"api.github.com": _stamp(3), "github.io": _stamp(40)}
-    assert _due(live, tmp_path / "a", fresh) == "due=false"
-    assert _due(live, tmp_path / "b", {"api.github.com": _stamp(20)}) == "due=true"
-    # The host read fails: the Pages copy, read past its cache, decides.
-    assert _due(live, tmp_path / "c", {"github.io": _stamp(5)}) == "due=false"
-    # Nothing reads: a pass runs.
-    assert _due(live, tmp_path / "d", {}) == "due=true"
+    assert _check(live, tmp_path / "a", {}) == "start=true"
+    assert _check(live, tmp_path / "b", {"runs": _runs(7)}) == "start=true"
+    # A push of this file always starts one (the group serialises it behind any other).
+    running = {"runs": _runs(7), "jobs-7": _jobs(("live", "in_progress"))}
+    assert _check(live, tmp_path / "c", running, {"EVENT": "push"}) == "start=true"

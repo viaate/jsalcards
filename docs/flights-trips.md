@@ -133,6 +133,7 @@ Until both exist `GET /v1/google/config` says not configured, every other Google
 - Web (`web/src/modes/flights/`): `trips-host.svelte.ts`, `TripsPanel.svelte`,
   `TripTools.svelte`, `BackupPlans.svelte`, `backup.ts`, `ticket.ts`, `found.ts`, `gmail.ts`
   (lazy), `gmail-read.ts` (lazy); the words in `web/src/copy-trips.ts`.
-- Sender (`pipeline/snowlight/notify/flights.py`, `flights_rules.py`): the last step of each
-  `flights-live.yml` pass, `snowlight notify flights`. It reads the published files through
-  GitHub's API, works each trip's alerts as the page works its numbers, and fails dark.
+- Sender (`pipeline/snowlight/notify/flights.py`, `flights_rules.py`): run after each
+  `flights-live.yml` pass that wrote (the live loop, docs/flights.md), `snowlight notify
+  flights`. It reads the published files through GitHub's API, works each trip's alerts as the
+  page works its numbers, and fails dark.

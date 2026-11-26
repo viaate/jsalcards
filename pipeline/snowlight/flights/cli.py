@@ -4,6 +4,9 @@
   and ``flights/latest.json`` to the live host (``--host github``, needs ``LIVE_HOST_TOKEN``) or
   to a folder (``--host dir --host-dir DIR``, the dry run). Exit 0 when the files were written,
   3 when nothing could be (no forecast and no FAA status read), 1 on an error.
+* ``flights loop``: live passes on the live host about every 20 minutes until ``--until``, each a
+  child under a hard time limit and followed by the trip alerts (the flights-live workflow;
+  :mod:`snowlight.flights.loop`). Exit 0 when a pass wrote, 3 when none did.
 * ``flights train``: fit on the history kept in RAM, test on the held-out year, and write the
   model file, the held-out report and the track record and past storm files.
 * ``flights static``: write the airports, usual flights and own record files from the history.
@@ -56,6 +59,10 @@ def register(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") ->
     run.add_argument("--host-dir", type=Path, default=None)
     run.add_argument("--model", type=Path, default=artifact_module.MODEL_FILE)
     run.set_defaults(handler=run_live)
+
+    chain = sub.add_parser("loop", help="live passes about every 20 minutes until --until")
+    chain.add_argument("--until", required=True, help="how long, e.g. +300m")
+    chain.set_defaults(handler=run_loop)
 
     fit = sub.add_parser("train", help="fit, test and write the model and its report")
     fit.add_argument("--raw", type=Path, default=RAW)
@@ -362,6 +369,71 @@ def run_live(args: argparse.Namespace) -> int:  # pragma: no cover - the network
             return fetch.get_bytes(http, url, tries=2, pause=3, deadline=end)
 
         return live_pass(budgeted(plain), write, args.model, now, _say, read_back)
+
+
+PAGES_LATEST: Final = "https://viaate.github.io/snowlight-live/v1/flights/latest.json"
+FRESH_READ_SECONDS: Final = 15.0
+PASS_DROPS: Final = ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "GITHUB_TOKEN")
+"""Secrets the pass child never sees (the trip alerts' own)."""
+ALERTS_DROPS: Final = ("LIVE_HOST_TOKEN",)
+"""The secret the trip alerts' child never sees (the pass's own)."""
+
+
+def run_loop(args: argparse.Namespace) -> int:  # pragma: no cover - children, network, clock
+    """``snowlight flights loop``: :func:`snowlight.flights.loop.run` with each pass and the
+    trip alerts in a child of this interpreter, the host's ``latest.json`` read through the
+    contents API (no cache) and, only when that fails, the Pages copy past its cache."""
+    import subprocess  # noqa: PLC0415
+
+    from snowlight.flights import loop  # noqa: PLC0415
+    from snowlight.live.publishers import GitHubPublisher  # noqa: PLC0415
+    from snowlight.predict.inputs import client as host_client  # noqa: PLC0415
+
+    token = os.environ.get("LIVE_HOST_TOKEN", "")
+    if not token:
+        sys.stderr.write("flights loop: needs LIVE_HOST_TOKEN" + "\n")
+        return EXIT_ERROR
+    deadline = loop.until_of(args.until, datetime.now(UTC))
+    host = GitHubPublisher(
+        repository=LIVE_REPOSITORY, token=token, client=host_client(), branch="main"
+    )
+
+    def made() -> datetime | None:
+        try:
+            stamp = loop.made_of(host.read(f"{ROOT}/flights/latest.json"))
+        except Exception as error:  # the Pages copy then decides
+            _say(f"flights loop: latest.json not read from the host ({type(error).__name__})")
+            stamp = None
+        if stamp is not None:
+            return stamp
+        try:
+            with fetch.client(timeout=FRESH_READ_SECONDS) as http:
+                url = f"{PAGES_LATEST}?t={int(time.time())}"
+                return loop.made_of(fetch.get_bytes(http, url, tries=1))
+        except Exception as error:  # unreadable: a pass runs
+            _say(f"flights loop: latest.json not read from Pages ({type(error).__name__})")
+            return None
+
+    def child(arguments: Sequence[str], seconds: float, drops: Sequence[str]) -> int:
+        command = [sys.executable, "-m", "snowlight", *arguments]
+        env = loop.without(os.environ, drops)
+        try:
+            return subprocess.run(command, env=env, timeout=seconds, check=False).returncode  # noqa: S603
+        except subprocess.TimeoutExpired:  # the child is killed and reaped
+            return loop.EXIT_TIMEOUT
+
+    outcome = loop.run(
+        deadline=deadline,
+        clock=lambda: datetime.now(UTC),
+        sleep=time.sleep,
+        made=made,
+        one_pass=lambda: child(
+            ["flights", "live", "--host", "github"], loop.PASS_SECONDS, PASS_DROPS
+        ),
+        alerts=lambda: child(["notify", "flights"], loop.ALERTS_SECONDS, ALERTS_DROPS),
+        log=_say,
+    )
+    return EXIT_OK if outcome.written or not outcome.passes else EXIT_DARK
 
 
 # --- train ---------------------------------------------------------------------------------------

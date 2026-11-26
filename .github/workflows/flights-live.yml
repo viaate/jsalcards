@@ -1,22 +1,33 @@
-# Flights live (docs/flights.md): one `snowlight flights live` pass about every 20 minutes.
+# Flights live (docs/flights.md, "The live loop"): one self-chained loop, all day, the way
+# live-read.yml keeps the closings reader running.
 #
-# What starts it: every run of live-ingest.yml. The owner's Cloudflare timer dispatches that
-# workflow every 5 minutes, and each of its runs, as it is requested, also starts one run of
-# this workflow (workflow_run), the way chances-watch.yml is started. GitHub's own schedule on
-# this repository fires only a few times a day, so the hourly cron below is only a backstop.
-# Each run first reads v1/flights/latest.json from the live host's repository (not the Pages
-# cache) and goes on only when it is 15 minutes old or more (or missing or unreadable), so a
-# pass runs about every fourth tick. A run still
-# waiting for a runner is replaced by the next tick's; a pass under way is never cancelled.
+# Each run's `live` job is `snowlight flights loop --until +300m`: a live pass about every 20
+# minutes (`snowlight flights live --host github`, a child under a hard limit of 9 minutes, so a
+# hang ends that pass and never the loop), then the trip alerts after each pass that wrote. A
+# pass starts only when v1/flights/latest.json, read from the live host's repository (not the
+# Pages cache, whose copy can be 10 minutes old; the Pages copy, past its cache, only when that
+# read fails), is 15 minutes old or more, or missing or unreadable. At the end the job dispatches
+# its successor (workflow_dispatch with this run's own token, naming this run in `after`); if
+# that fails, one warning, and the next start below begins the next loop.
+#
+# What starts it: its predecessor, the 20-minute schedule (GitHub fires it late and seldom on
+# this repository: a backstop), every run of live-ingest.yml (workflow_run, as before), the
+# owner (workflow_dispatch) and a push that changes this file. The `check` job (a few seconds,
+# no checkout) ends a run quietly when another run's `live` job is not completed (the run named
+# in `after` excepted, and never on a push); the job-level concurrency group keeps one `live`
+# job at a time anyway, so there is never a second writer. It holds no group of live-ingest or
+# live-read.
 #
 # The pass reads the newest 00Z forecast bulletins (the public NBM bucket), the FAA airport
 # status, the NWS alerts and the weather reports, and writes v1/flights/live/<slot>.json and
 # v1/flights/latest.json to the live host (the same repository and token as predict.yml). Each
 # source that fails is published as not read, never as nothing in effect; with neither the
-# forecast nor the FAA status read, nothing is written and the job ends with exit 3 (the page
-# grays the old file by its age). Each request waits 20 s at most and the pass stops asking
-# after 6 minutes, writing what it read. Once a day, from that day's 00Z run, it also keeps the
-# day's archive snapshot in a write of its own (v1/flights/archive/<slot of the day>.json).
+# forecast nor the FAA status read, nothing is written (the page grays the old file by its age),
+# the pass is one warning and the loop goes on. Each request waits 20 s at most and the pass
+# stops asking after 6 minutes, writing what it read. Once a day, from that day's 00Z run, it
+# also keeps the day's archive snapshot in a write of its own (v1/flights/archive/<slot of the
+# day>.json). The loop step fails (the successor still starts) only when no pass of the run
+# wrote.
 #
 # Publishing needs the secret SNOWLIGHT_LIVE_TOKEN in the environment `live`; until it exists
 # every run ends at the first step with a notice: nothing is published, nothing fails.
@@ -25,35 +36,108 @@
 name: flights-live
 
 on:
+  workflow_dispatch:
+    inputs:
+      after:
+        description: "the run that dispatched this one (its predecessor's loop is not counted)"
+        required: false
+        type: string
+        default: ""
   workflow_run:
     workflows: [live-ingest]
     types: [requested]
   schedule:
-    - cron: "7 * * * *"
-
-concurrency:
-  group: flights-live
-  cancel-in-progress: false
+    - cron: "*/20 * * * *"
+  push:
+    paths:
+      - .github/workflows/flights-live.yml
 
 permissions:
   contents: read
 
 jobs:
-  live:
-    if: github.event_name == 'schedule' || github.event.workflow_run.head_branch == github.event.repository.default_branch
+  # End quietly while a loop runs. A list that fails is a notice and the run goes on: the
+  # concurrency group below still keeps one loop.
+  check:
+    # Scheduled runs are always on the default branch (their payload names no repository); a
+    # live-ingest run counts only from the default branch.
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_run' && github.event.workflow_run.head_branch == github.event.repository.default_branch) || (github.event_name != 'workflow_run' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 2
+    permissions:
+      actions: read # list this workflow's runs and their jobs
+    outputs:
+      start: ${{ steps.loop.outputs.start }}
+    steps:
+      - id: loop
+        name: End quietly while a loop runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AFTER: ${{ inputs.after }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -uo pipefail
+          if [ "$EVENT" = push ]; then
+            echo "flights loop: this file changed: a loop starts (the group keeps one)"
+            echo "start=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          api="${GITHUB_API_URL:-https://api.github.com}/repos/$GITHUB_REPOSITORY/actions"
+          call() { # URL OUT: prints the HTTP status, 000 for no answer
+            curl -sS --max-time 20 -o "$2" -w '%{http_code}' \
+              -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "$1" 2>/dev/null || echo 000
+          }
+          code=$(call "$api/workflows/flights-live.yml/runs?per_page=100" runs.json)
+          if [ "$code" != 200 ]; then
+            echo "::notice::flights-live runs could not be listed (HTTP $code): the concurrency group keeps one loop."
+            echo "start=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          while read -r id; do
+            [ -n "$id" ] || continue
+            if [ "$id" = "$GITHUB_RUN_ID" ] || [ "$id" = "$AFTER" ]; then continue; fi
+            code=$(call "$api/runs/$id/jobs" jobs.json)
+            if [ "$code" != 200 ]; then
+              echo "::notice::the jobs of run $id could not be listed (HTTP $code): the concurrency group keeps one loop."
+              continue
+            fi
+            open=$(jq '[.jobs[] | select(.name == "live" and .status != "completed")] | length' jobs.json 2>/dev/null || echo 0)
+            if [ "${open:-0}" -gt 0 ]; then
+              echo "flights loop: run $id holds the loop: nothing starts"
+              echo "start=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done < <(jq -r '.workflow_runs[] | select(.status != "completed") | .id' runs.json 2>/dev/null)
+          echo "flights loop: no loop runs: one starts"
+          echo "start=true" >> "$GITHUB_OUTPUT"
+
+  live:
+    needs: check
+    # A check that failed (a lost runner, a timeout) starts the loop too: the group keeps one.
+    if: ${{ !cancelled() && needs.check.result != 'skipped' && needs.check.outputs.start != 'false' }}
+    runs-on: ubuntu-latest
+    # The set-up (20 at most), the loop step (320: its 300 minutes, its last pass of 9 and trip
+    # alerts of 4) and the successor.
+    timeout-minutes: 345
     environment: live
+    concurrency:
+      group: flights-live
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      actions: write # start the successor
     defaults:
       run:
         working-directory: pipeline
     env:
-      LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
       PYTHONUNBUFFERED: "1"
     steps:
       - id: token
         name: Stay dark without the live host token
         working-directory: .
+        env:
+          LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
         run: |
           if [ -z "$LIVE_HOST_TOKEN" ]; then
             echo "::notice::No SNOWLIGHT_LIVE_TOKEN in the live environment: nothing is published (docs/flights.md)."
@@ -62,40 +146,14 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # The age is read from the live host's own repository (the contents API, no cache in
-      # between), never through the Pages CDN, whose copy can be up to 10 minutes old and would
-      # make a fresh file look stale. Only when that read fails is the Pages copy read, with a
-      # query that no cache holds.
       - if: steps.token.outputs.ready == 'true'
-        id: due
-        name: Go on only when the live file is 15 minutes old or more
-        working-directory: .
-        run: |
-          set +e
-          body=$(curl -sS --compressed --max-time 15 -H "Authorization: Bearer $LIVE_HOST_TOKEN" -H "Accept: application/vnd.github.raw+json" https://api.github.com/repos/viaate/snowlight-live/contents/v1/flights/latest.json 2>/dev/null)
-          made=$(printf '%s' "$body" | jq -r '.generated_at // empty' 2>/dev/null)
-          if [ -z "$made" ]; then
-            body=$(curl -sS --compressed --max-time 15 "https://viaate.github.io/snowlight-live/v1/flights/latest.json?t=$(date -u +%s)" 2>/dev/null)
-            made=$(printf '%s' "$body" | jq -r '.generated_at // empty' 2>/dev/null)
-          fi
-          when=$(date -u -d "$made" +%s 2>/dev/null)
-          if [ -z "$when" ]; then
-            echo "flights live: no readable latest.json: a pass runs"
-            echo "due=true" >> "$GITHUB_OUTPUT"
-          elif [ $(( $(date -u +%s) - when )) -ge 900 ]; then
-            echo "flights live: latest.json made at $made: a pass runs"
-            echo "due=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "flights live: latest.json made at $made is fresh: no pass this tick"
-            echo "due=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - if: steps.token.outputs.ready == 'true' && steps.due.outputs.due == 'true'
+        timeout-minutes: 5
         uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - if: steps.token.outputs.ready == 'true' && steps.due.outputs.due == 'true'
+      - if: steps.token.outputs.ready == 'true'
+        timeout-minutes: 5
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: "3.12"
@@ -103,27 +161,50 @@ jobs:
           enable-cache: true
           cache-dependency-glob: uv.lock
 
-      - if: steps.token.outputs.ready == 'true' && steps.due.outputs.due == 'true'
+      - if: steps.token.outputs.ready == 'true'
+        timeout-minutes: 10
         run: uv sync --locked --no-dev
 
-      - if: steps.token.outputs.ready == 'true' && steps.due.outputs.due == 'true'
-        name: One live pass
-        timeout-minutes: 8
-        run: uv run snowlight flights live --host github
-
-      # The Flights trip alerts (docs/flights-trips.md, flights spec D12), right after each pass:
+      # The trip alerts (docs/flights-trips.md, flights spec D12) follow each pass that wrote:
       # `snowlight notify flights` reads the saved trips from the accounts database (D1, over the
       # Cloudflare API with the API's own two secrets) and the files just published (through
       # GitHub's API), and sends what is due by web push and, where Google is connected, by email
       # through the accounts API. With no Cloudflare secrets, no trips tables or no trips it says
-      # one line and sends nothing; a problem there never turns the live pass red.
-      - if: steps.token.outputs.ready == 'true' && steps.due.outputs.due == 'true'
-        name: Send the trip alerts
-        timeout-minutes: 4
-        continue-on-error: true
+      # one line and sends nothing; a problem there never ends the loop. Each child gets only its
+      # own secrets (the pass never sees the Cloudflare ones, the alerts never the live host's).
+      - if: steps.token.outputs.ready == 'true'
+        id: loop
+        name: Live passes until the loop's end
+        timeout-minutes: 320
         env:
+          LIVE_HOST_TOKEN: ${{ secrets.SNOWLIGHT_LIVE_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
           SNOWLIGHT_API_ROOT: ${{ vars.SNOWLIGHT_API_ROOT }}
-        run: uv run snowlight notify flights
+        run: uv run snowlight flights loop --until +300m
+
+      # Not on cancel: cancelling a run (or disabling the workflow) stops the chain. Not when the
+      # loop never ran (a set-up step failed): the schedule or live-ingest starts the next run,
+      # never a tight chain of cold runs. The successor's `live` job waits for this one.
+      - if: steps.token.outputs.ready == 'true' && (success() || failure()) && steps.loop.outcome != 'skipped'
+        id: successor
+        name: Start the successor
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          api="${GITHUB_API_URL:-https://api.github.com}/repos/$GITHUB_REPOSITORY/actions/workflows/flights-live.yml/dispatches"
+          body=$(jq -cn --arg ref "$GITHUB_REF_NAME" --arg after "$GITHUB_RUN_ID" '{ref: $ref, inputs: {after: $after}}')
+          for try in 1 2 3; do
+            code=$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              -d "$body" "$api" 2>/dev/null || true)
+            if [ "$code" = "204" ]; then
+              echo "successor dispatched"
+              exit 0
+            fi
+            if [ "$try" -lt 3 ]; then sleep $((try * 10)); fi
+          done
+          echo "::warning::The flights-live successor could not be dispatched (HTTP $code): the 20-minute schedule or the next live-ingest run starts one (docs/flights.md)."
+          exit 0

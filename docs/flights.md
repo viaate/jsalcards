@@ -255,12 +255,8 @@ what usually flies, never a claim that a flight is on sale.
 
 ## The live pass
 
-`snowlight flights live --host github` (`.github/workflows/flights-live.yml`). The workflow is
-started by every run of live-ingest.yml (the owner's 5-minute timer, the way chances-watch.yml
-is started) and goes on only when `v1/flights/latest.json`, read from the live host's repository
-(not the Pages cache, whose copy can be 10 minutes old), is 15 minutes old or more,
-so a pass runs about every 20 minutes; GitHub's own schedule on this repository fires only a few
-times a day, so its hourly cron is a backstop. A pass:
+`snowlight flights live --host github`, run about every 20 minutes by the live loop below
+(`.github/workflows/flights-live.yml`). A pass:
 
 1. reads the two newest 00Z NBS runs out (the only runs the test scored), the FAA status, the
    NWS alerts, the weather reports and the hourly reports of the 49 hours before the runs, each
@@ -327,6 +323,38 @@ written and when read. A pass reads the slot back first and keeps no second snap
 The host's tree is the site's, uploaded whole by every Schools deploy, so every Flights file has
 a budget (`live.HOST_BUDGET`, 200 MB): the archive 150 MB, the live files 1.5 MB, the monthly
 build 40 MB (a larger build is not published), each held by a test.
+
+## The live loop
+
+`snowlight flights loop --until +300m` (`pipeline/snowlight/flights/loop.py`), the `live` job of
+`.github/workflows/flights-live.yml`, keeps itself running all day the way the closings reader
+does (live-read.yml): it runs a pass about every 20 minutes for 300 minutes, then the job
+dispatches its successor (workflow_dispatch with the run's own token, naming the run in `after`).
+
+- A pass starts only when `v1/flights/latest.json`, read from the live host's repository (the
+  contents API, not the Pages cache, whose copy can be 10 minutes old; the Pages copy past its
+  cache only when that read fails), is 15 minutes old or more, or missing or unreadable (a stamp
+  more than a minute ahead of the clock reads as unreadable), and never sooner than 20 minutes
+  after the loop's previous pass began. So two loops back to back keep the 20-minute rhythm.
+- Each pass is a child process with a hard limit of 9 minutes, so a hang ends that pass and never
+  the loop; the trip alerts (`snowlight notify flights`, docs/flights-trips.md) follow each pass
+  that wrote, a child with a limit of 4 minutes. The pass's child never sees the Cloudflare
+  secrets, the alerts' child never the live host's token.
+- A pass that fails (exit 3: nothing written; 1: an error; 124: its time limit) is one warning
+  annotation and the loop goes on to its next pass. The loop step fails only when no pass of the
+  run wrote; the successor is dispatched either way, but not when the run is cancelled (cancel
+  it, or disable the workflow, to stop the chain).
+- If the successor cannot be dispatched (3 tries), one warning: the next start below begins the
+  next loop.
+
+What starts a run: its predecessor; the `*/20` schedule (GitHub fires it late and seldom on this
+repository, so it is a backstop); every run of live-ingest.yml (workflow_run, requested); the
+owner (workflow_dispatch); and a push that changes the workflow file. The `check` job (a few
+seconds, no checkout, the Actions API) ends a run quietly when another run's `live` job is not
+completed, the predecessor named in `after` excepted; a push, or a check that failed, always
+goes on. The `live` job's concurrency group (`flights-live`, never cancelled) keeps one loop at a
+time whatever the check saw, so there is never a second writer, and the loop holds no group of
+live-ingest or live-read.
 
 ## The monthly job
 
