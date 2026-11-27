@@ -412,6 +412,192 @@ what the files would have shown: where the airport's own gate fails (MCI's does)
 rate with its bit set, never the model's number. Each is marked with how it was kept from the
 model.
 
+## Windy days
+
+Are the chances low on windy days (asked after the wind storm of November 26, 2026)?
+`snowlight flights wind --raw RAW --gusts GUSTS --out OUT` (`flights.wind`) scores the held-out
+test year (October 2025 to September 2026) with the published model, on the rows the live pass
+reads (the evening-before 00Z run, lead 1), and the values the files would have shown: the
+model's chance where the airport's own gate passed (and the after-storm gate on a day after a
+storm), else the usual rate. Each block is put in a band twice: by the run's strongest forecast
+gust in it (the forecast path: what the page knew) and by the strongest gust or wind the hourly
+reports saw in it (the observed path: what came), so a forecast that missed the wind is told
+apart from a model that read it and still said too little. Per band and outcome: blocks, days,
+the chance said per flight, what happened, their ratio with a 90% interval from whole days drawn
+again 1,000 times with a fixed seed (cancels cluster by day, LR-F5), and the log loss and Brier
+score per flight of the values shown and of the usual rate. Two groups: the airports whose chance
+for that outcome passed its gate, and EWR, JFK, LGA, PHL, BOS and DCA whatever they show. The
+verdict says too low only when, at the airports that passed, on the forecast path, the 35 kt
+band's interval for departures cancelled or late lies wholly above 1.15, on 30 days or more;
+with fewer days on that line it says too few days to tell for that outcome, never not shown too
+low. A line on fewer than 5 days prints no interval (-): drawing one or two days again cannot
+give one.
+A third table, seen against forecast, splits the blocks the reports saw at 35 kt or more by the
+band the forecast had put them in (and adds the blocks forecast at 35 kt or more that the reports
+saw under 30 kt), so a rerun keeps the answer to whether the forecast or the model said too
+little.
+
+Verdict on the test year: not shown too low. Departures cancelled 1.18 (about 0.8 to 1.5) on 32
+days; departures late 1.37 (about 1.0 to 1.8) on 107 days. The second decimal of the bounds moves
+with the bootstrap's seed, far below 1.15 either way. No model code changed.
+
+That verdict reads the forecast path, as the rule says. The observed path says the chances were
+too low when the wind came: where the reports saw 35 kt or more, the airports that passed said
+13.98% of departures late and 18.52% were, 1.32 (1.19 to 1.46) on 282 days, wholly above 1.15.
+
+What else the tables say:
+
+* The whole year ran above what was said, wind or not: under 30 kt, 1.32 for cancels and 1.13
+  for late departures, the year's own excess over the usual rates (about 1.3 and 1.15, above).
+* No airport passed the gate for arrivals late, so its lines are only in the six's tables. Of the
+  six, none passed for cancels and only JFK and PHL for departures late. So at the six, cancels
+  are the usual rate on every day, marked as usual, and it does not move with the wind: where
+  the reports saw 35 kt or more it said 1.81% and 10.74% were cancelled. The site shows it as the
+  usual rate, never as a forecast, beside the FAA state.
+* The observed path's excess on late departures is not explained by the forecast missing the
+  wind alone. Split by
+  what the forecast said (seen against forecast, airports that passed), the blocks the reports
+  saw at 35 kt or more ran 1.42 (0.96 to 1.89, 380 blocks on 97 days) where the forecast also
+  had 35 kt or more, 1.36 (1.11 to 1.61, 499 blocks) where it had 30-34 kt, and 1.29 (1.16 to
+  1.44, 895 blocks) where it had under 30 kt. Where the wind came and was forecast, departures
+  late still ran about 1.4 times what was said, by no less than elsewhere. That line alone, on
+  97 days, reaches down to 0.96, and blocks under 30 kt already ran 1.13 all year, so these lines
+  cannot tell how much of it is the model on a gust it was given and how much is the year's own
+  excess.
+  The forecast does catch fewer windy blocks (485 forecast at 35 kt or more against 1,774
+  the reports saw), but the excess is no smaller where it caught them. Blocks forecast at 35 kt
+  or more that the reports saw under 30 kt ran 1.13 (0.81 to 1.41, 30 blocks).
+* Departures cancelled split the same way: 1.32 (0.80 to 2.05, 57 blocks) seen and forecast at
+  35 kt or more against 1.19 (0.69 to 1.90, 220 blocks) seen at 35 kt or more and forecast under
+  30 kt. Where the reports saw 45 kt or more they ran 2.86 (1.42 to 4.80) on 32 days.
+
+The hourly reports of this run (the weather before each run, and the observed peaks) are NCEI's
+Local Climatological Data, the same METAR text ISD keeps, read by the ISD reader, while the long
+pull's IEM queue held IEM. This backtest's LCD pull had no file for 40 airports (Alaska, Hawaii,
+the territories and nine small airports), so they are left out: a gap in this backtest's data,
+not in the live pass, which reads their METARs. Seven airport-outcomes among them passed their
+gate at lead 1 and are missing from the airports that passed: departures cancelled at BQN, HHH
+and ITO, and departures late at HHH, JNU, WRG and XWA (each run names them under its verdict).
+They are to be scored once FL-1b's IEM tables exist. `--gusts` is a folder of hourly peaks
+(`station`, `hour`, `gust`, `wind`, in knots); without it the observed path is empty. The
+validation year is not scored yet: it needs the fit on the years before it, from the whole
+history. Once FL-1b restores that history it is to be rerun with that fit, labeled apart from the
+test year.
+
+**Forecast gust, airports that passed**
+
+| outcome | band | blocks | days | said | happened | ratio (90%) | log loss shown / usual | Brier shown / usual |
+| --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| dep_canc | under 30 kt | 22,946 | 355 | 1.24% | 1.64% | 1.32 (1.16-1.48) | 0.0764 / 0.0818 | 0.01525 / 0.01606 |
+| dep_canc | 30-34 kt | 244 | 92 | 5.06% | 4.50% | 0.89 (0.54-1.17) | 0.1588 / 0.2044 | 0.03850 / 0.04379 |
+| dep_canc | 35 kt or more | 80 | 32 | 7.30% | 8.60% | 1.18 (0.79-1.50) | 0.2662 / 0.3881 | 0.06487 / 0.08392 |
+| dep_canc | 45 kt or more | 1 | 1 | 7.59% | 0.00% | 0.00 (-) | 0.0790 / 0.0124 | 0.00577 / 0.00015 |
+| dep_late | under 30 kt | 100,366 | 355 | 9.93% | 11.21% | 1.13 (1.09-1.17) | 0.3359 / 0.3375 | 0.09625 / 0.09666 |
+| dep_late | 30-34 kt | 1,258 | 211 | 15.19% | 15.21% | 1.00 (0.84-1.17) | 0.4278 / 0.4411 | 0.13030 / 0.13221 |
+| dep_late | 35 kt or more | 485 | 107 | 15.66% | 21.42% | 1.37 (0.99-1.77) | 0.5225 / 0.5764 | 0.16956 / 0.18055 |
+| dep_late | 45 kt or more | 39 | 19 | 19.61% | 28.41% | 1.45 (0.78-2.26) | 0.6926 / 0.8005 | 0.22681 / 0.24723 |
+| arr_canc | under 30 kt | 40,395 | 355 | 1.11% | 1.32% | 1.19 (1.05-1.33) | 0.0642 / 0.0684 | 0.01226 / 0.01296 |
+| arr_canc | 30-34 kt | 420 | 142 | 2.26% | 2.59% | 1.15 (0.58-1.72) | 0.1115 / 0.1286 | 0.02445 / 0.02540 |
+| arr_canc | 35 kt or more | 126 | 51 | 2.35% | 3.14% | 1.34 (0.43-2.16) | 0.1220 / 0.1482 | 0.02861 / 0.03069 |
+| arr_canc | 45 kt or more | 5 | 4 | 5.00% | 7.14% | 1.43 (-) | 0.2395 / 0.3552 | 0.06291 / 0.07042 |
+
+**Forecast gust, EWR JFK LGA PHL BOS DCA**
+
+| outcome | band | blocks | days | said | happened | ratio (90%) | log loss shown / usual | Brier shown / usual |
+| --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| dep_canc | under 30 kt | 10,348 | 355 | 2.11% | 3.55% | 1.68 (1.35-2.06) | 0.1498 / 0.1498 | 0.03382 / 0.03382 |
+| dep_canc | 30-34 kt | 195 | 35 | 1.27% | 9.14% | 7.22 (3.90-11.25) | 0.3926 / 0.3926 | 0.08848 / 0.08848 |
+| dep_canc | 35 kt or more | 95 | 19 | 1.43% | 17.67% | 12.39 (4.71-23.63) | 0.7528 / 0.7528 | 0.17112 / 0.17112 |
+| dep_canc | 45 kt or more | 2 | 1 | 2.18% | 100.00% | 45.92 (-) | 3.8294 / 3.8294 | 0.95692 / 0.95692 |
+| dep_late | under 30 kt | 10,348 | 355 | 10.51% | 12.44% | 1.18 (1.13-1.23) | 0.3614 / 0.3619 | 0.10580 / 0.10592 |
+| dep_late | 30-34 kt | 195 | 35 | 10.84% | 19.64% | 1.81 (1.49-2.11) | 0.5251 / 0.5285 | 0.16444 / 0.16493 |
+| dep_late | 35 kt or more | 95 | 19 | 10.60% | 18.41% | 1.74 (1.31-2.39) | 0.4992 / 0.5073 | 0.15444 / 0.15608 |
+| dep_late | 45 kt or more | 2 | 1 | 6.90% | 0.00% | 0.00 (-) | 0.0716 / 0.0716 | 0.00497 / 0.00497 |
+| arr_canc | under 30 kt | 10,358 | 355 | 2.13% | 3.51% | 1.64 (1.31-2.01) | 0.1494 / 0.1494 | 0.03355 / 0.03355 |
+| arr_canc | 30-34 kt | 195 | 35 | 1.20% | 9.05% | 7.53 (4.10-11.83) | 0.3920 / 0.3920 | 0.08770 / 0.08770 |
+| arr_canc | 35 kt or more | 95 | 19 | 1.47% | 18.66% | 12.68 (5.59-22.56) | 0.7901 / 0.7901 | 0.18060 / 0.18060 |
+| arr_canc | 45 kt or more | 2 | 1 | 2.21% | 100.00% | 45.33 (-) | 3.8208 / 3.8208 | 0.95637 / 0.95637 |
+| arr_late | under 30 kt | 10,358 | 355 | 11.70% | 13.71% | 1.17 (1.11-1.23) | 0.3861 / 0.3861 | 0.11501 / 0.11501 |
+| arr_late | 30-34 kt | 195 | 35 | 9.48% | 22.76% | 2.40 (1.95-2.88) | 0.6016 / 0.6016 | 0.19005 / 0.19005 |
+| arr_late | 35 kt or more | 95 | 19 | 9.27% | 23.25% | 2.51 (1.75-3.64) | 0.6358 / 0.6358 | 0.19722 / 0.19722 |
+| arr_late | 45 kt or more | 2 | 1 | 6.32% | 0.00% | 0.00 (-) | 0.0653 / 0.0653 | 0.00399 / 0.00399 |
+
+**Observed gust, airports that passed**
+
+| outcome | band | blocks | days | said | happened | ratio (90%) | log loss shown / usual | Brier shown / usual |
+| --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| dep_canc | under 30 kt | 22,266 | 355 | 1.22% | 1.60% | 1.31 (1.14-1.47) | 0.0747 / 0.0800 | 0.01487 / 0.01568 |
+| dep_canc | 30-34 kt | 575 | 216 | 2.73% | 3.74% | 1.37 (1.08-1.71) | 0.1530 / 0.1765 | 0.03312 / 0.03645 |
+| dep_canc | 35 kt or more | 372 | 145 | 3.52% | 4.22% | 1.20 (0.86-1.59) | 0.1642 / 0.1957 | 0.03871 / 0.04118 |
+| dep_canc | 45 kt or more | 40 | 32 | 2.82% | 8.06% | 2.86 (1.42-4.80) | 0.3164 / 0.3728 | 0.07598 / 0.07881 |
+| dep_late | under 30 kt | 96,791 | 355 | 9.84% | 11.04% | 1.12 (1.09-1.16) | 0.3329 / 0.3343 | 0.09509 / 0.09546 |
+| dep_late | 30-34 kt | 2,749 | 329 | 12.85% | 14.48% | 1.13 (1.00-1.24) | 0.4024 / 0.4093 | 0.12104 / 0.12244 |
+| dep_late | 35 kt or more | 1,774 | 282 | 13.98% | 18.52% | 1.32 (1.19-1.46) | 0.4680 / 0.4845 | 0.14787 / 0.15115 |
+| dep_late | 45 kt or more | 244 | 107 | 17.02% | 25.52% | 1.50 (1.12-1.93) | 0.5860 / 0.6348 | 0.19649 / 0.20735 |
+| arr_canc | under 30 kt | 39,123 | 355 | 1.10% | 1.30% | 1.19 (1.04-1.32) | 0.0636 / 0.0677 | 0.01210 / 0.01280 |
+| arr_canc | 30-34 kt | 1,117 | 266 | 1.52% | 1.85% | 1.21 (0.80-1.71) | 0.0864 / 0.0942 | 0.01770 / 0.01814 |
+| arr_canc | 35 kt or more | 615 | 200 | 2.16% | 2.90% | 1.34 (0.82-1.96) | 0.1165 / 0.1377 | 0.02682 / 0.02829 |
+| arr_canc | 45 kt or more | 82 | 55 | 2.48% | 3.48% | 1.41 (0.84-1.94) | 0.1473 / 0.1653 | 0.03308 / 0.03406 |
+
+**Observed gust, EWR JFK LGA PHL BOS DCA**
+
+| outcome | band | blocks | days | said | happened | ratio (90%) | log loss shown / usual | Brier shown / usual |
+| --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| dep_canc | under 30 kt | 9,867 | 355 | 2.12% | 3.37% | 1.59 (1.28-1.94) | 0.1435 / 0.1435 | 0.03212 / 0.03212 |
+| dep_canc | 30-34 kt | 462 | 121 | 1.63% | 8.04% | 4.95 (3.13-7.14) | 0.3199 / 0.3199 | 0.07614 / 0.07614 |
+| dep_canc | 35 kt or more | 309 | 72 | 1.81% | 10.74% | 5.95 (3.39-9.25) | 0.4430 / 0.4430 | 0.10310 / 0.10310 |
+| dep_canc | 45 kt or more | 33 | 19 | 2.38% | 22.07% | 9.29 (2.71-19.18) | 0.8662 / 0.8662 | 0.21109 / 0.21109 |
+| dep_late | under 30 kt | 9,867 | 355 | 10.47% | 12.31% | 1.18 (1.12-1.22) | 0.3591 / 0.3595 | 0.10490 / 0.10501 |
+| dep_late | 30-34 kt | 462 | 121 | 10.63% | 15.34% | 1.44 (1.25-1.62) | 0.4263 / 0.4283 | 0.12900 / 0.12935 |
+| dep_late | 35 kt or more | 309 | 72 | 11.66% | 18.99% | 1.63 (1.41-1.84) | 0.4926 / 0.4966 | 0.15461 / 0.15546 |
+| dep_late | 45 kt or more | 33 | 19 | 13.78% | 23.81% | 1.73 (1.37-2.04) | 0.5550 / 0.5601 | 0.18272 / 0.18368 |
+| arr_canc | under 30 kt | 9,876 | 355 | 2.15% | 3.31% | 1.54 (1.25-1.86) | 0.1426 / 0.1426 | 0.03177 / 0.03177 |
+| arr_canc | 30-34 kt | 463 | 121 | 1.61% | 7.71% | 4.80 (3.08-6.79) | 0.3141 / 0.3141 | 0.07350 / 0.07350 |
+| arr_canc | 35 kt or more | 309 | 72 | 1.73% | 11.01% | 6.35 (3.65-9.44) | 0.4555 / 0.4555 | 0.10590 / 0.10590 |
+| arr_canc | 45 kt or more | 33 | 19 | 2.46% | 20.32% | 8.28 (3.48-15.70) | 0.8096 / 0.8096 | 0.19486 / 0.19486 |
+| arr_late | under 30 kt | 9,876 | 355 | 11.72% | 13.55% | 1.16 (1.10-1.21) | 0.3834 / 0.3834 | 0.11393 / 0.11393 |
+| arr_late | 30-34 kt | 463 | 121 | 10.36% | 17.11% | 1.65 (1.40-1.89) | 0.4634 / 0.4634 | 0.14221 / 0.14221 |
+| arr_late | 35 kt or more | 309 | 72 | 11.07% | 22.03% | 1.99 (1.66-2.32) | 0.5681 / 0.5681 | 0.17989 / 0.17989 |
+| arr_late | 45 kt or more | 33 | 19 | 12.87% | 28.13% | 2.18 (1.81-2.53) | 0.6445 / 0.6445 | 0.21438 / 0.21438 |
+
+**Seen against forecast, airports that passed**
+
+| outcome | band | blocks | days | said | happened | ratio (90%) | log loss shown / usual | Brier shown / usual |
+| --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| dep_canc | seen 35 kt or more, forecast under 30 kt | 220 | 129 | 2.40% | 2.85% | 1.19 (0.69-1.90) | 0.1319 / 0.1376 | 0.02885 / 0.02791 |
+| dep_canc | seen 35 kt or more, forecast 30-34 kt | 95 | 48 | 4.88% | 5.53% | 1.13 (0.73-1.62) | 0.1901 / 0.2467 | 0.04841 / 0.05363 |
+| dep_canc | seen 35 kt or more, forecast 35 kt or more | 57 | 26 | 6.79% | 8.95% | 1.32 (0.80-2.05) | 0.2856 / 0.4047 | 0.07214 / 0.08734 |
+| dep_canc | forecast 35 kt or more, seen under 30 kt | 6 | 4 | 8.46% | 2.44% | 0.29 (-) | 0.1204 / 0.1216 | 0.02395 / 0.02401 |
+| dep_late | seen 35 kt or more, forecast under 30 kt | 895 | 266 | 13.94% | 18.04% | 1.29 (1.16-1.44) | 0.4550 / 0.4597 | 0.14322 / 0.14402 |
+| dep_late | seen 35 kt or more, forecast 30-34 kt | 499 | 141 | 12.90% | 17.54% | 1.36 (1.11-1.61) | 0.4638 / 0.4895 | 0.14447 / 0.14960 |
+| dep_late | seen 35 kt or more, forecast 35 kt or more | 380 | 97 | 15.83% | 22.42% | 1.42 (0.96-1.89) | 0.5378 / 0.5980 | 0.17598 / 0.18844 |
+| dep_late | forecast 35 kt or more, seen under 30 kt | 30 | 20 | 15.45% | 17.48% | 1.13 (0.81-1.41) | 0.4541 / 0.4811 | 0.14189 / 0.14611 |
+| arr_canc | seen 35 kt or more, forecast under 30 kt | 365 | 178 | 1.89% | 2.23% | 1.18 (0.85-1.59) | 0.0971 / 0.1054 | 0.02099 / 0.02173 |
+| arr_canc | seen 35 kt or more, forecast 30-34 kt | 159 | 78 | 2.45% | 3.28% | 1.34 (0.50-2.16) | 0.1299 / 0.1630 | 0.03046 / 0.03220 |
+| arr_canc | seen 35 kt or more, forecast 35 kt or more | 91 | 37 | 2.95% | 5.28% | 1.79 (0.49-2.91) | 0.1829 / 0.2425 | 0.04725 / 0.05155 |
+| arr_canc | forecast 35 kt or more, seen under 30 kt | 11 | 9 | 2.12% | 2.91% | 1.37 (0.25-2.70) | 0.1296 / 0.1409 | 0.02737 / 0.02855 |
+
+**Seen against forecast, EWR JFK LGA PHL BOS DCA**
+
+| outcome | band | blocks | days | said | happened | ratio (90%) | log loss shown / usual | Brier shown / usual |
+| --- | --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| dep_canc | seen 35 kt or more, forecast under 30 kt | 153 | 68 | 2.23% | 8.05% | 3.61 (2.27-5.24) | 0.3150 / 0.3150 | 0.07628 / 0.07628 |
+| dep_canc | seen 35 kt or more, forecast 30-34 kt | 86 | 23 | 1.38% | 8.46% | 6.14 (3.21-10.36) | 0.3681 / 0.3681 | 0.08182 / 0.08182 |
+| dep_canc | seen 35 kt or more, forecast 35 kt or more | 70 | 17 | 1.45% | 19.54% | 13.45 (5.29-25.91) | 0.8170 / 0.8170 | 0.18877 / 0.18877 |
+| dep_canc | forecast 35 kt or more, seen under 30 kt | 8 | 5 | 1.32% | 7.04% | 5.32 (0.95-12.35) | 0.3342 / 0.3342 | 0.06906 / 0.06906 |
+| dep_late | seen 35 kt or more, forecast under 30 kt | 153 | 68 | 12.17% | 18.91% | 1.55 (1.34-1.76) | 0.4771 / 0.4785 | 0.15041 / 0.15079 |
+| dep_late | seen 35 kt or more, forecast 30-34 kt | 86 | 23 | 11.44% | 20.98% | 1.83 (1.48-2.13) | 0.5385 / 0.5454 | 0.17176 / 0.17324 |
+| dep_late | seen 35 kt or more, forecast 35 kt or more | 70 | 17 | 10.85% | 16.56% | 1.53 (1.10-2.16) | 0.4657 / 0.4711 | 0.14107 / 0.14212 |
+| dep_late | forecast 35 kt or more, seen under 30 kt | 8 | 5 | 10.43% | 22.24% | 2.13 (1.18-2.91) | 0.5633 / 0.5705 | 0.18096 / 0.18237 |
+| arr_canc | seen 35 kt or more, forecast under 30 kt | 153 | 68 | 2.10% | 8.16% | 3.89 (2.23-5.99) | 0.3222 / 0.3222 | 0.07766 / 0.07766 |
+| arr_canc | seen 35 kt or more, forecast 30-34 kt | 86 | 23 | 1.30% | 8.05% | 6.19 (3.17-10.45) | 0.3535 / 0.3535 | 0.07806 / 0.07806 |
+| arr_canc | seen 35 kt or more, forecast 35 kt or more | 70 | 17 | 1.47% | 21.20% | 14.40 (6.46-26.09) | 0.8851 / 0.8851 | 0.20487 / 0.20487 |
+| arr_canc | forecast 35 kt or more, seen under 30 kt | 8 | 5 | 1.38% | 6.71% | 4.86 (0.24-12.26) | 0.3173 / 0.3173 | 0.06578 / 0.06578 |
+| arr_late | seen 35 kt or more, forecast under 30 kt | 153 | 68 | 12.42% | 21.17% | 1.70 (1.40-2.00) | 0.5252 / 0.5252 | 0.16787 / 0.16787 |
+| arr_late | seen 35 kt or more, forecast 30-34 kt | 86 | 23 | 9.93% | 24.30% | 2.45 (1.99-2.89) | 0.6287 / 0.6287 | 0.20129 / 0.20129 |
+| arr_late | seen 35 kt or more, forecast 35 kt or more | 70 | 17 | 9.46% | 21.08% | 2.23 (1.54-3.28) | 0.5877 / 0.5877 | 0.17970 / 0.17970 |
+| arr_late | forecast 35 kt or more, seen under 30 kt | 8 | 5 | 10.21% | 27.82% | 2.72 (1.31-3.98) | 0.7250 / 0.7250 | 0.23137 / 0.23137 |
+
 ## Running it locally
 
 From `pipeline/`:

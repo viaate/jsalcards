@@ -84,6 +84,15 @@ def register(commands: "argparse._SubParsersAction[argparse.ArgumentParser]") ->
     seeding.add_argument("--host-dir", type=Path, default=None)
     seeding.set_defaults(handler=run_seed)
 
+    windy = sub.add_parser("wind", help="score the test year's chances on windy blocks")
+    windy.add_argument("--raw", type=Path, default=RAW)
+    windy.add_argument("--out", type=Path, required=True)
+    windy.add_argument("--model", type=Path, default=artifact_module.MODEL_FILE)
+    windy.add_argument(
+        "--gusts", type=Path, default=None, help="hourly peaks: station, hour, gust, wind"
+    )
+    windy.set_defaults(handler=run_wind)
+
     static = sub.add_parser("static", help="write the airports, usual flights and records")
     static.add_argument("--raw", type=Path, default=RAW)
     static.add_argument("--out", type=Path, required=True)
@@ -444,6 +453,13 @@ def run_train(args: argparse.Namespace) -> int:  # pragma: no cover - hours of d
     from snowlight.flights import build  # noqa: PLC0415
 
     return build.train_all(args.raw, args.out, args.model, args.first_run)
+
+
+def run_wind(args: argparse.Namespace) -> int:  # pragma: no cover - a year of data on disk
+    """``snowlight flights wind``."""
+    from snowlight.flights import wind  # noqa: PLC0415
+
+    return wind.run(args.raw, args.model, args.out, args.gusts)
 
 
 def run_static(args: argparse.Namespace) -> int:  # pragma: no cover - the data in RAM
