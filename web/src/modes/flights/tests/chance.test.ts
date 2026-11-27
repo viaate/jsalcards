@@ -11,6 +11,7 @@ import {
   dayViews,
   either,
   flightChance,
+  pillOf,
   instantOf,
   levelOf,
   wholePercent,
@@ -366,5 +367,183 @@ describe('the answer’s number (LR-F9)', () => {
     expect(dayChance('2026-01-05', '2026-01-05', true)).toBe(
       'Chance of a cancel for the rest of today',
     );
+  });
+});
+
+describe('the cancel number’s own usual flags (LR-SF1)', () => {
+  const ZONE = 'America/New_York';
+  /** Jan 5, 2026, 8:00 am EST: no block is over yet. */
+  const EIGHT = Date.parse('2026-01-05T13:00:00Z');
+  const ALL: [number, number, number] = [0b11111, 0b11111, 0b11111];
+  const NONE: [number, number, number] = [0, 0, 0];
+
+  it('says a usual cancel chance as usual beside a forecast late chance', () => {
+    // JFK: cancels the usual rate, late the forecast's (its late gate passes, its cancel fails).
+    const entry = airportLive('JFK', '2026-01-05', { usual: [ALL, NONE, ALL, NONE] });
+    const [today] = dayViews(entry, ZONE, EIGHT);
+    if (today === undefined) throw new Error('no day');
+    for (const counts of [null, [1, 1, 1, 1, 1]]) {
+      const hero = dayHero(today, counts);
+      expect(hero?.usual).toBe('part');
+      expect(hero?.cancelUsual).toBe('all');
+    }
+  });
+
+  it('keeps a forecast cancel chance a forecast beside a usual late chance', () => {
+    const entry = airportLive('APN', '2026-01-05', { usual: [NONE, ALL, NONE, ALL] });
+    const [today] = dayViews(entry, ZONE, EIGHT);
+    if (today === undefined) throw new Error('no day');
+    const hero = dayHero(today, [1, 1, 1, 1, 1]);
+    expect(hero?.usual).toBe('part');
+    expect(hero?.cancelUsual).toBe('none');
+  });
+
+  it('counts only the blocks the number rests on', () => {
+    // The early block's cancel is usual, the rest are forecast: part of the day's number.
+    const entry = airportLive('JFK', '2026-01-05', {
+      usual: [[0b00001, 0, 0], NONE, NONE, NONE],
+    });
+    const [today] = dayViews(entry, ZONE, EIGHT);
+    if (today === undefined) throw new Error('no day');
+    expect(dayHero(today, [1, 1, 1, 1, 1])?.cancelUsual).toBe('part');
+    // With no flight early, the number rests on forecast blocks alone.
+    expect(dayHero(today, [0, 1, 1, 1, 1])?.cancelUsual).toBe('none');
+  });
+
+  it('gives each end of a flight its own cancel flag', () => {
+    const jfk = airportLive('JFK', '2026-01-05', { usual: [ALL, NONE, ALL, NONE] });
+    const lax = airportLive('LAX', '2026-01-05');
+    const out = flightChance(
+      { entry: jfk, zone: ZONE },
+      { entry: lax, zone: 'America/Los_Angeles' },
+      '2026-01-05',
+      600,
+      840,
+    );
+    expect(out).toMatchObject({ fromCancelUsual: true, toCancelUsual: false, allUsual: false });
+    const back = flightChance(
+      { entry: lax, zone: 'America/Los_Angeles' },
+      { entry: jfk, zone: ZONE },
+      '2026-01-05',
+      420,
+      900,
+    );
+    expect(back).toMatchObject({ fromCancelUsual: false, toCancelUsual: true });
+    const both = flightChance(
+      { entry: jfk, zone: ZONE },
+      { entry: airportLive('PHL', '2026-01-05', { usual: [ALL, NONE, ALL, NONE] }), zone: ZONE },
+      '2026-01-05',
+      600,
+      660,
+    );
+    expect(both).toMatchObject({ fromCancelUsual: true, toCancelUsual: true, allUsual: false });
+  });
+
+  it('gives the late number its own usual share', () => {
+    const jfk = airportLive('JFK', '2026-01-05', { usual: [ALL, NONE, ALL, NONE] });
+    const apn = airportLive('APN', '2026-01-05', { usual: [NONE, ALL, NONE, ALL] });
+    for (const [entry, late] of [
+      [jfk, 'none'],
+      [apn, 'all'],
+    ] as const) {
+      const [today] = dayViews(entry, ZONE, EIGHT);
+      if (today === undefined) throw new Error('no day');
+      expect(dayHero(today, [1, 1, 1, 1, 1])?.lateUsual).toBe(late);
+      expect(dayHero(today, null)?.lateUsual).toBe(late);
+    }
+  });
+
+  it('says a route row’s usual cancel chance as usual, never in its forecast late level', () => {
+    // A windy day at JFK and PHL: cancels the usual rate, a 30% forecast late chance at both ends.
+    const row: [number, number, number, number, number] = [300, 300, 300, 300, 300];
+    const late30: [typeof row, typeof row, typeof row] = [row, row, row];
+    const windy = (code: string): ReturnType<typeof airportLive> =>
+      airportLive(code, '2026-01-05', {
+        usual: [ALL, NONE, ALL, NONE],
+        dep_late: late30,
+        arr_late: late30,
+      });
+    const chance = flightChance(
+      { entry: windy('JFK'), zone: ZONE },
+      { entry: windy('PHL'), zone: ZONE },
+      '2026-01-05',
+      600,
+      660,
+    );
+    // The forecast late chance alone makes a level, which the pill would show as a color.
+    expect(chance.level).toBe('delay');
+    expect(chance.cancelShare).toBe('all');
+    expect(pillOf(chance)).toEqual({ usual: 'all', level: null });
+    // A cancel number the usual rate in part has no level color either; only a cancel number
+    // wholly the forecast's takes the forecast's level.
+    expect(pillOf({ level: 'delay', cancelShare: 'part' })).toEqual({ usual: 'part', level: null });
+    expect(pillOf({ level: 'delay', cancelShare: 'none' })).toEqual({
+      usual: 'none',
+      level: 'delay',
+    });
+  });
+
+  // The host file's pattern (LR-SF8 rule 5): arr_late usual at every airport, JFK's dep_late the
+  // model's, cancels usual at JFK and BOS, the model's elsewhere.
+  const lateRows = (n: number): ReturnType<typeof airportLive>['dep_late'] => [
+    [n, n, n, n, n],
+    [n, n, n, n, n],
+    [n, n, n, n, n],
+  ];
+  const host = (
+    code: string,
+    cancelsUsual: boolean,
+    depLate: number,
+    arrLate: number,
+  ): ReturnType<typeof airportLive> =>
+    airportLive(code, '2026-01-05', {
+      dep_late: lateRows(depLate),
+      arr_late: lateRows(arrLate),
+      usual: [cancelsUsual ? ALL : NONE, cancelsUsual ? ALL : NONE, cancelsUsual ? ALL : NONE, ALL],
+    });
+  const fly = (
+    from: ReturnType<typeof airportLive>,
+    to: ReturnType<typeof airportLive>,
+  ): ReturnType<typeof flightChance> =>
+    flightChance({ entry: from, zone: ZONE }, { entry: to, zone: ZONE }, '2026-01-05', 600, 660);
+
+  it('marks a flight’s delay all usual where the larger end’s late value is usual (JFK to BOS)', () => {
+    const jfk = airportLive('JFK', '2026-01-05', {
+      dep_late: lateRows(86),
+      arr_late: lateRows(80),
+      usual: [ALL, NONE, ALL, ALL],
+    });
+    const bos = host('BOS', true, 70, 91);
+    const chance = fly(jfk, bos);
+    // 9% is BOS's usual arrival rate over JFK's forecast 86: wholly the usual rate.
+    expect(chance.late).toBe(91);
+    expect(chance).toMatchObject({ cancelShare: 'all', lateShare: 'all' });
+    // The larger value the forecast's and the smaller usual: usual in part.
+    const bosLow = host('BOS', true, 70, 50);
+    expect(fly(jfk, bosLow)).toMatchObject({ late: 86, lateShare: 'part' });
+    // Equal values, one usual: in part, never all.
+    expect(fly(jfk, host('BOS', true, 70, 86))).toMatchObject({ late: 86, lateShare: 'part' });
+  });
+
+  it('decides the pill by the cancel number’s own values, never by a late flag (PIT to SNA)', () => {
+    // Cancels the model's at both ends, the arrival's late value usual: the cancel number is the
+    // forecast's, so the pill never says usual.
+    const chance = fly(host('PIT', false, 40, 50), host('SNA', false, 40, 50));
+    expect(chance.cancelShare).toBe('none');
+    expect(chance.lateShare).toBe('all');
+    expect(pillOf(chance).usual).toBe('none');
+  });
+
+  it('marks a cancel number usual in part where one end’s is (JFK to SEA, windy at JFK)', () => {
+    const jfk = airportLive('JFK', '2026-01-05', {
+      dep_late: lateRows(300),
+      usual: [ALL, NONE, ALL, ALL],
+    });
+    const chance = fly(jfk, host('SEA', false, 40, 50));
+    expect(chance.cancelShare).toBe('part');
+    // The forecast's 30% late at JFK makes a level, which the part-usual pill never shows.
+    expect(chance.level).toBe('delay');
+    expect(pillOf(chance)).toEqual({ usual: 'part', level: null });
+    expect(chance.lateShare).toBe('part');
   });
 });

@@ -11,6 +11,8 @@
     flightsCopy,
     heroNumber,
     lateFact,
+    notInUsual,
+    reasonKind,
     usualFacts,
     whyFact,
     percent,
@@ -33,7 +35,7 @@
     regionalNames,
   } from '../../copy-flights';
   import PanelShell from '../../ui/PanelShell.svelte';
-  import type { FlightsRoutes } from '../../types/generated';
+  import type { FlightsRecord, FlightsRoutes } from '../../types/generated';
   import Hero from './Hero.svelte';
   import type { Fact } from '../../copy-flights';
   import RecordBox from './RecordBox.svelte';
@@ -70,6 +72,8 @@
   /** The day picked; null for the first day with a block left. */
   let picked = $state<number | null>(null);
   let routes = $state<FlightsRoutes | null | undefined>(undefined);
+  /** The airport's record in bad weather (the RecordBox's own read, kept by files.record). */
+  let record = $state<FlightsRecord | null>(null);
 
   const zone = $derived(airport?.tz ?? null);
   const entry = $derived(zone === null ? null : (live?.byCode.get(code) ?? null));
@@ -105,13 +109,6 @@
       ? 0
       : (now - Date.parse(live?.file.programs_at ?? '')) / 60_000,
   );
-  /** Whether the forecast, the FAA or an alert says there is weather: a usual rate is told so. */
-  const weather = $derived(
-    entry !== null &&
-      ((entry.why[dayIndex] ?? []).length > 0 ||
-        (faaShown && (entry.programs?.length ?? 0) > 0) ||
-        (!stale && (entry.alerts?.length ?? 0) > 0)),
-  );
   const whys = $derived(entry?.why[dayIndex] ?? []);
   /** The usual flights still to leave in each block of the day shown: the day number's weights. */
   const counts = $derived(
@@ -126,7 +123,10 @@
   const heroMeaning = $derived.by(() => {
     if (hero === undefined || hero === null || shownDay === null) return '';
     const block = hero.block === null ? null : (BLOCK_KEYS[hero.block] ?? null);
-    if (hero.usual === 'all') return usualChance(shownDay.day, block);
+    // The cancel number's own flags (LR-SF1): a usual cancel chance is said as the usual rate
+    // whatever its late chance is.
+    if (hero.cancelUsual === 'all')
+      return usualChance(shownDay.day, block, hero.rest && shownDay.day === today);
     if (block === null) return dayChance(shownDay.day, today, hero.rest);
     return blockChance(shownDay.day, today, block);
   });
@@ -142,16 +142,62 @@
       ? []
       : faaFacts(live, entry, null, zone ?? 'UTC', now, true),
   );
-  /** The rows under the answer (LR-F18.2): the forecast's reason, then the FAA, then the rest. */
+  /**
+   * Beside a usual cancel chance, on a day whose reasons name weather the record has a kind for,
+   * what past days of it did here (LR-SF1, storm spec D): past days, never a forecast. None on an
+   * old file (no rows show then) or where the cancel chance is the forecast's, in whole or in
+   * part (then its headline reads as a forecast, and these rows would say it leaves the weather
+   * out).
+   */
+  /** The day's first reason the record has a kind for: the record rows and the Weather row say it. */
+  const kindWhy = $derived(whys.find((why) => reasonKind(why) !== null) ?? null);
+  const recordRows = $derived.by((): Fact[] => {
+    if (hero?.cancelUsual !== 'all' || record === null || kindWhy === null) return [];
+    const kind = reasonKind(kindWhy);
+    if (kind === null) return [];
+    const line = record.lines.find((each) => each.kind === kind) ?? null;
+    return notInUsual(kind, line, record.first);
+  });
+  /** Whether a forecast run was read for the day shown: with none, its forecast is not there yet. */
+  const run = $derived(entry !== null && (entry.runs[dayIndex] ?? null) !== null);
+  /**
+   * The rows under the answer (LR-F18.2): the forecast's reason, then the FAA, then the rest. With
+   * any number shown the usual rate in whole or in part, there is no "Why" row: the one usual rule
+   * (LR-SF8) says which numbers are usual and what they leave out, and the forecast's weather is
+   * said after those rows, as the weather, never as the reason for the usual rate.
+   */
   const heroRows = $derived.by((): Fact[] => {
     if (hero === undefined || hero === null) return faaNow;
-    const why = hero.usual === 'all' || whys[0] === undefined ? null : reasonName(whys[0]);
+    // Beside a usual cancel chance the Weather row names the weather the record rows speak to.
+    const said = hero.cancelUsual === 'all' && kindWhy !== null ? kindWhy : whys[0];
+    const reason = said === undefined ? null : reasonName(said);
+    const anyUsual = hero.usual !== 'none';
     // A live FAA program first, right under the headline (LR-F9), after the answer's one reason.
-    const lines: Fact[] = [...(why === null ? [] : [whyFact(why)]), ...faaCounted];
+    const lines: Fact[] = [
+      ...(anyUsual || reason === null ? [] : [whyFact(reason)]),
+      ...faaCounted,
+    ];
     if (hero.late !== null) lines.push(lateFact(hero.late));
-    if (hero.usual !== 'none') lines.push(...usualFacts(hero.usual === 'all', weather));
+    lines.push(
+      ...usualFacts({
+        cancel: hero.cancelUsual,
+        late: hero.late === null ? null : hero.lateUsual,
+        run,
+        reason,
+      }),
+    );
+    lines.push(...recordRows);
     return lines;
   });
+  /**
+   * The reasons' heading: beside a number that is the usual rate in whole or in part they are the
+   * forecast's weather, never the reason for that number (LR-SF8), so not headed "Why".
+   */
+  const whyTitle = $derived(
+    hero !== undefined && hero !== null && hero.usual !== 'none'
+      ? flightsCopy.why.forecastTitle
+      : flightsCopy.why.title,
+  );
   const rough = $derived(entry?.rough[dayIndex] ?? null);
   const roughUsual = $derived(entry !== null && (entry.rough_usual & (1 << dayIndex)) !== 0);
   /**
@@ -165,9 +211,13 @@
   $effect(() => {
     const asked = code;
     routes = undefined;
+    record = null;
     picked = null;
     void files.routes(asked).then((read) => {
       if (asked === code) routes = read;
+    });
+    void files.record(asked).then((read) => {
+      if (asked === code) record = read;
     });
   });
 
@@ -333,8 +383,8 @@
       <p class="fl-note fl-usual-note">{roughLine(rough, roughUsual)} {flightsCopy.roughNote}</p>
     {/if}
 
-    <section class="fl-block" aria-label={flightsCopy.why.title}>
-      <h3 class="fl-heading">{flightsCopy.why.title}</h3>
+    <section class="fl-block" aria-label={whyTitle} data-testid="flights-why">
+      <h3 class="fl-heading">{whyTitle}</h3>
       {#if stale}
         <!-- An old file's reasons are its own, never now's: in gray, with its age. -->
         {#each whys as why, i (i)}<p class="fl-note">{reasonName(why)}</p>{/each}

@@ -52,14 +52,35 @@ export const flightsCopy = /* @__PURE__ */ deepFreeze({
     faa: 'FAA',
     faaStatus: 'FAA status',
     usualTimes: 'Usual times',
-    notRankedYet: 'No forecast yet, not ranked',
-    usualNotRanked: 'Usual rate, not ranked',
+    /** Times whose chance is the usual rate in whole or in part: never ranked (LR-SF8). */
+    usualNotRanked: 'Usual rate in them, not ranked',
     forecast: 'Forecast',
     noneThisDay: 'None for this day yet',
     usualRate: 'Usual rate',
-    partOfThis: 'Part of this chance',
+    /**
+     * Which numbers shown are the usual rate (LR-SF8), by the cancel number's share then the
+     * delay number's: each short enough to sit on one line beside its label at 360 px.
+     */
+    usualWhich: {
+      all_none: 'Cancel chance',
+      part_none: 'Part of the cancel chance',
+      none_all: 'Delay chance',
+      none_part: 'Part of the delay chance',
+      all_all: 'Both chances',
+      part_part: 'Part of both chances',
+      all_part: 'Cancel chance, part of delay',
+      part_all: 'Delay chance, part of cancel',
+    },
+    /** The forecast's weather beside a usual cancel chance: never said as its reason. */
+    weather: 'Weather',
+    /**
+     * The record beside a usual cancel chance (LR-SF1): past days, never a forecast. Each row
+     * stays on one line beside its label at 360 px, so the kind names the days in the label.
+     */
+    cancelledHere: 'Cancelled here',
+    otherAirports: 'Elsewhere',
     leftOut: 'Left out',
-    weatherAndFaa: 'The weather and the FAA',
+    weatherAndFaa: 'Weather and the FAA',
     today: 'Today',
     partOfToday: 'Part of today',
     heldByHolds: 'Held by FAA holds',
@@ -107,8 +128,8 @@ export const flightsCopy = /* @__PURE__ */ deepFreeze({
   noForecast: 'No forecast',
   /** Beside a value that is the usual rate, not a forecast. */
   usualMark: 'Usual',
-  usualNote:
-    'Usual means the usual rate for this time of year. Our forecast for this airport is not ready yet.',
+  /** Under a table with a usual value: true whether no run was read or the gate failed here. */
+  usualNote: 'Usual means the usual rate for this time of year, in place of our forecast.',
   /**
    * Under a usual chance, where no forecast chance covers the day: the weather forecast may still
    * name snow below, so it says which forecast is missing.
@@ -165,8 +186,10 @@ export const flightsCopy = /* @__PURE__ */ deepFreeze({
   },
   why: {
     title: 'Why',
+    /** The reasons' heading under a usual cancel chance: the forecast's weather, never its why. */
+    forecastTitle: 'In the forecast',
     snow: 'Snow in the forecast',
-    ice: 'Ice in the forecast',
+    ice: 'Freezing rain in the forecast',
     thunder: 'Thunderstorms in the forecast',
     wind: 'Strong wind in the forecast',
     fog: 'Low clouds or fog in the forecast',
@@ -184,6 +207,17 @@ export const flightsCopy = /* @__PURE__ */ deepFreeze({
       fog: 'Low clouds and fog',
       wind: 'Strong wind',
     },
+    /**
+     * Past days of each kind, in the words of the forecast's reasons and the kinds above, one word
+     * per weather (LR-SF8 rule 6): "Windy days here" | "49 since 2020"; "Freezing rain days".
+     */
+    pastKinds: {
+      freezing_rain: 'Freezing rain days',
+      snow: 'Snowy days',
+      thunder: 'Thunderstorm days',
+      fog: 'Foggy days',
+      wind: 'Windy days',
+    },
     sooner: 'Cancels sooner than most',
     longer: 'Holds out longer than most',
     notReady: 'This airport’s record is not ready yet.',
@@ -198,7 +232,11 @@ export const flightsCopy = /* @__PURE__ */ deepFreeze({
     /** The same, in a grid cell. */
     noneShort: 'No flights',
     /** Best time to fly when no time can be named the safest. */
-    allUsual: 'We only have the usual rate for these times, so none of them stands out.',
+    /**
+     * Every time left rests on the usual rate in whole or in part (LR-SF8): one line, and the rows
+     * under it say which numbers.
+     */
+    allUsual: 'The usual rate is in each chance here, so none of these times stands out.',
     /** Beside forecast cells, usual ones on the same days: never ranked. */
     usualSome: 'Times with the usual mark have no forecast yet, so they are not ranked.',
     noForecast: 'We have no forecast for these days yet.',
@@ -455,8 +493,12 @@ export function blockChance(day: string, today: string, block: BlockKey): string
   return `Chance of a cancel ${chanceWhen(day, today)}, ${hoursIn(block)}`;
 }
 
-/** The usual rate as itself: "Usual chance of a cancel on a Sunday", with its block's hours. */
-export function usualChance(day: string, block: BlockKey | null): string {
+/**
+ * The usual rate as itself: "Usual chance of a cancel on a Sunday", with its block's hours;
+ * `restOfToday`, a day number over the blocks left today: "... for the rest of today".
+ */
+export function usualChance(day: string, block: BlockKey | null, restOfToday = false): string {
+  if (block === null && restOfToday) return 'Usual chance of a cancel for the rest of today';
   const hours = block === null ? '' : `, ${hoursIn(block)}`;
   return `Usual chance of a cancel on a ${weekday(day)}${hours}`;
 }
@@ -675,7 +717,8 @@ export function notFoundAt(flight: string, from: string): string {
 /**
  * The FAA's live program at an airport, as a row under a Flights answer (LR-F9, LR-F18.2):
  * "FAA at MCI" | "Ground stop now". `counted`: the answer above shows a chance, which LR-F4 keeps
- * the FAA out of, so the row says so: "Ground stop now, not in this chance". `code` null: the
+ * the FAA out of, so the row says so, short enough for one line at 360 px: "Ground stop now, not
+ * counted". `code` null: the
  * airport the panel names already (LR-F9: the title's code is never said again), "FAA".
  */
 export function faaFact(program: number, code: string | null, counted = false): Fact | null {
@@ -692,7 +735,7 @@ export function faaFact(program: number, code: string | null, counted = false): 
   return {
     label: faaLabel(code),
     // After the value under a chance, which never counts the FAA (LR-F4).
-    value: counted ? `${now[key]}, not in this chance` : now[key],
+    value: counted ? `${now[key]}, not counted` : now[key],
   };
 }
 
@@ -738,7 +781,13 @@ const PROGRAM_THE: Readonly<Record<Exclude<FaaKey, 'closed'>, string>> = {
   deicing: 'Deicing',
 };
 
-/** The row for days with only the usual rate beside forecast ones: "Tuesday" | "Usual rate, not ranked". */
+/** How much of a number is the usual rate (chance.ts UsualShare). */
+type Share = 'all' | 'part' | 'none';
+
+/**
+ * The row for days whose times rest on the usual rate, in whole or in part, beside forecast ones:
+ * "Tuesday" | "Usual rate in them, not ranked" (LR-SF8: one form, whatever their share).
+ */
 export function usualDaysFact(days: readonly string[], today: string): Fact {
   return {
     label: listOf(days.map((day) => dayName(day, today))),
@@ -746,43 +795,98 @@ export function usualDaysFact(days: readonly string[], today: string): Fact {
   };
 }
 
-/** The row for usual cells beside forecast ones on the same days: "Usual times" | "No forecast yet, not ranked". */
+/**
+ * The row for times with the usual rate in them beside forecast ones on the same days: "Usual
+ * times" | "Usual rate in them, not ranked". Never "no forecast": where a run was read and its test
+ * failed, there is one, and it is not used.
+ */
 export function usualSomeFact(): Fact {
-  return { label: flightsCopy.facts.usualTimes, value: flightsCopy.facts.notRankedYet };
+  return { label: flightsCopy.facts.usualTimes, value: flightsCopy.facts.usualNotRanked };
+}
+
+/** What the numbers shown rest on, for the rows under them (LR-SF8). */
+export interface UsualShown {
+  /** How much of the cancel number is the usual rate, from its own values. */
+  readonly cancel: Share;
+  /** How much of the delay number is the usual rate; null where no delay number shows. */
+  readonly late: Share | null;
+  /** Whether a forecast run was read for the day: with none, the forecast is not there yet. */
+  readonly run: boolean;
+  /** The airports with no run read for the day, all of whose values are the usual rate. */
+  readonly codes?: readonly string[];
+  /** The forecast's weather: said as the weather, never as the reason for a usual number. */
+  readonly reason?: string | null;
+  /** The airport the weather is at, named on a flight: "At LAX". */
+  readonly reasonAt?: string | null;
 }
 
 /**
- * The rows under a chance that rests on the usual rate, in part (`all` false) or in whole: "Usual
- * rate" | "Part of this chance", or "Forecast" | "None for this day yet"; `codes`, the airports
- * whose forecast is not ready, "Forecast" | "Not ready for MCI and LAX"; `weather`, where the
- * forecast, the FAA or an alert says there is weather, "Left out" | "The weather and the FAA".
+ * The rows under numbers shown where any is the usual rate in whole or in part (LR-SF8): exactly
+ * one "Usual rate" | <which> row ("Cancel chance", "Delay chance", "Both chances", "Part of the
+ * delay chance", ...) and one "Left out" | "Weather and the FAA" row, the same rows whatever the
+ * combination; with none usual, no rows at all (the panel says its forecast's reason as "Why").
+ * Then, where no forecast was read, one "Forecast" row: "Not ready for MCI and LAX" with the
+ * airports known, else, with every number shown wholly usual, "None for this day yet" (a number
+ * from the forecast means one was read). Then the forecast's weather, never said as the
+ * reason for the usual rate: "Weather" | "Strong wind in the forecast", or "At LAX" with
+ * `reasonAt`, short so the longest reason fits on its line at 360 px.
  */
-export function usualFacts(all: boolean, weather: boolean, codes: readonly string[] = []): Fact[] {
+export function usualFacts(shown: UsualShown): Fact[] {
   const { facts } = flightsCopy;
+  const which = `${shown.cancel}_${shown.late ?? 'none'}` as const;
+  if (which === 'none_none') return [];
+  const codes = shown.codes ?? [];
+  const allUsual = shown.cancel === 'all' && (shown.late === null || shown.late === 'all');
+  const reason = shown.reason ?? null;
+  const at = shown.reasonAt ?? null;
+  const forecast: Fact[] =
+    codes.length > 0
+      ? [{ label: facts.forecast, value: `Not ready for ${listOf(codes)}` }]
+      : shown.run || !allUsual
+        ? []
+        : [{ label: facts.forecast, value: facts.noneThisDay }];
   return [
-    all
-      ? { label: facts.forecast, value: facts.noneThisDay }
-      : { label: facts.usualRate, value: facts.partOfThis },
-    ...(codes.length === 0
+    { label: facts.usualRate, value: facts.usualWhich[which] },
+    { label: facts.leftOut, value: facts.weatherAndFaa },
+    ...forecast,
+    ...(reason === null
       ? []
-      : [{ label: facts.forecast, value: `Not ready for ${listOf(codes)}` }]),
-    ...(weather ? [{ label: facts.leftOut, value: facts.weatherAndFaa }] : []),
+      : [{ label: at === null ? facts.weather : `At ${at}`, value: reason }]),
   ];
 }
 
-/** A hub's chance today: "Chance of a cancel today: 4%", "Usual chance of a cancel today: 1%". */
-export function hubChance(perMille: number, usual: boolean): string {
-  return `${usual ? 'Usual chance' : 'Chance'} of a cancel today: ${percent(perMille).toLowerCase()}`;
+/**
+ * A hub's chance today: "Chance of a cancel today: 4%", "Usual chance of a cancel today: 1%";
+ * with `block`, the one time it is of, named: "Chance of a cancel this evening: 9%".
+ */
+export function hubChance(
+  perMille: number,
+  usual: boolean | Share,
+  block: BlockKey | null = null,
+): string {
+  const share = shareOf(usual);
+  const when = block === null ? 'today' : blockWhen(block, 'today');
+  const said = percent(perMille).toLowerCase();
+  if (share === 'part') return `Chance of a cancel ${when}, usual in part: ${said}`;
+  return `${share === 'all' ? 'Usual chance' : 'Chance'} of a cancel ${when}: ${said}`;
 }
 
-/** The usual mark's note, naming the airports: "... Our forecast for MCI and LAX is not ready yet." */
+/** A share from a flag: true is the usual rate as a whole, false none of it. */
+function shareOf(usual: boolean | Share): Share {
+  return usual === true ? 'all' : usual === false ? 'none' : usual;
+}
+
+/**
+ * The usual mark's note, naming the airports: "... in place of our forecast for MCI and LAX."
+ * True whether no run was read there or the airport's own test failed.
+ */
 export function usualNoteFor(codes: readonly string[]): string {
-  return `Usual means the usual rate for this time of year. Our forecast for ${listOf(codes)} is not ready yet.`;
+  return `Usual means the usual rate for this time of year, in place of our forecast for ${listOf(codes)}.`;
 }
 
-/** The same note on a past day: the forecast was not ready then. */
+/** The same note on a past day. */
 export function usualNotePast(code: string): string {
-  return `Usual means the usual rate for that time of year. Our forecast for ${code} was not ready then.`;
+  return `Usual means the usual rate for that time of year, in place of our forecast for ${code}.`;
 }
 
 /** Regional airlines at an airport, which fly under bigger airlines' names. */
@@ -790,9 +894,12 @@ export function regionalLine(names: readonly string[]): string {
   return `${listOf(names)} ${names.length === 1 ? 'flies' : 'fly'} here for bigger airlines. For those flights, check the waiver of the airline on your ticket.`;
 }
 
-/** A flight or a block whose chance rests on the usual rate: "Usual rate. Cancel chance 1%." */
-export function usualAnswer(cancel: number): string {
-  return `Usual rate. Cancel chance ${percent(cancel).toLowerCase()}.`;
+/**
+ * A flight's pill whose cancel chance is the usual rate: "Usual rate. Cancel chance 1%."; in part
+ * (`part`, one end's usual rate and the other's forecast): "Usual in part. Cancel chance 9%."
+ */
+export function usualAnswer(cancel: number, part = false): string {
+  return `${part ? 'Usual in part' : 'Usual rate'}. Cancel chance ${percent(cancel).toLowerCase()}.`;
 }
 
 /** "this morning", "tonight", "early tomorrow", "Monday afternoon". */
@@ -857,16 +964,18 @@ export function cellLabel(
 /**
  * A cell's value for a screen reader, with what it measures and the level its color shows, so the
  * level is never told by color alone (LR-F15.2): "5% chance of a cancel, some risk"; a usual value
- * has no level: "2% chance of a cancel, usual".
+ * has no level: "2% chance of a cancel, usual", or in part: "9% chance of a cancel, usual in part".
  */
 export function cellChance(
   perMille: number,
-  usual: boolean,
+  usual: boolean | Share,
   level: LevelKey | null = null,
   fromLate = false,
 ): string {
   const chance = `${percent(perMille)} chance of a cancel`;
-  if (usual) return `${chance}, ${flightsCopy.usualMark.toLowerCase()}`;
+  const share = shareOf(usual);
+  if (share === 'all') return `${chance}, ${flightsCopy.usualMark.toLowerCase()}`;
+  if (share === 'part') return `${chance}, ${flightsCopy.usualMark.toLowerCase()} in part`;
   if (level === null) return chance;
   // A level its cancel chance alone would not make: from the chance of a long delay, said so.
   const word = flightsCopy.legend[level].toLowerCase();
@@ -896,6 +1005,62 @@ export function usualFrom(month: string): string {
 /** A record line with its verdict or its plain numbers. */
 export function recordLine(share: number, others: number, days: number): string {
   return `${percent(share)} cancelled on ${String(days)} such days. Other airports: ${percent(others).toLowerCase()}.`;
+}
+
+/**
+ * The record kind (records/<code>.json, KIND_KEYS) a forecast reason (REASON_KEYS) speaks to:
+ * snow, ice as freezing rain, thunder, wind, fog; null for cold, hubs and a storm the day before.
+ */
+export function reasonKind(reason: number): number | null {
+  return REASON_KINDS[reason] ?? null;
+}
+
+const REASON_KINDS: Readonly<Record<number, number | undefined>> = { 0: 2, 1: 1, 2: 3, 3: 5, 4: 4 };
+
+/**
+ * The record beside a usual cancel chance (flights-demo-honesty, LR-SF1): what past days of this
+ * weather did here, as past days, never a forecast. `line`: the record's line for the kind, null
+ * with no record read (then nothing is said); `first`: the record's first day; `code`: the
+ * airport, named where the panel is not that airport's own. "Windy days here" | "60 since
+ * 2020", "Cancelled here" | "5% in the wind", "Elsewhere" | "7% in the same weather" ("Windy
+ * days at LAX", "Cancelled at LAX" with `code`). Each row fits on one line at 360 px. The share
+ * is of departures in the hours of that weather only (schemas/flights.py share), never of whole
+ * days, so it says so: "in the wind". The days are the record's own count
+ * (schemas/flights.py days): days with a block of this weather here and a peer airport in the
+ * same weather, the days its shares are from.
+ * Its bad days (days with any one block of this weather 10% cancelled) are not said: in words
+ * they read as whole days 10% cancelled, which they are not.
+ */
+export function notInUsual(
+  kind: number,
+  line: { days: number; share: number; others: number } | null,
+  first: string,
+  code: string | null = null,
+): Fact[] {
+  const key = KIND_KEYS[kind];
+  if (key === undefined || line === null) return [];
+  const { facts } = flightsCopy;
+  const kinds = flightsCopy.record.pastKinds[key];
+  const label = code === null ? `${kinds} here` : `${kinds} at ${code}`;
+  const year = first.slice(0, 4);
+  if (line.days <= 0) return [{ label, value: `None since ${year}` }];
+  return [
+    { label, value: `${String(line.days)} since ${year}` },
+    {
+      label: code === null ? facts.cancelledHere : `Cancelled at ${code}`,
+      value: `${percent(line.share)} ${PAST_IN[key]}`,
+    },
+    { label: facts.otherAirports, value: `${percent(line.others)} in the same weather` },
+  ];
+}
+
+/**
+ * The track record's line where its scores are not for the chances the live file shows
+ * (LR-SF2): dated, and nothing it would contradict. "These scores are from Nov 22, 2026. They
+ * are not for the chances on the map now, so we do not show them."
+ */
+export function trackNotShown(generatedAt: string): string {
+  return `These scores are from ${longDate(generatedAt.slice(0, 10))}. They are not for the chances on the map now, so we do not show them.`;
 }
 
 /** The record's span: "Since 2015". */
@@ -1028,12 +1193,16 @@ export function testSpan(first: string, last: string): string {
   return `Tested on ${longDate(first)} to ${longDate(last)}, days never used to make them.`;
 }
 
-/** A target's skill: "Beat the usual rate by 12% at 40 of 359 airports." */
+/**
+ * A target's skill: "Beat the usual rate by 12%. Passed the test at 40 of 359 airports." The
+ * count is the test's, never the map's now: an airport that passed can still show the usual rate
+ * when its observations are not fresh.
+ */
 export function skillLine(skill: number, published: number, tested: number): string {
   const whole = Math.round(skill * 100);
   const beat =
     whole > 0 ? `Beat the usual rate by ${String(whole)}%` : 'Did not beat the usual rate';
-  return `${beat}. Shown at ${String(published)} of ${String(tested)} airports.`;
+  return `${beat}. Passed the test at ${String(published)} of ${String(tested)} airports.`;
 }
 
 /** A scored month: "Sep 2026: 30 of 30 days scored, 3 rough days, 2 caught." */
@@ -1080,8 +1249,19 @@ const ALERT_KEYS: readonly (Exclude<keyof typeof flightsCopy.alerts, 'title'> | 
   'extreme_cold',
 ];
 const REASON_KEYS: readonly (
-  Exclude<keyof typeof flightsCopy.why, 'title' | 'calm'> | undefined
+  Exclude<keyof typeof flightsCopy.why, 'title' | 'forecastTitle' | 'calm'> | undefined
 )[] = ['snow', 'ice', 'thunder', 'wind', 'fog', 'cold', 'hubs', 'before'];
+/**
+ * The hours a record's share is of: its departures in the blocks of that weather only, never
+ * whole days (schemas/flights.py), as "5% in the wind".
+ */
+const PAST_IN: Readonly<Record<keyof typeof flightsCopy.record.kinds, string>> = {
+  freezing_rain: 'in freezing rain',
+  snow: 'in the snow',
+  thunder: 'in thunderstorms',
+  fog: 'in the fog',
+  wind: 'in the wind',
+};
 const KIND_KEYS: readonly (keyof typeof flightsCopy.record.kinds | undefined)[] = [
   undefined,
   'freezing_rain',

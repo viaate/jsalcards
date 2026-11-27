@@ -28,6 +28,7 @@
     cellHeld,
     updated,
     usualAnswer,
+    usualFacts,
     usualDaysFact,
     usualNoteFor,
     cellChance,
@@ -38,7 +39,7 @@
   import Hero from './Hero.svelte';
   import PanelShell from '../../ui/PanelShell.svelte';
   import type { FlightsRoutes } from '../../types/generated';
-  import { dayHero, dayViews, levelOf, localParts, localToday, todayView } from './chance';
+  import { dayHero, dayViews, levelOf, localParts, localToday, pillOf, todayView } from './chance';
   import type { Level } from './chance';
   import { bestTime, faaHolds, holdsOn, routeGrid } from './schedule';
   import type { BestTime, Cell, CellState, Hold, Rated, RouteBack } from './schedule';
@@ -217,8 +218,9 @@
    * delay, which the cell does not show: its name says so, and the note under the grid (TRAV-R11-S2).
    */
   function fromLate(best: Rated): boolean {
-    const { level, usual, cancel } = best.chance;
-    return !stale && !usual && level !== null && level !== levelOf(cancel ?? 0, 0);
+    const { level } = pillOf(best.chance);
+    const { cancel } = best.chance;
+    return !stale && level !== null && level !== levelOf(cancel ?? 0, 0);
   }
 
   /** Whether a grid cell reads "No forecast" (emptyWords): the note under the grid says why. */
@@ -314,13 +316,16 @@
     return lines;
   });
 
-  /** The airports a usual value in the grid comes from, for the usual mark's note. */
+  /**
+   * The airports a usual cancel value in the grid comes from, for the usual mark's note: the grid
+   * shows the cancel number alone, and marks it by its own values (LR-SF8).
+   */
   const usualEnds = $derived.by(() => {
     if (grid === null || from === null || to === null) return [];
     const chances = grid.flatMap((row) => row.cells.map((cell) => cell.best?.chance ?? null));
     return [
-      ...(chances.some((chance) => chance?.fromUsual === true) ? [from.code] : []),
-      ...(chances.some((chance) => chance?.toUsual === true) ? [to.code] : []),
+      ...(chances.some((chance) => chance?.fromCancelUsual === true) ? [from.code] : []),
+      ...(chances.some((chance) => chance?.toCancelUsual === true) ? [to.code] : []),
     ];
   });
 
@@ -332,7 +337,14 @@
     const hero = view === null ? null : dayHero(view, null);
     if (view === null || hero === null) return { text: hubNone(), level: undefined };
     return {
-      text: hubChance(hero.cancel, hero.usual === 'all'),
+      // The cancel number's own flags (LR-SF1): a usual cancel chance is said so.
+      // With no counts the chance is one time's, the riskiest left: named, never said as the day's.
+      text: hubChance(
+        hero.cancel,
+        hero.cancelUsual,
+        hero.block === null ? null : (BLOCK_KEYS[hero.block] ?? null),
+      ),
+      // A usual number never takes a forecast level color (LR-SF8).
       level: hero.usual === 'none' ? (view.level ?? undefined) : undefined,
     };
   }
@@ -423,7 +435,11 @@
       <Hero
         number={null}
         meaning={flightsCopy.route.allUsual}
-        rows={[...faaNow, ...faaOld]}
+        rows={[
+          ...faaNow,
+          ...faaOld,
+          ...usualFacts({ cancel: answer.cancelShare, late: answer.lateShare, run: true }),
+        ]}
         testid="flights-best"
       />
     {:else}
@@ -457,16 +473,16 @@
             <button
               type="button"
               class="fl-cell"
-              class:is-usual={best.chance.usual}
-              data-level={stale ? undefined : (best.chance.level ?? undefined)}
+              class:is-usual={pillOf(best.chance).usual !== 'none'}
+              data-level={stale ? undefined : (pillOf(best.chance).level ?? undefined)}
               aria-pressed={shown?.day === dayRow.index && shown.block === block}
               aria-label={cellLabel(
                 name,
                 blockKey,
                 cellChance(
                   value,
-                  best.chance.usual,
-                  stale ? null : best.chance.level,
+                  pillOf(best.chance).usual,
+                  stale ? null : pillOf(best.chance).level,
                   fromLate(best),
                 ) + cellHolds(dayRow.date, block),
                 oldWords,
@@ -516,13 +532,14 @@
                 <!-- An old file: its number only, gray, never a level said as current. -->
                 <span class="fl-pill is-old">{cancelAnswer(rated.chance.cancel)}</span>
               {:else if rated.chance.cancel !== null}
-                <!-- Its number, in its level's color: never a level said as a sentence (LR-F9). -->
-                <span
-                  class="fl-pill"
-                  data-level={stale ? undefined : (rated.chance.level ?? undefined)}
-                  >{rated.chance.level === null
-                    ? usualAnswer(rated.chance.cancel)
-                    : cancelAnswer(rated.chance.cancel)}</span
+                <!-- Its number, in its level's color: never a level said as a sentence (LR-F9). A
+                     cancel chance that is the usual rate in whole or in part is said so, by its own
+                     two values, with no level color (LR-SF8). -->
+                {@const pill = pillOf(rated.chance)}
+                <span class="fl-pill" data-level={stale ? undefined : (pill.level ?? undefined)}
+                  >{pill.usual === 'none'
+                    ? cancelAnswer(rated.chance.cancel)
+                    : usualAnswer(rated.chance.cancel, pill.usual === 'part')}</span
                 >
               {:else}
                 <span class="fl-pill">{flightsCopy.noForecast}</span>
@@ -532,7 +549,7 @@
         </div>
       </section>
     {/if}
-    {#if grid.some((d) => d.cells.some((cell) => cell.best?.chance.usual === true))}
+    {#if grid.some( (d) => d.cells.some((cell) => cell.best !== null && pillOf(cell.best.chance).usual !== 'none') )}
       <p class="fl-note">{usualNoteFor(usualEnds)}</p>
     {/if}
     {#if grid.some((d) => d.cells.some(showsNoForecast))}

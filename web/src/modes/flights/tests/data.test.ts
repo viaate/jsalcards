@@ -18,7 +18,9 @@ import {
   readWaivers,
   airportWaivers,
   waiverState,
+  trackRecordFits,
 } from '../data';
+import type { FlightsAirportLive, FlightsTrackRecord } from '../../../types/generated';
 import { airportLive, liveFile } from './fixtures';
 
 const MADE = '2026-01-05T12:00:00Z';
@@ -247,5 +249,116 @@ describe('waivers (waivers spec W2)', () => {
     expect(waiverState(null, 'DL', 'Delta', 'MCI', '2026-01-05', MADE_MS).state).toBe(
       'not_checked',
     );
+  });
+});
+
+describe('the track record against the live file (LR-SF2)', () => {
+  const ALL: [number, number, number] = [0b11111, 0b11111, 0b11111];
+  const NONE: [number, number, number] = [0, 0, 0];
+  const record = (
+    airports: { code: string; passed: [number, number, number, number, number] }[],
+  ): FlightsTrackRecord => ({
+    schema_version: 1,
+    generated_at: '2026-11-22T14:11:13Z',
+    test_first: '2025-10-01',
+    test_last: '2026-09-30',
+    usual_first: '2024-10-01',
+    usual_last: '2025-09-30',
+    tests: [],
+    airports,
+    months: [],
+  });
+  const ZONES = new Map([['JFK', 'America/New_York']]);
+  // The run of Jan 5 00Z is the evening of Jan 4 in New York: days 0, 1, 2 (Jan 5 to 7) are
+  // leads 1, 2, 3, bits 1, 2, 4.
+  const RUNS = ['2026-01-05T00:00:00Z', '2026-01-05T00:00:00Z', '2026-01-05T00:00:00Z'] as const;
+  // JFK's cancels and rough day the usual rate, its late chances the forecast's.
+  const jfk = airportLive('JFK', '2026-01-05', {
+    usual: [ALL, NONE, ALL, NONE],
+    rough_usual: 0b111,
+    runs: [...RUNS],
+  });
+
+  it('fits where every forecast value the live file shows passed its gate at its lead', () => {
+    const live = liveFile([jfk], MADE);
+    const gate = record([{ code: 'JFK', passed: [0, 7, 0, 7, 0] }]);
+    expect(trackRecordFits(gate, live, ZONES)).toBe(true);
+  });
+
+  it('does not fit where the live file shows a forecast the record says passed nowhere', () => {
+    // The Nov 22 record: JFK's late chance passed at no lead, while the map shows it.
+    const live = liveFile([jfk], MADE);
+    expect(trackRecordFits(record([{ code: 'JFK', passed: [0, 0, 0, 7, 0] }]), live, ZONES)).toBe(
+      false,
+    );
+    expect(trackRecordFits(record([]), live, ZONES)).toBe(false);
+  });
+
+  it('does not fit where the record passed a target only at a later lead than a day shown', () => {
+    // Leads 2 and 3 passed (bits 2, 4), lead 1 not: tomorrow's forecast late chance at day 0 is
+    // not covered, so the lead 1 count would contradict the map.
+    const live = liveFile([jfk], MADE);
+    expect(trackRecordFits(record([{ code: 'JFK', passed: [0, 6, 0, 7, 0] }]), live, ZONES)).toBe(
+      false,
+    );
+    // Only day 0 shows a forecast: lead 1 alone is enough.
+    const first = airportLive('JFK', '2026-01-05', {
+      usual: [ALL, [0, 0b11111, 0b11111], ALL, [0, 0b11111, 0b11111]],
+      rough_usual: 0b111,
+      runs: [...RUNS],
+    });
+    const one = record([{ code: 'JFK', passed: [0, 1, 0, 1, 0] }]);
+    expect(trackRecordFits(one, liveFile([first], MADE), ZONES)).toBe(true);
+    // An older run moves each day one lead out: day 0 is lead 2 then.
+    const older: FlightsAirportLive = { ...first, runs: ['2026-01-04T00:00:00Z', null, null] };
+    expect(trackRecordFits(one, liveFile([older], MADE), ZONES)).toBe(false);
+    expect(
+      trackRecordFits(
+        record([{ code: 'JFK', passed: [0, 2, 0, 2, 0] }]),
+        liveFile([older], MADE),
+        ZONES,
+      ),
+    ).toBe(true);
+  });
+
+  it('asks for every lead where the run or the zone cannot place a day', () => {
+    const live = liveFile([{ ...jfk, runs: [null, null, null] }], MADE);
+    expect(trackRecordFits(record([{ code: 'JFK', passed: [0, 3, 0, 3, 0] }]), live, ZONES)).toBe(
+      false,
+    );
+    expect(trackRecordFits(record([{ code: 'JFK', passed: [0, 7, 0, 7, 0] }]), live, ZONES)).toBe(
+      true,
+    );
+    const placed = liveFile([jfk], MADE);
+    const gate = record([{ code: 'JFK', passed: [0, 1, 0, 7, 0] }]);
+    expect(trackRecordFits(gate, placed, new Map())).toBe(false);
+  });
+
+  it('reads the rough day by its own bits and leads, and a value missing as no forecast', () => {
+    const rough = airportLive('JFK', '2026-01-05', {
+      usual: [ALL, ALL, ALL, ALL],
+      runs: [...RUNS],
+    });
+    const gate = record([{ code: 'JFK', passed: [0, 0, 0, 0, 0] }]);
+    expect(trackRecordFits(gate, liveFile([rough], MADE), ZONES)).toBe(false);
+    expect(
+      trackRecordFits(
+        record([{ code: 'JFK', passed: [0, 0, 0, 0, 3] }]),
+        liveFile([rough], MADE),
+        ZONES,
+      ),
+    ).toBe(false);
+    expect(
+      trackRecordFits(
+        record([{ code: 'JFK', passed: [0, 0, 0, 0, 7] }]),
+        liveFile([rough], MADE),
+        ZONES,
+      ),
+    ).toBe(true);
+    const none = airportLive('JFK', '2026-01-05', {
+      usual: [ALL, ALL, ALL, ALL],
+      rough: [null, null, null],
+    });
+    expect(trackRecordFits(gate, liveFile([none], MADE), ZONES)).toBe(true);
   });
 });

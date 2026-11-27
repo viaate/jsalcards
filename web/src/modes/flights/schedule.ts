@@ -18,7 +18,7 @@ import {
   weekdayIndex,
   wholePercent,
 } from './chance';
-import type { FlightChance, Level } from './chance';
+import type { FlightChance, Level, UsualShare } from './chance';
 import { HOLDING, faaPrograms, programEnd, programEnded } from './data';
 import type { LiveRead } from './data';
 
@@ -207,6 +207,9 @@ export function holdsOn(
  * to the FAA, naming every hold that covers one (`holds`, the gravest first; TRAV-R13-S3). `usual`: every cell left rests on the usual rate, which never ranks one time over
  * another. `none`: no cell has a value. Usual cells are never ranked, and `usualDays` names the
  * days with no forecast at all (`usualSome` for usual cells on a day that has forecast ones too).
+ * Under `usual`, `cancelShare` and `lateShare`: how much of the cells' cancel and late numbers is
+ * the usual rate, across every cell ('all' where each cell's is wholly, 'none' where none is), so
+ * the rows under it name which numbers by value (LR-SF8).
  * `todayHeld`: holds cover forecast times of today and the pick is a later day, so the line
  * under it says why today is not named, naming each hold (`all`: they cover every one left today).
  * `heldBy`: every hold that keeps a forecast time out, in the holds' order, so the lines name each
@@ -227,7 +230,12 @@ export type BestTime =
       readonly passed: (Pick & { readonly best: Rated }) | null;
     }
   | { readonly kind: 'faa'; readonly holds: readonly Hold[] }
-  | { readonly kind: 'usual' | 'none' };
+  | {
+      readonly kind: 'usual';
+      readonly cancelShare: UsualShare;
+      readonly lateShare: UsualShare;
+    }
+  | { readonly kind: 'none' };
 
 export function bestTime(
   grid: readonly GridDay[],
@@ -243,7 +251,12 @@ export function bestTime(
   if (cells.length === 0) return { kind: 'none' };
   // The usual rate is no forecast: it never names one time as safer than another.
   const forecast = cells.filter((cell) => !cell.best.chance.usual);
-  if (forecast.length === 0) return { kind: 'usual' };
+  if (forecast.length === 0)
+    return {
+      kind: 'usual',
+      cancelShare: shareAcross(cells.map((cell) => cell.best.chance.cancelShare)),
+      lateShare: shareAcross(cells.map((cell) => cell.best.chance.lateShare)),
+    };
   const usualDays = grid
     .filter(
       (row) =>
@@ -313,4 +326,10 @@ export function rowForDay(
   const weekday = date === null ? -1 : weekdayIndex(date);
   const onDay = leg.find((row) => weekday >= 0 && (row.weekdays & (1 << weekday)) !== 0);
   return onDay ?? [...leg].sort((a, b) => b.days - a.days)[0] ?? null;
+}
+
+/** One share for many numbers: 'all' where each is wholly the usual rate, 'none' where none is. */
+function shareAcross(shares: readonly UsualShare[]): UsualShare {
+  if (shares.length > 0 && shares.every((share) => share === 'all')) return 'all';
+  return shares.every((share) => share === 'none') ? 'none' : 'part';
 }

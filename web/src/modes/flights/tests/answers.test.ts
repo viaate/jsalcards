@@ -36,10 +36,19 @@ import {
   bothFact,
   usualDaysFact,
   usualSomeFact,
+  usualAnswer,
   usualFacts,
+  usualNoteFor,
   updated,
+  notInUsual,
+  reasonKind,
+  trackNotShown,
+  usualChance,
+  hubChance,
+  skillLine,
 } from '../../../copy-flights';
 import { dayHero, dayViews, localToday } from '../chance';
+import type { UsualShare } from '../chance';
 import {
   REGIONAL_AIRLINES,
   faaFacts,
@@ -60,6 +69,9 @@ const rows = (facts: readonly { label: string; value: string }[]): string[] =>
   facts.map((fact) => `${fact.label} | ${fact.value}`);
 const row = (fact: { label: string; value: string } | null): string =>
   fact === null ? '' : `${fact.label} | ${fact.value}`;
+
+/** A chance resting in part on the usual rate, with a run read and weather (LR-SF1 rows). */
+const SHARES = ['all', 'part', 'none'] as const;
 
 describe('the airport headline after midnight', () => {
   // Monday 2 am in Kansas City: the file's first day is Sunday, whose night runs to 5 am.
@@ -157,12 +169,12 @@ describe('the FAA under the answer', () => {
     if (read === null) throw new Error('no read');
     const at = Date.parse(made) + 5 * 60_000;
     expect(rows(faaFacts(read, entry, 'MCI', CHI, at, true))).toEqual([
-      'FAA at MCI | Ground stop now, not in this chance',
+      'FAA at MCI | Ground stop now, not counted',
     ]);
-    expect(row(faaFact(1, 'LAX', true))).toBe('FAA at LAX | Ground delay now, not in this chance');
+    expect(row(faaFact(1, 'LAX', true))).toBe('FAA at LAX | Ground delay now, not counted');
     // On the airport's own panel, its code is never said again.
     expect(rows(faaFacts(read, entry, null, CHI, at, true))).toEqual([
-      'FAA | Ground stop now, not in this chance',
+      'FAA | Ground stop now, not counted',
     ]);
   });
 
@@ -240,7 +252,7 @@ describe('the FAA under the answer', () => {
     // Each program gets its own line, so none the answer's other lines name is missing
     // (TRAV-R13-S3); one the answer itself names is left out (`named`).
     expect(rows(faaFacts(endRead, both, 'MCI', CHI, after, true))).toEqual([
-      'FAA at MCI | Ground delay now, not in this chance',
+      'FAA at MCI | Ground delay now, not counted',
       'FAA at MCI | Ground stop was set to end at 6:06 am',
     ]);
     expect(rows(faaFacts(endRead, both, 'MCI', CHI, before))).toEqual([
@@ -301,6 +313,9 @@ describe('words a traveler reads in passing', () => {
     expect(cellChance(150, false, 'cancel')).toBe('15% chance of a cancel, high risk');
     // A usual value has no level: the usual mark stands for it.
     expect(cellChance(20, true, null)).toBe('2% chance of a cancel, usual');
+    expect(cellChance(20, 'all', null)).toBe('2% chance of a cancel, usual');
+    expect(cellChance(90, 'part', null)).toBe('9% chance of a cancel, usual in part');
+    expect(cellChance(20, 'none', null)).toBe('2% chance of a cancel');
   });
 
   it('says why today is not named, and leaves held times out of a tie (LR-F15.3a)', () => {
@@ -514,10 +529,35 @@ describe('every template under an answer, with its longest real values (LR-F17.1
       bothFact(),
       usualDaysFact(['2026-01-07', '2026-01-08', '2026-01-09'], today),
       usualSomeFact(),
-      ...usualFacts(false, true, ['MCI', 'LAX']),
-      ...usualFacts(true, true),
+      ...SHARES.flatMap((cancel) =>
+        [...SHARES, null].flatMap((late) =>
+          usualFacts({ cancel, late, run: false, codes: ['MCI', 'LAX'] }),
+        ),
+      ),
+      ...usualFacts({ cancel: 'all', late: 'all', run: false }),
+      ...usualFacts({
+        cancel: 'part',
+        late: 'all',
+        run: true,
+        reason: 'Freezing rain in the forecast',
+        reasonAt: 'LAX',
+      }),
+      ...notInUsual(5, { days: 60, share: 48, others: 66 }, '2020-01-31'),
+      ...notInUsual(1, { days: 1, share: 97, others: 60 }, '2020-01-31', 'LAX'),
+      ...notInUsual(3, { days: 9, share: 97, others: 60 }, '2020-01-31'),
+      ...notInUsual(4, { days: 9, share: 97, others: 60 }, '2020-01-31'),
+      ...notInUsual(2, { days: 9, share: 97, others: 60 }, '2020-01-31'),
+      ...notInUsual(3, { days: 0, share: 0, others: 0 }, '2020-01-31'),
       ...stormFacts(4, false, 2),
       ...stormFacts(4, true, 1),
+    );
+    lines.push(
+      trackNotShown('2026-11-22T14:11:13Z'),
+      skillLine(0.12, 40, 359),
+      flightsCopy.route.allUsual,
+      hubChance(90, true, 'afternoon').replace(/\d+%/gu, 'ten'),
+      hubChance(90, 'part', 'afternoon').replace(/\d+%/gu, 'ten'),
+      usualAnswer(90, true).replace(/\d+%/gu, 'ten'),
     );
     const failed = lines.filter((line) => {
       const { grade, longest } = measure(line, ['MCI', 'LAX', 'ORD', 'FAA']);
@@ -525,5 +565,196 @@ describe('every template under an answer, with its longest real values (LR-F17.1
     });
     expect(failed).toEqual([]);
     expect(labels.filter((label) => label.split(/\s+/u).length > 5)).toEqual([]);
+  });
+});
+
+describe('the record beside a usual cancel chance (LR-SF1)', () => {
+  const JFK_WIND = { days: 60, share: 48, others: 66 };
+
+  it('maps each forecast reason to the record kind it speaks to, and the rest to none', () => {
+    // snow, ice, thunder, wind, fog; then cold, hubs and a storm the day before.
+    expect([0, 1, 2, 3, 4, 5, 6, 7, 99].map(reasonKind)).toEqual([
+      2,
+      1,
+      3,
+      5,
+      4,
+      null,
+      null,
+      null,
+      null,
+    ]);
+  });
+
+  it('says past days of the weather here, as past days, with their spread', () => {
+    expect(rows(notInUsual(5, JFK_WIND, '2020-01-31'))).toEqual([
+      'Windy days here | 60 since 2020',
+      'Cancelled here | 5% in the wind',
+      'Elsewhere | 7% in the same weather',
+    ]);
+  });
+
+  it('never says bad days, which count days with any one bad block, not whole days', () => {
+    // The record's line as read: its bad_days are there, and never said.
+    const line = { ...JFK_WIND, bad_days: 12 };
+    const said = rows(notInUsual(5, line, '2020-01-31'));
+    expect(said.join(' ')).not.toMatch(/bad|1 in 10|12/iu);
+  });
+
+  it('names each kind in the words of the forecast reasons', () => {
+    const line = { days: 3, share: 20, others: 30 };
+    expect([1, 2, 3, 4, 5].map((kind) => rows(notInUsual(kind, line, '2015-01-01'))[0])).toEqual([
+      'Freezing rain days here | 3 since 2015',
+      'Snowy days here | 3 since 2015',
+      'Thunderstorm days here | 3 since 2015',
+      'Foggy days here | 3 since 2015',
+      'Windy days here | 3 since 2015',
+    ]);
+    expect(rows(notInUsual(4, { ...line, days: 1 }, '2015-01-01', 'LAX'))[0]).toBe(
+      'Foggy days at LAX | 1 since 2015',
+    );
+  });
+
+  it('names the airport where the panel is not its own', () => {
+    expect(rows(notInUsual(5, JFK_WIND, '2020-01-31', 'JFK'))).toEqual([
+      'Windy days at JFK | 60 since 2020',
+      'Cancelled at JFK | 5% in the wind',
+      'Elsewhere | 7% in the same weather',
+    ]);
+  });
+
+  it('says nothing with no record, and none for a kind never seen here', () => {
+    expect(notInUsual(5, null, '2020-01-31')).toEqual([]);
+    expect(notInUsual(0, JFK_WIND, '2020-01-31')).toEqual([]);
+    expect(rows(notInUsual(5, { days: 0, share: 0, others: 50 }, '2020-01-31'))).toEqual([
+      'Windy days here | None since 2020',
+    ]);
+  });
+
+  it('rounds as the page does: under 1% below 5 per mille, 1% at 5', () => {
+    const at = (share: number, others: number): string[] =>
+      rows(notInUsual(5, { days: 10, share, others }, '2020-01-31')).slice(1);
+    expect(at(4, 4)).toEqual([
+      'Cancelled here | Under 1% in the wind',
+      'Elsewhere | Under 1% in the same weather',
+    ]);
+    expect(at(5, 5)).toEqual([
+      'Cancelled here | 1% in the wind',
+      'Elsewhere | 1% in the same weather',
+    ]);
+    expect(at(14, 15)[1]).toBe('Elsewhere | 2% in the same weather');
+  });
+
+  it('says which numbers are usual in one row and what they leave out in one more (LR-SF8)', () => {
+    const wind = 'Strong wind in the forecast';
+    const which = (cancel: UsualShare, late: UsualShare | null): string[] =>
+      rows(usualFacts({ cancel, late, run: true }));
+    // Every combination: the same two rows, only the value naming which numbers changes.
+    const said = SHARES.flatMap((cancel) =>
+      [...SHARES, null].map((late) => [cancel, late, which(cancel, late)] as const),
+    );
+    for (const [cancel, late, shown] of said) {
+      if (cancel === 'none' && (late ?? 'none') === 'none') {
+        expect(shown).toEqual([]);
+        continue;
+      }
+      expect(shown).toHaveLength(2);
+      expect(shown[0]).toMatch(/^Usual rate \| /u);
+      expect(shown[1]).toBe('Left out | Weather and the FAA');
+    }
+    expect(said.map(([cancel, late, shown]) => [cancel, late, shown[0] ?? null])).toEqual([
+      ['all', 'all', 'Usual rate | Both chances'],
+      ['all', 'part', 'Usual rate | Cancel chance, part of delay'],
+      ['all', 'none', 'Usual rate | Cancel chance'],
+      ['all', null, 'Usual rate | Cancel chance'],
+      ['part', 'all', 'Usual rate | Delay chance, part of cancel'],
+      ['part', 'part', 'Usual rate | Part of both chances'],
+      ['part', 'none', 'Usual rate | Part of the cancel chance'],
+      ['part', null, 'Usual rate | Part of the cancel chance'],
+      ['none', 'all', 'Usual rate | Delay chance'],
+      ['none', 'part', 'Usual rate | Part of the delay chance'],
+      ['none', 'none', null],
+      ['none', null, null],
+    ]);
+    // No half forms: nothing says the weather is left out of one number alone.
+    expect(said.flatMap(([, , shown]) => shown).join(' ')).not.toMatch(/in part\b|without/iu);
+    // The forecast's weather after the usual rows, never as "Why"; on a flight at its airport.
+    expect(rows(usualFacts({ cancel: 'all', late: 'none', run: true, reason: wind }))).toEqual([
+      'Usual rate | Cancel chance',
+      'Left out | Weather and the FAA',
+      'Weather | Strong wind in the forecast',
+    ]);
+    expect(
+      rows(usualFacts({ cancel: 'part', late: 'all', run: true, reason: wind, reasonAt: 'LAX' })),
+    ).toEqual([
+      'Usual rate | Delay chance, part of cancel',
+      'Left out | Weather and the FAA',
+      'At LAX | Strong wind in the forecast',
+    ]);
+    // Nothing usual: no rows, not even the weather (the panel says its reason as "Why").
+    expect(usualFacts({ cancel: 'none', late: 'none', run: true, reason: wind })).toEqual([]);
+    // No run read: one Forecast row, the airports' form where they are known.
+    expect(rows(usualFacts({ cancel: 'all', late: 'all', run: false }))).toEqual([
+      'Usual rate | Both chances',
+      'Left out | Weather and the FAA',
+      'Forecast | None for this day yet',
+    ]);
+    expect(
+      rows(usualFacts({ cancel: 'all', late: 'all', run: false, codes: ['MCI', 'LAX'] })),
+    ).toEqual([
+      'Usual rate | Both chances',
+      'Left out | Weather and the FAA',
+      'Forecast | Not ready for MCI and LAX',
+    ]);
+    expect(usualChance('2026-11-27', null)).toBe('Usual chance of a cancel on a Friday');
+    // A day number over the blocks left today keeps its scope.
+    expect(usualChance('2026-11-27', null, true)).toBe(
+      'Usual chance of a cancel for the rest of today',
+    );
+    expect(usualChance('2026-11-27', 'evening', true)).toBe(
+      'Usual chance of a cancel on a Friday, 5 to 9 pm',
+    );
+    // A hub whose cancel chance is the usual rate says so on its line.
+    expect(hubChance(3, true)).toBe('Usual chance of a cancel today: under 1%');
+    expect(hubChance(3, false)).toBe('Chance of a cancel today: under 1%');
+    // With no counts, the riskiest time left is named, never said as the whole day.
+    expect(hubChance(90, false, 'evening')).toBe('Chance of a cancel this evening: 9%');
+    expect(hubChance(90, true, 'early')).toBe('Usual chance of a cancel early today: 9%');
+    expect(hubChance(90, 'all')).toBe('Usual chance of a cancel today: 9%');
+    expect(hubChance(90, 'none')).toBe('Chance of a cancel today: 9%');
+    // In part (one block's usual and another's the forecast's at the same value): said so.
+    expect(hubChance(90, 'part')).toBe('Chance of a cancel today, usual in part: 9%');
+    // A pill by its cancel number's share.
+    expect(usualAnswer(20)).toBe('Usual rate. Cancel chance 2%.');
+    expect(usualAnswer(90, true)).toBe('Usual in part. Cancel chance 9%.');
+    expect(usualNoteFor(['JFK'])).toBe(
+      'Usual means the usual rate for this time of year, in place of our forecast for JFK.',
+    );
+  });
+
+  it('says a share of the weather’s own hours for every kind, never of whole days', () => {
+    const line = { days: 3, share: 20, others: 30 };
+    expect([1, 2, 3, 4, 5].map((kind) => notInUsual(kind, line, '2015-01-01')[1]?.value)).toEqual([
+      '2% in freezing rain',
+      '2% in the snow',
+      '2% in thunderstorms',
+      '2% in the fog',
+      '2% in the wind',
+    ]);
+  });
+
+  it('says a skill count as the test’s, never as the map’s now', () => {
+    expect(skillLine(0.12, 40, 359)).toBe(
+      'Beat the usual rate by 12%. Passed the test at 40 of 359 airports.',
+    );
+    expect(skillLine(-0.02, 3, 351)).toBe(
+      'Did not beat the usual rate. Passed the test at 3 of 351 airports.',
+    );
+  });
+
+  it('dates a track record whose scores are not for the map’s chances', () => {
+    expect(trackNotShown('2026-11-22T14:11:13Z')).toBe(
+      'These scores are from Nov 22, 2026. They are not for the chances on the map now, so we do not show them.',
+    );
   });
 });

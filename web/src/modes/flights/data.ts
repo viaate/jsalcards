@@ -9,10 +9,11 @@ import { liveRootOf } from '../../pwa/config';
 import { dataRootFor } from '../../data/files';
 import { clock, clockAt, faaEndedFact, faaFact } from '../../copy-flights';
 import type { Fact } from '../../copy-flights';
-import { localParts } from './chance';
+import { addDays, localParts } from './chance';
 import { FlightsProgram } from '../../types/generated';
 import type {
   FlightsAirportLive,
+  FlightsDayRows,
   FlightsLive,
   FlightsProgramNow,
   FlightsRecord,
@@ -351,6 +352,73 @@ export function isTrackRecord(value: unknown): value is FlightsTrackRecord {
     Array.isArray(value.tests) &&
     Array.isArray(value.months)
   );
+}
+
+/** The lead classes the model is tested at (1 to 3: the evening before up to three before). */
+const LEADS = [1, 2, 3] as const;
+const ALL_LEADS = 0b111;
+
+/**
+ * The lead class bits a live day's values come from (the pipeline's features.lead_class): the
+ * days from the local date of the day's run at the airport to the day; bit `lead - 1`. With no
+ * run or no zone to place it, every lead (the check then asks the record for all three).
+ */
+function leadBits(entry: FlightsAirportLive, day: number, zone: string | undefined): number {
+  const run = entry.runs[day] ?? null;
+  if (run === null || zone === undefined) return ALL_LEADS;
+  const ran = localParts(new Date(run), zone).day;
+  const lead = Math.round(
+    (Date.parse(`${addDays(entry.today, day)}T12:00:00Z`) - Date.parse(`${ran}T12:00:00Z`)) /
+      86_400_000,
+  );
+  return LEADS.some((each) => each === lead) ? 1 << (lead - 1) : ALL_LEADS;
+}
+
+/**
+ * Whether the track record can be for the chances `live` shows (LR-SF2): false where the live
+ * file shows a forecast value (its usual bit off) of a target on a day whose lead class the
+ * record's gate for that airport and target did not pass, or at an airport the record does not
+ * list. The panel's counts are by lead, so a pass at another lead does not cover the day. Such
+ * a record is of other chances than the map's, and its counts would contradict the page, so none
+ * is shown. `zones`: each airport's time zone, which places its run's date. A usual value where
+ * the record passed is no contradiction: the files show the usual rate there too when the
+ * airport's observations are not fresh or the day follows a storm (live.py _chance).
+ */
+export function trackRecordFits(
+  record: FlightsTrackRecord,
+  live: FlightsLive,
+  zones: ReadonlyMap<string, string>,
+): boolean {
+  const airports: unknown = record.airports;
+  if (!Array.isArray(airports)) return false;
+  const passed = new Map<string, readonly number[]>();
+  for (const gate of record.airports) passed.set(gate.code, gate.passed);
+  const rows = (entry: FlightsAirportLive): readonly FlightsDayRows[] => [
+    entry.dep_canc,
+    entry.dep_late,
+    entry.arr_canc,
+    entry.arr_late,
+  ];
+  for (const entry of live.airports) {
+    const masks = passed.get(entry.code);
+    const zone = zones.get(entry.code);
+    const fits = (target: number, day: number): boolean => {
+      const bits = leadBits(entry, day, zone);
+      return ((masks?.[target] ?? 0) & bits) === bits;
+    };
+    for (const [target, days] of rows(entry).entries()) {
+      for (const [day, row] of days.entries()) {
+        const usual = entry.usual[target as 0 | 1 | 2 | 3][day] ?? 0;
+        const forecast = row.some((value, block) => value !== null && (usual & (1 << block)) === 0);
+        if (forecast && !fits(target, day)) return false;
+      }
+    }
+    for (const [day, value] of entry.rough.entries()) {
+      const forecast = value !== null && (entry.rough_usual & (1 << day)) === 0;
+      if (forecast && !fits(4, day)) return false;
+    }
+  }
+  return true;
 }
 
 // Waivers (waivers spec W3, W7; its schema is the waivers lane's) ----------------------------

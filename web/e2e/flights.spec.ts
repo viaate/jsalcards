@@ -67,6 +67,14 @@ interface Files {
   readonly waivers?: unknown;
   /** When the FAA's programs were read, if not with the rest of the file. */
   readonly programsAt?: Date;
+  /** Fields of an airport's live entry by its code, over the made-up ones (JFK is added). */
+  readonly over?: Readonly<Record<string, Record<string, unknown>>>;
+  /** More records/<code>.json files, by code, beside MCI's. */
+  readonly records?: Readonly<Record<string, unknown>>;
+  /** More routes/<code>.json files' usual flights, by code, beside MCI's. */
+  readonly routes?: Readonly<Record<string, readonly unknown[]>>;
+  /** flights/track-record.json. */
+  readonly track?: unknown;
 }
 
 function airport(code: string, zone: string, cancel: number, made: Date, programs: unknown[] = []) {
@@ -229,8 +237,9 @@ async function serveFlights(page: Page, files: Files): Promise<void> {
       },
       airport('LAX', 'America/Los_Angeles', 10, made, files.laxPrograms ?? []),
       airport('DEN', 'America/Denver', 10, made),
+      ...(files.over?.JFK === undefined ? [] : [airport('JFK', 'America/New_York', 3, made)]),
       ...(files.extra ?? []).map(([code, zone, cancel]) => airport(code, zone, cancel, made)),
-    ],
+    ].map((entry) => ({ ...entry, ...(files.over?.[entry.code] ?? {}) })),
   };
   const routes = {
     schema_version: 1,
@@ -316,6 +325,12 @@ async function serveFlights(page: Page, files: Files): Promise<void> {
     ],
     carriers: [],
   };
+  const routesOf = (code: string): unknown => {
+    const flights = files.routes?.[code];
+    return flights === undefined
+      ? null
+      : { ...routes, code, months: [{ month: '2026-09', flights }] };
+  };
   await page.route('**/data/flights/**', async (route) => {
     const url = new URL(route.request().url());
     const name = url.pathname.replace(/^.*\/data\/flights\//, '');
@@ -330,7 +345,10 @@ async function serveFlights(page: Page, files: Files): Promise<void> {
               ? record
               : name === 'waivers.json' && files.waivers !== undefined
                 ? files.waivers
-                : null;
+                : name === 'track-record.json' && files.track !== undefined
+                  ? files.track
+                  : (files.records?.[name.replace(/^records\/(\w+)\.json$/, '$1').toUpperCase()] ??
+                    routesOf(name.replace(/^routes\/(\w+)\.json$/, '$1').toUpperCase()));
     if (body === null) await route.fulfill({ status: 404, body: '' });
     else
       await route.fulfill({
@@ -455,7 +473,7 @@ test('opens an airport from a link: the answer first, the day by block, the FAA 
     .poll(() => factRows(answer))
     .toEqual([
       'Why | Snow in the forecast',
-      'FAA | Ground stop now, not in this chance',
+      'FAA | Ground stop now, not counted',
       'Delay of 45+ min | 6%',
     ]);
   // No callout, no level sentence, no "up to", no code the title shows already.
@@ -618,12 +636,577 @@ test('says the usual rate as the usual rate, never as a level, under a storm and
   expect(usualRows).toContain('Forecast | None for this day yet');
   await expect(answer).not.toContainText('risk');
   expect(usualRows.filter((row) => row.startsWith('Why | '))).toEqual([]);
-  expect(usualRows).toContain('Left out | The weather and the FAA');
+  expect(usualRows).toContain('Left out | Weather and the FAA');
+  expect(usualRows).toContain('Usual rate | Both chances');
+  // One Forecast row, never two.
+  expect(usualRows.filter((row) => row.startsWith('Forecast | '))).toHaveLength(1);
   // A waiver that names no airports plainly is unclear; an airline not read is not checked.
   const waivers = page.getByTestId('flights-waivers');
   await expect(waivers).toContainText('We could not tell if it covers this trip.');
   await expect(waivers).toContainText('We could not check American’s page just now.');
   await expect(waivers).not.toContainText('no waiver');
+});
+
+/** JFK's cancels the usual rate and its late chances the forecast's, as on Nov 26, 2026. */
+const CANCEL_USUAL = [ALL, [0, 0, 0], ALL, [0, 0, 0]];
+/** A record with one strong wind line (SYNTHETIC numbers in the shape of JFK's). */
+function windRecord(code: string, days: number, badDays: number) {
+  return {
+    schema_version: 1,
+    generated_at: '2026-11-22T14:11:48Z',
+    code,
+    first: '2020-01-31',
+    last: '2026-09-30',
+    lines: [
+      {
+        kind: 5,
+        blocks: 87,
+        bad: 15,
+        days,
+        bad_days: badDays,
+        share: 48,
+        others: 66,
+        worse: 0,
+        better: 0,
+        verdict: 0,
+      },
+    ],
+    carriers: [],
+  };
+}
+
+test('says a usual cancel chance as usual on a windy day, with what past windy days did here', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(NOW);
+  await serveFlights(page, {
+    generatedAt: new Date(NOW.getTime() - 5 * 60_000),
+    over: { JFK: { usual: CANCEL_USUAL, why: [[3], [3], []] } },
+    records: { JFK: windRecord('JFK', 60, 12) },
+  });
+  await page.goto('/?mode=flights&airport=JFK');
+  const answer = page.getByTestId('flights-answer');
+  // The cancel number is the usual rate: said so, though the late chance is the forecast's,
+  // and over the blocks left today, as the day number is.
+  await expect(answer.locator('.fl-hero-meaning')).toHaveText(
+    '<1% Usual chance of a cancel for the rest of today',
+    { timeout: 60_000 },
+  );
+  // No "Why" under the usual headline: the one usual rule (LR-SF8) names the cancel chance as
+  // the usual rate and what it leaves out, then the forecast's wind as the weather; the share is
+  // of the windy hours, never whole days; and the record's bad days are never said.
+  await expect
+    .poll(() => factRows(answer))
+    .toEqual([
+      'Delay of 45+ min | 6%',
+      'Usual rate | Cancel chance',
+      'Left out | Weather and the FAA',
+      'Weather | Strong wind in the forecast',
+      'Windy days here | 60 since 2020',
+      'Cancelled here | 5% in the wind',
+      'Elsewhere | 7% in the same weather',
+    ]);
+  // The reasons below are the forecast's weather, never headed as why the usual rate is.
+  await expect(page.getByTestId('flights-why').locator('h3')).toHaveText('In the forecast');
+  // The table's note says the usual rate is in place of the forecast, never that it is not ready.
+  await expect(page.locator('.fl-usual-note').first()).toHaveText(
+    'Usual means the usual rate for this time of year, in place of our forecast.',
+  );
+  await expect(answer).not.toContainText('risk');
+});
+
+test('says no past days beside a forecast cancel chance, even where the late chance is usual', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(NOW);
+  await serveFlights(page, {
+    generatedAt: new Date(NOW.getTime() - 5 * 60_000),
+    over: { JFK: { usual: [[0, 0, 0], ALL, [0, 0, 0], ALL], why: [[3], [3], []] } },
+    records: { JFK: windRecord('JFK', 60, 12) },
+  });
+  await page.goto('/?mode=flights&airport=JFK');
+  const answer = page.getByTestId('flights-answer');
+  await expect(answer.locator('.fl-hero-meaning')).toHaveText(
+    '<1% Chance of a cancel for the rest of today',
+    { timeout: 60_000 },
+  );
+  // The same two rows by value (LR-SF8): the delay chance is the usual rate, never the forecast
+  // cancel chance; the wind is said as the weather, never as "Why" beside a usual number.
+  await expect.poll(() => factRows(answer)).toContain('Usual rate | Delay chance');
+  const said = await factRows(answer);
+  expect(said).toContain('Left out | Weather and the FAA');
+  expect(said).toContain('Weather | Strong wind in the forecast');
+  expect(said.filter((row) => row.startsWith('Why | '))).toEqual([]);
+  await expect(answer).not.toContainText(' since 2020');
+  await expect(page.getByTestId('flights-why').locator('h3')).toHaveText('In the forecast');
+});
+
+test('names the weather the record rows speak to, though another reason comes first', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(NOW);
+  // Cold first, then strong wind (SYNTHETIC order: the file lists weather kinds first).
+  await serveFlights(page, {
+    generatedAt: new Date(NOW.getTime() - 5 * 60_000),
+    over: { JFK: { usual: CANCEL_USUAL, why: [[5, 3], [3], []] } },
+    records: { JFK: windRecord('JFK', 60, 12) },
+  });
+  await page.goto('/?mode=flights&airport=JFK');
+  const answer = page.getByTestId('flights-answer');
+  await expect
+    .poll(() => factRows(answer), { timeout: 60_000 })
+    .toContain('Windy days here | 60 since 2020');
+  const said = await factRows(answer);
+  expect(said.filter((row) => row.startsWith('Weather | '))).toEqual([
+    'Weather | Strong wind in the forecast',
+  ]);
+});
+
+test('says no past days on a flight whose cancel chance is the forecast’s at one end', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(NOW);
+  await serveFlights(page, {
+    generatedAt: new Date(NOW.getTime() - 5 * 60_000),
+    mciWhy: [[], [], []],
+    // LAX's arrival cancels the usual rate, with strong wind in its forecast.
+    over: {
+      LAX: { usual: [[0, 0, 0], [0, 0, 0], ALL, [0, 0, 0]], why: [[3], [], []] },
+    },
+    records: { LAX: windRecord('LAX', 35, 0) },
+  });
+  await page.goto('/?mode=flights&flight=WN1234-MCI');
+  const answer = page.getByTestId('flights-answer');
+  // MCI's cancel chance is a forecast: the flight's number is not the usual rate as a whole.
+  await expect(answer.locator('.fl-hero-meaning')).toHaveText('21% Chance of a cancel today', {
+    timeout: 60_000,
+  });
+  // Its headline reads as a forecast, as the airport's does with a forecast cancel: no record
+  // rows, which would say past weather the rows above do not. The cancel number is LAX's usual
+  // rate in part, so LAX's wind is said as the weather, never as "Why" (LR-SF8).
+  await expect.poll(() => factRows(answer)).toContain('Usual rate | Part of the cancel chance');
+  const said = await factRows(answer);
+  expect(said).toContain('Left out | Weather and the FAA');
+  expect(said).toContain('At LAX | Strong wind in the forecast');
+  expect(said.filter((row) => row.startsWith('Why | '))).toEqual([]);
+  expect(said.filter((row) => /^(\w+ days (here|at )|Cancelled|Elsewhere)/u.test(row))).toEqual([]);
+});
+
+test('says a flight whose cancels are usual at both ends as usual, beside forecast late chances', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(NOW);
+  // JFK to PHL on Nov 26 in shape: each end's cancels the usual rate, its late chances the
+  // forecast's, strong wind in the landing airport's forecast.
+  await serveFlights(page, {
+    generatedAt: new Date(NOW.getTime() - 5 * 60_000),
+    mciWhy: [[], [], []],
+    over: { MCI: { usual: CANCEL_USUAL }, LAX: { usual: CANCEL_USUAL, why: [[3], [], []] } },
+    records: { LAX: windRecord('LAX', 35, 4) },
+  });
+  await page.goto('/?mode=flights&flight=WN1234-MCI');
+  const answer = page.getByTestId('flights-answer');
+  await expect(answer.locator('.fl-hero-meaning')).toHaveText(
+    /^\d+% Usual chance of a cancel on a Monday$/u,
+    { timeout: 60_000 },
+  );
+  await expect.poll(() => factRows(answer)).toContain('Windy days at LAX | 35 since 2020');
+  const said = await factRows(answer);
+  // The forecast's wind never as the reason for the usual cancel chance, and neither end is
+  // said as not ready: both forecasts are there, their late chances shown.
+  expect(said.filter((row) => row.startsWith('Why | '))).toEqual([]);
+  expect(said.filter((row) => row.includes('Not ready'))).toEqual([]);
+  expect(said).toContain('Usual rate | Cancel chance');
+  expect(said).toContain('Left out | Weather and the FAA');
+  // The weather the record rows speak to, at the airport they are for.
+  expect(said).toContain('At LAX | Strong wind in the forecast');
+  expect(said.indexOf('At LAX | Strong wind in the forecast')).toBeLessThan(
+    said.indexOf('Windy days at LAX | 35 since 2020'),
+  );
+  expect(said).toContain('Cancelled at LAX | 5% in the wind');
+  expect(said.filter((row) => row.startsWith('Delay of 45+ min | '))).toHaveLength(1);
+  await expect(answer).not.toContainText('risk');
+});
+
+/** JFK and PHL on the host file: cancels usual at both ends, the landing end's late usual too. */
+const HOST_SHAPE = [ALL, [0, 0, 0], ALL, ALL];
+/** A run read for each day, as on the host file (a forecast is there, its test failed). */
+const RUNS = ['2026-01-05T00:00:00Z', '2026-01-05T00:00:00Z', '2026-01-05T00:00:00Z'];
+
+/** The rows' words LR-SF8 ended: half forms and per-combination values. */
+const HALF_FORMS =
+  /weather left out|Usual rate in part|The usual rate|Part of this chance|Not ready.*\n.*None/u;
+
+test('marks a flight’s delay as usual where the larger end’s late value is the usual rate', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(NOW);
+  // The delay is the larger of the two ends': here LAX's usual 9%, over MCI's forecast 4%, so the
+  // number shown is wholly the usual rate (LR-SF8 rule 1).
+  await serveFlights(page, {
+    generatedAt: new Date(NOW.getTime() - 5 * 60_000),
+    mciWhy: [[], [], []],
+    over: {
+      MCI: { usual: HOST_SHAPE, runs: RUNS, dep_late: [ROW(40), ROW(40), ROW(40)] },
+      LAX: {
+        usual: HOST_SHAPE,
+        runs: RUNS,
+        arr_late: [ROW(91), ROW(91), ROW(91)],
+        why: [[3], [], []],
+      },
+    },
+    records: { LAX: windRecord('LAX', 35, 4) },
+  });
+  await page.goto('/?mode=flights&flight=WN1234-MCI');
+  const answer = page.getByTestId('flights-answer');
+  await expect(answer.locator('.fl-hero-meaning')).toHaveText(
+    /^\d+% Usual chance of a cancel on a Monday$/u,
+    { timeout: 60_000 },
+  );
+  await expect.poll(() => factRows(answer)).toContain('Delay of 45+ min | 9%');
+  const said = await factRows(answer);
+  // One row names both numbers as the usual rate, one says what they leave out.
+  expect(said.filter((row) => /^(Usual rate|Left out) \| /u.test(row))).toEqual([
+    'Usual rate | Both chances',
+    'Left out | Weather and the FAA',
+  ]);
+  expect(said.join('\n')).not.toMatch(HALF_FORMS);
+  expect(said.filter((row) => row.startsWith('Why | '))).toEqual([]);
+  // Both forecasts were read: neither end is said as not ready.
+  expect(said.filter((row) => row.startsWith('Forecast | '))).toEqual([]);
+});
+
+/** JFK on the host file: cancels usual, its departure late chance the forecast's, arr_late usual. */
+const JFK_HOST = { usual: HOST_SHAPE, runs: RUNS, dep_late: [ROW(86), ROW(86), ROW(86)] };
+/** JFK's usual flights for the flight and route tests: to BOS, and to LAX in SEA's place. */
+const JFK_FLIGHTS = [
+  {
+    carrier: 'B6',
+    number: 1015,
+    to_airport: 'BOS',
+    leaves: 960,
+    lands: 1035,
+    weekdays: 127,
+    days: 30,
+    cancelled: 0,
+    late: 2,
+  },
+];
+
+test('marks JFK to BOS’s delay as usual, BOS’s usual arrival rate over JFK’s forecast', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(NOW);
+  await serveFlights(page, {
+    generatedAt: new Date(NOW.getTime() - 5 * 60_000),
+    extra: [['BOS', 'America/New_York', 3]],
+    over: {
+      JFK: { ...JFK_HOST, why: [[3], [3], []] },
+      BOS: { usual: HOST_SHAPE, runs: RUNS, arr_late: [ROW(91), ROW(91), ROW(91)] },
+    },
+    records: { JFK: windRecord('JFK', 60, 12) },
+    routes: { JFK: JFK_FLIGHTS },
+  });
+  await page.goto('/?mode=flights&flight=B61015-JFK');
+  const answer = page.getByTestId('flights-answer');
+  await expect(answer.locator('.fl-hero-meaning')).toHaveText(
+    /^\d+% Usual chance of a cancel on a Monday$/u,
+    { timeout: 60_000 },
+  );
+  await expect.poll(() => factRows(answer)).toContain('Windy days at JFK | 60 since 2020');
+  const said = await factRows(answer);
+  expect(said).toContain('Delay of 45+ min | 9%');
+  expect(said.filter((row) => /^(Usual rate|Left out) \| /u.test(row))).toEqual([
+    'Usual rate | Both chances',
+    'Left out | Weather and the FAA',
+  ]);
+  expect(said).toContain('At JFK | Strong wind in the forecast');
+  expect(said.join('\n')).not.toMatch(HALF_FORMS);
+  expect(said.filter((row) => row.startsWith('Why | '))).toEqual([]);
+  await expect(answer).not.toContainText('risk');
+});
+
+/** Every label and value under the answer on one line (LR-F18 uniform rows). */
+async function rowLines(scope: Locator): Promise<string[]> {
+  return scope.locator('.fl-fact').evaluateAll((rows) =>
+    rows.flatMap((row) => {
+      const cells = [row.querySelector('dt'), row.querySelector('dd')];
+      return cells.flatMap((cell) => {
+        if (cell === null) return [];
+        const line = Number.parseFloat(getComputedStyle(cell).lineHeight);
+        const lines = Math.round(cell.getBoundingClientRect().height / line);
+        return lines === 1 ? [] : [`${cell.textContent.trim()} (${String(lines)} lines)`];
+      });
+    }),
+  );
+}
+
+// Each kind of weather the record speaks to: reason, record kind and its rows' words.
+for (const [why, kind, name] of [
+  [3, 5, 'wind'],
+  [1, 1, 'ice'],
+  [2, 3, 'thunder'],
+  [4, 4, 'fog'],
+  [0, 2, 'snow'],
+] as const) {
+  test(`keeps every row on one line at 360 px beside a usual cancel chance, ${name}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 780 });
+    await page.clock.setFixedTime(NOW);
+    const record = (code: string) => {
+      // The longest values a row can carry: four figures of days, and "Under 1%" twice.
+      const r = windRecord(code, 1112, 0);
+      return { ...r, lines: r.lines.map((line) => ({ ...line, kind, share: 4, others: 4 })) };
+    };
+    // The airport: JFK's shape, its late chances the forecast's.
+    await serveFlights(page, {
+      generatedAt: new Date(NOW.getTime() - 5 * 60_000),
+      over: { JFK: { usual: CANCEL_USUAL, why: [[why], [why], []] } },
+      records: { JFK: record('JFK') },
+    });
+    await page.goto('/?mode=flights&airport=JFK');
+    const answer = page.getByTestId('flights-answer');
+    await expect
+      .poll(() => factRows(answer), { timeout: 60_000 })
+      .toContainEqual(expect.stringMatching(/^[\w ]+ days here \| 1112 since/u));
+    expect(await factRows(answer)).toContain('Usual rate | Cancel chance');
+    expect(await rowLines(answer)).toEqual([]);
+    // The flight, both ends' cancels usual: as forecast lates, and as on the host file.
+    // The flight: both ends' cancels usual, as forecast lates and as on the host file, with the
+    // FAA's longest row at both ends; and the longest usual row, a cancel chance usual in part.
+    const departures = [{ program: 2, minutes: 60, until: null, why: 2 }];
+    const flights = [
+      { mci: CANCEL_USUAL, lax: CANCEL_USUAL, faa: false, which: 'Cancel chance' },
+      { mci: HOST_SHAPE, lax: HOST_SHAPE, faa: true, which: 'Both chances' },
+      {
+        mci: HOST_SHAPE,
+        lax: [[0, 0, 0], [0, 0, 0], [0, 0, 0], ALL],
+        faa: false,
+        which: 'Delay chance, part of cancel',
+      },
+    ];
+    for (const { mci, lax, faa, which } of flights) {
+      await page.unroute('**/data/flights/**');
+      await serveFlights(page, {
+        generatedAt: new Date(NOW.getTime() - 5 * 60_000),
+        mciWhy: [[], [], []],
+        ...(faa ? { programs: departures, laxPrograms: departures } : {}),
+        over: {
+          MCI: { usual: mci, runs: RUNS },
+          LAX: {
+            usual: lax,
+            runs: RUNS,
+            why: [[why], [], []],
+            arr_late: [ROW(91), ROW(91), ROW(91)],
+          },
+        },
+        records: { LAX: record('LAX') },
+      });
+      await page.goto('/?mode=flights&flight=WN1234-MCI');
+      await expect
+        .poll(() => factRows(answer), { timeout: 60_000 })
+        .toContain(`Usual rate | ${which}`);
+      const said = await factRows(answer);
+      expect(said).toContain('Left out | Weather and the FAA');
+      if (lax === CANCEL_USUAL || lax === HOST_SHAPE)
+        expect(said).toContainEqual(expect.stringMatching(/^[\w ]+ days at LAX \| 1112 since/u));
+      if (faa)
+        expect(
+          said.filter((row) => /^FAA at (MCI|LAX) \| Departures late now, not counted$/u.test(row)),
+        ).toHaveLength(2);
+      expect(await rowLines(answer)).toEqual([]);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      360,
+    );
+  });
+}
+
+test('draws no level on a route time whose cancels are usual at both ends, and ranks none', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(NOW);
+  // A forecast late chance of 32% at both ends, which alone would make a level.
+  const late = [ROW(320), ROW(320), ROW(320)];
+  await serveFlights(page, {
+    generatedAt: new Date(NOW.getTime() - 5 * 60_000),
+    mciWhy: [[], [], []],
+    over: {
+      MCI: { usual: CANCEL_USUAL, dep_late: late, arr_late: late },
+      LAX: { usual: CANCEL_USUAL, dep_late: late, arr_late: late },
+    },
+  });
+  await page.goto('/?mode=flights&route=MCI-LAX');
+  const grid = page.getByTestId('flights-grid');
+  await expect(grid.locator('button.fl-cell').first()).toBeVisible({ timeout: 60_000 });
+  const levels = await grid
+    .locator('button.fl-cell')
+    .evaluateAll((cells) => cells.map((cell) => cell.getAttribute('data-level')));
+  expect(levels.length).toBeGreaterThan(0);
+  expect(levels.filter((level) => level !== null)).toEqual([]);
+  const labels = await grid
+    .locator('button.fl-cell')
+    .evaluateAll((cells) => cells.map((cell) => cell.getAttribute('aria-label') ?? ''));
+  expect(labels.filter((label) => !label.endsWith('chance of a cancel, usual'))).toEqual([]);
+  // The late chances are the forecast's: the one rule names the cancel chance alone.
+  const best = page.getByTestId('flights-best');
+  await expect(best.locator('.fl-hero-meaning')).toHaveText(
+    'The usual rate is in each chance here, so none of these times stands out.',
+  );
+  expect(await factRows(best)).toEqual([
+    'Usual rate | Cancel chance',
+    'Left out | Weather and the FAA',
+  ]);
+});
+
+/** A route grid's cells as drawn: each cell's level, usual mark and label, and its first pill. */
+async function routeCells(page: Page): Promise<{
+  levels: (string | null)[];
+  usual: boolean[];
+  labels: string[];
+  pill: string;
+}> {
+  const grid = page.getByTestId('flights-grid');
+  await expect(grid.locator('button.fl-cell').first()).toBeVisible({ timeout: 60_000 });
+  const cells = grid.locator('button.fl-cell');
+  const levels = await cells.evaluateAll((all) =>
+    all.map((cell) => cell.getAttribute('data-level')),
+  );
+  const usual = await cells.evaluateAll((all) =>
+    all.map((cell) => cell.classList.contains('is-usual')),
+  );
+  const labels = await cells.evaluateAll((all) =>
+    all.map((cell) => cell.getAttribute('aria-label') ?? ''),
+  );
+  await cells.first().click();
+  const pill = page.locator('.fl-pill').first();
+  await expect(pill).toBeVisible();
+  return { levels, usual, labels, pill: (await pill.textContent())?.trim() ?? '' };
+}
+
+test('never marks a route’s forecast cancel chance usual for a usual late chance (PIT to SNA)', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(NOW);
+  // The host file's pattern: cancels the model's at both ends, the arrival's late chance usual.
+  await serveFlights(page, {
+    generatedAt: new Date(NOW.getTime() - 5 * 60_000),
+    mciWhy: [[], [], []],
+    over: {
+      MCI: { usual: [[0, 0, 0], [0, 0, 0], [0, 0, 0], ALL], runs: RUNS },
+      LAX: {
+        usual: [[0, 0, 0], [0, 0, 0], [0, 0, 0], ALL],
+        runs: RUNS,
+        arr_late: [ROW(91), ROW(91), ROW(91)],
+      },
+    },
+  });
+  await page.goto('/?mode=flights&route=MCI-LAX');
+  const { usual, labels, pill } = await routeCells(page);
+  // The cancel number is wholly the forecast's: no usual mark, never "Usual rate".
+  expect(usual.filter(Boolean)).toEqual([]);
+  expect(labels.filter((label) => label.includes('usual'))).toEqual([]);
+  expect(pill).toMatch(/^Cancel chance \d+%\.$/u);
+  // The delay chance is the usual rate, which never ranks one time over another: said by value.
+  const best = page.getByTestId('flights-best');
+  expect(await factRows(best)).toEqual([
+    'Usual rate | Delay chance',
+    'Left out | Weather and the FAA',
+  ]);
+});
+
+test('marks a route’s cancel chance usual in part where one end’s is (JFK to SEA on a windy day)', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(NOW);
+  // JFK in MCI's place: cancels usual, a 30% forecast late chance; LAX in SEA's: the model's
+  // cancels, its arrival late chance usual.
+  await serveFlights(page, {
+    generatedAt: new Date(NOW.getTime() - 5 * 60_000),
+    mciWhy: [[3], [3], []],
+    over: {
+      MCI: { usual: HOST_SHAPE, runs: RUNS, dep_late: [ROW(300), ROW(300), ROW(300)] },
+      LAX: { usual: [[0, 0, 0], [0, 0, 0], [0, 0, 0], ALL], runs: RUNS },
+    },
+  });
+  await page.goto('/?mode=flights&route=MCI-LAX');
+  const { levels, usual, labels, pill } = await routeCells(page);
+  // Part of each cancel number is the usual rate: marked, with no forecast level color.
+  expect(levels.filter((level) => level !== null)).toEqual([]);
+  expect(usual.filter((each) => !each)).toEqual([]);
+  expect(labels.filter((label) => !label.endsWith('chance of a cancel, usual in part'))).toEqual(
+    [],
+  );
+  expect(pill).toMatch(/^Usual in part\. Cancel chance \d+%\.$/u);
+  const best = page.getByTestId('flights-best');
+  expect(await factRows(best)).toEqual([
+    'Usual rate | Part of both chances',
+    'Left out | Weather and the FAA',
+  ]);
+});
+
+test('says no past days on an old file, only its age', async ({ page }) => {
+  await serveFlights(page, {
+    generatedAt: new Date(Date.now() - 3 * 3_600_000),
+    over: { JFK: { usual: CANCEL_USUAL, why: [[3], [3], []] } },
+    records: { JFK: windRecord('JFK', 60, 12) },
+  });
+  await page.goto('/?mode=flights&airport=JFK');
+  const answer = page.getByTestId('flights-answer');
+  await expect(answer).toHaveClass(/is-old/, { timeout: 60_000 });
+  await expect(answer).toContainText('Old: from 3 h ago');
+  await expect(answer).not.toContainText(' since 2020');
+  await expect(answer.locator('.fl-fact')).toHaveCount(0);
+});
+
+test('shows no track record count the live file contradicts, and a record that fits whole', async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(NOW);
+  const track = (late: number) => ({
+    schema_version: 1,
+    generated_at: '2026-11-22T14:11:13Z',
+    test_first: '2025-10-01',
+    test_last: '2026-09-30',
+    usual_first: '2024-10-01',
+    usual_last: '2025-09-30',
+    tests: [
+      {
+        target: 1,
+        lead: 1,
+        skill: -0.01,
+        skill_published: 0,
+        skill_confirmed: 0,
+        published: late === 0 ? 0 : 3,
+        tested: 351,
+        bins: [],
+      },
+    ],
+    airports: ['DEN', 'LAX', 'MCI'].map((code) => ({ code, passed: [31, late, 31, 31, 31] })),
+    months: [],
+  });
+  // The live file shows MCI's late chance from the forecast; this record passed it nowhere.
+  await serveFlights(page, { generatedAt: new Date(NOW.getTime() - 5 * 60_000), track: track(0) });
+  await page.goto('/?mode=flights&page=record');
+  await expect(page.getByTestId('flights-track-not-shown')).toHaveText(
+    'These scores are from Nov 22, 2026. They are not for the chances on the map now, so we do not show them.',
+    { timeout: 60_000 },
+  );
+  await expect(page.getByText(/(Shown at|Passed the test at) \d+ of/u)).toHaveCount(0);
+  await expect(page.getByTestId('flights-track')).toHaveCount(0);
+  // Nor the same record's months.
+  await expect(page.getByTestId('flights-track-months')).toHaveCount(0);
+
+  await page.unrouteAll({ behavior: 'wait' });
+  await serveFlights(page, { generatedAt: new Date(NOW.getTime() - 5 * 60_000), track: track(31) });
+  await page.goto('/?mode=flights&page=record');
+  await expect(page.getByTestId('flights-track')).toContainText(
+    'Did not beat the usual rate. Passed the test at 3 of 351 airports.',
+    { timeout: 60_000 },
+  );
+  await expect(page.getByTestId('flights-track-months')).toHaveCount(1);
+  await expect(page.getByTestId('flights-track-not-shown')).toHaveCount(0);
 });
 
 test('draws Flights in the light theme in its own tokens', async ({ page, context }) => {
@@ -1243,13 +1826,13 @@ test('says a live FAA ground stop under a calm answer, at the airport, the fligh
     programs: [{ program: 0, minutes: null, until: null, why: 1 }],
     laxPrograms: [{ program: 1, minutes: 95, until: null, why: 1 }],
   });
-  const stop = 'FAA at MCI | Ground stop now, not in this chance';
-  const delay = 'FAA at LAX | Ground delay now, not in this chance';
+  const stop = 'FAA at MCI | Ground stop now, not counted';
+  const delay = 'FAA at LAX | Ground delay now, not counted';
   await page.goto('/?mode=flights&airport=MCI');
   const answer = page.getByTestId('flights-answer');
   await expect(answer.locator('.fl-hero-number')).toBeVisible({ timeout: 60_000 });
   // The airport's own panel names it already: the label is "FAA" alone.
-  await expect.poll(() => factRows(answer)).toContain('FAA | Ground stop now, not in this chance');
+  await expect.poll(() => factRows(answer)).toContain('FAA | Ground stop now, not counted');
   await page.goto('/?mode=flights&flight=WN1234-MCI');
   const flight = page.getByTestId('flights-answer');
   await expect.poll(() => factRows(flight), { timeout: 60_000 }).toContain(stop);
@@ -1403,7 +1986,7 @@ test('never names a time a live ground stop holds as the safest, and points to t
   await expect(best).toContainText('Chance of a cancel tomorrow', { timeout: 60_000 });
   await expect(best).not.toContainText('today');
   const heldRows = await factRows(best);
-  expect(heldRows).toContain('FAA at MCI | Ground stop now, not in this chance');
+  expect(heldRows).toContain('FAA at MCI | Ground stop now, not counted');
   // Why today is not named (LR-F15.3a).
   expect(heldRows).toContain('Today | Held by the FAA ground stop at MCI');
   // The cell pressed is tomorrow's, never one inside the stop.
@@ -1782,9 +2365,9 @@ test('names every FAA hold at both ends, on the lines, the answer and a held cel
     .poll(() => factRows(best), { timeout: 60_000 })
     .toEqual(
       expect.arrayContaining([
-        'FAA at MCI | Ground stop now, not in this chance',
-        'FAA at MCI | Ground delay now, not in this chance',
-        'FAA at LAX | Ground delay now, not in this chance',
+        'FAA at MCI | Ground stop now, not counted',
+        'FAA at MCI | Ground delay now, not counted',
+        'FAA at LAX | Ground delay now, not counted',
         'Today | Held by FAA holds',
       ]),
     );

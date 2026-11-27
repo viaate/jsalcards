@@ -228,7 +228,24 @@ describe('Best time to fly', () => {
       '2026-01-05',
       Date.parse('2026-01-05T10:00:00Z'),
     );
-    expect(bestTime(allUsual).kind).toBe('usual');
+    const whole = bestTime(allUsual);
+    expect(whole.kind).toBe('usual');
+    // Only MCI's values are usual, LAX's the forecast's: never said as only the usual rate. The
+    // cancel number is MCI's usual rate and LAX's forecast: usual in part.
+    if (whole.kind === 'usual') expect(whole.cancelShare).toBe('part');
+    const usualTo = airportLive('LAX', '2026-01-05', {
+      usual: [ALL_USUAL, ALL_USUAL, ALL_USUAL, ALL_USUAL],
+    });
+    const both = bestTime(
+      routeGrid(
+        FLIGHTS,
+        { entry: usualFrom, zone: MCI },
+        { entry: usualTo, zone: LAX },
+        '2026-01-05',
+        Date.parse('2026-01-05T10:00:00Z'),
+      ),
+    );
+    expect(both).toEqual({ kind: 'usual', cancelShare: 'all', lateShare: 'all' });
   });
 
   const ZERO = airportLive('LAX', '2026-01-05', {
@@ -413,9 +430,10 @@ describe('Best time to fly', () => {
     expect(best.pick.index).toBe(0);
     expect(best.best.chance.usual).toBe(false);
     expect(best.usualDays).toEqual(['2026-01-07']);
+    // Wednesday's cells are the usual rate at MCI only, LAX's the forecast's: usual in part.
     expect(usualDaysFact(best.usualDays, '2026-01-05')).toEqual({
       label: 'Wednesday',
-      value: 'Usual rate, not ranked',
+      value: 'Usual rate in them, not ranked',
     });
   });
 

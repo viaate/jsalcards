@@ -12,6 +12,8 @@
     lateFact,
     bothFact,
     usualFacts,
+    notInUsual,
+    reasonKind,
     whyFact,
     programLine,
     programName,
@@ -37,7 +39,7 @@
     zoneName,
   } from '../../copy-flights';
   import PanelShell from '../../ui/PanelShell.svelte';
-  import type { FlightsAirportLive, FlightsRoutes } from '../../types/generated';
+  import type { FlightsAirportLive, FlightsRecord, FlightsRoutes } from '../../types/generated';
   import Hero from './Hero.svelte';
   import type { Fact } from '../../copy-flights';
   import RecordBox from './RecordBox.svelte';
@@ -202,31 +204,39 @@
     return entry.why[index] ?? [];
   }
 
-  /** Whether the forecast, the FAA or an alert at `entry` says there is weather on `onDay`. */
-  function weatherAt(entry: FlightsAirportLive | null, onDay: string): boolean {
-    if (entry === null || live === null) return false;
-    return (
-      whysAt(entry, onDay).length > 0 ||
-      (faaLive(live, now) && (entry.programs?.length ?? 0) > 0) ||
-      (!stale && (entry.alerts?.length ?? 0) > 0)
-    );
-  }
-  const weather = $derived(
-    chance !== null &&
-      (weatherAt(fromLive, chance.departDay) || weatherAt(toLive, chance.arriveDay)),
-  );
-
   $effect(() => {
     if (to !== null) onroute(to.code);
   });
 
-  /** The answer's one reason: the forecast's first at the end it leaves from, else where it lands. */
-  const reason = $derived.by(() => {
-    if (chance === null || chance.allUsual) return null;
+  /** Whether a forecast run was read at `entry` for local `onDay`. */
+  function runAt(entry: FlightsAirportLive | null, onDay: string): boolean {
+    if (entry === null) return false;
+    const index = Math.round(
+      (Date.parse(`${onDay}T12:00:00Z`) - Date.parse(`${entry.today}T12:00:00Z`)) / 86_400_000,
+    );
+    return (entry.runs[index] ?? null) !== null;
+  }
+
+  /** The forecast's first reason at the end it leaves from, else where it lands. */
+  const forecastReason = $derived.by(() => {
+    if (chance === null) return null;
     const code =
       whysAt(fromLive, chance.departDay)[0] ?? whysAt(toLive, chance.arriveDay)[0] ?? null;
     return code === null ? null : reasonName(code);
   });
+  /** Whether the flight's cancel chance is the usual rate at both ends (LR-SF1, LR-SF8). */
+  const cancelAll = $derived(chance !== null && chance.cancelShare === 'all');
+  /** Whether a number shown is the usual rate in whole or in part (LR-SF8). */
+  const anyUsual = $derived(
+    chance !== null &&
+      (chance.cancelShare !== 'none' || (chance.late !== null && chance.lateShare !== 'none')),
+  );
+  /**
+   * The answer's one reason, as "Why" under the headline: none where a number shown is the usual
+   * rate in whole or in part, so the forecast's weather never reads as the reason for the usual
+   * rate (it is said after the usual rows, as the weather).
+   */
+  const reason = $derived(anyUsual ? null : forecastReason);
   /**
    * The FAA's live programs at either end, said under the answer as now's (LR-F9) and never
    * counted in it (LR-F4): only for today's flight, as the FAA's state is now's alone.
@@ -244,6 +254,60 @@
   const faaNow = $derived(faaUnder(false));
   /** Under the flight's chance: with the note that the chance does not count them. */
   const faaCounted = $derived(faaUnder(true));
+  /** The flight's two ends, leaving then landing, each with its day's reasons. */
+  const endsWhy = $derived(
+    chance === null || from === null || to === null
+      ? []
+      : [
+          { code: from.code, whys: whysAt(fromLive, chance.departDay) },
+          { code: to.code, whys: whysAt(toLive, chance.arriveDay) },
+        ],
+  );
+  /**
+   * The end whose record is said beside a usual cancel chance (LR-SF1): only where the cancel
+   * chance is the usual rate at both ends (with a forecast cancel at either end, its headline reads
+   * as a forecast, as the airport's does), the first end whose reasons that day name weather the
+   * record has a kind for. Null where none does.
+   */
+  const recordEnd = $derived.by((): { code: string; kind: number; why: number } | null => {
+    if (!cancelAll) return null;
+    for (const end of endsWhy) {
+      const why = end.whys.find((each) => reasonKind(each) !== null);
+      const kind = why === undefined ? null : reasonKind(why);
+      if (why !== undefined && kind !== null) return { code: end.code, kind, why };
+    }
+    return null;
+  });
+  /**
+   * The Weather row beside a usual cancel chance, at its airport (LR-SF1): the record end's
+   * weather, so the record rows always follow the weather they speak to, else the first end's.
+   */
+  const weatherEnd = $derived.by((): { code: string; why: number } | null => {
+    if (recordEnd !== null) return { code: recordEnd.code, why: recordEnd.why };
+    for (const end of endsWhy) {
+      const why = end.whys[0];
+      if (why !== undefined) return { code: end.code, why };
+    }
+    return null;
+  });
+  /** Its code alone, so the clock's ticks never read the record again. */
+  const recordCode = $derived(recordEnd?.code ?? null);
+  let endRecord = $state<FlightsRecord | null>(null);
+  $effect(() => {
+    const asked = recordCode;
+    endRecord = null;
+    if (asked === null) return;
+    void files.record(asked).then((read) => {
+      if (asked === recordCode) endRecord = read;
+    });
+  });
+  const recordRows = $derived.by((): Fact[] => {
+    const read = endRecord;
+    if (recordEnd === null || read?.code !== recordEnd.code) return [];
+    const { kind } = recordEnd;
+    const line = read.lines.find((each) => each.kind === kind) ?? null;
+    return notInUsual(kind, line, read.first, recordEnd.code);
+  });
   /** The rows under the answer (LR-F18.2): the forecast's reason, then the FAA, then the rest. */
   const heroRows = $derived.by((): Fact[] => {
     const cancel = chance?.cancel ?? null;
@@ -253,13 +317,29 @@
     const lines: Fact[] = [...(reason === null ? [] : [whyFact(reason)]), ...faaCounted];
     if (chance.late !== null) lines.push(lateFact(chance.late));
     lines.push(bothFact());
-    if (chance.usual) {
+    if (anyUsual) {
+      // An end is "not ready" only where all its values are usual and no run was read for its
+      // day: where a run was read, its own test failed, which the usual rows already say.
+      const fromRun = runAt(fromLive, chance.departDay);
+      const toRun = runAt(toLive, chance.arriveDay);
       const ends = [
-        ...(chance.fromUsual && from !== null ? [from.code] : []),
-        ...(chance.toUsual && to !== null ? [to.code] : []),
+        ...(chance.fromCancelUsual && chance.fromLateUsual && !fromRun && from !== null
+          ? [from.code]
+          : []),
+        ...(chance.toCancelUsual && chance.toLateUsual && !toRun && to !== null ? [to.code] : []),
       ];
-      lines.push(...usualFacts(chance.allUsual, weather, ends));
+      lines.push(
+        ...usualFacts({
+          cancel: chance.cancelShare,
+          late: chance.late === null ? null : chance.lateShare,
+          run: fromRun || toRun,
+          codes: ends,
+          reason: weatherEnd === null ? null : reasonName(weatherEnd.why),
+          reasonAt: weatherEnd?.code ?? null,
+        }),
+      );
     }
+    lines.push(...recordRows);
     return lines;
   });
 
@@ -481,7 +561,7 @@
       <!-- The flight's own block at each end (LR-F9): its number, never the day's. -->
       <Hero
         number={heroNumber(chance.cancel)}
-        meaning={chance.allUsual ? usualChance(date, null) : dayChance(date, today ?? date, false)}
+        meaning={cancelAll ? usualChance(date, null) : dayChance(date, today ?? date, false)}
         rows={heroRows}
         testid="flights-answer"
       />

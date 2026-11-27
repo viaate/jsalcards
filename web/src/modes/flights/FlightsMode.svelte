@@ -868,6 +868,9 @@
   {:else if view.kind === 'record'}
     <RecordPanel
       {files}
+      {live}
+      {zones}
+      failed={tried && live === null}
       onclose={close}
       onsettle={() => {
         map.controlsChanged();

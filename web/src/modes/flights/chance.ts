@@ -286,6 +286,54 @@ export interface FlightChance {
   /** Whether a value of each end is the usual rate. */
   readonly fromUsual: boolean;
   readonly toUsual: boolean;
+  /**
+   * Whether each end's cancel value is the usual rate: with both, the flight's cancel chance is
+   * the usual rate whatever its late values are (LR-SF1), and is said so.
+   */
+  readonly fromCancelUsual: boolean;
+  readonly toCancelUsual: boolean;
+  /** Whether each end's late value is the usual rate. */
+  readonly fromLateUsual: boolean;
+  readonly toLateUsual: boolean;
+  /**
+   * How much of the cancel number is the usual rate (LR-SF8): 'all' with both ends' usual, 'part'
+   * with one end's, 'none' with neither.
+   */
+  readonly cancelShare: UsualShare;
+  /**
+   * How much of the late number is the usual rate (LR-SF8). It is the larger end's value, so
+   * 'all' where that end's is usual (or both are), 'part' where only the other end's is (or the
+   * two are equal and one is usual), 'none' where neither is or there is no late number.
+   */
+  readonly lateShare: UsualShare;
+}
+
+/**
+ * A flight row's pill and a grid cell (RoutePanel), which show the cancel number alone: how much
+ * of that number is the usual rate, from its own two values (LR-SF8), and the level its color
+ * shows. A number that is the usual rate in whole or in part has no level color; only a cancel
+ * number that is wholly the forecast's takes the forecast's level, and a late value the pill does
+ * not show never marks it usual.
+ */
+export function pillOf(chance: Pick<FlightChance, 'level' | 'cancelShare'>): {
+  usual: UsualShare;
+  level: Level | null;
+} {
+  if (chance.cancelShare !== 'none') return { usual: chance.cancelShare, level: null };
+  return { usual: 'none', level: chance.level };
+}
+
+/** The late number's usual share: the larger end's value is the number (lateShare). */
+function lateShareOf(
+  dep: { readonly late: number | null; readonly lateUsual: boolean },
+  arr: { readonly late: number | null; readonly lateUsual: boolean },
+): UsualShare {
+  if (dep.late === null || arr.late === null) return 'none';
+  if (dep.lateUsual && arr.lateUsual) return 'all';
+  if (!dep.lateUsual && !arr.lateUsual) return 'none';
+  if (dep.late === arr.late) return 'part';
+  const larger = dep.late > arr.late ? dep : arr;
+  return larger.lateUsual ? 'all' : 'part';
 }
 
 interface End {
@@ -378,6 +426,19 @@ export function flightChance(
     allUsual: dep.cancelUsual && dep.lateUsual && arr.cancelUsual && arr.lateUsual,
     fromUsual: dep.cancelUsual || dep.lateUsual,
     toUsual: arr.cancelUsual || arr.lateUsual,
+    fromCancelUsual: dep.cancelUsual,
+    toCancelUsual: arr.cancelUsual,
+    fromLateUsual: dep.lateUsual,
+    toLateUsual: arr.lateUsual,
+    cancelShare:
+      cancel === null
+        ? 'none'
+        : dep.cancelUsual && arr.cancelUsual
+          ? 'all'
+          : dep.cancelUsual || arr.cancelUsual
+            ? 'part'
+            : 'none',
+    lateShare: lateShareOf(dep, arr),
   };
 }
 
@@ -429,6 +490,13 @@ export interface DayHero {
   /** Whether part of the day has ended already. */
   readonly rest: boolean;
   readonly usual: UsualShare;
+  /**
+   * How much of the cancel number alone is the usual rate (LR-SF1): its headline keys on this,
+   * so a usual cancel chance beside a forecast late chance is never said as a forecast.
+   */
+  readonly cancelUsual: UsualShare;
+  /** How much of the late number alone is the usual rate ('none' with no late number). */
+  readonly lateUsual: UsualShare;
 }
 
 export function dayHero(view: DayView, counts: readonly number[] | null): DayHero | null {
@@ -456,6 +524,8 @@ export function dayHero(view: DayView, counts: readonly number[] | null): DayHer
           ...(block.late === null ? [] : [block.lateUsual]),
         ]),
       ),
+      cancelUsual: usualShare(used.map(({ block }) => block.cancelUsual)),
+      lateUsual: usualShare(lates.map(({ block }) => block.lateUsual)),
     };
   }
   const first = left[0]?.block;
@@ -480,6 +550,10 @@ export function dayHero(view: DayView, counts: readonly number[] | null): DayHer
     rest,
     usual: usualShare(
       shown.flatMap(({ block: b }) => [b.cancelUsual, ...(b.late === null ? [] : [b.lateUsual])]),
+    ),
+    cancelUsual: usualShare(shown.map(({ block: b }) => b.cancelUsual)),
+    lateUsual: usualShare(
+      shown.filter(({ block: b }) => b.late !== null).map(({ block: b }) => b.lateUsual),
     ),
   };
 }
