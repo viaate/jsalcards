@@ -5,7 +5,9 @@ name: iOS core
 # model, and reads of the device's clock out of the app. The fixture check fails when a copy
 # of the pipeline's synthetic files differs from its source. The golden check runs the site's
 # own code and fails when one of its answers no longer matches the golden files the Swift
-# tests are held to. The screens are parsed for syntax only; the Mac compiles them.
+# tests are held to. The map check (ios/tools/map-check.sh) fails when the map's files made
+# from the site's own differ from what the site would make now. The screens are parsed for
+# syntax only; the Mac compiles them.
 # The tests and the golden check always run under a zone that is not UTC: on a UTC
 # machine, code that leans on the device's zone by mistake gives right answers.
 on:
@@ -50,6 +52,8 @@ jobs:
         run: |
           TZ=America/St_Johns node ios/tools/gen-golden.mjs --check
           TZ=Pacific/Kiritimati node ios/tools/gen-golden.mjs --check
+      - name: The map's files match the site's
+        run: bash ios/tools/map-check.sh
       - name: The screens parse (syntax only; the Mac compiles them)
         run: |
           find ios/SnowlightKit/Sources ios/App -name '*.swift' -print0 | xargs -0 -n 1 swiftc -frontend -parse

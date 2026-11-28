@@ -13,8 +13,16 @@
 # The last picture is the machine probe. It has no words: its file holds two facts about
 # the machine it ran on, so it is printed and never compared.
 #
+# TOUR_SET=map (the map job, M3): the map's pictures alone, on the iPhone, with no Duo leg.
+# Unset: M0a's and M1's pictures, as below.
+#
 # Bash 3.2 on macOS: no associative arrays, no mapfile.
 set -euo pipefail
+TOUR_SET=${TOUR_SET:-}
+case "$TOUR_SET" in
+  ''|map) ;;
+  *) echo "::error::TOUR_SET must be unset or map, not '$TOUR_SET'."; exit 1 ;;
+esac
 BUNDLE=com.snowlightmap.app
 APP="$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/Snowlight.app"
 OUT=ios/out
@@ -24,6 +32,13 @@ LOGS="$(cd "$OUT/logs" && pwd)"
 if [ ! -d "$APP" ]; then
   echo "::error::There is no built app at $APP."
   exit 1
+fi
+
+# The map list (M3) is empty until the map engine comes in (M3 part 1, step 1b): there is
+# no map picture to take, so no simulator is made.
+if [ "$TOUR_SET" = map ]; then
+  echo "TOUR_SET=map: the map list is empty, so there is no picture to take and no simulator is made."
+  exit 0
 fi
 
 # On the iOS 27 leg only, FIRST: the same tour on the iPhone Duo, closed (tools/duo.sh),

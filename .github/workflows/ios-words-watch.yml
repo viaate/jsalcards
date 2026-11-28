@@ -1,6 +1,7 @@
 name: iOS words watch
 
-# A change to the site's code or the shared fixtures: do the app's golden answers still match?
+# A change to the site's code, its map's geography and packages, or the shared fixtures: do
+# the app's golden answers and its map files still match?
 # A warning only, until testers hold the app (PLAN section 9.2). Before then it never fails,
 # so a web lane is never held up by the app. It watches all of web/src, so its list cannot
 # fall behind what the generator loads; the generator refuses to load a site file from
@@ -10,6 +11,9 @@ on:
     paths:
       - web/src/**
       - web/scripts/check-copy.mjs
+      - web/public/geo/**
+      - web/package.json
+      - web/package-lock.json
       - pipeline/tests/schemas/examples/**
       - pipeline/tests/live/golden/**
       - pipeline/tests/predict/golden/**
@@ -41,6 +45,8 @@ jobs:
           fixtures=$?
           node ios/tools/gen-golden.mjs --check
           golden=$?
+          bash ios/tools/map-check.sh
+          map=$?
           set -e
           if [ "$fixtures" -eq 0 ] && [ "$golden" -eq 0 ]; then
             echo "The app's golden answers match the site."
@@ -48,4 +54,9 @@ jobs:
             echo "::warning title=iPhone app generator::The app's generator could not load the site's code (the log above names the file). No word is known to have changed. Fix the loader under ios/tools before the next iOS push."
           else
             echo "::warning title=iPhone app words::An answer of the site's words or rules, or a shared fixture, changed. Make the app's golden files again (node ios/tools/gen-golden.mjs, node ios/tools/sync-fixtures.mjs) and update the Swift port. The next iOS push fails until then."
+          fi
+          if [ "$map" -eq 0 ]; then
+            echo "The app's map files match the site."
+          else
+            echo "::warning title=iPhone app map::A map check of the app failed (the log above names it): the site's map style, its bundled geography or a package the map reads changed. Run ios/tools/map-check.sh and make the app's map files again. The next iOS push fails until then."
           fi

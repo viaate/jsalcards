@@ -1,24 +1,43 @@
 #!/bin/bash
-# The on-screen words, read by a UI test (M1 6.3): the macos-26 job's own step, after the
-# tour. ios/UITests/MySchoolTextTests.swift starts the app once for each of My School's six
-# iPhone pictures and reads the label and value of every element on the screen; this
-# script makes a simulator for it, builds it, runs it and checks how many tests ran.
+# The on-screen words, read by UI tests (M1 6.3; M3 6.2): the ui job's two steps
+# (ios-app.yml), one group each, after the job has resolved the packages into
+# $RUNNER_TEMP/spm. ios/UITests/MySchoolTextTests.swift starts the app once for each of My
+# School's six iPhone pictures and reads the label and value of every element on the
+# screen; ios/UITests/MapTextTests.swift (M3 step 3a2) does the same on the Map tab. This
+# script makes a simulator for a group, builds the tests (the first group only), runs the
+# group's tests and checks how many tests ran.
 #
-# - Its own simulator, made and booted as tools/tour.sh makes the tour's (the tour deletes
-#   its own on exit), and deleted on exit.
+#   ui-test.sh my-school   its own simulator; builds for testing; runs MySchoolTextTests
+#                          and writes the number run to $RUNNER_TEMP/ui-ran.txt.
+#   ui-test.sh map         its own simulator, without building (it runs what my-school
+#                          built); runs MapTextTests when ios/UITests/MapTextTests.swift
+#                          exists, and otherwise says there are no map reads yet. It adds
+#                          its number to ui-ran.txt's, and the sum must equal
+#                          ui-test-count.txt.
+#
+# - Each simulator is made and booted as tools/tour.sh makes the tour's, and deleted on exit.
 # - Built for testing, unsigned, exactly as tools/build.sh builds the app: no certificate,
 #   no account, no secret. The project's scheme builds the UI test target for testing only.
-# - Every label the test reads is printed (lines that start "ui-read"), from the raw log.
-# - The number of tests run, read from the result bundle, must equal ui-test-count.txt.
+# - Every label a test reads is printed (lines that start "ui-read"), from the raw log.
+# - The number of tests run is read from each group's result bundle.
 #
 # Bash 3.2 on macOS: no associative arrays, no mapfile.
 set -euo pipefail
+GROUP=${1:-}
+case "$GROUP" in
+  my-school) CLASS=MySchoolTextTests ;;
+  map) CLASS=MapTextTests ;;
+  *) echo "::error::ui-test.sh takes one group, my-school or map, not '$GROUP'."; exit 1 ;;
+esac
 OUT=ios/out/ui
 mkdir -p "$OUT"
 LOGS="$(cd "$OUT" && pwd)"
+SPM="$RUNNER_TEMP/spm"
+DD="$RUNNER_TEMP/dd-ui"
+RAN_FILE="$RUNNER_TEMP/ui-ran.txt"
 BUILD_LOG="$RUNNER_TEMP/xcodebuild-ui-build.log"
-TEST_LOG="$RUNNER_TEMP/xcodebuild-ui-test.log"
-RESULT="$RUNNER_TEMP/ui.xcresult"
+TEST_LOG="$RUNNER_TEMP/xcodebuild-ui-test-$GROUP.log"
+RESULT="$RUNNER_TEMP/ui-$GROUP.xcresult"
 PRETTY=cat
 if command -v xcbeautify >/dev/null 2>&1; then PRETTY=xcbeautify; fi
 
@@ -27,6 +46,33 @@ WANTED=$(grep -v '^#' ios/tools/ui-test-count.txt | grep -v '^[[:space:]]*$' || 
 case "$WANTED" in
   ''|*[!0-9]*) echo "::error::ios/tools/ui-test-count.txt must hold one whole number."; exit 1 ;;
 esac
+
+# The map group runs what the my-school group counted and built.
+BEFORE=0
+if [ "$GROUP" = map ]; then
+  if [ ! -f "$RAN_FILE" ]; then
+    echo "::error::$RAN_FILE is missing: the my-school group runs first and writes how many tests it ran."
+    exit 1
+  fi
+  BEFORE=$(tr -d '[:space:]' < "$RAN_FILE")
+  case "$BEFORE" in
+    ''|*[!0-9]*) echo "::error::$RAN_FILE must hold one whole number, not '$BEFORE'."; exit 1 ;;
+  esac
+  echo "UI tests run before this group: $BEFORE"
+  if [ ! -f ios/UITests/MapTextTests.swift ]; then
+    echo "no map reads yet: ios/UITests/MapTextTests.swift does not exist, so no map test runs and no simulator is made."
+    echo "UI tests run: $BEFORE in all; ios/tools/ui-test-count.txt: $WANTED"
+    if [ "$BEFORE" -ne "$WANTED" ]; then
+      echo "::error::$BEFORE UI tests ran and ios/tools/ui-test-count.txt says $WANTED."
+      exit 1
+    fi
+    exit 0
+  fi
+  if [ ! -d "$DD/Build/Products" ]; then
+    echo "::error::There are no tests built for testing at $DD: the my-school group builds them first."
+    exit 1
+  fi
+fi
 
 # Our own device, from what this image has, addressed by id (as tools/tour.sh does).
 DEVTYPE=$(xcrun simctl list devicetypes -j | jq -r --arg d "$SIM_DEVICE" \
@@ -60,26 +106,29 @@ xcrun simctl boot "$UDID"
 xcrun simctl bootstatus "$UDID" -b
 echo "[$SECONDS s] the simulator is up"
 
-if ! xcodebuild build-for-testing -project ios/Snowlight.xcodeproj -scheme Snowlight -configuration Debug \
-  -destination "id=$UDID" -derivedDataPath "$RUNNER_TEMP/dd-ui" \
-  CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO \
-  2>&1 | tee "$BUILD_LOG" | "$PRETTY"; then
-  echo "::error::The build for testing failed. The last 80 lines of the raw log follow."
-  tail -80 "$BUILD_LOG"
-  exit 1
+if [ "$GROUP" = my-school ]; then
+  if ! xcodebuild build-for-testing -project ios/Snowlight.xcodeproj -scheme Snowlight -configuration Debug \
+    -destination "id=$UDID" -derivedDataPath "$DD" -clonedSourcePackagesDirPath "$SPM" \
+    CODE_SIGNING_ALLOWED=NO ONLY_ACTIVE_ARCH=YES ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO \
+    2>&1 | tee "$BUILD_LOG" | "$PRETTY"; then
+    echo "::error::The build for testing failed. The last 80 lines of the raw log follow."
+    tail -80 "$BUILD_LOG"
+    exit 1
+  fi
+  echo "[$SECONDS s] built for testing (unsigned: CODE_SIGNING_ALLOWED=NO)"
 fi
-echo "[$SECONDS s] built for testing (unsigned: CODE_SIGNING_ALLOWED=NO)"
 
 rm -rf "$RESULT"
 FAILED=0
 if ! xcodebuild test-without-building -project ios/Snowlight.xcodeproj -scheme Snowlight \
-  -destination "id=$UDID" -derivedDataPath "$RUNNER_TEMP/dd-ui" -only-testing:SnowlightUITests \
+  -destination "id=$UDID" -derivedDataPath "$DD" -clonedSourcePackagesDirPath "$SPM" \
+  -only-testing:"SnowlightUITests/$CLASS" \
   -resultBundlePath "$RESULT" \
   2>&1 | tee "$TEST_LOG" | "$PRETTY"; then
   echo "::error::The UI test failed (its failures are above and in the summary below)."
   FAILED=1
 fi
-echo "[$SECONDS s] the UI test ran"
+echo "[$SECONDS s] the UI tests of $CLASS ran"
 
 # Every label read, from the raw log (the pretty printer may leave the test's own lines out).
 echo "--- what the UI test read"
@@ -91,7 +140,7 @@ if [ ! -d "$RESULT" ]; then
   tail -80 "$TEST_LOG"
   exit 1
 fi
-SUMMARY="$LOGS/summary.json"
+SUMMARY="$LOGS/summary-$GROUP.json"
 if ! xcrun xcresulttool get test-results summary --path "$RESULT" > "$SUMMARY"; then
   echo "::error::xcresulttool could not read the result bundle's summary."
   exit 1
@@ -103,9 +152,14 @@ RAN=$(jq -r '.totalTestCount // empty' "$SUMMARY")
 case "$RAN" in
   ''|*[!0-9]*) echo "::error::The summary has no whole totalTestCount (its fields are above)."; exit 1 ;;
 esac
-echo "UI tests run: $RAN; ios/tools/ui-test-count.txt: $WANTED"
-if [ "$RAN" -ne "$WANTED" ]; then
-  echo "::error::$RAN UI tests ran and ios/tools/ui-test-count.txt says $WANTED."
-  FAILED=1
+TOTAL=$((BEFORE + RAN))
+echo "$TOTAL" > "$RAN_FILE"
+echo "UI tests run by $CLASS: $RAN; $TOTAL in all so far"
+if [ "$GROUP" = map ]; then
+  echo "UI tests run: $TOTAL in all; ios/tools/ui-test-count.txt: $WANTED"
+  if [ "$TOTAL" -ne "$WANTED" ]; then
+    echo "::error::$TOTAL UI tests ran and ios/tools/ui-test-count.txt says $WANTED."
+    FAILED=1
+  fi
 fi
 exit $FAILED

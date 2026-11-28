@@ -9,7 +9,16 @@
 # every push: the tour (Tour/) is wholly inside #if DEBUG, so a view that named a tour
 # symbol outside it would build in Debug and first fail on the day of a signed build. And
 # the release app must hold no trace of the tour: its launch keys are looked for in it.
+#
+# BUILD_SET=debug (the map job, M3): the Debug build alone, which the map's pictures run; no
+# Release build, no Release check and no iPhone build, which the app job makes on the same
+# push. Unset: every build, as above.
 set -euo pipefail
+BUILD_SET=${BUILD_SET:-}
+case "$BUILD_SET" in
+  ''|debug) ;;
+  *) echo "::error::BUILD_SET must be unset or debug, not '$BUILD_SET'."; exit 1 ;;
+esac
 LOG="$RUNNER_TEMP/xcodebuild.log"
 PRETTY=cat
 if command -v xcbeautify >/dev/null 2>&1; then PRETTY=xcbeautify; fi
@@ -47,6 +56,10 @@ if [ "${SIM_OS_PREFIX:-}" = "iOS 27." ]; then
     exit 1
   fi
   echo "The app was built with the iOS $SDK SDK ($(plutil -extract DTSDKName raw "$APP/Info.plist" 2>/dev/null || true))."
+fi
+if [ "$BUILD_SET" = debug ]; then
+  echo "BUILD_SET=debug: the Debug build alone; no Release build, no Release check, no iPhone build."
+  exit 0
 fi
 
 RLOG="$RUNNER_TEMP/xcodebuild-release.log"

@@ -1,20 +1,23 @@
 name: iOS app
 
-# The iPhone app (ios/), built on one of GitHub's standard hosted Macs: the core tests
-# on Apple's Foundation, then an unsigned build for the simulator from a project that
-# XcodeGen makes from ios/project.yml, then pictures of the app taken from the real
-# simulator screen. The pictures come back as one small artifact, ios-shots; the color
-# at a named point of each picture is printed in the log, so the log alone tells a light
-# screen from a dark one. On the first job only, a UI test then reads the words on the
-# screen. No signing identity, no account and no secret is involved.
+# The iPhone app (ios/), built on GitHub's standard hosted Macs: the core tests on Apple's
+# Foundation, then an unsigned build for the simulator from a project that XcodeGen makes
+# from ios/project.yml, then pictures of the app taken from the real simulator screen. The
+# pictures come back as small artifacts (ios-shots and its siblings); the color at a named
+# point of each picture is printed in the log, so the log alone tells a light screen from a
+# dark one. A UI test reads the words on the screen. No signing identity, no account and no
+# secret is involved.
 # Logic lives in the ios/tools scripts so this file changes rarely: every change to it
 # also runs the normal CI.
 #
-# There are two jobs, with the same steps but the UI test, which runs on the first only.
-# The first is the one that counts: the Xcode pinned by its path, on the settled image.
-# The second does the same on the newer image with whatever Xcode is its default, on an
-# iOS 27 simulator; that image is still marked a preview, so the second job may fail
-# without failing the run, and what it did is read from its log.
+# There are four jobs. The first is the one that counts for the app's own screens: the
+# Xcode pinned by its path, on the settled image. The map job takes the map's pictures
+# (M3), from a Debug build alone; its list is empty until the map engine comes in. The ui
+# job runs the UI tests, in two groups (My School, then the map), on a simulator of its
+# own for each. The three run side by side on the settled image. The last does the app
+# job's steps on the newer image with whatever Xcode is its default, on an iOS 27
+# simulator; that image is still marked a preview, so that job may fail without failing
+# the run, and what it did is read from its log.
 on:
   push:
     paths:
@@ -104,12 +107,118 @@ jobs:
           path: ios/out/full/
           if-no-files-found: ignore
           retention-days: 7
-      # The on-screen words of My School, read by a UI test on this job only (M1 6.3),
-      # after the pictures are safe: its own simulator, built for testing unsigned, and
-      # the number of tests run held to ios/tools/ui-test-count.txt.
-      - name: The on-screen words, read by a UI test
+  map:
+    name: map (macos-26, Xcode 26.6)
+    # The map's pictures (M3), on the same image and Xcode as the app job: a Debug build
+    # alone (no Release build, no Release check, no iPhone build), then the tour's map
+    # list alone. Also a standard runner, free for this public repository.
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      SIM_OS_PREFIX: "iOS 26."
+      SIM_DEVICE: "iPhone 17 Pro"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: What this machine has
+        run: |
+          set -euo pipefail
+          if [ ! -d "$DEVELOPER_DIR" ]; then
+            echo "::error::The pinned Xcode is gone from this image. Bump DEVELOPER_DIR in this workflow (ios/README.md says how)."
+            ls /Applications | grep -i xcode || true
+            exit 1
+          fi
+          sw_vers
+          uname -m
+          xcodebuild -version
+          swift --version
+          date +%Z
+          xcrun simctl list runtimes
+          xcrun simctl list devicetypes | grep -i iphone || true
+          xcrun simctl help launch || true
+          xcbeautify --version || true
+          df -h /
+      - name: XcodeGen, pinned and checked
+        run: bash ios/tools/get-xcodegen.sh
+      - name: Generate the project
+        run: |
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate --spec ios/project.yml
+      - name: Build for the simulator, unsigned, Debug alone
+        run: |
+          BUILD_SET=debug bash ios/tools/build.sh
+      - name: Picture tour, the map list
+        run: |
+          TOUR_SET=map bash ios/tools/tour.sh
+      - name: Small pictures
+        if: always()
+        run: bash ios/tools/shots.sh
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ios-shots-map
+          path: ios/out/small/
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ios-screens-full-map
+          path: ios/out/full/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ui:
+    name: ui (macos-26, Xcode 26.6)
+    # The on-screen words, read by the UI tests (M1 6.3; M3 6.2), on the same image and
+    # Xcode as the app job: the packages resolved once into a folder of this job's own,
+    # then two groups, each on a simulator of its own, built for testing unsigned once by
+    # the first. The number of tests the two groups ran together is held to
+    # ios/tools/ui-test-count.txt. Also a standard runner, free for this public repository.
+    runs-on: macos-26
+    timeout-minutes: 40
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      SIM_OS_PREFIX: "iOS 26."
+      SIM_DEVICE: "iPhone 17 Pro"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: What this machine has
+        run: |
+          set -euo pipefail
+          if [ ! -d "$DEVELOPER_DIR" ]; then
+            echo "::error::The pinned Xcode is gone from this image. Bump DEVELOPER_DIR in this workflow (ios/README.md says how)."
+            ls /Applications | grep -i xcode || true
+            exit 1
+          fi
+          sw_vers
+          uname -m
+          xcodebuild -version
+          swift --version
+          date +%Z
+          xcrun simctl list runtimes
+          xcrun simctl list devicetypes | grep -i iphone || true
+          xcrun simctl help launch || true
+          xcbeautify --version || true
+          df -h /
+      - name: XcodeGen, pinned and checked
+        run: bash ios/tools/get-xcodegen.sh
+      - name: Generate the project
+        run: |
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate --spec ios/project.yml
+      - name: Resolve the packages
+        timeout-minutes: 10
+        run: |
+          xcodebuild -resolvePackageDependencies -project ios/Snowlight.xcodeproj -scheme Snowlight -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm"
+      - name: The on-screen words of My School, read by a UI test
         timeout-minutes: 15
-        run: bash ios/tools/ui-test.sh
+        run: bash ios/tools/ui-test.sh my-school
+      - name: The on-screen words of the map, read by a UI test
+        timeout-minutes: 15
+        run: bash ios/tools/ui-test.sh map
 
   app-27:
     name: app (xcode-27, may fail)
@@ -118,8 +227,8 @@ jobs:
     # repository. The image is still marked a preview, so this job is allowed to fail:
     # the run stays green on the first job alone, and this job's result is recorded.
     # A workflow has no include, so the steps are written out again; the steps left out
-    # are the test that the pinned Xcode exists, because nothing is pinned here, and the
-    # UI test, which runs on the first job only (M1 6.3).
+    # are the test that the pinned Xcode exists, because nothing is pinned here. The UI
+    # tests and the map's pictures run on the settled image only (the ui and map jobs).
     runs-on: xcode-27
     continue-on-error: true
     timeout-minutes: 30
