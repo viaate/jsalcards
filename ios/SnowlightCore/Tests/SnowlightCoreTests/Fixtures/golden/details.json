@@ -1,6 +1,6 @@
 {"family": "details", "min_cases": 320, "made_from": [
 {"path": "web/src/copy-details.ts", "sha256": "f6818e16f2a21eb1bb4354d7694fe33a0be05baf1030578f779e2963de4f013e"},
-{"path": "web/src/types/generated/index.ts", "sha256": "41211f57347878a6ea944c6b470eba169976520c90dd45b6e3720ac4011f254f"}
+{"path": "web/src/types/generated/index.ts", "sha256": "2752c5b36bf97a2ea6e9b31e66afe29a1727f49e25856fe421ddf817e4746d8c"}
 ], "cases": [
 [[0],"Students and staff."],
 [[1],"Staff report, students stay home."],

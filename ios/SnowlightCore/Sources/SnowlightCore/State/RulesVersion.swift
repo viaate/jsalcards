@@ -12,5 +12,5 @@
 
 enum RulesVersion {
     /// The rules version of the golden families this build is held to.
-    static let number = 1
+    static let number = 2
 }

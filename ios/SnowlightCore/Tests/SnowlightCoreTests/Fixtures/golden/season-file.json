@@ -4,16 +4,17 @@
 {"path": "web/src/data/closings.ts", "sha256": "150ec12054329619abec07769ad679439072640daf660320f9509fa8cf69fda8"},
 {"path": "web/src/data/directory.ts", "sha256": "424ee48b2d79d582a0e8fb5f9eb1d53c28a5824cdaeccee6a51f7f6223fe6072"},
 {"path": "web/src/data/files.ts", "sha256": "1f785b11bab70f12b76bfa683903db1201f291cb24b59550cf0134b0ecd8551b"},
-{"path": "web/src/data/forecast-detail.ts", "sha256": "9dbeaf7eaf4c0c199d52cc9e5b80311a5d8eb60c1db9f47a5a94b0a3932510a9"},
+{"path": "web/src/data/forecast-detail.ts", "sha256": "bb6161145981e0867405d3a9fca1b2f92d74e81bb185b6e6c024e211ec84bf64"},
+{"path": "web/src/data/live-roots.ts", "sha256": "431102361bfd3956aba95b31ca6f04bb9a441177f02a28cb49b5c5005f714330"},
 {"path": "web/src/data/map-day.ts", "sha256": "c295f369bf6c1fe0a4e68f26dfb20721915223599871e423c87dfc4c65314c4e"},
 {"path": "web/src/data/night.ts", "sha256": "f0862bb40fe1bcce12ac7caa8584e951c3bb9f3ce7637bfcf5e57556161ea9a8"},
 {"path": "web/src/data/paths.ts", "sha256": "8dc84209b7c9ee1c8a9125650f10681b313919b044c92803d2d77a7426e99d55"},
 {"path": "web/src/data/school-day.ts", "sha256": "d015420807c82be1503eeb83572789e6f9ddceccb3ec25a00a75a9389bd0effc"},
-{"path": "web/src/data/season.ts", "sha256": "9e23f6f74b1c4efbf4d4cf1b3cc2744d2824d7f176e0eeb2ec1d261637b6a1b2"},
-{"path": "web/src/pwa/config.ts", "sha256": "b7ccae3ae3bdaaa07c4464e40ed40fe0559e34748bb92448c1866e58cb4c6698"},
+{"path": "web/src/data/season.ts", "sha256": "057554f013e171a5578fd6123521d692c636d5a9e454546b233baa4c31daa401"},
+{"path": "web/src/pwa/config.ts", "sha256": "32a0edbfe741d07be698698b26b3b2144e0e94105a9558d8653ae22487a753a1"},
 {"path": "web/src/state/filter.ts", "sha256": "6e6a2561a8f3b94464996b1f712c9bfe2fd9e98e2cb2b379da3de52af94a5ef6"},
 {"path": "web/src/state/instant.ts", "sha256": "844a49ecd1c2319c7b23907762646580a6605033fb67af098d477293b6745503"},
-{"path": "web/src/types/generated/index.ts", "sha256": "41211f57347878a6ea944c6b470eba169976520c90dd45b6e3720ac4011f254f"}
+{"path": "web/src/types/generated/index.ts", "sha256": "2752c5b36bf97a2ea6e9b31e66afe29a1727f49e25856fe421ddf817e4746d8c"}
 ], "cases": [
 ["file","fixture","schemas/examples/synthetic-live-season.json",null,true],
 ["file","schema 2",null,{"closed":[2,0,1],"content_sha256":"5555555555555555555555555555555555555555555555555555555555555555","delayed":[1,0,0],"directory":{"districts":2,"generated_on":"2026-09-24","schools":6},"early_dismissal":[0,1,0],"gaps":[0,1,2],"remote":[0,0,1],"schema_version":2,"season":"2026-2027","since":"2026-10-27","through":"2027-01-12"},false],

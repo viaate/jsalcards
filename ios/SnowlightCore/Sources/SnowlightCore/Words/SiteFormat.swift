@@ -340,11 +340,11 @@ enum SiteFormat {
         return ShownText(String(text.dropLast()))
     }
 
-    /// The delayed start, as one plain line: "18% chance of a delayed start instead"
+    /// The late start, as one plain line: "18% chance of a late start instead"
     /// (copy-chance.ts `delayInstead`).
     static func delayInstead(_ probability: Double) throws -> ShownText {
         let text = try chanceText(probability)
-        return ShownText(text + " chance of a delayed start instead")
+        return ShownText(text + " chance of a late start instead")
     }
 
     // Grades ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 {"family": "days", "min_cases": 373, "made_from": [
-{"path": "web/src/copy-chance.ts", "sha256": "0a10a405b3e20cb4d153b2f4d9d0b785542b41f6c2ab403ab8c79b2c090b0f7c"},
+{"path": "web/src/copy-chance.ts", "sha256": "be4b2602e24dca95521bbb649b54aeebce5e929b1b7bf64fd261a2cc2af88e16"},
 {"path": "web/src/copy-format.ts", "sha256": "a19c5266de685ad8600f53e3b5166d52f290f9a190fc9fa8872c4712dd84fcf5"},
 {"path": "web/src/copy.ts", "sha256": "6c6d5d00c61740f01f91a52008a3e5da8fe62568717da3b15abb7ae02bcc564b"},
 {"path": "web/src/search/states.ts", "sha256": "a980c8aa1718c327a2d4374f528dce0ca46025acc525c32b559205df90465f91"}
